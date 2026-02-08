@@ -136,6 +136,8 @@ export class ScheduleService {
       description: 'Foundation work and structural framework',
       status: 'in_progress',
       priority: 'urgent',
+      dependency: 'task-1',
+      dependencyType: 'FS',
       startDate: new Date('2025-09-01'),
       endDate: new Date('2026-06-30'),
       progressPercentage: 35,
@@ -166,6 +168,8 @@ export class ScheduleService {
       description: 'Erecting steel columns and beams for lower floors',
       status: 'in_progress',
       priority: 'high',
+      dependency: 'task-2-1',
+      dependencyType: 'FS',
       startDate: new Date('2026-01-01'),
       endDate: new Date('2026-06-30'),
       progressPercentage: 40,
@@ -180,6 +184,8 @@ export class ScheduleService {
       description: 'Building envelope and interior finishing',
       status: 'pending',
       priority: 'high',
+      dependency: 'task-2',
+      dependencyType: 'FS',
       startDate: new Date('2026-07-01'),
       endDate: new Date('2027-09-30'),
       progressPercentage: 0,
@@ -194,6 +200,8 @@ export class ScheduleService {
       description: 'Quality inspection and project completion',
       status: 'pending',
       priority: 'high',
+      dependency: 'task-3',
+      dependencyType: 'FS',
       startDate: new Date('2027-10-01'),
       endDate: new Date('2027-12-31'),
       progressPercentage: 0,
@@ -251,6 +259,31 @@ export class ScheduleService {
 
   async findAllTasks(): Promise<Task[]> {
     return [...this.tasks];
+  }
+
+  /** Find all tasks that directly depend on the given task ID */
+  async findDependentTasks(taskId: string): Promise<Task[]> {
+    return this.tasks.filter(t => t.dependency === taskId);
+  }
+
+  /** Recursively find all downstream tasks (transitive dependents) */
+  async findAllDownstreamTasks(taskId: string): Promise<Task[]> {
+    const result: Task[] = [];
+    const visited = new Set<string>();
+
+    const collect = async (id: string) => {
+      const dependents = await this.findDependentTasks(id);
+      for (const dep of dependents) {
+        if (!visited.has(dep.id)) {
+          visited.add(dep.id);
+          result.push(dep);
+          await collect(dep.id);
+        }
+      }
+    };
+
+    await collect(taskId);
+    return result;
   }
 
   async createTask(data: CreateTaskData): Promise<Task> {

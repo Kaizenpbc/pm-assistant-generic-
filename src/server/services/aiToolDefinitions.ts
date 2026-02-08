@@ -134,9 +134,47 @@ export const AI_TOOLS: Anthropic.Tool[] = [
       required: ['scheduleId'],
     },
   },
+  {
+    name: 'cascade_reschedule',
+    description: 'Reschedule a task AND automatically shift all downstream dependent tasks by the same delta. Use this instead of reschedule_task when a delay should ripple through the schedule. For example, if Phase 2 slips by 2 weeks, Phase 3 and Phase 4 automatically shift forward by 2 weeks.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        taskId: { type: 'string', description: 'The ID of the task to reschedule' },
+        newStartDate: { type: 'string', description: 'New start date in ISO format (YYYY-MM-DD)' },
+        newEndDate: { type: 'string', description: 'New end date in ISO format (YYYY-MM-DD)' },
+        reason: { type: 'string', description: 'Reason for rescheduling' },
+      },
+      required: ['taskId'],
+    },
+  },
+  {
+    name: 'set_dependency',
+    description: 'Set or update the dependency relationship between two tasks. The dependent task (taskId) cannot start until the predecessor (predecessorId) completes (Finish-to-Start by default). Use this when adding a new task to wire it into the schedule, or to adjust the dependency chain.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        taskId: { type: 'string', description: 'The task that depends on the predecessor' },
+        predecessorId: { type: 'string', description: 'The predecessor task that must complete first' },
+        dependencyType: { type: 'string', enum: ['FS', 'SS', 'FF', 'SF'], description: 'Dependency type: Finish-to-Start (default), Start-to-Start, Finish-to-Finish, Start-to-Finish' },
+      },
+      required: ['taskId', 'predecessorId'],
+    },
+  },
+  {
+    name: 'get_dependency_chain',
+    description: 'Show the full dependency chain for a task — both what it depends on (upstream) and what depends on it (downstream). Use this to understand impact before rescheduling.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        taskId: { type: 'string', description: 'The task ID to analyze' },
+      },
+      required: ['taskId'],
+    },
+  },
 ];
 
 // Tool categories for permission checking
 export const DESTRUCTIVE_TOOLS = ['delete_task'];
-export const MUTATING_TOOLS = ['create_task', 'update_task', 'delete_task', 'create_project', 'update_project', 'reschedule_task'];
-export const READ_ONLY_TOOLS = ['list_projects', 'get_project_details', 'list_tasks'];
+export const MUTATING_TOOLS = ['create_task', 'update_task', 'delete_task', 'create_project', 'update_project', 'reschedule_task', 'cascade_reschedule', 'set_dependency'];
+export const READ_ONLY_TOOLS = ['list_projects', 'get_project_details', 'list_tasks', 'get_dependency_chain'];

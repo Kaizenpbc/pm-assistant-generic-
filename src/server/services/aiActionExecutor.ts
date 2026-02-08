@@ -34,6 +34,9 @@ export class AIActionExecutor {
         case 'list_projects': return await this.listProjects(context);
         case 'get_project_details': return await this.getProjectDetails(input, context);
         case 'list_tasks': return await this.listTasks(input, context);
+        case 'cascade_reschedule': return await this.cascadeReschedule(input, context);
+        case 'set_dependency': return await this.setDependency(input, context);
+        case 'get_dependency_chain': return await this.getDependencyChain(input, context);
         default:
           return { success: false, toolName, summary: `Unknown tool: ${toolName}`, error: `Tool '${toolName}' is not recognized` };
       }
@@ -287,8 +290,12 @@ export class AIActionExecutor {
       priority: t.priority,
       assignedTo: t.assignedTo,
       dueDate: t.dueDate,
+      startDate: t.startDate,
+      endDate: t.endDate,
       progressPercentage: t.progressPercentage,
       parentTaskId: t.parentTaskId,
+      dependency: t.dependency,
+      dependencyType: t.dependencyType,
     }));
 
     return {
@@ -296,6 +303,159 @@ export class AIActionExecutor {
       toolName: 'list_tasks',
       summary: `Found ${tasks.length} tasks in schedule "${schedule.name}"`,
       data: taskList,
+    };
+  }
+
+  private async cascadeReschedule(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
+    const { taskId, newStartDate, newEndDate, reason } = input;
+
+    const target = await this.scheduleService.findTaskById(taskId);
+    if (!target) {
+      return { success: false, toolName: 'cascade_reschedule', summary: `Task '${taskId}' not found`, error: 'Task not found' };
+    }
+
+    // Calculate the delta in milliseconds
+    let deltaMs = 0;
+    if (newStartDate && target.startDate) {
+      deltaMs = new Date(newStartDate).getTime() - new Date(target.startDate).getTime();
+    } else if (newEndDate && target.endDate) {
+      deltaMs = new Date(newEndDate).getTime() - new Date(target.endDate).getTime();
+    }
+
+    if (deltaMs === 0 && !newStartDate && !newEndDate) {
+      return { success: false, toolName: 'cascade_reschedule', summary: 'No date change specified', error: 'Provide newStartDate or newEndDate' };
+    }
+
+    // Update the target task
+    const targetUpdate: Record<string, any> = {};
+    if (newStartDate) targetUpdate.startDate = new Date(newStartDate);
+    if (newEndDate) targetUpdate.endDate = new Date(newEndDate);
+    // If only start changed, shift end by same delta
+    if (newStartDate && !newEndDate && target.endDate) {
+      targetUpdate.endDate = new Date(new Date(target.endDate).getTime() + deltaMs);
+    }
+    // If only end changed, shift start by same delta
+    if (newEndDate && !newStartDate && target.startDate) {
+      targetUpdate.startDate = new Date(new Date(target.startDate).getTime() + deltaMs);
+    }
+    await this.scheduleService.updateTask(taskId, targetUpdate);
+
+    // Find and shift all downstream dependents
+    const downstream = await this.scheduleService.findAllDownstreamTasks(taskId);
+    const affected: Array<{ id: string; name: string; newStart?: string; newEnd?: string }> = [];
+
+    for (const dep of downstream) {
+      const depUpdate: Record<string, any> = {};
+      if (dep.startDate) {
+        depUpdate.startDate = new Date(new Date(dep.startDate).getTime() + deltaMs);
+      }
+      if (dep.endDate) {
+        depUpdate.endDate = new Date(new Date(dep.endDate).getTime() + deltaMs);
+      }
+      if (dep.dueDate) {
+        depUpdate.dueDate = new Date(new Date(dep.dueDate).getTime() + deltaMs);
+      }
+      await this.scheduleService.updateTask(dep.id, depUpdate);
+      affected.push({
+        id: dep.id,
+        name: dep.name,
+        newStart: depUpdate.startDate?.toISOString().split('T')[0],
+        newEnd: depUpdate.endDate?.toISOString().split('T')[0],
+      });
+    }
+
+    const deltaDays = Math.round(deltaMs / (1000 * 60 * 60 * 24));
+    const direction = deltaDays > 0 ? 'forward' : 'back';
+
+    return {
+      success: true,
+      toolName: 'cascade_reschedule',
+      summary: `Rescheduled "${target.name}" and ${affected.length} downstream task${affected.length === 1 ? '' : 's'} by ${Math.abs(deltaDays)} day${Math.abs(deltaDays) === 1 ? '' : 's'} ${direction}${reason ? `. Reason: ${reason}` : ''}`,
+      data: {
+        target: { id: taskId, name: target.name, ...targetUpdate },
+        affectedTasks: affected,
+        deltaDays,
+      },
+    };
+  }
+
+  private async setDependency(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
+    const { taskId, predecessorId, dependencyType } = input;
+
+    const task = await this.scheduleService.findTaskById(taskId);
+    if (!task) {
+      return { success: false, toolName: 'set_dependency', summary: `Task '${taskId}' not found`, error: 'Task not found' };
+    }
+
+    const predecessor = await this.scheduleService.findTaskById(predecessorId);
+    if (!predecessor) {
+      return { success: false, toolName: 'set_dependency', summary: `Predecessor task '${predecessorId}' not found`, error: 'Predecessor not found' };
+    }
+
+    // Check for circular dependency
+    const downstreamOfTask = await this.scheduleService.findAllDownstreamTasks(taskId);
+    if (downstreamOfTask.some(d => d.id === predecessorId)) {
+      return {
+        success: false,
+        toolName: 'set_dependency',
+        summary: `Cannot set dependency: "${predecessor.name}" is already downstream of "${task.name}" — this would create a circular dependency`,
+        error: 'Circular dependency detected',
+      };
+    }
+
+    const depType = dependencyType || 'FS';
+    await this.scheduleService.updateTask(taskId, {
+      dependency: predecessorId,
+      dependencyType: depType,
+    });
+
+    return {
+      success: true,
+      toolName: 'set_dependency',
+      summary: `Set dependency: "${task.name}" now depends on "${predecessor.name}" (${depType})`,
+      data: { taskId, taskName: task.name, predecessorId, predecessorName: predecessor.name, dependencyType: depType },
+    };
+  }
+
+  private async getDependencyChain(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
+    const { taskId } = input;
+
+    const task = await this.scheduleService.findTaskById(taskId);
+    if (!task) {
+      return { success: false, toolName: 'get_dependency_chain', summary: `Task '${taskId}' not found`, error: 'Task not found' };
+    }
+
+    // Walk upstream (predecessors)
+    const upstream: Array<{ id: string; name: string; type: string }> = [];
+    let current = task;
+    const visitedUp = new Set<string>();
+    while (current.dependency && !visitedUp.has(current.dependency)) {
+      visitedUp.add(current.dependency);
+      const pred = await this.scheduleService.findTaskById(current.dependency);
+      if (!pred) break;
+      upstream.push({ id: pred.id, name: pred.name, type: current.dependencyType || 'FS' });
+      current = pred;
+    }
+    upstream.reverse(); // oldest predecessor first
+
+    // Walk downstream (dependents)
+    const downstream = await this.scheduleService.findAllDownstreamTasks(taskId);
+    const downstreamList = downstream.map(d => ({
+      id: d.id,
+      name: d.name,
+      startDate: d.startDate?.toISOString().split('T')[0],
+      endDate: d.endDate?.toISOString().split('T')[0],
+    }));
+
+    return {
+      success: true,
+      toolName: 'get_dependency_chain',
+      summary: `"${task.name}" has ${upstream.length} predecessor(s) and ${downstream.length} downstream dependent(s)`,
+      data: {
+        task: { id: task.id, name: task.name, startDate: task.startDate, endDate: task.endDate },
+        upstream,
+        downstream: downstreamList,
+      },
     };
   }
 }
