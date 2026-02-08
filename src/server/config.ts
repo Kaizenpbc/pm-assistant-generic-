@@ -17,6 +17,13 @@ const configSchema = z.object({
 
   CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']).default('debug'),
+
+  // AI Configuration
+  ANTHROPIC_API_KEY: z.string().optional().default(''),
+  AI_MODEL: z.string().default('claude-sonnet-4-5-20250929'),
+  AI_TEMPERATURE: z.coerce.number().min(0).max(1).default(0.3),
+  AI_MAX_TOKENS: z.coerce.number().min(100).max(8192).default(4096),
+  AI_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
 }).refine((data) => {
   if (data.JWT_SECRET === data.JWT_REFRESH_SECRET) {
     throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be different');
@@ -46,6 +53,11 @@ export function validateConfiguration() {
       COOKIE_SECRET: process.env['COOKIE_SECRET'],
       CORS_ORIGIN: process.env['CORS_ORIGIN'],
       LOG_LEVEL: process.env['LOG_LEVEL'],
+      ANTHROPIC_API_KEY: process.env['ANTHROPIC_API_KEY'],
+      AI_MODEL: process.env['AI_MODEL'],
+      AI_TEMPERATURE: process.env['AI_TEMPERATURE'],
+      AI_MAX_TOKENS: process.env['AI_MAX_TOKENS'],
+      AI_ENABLED: process.env['AI_ENABLED'],
     };
 
     console.log('Validating configuration...');

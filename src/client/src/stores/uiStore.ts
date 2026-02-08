@@ -13,9 +13,16 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface AIPanelContext {
+  type: 'dashboard' | 'project' | 'schedule' | 'reports' | 'general';
+  projectId?: string;
+  projectName?: string;
+}
+
 interface UIState {
   sidebarCollapsed: boolean;
   aiPanelOpen: boolean;
+  aiPanelContext: AIPanelContext;
   notifications: Notification[];
   unreadCount: number;
 
@@ -24,6 +31,7 @@ interface UIState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   toggleAIPanel: () => void;
   setAIPanelOpen: (open: boolean) => void;
+  setAIPanelContext: (context: AIPanelContext) => void;
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void;
   dismissNotification: (id: string) => void;
   markAllRead: () => void;
@@ -37,6 +45,7 @@ export const useUIStore = create<UIState>()(
     (set) => ({
       sidebarCollapsed: false,
       aiPanelOpen: true,
+      aiPanelContext: { type: 'dashboard' },
       notifications: [],
       unreadCount: 0,
 
@@ -47,6 +56,8 @@ export const useUIStore = create<UIState>()(
       toggleAIPanel: () => set((state) => ({ aiPanelOpen: !state.aiPanelOpen })),
 
       setAIPanelOpen: (open) => set({ aiPanelOpen: open }),
+
+      setAIPanelContext: (context) => set({ aiPanelContext: context }),
 
       addNotification: (notification) =>
         set((state) => {

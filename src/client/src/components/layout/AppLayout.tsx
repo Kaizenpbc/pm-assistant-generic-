@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import { Sparkles, X, MessageSquare } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
+import { AIChatPanel } from '../ai/AIChatPanel';
+import { useUIStore } from '../../stores/uiStore';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -54,6 +56,7 @@ function useBreakpoint(): 'mobile' | 'tablet' | 'desktop' {
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const breakpoint = useBreakpoint();
+  const { aiPanelContext } = useUIStore();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
     readLocalStorageBool(SIDEBAR_STORAGE_KEY, false)
@@ -62,7 +65,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     readLocalStorageBool(AI_PANEL_STORAGE_KEY, true)
   );
 
-  // Persist sidebar state
   useEffect(() => {
     try {
       localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarCollapsed));
@@ -71,7 +73,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   }, [sidebarCollapsed]);
 
-  // Persist AI panel state
   useEffect(() => {
     try {
       localStorage.setItem(AI_PANEL_STORAGE_KEY, String(aiPanelOpen));
@@ -80,7 +81,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   }, [aiPanelOpen]);
 
-  // Auto-collapse sidebar on tablet, hide AI on non-desktop
   useEffect(() => {
     if (breakpoint === 'tablet') {
       setSidebarCollapsed(true);
@@ -152,7 +152,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   <div>
                     <h2 className="text-sm font-semibold text-gray-900">AI Assistant</h2>
                     <p className="text-[10px] text-gray-500 leading-none mt-0.5">
-                      Coming in Phase 2
+                      Powered by Claude
                     </p>
                   </div>
                 </div>
@@ -165,55 +165,14 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 </button>
               </div>
 
-              {/* AI Panel Body -- Placeholder */}
-              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
-                  <MessageSquare className="w-8 h-8 text-indigo-400" />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                  AI Assistant
-                </h3>
-                <p className="text-xs text-gray-500 max-w-[240px] leading-relaxed">
-                  Ask questions about your projects, get scheduling suggestions, or analyze
-                  task breakdowns. The full AI chat experience is coming in Phase 2.
-                </p>
-              </div>
-
-              {/* AI Panel Input -- Placeholder */}
-              <div className="flex-shrink-0 p-4 border-t border-gray-200">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Ask AI anything..."
-                    disabled
-                    className="
-                      flex-1 h-9 px-3 text-sm rounded-lg
-                      bg-gray-100 border border-gray-200
-                      text-gray-400 placeholder-gray-400
-                      cursor-not-allowed
-                    "
-                    aria-label="AI chat input (coming soon)"
-                  />
-                  <button
-                    disabled
-                    className="
-                      h-9 px-3 rounded-lg
-                      bg-indigo-100 text-indigo-300
-                      text-sm font-medium
-                      cursor-not-allowed
-                    "
-                    aria-label="Send message (coming soon)"
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
+              {/* AI Chat Panel */}
+              <AIChatPanel context={aiPanelContext} />
             </>
           )}
         </aside>
       )}
 
-      {/* Floating AI Toggle (when panel is closed on desktop) */}
+      {/* Floating AI Toggle */}
       {breakpoint === 'desktop' && !aiPanelOpen && (
         <button
           onClick={handleAiPanelToggle}
@@ -225,7 +184,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-500/40
             transition-all duration-200
             flex items-center justify-center
-            animate-fade-in
           "
           aria-label="Open AI Assistant"
           title="Open AI Assistant"

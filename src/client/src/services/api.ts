@@ -170,6 +170,32 @@ class ApiService {
     const response = await this.api.put(`/schedules/${scheduleId}/tasks/${taskId}`, taskData);
     return response.data;
   }
+
+  // -------------------------------------------------------------------------
+  // AI Chat endpoints
+  // -------------------------------------------------------------------------
+
+  async streamChatMessage(data: {
+    message: string;
+    conversationId?: string;
+    context?: { type: string; projectId?: string };
+  }): Promise<Response> {
+    return fetch('http://localhost:3002/api/v1/ai-chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async sendChatMessage(data: {
+    message: string;
+    conversationId?: string;
+    context?: { type: string; projectId?: string };
+  }) {
+    const response = await this.api.post('/ai-chat/message', data);
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
