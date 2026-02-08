@@ -5,6 +5,7 @@ import { userRoutes } from './routes/users';
 import { scheduleRoutes } from './routes/schedules';
 import { aiChatRoutes } from './routes/aiChat';
 import { aiSchedulingRoutes } from './routes/aiScheduling';
+import { alertRoutes } from './routes/alerts';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
@@ -13,4 +14,5 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(scheduleRoutes, { prefix: '/api/v1/schedules' });
   await fastify.register(aiChatRoutes, { prefix: '/api/v1/ai-chat' });
   await fastify.register(aiSchedulingRoutes, { prefix: '/api/v1/ai-scheduling' });
+  await fastify.register(alertRoutes, { prefix: '/api/v1/alerts' });
 }

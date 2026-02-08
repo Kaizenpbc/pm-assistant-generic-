@@ -19,7 +19,7 @@ export interface CreateUserData {
 }
 
 export class UserService {
-  private users: User[] = [
+  private static users: User[] = [
     {
       id: '1',
       username: 'admin',
@@ -32,6 +32,8 @@ export class UserService {
       updatedAt: new Date(),
     },
   ];
+
+  private get users() { return UserService.users; }
 
   async findById(id: string): Promise<User | null> {
     return this.users.find(user => user.id === id) || null;
@@ -57,21 +59,21 @@ export class UserService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.users.push(user);
+    UserService.users.push(user);
     return user;
   }
 
   async update(id: string, data: Partial<Omit<User, 'id' | 'createdAt' | 'updatedAt'>>): Promise<User | null> {
     const userIndex = this.users.findIndex(user => user.id === id);
     if (userIndex === -1) return null;
-    this.users[userIndex] = { ...this.users[userIndex], ...data, updatedAt: new Date() };
-    return this.users[userIndex];
+    UserService.users[userIndex] = { ...this.users[userIndex], ...data, updatedAt: new Date() };
+    return UserService.users[userIndex];
   }
 
   async delete(id: string): Promise<boolean> {
     const userIndex = this.users.findIndex(user => user.id === id);
     if (userIndex === -1) return false;
-    this.users.splice(userIndex, 1);
+    UserService.users.splice(userIndex, 1);
     return true;
   }
 

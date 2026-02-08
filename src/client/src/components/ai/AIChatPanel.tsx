@@ -6,8 +6,10 @@ import {
   Bot,
   User,
   ChevronDown,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
-import { useAIChatStore, dashboardQuickActions, projectQuickActions, type QuickAction } from '../../stores/aiChatStore';
+import { useAIChatStore, dashboardQuickActions, projectQuickActions, type QuickAction, type ActionResult } from '../../stores/aiChatStore';
 import { AIChatContext } from './AIChatContext';
 import { QuickActions } from './QuickActions';
 import type { AIPanelContext } from '../../stores/uiStore';
@@ -120,6 +122,28 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
                 ))}
                 {message.isStreaming && (
                   <span className="ml-1 inline-block h-4 w-1.5 animate-pulse rounded-full bg-indigo-500" />
+                )}
+                {/* Action Results */}
+                {message.actions && message.actions.length > 0 && (
+                  <div className="mt-2 space-y-1.5 border-t border-gray-200 pt-2">
+                    {message.actions.map((action, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
+                          action.success
+                            ? 'bg-green-50 text-green-700'
+                            : 'bg-red-50 text-red-700'
+                        }`}
+                      >
+                        {action.success ? (
+                          <CheckCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                        ) : (
+                          <XCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                        )}
+                        <span>{action.summary}</span>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>

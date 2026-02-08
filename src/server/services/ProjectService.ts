@@ -38,7 +38,7 @@ export interface CreateProjectData {
 }
 
 export class ProjectService {
-  private projects: Project[] = [
+  private static projects: Project[] = [
     {
       id: '1',
       name: 'Cloud Migration Project',
@@ -101,8 +101,13 @@ export class ProjectService {
     },
   ];
 
-  async findById(id: string, userId: string): Promise<Project | null> {
-    return this.projects.find(p => p.id === id && p.createdBy === userId) || null;
+  private get projects() { return ProjectService.projects; }
+
+  async findById(id: string, userId?: string): Promise<Project | null> {
+    if (userId) {
+      return this.projects.find(p => p.id === id && p.createdBy === userId) || null;
+    }
+    return this.projects.find(p => p.id === id) || null;
   }
 
   async findByUserId(userId: string): Promise<Project[]> {
@@ -134,21 +139,25 @@ export class ProjectService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.projects.push(project);
+    ProjectService.projects.push(project);
     return project;
   }
 
-  async update(id: string, data: Partial<Omit<Project, 'id' | 'createdBy' | 'createdAt' | 'updatedAt'>>, userId: string): Promise<Project | null> {
-    const projectIndex = this.projects.findIndex(p => p.id === id && p.createdBy === userId);
+  async update(id: string, data: Partial<Omit<Project, 'id' | 'createdBy' | 'createdAt' | 'updatedAt'>>, userId?: string): Promise<Project | null> {
+    const projectIndex = userId
+      ? this.projects.findIndex(p => p.id === id && p.createdBy === userId)
+      : this.projects.findIndex(p => p.id === id);
     if (projectIndex === -1) return null;
-    this.projects[projectIndex] = { ...this.projects[projectIndex], ...data, updatedAt: new Date() };
-    return this.projects[projectIndex];
+    ProjectService.projects[projectIndex] = { ...this.projects[projectIndex], ...data, updatedAt: new Date() };
+    return ProjectService.projects[projectIndex];
   }
 
-  async delete(id: string, userId: string): Promise<boolean> {
-    const projectIndex = this.projects.findIndex(p => p.id === id && p.createdBy === userId);
+  async delete(id: string, userId?: string): Promise<boolean> {
+    const projectIndex = userId
+      ? this.projects.findIndex(p => p.id === id && p.createdBy === userId)
+      : this.projects.findIndex(p => p.id === id);
     if (projectIndex === -1) return false;
-    this.projects.splice(projectIndex, 1);
+    ProjectService.projects.splice(projectIndex, 1);
     return true;
   }
 }

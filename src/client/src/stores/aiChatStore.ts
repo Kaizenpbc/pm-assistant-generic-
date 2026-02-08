@@ -7,10 +7,19 @@ export interface ChatMessage {
   content: string;
   timestamp: string;
   isStreaming?: boolean;
+  actions?: ActionResult[];
   context?: {
     type: string;
     projectId?: string;
   };
+}
+
+export interface ActionResult {
+  success: boolean;
+  toolName: string;
+  summary: string;
+  data?: any;
+  error?: string;
 }
 
 export interface QuickAction {
@@ -99,68 +108,30 @@ export const useAIChatStore = create<AIChatState>()((set, get) => ({
 
     setLoading(true);
 
-    // Add placeholder assistant message for streaming
+    // Add placeholder assistant message
     addMessage({ role: 'assistant', content: '', isStreaming: true });
-
     const placeholderMsg = get().messages[get().messages.length - 1];
 
     try {
-      const response = await apiService.streamChatMessage({
+      // Use non-streaming endpoint for tool support
+      const result = await apiService.sendChatMessage({
         message: userMessage,
         conversationId: conversationId || undefined,
         context,
       });
 
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response stream available');
-      }
-
-      const decoder = new TextDecoder();
-      let accumulated = '';
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith('data: ')) continue;
-
-          const jsonStr = trimmed.slice(6);
-          try {
-            const chunk = JSON.parse(jsonStr);
-
-            if (chunk.type === 'text_delta' && chunk.content) {
-              accumulated += chunk.content;
-              updateLastAssistantMessage(accumulated);
-            } else if (chunk.type === 'done') {
-              if (chunk.conversationId) {
-                setConversationId(chunk.conversationId);
-              }
-            }
-          } catch {
-            // Ignore malformed JSON
-          }
-        }
-      }
-
-      // Mark streaming as done
+      // Update the placeholder with the real response
       set((state) => ({
         messages: state.messages.map(m =>
-          m.id === placeholderMsg.id ? { ...m, isStreaming: false } : m
+          m.id === placeholderMsg.id
+            ? { ...m, content: result.reply, isStreaming: false, actions: result.actions }
+            : m
         ),
       }));
+
+      if (result.conversationId) {
+        setConversationId(result.conversationId);
+      }
 
       setLoading(false);
     } catch (error) {
@@ -189,6 +160,6 @@ export const dashboardQuickActions: QuickAction[] = [
 export const projectQuickActions: QuickAction[] = [
   { id: 'analyze', label: 'Analyze', icon: 'BarChart3', prompt: 'Analyze this project and tell me how it\'s doing overall.' },
   { id: 'risks', label: 'Find Risks', icon: 'AlertTriangle', prompt: 'What are the biggest risks for this project right now?' },
-  { id: 'optimize', label: 'Optimize', icon: 'Zap', prompt: 'How can I optimize the schedule for this project?' },
-  { id: 'tasks', label: 'Break Down', icon: 'List', prompt: 'Break down this project into detailed tasks and phases.' },
+  { id: 'add-task', label: 'Add Task', icon: 'Plus', prompt: 'I need to add a new task to this project. Ask me for the details.' },
+  { id: 'whats-overdue', label: 'Overdue?', icon: 'Clock', prompt: 'Show me any overdue or at-risk tasks in this project and suggest what to do about them.' },
 ];

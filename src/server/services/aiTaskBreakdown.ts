@@ -66,7 +66,7 @@ export class FallbackTaskBreakdownService {
   }
 
   private async extractProjectInfo(description: string) {
-    const keywords = description.toLowerCase();
+    const keywords = (description || '').toLowerCase();
 
     const projectTypeScores: Record<string, number> = {
       construction_project: 0,

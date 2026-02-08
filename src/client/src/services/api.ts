@@ -196,6 +196,21 @@ class ApiService {
     const response = await this.api.post('/ai-chat/message', data);
     return response.data;
   }
+
+  async executeAlertAction(data: { toolName: string; params: Record<string, any> }) {
+    const response = await this.api.post('/alerts/execute-action', data);
+    return response.data;
+  }
+
+  async getAlerts() {
+    const response = await this.api.get('/alerts');
+    return response.data;
+  }
+
+  async getAlertsSummary() {
+    const response = await this.api.get('/alerts/summary');
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

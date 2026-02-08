@@ -69,7 +69,7 @@ export interface CreateTaskData {
 }
 
 export class ScheduleService {
-  private schedules: Schedule[] = [
+  private static schedules: Schedule[] = [
     {
       id: 'sch-1',
       projectId: '3',
@@ -84,7 +84,7 @@ export class ScheduleService {
     }
   ];
 
-  private tasks: Task[] = [
+  private static tasks: Task[] = [
     {
       id: 'task-1',
       scheduleId: 'sch-1',
@@ -203,6 +203,9 @@ export class ScheduleService {
     },
   ];
 
+  private get schedules() { return ScheduleService.schedules; }
+  private get tasks() { return ScheduleService.tasks; }
+
   async findByProjectId(projectId: string): Promise<Schedule[]> {
     return this.schedules.filter(s => s.projectId === projectId);
   }
@@ -219,27 +222,35 @@ export class ScheduleService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.schedules.push(schedule);
+    ScheduleService.schedules.push(schedule);
     return schedule;
   }
 
   async update(id: string, data: Partial<Omit<Schedule, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>>): Promise<Schedule | null> {
     const index = this.schedules.findIndex(s => s.id === id);
     if (index === -1) return null;
-    this.schedules[index] = { ...this.schedules[index], ...data, updatedAt: new Date() };
-    return this.schedules[index];
+    ScheduleService.schedules[index] = { ...this.schedules[index], ...data, updatedAt: new Date() };
+    return ScheduleService.schedules[index];
   }
 
   async delete(id: string): Promise<boolean> {
     const index = this.schedules.findIndex(s => s.id === id);
     if (index === -1) return false;
-    this.schedules.splice(index, 1);
-    this.tasks = this.tasks.filter(t => t.scheduleId !== id);
+    ScheduleService.schedules.splice(index, 1);
+    ScheduleService.tasks = ScheduleService.tasks.filter(t => t.scheduleId !== id);
     return true;
   }
 
   async findTasksByScheduleId(scheduleId: string): Promise<Task[]> {
     return this.tasks.filter(t => t.scheduleId === scheduleId);
+  }
+
+  async findTaskById(id: string): Promise<Task | null> {
+    return this.tasks.find(t => t.id === id) || null;
+  }
+
+  async findAllTasks(): Promise<Task[]> {
+    return [...this.tasks];
   }
 
   async createTask(data: CreateTaskData): Promise<Task> {
@@ -252,21 +263,21 @@ export class ScheduleService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.tasks.push(task);
+    ScheduleService.tasks.push(task);
     return task;
   }
 
   async updateTask(id: string, data: Partial<Omit<Task, 'id' | 'scheduleId' | 'createdAt' | 'updatedAt'>>): Promise<Task | null> {
     const index = this.tasks.findIndex(t => t.id === id);
     if (index === -1) return null;
-    this.tasks[index] = { ...this.tasks[index], ...data, updatedAt: new Date() };
-    return this.tasks[index];
+    ScheduleService.tasks[index] = { ...this.tasks[index], ...data, updatedAt: new Date() };
+    return ScheduleService.tasks[index];
   }
 
   async deleteTask(id: string): Promise<boolean> {
     const index = this.tasks.findIndex(t => t.id === id);
     if (index === -1) return false;
-    this.tasks.splice(index, 1);
+    ScheduleService.tasks.splice(index, 1);
     return true;
   }
 }

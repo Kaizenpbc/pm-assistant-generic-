@@ -3,6 +3,8 @@ import { randomUUID } from 'crypto';
 import { claudeService, promptTemplates, type StreamChunk, type CompletionResult } from './claudeService';
 import { AIContextBuilder } from './aiContextBuilder';
 import { logAIUsage } from './aiUsageLogger';
+import { AI_TOOLS, MUTATING_TOOLS } from './aiToolDefinitions';
+import { AIActionExecutor, type ActionResult } from './aiActionExecutor';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -17,12 +19,14 @@ export interface ChatRequest {
   };
   userId: string;
   userRole: string;
+  enableTools?: boolean;
 }
 
 interface StoredMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  actions?: ActionResult[];
 }
 
 interface StoredConversation {
@@ -45,22 +49,24 @@ interface StoredConversation {
 export class AIChatService {
   private fastify: FastifyInstance;
   private contextBuilder: AIContextBuilder;
-  // In-memory conversation store (will be replaced with DB in production)
+  private actionExecutor: AIActionExecutor;
   private static conversations: Map<string, StoredConversation> = new Map();
 
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
     this.contextBuilder = new AIContextBuilder(fastify);
+    this.actionExecutor = new AIActionExecutor();
   }
 
   // -----------------------------------------------------------------------
-  // Non-streaming chat
+  // Non-streaming chat WITH tool execution
   // -----------------------------------------------------------------------
 
   async sendMessage(req: ChatRequest): Promise<{
     reply: string;
     conversationId: string;
     aiPowered: boolean;
+    actions?: ActionResult[];
   }> {
     if (!claudeService.isAvailable()) {
       return {
@@ -72,34 +78,84 @@ export class AIChatService {
     }
 
     const { systemPrompt, history } = await this.prepareConversation(req);
+    const enableTools = req.enableTools !== false; // tools enabled by default
 
     try {
-      const result: CompletionResult = await claudeService.complete({
-        systemPrompt,
-        userMessage: req.message,
-        conversationHistory: history,
-        temperature: 0.5,
-      });
+      if (enableTools) {
+        // Use the tool loop — Claude can call tools and we execute them
+        const actionContext = { userId: req.userId, userRole: req.userRole };
+        const allActions: ActionResult[] = [];
 
-      const conversationId = this.persistConversation(req, result.content, result.usage.inputTokens + result.usage.outputTokens);
+        const result = await claudeService.completeToolLoop({
+          systemPrompt,
+          userMessage: req.message,
+          conversationHistory: history,
+          temperature: 0.5,
+          tools: AI_TOOLS,
+          executeToolFn: async (toolName: string, toolInput: Record<string, any>) => {
+            const actionResult = await this.actionExecutor.execute(toolName, toolInput, actionContext);
+            allActions.push(actionResult);
+            // Return the result as a string for Claude to interpret
+            return JSON.stringify(actionResult);
+          },
+        });
 
-      logAIUsage(this.fastify, {
-        userId: req.userId,
-        feature: 'chat',
-        model: 'claude',
-        usage: result.usage,
-        latencyMs: result.latencyMs,
-        success: true,
-        requestContext: { conversationId, contextType: req.context?.type },
-      });
+        const conversationId = this.persistConversation(
+          req,
+          result.finalText,
+          result.totalUsage.inputTokens + result.totalUsage.outputTokens,
+          allActions.length > 0 ? allActions : undefined,
+        );
 
-      return { reply: result.content, conversationId, aiPowered: true };
+        logAIUsage(this.fastify, {
+          userId: req.userId,
+          feature: 'chat-tools',
+          model: 'claude',
+          usage: result.totalUsage,
+          latencyMs: result.totalLatencyMs,
+          success: true,
+          requestContext: {
+            conversationId,
+            contextType: req.context?.type,
+            toolsUsed: result.toolResults.map(t => t.toolName),
+          },
+        });
+
+        return {
+          reply: result.finalText,
+          conversationId,
+          aiPowered: true,
+          actions: allActions.length > 0 ? allActions : undefined,
+        };
+      } else {
+        // Plain completion without tools
+        const result: CompletionResult = await claudeService.complete({
+          systemPrompt,
+          userMessage: req.message,
+          conversationHistory: history,
+          temperature: 0.5,
+        });
+
+        const conversationId = this.persistConversation(req, result.content, result.usage.inputTokens + result.usage.outputTokens);
+
+        logAIUsage(this.fastify, {
+          userId: req.userId,
+          feature: 'chat',
+          model: 'claude',
+          usage: result.usage,
+          latencyMs: result.latencyMs,
+          success: true,
+          requestContext: { conversationId, contextType: req.context?.type },
+        });
+
+        return { reply: result.content, conversationId, aiPowered: true };
+      }
     } catch (error) {
       this.fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Chat completion failed');
 
       logAIUsage(this.fastify, {
         userId: req.userId,
-        feature: 'chat',
+        feature: 'chat-tools',
         model: 'claude',
         usage: { inputTokens: 0, outputTokens: 0 },
         latencyMs: 0,
@@ -116,11 +172,11 @@ export class AIChatService {
   }
 
   // -----------------------------------------------------------------------
-  // Streaming chat
+  // Streaming chat (tools not supported in streaming mode)
   // -----------------------------------------------------------------------
 
   async *streamMessage(req: ChatRequest): AsyncGenerator<
-    StreamChunk & { conversationId?: string }
+    StreamChunk & { conversationId?: string; actions?: ActionResult[] }
   > {
     if (!claudeService.isAvailable()) {
       yield {
@@ -273,10 +329,11 @@ export class AIChatService {
     req: ChatRequest,
     assistantReply: string,
     tokenCount: number,
+    actions?: ActionResult[],
   ): string {
     const now = new Date().toISOString();
     const userMsg: StoredMessage = { role: 'user', content: req.message, timestamp: now };
-    const assistantMsg: StoredMessage = { role: 'assistant', content: assistantReply, timestamp: now };
+    const assistantMsg: StoredMessage = { role: 'assistant', content: assistantReply, timestamp: now, actions };
 
     if (req.conversationId && AIChatService.conversations.has(req.conversationId)) {
       const conv = AIChatService.conversations.get(req.conversationId)!;
@@ -288,7 +345,6 @@ export class AIChatService {
       }
     }
 
-    // Create new conversation
     const id = randomUUID();
     const title = req.message.slice(0, 100) + (req.message.length > 100 ? '...' : '');
 

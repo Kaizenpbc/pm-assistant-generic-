@@ -225,18 +225,23 @@ Context:
 - You help project managers, team leads, and executives manage projects across diverse industries.
 - Your expertise covers project planning, scheduling, risk management, resource allocation, budgeting, procurement, and stakeholder management.
 - You are familiar with project management methodologies (PMBOK, PRINCE2, Agile, Lean) and tools (Gantt charts, critical path method, earned value management).
+- You have access to tools that let you CREATE, UPDATE, and DELETE tasks and projects. Use them when the user asks you to make changes.
+- When the user asks you to do something (create a task, update status, etc.), use your tools to execute the action — don't just describe what you would do.
+- Before making destructive changes (deleting tasks/projects), confirm with the user first by explaining what you intend to do.
+- For read-only queries (listing projects, checking status), use the appropriate lookup tools to get current data.
 
 Guidelines for your responses:
 - Be professional, clear, and concise.
 - Support your recommendations with reasoning.
 - When you are uncertain, say so clearly. Never fabricate information.
 - Format responses for readability: use bullet points, numbered lists, and clear headings when appropriate.
+- After executing actions, summarize what was done clearly.
 
 Current project context:
 {{projectContext}}
 
 User's role: {{userRole}}`,
-    '1.0.0',
+    '2.0.0',
   ),
 };
 
@@ -433,6 +438,155 @@ export class ClaudeService {
     throw new Error(
       `[ClaudeService] Failed to get valid JSON after retry. Validation error: ${retryParseResult.error}`,
     );
+  }
+
+  async completeWithTools(options: CompletionOptions & {
+    tools: Anthropic.Tool[];
+  }): Promise<{
+    content: Anthropic.ContentBlock[];
+    usage: TokenUsage;
+    latencyMs: number;
+    model: string;
+    stopReason: string;
+  }> {
+    this.assertAvailable();
+
+    const startMs = Date.now();
+    const effectiveMaxTokens = options.maxTokens ?? this.maxTokens;
+    const effectiveTemperature = options.temperature ?? this.temperature;
+    const systemPrompt = this.buildSystemPrompt(options.systemPrompt, options.responseFormat);
+    const messages = this.buildMessages(options);
+
+    try {
+      const response = await this.client!.messages.create({
+        model: this.model,
+        max_tokens: effectiveMaxTokens,
+        temperature: effectiveTemperature,
+        system: systemPrompt,
+        messages,
+        tools: options.tools,
+        stream: false,
+      });
+
+      const latencyMs = Date.now() - startMs;
+      const usage: TokenUsage = {
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+      };
+
+      this.recordUsage(usage);
+
+      return {
+        content: response.content,
+        usage,
+        latencyMs,
+        model: response.model,
+        stopReason: response.stop_reason ?? 'end_turn',
+      };
+    } catch (error: unknown) {
+      throw this.wrapError(error, 'completeWithTools');
+    }
+  }
+
+  async completeToolLoop(options: CompletionOptions & {
+    tools: Anthropic.Tool[];
+    executeToolFn: (toolName: string, toolInput: Record<string, any>) => Promise<string>;
+    maxIterations?: number;
+  }): Promise<{
+    finalText: string;
+    toolResults: Array<{ toolName: string; result: string }>;
+    totalUsage: TokenUsage;
+    totalLatencyMs: number;
+  }> {
+    this.assertAvailable();
+
+    const maxIter = options.maxIterations ?? 5;
+    const toolResults: Array<{ toolName: string; result: string }> = [];
+    let totalUsage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
+    let totalLatencyMs = 0;
+
+    // Build initial messages
+    let messages: Anthropic.MessageParam[] = this.buildMessages(options) as Anthropic.MessageParam[];
+
+    for (let i = 0; i < maxIter; i++) {
+      const startMs = Date.now();
+      const response = await this.client!.messages.create({
+        model: this.model,
+        max_tokens: options.maxTokens ?? this.maxTokens,
+        temperature: options.temperature ?? this.temperature,
+        system: this.buildSystemPrompt(options.systemPrompt, options.responseFormat),
+        messages,
+        tools: options.tools,
+        stream: false,
+      });
+
+      const latencyMs = Date.now() - startMs;
+      totalLatencyMs += latencyMs;
+      totalUsage.inputTokens += response.usage.input_tokens;
+      totalUsage.outputTokens += response.usage.output_tokens;
+      this.recordUsage({ inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens });
+
+      // If no tool use, extract text and return
+      if (response.stop_reason !== 'tool_use') {
+        const textBlocks = response.content.filter(
+          (block): block is Anthropic.TextBlock => block.type === 'text',
+        );
+        const finalText = textBlocks.map(b => b.text).join('');
+        return { finalText, toolResults, totalUsage, totalLatencyMs };
+      }
+
+      // Process tool use blocks
+      const toolUseBlocks = response.content.filter(
+        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
+      );
+
+      // Add assistant's response (with tool_use) to messages
+      messages.push({ role: 'assistant', content: response.content });
+
+      // Execute each tool and build tool_result messages
+      const toolResultContents: Anthropic.ToolResultBlockParam[] = [];
+      for (const toolUse of toolUseBlocks) {
+        try {
+          const result = await options.executeToolFn(toolUse.name, toolUse.input as Record<string, any>);
+          toolResults.push({ toolName: toolUse.name, result });
+          toolResultContents.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: result,
+          });
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          toolResults.push({ toolName: toolUse.name, result: `Error: ${errorMsg}` });
+          toolResultContents.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: `Error: ${errorMsg}`,
+            is_error: true,
+          });
+        }
+      }
+
+      // Add tool results to messages
+      messages.push({ role: 'user', content: toolResultContents });
+    }
+
+    // Max iterations reached — get final text response
+    const finalResponse = await this.client!.messages.create({
+      model: this.model,
+      max_tokens: options.maxTokens ?? this.maxTokens,
+      temperature: options.temperature ?? this.temperature,
+      system: this.buildSystemPrompt(options.systemPrompt, options.responseFormat),
+      messages,
+      stream: false,
+    });
+
+    totalUsage.inputTokens += finalResponse.usage.input_tokens;
+    totalUsage.outputTokens += finalResponse.usage.output_tokens;
+
+    const textBlocks = finalResponse.content.filter(
+      (block): block is Anthropic.TextBlock => block.type === 'text',
+    );
+    return { finalText: textBlocks.map(b => b.text).join(''), toolResults, totalUsage, totalLatencyMs };
   }
 
   private assertAvailable(): void {
