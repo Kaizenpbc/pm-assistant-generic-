@@ -117,7 +117,7 @@ const priorityDot: Record<string, string> = {
 const ROW_H = 36;
 const HEADER_H = 48;
 const DAY_PX = 3.2; // pixels per day — controls how wide the timeline is
-const TABLE_MIN_W = 520;
+const TABLE_MIN_W = 550;
 
 // ---------------------------------------------------------------------------
 // GanttChart component
@@ -257,6 +257,7 @@ export function GanttChart({
             <div className="w-20 px-1 text-center">End</div>
             <div className="w-12 px-1 text-center">%</div>
             <div className="w-16 px-1 text-center">Status</div>
+            {onTaskClick && <div className="w-8" />}
           </div>
 
           {/* Task rows */}
@@ -329,6 +330,25 @@ export function GanttChart({
                           : task.status}
                   </span>
                 </div>
+
+                {/* Edit icon (visible on hover) */}
+                {onTaskClick && (
+                  <div className="w-8 flex items-center justify-center">
+                    <svg
+                      className="w-3.5 h-3.5 text-gray-300 group-hover:text-indigo-500 transition-colors"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
+                      />
+                    </svg>
+                  </div>
+                )}
               </div>
             );
           })}
