@@ -15,6 +15,8 @@ export interface ProjectContext {
     startDate?: string;
     endDate?: string;
     location?: string;
+    locationLat?: number;
+    locationLon?: number;
     completionPercentage?: number;
   };
   schedules: Array<{
@@ -44,6 +46,10 @@ export interface PortfolioContext {
     projectType: string;
     budgetAllocated?: number;
     budgetSpent?: number;
+    startDate?: string;
+    endDate?: string;
+    locationLat?: number;
+    locationLon?: number;
     completionPercentage?: number;
   }>;
   summary: {
@@ -106,6 +112,8 @@ export class AIContextBuilder {
         startDate: project.startDate?.toISOString?.() || project.startDate,
         endDate: project.endDate?.toISOString?.() || project.endDate,
         location: project.location,
+        locationLat: project.locationLat,
+        locationLon: project.locationLon,
         completionPercentage: project.completionPercentage,
       },
       schedules: schedulesWithTasks,
@@ -134,6 +142,10 @@ export class AIContextBuilder {
         projectType: p.projectType || 'other',
         budgetAllocated: p.budgetAllocated,
         budgetSpent: p.budgetSpent,
+        startDate: p.startDate?.toISOString?.() || p.startDate,
+        endDate: p.endDate?.toISOString?.() || p.endDate,
+        locationLat: p.locationLat,
+        locationLon: p.locationLon,
         completionPercentage: p.completionPercentage,
       };
     });
