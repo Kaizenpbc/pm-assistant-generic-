@@ -79,7 +79,7 @@ export function NotificationBell() {
           projectId?: string;
           projectName?: string;
           suggestedActions?: Array<{ toolName: string; params: Record<string, any>; label: string }>;
-        }> = response?.data ?? [];
+        }> = response?.alerts ?? [];
 
         for (const alert of alerts) {
           const type = (['risk', 'budget', 'schedule', 'resource', 'info'].includes(alert.type)

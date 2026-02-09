@@ -162,8 +162,8 @@ export const ReportsPage: React.FC = () => {
     queryFn: () => apiService.getProjects(),
   });
 
-  const reports: Report[] = historyData?.data || [];
-  const projects: Project[] = projectsData?.data || [];
+  const reports: Report[] = historyData?.reports || [];
+  const projects: Project[] = projectsData?.projects || [];
 
   // ---- Mutation ----
 

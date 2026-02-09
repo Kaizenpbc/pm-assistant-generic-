@@ -160,7 +160,7 @@ export function ProjectDetailPage() {
     enabled: !!id,
   });
 
-  const project = projectData?.data;
+  const project = projectData?.project;
 
   // Set AI panel context when project loads
   useEffect(() => {
@@ -423,7 +423,7 @@ function ScheduleTab({ projectId }: { projectId: string }) {
     enabled: !!projectId,
   });
 
-  const schedules: any[] = schedulesData?.data || [];
+  const schedules: any[] = schedulesData?.schedules || [];
 
   if (schedulesLoading) {
     return (
@@ -463,7 +463,7 @@ function ScheduleCard({ schedule }: { schedule: any }) {
     enabled: expanded,
   });
 
-  const tasks: any[] = tasksData?.data || [];
+  const tasks: any[] = tasksData?.tasks || [];
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white">
