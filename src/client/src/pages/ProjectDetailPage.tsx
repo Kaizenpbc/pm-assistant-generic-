@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Calendar,
@@ -25,6 +25,7 @@ import {
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
 import { GanttChart, type GanttTask } from '../components/schedule/GanttChart';
+import { TaskFormModal, type TaskFormData } from '../components/schedule/TaskFormModal';
 
 type Tab = 'overview' | 'schedule' | 'ai-insights' | 'scenarios' | 'team';
 
@@ -448,12 +449,76 @@ function ScheduleTab({ projectId }: { projectId: string }) {
 }
 
 function ScheduleGantt({ schedule }: { schedule: any }) {
+  const queryClient = useQueryClient();
+  const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+
   const { data: tasksData, isLoading: tasksLoading } = useQuery({
     queryKey: ['tasks', schedule.id],
     queryFn: () => apiService.getTasks(schedule.id),
   });
 
   const tasks: GanttTask[] = tasksData?.tasks || [];
+
+  // Create task mutation
+  const createMutation = useMutation({
+    mutationFn: (data: TaskFormData) => {
+      const payload: Record<string, unknown> = {
+        name: data.name,
+        description: data.description || undefined,
+        status: data.status,
+        priority: data.priority,
+        assignedTo: data.assignedTo || undefined,
+        startDate: data.startDate || undefined,
+        endDate: data.endDate || undefined,
+        progressPercentage: data.progressPercentage,
+        dependency: data.dependency || undefined,
+        parentTaskId: data.parentTaskId || undefined,
+        estimatedDays: data.estimatedDays ? parseInt(data.estimatedDays) : undefined,
+      };
+      return apiService.createTask(schedule.id, payload as any);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+      setShowAddForm(false);
+    },
+  });
+
+  // Update task mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ taskId, data }: { taskId: string; data: TaskFormData }) => {
+      const payload: Record<string, unknown> = {
+        name: data.name,
+        description: data.description || undefined,
+        status: data.status,
+        priority: data.priority,
+        assignedTo: data.assignedTo || undefined,
+        startDate: data.startDate || undefined,
+        endDate: data.endDate || undefined,
+        progressPercentage: data.progressPercentage,
+        dependency: data.dependency || undefined,
+        parentTaskId: data.parentTaskId || undefined,
+        estimatedDays: data.estimatedDays ? parseInt(data.estimatedDays) : undefined,
+      };
+      return apiService.updateTask(schedule.id, taskId, payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+      setEditingTask(null);
+    },
+  });
+
+  // Delete task — call update with cancelled status (or use a delete endpoint if available)
+  const deleteMutation = useMutation({
+    mutationFn: (taskId: string) => {
+      // The schedules route has a DELETE endpoint
+      return apiService.updateTask(schedule.id, taskId, { status: 'cancelled' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+      setEditingTask(null);
+    },
+  });
 
   if (tasksLoading) {
     return (
@@ -465,7 +530,39 @@ function ScheduleGantt({ schedule }: { schedule: any }) {
     );
   }
 
-  return <GanttChart tasks={tasks} scheduleName={schedule.name} />;
+  return (
+    <>
+      <GanttChart
+        tasks={tasks}
+        scheduleName={schedule.name}
+        onTaskClick={(task) => setEditingTask(task)}
+        onAddTask={() => setShowAddForm(true)}
+      />
+
+      {/* Edit modal */}
+      {editingTask && (
+        <TaskFormModal
+          task={editingTask}
+          allTasks={tasks}
+          onSave={(data) => updateMutation.mutate({ taskId: editingTask.id, data })}
+          onDelete={(taskId) => deleteMutation.mutate(taskId)}
+          onClose={() => setEditingTask(null)}
+          isSaving={updateMutation.isPending}
+        />
+      )}
+
+      {/* Add modal */}
+      {showAddForm && (
+        <TaskFormModal
+          task={null}
+          allTasks={tasks}
+          onSave={(data) => createMutation.mutate(data)}
+          onClose={() => setShowAddForm(false)}
+          isSaving={createMutation.isPending}
+        />
+      )}
+    </>
+  );
 }
 
 // ---------------------------------------------------------------------------

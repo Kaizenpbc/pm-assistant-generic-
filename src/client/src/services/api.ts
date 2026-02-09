@@ -160,6 +160,11 @@ class ApiService {
       assignedTo?: string;
       dueDate?: string;
       estimatedDays?: number;
+      startDate?: string;
+      endDate?: string;
+      progressPercentage?: number;
+      dependency?: string;
+      parentTaskId?: string;
     }
   ) {
     const response = await this.api.post(`/schedules/${scheduleId}/tasks`, taskData);

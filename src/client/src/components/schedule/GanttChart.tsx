@@ -126,9 +126,15 @@ const TABLE_MIN_W = 520;
 export function GanttChart({
   tasks,
   scheduleName,
+  onTaskClick,
+  onAddTask,
 }: {
   tasks: GanttTask[];
   scheduleName?: string;
+  /** Called when a task row is clicked */
+  onTaskClick?: (task: GanttTask) => void;
+  /** Called when the "Add Task" button is clicked */
+  onAddTask?: () => void;
 }) {
   const rows = useMemo(() => buildFlatRows(tasks), [tasks]);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -208,14 +214,27 @@ export function GanttChart({
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
       {/* Schedule title bar */}
       {scheduleName && (
-        <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
-          <div className="w-1.5 h-4 rounded-full bg-indigo-500" />
-          <span className="text-sm font-semibold text-gray-800">
-            {scheduleName}
-          </span>
-          <span className="text-xs text-gray-400 ml-2">
-            {rows.length} tasks
-          </span>
+        <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-4 rounded-full bg-indigo-500" />
+            <span className="text-sm font-semibold text-gray-800">
+              {scheduleName}
+            </span>
+            <span className="text-xs text-gray-400 ml-2">
+              {rows.length} tasks
+            </span>
+          </div>
+          {onAddTask && (
+            <button
+              onClick={onAddTask}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Task
+            </button>
+          )}
         </div>
       )}
 
@@ -250,8 +269,9 @@ export function GanttChart({
             return (
               <div
                 key={task.id}
-                className="flex items-center border-b border-gray-100 hover:bg-blue-50/40 transition-colors group"
+                className={`flex items-center border-b border-gray-100 hover:bg-blue-50/40 transition-colors group ${onTaskClick ? 'cursor-pointer' : ''}`}
                 style={{ height: ROW_H }}
+                onClick={() => onTaskClick?.(task)}
               >
                 {/* WBS */}
                 <div className="w-12 px-2 text-center text-[10px] text-gray-400 font-mono">
