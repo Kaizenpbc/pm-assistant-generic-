@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -9,6 +9,8 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { apiService } from '../services/api';
+import { useUIStore } from '../stores/uiStore';
+import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
 
 interface Project {
   id: string;
@@ -25,6 +27,10 @@ interface Project {
 
 export const ExecutiveDashboard: React.FC = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    useUIStore.getState().setAIPanelContext({ type: 'dashboard' });
+  }, []);
 
   const { data: projectsData, isLoading } = useQuery({
     queryKey: ['projects'],
@@ -67,6 +73,9 @@ export const ExecutiveDashboard: React.FC = () => {
           Portfolio-level view of all projects and key metrics.
         </p>
       </div>
+
+      {/* AI Summary Banner */}
+      <AISummaryBanner />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

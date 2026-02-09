@@ -211,6 +211,183 @@ class ApiService {
     const response = await this.api.get('/alerts/summary');
     return response.data;
   }
+
+  // -------------------------------------------------------------------------
+  // AI Chat extended endpoints
+  // -------------------------------------------------------------------------
+
+  async createProjectFromChat(description: string) {
+    const response = await this.api.post('/ai-chat/create-project', { description });
+    return response.data;
+  }
+
+  async extractTasksFromNotes(data: {
+    meetingNotes: string;
+    projectId?: string;
+    scheduleId?: string;
+  }) {
+    const response = await this.api.post('/ai-chat/extract-tasks', data);
+    return response.data;
+  }
+
+  async getConversations() {
+    const response = await this.api.get('/ai-chat/conversations');
+    return response.data;
+  }
+
+  async getConversation(conversationId: string) {
+    const response = await this.api.get(`/ai-chat/conversations/${conversationId}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Predictions endpoints
+  // -------------------------------------------------------------------------
+
+  async getDashboardPredictions() {
+    const response = await this.api.get('/predictions/dashboard');
+    return response.data;
+  }
+
+  async getProjectRisks(projectId: string) {
+    const response = await this.api.get(`/predictions/project/${projectId}/risks`);
+    return response.data;
+  }
+
+  async getProjectWeather(projectId: string) {
+    const response = await this.api.get(`/predictions/project/${projectId}/weather`);
+    return response.data;
+  }
+
+  async getProjectBudget(projectId: string) {
+    const response = await this.api.get(`/predictions/project/${projectId}/budget`);
+    return response.data;
+  }
+
+  async getProjectHealth(projectId: string) {
+    const response = await this.api.get(`/predictions/project/${projectId}/health`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // AI Reports endpoints
+  // -------------------------------------------------------------------------
+
+  async generateReport(data: {
+    reportType: string;
+    projectId?: string;
+  }) {
+    const response = await this.api.post('/ai-reports/generate', data);
+    return response.data;
+  }
+
+  async getReportHistory() {
+    const response = await this.api.get('/ai-reports/history');
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // AI Scheduling endpoints
+  // -------------------------------------------------------------------------
+
+  async getTaskBreakdown(data: {
+    projectDescription: string;
+    projectType?: string;
+    estimatedDurationMonths?: number;
+  }) {
+    const response = await this.api.post('/ai-scheduling/breakdown', data);
+    return response.data;
+  }
+
+  async getSchedulingDependencies(data: { tasks: Array<{ id: string; name: string }> }) {
+    const response = await this.api.post('/ai-scheduling/dependencies', data);
+    return response.data;
+  }
+
+  async getSchedulingOptimization(data: { projectId: string }) {
+    const response = await this.api.post('/ai-scheduling/optimization', data);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Learning & Feedback endpoints
+  // -------------------------------------------------------------------------
+
+  async submitFeedback(data: {
+    feature: string;
+    projectId?: string;
+    userAction: 'accepted' | 'modified' | 'rejected';
+    feedbackText?: string;
+  }) {
+    const response = await this.api.post('/learning/feedback', data);
+    return response.data;
+  }
+
+  async submitAccuracy(data: {
+    projectId: string;
+    metricType: string;
+    predictedValue: number;
+    actualValue: number;
+    projectType?: string;
+  }) {
+    const response = await this.api.post('/learning/accuracy', data);
+    return response.data;
+  }
+
+  async getAccuracyReport(projectType?: string) {
+    const params = projectType ? { projectType } : {};
+    const response = await this.api.get('/learning/accuracy-report', { params });
+    return response.data;
+  }
+
+  async getFeedbackStats(feature?: string) {
+    const params = feature ? { feature } : {};
+    const response = await this.api.get('/learning/feedback-stats', { params });
+    return response.data;
+  }
+
+  async getLearningInsights() {
+    const response = await this.api.get('/learning/insights');
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Intelligence endpoints
+  // -------------------------------------------------------------------------
+
+  async getPortfolioAnomalies() {
+    const response = await this.api.get('/intelligence/anomalies');
+    return response.data;
+  }
+
+  async getProjectAnomalies(projectId: string) {
+    const response = await this.api.get(`/intelligence/anomalies/project/${projectId}`);
+    return response.data;
+  }
+
+  async getCrossProjectIntelligence() {
+    const response = await this.api.get('/intelligence/cross-project');
+    return response.data;
+  }
+
+  async getSimilarProjects(projectId: string) {
+    const response = await this.api.get(`/intelligence/cross-project/similar/${projectId}`);
+    return response.data;
+  }
+
+  async modelScenario(data: {
+    projectId: string;
+    scenario: string;
+    parameters?: {
+      budgetChangePct?: number;
+      workerChange?: number;
+      daysExtension?: number;
+      scopeChangePct?: number;
+    };
+  }) {
+    const response = await this.api.post('/intelligence/scenarios', data);
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Bell, ChevronRight, LogOut, User } from 'lucide-react';
+import { Search, ChevronRight, LogOut, User } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import { useUIStore } from '../../stores/uiStore';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 interface Breadcrumb {
   label: string;
@@ -40,7 +40,6 @@ const TopBar: React.FC = () => {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const unreadCount = useUIStore((state) => state.unreadCount);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -82,9 +81,6 @@ const TopBar: React.FC = () => {
         .toUpperCase()
         .slice(0, 2)
     : '??';
-
-  const displayBadge = unreadCount > 0;
-  const badgeText = unreadCount > 99 ? '99+' : String(unreadCount);
 
   return (
     <header className="sticky top-0 z-30 flex items-center h-16 bg-white border-b border-gray-200 px-4 lg:px-6">
@@ -150,26 +146,7 @@ const TopBar: React.FC = () => {
       {/* Right: Notifications + User */}
       <div className="flex items-center gap-2 flex-shrink-0">
         {/* Notification Bell */}
-        <button
-          className="relative p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors duration-150"
-          aria-label={`Notifications${displayBadge ? `, ${unreadCount} unread` : ''}`}
-        >
-          <Bell className="w-5 h-5" />
-          {displayBadge && (
-            <span
-              className="
-                absolute -top-0.5 -right-0.5 flex items-center justify-center
-                min-w-[18px] h-[18px] px-1
-                text-[10px] font-bold text-white
-                bg-red-500 rounded-full
-                ring-2 ring-white
-                animate-fade-in
-              "
-            >
-              {badgeText}
-            </span>
-          )}
-        </button>
+        <NotificationBell />
 
         {/* Divider */}
         <div className="hidden sm:block w-px h-6 bg-gray-200" />

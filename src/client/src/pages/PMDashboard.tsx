@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -10,6 +10,8 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { apiService } from '../services/api';
+import { useUIStore } from '../stores/uiStore';
+import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
 
 interface Project {
   id: string;
@@ -42,6 +44,10 @@ const priorityStyles: Record<string, string> = {
 export const PMDashboard: React.FC = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    useUIStore.getState().setAIPanelContext({ type: 'dashboard' });
+  }, []);
+
   const { data: projectsData, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => apiService.getProjects(),
@@ -72,6 +78,9 @@ export const PMDashboard: React.FC = () => {
           New Project
         </button>
       </div>
+
+      {/* AI Summary Banner */}
+      <AISummaryBanner />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-4">

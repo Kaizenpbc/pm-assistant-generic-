@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   FileText,
+  Brain,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -38,6 +39,11 @@ const navItems: NavItem[] = [
     label: 'Reports',
     icon: FileText,
     path: '/reports',
+  },
+  {
+    label: 'Intelligence',
+    icon: Brain,
+    path: '/scenarios',
   },
   {
     label: 'Settings',
