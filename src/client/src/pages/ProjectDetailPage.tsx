@@ -8,9 +8,7 @@ import {
   TrendingUp,
   Clock,
   Users,
-  ListTodo,
   ChevronDown,
-  ChevronUp,
   ShieldAlert,
   CloudRain,
   PieChart,
@@ -26,6 +24,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
+import { GanttChart, type GanttTask } from '../components/schedule/GanttChart';
 
 type Tab = 'overview' | 'schedule' | 'ai-insights' | 'scenarios' | 'team';
 
@@ -45,12 +44,6 @@ const statusStyles: Record<string, { label: string; color: string }> = {
   cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-600' },
 };
 
-const taskStatusStyles: Record<string, { label: string; color: string }> = {
-  not_started: { label: 'Not Started', color: 'bg-gray-100 text-gray-600' },
-  in_progress: { label: 'In Progress', color: 'bg-blue-100 text-blue-700' },
-  completed: { label: 'Completed', color: 'bg-green-100 text-green-700' },
-  blocked: { label: 'Blocked', color: 'bg-red-100 text-red-700' },
-};
 
 const severityColors: Record<string, string> = {
   critical: 'bg-red-100 text-red-600 border-red-200',
@@ -446,99 +439,33 @@ function ScheduleTab({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {schedules.map((schedule: any) => (
-        <ScheduleCard key={schedule.id} schedule={schedule} />
+        <ScheduleGantt key={schedule.id} schedule={schedule} />
       ))}
     </div>
   );
 }
 
-function ScheduleCard({ schedule }: { schedule: any }) {
-  const [expanded, setExpanded] = useState(false);
-
+function ScheduleGantt({ schedule }: { schedule: any }) {
   const { data: tasksData, isLoading: tasksLoading } = useQuery({
     queryKey: ['tasks', schedule.id],
     queryFn: () => apiService.getTasks(schedule.id),
-    enabled: expanded,
   });
 
-  const tasks: any[] = tasksData?.tasks || [];
+  const tasks: GanttTask[] = tasksData?.tasks || [];
 
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
-      >
-        <div>
-          <h4 className="text-sm font-semibold text-gray-900">{schedule.name}</h4>
-          {schedule.description && (
-            <p className="mt-0.5 text-xs text-gray-500">{schedule.description}</p>
-          )}
-          <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
-            {(schedule.startDate || schedule.start_date) && (
-              <span>
-                Start: {new Date(schedule.startDate || schedule.start_date).toLocaleDateString()}
-              </span>
-            )}
-            {(schedule.endDate || schedule.end_date) && (
-              <span>
-                End: {new Date(schedule.endDate || schedule.end_date).toLocaleDateString()}
-              </span>
-            )}
-          </div>
+  if (tasksLoading) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
         </div>
-        {expanded ? (
-          <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-        )}
-      </button>
+      </div>
+    );
+  }
 
-      {expanded && (
-        <div className="border-t border-gray-100 p-4">
-          {tasksLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-            </div>
-          ) : tasks.length === 0 ? (
-            <div className="text-center py-4">
-              <ListTodo className="mx-auto h-8 w-8 text-gray-300 mb-2" />
-              <p className="text-xs text-gray-500">No tasks in this schedule.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {tasks.map((task: any) => {
-                const taskStatus =
-                  taskStatusStyles[task.status] || taskStatusStyles.not_started;
-                return (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {task.name}
-                      </p>
-                      {task.assignedTo && (
-                        <p className="text-xs text-gray-400">Assigned: {task.assignedTo}</p>
-                      )}
-                    </div>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${taskStatus.color}`}
-                    >
-                      {taskStatus.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  return <GanttChart tasks={tasks} scheduleName={schedule.name} />;
 }
 
 // ---------------------------------------------------------------------------
