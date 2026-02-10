@@ -7,6 +7,8 @@ import { DashboardRouter } from './pages/DashboardRouter';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { ScenarioModelingPage } from './pages/ScenarioModelingPage';
+import { PortfolioPage } from './pages/PortfolioPage';
+import { WorkflowPage } from './pages/WorkflowPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -50,6 +52,8 @@ function App() {
         <Route path="/project/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
         <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
         <Route path="/scenarios" element={<PrivateRoute><ScenarioModelingPage /></PrivateRoute>} />
+        <Route path="/portfolio" element={<PrivateRoute><PortfolioPage /></PrivateRoute>} />
+        <Route path="/workflows" element={<PrivateRoute><WorkflowPage /></PrivateRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

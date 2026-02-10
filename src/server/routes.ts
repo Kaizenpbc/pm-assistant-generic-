@@ -10,6 +10,13 @@ import { predictionRoutes } from './routes/predictions';
 import { aiReportRoutes } from './routes/aiReports';
 import { learningRoutes } from './routes/learning';
 import { intelligenceRoutes } from './routes/intelligence';
+import { resourceRoutes } from './routes/resources';
+import { exportRoutes } from './routes/exports';
+import { portfolioRoutes } from './routes/portfolio';
+import { workflowRoutes } from './routes/workflows';
+import { projectMemberRoutes } from './routes/projectMembers';
+import { auditTrailRoutes } from './routes/auditTrail';
+import { websocketRoutes } from './routes/websocket';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
@@ -23,4 +30,11 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(aiReportRoutes, { prefix: '/api/v1/ai-reports' });
   await fastify.register(learningRoutes, { prefix: '/api/v1/learning' });
   await fastify.register(intelligenceRoutes, { prefix: '/api/v1/intelligence' });
+  await fastify.register(resourceRoutes, { prefix: '/api/v1/resources' });
+  await fastify.register(exportRoutes, { prefix: '/api/v1/exports' });
+  await fastify.register(portfolioRoutes, { prefix: '/api/v1/portfolio' });
+  await fastify.register(workflowRoutes, { prefix: '/api/v1/workflows' });
+  await fastify.register(projectMemberRoutes, { prefix: '/api/v1/projects' });
+  await fastify.register(auditTrailRoutes, { prefix: '/api/v1/audit' });
+  await fastify.register(websocketRoutes, { prefix: '/api/v1/ws' });
 }

@@ -4,6 +4,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import websocket from '@fastify/websocket';
 import { config } from './config';
 import { requestLogger } from './utils/logger';
 import { toCamelCaseKeys } from './utils/caseConverter';
@@ -11,6 +12,8 @@ import { auditService } from './services/auditService';
 import { securityMiddleware, securityValidationMiddleware } from './middleware/securityMiddleware';
 
 export async function registerPlugins(fastify: FastifyInstance) {
+  await fastify.register(websocket);
+
   fastify.addHook('onRequest', requestLogger);
   fastify.addHook('onRequest', securityMiddleware);
   fastify.addHook('preHandler', securityValidationMiddleware);

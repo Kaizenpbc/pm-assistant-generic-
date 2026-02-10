@@ -4,6 +4,7 @@ import TopBar from './TopBar';
 import { Sparkles, X } from 'lucide-react';
 import { AIChatPanel } from '../ai/AIChatPanel';
 import { useUIStore } from '../../stores/uiStore';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -55,6 +56,7 @@ function useBreakpoint(): 'mobile' | 'tablet' | 'desktop' {
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  useWebSocket();
   const breakpoint = useBreakpoint();
   const { aiPanelContext } = useUIStore();
 

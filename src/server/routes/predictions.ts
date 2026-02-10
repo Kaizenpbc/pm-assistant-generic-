@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { PredictiveIntelligenceService } from '../services/predictiveIntelligence';
+import { SCurveService } from '../services/SCurveService';
 
 export async function predictionRoutes(fastify: FastifyInstance) {
   const service = new PredictiveIntelligenceService(fastify);
@@ -77,6 +78,23 @@ export async function predictionRoutes(fastify: FastifyInstance) {
     } catch (err) {
       fastify.log.error({ err }, 'Health score calculation failed');
       return reply.status(500).send({ error: 'Failed to calculate health score' });
+    }
+  });
+
+  // GET /project/:projectId/evm/s-curve — S-Curve data
+  const sCurveService = new SCurveService();
+
+  fastify.get('/project/:projectId/evm/s-curve', async (
+    request: FastifyRequest<{ Params: { projectId: string } }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const { projectId } = request.params;
+      const data = await sCurveService.computeSCurveData(projectId);
+      return reply.send({ data });
+    } catch (err) {
+      fastify.log.error({ err }, 'S-Curve computation failed');
+      return reply.status(500).send({ error: 'Failed to compute S-Curve data' });
     }
   });
 }

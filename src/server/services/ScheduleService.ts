@@ -68,6 +68,43 @@ export interface CreateTaskData {
   createdBy: string;
 }
 
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface CascadeChange {
+  taskId: string;
+  taskName: string;
+  oldStartDate: string;
+  newStartDate: string;
+  oldEndDate: string;
+  newEndDate: string;
+  deltaDays: number;
+}
+
+export interface CascadeResult {
+  triggeredByTaskId: string;
+  deltaDays: number;
+  affectedTasks: CascadeChange[];
+}
+
+export interface TaskActivityEntry {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  action: string;
+  field?: string;
+  oldValue?: string;
+  newValue?: string;
+  createdAt: string;
+}
+
 export class ScheduleService {
   private static schedules: Schedule[] = [
     {
@@ -423,6 +460,9 @@ export class ScheduleService {
     },
   ];
 
+  private static comments: TaskComment[] = [];
+  private static activities: TaskActivityEntry[] = [];
+
   private get schedules() { return ScheduleService.schedules; }
   private get tasks() { return ScheduleService.tasks; }
 
@@ -515,6 +555,21 @@ export class ScheduleService {
   async updateTask(id: string, data: Partial<Omit<Task, 'id' | 'scheduleId' | 'createdAt' | 'updatedAt'>>): Promise<Task | null> {
     const index = this.tasks.findIndex(t => t.id === id);
     if (index === -1) return null;
+
+    const oldTask = this.tasks[index];
+
+    // Auto-log field changes as activity
+    const trackFields: (keyof Task)[] = ['status', 'priority', 'assignedTo', 'progressPercentage', 'startDate', 'endDate', 'name'];
+    for (const field of trackFields) {
+      if (field in data && data[field as keyof typeof data] !== undefined) {
+        const oldVal = String(oldTask[field] ?? '');
+        const newVal = String(data[field as keyof typeof data] ?? '');
+        if (oldVal !== newVal) {
+          this.logActivity(id, '1', 'System', 'updated', field, oldVal, newVal);
+        }
+      }
+    }
+
     ScheduleService.tasks[index] = { ...this.tasks[index], ...data, updatedAt: new Date() };
     return ScheduleService.tasks[index];
   }
@@ -524,5 +579,138 @@ export class ScheduleService {
     if (index === -1) return false;
     ScheduleService.tasks.splice(index, 1);
     return true;
+  }
+
+  // -------------------------------------------------------------------------
+  // Comments
+  // -------------------------------------------------------------------------
+
+  addComment(taskId: string, text: string, userId: string, userName: string): TaskComment {
+    const comment: TaskComment = {
+      id: `cmt-${Math.random().toString(36).substr(2, 9)}`,
+      taskId,
+      userId,
+      userName,
+      text,
+      createdAt: new Date().toISOString(),
+    };
+    ScheduleService.comments.push(comment);
+    return comment;
+  }
+
+  getComments(taskId: string): TaskComment[] {
+    return ScheduleService.comments
+      .filter((c) => c.taskId === taskId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  deleteComment(commentId: string): boolean {
+    const idx = ScheduleService.comments.findIndex((c) => c.id === commentId);
+    if (idx === -1) return false;
+    ScheduleService.comments.splice(idx, 1);
+    return true;
+  }
+
+  // -------------------------------------------------------------------------
+  // Activity Feed
+  // -------------------------------------------------------------------------
+
+  logActivity(
+    taskId: string,
+    userId: string,
+    userName: string,
+    action: string,
+    field?: string,
+    oldValue?: string,
+    newValue?: string,
+  ): TaskActivityEntry {
+    const entry: TaskActivityEntry = {
+      id: `act-${Math.random().toString(36).substr(2, 9)}`,
+      taskId,
+      userId,
+      userName,
+      action,
+      field,
+      oldValue,
+      newValue,
+      createdAt: new Date().toISOString(),
+    };
+    ScheduleService.activities.push(entry);
+    return entry;
+  }
+
+  getActivities(taskId: string): TaskActivityEntry[] {
+    return ScheduleService.activities
+      .filter((a) => a.taskId === taskId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  getActivitiesBySchedule(scheduleId: string): TaskActivityEntry[] {
+    const taskIds = new Set(this.tasks.filter(t => t.scheduleId === scheduleId).map(t => t.id));
+    return ScheduleService.activities
+      .filter((a) => taskIds.has(a.taskId))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  getAllActivities(): TaskActivityEntry[] {
+    return [...ScheduleService.activities]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  // -------------------------------------------------------------------------
+  // Auto-Scheduling: Cascade Reschedule
+  // -------------------------------------------------------------------------
+
+  async cascadeReschedule(taskId: string, oldEndDate: Date, newEndDate: Date): Promise<CascadeResult> {
+    const deltaDays = Math.round((newEndDate.getTime() - oldEndDate.getTime()) / (1000 * 60 * 60 * 24));
+    const deltaMs = deltaDays * 24 * 60 * 60 * 1000;
+
+    if (deltaDays === 0) {
+      return { triggeredByTaskId: taskId, deltaDays: 0, affectedTasks: [] };
+    }
+
+    // Get downstream tasks in topological order (BFS)
+    const downstream = await this.findAllDownstreamTasks(taskId);
+    const affectedTasks: CascadeChange[] = [];
+
+    // Process tasks - they're already in dependency order from BFS traversal
+    for (const task of downstream) {
+      if (task.dependencyType && task.dependencyType !== 'FS') continue; // Only cascade FS deps
+
+      const oldStart = task.startDate ? new Date(task.startDate) : null;
+      const oldEnd = task.endDate ? new Date(task.endDate) : null;
+
+      if (!oldStart && !oldEnd) continue;
+
+      const newStart = oldStart ? new Date(oldStart.getTime() + deltaMs) : null;
+      const newEnd = oldEnd ? new Date(oldEnd.getTime() + deltaMs) : null;
+
+      const change: CascadeChange = {
+        taskId: task.id,
+        taskName: task.name,
+        oldStartDate: oldStart?.toISOString().split('T')[0] || '',
+        newStartDate: newStart?.toISOString().split('T')[0] || '',
+        oldEndDate: oldEnd?.toISOString().split('T')[0] || '',
+        newEndDate: newEnd?.toISOString().split('T')[0] || '',
+        deltaDays,
+      };
+
+      // Apply the shift
+      const idx = this.tasks.findIndex(t => t.id === task.id);
+      if (idx !== -1) {
+        if (newStart) ScheduleService.tasks[idx].startDate = newStart;
+        if (newEnd) ScheduleService.tasks[idx].endDate = newEnd;
+        ScheduleService.tasks[idx].updatedAt = new Date();
+      }
+
+      this.logActivity(task.id, '1', 'System', 'auto-rescheduled', 'dates',
+        `${change.oldStartDate} - ${change.oldEndDate}`,
+        `${change.newStartDate} - ${change.newEndDate}`
+      );
+
+      affectedTasks.push(change);
+    }
+
+    return { triggeredByTaskId: taskId, deltaDays, affectedTasks };
   }
 }

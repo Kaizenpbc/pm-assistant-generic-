@@ -4,11 +4,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Calendar,
+  CalendarDays,
   DollarSign,
   TrendingUp,
   Clock,
-  Users,
-  ChevronDown,
   ShieldAlert,
   CloudRain,
   PieChart,
@@ -21,11 +20,27 @@ import {
   Lightbulb,
   Play,
   SlidersHorizontal,
+  Download,
+  Printer,
+  BarChart3,
+  Kanban,
+  GanttChartSquare,
+  Table2,
+  Save,
+  Users,
+  Plus,
+  Trash2,
+  Activity,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
 import { GanttChart, type GanttTask } from '../components/schedule/GanttChart';
 import { TaskFormModal, type TaskFormData } from '../components/schedule/TaskFormModal';
+import { KanbanBoard } from '../components/schedule/KanbanBoard';
+import { TableView } from '../components/schedule/TableView';
+import { CalendarView } from '../components/schedule/CalendarView';
+import { SCurveChart } from '../components/evm/SCurveChart';
+import { WorkloadHeatmap } from '../components/resources/WorkloadHeatmap';
 
 type Tab = 'overview' | 'schedule' | 'ai-insights' | 'scenarios' | 'team';
 
@@ -230,6 +245,29 @@ export function ProjectDetailPage() {
               <p className="mt-1 text-sm text-gray-500">{project.description}</p>
             )}
           </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => apiService.exportProjectCSV(id!)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export CSV
+            </button>
+            <button
+              onClick={() => apiService.exportProjectPDF(id!)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export PDF
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              Print Gantt
+            </button>
+          </div>
         </div>
       </div>
 
@@ -411,6 +449,8 @@ function OverviewTab({ project }: { project: any }) {
 // ---------------------------------------------------------------------------
 
 function ScheduleTab({ projectId }: { projectId: string }) {
+  const [viewMode, setViewMode] = useState<'gantt' | 'kanban' | 'table' | 'calendar'>('gantt');
+
   const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
     queryKey: ['schedules', projectId],
     queryFn: () => apiService.getSchedules(projectId),
@@ -440,18 +480,46 @@ function ScheduleTab({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* View Toggle */}
+      <div className="flex items-center gap-2">
+        <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
+          {([
+            { mode: 'gantt' as const, icon: GanttChartSquare, label: 'Gantt' },
+            { mode: 'kanban' as const, icon: Kanban, label: 'Kanban' },
+            { mode: 'table' as const, icon: Table2, label: 'Table' },
+            { mode: 'calendar' as const, icon: CalendarDays, label: 'Calendar' },
+          ] as const).map(({ mode, icon: Icon, label }) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                viewMode === mode
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {schedules.map((schedule: any) => (
-        <ScheduleGantt key={schedule.id} schedule={schedule} />
+        <ScheduleGantt key={schedule.id} schedule={schedule} viewMode={viewMode} projectId={projectId} />
       ))}
     </div>
   );
 }
 
-function ScheduleGantt({ schedule }: { schedule: any }) {
+function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule: any; viewMode: 'gantt' | 'kanban' | 'table' | 'calendar'; projectId: string }) {
   const queryClient = useQueryClient();
   const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showCriticalPath, setShowCriticalPath] = useState(false);
+  const [selectedBaselineId, setSelectedBaselineId] = useState<string>('');
+  const [showComparison, setShowComparison] = useState(false);
 
   const { data: tasksData, isLoading: tasksLoading } = useQuery({
     queryKey: ['tasks', schedule.id],
@@ -459,6 +527,38 @@ function ScheduleGantt({ schedule }: { schedule: any }) {
   });
 
   const tasks: GanttTask[] = tasksData?.tasks || [];
+
+  // Critical Path
+  const { data: cpmData } = useQuery({
+    queryKey: ['criticalPath', schedule.id],
+    queryFn: () => apiService.getCriticalPath(schedule.id),
+    enabled: showCriticalPath,
+  });
+
+  // Baselines
+  const { data: baselinesData } = useQuery({
+    queryKey: ['baselines', schedule.id],
+    queryFn: () => apiService.getBaselines(schedule.id),
+  });
+
+  const baselines = baselinesData?.baselines || [];
+  const selectedBaseline = baselines.find((b: any) => b.id === selectedBaselineId);
+
+  // Baseline comparison
+  const { data: comparisonData } = useQuery({
+    queryKey: ['baselineComparison', schedule.id, selectedBaselineId],
+    queryFn: () => apiService.compareBaseline(schedule.id, selectedBaselineId),
+    enabled: !!selectedBaselineId && showComparison,
+  });
+
+  const comparison = comparisonData?.comparison;
+
+  const createBaselineMutation = useMutation({
+    mutationFn: () => apiService.createBaseline(schedule.id, `Baseline ${new Date().toLocaleDateString()}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['baselines', schedule.id] });
+    },
+  });
 
   // Create task mutation
   const createMutation = useMutation({
@@ -486,21 +586,26 @@ function ScheduleGantt({ schedule }: { schedule: any }) {
 
   // Update task mutation
   const updateMutation = useMutation({
-    mutationFn: ({ taskId, data }: { taskId: string; data: TaskFormData }) => {
-      const payload: Record<string, unknown> = {
-        name: data.name,
-        description: data.description || undefined,
-        status: data.status,
-        priority: data.priority,
-        assignedTo: data.assignedTo || undefined,
-        startDate: data.startDate || undefined,
-        endDate: data.endDate || undefined,
-        progressPercentage: data.progressPercentage,
-        dependency: data.dependency || undefined,
-        parentTaskId: data.parentTaskId || undefined,
-        estimatedDays: data.estimatedDays ? parseInt(data.estimatedDays) : undefined,
-      };
-      return apiService.updateTask(schedule.id, taskId, payload);
+    mutationFn: ({ taskId, data }: { taskId: string; data: TaskFormData | Record<string, unknown> }) => {
+      if ('name' in data && 'status' in data && 'priority' in data && 'assignedTo' in data) {
+        // Full TaskFormData
+        const d = data as TaskFormData;
+        const payload: Record<string, unknown> = {
+          name: d.name,
+          description: d.description || undefined,
+          status: d.status,
+          priority: d.priority,
+          assignedTo: d.assignedTo || undefined,
+          startDate: d.startDate || undefined,
+          endDate: d.endDate || undefined,
+          progressPercentage: d.progressPercentage,
+          dependency: d.dependency || undefined,
+          parentTaskId: d.parentTaskId || undefined,
+          estimatedDays: d.estimatedDays ? parseInt(d.estimatedDays) : undefined,
+        };
+        return apiService.updateTask(schedule.id, taskId, payload);
+      }
+      return apiService.updateTask(schedule.id, taskId, data as Record<string, unknown>);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
@@ -508,10 +613,9 @@ function ScheduleGantt({ schedule }: { schedule: any }) {
     },
   });
 
-  // Delete task — call update with cancelled status (or use a delete endpoint if available)
+  // Delete task
   const deleteMutation = useMutation({
     mutationFn: (taskId: string) => {
-      // The schedules route has a DELETE endpoint
       return apiService.updateTask(schedule.id, taskId, { status: 'cancelled' });
     },
     onSuccess: () => {
@@ -519,6 +623,11 @@ function ScheduleGantt({ schedule }: { schedule: any }) {
       setEditingTask(null);
     },
   });
+
+  // Kanban status change
+  const handleKanbanStatusChange = (taskId: string, newStatus: string) => {
+    updateMutation.mutate({ taskId, data: { status: newStatus } as any });
+  };
 
   if (tasksLoading) {
     return (
@@ -532,18 +641,219 @@ function ScheduleGantt({ schedule }: { schedule: any }) {
 
   return (
     <>
-      <GanttChart
-        tasks={tasks}
-        scheduleName={schedule.name}
-        onTaskClick={(task) => setEditingTask(task)}
-        onAddTask={() => setShowAddForm(true)}
-      />
+      {/* Controls bar */}
+      {viewMode === 'gantt' && (
+        <div className="flex items-center gap-2 flex-wrap mb-2">
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showCriticalPath}
+              onChange={(e) => setShowCriticalPath(e.target.checked)}
+              className="accent-red-600 w-3.5 h-3.5"
+            />
+            Show Critical Path
+          </label>
+
+          <div className="h-4 w-px bg-gray-200 mx-1" />
+
+          <button
+            onClick={() => createBaselineMutation.mutate()}
+            disabled={createBaselineMutation.isPending}
+            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+          >
+            <Save className="w-3 h-3" />
+            Save Baseline
+          </button>
+
+          {baselines.length > 0 && (
+            <>
+              <select
+                value={selectedBaselineId}
+                onChange={(e) => { setSelectedBaselineId(e.target.value); setShowComparison(false); }}
+                className="text-[10px] border border-gray-200 rounded-md px-2 py-1 text-gray-600 bg-white"
+              >
+                <option value="">No baseline overlay</option>
+                {baselines.map((b: any) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} ({new Date(b.createdAt).toLocaleDateString()})
+                  </option>
+                ))}
+              </select>
+              {selectedBaselineId && (
+                <button
+                  onClick={() => setShowComparison(!showComparison)}
+                  className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-md transition-colors ${
+                    showComparison
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100'
+                  }`}
+                >
+                  <BarChart3 className="w-3 h-3" />
+                  Variance Report
+                </button>
+              )}
+            </>
+          )}
+
+          {cpmData && showCriticalPath && (
+            <span className="text-[10px] text-gray-400 ml-auto">
+              Project duration: {cpmData.projectDuration} days | Critical tasks: {cpmData.criticalPathTaskIds?.length || 0}
+            </span>
+          )}
+        </div>
+      )}
+
+      {viewMode === 'gantt' && (
+        <GanttChart
+          tasks={tasks}
+          scheduleName={schedule.name}
+          onTaskClick={(task) => setEditingTask(task)}
+          onAddTask={() => setShowAddForm(true)}
+          criticalPathTaskIds={showCriticalPath ? cpmData?.criticalPathTaskIds : undefined}
+          baselineTasks={selectedBaseline?.tasks?.map((bt: any) => ({
+            taskId: bt.taskId,
+            startDate: bt.startDate,
+            endDate: bt.endDate,
+          }))}
+        />
+      )}
+      {viewMode === 'kanban' && (
+        <KanbanBoard
+          tasks={tasks}
+          onTaskClick={(task) => setEditingTask(task as GanttTask)}
+          onStatusChange={handleKanbanStatusChange}
+        />
+      )}
+      {viewMode === 'table' && (
+        <TableView
+          tasks={tasks}
+          onTaskClick={(task) => setEditingTask(task)}
+          onTaskUpdate={(taskId, data) => updateMutation.mutate({ taskId, data })}
+        />
+      )}
+      {viewMode === 'calendar' && (
+        <CalendarView
+          tasks={tasks}
+          onTaskClick={(task) => setEditingTask(task)}
+        />
+      )}
+
+      {/* Baseline Variance Report */}
+      {showComparison && comparison && (
+        <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-indigo-500" />
+              <h3 className="text-sm font-semibold text-gray-900">
+                Baseline Variance Report — {comparison.baselineName}
+              </h3>
+              <span className="text-[10px] text-gray-400">
+                Saved {new Date(comparison.baselineDate).toLocaleDateString()}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowComparison(false)}
+              className="text-gray-400 hover:text-gray-600 text-xs"
+            >
+              Close
+            </button>
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 mb-4">
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
+              <div className="text-[10px] font-medium text-gray-400 uppercase">Health</div>
+              <div className={`mt-1 text-lg font-bold ${
+                comparison.summary.scheduleHealthPct >= 70 ? 'text-green-600' :
+                comparison.summary.scheduleHealthPct >= 40 ? 'text-yellow-600' : 'text-red-600'
+              }`}>
+                {comparison.summary.scheduleHealthPct}%
+              </div>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
+              <div className="text-[10px] font-medium text-gray-400 uppercase">Slipped</div>
+              <div className="mt-1 text-lg font-bold text-red-600">{comparison.summary.tasksSlipped}</div>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
+              <div className="text-[10px] font-medium text-gray-400 uppercase">On Track</div>
+              <div className="mt-1 text-lg font-bold text-green-600">{comparison.summary.tasksOnTrack}</div>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
+              <div className="text-[10px] font-medium text-gray-400 uppercase">Ahead</div>
+              <div className="mt-1 text-lg font-bold text-blue-600">{comparison.summary.tasksAhead}</div>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
+              <div className="text-[10px] font-medium text-gray-400 uppercase">Avg End Var</div>
+              <div className={`mt-1 text-lg font-bold ${
+                comparison.summary.avgEndVarianceDays > 0 ? 'text-red-600' : 'text-green-600'
+              }`}>
+                {comparison.summary.avgEndVarianceDays > 0 ? '+' : ''}{comparison.summary.avgEndVarianceDays}d
+              </div>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
+              <div className="text-[10px] font-medium text-gray-400 uppercase">New Tasks</div>
+              <div className="mt-1 text-lg font-bold text-gray-900">{comparison.summary.newTasks}</div>
+            </div>
+          </div>
+
+          {/* Task Variance Table */}
+          <div className="overflow-x-auto max-h-64 overflow-y-auto">
+            <table className="w-full text-[10px]">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr>
+                  <th className="text-left px-2 py-1.5 font-semibold text-gray-500 uppercase">Task</th>
+                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 uppercase">Start Var</th>
+                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 uppercase">End Var</th>
+                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 uppercase">Duration Var</th>
+                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 uppercase">Progress Var</th>
+                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 uppercase">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparison.taskVariances.map((tv: any) => (
+                  <tr key={tv.taskId} className="border-b border-gray-50 hover:bg-gray-50">
+                    <td className="px-2 py-1.5 text-gray-800 font-medium">{tv.taskName}</td>
+                    <td className={`text-center px-2 py-1.5 font-medium ${
+                      tv.startVarianceDays > 0 ? 'text-red-600' : tv.startVarianceDays < 0 ? 'text-green-600' : 'text-gray-500'
+                    }`}>
+                      {tv.startVarianceDays > 0 ? '+' : ''}{tv.startVarianceDays}d
+                    </td>
+                    <td className={`text-center px-2 py-1.5 font-medium ${
+                      tv.endVarianceDays > 0 ? 'text-red-600' : tv.endVarianceDays < 0 ? 'text-green-600' : 'text-gray-500'
+                    }`}>
+                      {tv.endVarianceDays > 0 ? '+' : ''}{tv.endVarianceDays}d
+                    </td>
+                    <td className={`text-center px-2 py-1.5 font-medium ${
+                      tv.durationVarianceDays > 0 ? 'text-red-600' : tv.durationVarianceDays < 0 ? 'text-green-600' : 'text-gray-500'
+                    }`}>
+                      {tv.durationVarianceDays > 0 ? '+' : ''}{tv.durationVarianceDays}d
+                    </td>
+                    <td className={`text-center px-2 py-1.5 font-medium ${
+                      tv.progressVariancePct > 0 ? 'text-green-600' : tv.progressVariancePct < 0 ? 'text-red-600' : 'text-gray-500'
+                    }`}>
+                      {tv.progressVariancePct > 0 ? '+' : ''}{tv.progressVariancePct}%
+                    </td>
+                    <td className="text-center px-2 py-1.5">
+                      {tv.statusChanged ? (
+                        <span className="text-amber-600">{tv.baselineStatus} → {tv.actualStatus}</span>
+                      ) : (
+                        <span className="text-gray-400">{tv.actualStatus}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Edit modal */}
       {editingTask && (
         <TaskFormModal
           task={editingTask}
           allTasks={tasks}
+          scheduleId={schedule.id}
           onSave={(data) => updateMutation.mutate({ taskId: editingTask.id, data })}
           onDelete={(taskId) => deleteMutation.mutate(taskId)}
           onClose={() => setEditingTask(null)}
@@ -556,6 +866,7 @@ function ScheduleGantt({ schedule }: { schedule: any }) {
         <TaskFormModal
           task={null}
           allTasks={tasks}
+          scheduleId={schedule.id}
           onSave={(data) => createMutation.mutate(data)}
           onClose={() => setShowAddForm(false)}
           isSaving={createMutation.isPending}
@@ -577,6 +888,94 @@ function AIInsightsTab({ projectId }: { projectId: string }) {
       <div className="lg:col-span-2">
         <BudgetForecastSection projectId={projectId} />
       </div>
+      <div className="lg:col-span-2">
+        <EVMSCurveSection projectId={projectId} />
+      </div>
+    </div>
+  );
+}
+
+// --- EVM S-Curve Section ---
+
+function EVMSCurveSection({ projectId }: { projectId: string }) {
+  const { data: sCurveData, isLoading: sCurveLoading } = useQuery({
+    queryKey: ['sCurve', projectId],
+    queryFn: () => apiService.getSCurveData(projectId),
+    enabled: !!projectId,
+  });
+
+  const { data: budgetData } = useQuery({
+    queryKey: ['projectBudget', projectId],
+    queryFn: () => apiService.getProjectBudget(projectId),
+    enabled: !!projectId,
+  });
+
+  const evm = budgetData?.data?.evmMetrics;
+  const sCurve = sCurveData?.data || [];
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="mb-4 flex items-center gap-2">
+        <BarChart3 className="h-5 w-5 text-indigo-500" />
+        <h3 className="text-sm font-semibold text-gray-900">Earned Value Management — S-Curve</h3>
+      </div>
+
+      {/* Extended EVM Metrics */}
+      {evm && (
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-7 mb-4">
+          <MetricCard
+            label="PV"
+            value={formatDollar(evm.plannedValue)}
+            color="text-gray-900"
+            tooltip="Planned Value"
+          />
+          <MetricCard
+            label="EV"
+            value={formatDollar(evm.earnedValue)}
+            color="text-blue-600"
+            tooltip="Earned Value"
+          />
+          <MetricCard
+            label="AC"
+            value={formatDollar(evm.actualCost)}
+            color="text-red-600"
+            tooltip="Actual Cost"
+          />
+          <MetricCard
+            label="CV"
+            value={formatDollar(evm.cv)}
+            color={evm.cv >= 0 ? 'text-green-600' : 'text-red-600'}
+            tooltip="Cost Variance (EV - AC)"
+          />
+          <MetricCard
+            label="SV"
+            value={formatDollar(evm.sv)}
+            color={evm.sv >= 0 ? 'text-green-600' : 'text-red-600'}
+            tooltip="Schedule Variance (EV - PV)"
+          />
+          <MetricCard
+            label="TCPI (BAC)"
+            value={evm.tcpiBAC != null ? evm.tcpiBAC.toFixed(2) : 'N/A'}
+            color={evm.tcpiBAC != null && evm.tcpiBAC <= 1 ? 'text-green-600' : 'text-red-600'}
+            tooltip="To-Complete Performance Index (BAC)"
+          />
+          <MetricCard
+            label="TCPI (EAC)"
+            value={evm.tcpiEAC != null ? evm.tcpiEAC.toFixed(2) : 'N/A'}
+            color="text-gray-900"
+            tooltip="To-Complete Performance Index (EAC)"
+          />
+        </div>
+      )}
+
+      {/* S-Curve Chart */}
+      {sCurveLoading && <SectionSpinner />}
+      {!sCurveLoading && sCurve.length > 0 && (
+        <SCurveChart data={sCurve} height={280} />
+      )}
+      {!sCurveLoading && sCurve.length === 0 && (
+        <p className="text-xs text-gray-400 text-center py-4">No S-Curve data available for this project.</p>
+      )}
     </div>
   );
 }
@@ -1258,13 +1657,210 @@ function ImpactCard({
 // ---------------------------------------------------------------------------
 
 function TeamTab() {
+  const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
+
+  const { data: workloadData, isLoading: workloadLoading } = useQuery({
+    queryKey: ['resourceWorkload', id],
+    queryFn: () => apiService.getResourceWorkload(id!),
+    enabled: !!id,
+  });
+
+  const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
+    queryKey: ['resources'],
+    queryFn: () => apiService.getResources(),
+  });
+
+  const { data: membersData, isLoading: membersLoading } = useQuery({
+    queryKey: ['projectMembers', id],
+    queryFn: () => apiService.getProjectMembers(id!),
+    enabled: !!id,
+  });
+
+  const { data: auditData, isLoading: auditLoading } = useQuery({
+    queryKey: ['auditTrail', id],
+    queryFn: () => apiService.getAuditTrail(id!),
+    enabled: !!id,
+  });
+
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMember, setNewMember] = useState({ userName: '', email: '', role: 'editor' });
+
+  const addMemberMutation = useMutation({
+    mutationFn: (data: { userId: string; userName: string; email: string; role: string }) =>
+      apiService.addProjectMember(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projectMembers', id] });
+      setShowAddMember(false);
+      setNewMember({ userName: '', email: '', role: 'editor' });
+    },
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: (memberId: string) => apiService.removeProjectMember(id!, memberId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['projectMembers', id] }),
+  });
+
+  const workload = workloadData?.workload || [];
+  const resources = resourcesData?.resources || [];
+  const members = membersData?.members || [];
+  const auditActivities = auditData?.activities || [];
+
+  const roleColors: Record<string, string> = {
+    owner: 'bg-purple-100 text-purple-700',
+    manager: 'bg-blue-100 text-blue-700',
+    editor: 'bg-green-100 text-green-700',
+    viewer: 'bg-gray-100 text-gray-600',
+  };
+
+  const handleAddMember = () => {
+    if (!newMember.userName.trim() || !newMember.email.trim()) return;
+    addMemberMutation.mutate({
+      userId: `user-${Math.random().toString(36).substr(2, 6)}`,
+      userName: newMember.userName,
+      email: newMember.email,
+      role: newMember.role,
+    });
+  };
+
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-      <Users className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-      <h3 className="text-sm font-semibold text-gray-900">Team Members</h3>
-      <p className="mt-1 text-sm text-gray-500">
-        Team management will be available in a future update.
-      </p>
+    <div className="space-y-6">
+      {/* Team Members Section */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-indigo-500" />
+            <h3 className="text-sm font-semibold text-gray-900">Team Members</h3>
+            <span className="text-xs text-gray-400">({members.length})</span>
+          </div>
+          <button
+            onClick={() => setShowAddMember(!showAddMember)}
+            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            Add Member
+          </button>
+        </div>
+
+        {/* Add member form */}
+        {showAddMember && (
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
+              <input
+                type="text"
+                placeholder="Name"
+                value={newMember.userName}
+                onChange={e => setNewMember({ ...newMember, userName: e.target.value })}
+                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={newMember.email}
+                onChange={e => setNewMember({ ...newMember, email: e.target.value })}
+                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              <select
+                value={newMember.role}
+                onChange={e => setNewMember({ ...newMember, role: e.target.value })}
+                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="viewer">Viewer</option>
+                <option value="editor">Editor</option>
+                <option value="manager">Manager</option>
+                <option value="owner">Owner</option>
+              </select>
+              <button
+                onClick={handleAddMember}
+                disabled={addMemberMutation.isPending}
+                className="text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md px-3 py-1.5 transition-colors disabled:opacity-50"
+              >
+                {addMemberMutation.isPending ? 'Adding...' : 'Add'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {membersLoading ? (
+          <SectionSpinner />
+        ) : (
+          <div className="space-y-2">
+            {members.map((member: any) => (
+              <div key={member.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <span className="text-xs font-semibold text-indigo-600">
+                      {member.userName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">{member.userName}</div>
+                    <div className="text-[10px] text-gray-400">{member.email}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${roleColors[member.role] || roleColors.viewer}`}>
+                    {member.role}
+                  </span>
+                  {member.role !== 'owner' && (
+                    <button
+                      onClick={() => removeMemberMutation.mutate(member.id)}
+                      className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors"
+                      title="Remove member"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Activity Log Section */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="h-5 w-5 text-green-500" />
+          <h3 className="text-sm font-semibold text-gray-900">Activity Log</h3>
+        </div>
+
+        {auditLoading ? (
+          <SectionSpinner />
+        ) : auditActivities.length === 0 ? (
+          <p className="text-xs text-gray-400 text-center py-4">No activity recorded yet.</p>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+            {auditActivities.map((entry: any) => (
+              <div key={entry.id} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Activity className="w-3 h-3 text-gray-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-700">
+                    <span className="font-medium">{entry.userName}</span>
+                    {' '}{entry.action}{' '}
+                    {entry.field && <span className="font-medium">{entry.field}</span>}
+                    {entry.oldValue && entry.newValue && (
+                      <span className="text-gray-400"> from "{entry.oldValue}" to "{entry.newValue}"</span>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    {new Date(entry.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Workload Heatmap */}
+      {(workloadLoading || resourcesLoading) ? (
+        <SectionSpinner />
+      ) : (
+        <WorkloadHeatmap workload={workload} resources={resources} />
+      )}
     </div>
   );
 }

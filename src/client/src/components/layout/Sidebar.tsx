@@ -9,6 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Layers,
+  Workflow,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -39,6 +41,16 @@ const navItems: NavItem[] = [
     label: 'Reports',
     icon: FileText,
     path: '/reports',
+  },
+  {
+    label: 'Portfolio',
+    icon: Layers,
+    path: '/portfolio',
+  },
+  {
+    label: 'Workflows',
+    icon: Workflow,
+    path: '/workflows',
   },
   {
     label: 'Intelligence',

@@ -234,6 +234,13 @@ export function computeEVMMetrics(
   vac: number;
   burnRateDaily: number;
   burnRateMonthly: number;
+  plannedValue: number;
+  earnedValue: number;
+  actualCost: number;
+  cv: number;
+  sv: number;
+  tcpiBAC: number;
+  tcpiEAC: number;
 } {
   const percentElapsed =
     totalDays > 0 ? Math.min(daysElapsed / totalDays, 1) : 0;
@@ -257,13 +264,34 @@ export function computeEVMMetrics(
   const etc = Math.max(0, parseFloat((eac - actualCost).toFixed(2)));
   const vac = parseFloat((budgetAllocated - eac).toFixed(2));
 
+  const cv = parseFloat((earnedValue - actualCost).toFixed(2));
+  const sv = parseFloat((earnedValue - plannedValue).toFixed(2));
+
+  // TCPI = (BAC - EV) / (BAC - AC) — To Complete Performance Index against BAC
+  const tcpiBAC =
+    budgetAllocated - actualCost > 0
+      ? parseFloat(((budgetAllocated - earnedValue) / (budgetAllocated - actualCost)).toFixed(2))
+      : 1;
+
+  // TCPI against EAC = (BAC - EV) / (EAC - AC)
+  const tcpiEAC =
+    eac - actualCost > 0
+      ? parseFloat(((budgetAllocated - earnedValue) / (eac - actualCost)).toFixed(2))
+      : 1;
+
   const burnRateDaily =
     daysElapsed > 0
       ? parseFloat((actualCost / daysElapsed).toFixed(2))
       : 0;
   const burnRateMonthly = parseFloat((burnRateDaily * 30).toFixed(2));
 
-  return { cpi, spi, eac, etc, vac, burnRateDaily, burnRateMonthly };
+  return {
+    cpi, spi, eac, etc, vac, burnRateDaily, burnRateMonthly,
+    plannedValue: parseFloat(plannedValue.toFixed(2)),
+    earnedValue: parseFloat(earnedValue.toFixed(2)),
+    actualCost: parseFloat(actualCost.toFixed(2)),
+    cv, sv, tcpiBAC, tcpiEAC,
+  };
 }
 
 export function categorizeWeatherImpact(

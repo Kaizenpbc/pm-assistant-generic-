@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2 } from 'lucide-react';
 import type { GanttTask } from './GanttChart';
+import { TaskActivityPanel } from './TaskActivityPanel';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,6 +30,8 @@ interface TaskFormModalProps {
   onDelete?: (taskId: string) => void;
   onClose: () => void;
   isSaving?: boolean;
+  /** Schedule ID for comments/activity panel */
+  scheduleId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +58,7 @@ export function TaskFormModal({
   onDelete,
   onClose,
   isSaving,
+  scheduleId,
 }: TaskFormModalProps) {
   const isEdit = !!task;
 
@@ -311,6 +315,11 @@ export function TaskFormModal({
               </select>
             </div>
           </div>
+
+          {/* Comments & Activity (edit mode only) */}
+          {isEdit && scheduleId && task && (
+            <TaskActivityPanel scheduleId={scheduleId} taskId={task.id} />
+          )}
         </form>
 
         {/* Footer buttons */}

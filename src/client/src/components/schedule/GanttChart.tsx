@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -128,6 +128,8 @@ export function GanttChart({
   scheduleName,
   onTaskClick,
   onAddTask,
+  criticalPathTaskIds,
+  baselineTasks,
 }: {
   tasks: GanttTask[];
   scheduleName?: string;
@@ -135,7 +137,21 @@ export function GanttChart({
   onTaskClick?: (task: GanttTask) => void;
   /** Called when the "Add Task" button is clicked */
   onAddTask?: () => void;
+  /** Task IDs that are on the critical path (rendered in red) */
+  criticalPathTaskIds?: string[];
+  /** Baseline task data for ghost bars */
+  baselineTasks?: Array<{ taskId: string; startDate: string; endDate: string }>;
 }) {
+  const criticalSet = useMemo(() => new Set(criticalPathTaskIds || []), [criticalPathTaskIds]);
+  const baselineMap = useMemo(() => {
+    const m = new Map<string, { startDate: string; endDate: string }>();
+    if (baselineTasks) {
+      for (const bt of baselineTasks) {
+        m.set(bt.taskId, bt);
+      }
+    }
+    return m;
+  }, [baselineTasks]);
   const rows = useMemo(() => buildFlatRows(tasks), [tasks]);
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -415,6 +431,37 @@ export function GanttChart({
               </div>
             )}
 
+            {/* Baseline ghost bars */}
+            {rows.map(({ task }, idx) => {
+              const bl = baselineMap.get(task.id);
+              if (!bl) return null;
+              const bStart = toDate(bl.startDate);
+              const bEnd = toDate(bl.endDate);
+              if (!bStart || !bEnd) return null;
+
+              const left = daysBetween(minDate, bStart) * DAY_PX;
+              const width = Math.max(daysBetween(bStart, bEnd) * DAY_PX, 8);
+              const top = HEADER_H + idx * ROW_H + 2;
+              const barH = ROW_H - 4;
+
+              return (
+                <div
+                  key={`bl-${task.id}`}
+                  className="absolute print-baseline-bar"
+                  style={{ left, top, width, height: barH }}
+                >
+                  <div
+                    className="absolute inset-0 rounded-sm"
+                    style={{
+                      backgroundColor: '#d1d5db',
+                      opacity: 0.35,
+                      border: '1px dashed #9ca3af',
+                    }}
+                  />
+                </div>
+              );
+            })}
+
             {/* Task bars */}
             {rows.map(({ task }, idx) => {
               const start = toDate(task.startDate);
@@ -424,7 +471,10 @@ export function GanttChart({
               const left = daysBetween(minDate, start) * DAY_PX;
               const width = Math.max(daysBetween(start, end) * DAY_PX, 8);
               const pct = task.progressPercentage ?? 0;
-              const colors = barColors[task.status] || barColors.pending;
+              const isCritical = criticalSet.has(task.id);
+              const colors = isCritical
+                ? { bg: '#fef2f2', fill: '#dc2626', text: '#991b1b' }
+                : barColors[task.status] || barColors.pending;
               const isParent = rows.some((r) => r.task.parentTaskId === task.id);
               const top = HEADER_H + idx * ROW_H + 6;
               const barH = ROW_H - 12;
@@ -440,7 +490,7 @@ export function GanttChart({
                     className="absolute inset-0 rounded-sm"
                     style={{
                       backgroundColor: colors.bg,
-                      border: `1px solid ${colors.fill}40`,
+                      border: isCritical ? '2px solid #dc2626' : `1px solid ${colors.fill}40`,
                     }}
                   />
 
@@ -486,7 +536,10 @@ export function GanttChart({
 
                   {/* Tooltip on hover */}
                   <div className="invisible group-hover/bar:visible absolute z-30 left-0 -top-16 bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-lg pointer-events-none">
-                    <div className="font-semibold">{task.name}</div>
+                    <div className="font-semibold">
+                      {isCritical && <span className="text-red-400">[Critical] </span>}
+                      {task.name}
+                    </div>
                     <div className="text-gray-300 mt-0.5">
                       {formatShortDate(start)} — {formatShortDate(end)} &middot;{' '}
                       {daysBetween(start, end)}d &middot; {pct}% complete
@@ -559,7 +612,7 @@ export function GanttChart({
       </div>
 
       {/* Legend */}
-      <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex items-center gap-4 flex-wrap">
+      <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex items-center gap-4 flex-wrap print-legend">
         {Object.entries(statusLabels).map(([key, label]) => (
           <div key={key} className="flex items-center gap-1.5">
             <div
@@ -589,7 +642,28 @@ export function GanttChart({
           </span>
           <span className="text-[10px] text-gray-500">Dependency</span>
         </div>
+        {criticalPathTaskIds && criticalPathTaskIds.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-2.5 rounded-sm border-2 border-red-600 bg-red-50" />
+            <span className="text-[10px] text-gray-500">Critical Path</span>
+          </div>
+        )}
+        {baselineTasks && baselineTasks.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-2.5 rounded-sm bg-gray-300 border border-dashed border-gray-400 opacity-50" />
+            <span className="text-[10px] text-gray-500">Baseline</span>
+          </div>
+        )}
       </div>
+
+      {/* Print CSS */}
+      <style>{`
+        @media print {
+          .print-legend { display: flex !important; }
+          body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+          @page { size: landscape; margin: 0.5in; }
+        }
+      `}</style>
     </div>
   );
 }

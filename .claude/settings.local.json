@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(npm run dev:*)",
+      "Bash(mysql:*)",
+      "Bash(where:*)",
+      "Bash(dir:*)",
+      "Bash(dir \"C:\\\\xampp\" /s /b)",
+      "Bash(node -e:*)",
+      "Bash(npx tsx:*)",
+      "Bash(cmd /c \"for /f \"\"tokens=5\"\" %a in \\(''netstat -ano ^| findstr :3002 ^| findstr LISTENING''\\) do taskkill /PID %a /F\")",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c \"taskkill /PID 55644 /F\")",
+      "Bash(cmd /c \"taskkill /PID 55644 /T /F\")",
+      "Bash(cmd /c \"wmic process where ProcessId=55644 get CommandLine,ProcessId 2>nul\")",
+      "Bash(cmd /c \"tasklist /FI \"\"PID eq 55644\"\" /V\")",
+      "Bash(cmd /c \"tasklist /FI \"\"PID eq 55644\"\"\")",
+      "Bash(cmd /c \"netstat -ano | findstr 3002\")",
+      "Bash(cmd /c \"netstat -ano | findstr 5174 | findstr LISTENING\")",
+      "Bash(cmd /c \"for /f \"\"tokens=5\"\" %a in \\(''netstat -ano ^| findstr :3002 ^| findstr LISTENING''\\) do taskkill /PID %a /T /F\")",
+      "Bash(cmd /c \"timeout /t 3 >nul && netstat -ano | findstr /R \"\"3002 5174 5175 5176\"\" | findstr LISTENING\")",
+      "Bash(cmd /c \"timeout /t 3 >nul && netstat -ano | findstr LISTENING | findstr 3002\")",
+      "Bash(cmd /c \"taskkill /IM node.exe /F\")",
+      "Bash(cmd /c \"timeout /t 2 >nul && netstat -ano | findstr 3002 | findstr LISTENING\")",
+      "Bash(cmd /c \"start http://localhost:5178\")",
+      "WebSearch",
+      "Bash(npx tsc:*)",
+      "Bash(powershell -Command \"Start-Sleep -Seconds 5; Invoke-WebRequest -Uri ''http://localhost:3002/api/v1/schedules/sch-1/critical-path'' -UseBasicParsing | Select-Object -ExpandProperty Content\")",
+      "Bash(powershell:*)",
+      "Bash(timeout:*)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vite build)",
+      "Bash(curl:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
