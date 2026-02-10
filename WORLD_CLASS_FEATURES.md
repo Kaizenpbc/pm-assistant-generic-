@@ -174,6 +174,110 @@ Build an AI-native project management platform that combines the scheduling powe
 
 ---
 
+## Priority 4: Production Polish (Make It Shippable)
+
+### 4.1 Notification System
+- In-app notification center with unread badge
+- Email alerts for assignments, deadlines, status changes
+- Configurable notification preferences per user
+- @mention notifications from comments
+- **Benchmark:** All top tools
+
+### 4.2 File Attachments & Documents
+- Upload files to tasks and projects
+- File preview (images, PDFs, documents)
+- Version history on attachments
+- Drag-and-drop upload
+- **Benchmark:** Monday.com, Wrike, Asana
+
+### 4.3 Time Tracking & Timesheets
+- Log hours against tasks
+- Weekly timesheet view per resource
+- Actual vs estimated hours comparison
+- Time-based cost calculations
+- **Benchmark:** MS Project, Wrike, Smartsheet
+
+### 4.4 Project Templates
+- Save project structure as reusable template
+- Template library with categories
+- One-click project creation from template
+- Include tasks, dependencies, roles, and milestones
+- **Benchmark:** Monday.com, Asana, Smartsheet
+
+### 4.5 Custom Fields
+- User-defined fields on tasks and projects (text, number, date, dropdown, checkbox)
+- Custom field filtering and sorting
+- Custom fields visible in all views (Gantt, Kanban, Table)
+- **Benchmark:** Monday.com, Jira, Asana
+
+### 4.6 Network Diagram View
+- Dependency graph visualization (PERT/precedence diagram)
+- Interactive node layout with zoom/pan
+- Critical path highlighting on network view
+- **Benchmark:** Primavera P6, MS Project
+
+### 4.7 Burndown/Burnup Charts
+- Sprint burndown chart (remaining work vs time)
+- Burnup chart (completed work + scope changes)
+- Velocity tracking across sprints
+- **Benchmark:** Jira, Azure DevOps
+
+---
+
+## Priority 5: Market Advantage (Win Enterprise Deals)
+
+### 5.1 External Integrations
+- Slack integration (notifications, slash commands)
+- Microsoft Teams integration
+- Jira two-way sync
+- GitHub/GitLab commit linking
+- Email webhook triggers
+- **Benchmark:** Monday.com, Asana, Wrike
+
+### 5.2 Client/Stakeholder Portal
+- Read-only external view for clients
+- Branded portal with project status
+- Approval workflows for deliverables
+- Comment/feedback from external stakeholders
+- **Benchmark:** Wrike, Smartsheet
+
+### 5.3 Approval Workflows & Change Requests
+- Formal change request submission
+- Multi-level approval chains
+- Impact analysis before approval
+- Audit trail of all approvals/rejections
+- **Benchmark:** Primavera P6, enterprise tools
+
+### 5.4 Resource Leveling
+- Automatic over-allocation resolution
+- Level within slack / extend project options
+- Priority-based resource conflict resolution
+- Before/after comparison view
+- **Benchmark:** MS Project, Primavera P6
+
+### 5.5 Sprint Planning / Agile Mode
+- Scrum board with sprint cycles
+- Backlog grooming and prioritization
+- Story points and velocity tracking
+- Sprint retrospective summaries
+- **Benchmark:** Jira, Azure DevOps, Monday.com
+
+### 5.6 Custom Report Builder
+- Drag-and-drop report designer
+- Configurable data sources and filters
+- Scheduled report delivery via email
+- Shareable report links
+- **Benchmark:** Smartsheet, Monday.com
+
+### 5.7 Project Intake Forms
+- Customizable request submission forms
+- Triage pipeline with scoring
+- Auto-routing to approvers
+- Conversion from request to active project
+- **Benchmark:** Wrike, Smartsheet, Monday.com
+
+---
+
 ## Implementation Status
 
 | Feature | Status | Priority |
@@ -199,3 +303,17 @@ Build an AI-native project management platform that combines the scheduling powe
 | AI Lessons Learned | Done | P3 |
 | Monte Carlo Simulation | Done | P3 |
 | AI EVM Forecasting | Done | P3 |
+| Notification System | Not Started | P4 |
+| File Attachments & Documents | Not Started | P4 |
+| Time Tracking & Timesheets | Not Started | P4 |
+| Project Templates | Not Started | P4 |
+| Custom Fields | Not Started | P4 |
+| Network Diagram View | Not Started | P4 |
+| Burndown/Burnup Charts | Not Started | P4 |
+| External Integrations | Not Started | P5 |
+| Client/Stakeholder Portal | Not Started | P5 |
+| Approval Workflows & Change Requests | Not Started | P5 |
+| Resource Leveling | Not Started | P5 |
+| Sprint Planning / Agile Mode | Not Started | P5 |
+| Custom Report Builder | Not Started | P5 |
+| Project Intake Forms | Not Started | P5 |
