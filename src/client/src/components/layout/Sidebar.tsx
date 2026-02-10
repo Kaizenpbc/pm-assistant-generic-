@@ -11,6 +11,10 @@ import {
   Sparkles,
   Layers,
   Workflow,
+  Dice5,
+  MessageSquare,
+  BookOpen,
+  Search,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -56,6 +60,26 @@ const navItems: NavItem[] = [
     label: 'Intelligence',
     icon: Brain,
     path: '/scenarios',
+  },
+  {
+    label: 'Simulation',
+    icon: Dice5,
+    path: '/monte-carlo',
+  },
+  {
+    label: 'Meetings',
+    icon: MessageSquare,
+    path: '/meetings',
+  },
+  {
+    label: 'Lessons',
+    icon: BookOpen,
+    path: '/lessons',
+  },
+  {
+    label: 'Ask AI',
+    icon: Search,
+    path: '/query',
   },
   {
     label: 'Settings',

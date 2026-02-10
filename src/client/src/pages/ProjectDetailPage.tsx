@@ -41,13 +41,21 @@ import { TableView } from '../components/schedule/TableView';
 import { CalendarView } from '../components/schedule/CalendarView';
 import { SCurveChart } from '../components/evm/SCurveChart';
 import { WorkloadHeatmap } from '../components/resources/WorkloadHeatmap';
+import { EVMForecastDashboard } from '../components/evm/EVMForecastDashboard';
+import { EVMTrendChart } from '../components/evm/EVMTrendChart';
+import { ForecastComparisonChart } from '../components/evm/ForecastComparisonChart';
+import { ResourceForecastPanel } from '../components/resources/ResourceForecastPanel';
+import { RebalanceSuggestions } from '../components/resources/RebalanceSuggestions';
+import { CapacityChart } from '../components/resources/CapacityChart';
+import { AutoReschedulePanel } from '../components/schedule/AutoReschedulePanel';
 
-type Tab = 'overview' | 'schedule' | 'ai-insights' | 'scenarios' | 'team';
+type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team';
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'schedule', label: 'Schedule' },
   { id: 'ai-insights', label: 'AI Insights' },
+  { id: 'evm-forecast', label: 'EVM Forecast' },
   { id: 'scenarios', label: 'What-If' },
   { id: 'team', label: 'Team' },
 ];
@@ -346,6 +354,7 @@ export function ProjectDetailPage() {
       {activeTab === 'overview' && <OverviewTab project={project} />}
       {activeTab === 'schedule' && <ScheduleTab projectId={id!} />}
       {activeTab === 'ai-insights' && <AIInsightsTab projectId={id!} />}
+      {activeTab === 'evm-forecast' && <EVMForecastTab projectId={id!} />}
       {activeTab === 'scenarios' && <ScenariosTab projectId={id!} />}
       {activeTab === 'team' && <TeamTab />}
     </div>
@@ -520,6 +529,7 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
   const [showCriticalPath, setShowCriticalPath] = useState(false);
   const [selectedBaselineId, setSelectedBaselineId] = useState<string>('');
   const [showComparison, setShowComparison] = useState(false);
+  const [showReschedulePanel, setShowReschedulePanel] = useState(false);
 
   const { data: tasksData, isLoading: tasksLoading } = useQuery({
     queryKey: ['tasks', schedule.id],
@@ -694,6 +704,16 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
               )}
             </>
           )}
+
+          <div className="h-4 w-px bg-gray-200 mx-1" />
+
+          <button
+            onClick={() => setShowReschedulePanel(true)}
+            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors"
+          >
+            <Sparkles className="w-3 h-3" />
+            AI Reschedule
+          </button>
 
           {cpmData && showCriticalPath && (
             <span className="text-[10px] text-gray-400 ml-auto">
@@ -870,6 +890,17 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
           onSave={(data) => createMutation.mutate(data)}
           onClose={() => setShowAddForm(false)}
           isSaving={createMutation.isPending}
+        />
+      )}
+
+      {/* AI Reschedule Panel */}
+      {showReschedulePanel && (
+        <AutoReschedulePanel
+          scheduleId={schedule.id}
+          onClose={() => {
+            setShowReschedulePanel(false);
+            queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+          }}
         />
       )}
     </>
@@ -1335,6 +1366,52 @@ function MetricCard({
     <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center" title={tooltip}>
       <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{label}</div>
       <div className={`mt-1 text-lg font-bold ${color}`}>{value}</div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// EVM Forecast Tab
+// ---------------------------------------------------------------------------
+
+function EVMForecastTab({ projectId }: { projectId: string }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['evmForecast', projectId],
+    queryFn: () => apiService.getEVMForecast(projectId),
+    enabled: !!projectId,
+  });
+
+  const forecast = data?.result;
+
+  return (
+    <div className="space-y-6">
+      {isLoading && <SectionSpinner />}
+      {error && <SectionError message="Failed to load EVM forecast." />}
+      {!isLoading && !error && forecast && (
+        <>
+          <EVMForecastDashboard data={forecast} />
+
+          {forecast.historicalTrends?.weeklyData?.length > 0 && (
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">CPI / SPI Trend</h3>
+              <EVMTrendChart
+                historicalData={forecast.historicalTrends.weeklyData}
+                predictions={forecast.aiPredictions?.predictedCPI}
+              />
+            </div>
+          )}
+
+          {forecast.forecastComparison?.length > 0 && (
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Forecast Method Comparison</h3>
+              <ForecastComparisonChart
+                data={forecast.forecastComparison}
+                bac={forecast.currentMetrics?.BAC || 0}
+              />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -1855,6 +1932,9 @@ function TeamTab() {
         )}
       </div>
 
+      {/* Resource Optimizer */}
+      <ResourceOptimizerSection projectId={id!} />
+
       {/* Workload Heatmap */}
       {(workloadLoading || resourcesLoading) ? (
         <SectionSpinner />
@@ -1862,6 +1942,36 @@ function TeamTab() {
         <WorkloadHeatmap workload={workload} resources={resources} />
       )}
     </div>
+  );
+}
+
+function ResourceOptimizerSection({ projectId }: { projectId: string }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['resourceForecast', projectId],
+    queryFn: () => apiService.getResourceForecast(projectId),
+    enabled: !!projectId,
+  });
+
+  const forecast = data?.result;
+
+  if (isLoading) return <SectionSpinner />;
+  if (error || !forecast) return null;
+
+  return (
+    <>
+      <ResourceForecastPanel projectId={projectId} />
+
+      {forecast.capacityForecast?.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">Capacity Forecast</h3>
+          <CapacityChart data={forecast.capacityForecast} />
+        </div>
+      )}
+
+      {forecast.rebalanceSuggestions?.length > 0 && (
+        <RebalanceSuggestions suggestions={forecast.rebalanceSuggestions} />
+      )}
+    </>
   );
 }
 

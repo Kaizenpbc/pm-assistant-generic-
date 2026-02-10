@@ -17,6 +17,13 @@ import { workflowRoutes } from './routes/workflows';
 import { projectMemberRoutes } from './routes/projectMembers';
 import { auditTrailRoutes } from './routes/auditTrail';
 import { websocketRoutes } from './routes/websocket';
+import { monteCarloRoutes } from './routes/monteCarlo';
+import { evmForecastRoutes } from './routes/evmForecast';
+import { autoRescheduleRoutes } from './routes/autoReschedule';
+import { resourceOptimizerRoutes } from './routes/resourceOptimizer';
+import { meetingIntelligenceRoutes } from './routes/meetingIntelligence';
+import { lessonsLearnedRoutes } from './routes/lessonsLearned';
+import { nlQueryRoutes } from './routes/nlQuery';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
@@ -37,4 +44,11 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(projectMemberRoutes, { prefix: '/api/v1/projects' });
   await fastify.register(auditTrailRoutes, { prefix: '/api/v1/audit' });
   await fastify.register(websocketRoutes, { prefix: '/api/v1/ws' });
+  await fastify.register(monteCarloRoutes, { prefix: '/api/v1/monte-carlo' });
+  await fastify.register(evmForecastRoutes, { prefix: '/api/v1/evm-forecast' });
+  await fastify.register(autoRescheduleRoutes, { prefix: '/api/v1/auto-reschedule' });
+  await fastify.register(resourceOptimizerRoutes, { prefix: '/api/v1/resource-optimizer' });
+  await fastify.register(meetingIntelligenceRoutes, { prefix: '/api/v1/meeting-intelligence' });
+  await fastify.register(lessonsLearnedRoutes, { prefix: '/api/v1/lessons-learned' });
+  await fastify.register(nlQueryRoutes, { prefix: '/api/v1/nl-query' });
 }

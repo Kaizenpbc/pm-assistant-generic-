@@ -576,6 +576,147 @@ class ApiService {
     window.URL.revokeObjectURL(url);
   }
 
+  // -------------------------------------------------------------------------
+  // Monte Carlo Simulation
+  // -------------------------------------------------------------------------
+
+  async runMonteCarloSimulation(scheduleId: string, config?: { iterations?: number; confidenceLevels?: number[]; uncertaintyModel?: string }) {
+    const response = await this.api.post(`/monte-carlo/${scheduleId}/simulate`, config || {});
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // EVM Forecast
+  // -------------------------------------------------------------------------
+
+  async getEVMForecast(projectId: string) {
+    const response = await this.api.get(`/evm-forecast/${projectId}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Auto-Reschedule
+  // -------------------------------------------------------------------------
+
+  async getDelays(scheduleId: string) {
+    const response = await this.api.get(`/auto-reschedule/${scheduleId}/delays`);
+    return response.data;
+  }
+
+  async generateRescheduleProposal(scheduleId: string) {
+    const response = await this.api.post(`/auto-reschedule/${scheduleId}/propose`);
+    return response.data;
+  }
+
+  async getRescheduleProposals(scheduleId: string) {
+    const response = await this.api.get(`/auto-reschedule/${scheduleId}/proposals`);
+    return response.data;
+  }
+
+  async acceptRescheduleProposal(proposalId: string) {
+    const response = await this.api.post(`/auto-reschedule/proposals/${proposalId}/accept`);
+    return response.data;
+  }
+
+  async rejectRescheduleProposal(proposalId: string, feedback?: string) {
+    const response = await this.api.post(`/auto-reschedule/proposals/${proposalId}/reject`, { feedback });
+    return response.data;
+  }
+
+  async modifyRescheduleProposal(proposalId: string, modifications: any[]) {
+    const response = await this.api.post(`/auto-reschedule/proposals/${proposalId}/modify`, { modifications });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Resource Optimizer
+  // -------------------------------------------------------------------------
+
+  async getResourceForecast(projectId: string, weeksAhead?: number) {
+    const params = weeksAhead ? { weeksAhead } : {};
+    const response = await this.api.get(`/resource-optimizer/${projectId}/forecast`, { params });
+    return response.data;
+  }
+
+  async getSkillMatch(taskId: string, scheduleId: string) {
+    const response = await this.api.post('/resource-optimizer/skill-match', { taskId, scheduleId });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Meeting Intelligence
+  // -------------------------------------------------------------------------
+
+  async analyzeMeetingTranscript(data: { transcript: string; projectId: string; scheduleId: string }) {
+    const response = await this.api.post('/meeting-intelligence/analyze', data);
+    return response.data;
+  }
+
+  async applyMeetingChanges(analysisId: string, selectedItems: number[]) {
+    const response = await this.api.post(`/meeting-intelligence/${analysisId}/apply`, { selectedItems });
+    return response.data;
+  }
+
+  async getMeetingHistory(projectId: string) {
+    const response = await this.api.get(`/meeting-intelligence/project/${projectId}/history`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Lessons Learned
+  // -------------------------------------------------------------------------
+
+  async getLessonsKnowledgeBase() {
+    const response = await this.api.get('/lessons-learned/knowledge-base');
+    return response.data;
+  }
+
+  async extractLessons(projectId: string) {
+    const response = await this.api.post(`/lessons-learned/extract/${projectId}`);
+    return response.data;
+  }
+
+  async getRelevantLessons(projectType?: string, category?: string) {
+    const params: Record<string, string> = {};
+    if (projectType) params.projectType = projectType;
+    if (category) params.category = category;
+    const response = await this.api.get('/lessons-learned/relevant', { params });
+    return response.data;
+  }
+
+  async detectPatterns() {
+    const response = await this.api.post('/lessons-learned/patterns');
+    return response.data;
+  }
+
+  async suggestMitigations(riskDescription: string, projectType: string) {
+    const response = await this.api.post('/lessons-learned/mitigations', { riskDescription, projectType });
+    return response.data;
+  }
+
+  async addLesson(data: { projectId: string; projectName: string; projectType: string; category: string; title: string; description: string; impact: string; recommendation: string }) {
+    const response = await this.api.post('/lessons-learned', data);
+    return response.data;
+  }
+
+  async seedLessons() {
+    const response = await this.api.post('/lessons-learned/seed');
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Natural Language Query
+  // -------------------------------------------------------------------------
+
+  async submitNLQuery(data: { query: string; context?: { projectId?: string } }) {
+    const response = await this.api.post('/nl-query', data);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Export (continued)
+  // -------------------------------------------------------------------------
+
   async exportProjectJSON(projectId: string) {
     const response = await this.api.get(`/exports/projects/${projectId}/export?format=json`);
     return response.data;
