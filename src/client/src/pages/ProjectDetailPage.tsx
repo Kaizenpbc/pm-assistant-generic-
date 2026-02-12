@@ -48,6 +48,8 @@ import { ResourceForecastPanel } from '../components/resources/ResourceForecastP
 import { RebalanceSuggestions } from '../components/resources/RebalanceSuggestions';
 import { CapacityChart } from '../components/resources/CapacityChart';
 import { AutoReschedulePanel } from '../components/schedule/AutoReschedulePanel';
+import { TaskPrioritizationPanel } from '../components/ai/TaskPrioritizationPanel';
+import { SaveAsTemplateModal } from '../components/templates/SaveAsTemplateModal';
 
 type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team';
 
@@ -166,6 +168,7 @@ export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
 
   const {
     data: projectData,
@@ -254,6 +257,13 @@ export function ProjectDetailPage() {
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowSaveTemplate(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-lg transition-colors"
+            >
+              <Save className="w-3.5 h-3.5" />
+              Save as Template
+            </button>
             <button
               onClick={() => apiService.exportProjectCSV(id!)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
@@ -357,6 +367,15 @@ export function ProjectDetailPage() {
       {activeTab === 'evm-forecast' && <EVMForecastTab projectId={id!} />}
       {activeTab === 'scenarios' && <ScenariosTab projectId={id!} />}
       {activeTab === 'team' && <TeamTab />}
+
+      {project && (
+        <SaveAsTemplateModal
+          isOpen={showSaveTemplate}
+          onClose={() => setShowSaveTemplate(false)}
+          projectId={id!}
+          projectName={project.name}
+        />
+      )}
     </div>
   );
 }
@@ -912,8 +931,22 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
 // ---------------------------------------------------------------------------
 
 function AIInsightsTab({ projectId }: { projectId: string }) {
+  const { data: schedulesData } = useQuery({
+    queryKey: ['schedules', projectId],
+    queryFn: () => apiService.getSchedules(projectId),
+    enabled: !!projectId,
+  });
+
+  const schedules: any[] = schedulesData?.schedules || [];
+  const firstScheduleId = schedules.length > 0 ? schedules[0].id : null;
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {firstScheduleId && (
+        <div className="lg:col-span-2">
+          <TaskPrioritizationPanel projectId={projectId} scheduleId={firstScheduleId} />
+        </div>
+      )}
       <RiskAssessmentSection projectId={projectId} />
       <WeatherImpactSection projectId={projectId} />
       <div className="lg:col-span-2">

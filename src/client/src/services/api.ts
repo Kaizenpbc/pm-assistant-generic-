@@ -714,6 +714,50 @@ class ApiService {
   }
 
   // -------------------------------------------------------------------------
+  // Templates
+  // -------------------------------------------------------------------------
+
+  async getTemplates(projectType?: string, category?: string) {
+    const params: Record<string, string> = {};
+    if (projectType) params.projectType = projectType;
+    if (category) params.category = category;
+    const response = await this.api.get('/templates', { params });
+    return response.data;
+  }
+
+  async getTemplate(id: string) {
+    const response = await this.api.get(`/templates/${id}`);
+    return response.data;
+  }
+
+  async createTemplate(data: Record<string, unknown>) {
+    const response = await this.api.post('/templates', data);
+    return response.data;
+  }
+
+  async applyTemplate(data: {
+    templateId: string;
+    projectName: string;
+    startDate: string;
+    budget?: number;
+    priority?: string;
+    location?: string;
+  }) {
+    const response = await this.api.post('/templates/apply', data);
+    return response.data;
+  }
+
+  async saveProjectAsTemplate(data: {
+    projectId: string;
+    templateName: string;
+    description?: string;
+    tags?: string[];
+  }) {
+    const response = await this.api.post('/templates/save-from-project', data);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
   // Export (continued)
   // -------------------------------------------------------------------------
 
@@ -839,6 +883,25 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
       w.document.write(html);
       w.document.close();
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Task Prioritization
+  // -------------------------------------------------------------------------
+
+  async getTaskPrioritization(projectId: string, scheduleId: string) {
+    const response = await this.api.get(`/task-prioritization/${projectId}/${scheduleId}/prioritize`);
+    return response.data;
+  }
+
+  async applyTaskPriority(projectId: string, scheduleId: string, taskId: string, priority: string) {
+    const response = await this.api.post(`/task-prioritization/${projectId}/${scheduleId}/apply`, { taskId, priority });
+    return response.data;
+  }
+
+  async applyAllTaskPriorities(projectId: string, scheduleId: string, changes: Array<{ taskId: string; priority: string }>) {
+    const response = await this.api.post(`/task-prioritization/${projectId}/${scheduleId}/apply-all`, { changes });
+    return response.data;
   }
 }
 

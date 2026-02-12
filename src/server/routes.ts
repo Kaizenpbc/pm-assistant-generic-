@@ -24,6 +24,8 @@ import { resourceOptimizerRoutes } from './routes/resourceOptimizer';
 import { meetingIntelligenceRoutes } from './routes/meetingIntelligence';
 import { lessonsLearnedRoutes } from './routes/lessonsLearned';
 import { nlQueryRoutes } from './routes/nlQuery';
+import { templateRoutes } from './routes/templates';
+import { taskPrioritizationRoutes } from './routes/taskPrioritization';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
@@ -51,4 +53,6 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(meetingIntelligenceRoutes, { prefix: '/api/v1/meeting-intelligence' });
   await fastify.register(lessonsLearnedRoutes, { prefix: '/api/v1/lessons-learned' });
   await fastify.register(nlQueryRoutes, { prefix: '/api/v1/nl-query' });
+  await fastify.register(templateRoutes, { prefix: '/api/v1/templates' });
+  await fastify.register(taskPrioritizationRoutes, { prefix: '/api/v1/task-prioritization' });
 }
