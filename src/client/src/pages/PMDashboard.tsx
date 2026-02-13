@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -12,6 +12,7 @@ import {
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
 import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
+import { TemplatePicker } from '../components/templates/TemplatePicker';
 
 interface Project {
   id: string;
@@ -43,6 +44,7 @@ const priorityStyles: Record<string, string> = {
 
 export const PMDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
   useEffect(() => {
     useUIStore.getState().setAIPanelContext({ type: 'dashboard' });
@@ -73,7 +75,10 @@ export const PMDashboard: React.FC = () => {
             Manage your projects and track progress.
           </p>
         </div>
-        <button className="btn btn-primary flex items-center gap-2">
+        <button
+          onClick={() => setShowTemplatePicker(true)}
+          className="btn btn-primary flex items-center gap-2"
+        >
           <Plus className="w-4 h-4" />
           New Project
         </button>
@@ -188,6 +193,11 @@ export const PMDashboard: React.FC = () => {
           })}
         </div>
       )}
+
+      <TemplatePicker
+        isOpen={showTemplatePicker}
+        onClose={() => setShowTemplatePicker(false)}
+      />
     </div>
   );
 };

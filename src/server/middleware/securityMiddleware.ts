@@ -48,7 +48,9 @@ export async function securityValidationMiddleware(
 
   if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
     const contentType = request.headers['content-type'];
-    if (!contentType || !contentType.includes('application/json')) {
+    const bodyLength = parseInt(request.headers['content-length'] || '0');
+    // Only enforce Content-Type when request has a body
+    if (bodyLength > 0 && (!contentType || !contentType.includes('application/json'))) {
       reply.code(400).send({ error: 'Invalid content type' });
       return;
     }

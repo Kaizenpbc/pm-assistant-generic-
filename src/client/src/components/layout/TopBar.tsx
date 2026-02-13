@@ -22,6 +22,11 @@ function buildBreadcrumbs(pathname: string): Breadcrumb[] {
   const segments = pathname.split('/').filter(Boolean);
   const crumbs: Breadcrumb[] = [{ label: 'Home', path: '/dashboard' }];
 
+  // Skip adding "Dashboard" segment since Home already points to /dashboard
+  if (segments.length === 1 && segments[0] === 'dashboard') {
+    return crumbs;
+  }
+
   let currentPath = '';
   for (const segment of segments) {
     currentPath += `/${segment}`;

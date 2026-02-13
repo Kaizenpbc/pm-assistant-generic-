@@ -4,6 +4,7 @@ import { useAuthStore } from './stores/authStore';
 import AppLayout from './components/layout/AppLayout';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardRouter } from './pages/DashboardRouter';
+import { PMDashboard } from './pages/PMDashboard';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { ScenarioModelingPage } from './pages/ScenarioModelingPage';
@@ -53,6 +54,7 @@ function App() {
 
         {/* Protected routes */}
         <Route path="/dashboard" element={<PrivateRoute><DashboardRouter /></PrivateRoute>} />
+        <Route path="/projects" element={<PrivateRoute><PMDashboard /></PrivateRoute>} />
         <Route path="/project/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
         <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
         <Route path="/scenarios" element={<PrivateRoute><ScenarioModelingPage /></PrivateRoute>} />

@@ -39,8 +39,8 @@ class ApiService {
           originalRequest._retry = true;
 
           try {
-            // Try to refresh the token
-            await this.api.post('/auth/refresh');
+            // Try to refresh the token (empty body ensures Content-Type is sent)
+            await this.api.post('/auth/refresh', {});
             return this.api(originalRequest);
           } catch (_refreshError) {
             // Refresh failed, redirect to login
@@ -742,6 +742,7 @@ class ApiService {
     budget?: number;
     priority?: string;
     location?: string;
+    selectedTaskRefIds?: string[];
   }) {
     const response = await this.api.post('/templates/apply', data);
     return response.data;
