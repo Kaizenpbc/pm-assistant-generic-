@@ -1,3 +1,6 @@
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
+
 export interface Project {
   id: string;
   name: string;
@@ -102,8 +105,30 @@ export class ProjectService {
   ];
 
   private get projects() { return ProjectService.projects; }
+  private get useDb() { return databaseService.isHealthy(); }
+
+  private rowToProject(row: any): Project {
+    const camel = toCamelCaseKeys(row);
+    return {
+      ...camel,
+      budgetAllocated: camel.budgetAllocated != null ? Number(camel.budgetAllocated) : undefined,
+      budgetSpent: Number(camel.budgetSpent),
+      locationLat: camel.locationLat != null ? Number(camel.locationLat) : undefined,
+      locationLon: camel.locationLon != null ? Number(camel.locationLon) : undefined,
+      startDate: camel.startDate ? new Date(camel.startDate) : undefined,
+      endDate: camel.endDate ? new Date(camel.endDate) : undefined,
+      createdAt: new Date(camel.createdAt),
+      updatedAt: new Date(camel.updatedAt),
+    } as Project;
+  }
 
   async findById(id: string, userId?: string): Promise<Project | null> {
+    if (this.useDb) {
+      const rows = userId
+        ? await databaseService.query('SELECT * FROM projects WHERE id = ? AND created_by = ?', [id, userId])
+        : await databaseService.query('SELECT * FROM projects WHERE id = ?', [id]);
+      return rows.length > 0 ? this.rowToProject(rows[0]) : null;
+    }
     if (userId) {
       return this.projects.find(p => p.id === id && p.createdBy === userId) || null;
     }
@@ -111,39 +136,121 @@ export class ProjectService {
   }
 
   async findByUserId(userId: string): Promise<Project[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM projects WHERE created_by = ?', [userId]);
+      return rows.map((r: any) => this.rowToProject(r));
+    }
     return this.projects.filter(project => project.createdBy === userId);
   }
 
   async findAll(): Promise<Project[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM projects');
+      return rows.map((r: any) => this.rowToProject(r));
+    }
     return this.projects;
   }
 
   async create(data: CreateProjectData): Promise<Project> {
+    const id = Math.random().toString(36).substr(2, 9);
+    const now = new Date();
+    const projectType = data.projectType || 'other';
+    const status = data.status || 'planning';
+    const priority = data.priority || 'medium';
+    const currency = data.currency || 'USD';
+
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO projects (id, name, description, category, project_type, status, priority, budget_allocated, budget_spent, currency, location, location_lat, location_lon, start_date, end_date, created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, data.name, data.description ?? null, data.category ?? null, projectType, status, priority, data.budgetAllocated ?? null, 0, currency, data.location ?? null, data.locationLat ?? null, data.locationLon ?? null, data.startDate ?? null, data.endDate ?? null, data.userId, now, now],
+      );
+      return {
+        id,
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        projectType,
+        status,
+        priority,
+        budgetAllocated: data.budgetAllocated,
+        budgetSpent: 0,
+        currency,
+        location: data.location,
+        locationLat: data.locationLat,
+        locationLon: data.locationLon,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        createdBy: data.userId,
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
+
     const project: Project = {
-      id: Math.random().toString(36).substr(2, 9),
+      id,
       name: data.name,
       description: data.description,
       category: data.category,
-      projectType: data.projectType || 'other',
-      status: data.status || 'planning',
-      priority: data.priority || 'medium',
+      projectType,
+      status,
+      priority,
       budgetAllocated: data.budgetAllocated,
       budgetSpent: 0,
-      currency: data.currency || 'USD',
+      currency,
       location: data.location,
       locationLat: data.locationLat,
       locationLon: data.locationLon,
       startDate: data.startDate,
       endDate: data.endDate,
       createdBy: data.userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     };
     ProjectService.projects.push(project);
     return project;
   }
 
   async update(id: string, data: Partial<Omit<Project, 'id' | 'createdBy' | 'createdAt' | 'updatedAt'>>, userId?: string): Promise<Project | null> {
+    if (this.useDb) {
+      const setClauses: string[] = [];
+      const values: any[] = [];
+      const fieldMap: Record<string, string> = {
+        name: 'name',
+        description: 'description',
+        category: 'category',
+        projectType: 'project_type',
+        status: 'status',
+        priority: 'priority',
+        budgetAllocated: 'budget_allocated',
+        budgetSpent: 'budget_spent',
+        currency: 'currency',
+        location: 'location',
+        locationLat: 'location_lat',
+        locationLon: 'location_lon',
+        startDate: 'start_date',
+        endDate: 'end_date',
+        projectManagerId: 'project_manager_id',
+      };
+      for (const [key, col] of Object.entries(fieldMap)) {
+        if ((data as any)[key] !== undefined) {
+          setClauses.push(`${col} = ?`);
+          values.push((data as any)[key]);
+        }
+      }
+      if (setClauses.length === 0) return this.findById(id, userId);
+      setClauses.push('updated_at = ?');
+      values.push(new Date());
+      if (userId) {
+        values.push(id, userId);
+        await databaseService.query(`UPDATE projects SET ${setClauses.join(', ')} WHERE id = ? AND created_by = ?`, values);
+      } else {
+        values.push(id);
+        await databaseService.query(`UPDATE projects SET ${setClauses.join(', ')} WHERE id = ?`, values);
+      }
+      return this.findById(id, userId);
+    }
+
     const projectIndex = userId
       ? this.projects.findIndex(p => p.id === id && p.createdBy === userId)
       : this.projects.findIndex(p => p.id === id);
@@ -153,6 +260,14 @@ export class ProjectService {
   }
 
   async delete(id: string, userId?: string): Promise<boolean> {
+    if (this.useDb) {
+      if (userId) {
+        await databaseService.query('DELETE FROM projects WHERE id = ? AND created_by = ?', [id, userId]);
+      } else {
+        await databaseService.query('DELETE FROM projects WHERE id = ?', [id]);
+      }
+      return true;
+    }
     const projectIndex = userId
       ? this.projects.findIndex(p => p.id === id && p.createdBy === userId)
       : this.projects.findIndex(p => p.id === id);

@@ -1,4 +1,6 @@
 import { ScheduleService } from './ScheduleService';
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
 
 export interface BaselineTask {
   taskId: string;
@@ -85,6 +87,17 @@ export class BaselineService {
     return BaselineService.baselines;
   }
 
+  private get useDb() { return databaseService.isHealthy(); }
+
+  private rowToBaseline(row: any): Baseline {
+    const c = toCamelCaseKeys(row);
+    return {
+      ...c,
+      createdAt: new Date(c.createdAt).toISOString(),
+      tasks: c.tasks as BaselineTask[],
+    } as Baseline;
+  }
+
   async create(scheduleId: string, name: string, createdBy: string): Promise<Baseline> {
     const scheduleService = new ScheduleService();
     const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
@@ -99,11 +112,30 @@ export class BaselineService {
       status: t.status,
     }));
 
+    const id = `bl-${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date();
+
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO baselines (id, schedule_id, name, created_at, created_by, tasks)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, scheduleId, name, now, createdBy, JSON.stringify(baselineTasks)],
+      );
+      return {
+        id,
+        scheduleId,
+        name,
+        createdAt: now.toISOString(),
+        createdBy,
+        tasks: baselineTasks,
+      };
+    }
+
     const baseline: Baseline = {
-      id: `bl-${Math.random().toString(36).substr(2, 9)}`,
+      id,
       scheduleId,
       name,
-      createdAt: new Date().toISOString(),
+      createdAt: now.toISOString(),
       createdBy,
       tasks: baselineTasks,
     };
@@ -113,14 +145,26 @@ export class BaselineService {
   }
 
   async findByScheduleId(scheduleId: string): Promise<Baseline[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM baselines WHERE schedule_id = ?', [scheduleId]);
+      return rows.map((r: any) => this.rowToBaseline(r));
+    }
     return this.baselines.filter((b) => b.scheduleId === scheduleId);
   }
 
   async findById(id: string): Promise<Baseline | null> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM baselines WHERE id = ?', [id]);
+      return rows.length > 0 ? this.rowToBaseline(rows[0]) : null;
+    }
     return this.baselines.find((b) => b.id === id) || null;
   }
 
   async delete(id: string): Promise<boolean> {
+    if (this.useDb) {
+      await databaseService.query('DELETE FROM baselines WHERE id = ?', [id]);
+      return true;
+    }
     const idx = this.baselines.findIndex((b) => b.id === id);
     if (idx === -1) return false;
     BaselineService.baselines.splice(idx, 1);

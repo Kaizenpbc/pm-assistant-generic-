@@ -1,4 +1,6 @@
 import { ScheduleService } from './ScheduleService';
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
 
 export interface Resource {
   id: string;
@@ -171,27 +173,87 @@ export class ResourceService {
 
   private get resources() { return ResourceService.resources; }
   private get assignments() { return ResourceService.assignments; }
+  private get useDb() { return databaseService.isHealthy(); }
+
+  // --- Row-to-model mappers ---
+
+  private rowToResource(row: any): Resource {
+    const camel = toCamelCaseKeys(row);
+    return {
+      ...camel,
+      isActive: Boolean(camel.isActive),
+    } as Resource;
+  }
+
+  private rowToAssignment(row: any): ResourceAssignment {
+    const camel = toCamelCaseKeys(row);
+    return {
+      ...camel,
+      startDate: row.start_date instanceof Date ? row.start_date.toISOString().split('T')[0] : String(camel.startDate),
+      endDate: row.end_date instanceof Date ? row.end_date.toISOString().split('T')[0] : String(camel.endDate),
+    } as ResourceAssignment;
+  }
 
   // --- Resource CRUD ---
 
   async findAllResources(): Promise<Resource[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM resources', []);
+      return rows.map((r: any) => this.rowToResource(r));
+    }
     return [...this.resources];
   }
 
   async findResourceById(id: string): Promise<Resource | null> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM resources WHERE id = ?', [id]);
+      return rows.length > 0 ? this.rowToResource(rows[0]) : null;
+    }
     return this.resources.find((r) => r.id === id) || null;
   }
 
   async createResource(data: Omit<Resource, 'id'>): Promise<Resource> {
-    const resource: Resource = {
-      id: `res-${Math.random().toString(36).substr(2, 9)}`,
-      ...data,
-    };
+    const id = `res-${Math.random().toString(36).substr(2, 9)}`;
+
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO resources (id, name, role, email, capacity_hours_per_week, skills, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, data.name, data.role, data.email, data.capacityHoursPerWeek, JSON.stringify(data.skills), data.isActive],
+      );
+      return { id, ...data };
+    }
+
+    const resource: Resource = { id, ...data };
     ResourceService.resources.push(resource);
     return resource;
   }
 
   async updateResource(id: string, data: Partial<Omit<Resource, 'id'>>): Promise<Resource | null> {
+    if (this.useDb) {
+      const setClauses: string[] = [];
+      const values: any[] = [];
+      const fieldMap: Record<string, string> = {
+        name: 'name',
+        role: 'role',
+        email: 'email',
+        capacityHoursPerWeek: 'capacity_hours_per_week',
+        skills: 'skills',
+        isActive: 'is_active',
+      };
+      for (const [key, col] of Object.entries(fieldMap)) {
+        if ((data as any)[key] !== undefined) {
+          const val = key === 'skills' ? JSON.stringify((data as any)[key]) : (data as any)[key];
+          setClauses.push(`${col} = ?`);
+          values.push(val);
+        }
+      }
+      if (setClauses.length === 0) return this.findResourceById(id);
+      values.push(id);
+      await databaseService.query(`UPDATE resources SET ${setClauses.join(', ')} WHERE id = ?`, values);
+      return this.findResourceById(id);
+    }
+
     const idx = this.resources.findIndex((r) => r.id === id);
     if (idx === -1) return null;
     ResourceService.resources[idx] = { ...this.resources[idx], ...data };
@@ -199,6 +261,14 @@ export class ResourceService {
   }
 
   async deleteResource(id: string): Promise<boolean> {
+    if (this.useDb) {
+      await databaseService.transaction(async (connection) => {
+        await connection.execute('DELETE FROM resource_assignments WHERE resource_id = ?', [id]);
+        await connection.execute('DELETE FROM resources WHERE id = ?', [id]);
+      });
+      return true;
+    }
+
     const idx = this.resources.findIndex((r) => r.id === id);
     if (idx === -1) return false;
     ResourceService.resources.splice(idx, 1);
@@ -209,23 +279,44 @@ export class ResourceService {
   // --- Assignment CRUD ---
 
   async findAssignmentsBySchedule(scheduleId: string): Promise<ResourceAssignment[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM resource_assignments WHERE schedule_id = ?', [scheduleId]);
+      return rows.map((r: any) => this.rowToAssignment(r));
+    }
     return this.assignments.filter((a) => a.scheduleId === scheduleId);
   }
 
   async findAssignmentsByResource(resourceId: string): Promise<ResourceAssignment[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM resource_assignments WHERE resource_id = ?', [resourceId]);
+      return rows.map((r: any) => this.rowToAssignment(r));
+    }
     return this.assignments.filter((a) => a.resourceId === resourceId);
   }
 
   async createAssignment(data: Omit<ResourceAssignment, 'id'>): Promise<ResourceAssignment> {
-    const assignment: ResourceAssignment = {
-      id: `asgn-${Math.random().toString(36).substr(2, 9)}`,
-      ...data,
-    };
+    const id = `asgn-${Math.random().toString(36).substr(2, 9)}`;
+
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO resource_assignments (id, resource_id, task_id, schedule_id, hours_per_week, start_date, end_date)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, data.resourceId, data.taskId, data.scheduleId, data.hoursPerWeek, data.startDate, data.endDate],
+      );
+      return { id, ...data };
+    }
+
+    const assignment: ResourceAssignment = { id, ...data };
     ResourceService.assignments.push(assignment);
     return assignment;
   }
 
   async deleteAssignment(id: string): Promise<boolean> {
+    if (this.useDb) {
+      await databaseService.query('DELETE FROM resource_assignments WHERE id = ?', [id]);
+      return true;
+    }
+
     const idx = this.assignments.findIndex((a) => a.id === id);
     if (idx === -1) return false;
     ResourceService.assignments.splice(idx, 1);
@@ -240,7 +331,21 @@ export class ResourceService {
     const scheduleIds = new Set(schedules.map((s) => s.id));
 
     // Get all assignments for this project
-    const projectAssignments = this.assignments.filter((a) => scheduleIds.has(a.scheduleId));
+    let projectAssignments: ResourceAssignment[];
+    if (this.useDb) {
+      if (scheduleIds.size === 0) {
+        projectAssignments = [];
+      } else {
+        const placeholders = [...scheduleIds].map(() => '?').join(', ');
+        const rows = await databaseService.query(
+          `SELECT * FROM resource_assignments WHERE schedule_id IN (${placeholders})`,
+          [...scheduleIds],
+        );
+        projectAssignments = rows.map((r: any) => this.rowToAssignment(r));
+      }
+    } else {
+      projectAssignments = this.assignments.filter((a) => scheduleIds.has(a.scheduleId));
+    }
 
     // Determine date range
     const DAY_MS = 86_400_000;
@@ -281,7 +386,12 @@ export class ResourceService {
     const workloads: ResourceWorkload[] = [];
 
     for (const resId of involvedResourceIds) {
-      const resource = this.resources.find((r) => r.id === resId);
+      let resource: Resource | null;
+      if (this.useDb) {
+        resource = await this.findResourceById(resId);
+      } else {
+        resource = this.resources.find((r) => r.id === resId) || null;
+      }
       if (!resource) continue;
 
       const resAssignments = projectAssignments.filter((a) => a.resourceId === resId);
