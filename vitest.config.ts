@@ -5,6 +5,35 @@ export default defineConfig({
   test: {
     globals: true,
     testTimeout: 30000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      include: [
+        'src/server/services/**/*.ts',
+        'src/server/middleware/**/*.ts',
+        'src/server/routes/**/*.ts',
+        'src/server/schemas/**/*.ts',
+        'src/client/src/stores/**/*.ts',
+        'src/client/src/pages/**/*.tsx',
+        'src/client/src/components/**/*.tsx',
+      ],
+      exclude: [
+        '**/__tests__/**',
+        '**/test-utils/**',
+        '**/node_modules/**',
+        '**/*.test.{ts,tsx}',
+      ],
+      thresholds: {
+        // Start conservative — increase over time
+        'src/server/services/**': {
+          statements: 50,
+          branches: 40,
+          functions: 50,
+          lines: 50,
+        },
+      },
+    },
     projects: [
       // Backend tests — node environment, no React aliases
       {
