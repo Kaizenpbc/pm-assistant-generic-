@@ -32,10 +32,11 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
   return (
     <button
       onClick={onClick}
-      className="bg-white rounded-xl border border-gray-200 p-5 text-left hover:shadow-lg hover:border-indigo-300 transition-all duration-200 w-full group focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+      className="bg-white rounded-xl border border-gray-200 p-6 text-left hover:shadow-lg hover:border-indigo-300 transition-all duration-200 w-full group focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
       aria-label={`Portfolio: ${portfolioName}. ${pmCount} PMs, ${projectCount} projects. ${onTrack} on track, ${atRisk} at risk, ${delayed} delayed.`}
     >
-      <div className="flex items-start justify-between mb-3">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
             <Briefcase className="w-5 h-5 text-indigo-600" />
@@ -50,7 +51,7 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-gray-400" aria-hidden="true" />
           <span className="text-sm text-gray-600">{pmCount} PMs</span>
@@ -61,24 +62,30 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
         </div>
       </div>
 
-      {/* Status Pills (WCAG 1.4.1 - not color-only, includes text labels + icons) */}
-      <div className="flex gap-2 mb-3">
-        <span className="inline-flex items-center gap-1 text-sm px-2.5 py-1 rounded-full bg-green-50 text-green-700">
-          <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" /> {onTrack} On Track
-        </span>
-        <span className="inline-flex items-center gap-1 text-sm px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-700">
-          <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" /> {atRisk} At Risk
-        </span>
-        <span className="inline-flex items-center gap-1 text-sm px-2.5 py-1 rounded-full bg-red-50 text-red-700">
-          <Clock className="w-3.5 h-3.5" aria-hidden="true" /> {delayed} Delayed
-        </span>
+      {/* Status indicators — grid layout for consistent spacing (WCAG 1.4.1) */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="flex flex-col items-center rounded-lg bg-green-50 py-2 px-1">
+          <TrendingUp className="w-4 h-4 text-green-600 mb-1" aria-hidden="true" />
+          <span className="text-lg font-bold text-green-700">{onTrack}</span>
+          <span className="text-xs text-green-600">On Track</span>
+        </div>
+        <div className="flex flex-col items-center rounded-lg bg-yellow-50 py-2 px-1">
+          <AlertTriangle className="w-4 h-4 text-yellow-600 mb-1" aria-hidden="true" />
+          <span className="text-lg font-bold text-yellow-700">{atRisk}</span>
+          <span className="text-xs text-yellow-600">At Risk</span>
+        </div>
+        <div className="flex flex-col items-center rounded-lg bg-red-50 py-2 px-1">
+          <Clock className="w-4 h-4 text-red-600 mb-1" aria-hidden="true" />
+          <span className="text-lg font-bold text-red-700">{delayed}</span>
+          <span className="text-xs text-red-600">Delayed</span>
+        </div>
       </div>
 
       {/* Budget Bar */}
       <div>
-        <div className="flex justify-between text-sm text-gray-500 mb-1">
+        <div className="flex justify-between text-sm text-gray-500 mb-1.5">
           <span>Budget</span>
-          <span>${(totalSpent / 1e6).toFixed(1)}M / ${(totalBudget / 1e6).toFixed(1)}M ({budgetPct}%)</span>
+          <span className="font-medium">${(totalSpent / 1e6).toFixed(1)}M / ${(totalBudget / 1e6).toFixed(1)}M ({budgetPct}%)</span>
         </div>
         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
           <div
