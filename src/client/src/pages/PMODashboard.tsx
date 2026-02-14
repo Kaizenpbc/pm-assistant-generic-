@@ -73,10 +73,10 @@ export const PMODashboard: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900">
               {portfolioName || 'Portfolio'} — PMs
             </h1>
-            <p className="text-sm text-gray-500">{pms.length} project managers</p>
+            <p className="text-base text-gray-500">{pms.length} project managers</p>
           </div>
         </div>
 
@@ -107,8 +107,8 @@ export const PMODashboard: React.FC = () => {
           <Briefcase className="w-5 h-5 text-indigo-600" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Portfolio Overview</h1>
-          <p className="text-sm text-gray-500">{portfolios.length} portfolios</p>
+          <h1 className="text-2xl font-bold text-gray-900">Portfolio Overview</h1>
+          <p className="text-base text-gray-500">{portfolios.length} portfolios</p>
         </div>
       </div>
 

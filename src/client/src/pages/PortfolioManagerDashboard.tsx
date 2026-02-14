@@ -39,8 +39,8 @@ export const PortfolioManagerDashboard: React.FC = () => {
           <Users className="w-5 h-5 text-indigo-600" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">My PMs</h1>
-          <p className="text-sm text-gray-500">{pms.length} project managers in your portfolios</p>
+          <h1 className="text-2xl font-bold text-gray-900">My PMs</h1>
+          <p className="text-base text-gray-500">{pms.length} project managers in your portfolios</p>
         </div>
       </div>
 
