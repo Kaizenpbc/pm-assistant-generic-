@@ -383,6 +383,42 @@ async function migrate() {
       }
     }
 
+    // ── Post-creation ALTER statements (idempotent) ─────────────────────────
+    // These handle upgrading existing tables that were created before the
+    // hierarchical role model was introduced.
+
+    const ALTERS: { description: string; sql: string }[] = [
+      {
+        description: 'users.role → new ENUM (admin, pmo_manager, portfolio_manager, pm)',
+        sql: `ALTER TABLE users MODIFY COLUMN role ENUM('admin','pmo_manager','portfolio_manager','pm') NOT NULL DEFAULT 'pm'`,
+      },
+      {
+        description: 'projects.portfolio_id column',
+        sql: `ALTER TABLE projects ADD COLUMN portfolio_id VARCHAR(36) DEFAULT NULL`,
+      },
+      {
+        description: 'projects.portfolio_id index',
+        sql: `ALTER TABLE projects ADD INDEX idx_projects_portfolio (portfolio_id)`,
+      },
+    ];
+
+    for (const alter of ALTERS) {
+      try {
+        await connection.execute(alter.sql);
+        console.log(`  ✓ ALTER: ${alter.description}`);
+      } catch (err: unknown) {
+        const code = (err as { code?: string }).code;
+        // ER_DUP_FIELDNAME (1060) = column already exists
+        // ER_DUP_KEYNAME (1061) = index already exists
+        if (code === 'ER_DUP_FIELDNAME' || code === 'ER_DUP_KEYNAME') {
+          console.log(`  · ALTER: ${alter.description} (already applied)`);
+        } else {
+          console.error(`  ✗ ALTER: ${alter.description}: ${err instanceof Error ? err.message : err}`);
+          throw err;
+        }
+      }
+    }
+
     console.log(`\nMigration complete — ${TABLES.length} tables created/verified.`);
   } catch (err) {
     console.error('\nMigration failed:', err instanceof Error ? err.message : err);
