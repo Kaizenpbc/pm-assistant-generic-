@@ -15,8 +15,9 @@ import {
   MessageSquare,
   BookOpen,
   Search,
+  Shield,
 } from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore, UserRole } from '../../stores/authStore';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -27,7 +28,7 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   path: string;
-  roles?: Array<'admin' | 'executive' | 'manager' | 'member'>;
+  roles?: UserRole[];
 }
 
 const navItems: NavItem[] = [
@@ -82,10 +83,16 @@ const navItems: NavItem[] = [
     path: '/query',
   },
   {
+    label: 'Admin',
+    icon: Shield,
+    path: '/admin',
+    roles: ['admin'],
+  },
+  {
     label: 'Settings',
     icon: Settings,
     path: '/settings',
-    roles: ['admin', 'manager'],
+    roles: ['admin'],
   },
 ];
 
@@ -222,8 +229,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             <p className="text-sm font-medium text-white truncate">
               {user?.fullName || 'Unknown User'}
             </p>
-            <p className="text-xs text-sidebar-text/60 truncate capitalize">
-              {user?.role || 'No role'}
+            <p className="text-xs text-sidebar-text/60 truncate">
+              {user?.role ? user.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'No role'}
             </p>
           </div>
         </div>

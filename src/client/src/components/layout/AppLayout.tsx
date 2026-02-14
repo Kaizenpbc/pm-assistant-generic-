@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import FilterBar from './FilterBar';
 import { Sparkles, X } from 'lucide-react';
 import { AIChatPanel } from '../ai/AIChatPanel';
 import { useUIStore } from '../../stores/uiStore';
@@ -124,6 +125,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       >
         {/* Top Bar */}
         <TopBar />
+
+        {/* Filter Bar (for portfolio_manager, pmo_manager, admin) */}
+        <FilterBar />
 
         {/* Main Content */}
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto" id="main-content">

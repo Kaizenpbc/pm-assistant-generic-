@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
+import { useFilterStore } from '../stores/filterStore';
 import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
 import { TemplatePicker } from '../components/templates/TemplatePicker';
 
@@ -45,14 +46,15 @@ const priorityStyles: Record<string, string> = {
 export const PMDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const { selectedPortfolioId, selectedPmUserId } = useFilterStore();
 
   useEffect(() => {
     useUIStore.getState().setAIPanelContext({ type: 'dashboard' });
   }, []);
 
   const { data: projectsData, isLoading } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => apiService.getProjects(),
+    queryKey: ['projects', selectedPortfolioId, selectedPmUserId],
+    queryFn: () => apiService.getProjects({ portfolioId: selectedPortfolioId, pmUserId: selectedPmUserId }),
   });
 
   const projects: Project[] = projectsData?.projects || [];
