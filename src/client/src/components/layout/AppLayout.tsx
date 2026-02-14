@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import FilterBar from './FilterBar';
 import { Sparkles, X } from 'lucide-react';
 import { AIChatPanel } from '../ai/AIChatPanel';
 import { useUIStore } from '../../stores/uiStore';
@@ -109,6 +110,17 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Skip to main content link (WCAG 2.4.1) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
+      {/* Live region for dynamic announcements (WCAG 4.1.3) */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only" id="a11y-announcer" />
+
       {/* Sidebar */}
       {showSidebar && (
         <Sidebar collapsed={effectiveCollapsed} onToggle={handleSidebarToggle} />
@@ -124,6 +136,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       >
         {/* Top Bar */}
         <TopBar />
+
+        {/* Filter Bar (for portfolio_manager, pmo_manager, admin) */}
+        <FilterBar />
 
         {/* Main Content */}
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto" id="main-content">

@@ -2,6 +2,8 @@ import { claudeService, PromptTemplate } from './claudeService';
 import { ProjectService } from './ProjectService';
 import { ScheduleService } from './ScheduleService';
 import { config } from '../config';
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
 import {
   LessonsExtractionAISchema,
   PatternDetectionAISchema,
@@ -80,6 +82,29 @@ Be specific and base suggestions on the historical data provided.`,
 export class LessonsLearnedService {
   private static lessons: LessonLearned[] = [];
   private static patterns: Pattern[] = [];
+
+  private get useDb() { return databaseService.isHealthy(); }
+
+  // -----------------------------------------------------------------------
+  // Row-to-model mappers
+  // -----------------------------------------------------------------------
+
+  private rowToLesson(row: any): LessonLearned {
+    const c = toCamelCaseKeys(row);
+    return {
+      ...c,
+      createdAt: new Date(c.createdAt).toISOString(),
+    } as LessonLearned;
+  }
+
+  private rowToPattern(row: any): Pattern {
+    const c = toCamelCaseKeys(row);
+    return {
+      ...c,
+      // project_types is JSON — mysql2 auto-parses it
+      projectTypes: c.projectTypes,
+    } as Pattern;
+  }
 
   // -----------------------------------------------------------------------
   // Seed initial lessons deterministically from existing project data
@@ -228,6 +253,17 @@ export class LessonsLearnedService {
       }
     }
 
+    // Persist to DB if available
+    if (this.useDb) {
+      for (const lesson of seededLessons) {
+        await databaseService.query(
+          `INSERT INTO lessons_learned (id, project_id, project_name, project_type, category, title, description, impact, recommendation, confidence, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [lesson.id, lesson.projectId, lesson.projectName, lesson.projectType, lesson.category, lesson.title, lesson.description, lesson.impact, lesson.recommendation, lesson.confidence, new Date(lesson.createdAt)],
+        );
+      }
+    }
+
     LessonsLearnedService.lessons.push(...seededLessons);
     return seededLessons.length;
   }
@@ -308,6 +344,17 @@ export class LessonsLearnedService {
           confidence: l.confidence,
           createdAt: new Date().toISOString(),
         }));
+
+        // Persist to DB if available
+        if (this.useDb) {
+          for (const lesson of newLessons) {
+            await databaseService.query(
+              `INSERT INTO lessons_learned (id, project_id, project_name, project_type, category, title, description, impact, recommendation, confidence, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [lesson.id, lesson.projectId, lesson.projectName, lesson.projectType, lesson.category, lesson.title, lesson.description, lesson.impact, lesson.recommendation, lesson.confidence, new Date(lesson.createdAt)],
+            );
+          }
+        }
 
         // Store and return
         LessonsLearnedService.lessons.push(...newLessons);
@@ -415,8 +462,18 @@ export class LessonsLearnedService {
   // -----------------------------------------------------------------------
 
   async getKnowledgeBase(): Promise<KnowledgeBaseOverview> {
-    const lessons = LessonsLearnedService.lessons;
-    const patterns = LessonsLearnedService.patterns;
+    let lessons: LessonLearned[];
+    let patterns: Pattern[];
+
+    if (this.useDb) {
+      const lessonRows = await databaseService.query('SELECT * FROM lessons_learned');
+      lessons = lessonRows.map((r: any) => this.rowToLesson(r));
+      const patternRows = await databaseService.query('SELECT * FROM patterns');
+      patterns = patternRows.map((r: any) => this.rowToPattern(r));
+    } else {
+      lessons = LessonsLearnedService.lessons;
+      patterns = LessonsLearnedService.patterns;
+    }
 
     const byCategory: Record<string, number> = {};
     const byProjectType: Record<string, number> = {};
@@ -449,6 +506,22 @@ export class LessonsLearnedService {
   // -----------------------------------------------------------------------
 
   async findRelevantLessons(projectType?: string, category?: string): Promise<LessonLearned[]> {
+    if (this.useDb) {
+      const conditions: string[] = [];
+      const values: any[] = [];
+      if (projectType) {
+        conditions.push('project_type = ?');
+        values.push(projectType);
+      }
+      if (category) {
+        conditions.push('category = ?');
+        values.push(category);
+      }
+      const where = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '';
+      const rows = await databaseService.query(`SELECT * FROM lessons_learned${where} ORDER BY confidence DESC`, values);
+      return rows.map((r: any) => this.rowToLesson(r));
+    }
+
     let results = [...LessonsLearnedService.lessons];
 
     if (projectType) {
@@ -512,6 +585,18 @@ export class LessonsLearnedService {
           confidence: p.confidence,
         }));
 
+        // Persist to DB if available
+        if (this.useDb) {
+          await databaseService.query('TRUNCATE TABLE patterns');
+          for (const pattern of newPatterns) {
+            await databaseService.query(
+              `INSERT INTO patterns (id, title, description, frequency, project_types, category, recommendation, confidence)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [pattern.id, pattern.title, pattern.description, pattern.frequency, JSON.stringify(pattern.projectTypes), pattern.category, pattern.recommendation, pattern.confidence],
+            );
+          }
+        }
+
         LessonsLearnedService.patterns = newPatterns;
         return newPatterns;
       } catch {
@@ -573,6 +658,19 @@ export class LessonsLearnedService {
       }
     }
 
+    // Persist to DB if available
+    if (this.useDb) {
+      databaseService.query('TRUNCATE TABLE patterns').then(() => {
+        for (const pattern of detectedPatterns) {
+          databaseService.query(
+            `INSERT INTO patterns (id, title, description, frequency, project_types, category, recommendation, confidence)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [pattern.id, pattern.title, pattern.description, pattern.frequency, JSON.stringify(pattern.projectTypes), pattern.category, pattern.recommendation, pattern.confidence],
+          );
+        }
+      });
+    }
+
     LessonsLearnedService.patterns = detectedPatterns;
     return detectedPatterns;
   }
@@ -587,15 +685,31 @@ export class LessonsLearnedService {
     _userId?: string,
   ): Promise<MitigationSuggestion[]> {
     // Find relevant historical lessons
-    const relevantLessons = LessonsLearnedService.lessons.filter((l) => {
-      const typeMatch = l.projectType === projectType;
+    let relevantLessons: LessonLearned[];
+
+    if (this.useDb) {
       const descLower = riskDescription.toLowerCase();
-      const categoryMatch =
-        descLower.includes(l.category) ||
-        l.title.toLowerCase().includes(descLower.split(' ')[0]) ||
-        l.description.toLowerCase().includes(descLower.split(' ')[0]);
-      return typeMatch || categoryMatch;
-    });
+      const firstWord = descLower.split(' ')[0];
+      const rows = await databaseService.query(
+        `SELECT * FROM lessons_learned
+         WHERE project_type = ?
+            OR category LIKE ?
+            OR LOWER(title) LIKE ?
+            OR LOWER(description) LIKE ?`,
+        [projectType, `%${firstWord}%`, `%${firstWord}%`, `%${firstWord}%`],
+      );
+      relevantLessons = rows.map((r: any) => this.rowToLesson(r));
+    } else {
+      relevantLessons = LessonsLearnedService.lessons.filter((l) => {
+        const typeMatch = l.projectType === projectType;
+        const descLower = riskDescription.toLowerCase();
+        const categoryMatch =
+          descLower.includes(l.category) ||
+          l.title.toLowerCase().includes(descLower.split(' ')[0]) ||
+          l.description.toLowerCase().includes(descLower.split(' ')[0]);
+        return typeMatch || categoryMatch;
+      });
+    }
 
     if (config.AI_ENABLED && claudeService.isAvailable() && relevantLessons.length > 0) {
       try {
@@ -727,6 +841,15 @@ export class LessonsLearnedService {
       confidence: data.confidence ?? 80,
       createdAt: new Date().toISOString(),
     };
+
+    // Persist to DB if available
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO lessons_learned (id, project_id, project_name, project_type, category, title, description, impact, recommendation, confidence, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [lesson.id, lesson.projectId, lesson.projectName, lesson.projectType, lesson.category, lesson.title, lesson.description, lesson.impact, lesson.recommendation, lesson.confidence, new Date(lesson.createdAt)],
+      );
+    }
 
     LessonsLearnedService.lessons.push(lesson);
     return lesson;

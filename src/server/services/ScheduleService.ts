@@ -1,3 +1,6 @@
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
+
 export interface Schedule {
   id: string;
   projectId: string;
@@ -465,28 +468,106 @@ export class ScheduleService {
 
   private get schedules() { return ScheduleService.schedules; }
   private get tasks() { return ScheduleService.tasks; }
+  private get useDb() { return databaseService.isHealthy(); }
+
+  private rowToSchedule(row: any): Schedule {
+    const c = toCamelCaseKeys(row);
+    return { ...c, startDate: new Date(c.startDate), endDate: new Date(c.endDate), createdAt: new Date(c.createdAt), updatedAt: new Date(c.updatedAt) } as Schedule;
+  }
+
+  private rowToTask(row: any): Task {
+    const c = toCamelCaseKeys(row);
+    return {
+      ...c,
+      estimatedDays: c.estimatedDays != null ? Number(c.estimatedDays) : undefined,
+      estimatedDurationHours: c.estimatedDurationHours != null ? Number(c.estimatedDurationHours) : undefined,
+      actualDurationHours: c.actualDurationHours != null ? Number(c.actualDurationHours) : undefined,
+      progressPercentage: c.progressPercentage != null ? Number(c.progressPercentage) : undefined,
+      startDate: c.startDate ? new Date(c.startDate) : undefined,
+      endDate: c.endDate ? new Date(c.endDate) : undefined,
+      dueDate: c.dueDate ? new Date(c.dueDate) : undefined,
+      createdAt: new Date(c.createdAt),
+      updatedAt: new Date(c.updatedAt),
+    } as Task;
+  }
 
   async findByProjectId(projectId: string): Promise<Schedule[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM schedules WHERE project_id = ?', [projectId]);
+      return rows.map((r: any) => this.rowToSchedule(r));
+    }
     return this.schedules.filter(s => s.projectId === projectId);
   }
 
   async findById(id: string): Promise<Schedule | null> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM schedules WHERE id = ?', [id]);
+      return rows.length > 0 ? this.rowToSchedule(rows[0]) : null;
+    }
     return this.schedules.find(s => s.id === id) || null;
   }
 
   async create(data: CreateScheduleData): Promise<Schedule> {
+    const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date();
+
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO schedules (id, project_id, name, description, start_date, end_date, status, created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, data.projectId, data.name, data.description ?? null, data.startDate, data.endDate, 'active', data.createdBy, now, now],
+      );
+      return {
+        id,
+        projectId: data.projectId,
+        name: data.name,
+        description: data.description,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        status: 'active',
+        createdBy: data.createdBy,
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
+
     const schedule: Schedule = {
-      id: `sch-${Math.random().toString(36).substr(2, 9)}`,
+      id,
       ...data,
       status: 'active',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     };
     ScheduleService.schedules.push(schedule);
     return schedule;
   }
 
   async update(id: string, data: Partial<Omit<Schedule, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>>): Promise<Schedule | null> {
+    if (this.useDb) {
+      const setClauses: string[] = [];
+      const values: any[] = [];
+      const fieldMap: Record<string, string> = {
+        name: 'name',
+        description: 'description',
+        startDate: 'start_date',
+        endDate: 'end_date',
+        status: 'status',
+        createdBy: 'created_by',
+      };
+      for (const [key, col] of Object.entries(fieldMap)) {
+        if ((data as any)[key] !== undefined) {
+          setClauses.push(`${col} = ?`);
+          values.push((data as any)[key]);
+        }
+      }
+      if (setClauses.length === 0) return this.findById(id);
+      setClauses.push('updated_at = ?');
+      values.push(new Date());
+      values.push(id);
+      await databaseService.query(`UPDATE schedules SET ${setClauses.join(', ')} WHERE id = ?`, values);
+      return this.findById(id);
+    }
+
     const index = this.schedules.findIndex(s => s.id === id);
     if (index === -1) return null;
     ScheduleService.schedules[index] = { ...this.schedules[index], ...data, updatedAt: new Date() };
@@ -494,6 +575,16 @@ export class ScheduleService {
   }
 
   async delete(id: string): Promise<boolean> {
+    if (this.useDb) {
+      await databaseService.transaction(async (conn) => {
+        await conn.execute('DELETE FROM task_activities WHERE task_id IN (SELECT id FROM tasks WHERE schedule_id = ?)', [id]);
+        await conn.execute('DELETE FROM task_comments WHERE task_id IN (SELECT id FROM tasks WHERE schedule_id = ?)', [id]);
+        await conn.execute('DELETE FROM tasks WHERE schedule_id = ?', [id]);
+        await conn.execute('DELETE FROM schedules WHERE id = ?', [id]);
+      });
+      return true;
+    }
+
     const index = this.schedules.findIndex(s => s.id === id);
     if (index === -1) return false;
     ScheduleService.schedules.splice(index, 1);
@@ -502,19 +593,35 @@ export class ScheduleService {
   }
 
   async findTasksByScheduleId(scheduleId: string): Promise<Task[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM tasks WHERE schedule_id = ?', [scheduleId]);
+      return rows.map((r: any) => this.rowToTask(r));
+    }
     return this.tasks.filter(t => t.scheduleId === scheduleId);
   }
 
   async findTaskById(id: string): Promise<Task | null> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM tasks WHERE id = ?', [id]);
+      return rows.length > 0 ? this.rowToTask(rows[0]) : null;
+    }
     return this.tasks.find(t => t.id === id) || null;
   }
 
   async findAllTasks(): Promise<Task[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM tasks');
+      return rows.map((r: any) => this.rowToTask(r));
+    }
     return [...this.tasks];
   }
 
   /** Find all tasks that directly depend on the given task ID */
   async findDependentTasks(taskId: string): Promise<Task[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM tasks WHERE dependency = ?', [taskId]);
+      return rows.map((r: any) => this.rowToTask(r));
+    }
     return this.tasks.filter(t => t.dependency === taskId);
   }
 
@@ -539,20 +646,121 @@ export class ScheduleService {
   }
 
   async createTask(data: CreateTaskData): Promise<Task> {
+    const id = `task-${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date();
+    const status = data.status || 'pending';
+    const priority = data.priority || 'medium';
+    const progressPercentage = data.progressPercentage || 0;
+
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO tasks (id, schedule_id, name, description, status, priority, assigned_to, due_date, estimated_days, estimated_duration_hours, actual_duration_hours, start_date, end_date, progress_percentage, dependency, dependency_type, risks, issues, comments, parent_task_id, created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id, data.scheduleId, data.name, data.description ?? null, status, priority,
+          data.assignedTo ?? null, data.dueDate ?? null, data.estimatedDays ?? null,
+          data.estimatedDurationHours ?? null, data.actualDurationHours ?? null,
+          data.startDate ?? null, data.endDate ?? null, progressPercentage,
+          data.dependency ?? null, (data as any).dependencyType ?? null,
+          data.risks ?? null, data.issues ?? null, data.comments ?? null,
+          data.parentTaskId ?? null, data.createdBy, now, now,
+        ],
+      );
+      return {
+        id,
+        scheduleId: data.scheduleId,
+        name: data.name,
+        description: data.description,
+        status,
+        priority,
+        assignedTo: data.assignedTo,
+        dueDate: data.dueDate,
+        estimatedDays: data.estimatedDays,
+        estimatedDurationHours: data.estimatedDurationHours,
+        actualDurationHours: data.actualDurationHours,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        progressPercentage,
+        dependency: data.dependency,
+        dependencyType: (data as any).dependencyType as Task['dependencyType'],
+        risks: data.risks,
+        issues: data.issues,
+        comments: data.comments,
+        parentTaskId: data.parentTaskId,
+        createdBy: data.createdBy,
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
+
     const task: Task = {
-      id: `task-${Math.random().toString(36).substr(2, 9)}`,
+      id,
       ...data,
-      status: data.status || 'pending',
-      priority: data.priority || 'medium',
-      progressPercentage: data.progressPercentage || 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      status,
+      priority,
+      progressPercentage,
+      createdAt: now,
+      updatedAt: now,
     };
     ScheduleService.tasks.push(task);
     return task;
   }
 
   async updateTask(id: string, data: Partial<Omit<Task, 'id' | 'scheduleId' | 'createdAt' | 'updatedAt'>>): Promise<Task | null> {
+    if (this.useDb) {
+      // Fetch old task for activity logging
+      const oldTask = await this.findTaskById(id);
+      if (!oldTask) return null;
+
+      // Auto-log field changes as activity
+      const trackFields: (keyof Task)[] = ['status', 'priority', 'assignedTo', 'progressPercentage', 'startDate', 'endDate', 'name'];
+      for (const field of trackFields) {
+        if (field in data && data[field as keyof typeof data] !== undefined) {
+          const oldVal = String(oldTask[field] ?? '');
+          const newVal = String(data[field as keyof typeof data] ?? '');
+          if (oldVal !== newVal) {
+            this.logActivity(id, '1', 'System', 'updated', field, oldVal, newVal);
+          }
+        }
+      }
+
+      // Build dynamic SET clause
+      const setClauses: string[] = [];
+      const values: any[] = [];
+      const fieldMap: Record<string, string> = {
+        name: 'name',
+        description: 'description',
+        status: 'status',
+        priority: 'priority',
+        assignedTo: 'assigned_to',
+        dueDate: 'due_date',
+        estimatedDays: 'estimated_days',
+        estimatedDurationHours: 'estimated_duration_hours',
+        actualDurationHours: 'actual_duration_hours',
+        startDate: 'start_date',
+        endDate: 'end_date',
+        progressPercentage: 'progress_percentage',
+        dependency: 'dependency',
+        dependencyType: 'dependency_type',
+        risks: 'risks',
+        issues: 'issues',
+        comments: 'comments',
+        parentTaskId: 'parent_task_id',
+      };
+      for (const [key, col] of Object.entries(fieldMap)) {
+        if ((data as any)[key] !== undefined) {
+          setClauses.push(`${col} = ?`);
+          values.push((data as any)[key]);
+        }
+      }
+      if (setClauses.length === 0) return this.findTaskById(id);
+      setClauses.push('updated_at = ?');
+      values.push(new Date());
+      values.push(id);
+      await databaseService.query(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`, values);
+      return this.findTaskById(id);
+    }
+
     const index = this.tasks.findIndex(t => t.id === id);
     if (index === -1) return null;
 
@@ -575,6 +783,11 @@ export class ScheduleService {
   }
 
   async deleteTask(id: string): Promise<boolean> {
+    if (this.useDb) {
+      await databaseService.query('DELETE FROM tasks WHERE id = ?', [id]);
+      return true;
+    }
+
     const index = this.tasks.findIndex(t => t.id === id);
     if (index === -1) return false;
     ScheduleService.tasks.splice(index, 1);
@@ -595,6 +808,12 @@ export class ScheduleService {
       createdAt: new Date().toISOString(),
     };
     ScheduleService.comments.push(comment);
+    if (this.useDb) {
+      databaseService.query(
+        'INSERT INTO task_comments (id, task_id, user_id, user_name, text, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [comment.id, taskId, userId, userName, text, new Date()],
+      ).catch(() => {});
+    }
     return comment;
   }
 
@@ -608,6 +827,9 @@ export class ScheduleService {
     const idx = ScheduleService.comments.findIndex((c) => c.id === commentId);
     if (idx === -1) return false;
     ScheduleService.comments.splice(idx, 1);
+    if (this.useDb) {
+      databaseService.query('DELETE FROM task_comments WHERE id = ?', [commentId]).catch(() => {});
+    }
     return true;
   }
 
@@ -636,6 +858,12 @@ export class ScheduleService {
       createdAt: new Date().toISOString(),
     };
     ScheduleService.activities.push(entry);
+    if (this.useDb) {
+      databaseService.query(
+        'INSERT INTO task_activities (id, task_id, user_id, user_name, action, field, old_value, new_value, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [entry.id, taskId, userId, userName, action, field ?? null, oldValue ?? null, newValue ?? null, new Date()],
+      ).catch(() => {});
+    }
     return entry;
   }
 
@@ -696,11 +924,18 @@ export class ScheduleService {
       };
 
       // Apply the shift
-      const idx = this.tasks.findIndex(t => t.id === task.id);
-      if (idx !== -1) {
-        if (newStart) ScheduleService.tasks[idx].startDate = newStart;
-        if (newEnd) ScheduleService.tasks[idx].endDate = newEnd;
-        ScheduleService.tasks[idx].updatedAt = new Date();
+      if (this.useDb) {
+        await databaseService.query(
+          'UPDATE tasks SET start_date = ?, end_date = ?, updated_at = ? WHERE id = ?',
+          [newStart, newEnd, new Date(), task.id],
+        );
+      } else {
+        const idx = this.tasks.findIndex(t => t.id === task.id);
+        if (idx !== -1) {
+          if (newStart) ScheduleService.tasks[idx].startDate = newStart;
+          if (newEnd) ScheduleService.tasks[idx].endDate = newEnd;
+          ScheduleService.tasks[idx].updatedAt = new Date();
+        }
       }
 
       this.logActivity(task.id, '1', 'System', 'auto-rescheduled', 'dates',

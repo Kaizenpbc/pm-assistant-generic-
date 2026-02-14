@@ -26,6 +26,8 @@ import { lessonsLearnedRoutes } from './routes/lessonsLearned';
 import { nlQueryRoutes } from './routes/nlQuery';
 import { templateRoutes } from './routes/templates';
 import { taskPrioritizationRoutes } from './routes/taskPrioritization';
+import { adminRoutes } from './routes/admin';
+import { dashboardDataRoutes } from './routes/dashboardData';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
@@ -55,4 +57,6 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(nlQueryRoutes, { prefix: '/api/v1/nl-query' });
   await fastify.register(templateRoutes, { prefix: '/api/v1/templates' });
   await fastify.register(taskPrioritizationRoutes, { prefix: '/api/v1/task-prioritization' });
+  await fastify.register(adminRoutes, { prefix: '/api/v1/admin' });
+  await fastify.register(dashboardDataRoutes, { prefix: '/api/v1/dashboard' });
 }

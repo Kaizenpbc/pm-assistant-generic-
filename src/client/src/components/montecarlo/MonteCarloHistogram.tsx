@@ -154,12 +154,19 @@ export function MonteCarloHistogram({ histogram, p50, p80, p90 }: MonteCarloHist
     );
   }
 
+  // Build text summary for screen readers
+  const histogramSummary = `Monte Carlo simulation histogram with ${histogram.length} bins. ` +
+    `P50: ${Math.round(p50)} days, P80: ${Math.round(p80)} days, P90: ${Math.round(p90)} days. ` +
+    `Range: ${Math.round(histogram[0].min)} to ${Math.round(histogram[histogram.length - 1].max)} days.`;
+
   return (
     <div className="relative">
       <svg
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         className="w-full"
         style={{ maxHeight: svgHeight }}
+        role="img"
+        aria-label={histogramSummary}
         onMouseLeave={() => setTooltip(null)}
       >
         {/* Grid lines */}

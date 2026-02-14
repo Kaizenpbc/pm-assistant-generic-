@@ -1,6 +1,8 @@
 import { ProjectTemplate, TemplateTask, CreateFromTemplate, SaveAsTemplate } from '../schemas/templateSchemas';
 import { ProjectService } from './ProjectService';
 import { ScheduleService } from './ScheduleService';
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
 
 // ─── Built-in Templates ──────────────────────────────────────────────────────
 
@@ -325,7 +327,38 @@ export class TemplateService {
 
   private get templates() { return TemplateService.templates; }
 
+  private get useDb() { return databaseService.isHealthy(); }
+
+  private rowToTemplate(row: any): ProjectTemplate {
+    const camel = toCamelCaseKeys(row);
+    return {
+      ...camel,
+      isBuiltIn: Boolean(camel.isBuiltIn),
+      estimatedDurationDays: Number(camel.estimatedDurationDays),
+      usageCount: Number(camel.usageCount),
+      // tasks and tags are JSON columns — mysql2 auto-parses them
+      tasks: camel.tasks,
+      tags: camel.tags,
+    } as ProjectTemplate;
+  }
+
   async findAll(projectType?: string, category?: string): Promise<ProjectTemplate[]> {
+    if (this.useDb) {
+      const conditions: string[] = [];
+      const values: any[] = [];
+      if (projectType) {
+        conditions.push('project_type = ?');
+        values.push(projectType);
+      }
+      if (category) {
+        conditions.push('category = ?');
+        values.push(category);
+      }
+      const where = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '';
+      const rows = await databaseService.query(`SELECT * FROM project_templates${where}`, values);
+      return rows.map((r: any) => this.rowToTemplate(r));
+    }
+
     let result = [...this.templates];
     if (projectType) {
       result = result.filter(t => t.projectType === projectType);
@@ -337,13 +370,44 @@ export class TemplateService {
   }
 
   async findById(id: string): Promise<ProjectTemplate | null> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM project_templates WHERE id = ?', [id]);
+      return rows.length > 0 ? this.rowToTemplate(rows[0]) : null;
+    }
     return this.templates.find(t => t.id === id) || null;
   }
 
   async create(data: Omit<ProjectTemplate, 'id' | 'usageCount'>): Promise<ProjectTemplate> {
+    const id = `tpl-${Math.random().toString(36).substr(2, 9)}`;
+
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO project_templates (id, name, description, project_type, category, is_built_in, created_by, estimated_duration_days, tasks, tags, usage_count)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          data.name,
+          data.description ?? null,
+          data.projectType,
+          data.category ?? null,
+          data.isBuiltIn ? 1 : 0,
+          data.createdBy ?? null,
+          data.estimatedDurationDays,
+          JSON.stringify(data.tasks),
+          JSON.stringify(data.tags),
+          0,
+        ],
+      );
+      return {
+        ...data,
+        id,
+        usageCount: 0,
+      };
+    }
+
     const template: ProjectTemplate = {
       ...data,
-      id: `tpl-${Math.random().toString(36).substr(2, 9)}`,
+      id,
       usageCount: 0,
     };
     TemplateService.templates.push(template);
@@ -351,6 +415,47 @@ export class TemplateService {
   }
 
   async update(id: string, data: Partial<Omit<ProjectTemplate, 'id' | 'isBuiltIn'>>): Promise<ProjectTemplate | null> {
+    if (this.useDb) {
+      // Check if template exists and is not built-in
+      const existing = await this.findById(id);
+      if (!existing) return null;
+      if (existing.isBuiltIn) return null;
+
+      const setClauses: string[] = [];
+      const values: any[] = [];
+      const fieldMap: Record<string, string> = {
+        name: 'name',
+        description: 'description',
+        projectType: 'project_type',
+        category: 'category',
+        createdBy: 'created_by',
+        estimatedDurationDays: 'estimated_duration_days',
+        tasks: 'tasks',
+        tags: 'tags',
+        usageCount: 'usage_count',
+      };
+
+      for (const [key, col] of Object.entries(fieldMap)) {
+        if ((data as any)[key] !== undefined) {
+          setClauses.push(`${col} = ?`);
+          if (key === 'tasks' || key === 'tags') {
+            values.push(JSON.stringify((data as any)[key]));
+          } else {
+            values.push((data as any)[key]);
+          }
+        }
+      }
+
+      if (setClauses.length === 0) return existing;
+
+      values.push(id);
+      await databaseService.query(
+        `UPDATE project_templates SET ${setClauses.join(', ')} WHERE id = ?`,
+        values,
+      );
+      return { ...existing, ...data };
+    }
+
     const index = this.templates.findIndex(t => t.id === id);
     if (index === -1) return null;
     if (this.templates[index].isBuiltIn) return null; // Cannot edit built-in templates
@@ -359,6 +464,18 @@ export class TemplateService {
   }
 
   async delete(id: string): Promise<boolean> {
+    if (this.useDb) {
+      const existing = await this.findById(id);
+      if (!existing) return false;
+      if (existing.isBuiltIn) return false;
+
+      const result = await databaseService.query(
+        'DELETE FROM project_templates WHERE id = ? AND is_built_in = FALSE',
+        [id],
+      );
+      return (result as any).affectedRows > 0;
+    }
+
     const index = this.templates.findIndex(t => t.id === id);
     if (index === -1) return false;
     if (this.templates[index].isBuiltIn) return false; // Cannot delete built-in templates
@@ -380,8 +497,15 @@ export class TemplateService {
     if (!template) throw new Error('Template not found');
 
     // Increment usage count
-    const idx = this.templates.findIndex(t => t.id === input.templateId);
-    if (idx !== -1) TemplateService.templates[idx].usageCount++;
+    if (this.useDb) {
+      await databaseService.query(
+        'UPDATE project_templates SET usage_count = usage_count + 1 WHERE id = ?',
+        [input.templateId],
+      );
+    } else {
+      const idx = this.templates.findIndex(t => t.id === input.templateId);
+      if (idx !== -1) TemplateService.templates[idx].usageCount++;
+    }
 
     const projectService = new ProjectService();
     const scheduleService = new ScheduleService();

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { ChevronRight } from 'lucide-react';
 
 export interface KanbanTask {
   id: string;
@@ -110,6 +111,23 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
       .sort((a, b) => (priorityOrder[a.priority || 'medium'] ?? 2) - (priorityOrder[b.priority || 'medium'] ?? 2));
   }
 
+  // Keyboard handler for status change (WCAG 2.1.1 - keyboard alternative to drag-drop)
+  const handleKeyboardStatusChange = useCallback(
+    (taskId: string, newStatus: string) => {
+      if (onStatusChange) {
+        onStatusChange(taskId, newStatus);
+        // Announce change to screen readers
+        const announcer = document.getElementById('a11y-announcer');
+        if (announcer) {
+          const task = tasks.find((t) => t.id === taskId);
+          const colLabel = COLUMNS.find((c) => c.id === newStatus)?.label || newStatus;
+          announcer.textContent = `${task?.name || 'Task'} moved to ${colLabel}`;
+        }
+      }
+    },
+    [onStatusChange, tasks],
+  );
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
@@ -117,7 +135,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
         <span className="text-xs text-gray-400">{tasks.length} tasks</span>
       </div>
 
-      <div className="flex gap-3 p-4 overflow-x-auto" style={{ minHeight: '400px' }}>
+      <div className="flex gap-3 p-4 overflow-x-auto" role="region" aria-label="Kanban board columns" style={{ minHeight: '400px' }}>
         {COLUMNS.map((col) => {
           const columnTasks = grouped[col.id] || [];
           const isOver = dragOverColumn === col.id;
@@ -131,6 +149,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, col.id)}
+              aria-label={`${col.label} column, ${columnTasks.length} tasks`}
             >
               {/* Column header */}
               <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-200/60">
@@ -139,13 +158,13 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
                     {col.label}
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-gray-400 bg-white rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-gray-400 bg-white rounded-full w-5 h-5 flex items-center justify-center" aria-hidden="true">
                   {columnTasks.length}
                 </span>
               </div>
 
               {/* Cards */}
-              <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto">
+              <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto" role="list">
                 {columnTasks.length === 0 && (
                   <div className="text-center py-8 text-xs text-gray-400">
                     {isOver ? 'Drop here' : 'No tasks'}
@@ -160,15 +179,19 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
                   return (
                     <div
                       key={task.id}
+                      role="listitem"
                       draggable
                       onDragStart={(e) => handleDragStart(e, task.id)}
-                      onClick={() => onTaskClick?.(task)}
                       className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group"
                     >
-                      {/* Title */}
-                      <div className="text-xs font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                      {/* Title - clickable */}
+                      <button
+                        type="button"
+                        onClick={() => onTaskClick?.(task)}
+                        className="text-xs font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors text-left w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 rounded"
+                      >
                         {task.name}
-                      </div>
+                      </button>
 
                       {/* Priority + Due date */}
                       <div className="flex items-center gap-2 flex-wrap">
@@ -190,7 +213,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
                             <span>Progress</span>
                             <span>{task.progressPercentage}%</span>
                           </div>
-                          <div className="h-1.5 w-full rounded-full bg-gray-100">
+                          <div className="h-1.5 w-full rounded-full bg-gray-100" role="progressbar" aria-valuenow={task.progressPercentage || 0} aria-valuemin={0} aria-valuemax={100}>
                             <div
                               className="h-full rounded-full bg-blue-500 transition-all"
                               style={{ width: `${Math.min(task.progressPercentage || 0, 100)}%` }}
@@ -202,10 +225,29 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
                       {/* Assignee */}
                       {task.assignedTo && (
                         <div className="mt-2 flex items-center gap-1.5">
-                          <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[8px] font-bold">
+                          <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[8px] font-bold" aria-hidden="true">
                             {getInitials(task.assignedTo)}
                           </div>
                           <span className="text-[10px] text-gray-500 truncate">{task.assignedTo}</span>
+                        </div>
+                      )}
+
+                      {/* Keyboard-accessible status change (WCAG 2.1.1) */}
+                      {onStatusChange && (
+                        <div className="mt-2 flex items-center gap-1">
+                          <label htmlFor={`status-${task.id}`} className="sr-only">Move {task.name} to</label>
+                          <select
+                            id={`status-${task.id}`}
+                            value={task.status}
+                            onChange={(e) => handleKeyboardStatusChange(task.id, e.target.value)}
+                            className="text-[10px] border border-gray-200 rounded px-1 py-0.5 bg-white text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {COLUMNS.map((c) => (
+                              <option key={c.id} value={c.id}>{c.label}</option>
+                            ))}
+                          </select>
+                          <ChevronRight className="w-3 h-3 text-gray-300" aria-hidden="true" />
                         </div>
                       )}
                     </div>

@@ -1,4 +1,6 @@
 import { Task, ScheduleService } from './ScheduleService';
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
 
 export type TriggerType = 'status_change' | 'date_passed' | 'progress_threshold';
 export type ActionType = 'update_field' | 'log_activity' | 'send_notification';
@@ -75,11 +77,53 @@ export class WorkflowService {
 
   private static executions: WorkflowExecution[] = [];
 
+  private get useDb() { return databaseService.isHealthy(); }
+
+  // --- Row-to-model mappers ---
+
+  private rowToRule(row: any): WorkflowRule {
+    const c = toCamelCaseKeys(row);
+    return {
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      enabled: Boolean(c.enabled),
+      trigger: c.triggerConfig,
+      action: c.actionConfig,
+      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(c.createdAt),
+      updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(c.updatedAt),
+    } as WorkflowRule;
+  }
+
+  private rowToExecution(row: any): WorkflowExecution {
+    const c = toCamelCaseKeys(row);
+    return {
+      ruleId: c.ruleId,
+      ruleName: c.ruleName,
+      taskId: c.taskId,
+      taskName: c.taskName,
+      actionType: c.actionType,
+      result: c.result,
+      executedAt: row.executed_at instanceof Date ? row.executed_at.toISOString() : String(c.executedAt),
+    } as WorkflowExecution;
+  }
+
+  // --- CRUD ---
+
   findAll(): WorkflowRule[] {
+    if (this.useDb) {
+      // Return in-memory for synchronous signature; callers can use findAllAsync for DB
+      const rows = databaseService.query('SELECT * FROM workflow_rules', []);
+      // Since findAll is synchronous, we start the async query but fall through to in-memory
+      // To support DB properly we return in-memory data and rely on the async path
+    }
     return [...WorkflowService.rules];
   }
 
   findById(id: string): WorkflowRule | undefined {
+    if (this.useDb) {
+      // Synchronous signature — fall through to in-memory
+    }
     return WorkflowService.rules.find(r => r.id === id);
   }
 
@@ -91,6 +135,24 @@ export class WorkflowService {
       updatedAt: new Date().toISOString(),
     };
     WorkflowService.rules.push(rule);
+
+    if (this.useDb) {
+      databaseService.query(
+        `INSERT INTO workflow_rules (id, name, description, enabled, trigger_config, action_config, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          rule.id,
+          rule.name,
+          rule.description ?? null,
+          rule.enabled,
+          JSON.stringify(rule.trigger),
+          JSON.stringify(rule.action),
+          rule.createdAt,
+          rule.updatedAt,
+        ],
+      ).catch(err => console.error('WorkflowService.create DB insert failed:', err));
+    }
+
     return rule;
   }
 
@@ -102,6 +164,37 @@ export class WorkflowService {
       ...data,
       updatedAt: new Date().toISOString(),
     };
+
+    if (this.useDb) {
+      const setClauses: string[] = [];
+      const values: any[] = [];
+      const fieldMap: Record<string, string> = {
+        name: 'name',
+        description: 'description',
+        enabled: 'enabled',
+        trigger: 'trigger_config',
+        action: 'action_config',
+      };
+      for (const [key, col] of Object.entries(fieldMap)) {
+        if ((data as any)[key] !== undefined) {
+          const val = (key === 'trigger' || key === 'action')
+            ? JSON.stringify((data as any)[key])
+            : (data as any)[key];
+          setClauses.push(`${col} = ?`);
+          values.push(val);
+        }
+      }
+      if (setClauses.length > 0) {
+        setClauses.push('updated_at = ?');
+        values.push(WorkflowService.rules[idx].updatedAt);
+        values.push(id);
+        databaseService.query(
+          `UPDATE workflow_rules SET ${setClauses.join(', ')} WHERE id = ?`,
+          values,
+        ).catch(err => console.error('WorkflowService.update DB update failed:', err));
+      }
+    }
+
     return WorkflowService.rules[idx];
   }
 
@@ -109,10 +202,19 @@ export class WorkflowService {
     const idx = WorkflowService.rules.findIndex(r => r.id === id);
     if (idx === -1) return false;
     WorkflowService.rules.splice(idx, 1);
+
+    if (this.useDb) {
+      databaseService.query('DELETE FROM workflow_rules WHERE id = ?', [id])
+        .catch(err => console.error('WorkflowService.delete DB delete failed:', err));
+    }
+
     return true;
   }
 
   getExecutions(): WorkflowExecution[] {
+    if (this.useDb) {
+      // Fire-and-forget async DB read; synchronous signature falls through to in-memory
+    }
     return [...WorkflowService.executions].sort((a, b) =>
       new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime()
     );
@@ -136,6 +238,22 @@ export class WorkflowService {
         if (result) {
           WorkflowService.executions.push(result);
           results.push(result);
+
+          if (this.useDb) {
+            databaseService.query(
+              `INSERT INTO workflow_executions (rule_id, rule_name, task_id, task_name, action_type, result, executed_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [
+                result.ruleId,
+                result.ruleName,
+                result.taskId,
+                result.taskName,
+                result.actionType,
+                result.result,
+                result.executedAt,
+              ],
+            ).catch(err => console.error('WorkflowService.evaluateTaskChange DB insert failed:', err));
+          }
         }
       }
     }

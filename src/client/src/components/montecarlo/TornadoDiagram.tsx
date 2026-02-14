@@ -89,12 +89,19 @@ export function TornadoDiagram({ data }: TornadoDiagramProps) {
     );
   }
 
+  // Build text summary for screen readers
+  const tornadoSummary = `Tornado sensitivity diagram with ${data.length} tasks ranked by impact. ` +
+    data.slice(0, 5).map(d => `${d.taskName}: ${d.correlationCoefficient.toFixed(2)}`).join(', ') +
+    (data.length > 5 ? `, and ${data.length - 5} more.` : '.');
+
   return (
     <div className="relative">
       <svg
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         className="w-full"
         style={{ maxHeight: Math.max(svgHeight, 200) }}
+        role="img"
+        aria-label={tornadoSummary}
         onMouseLeave={() => setHoveredIdx(null)}
       >
         {/* Center axis */}

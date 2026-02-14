@@ -17,6 +17,7 @@ async function start() {
 
     console.log('Testing database connection...');
     const isConnected = await databaseService.testConnection();
+    databaseService.setConnected(isConnected);
     if (!isConnected) {
       console.log('Database connection failed - running in offline mode');
     } else {

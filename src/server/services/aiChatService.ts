@@ -5,6 +5,8 @@ import { AIContextBuilder } from './aiContextBuilder';
 import { logAIUsage } from './aiUsageLogger';
 import { AI_TOOLS, MUTATING_TOOLS } from './aiToolDefinitions';
 import { AIActionExecutor, type ActionResult } from './aiActionExecutor';
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,10 +54,24 @@ export class AIChatService {
   private actionExecutor: AIActionExecutor;
   private static conversations: Map<string, StoredConversation> = new Map();
 
+  private get useDb() { return databaseService.isHealthy(); }
+
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
     this.contextBuilder = new AIContextBuilder(fastify);
     this.actionExecutor = new AIActionExecutor();
+  }
+
+  private rowToConversation(row: any): StoredConversation {
+    const c = toCamelCaseKeys(row);
+    return {
+      ...c,
+      messages: typeof c.messages === 'string' ? JSON.parse(c.messages) : c.messages,
+      tokenCount: Number(c.tokenCount),
+      isActive: Boolean(c.isActive),
+      createdAt: new Date(c.createdAt).toISOString(),
+      updatedAt: new Date(c.updatedAt).toISOString(),
+    } as StoredConversation;
   }
 
   // -----------------------------------------------------------------------
@@ -100,7 +116,7 @@ export class AIChatService {
           },
         });
 
-        const conversationId = this.persistConversation(
+        const conversationId = await this.persistConversation(
           req,
           result.finalText,
           result.totalUsage.inputTokens + result.totalUsage.outputTokens,
@@ -136,7 +152,7 @@ export class AIChatService {
           temperature: 0.5,
         });
 
-        const conversationId = this.persistConversation(req, result.content, result.usage.inputTokens + result.usage.outputTokens);
+        const conversationId = await this.persistConversation(req, result.content, result.usage.inputTokens + result.usage.outputTokens);
 
         logAIUsage(this.fastify, {
           userId: req.userId,
@@ -206,7 +222,7 @@ export class AIChatService {
           fullReply += chunk.content ?? '';
           yield chunk;
         } else if (chunk.type === 'usage') {
-          conversationId = this.persistConversation(
+          conversationId = await this.persistConversation(
             req,
             fullReply,
             (chunk.usage?.inputTokens ?? 0) + (chunk.usage?.outputTokens ?? 0),
@@ -249,10 +265,29 @@ export class AIChatService {
   }
 
   // -----------------------------------------------------------------------
-  // Conversation CRUD (in-memory)
+  // Conversation CRUD (dual-mode: DB + in-memory)
   // -----------------------------------------------------------------------
 
   async getConversations(userId: string): Promise<any[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query(
+        `SELECT * FROM chat_conversations WHERE user_id = ? AND is_active = TRUE ORDER BY updated_at DESC LIMIT 50`,
+        [userId],
+      );
+      return rows.map((row: any) => {
+        const c = this.rowToConversation(row);
+        return {
+          id: c.id,
+          title: c.title,
+          contextType: c.contextType,
+          projectId: c.projectId,
+          tokenCount: c.tokenCount,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+        };
+      });
+    }
+
     const convos: any[] = [];
     for (const conv of AIChatService.conversations.values()) {
       if (conv.userId === userId && conv.isActive) {
@@ -271,12 +306,28 @@ export class AIChatService {
   }
 
   async getConversation(conversationId: string, userId: string): Promise<any | null> {
+    if (this.useDb) {
+      const rows = await databaseService.query(
+        `SELECT * FROM chat_conversations WHERE id = ? AND user_id = ? AND is_active = TRUE`,
+        [conversationId, userId],
+      );
+      if (rows.length === 0) return null;
+      return this.rowToConversation(rows[0]);
+    }
+
     const conv = AIChatService.conversations.get(conversationId);
     if (!conv || conv.userId !== userId || !conv.isActive) return null;
     return { ...conv };
   }
 
   async deleteConversation(conversationId: string, userId: string): Promise<boolean> {
+    if (this.useDb) {
+      await databaseService.query(
+        `UPDATE chat_conversations SET is_active = FALSE WHERE id = ? AND user_id = ?`,
+        [conversationId, userId],
+      );
+    }
+
     const conv = AIChatService.conversations.get(conversationId);
     if (!conv || conv.userId !== userId) return false;
     conv.isActive = false;
@@ -325,12 +376,12 @@ export class AIChatService {
     return { systemPrompt, history };
   }
 
-  private persistConversation(
+  private async persistConversation(
     req: ChatRequest,
     assistantReply: string,
     tokenCount: number,
     actions?: ActionResult[],
-  ): string {
+  ): Promise<string> {
     const now = new Date().toISOString();
     const userMsg: StoredMessage = { role: 'user', content: req.message, timestamp: now };
     const assistantMsg: StoredMessage = { role: 'assistant', content: assistantReply, timestamp: now, actions };
@@ -341,6 +392,32 @@ export class AIChatService {
         conv.messages.push(userMsg, assistantMsg);
         conv.tokenCount += tokenCount;
         conv.updatedAt = now;
+
+        // Update DB
+        if (this.useDb) {
+          await databaseService.query(
+            `UPDATE chat_conversations SET messages = ?, token_count = token_count + ?, updated_at = ? WHERE id = ? AND user_id = ?`,
+            [JSON.stringify(conv.messages), tokenCount, new Date(now), req.conversationId, req.userId],
+          );
+        }
+
+        return req.conversationId;
+      }
+    }
+
+    // Also check DB for existing conversation not in memory
+    if (req.conversationId && this.useDb) {
+      const rows = await databaseService.query(
+        `SELECT * FROM chat_conversations WHERE id = ? AND user_id = ?`,
+        [req.conversationId, req.userId],
+      );
+      if (rows.length > 0) {
+        const existing = this.rowToConversation(rows[0]);
+        existing.messages.push(userMsg, assistantMsg);
+        await databaseService.query(
+          `UPDATE chat_conversations SET messages = ?, token_count = token_count + ?, updated_at = ? WHERE id = ? AND user_id = ?`,
+          [JSON.stringify(existing.messages), tokenCount, new Date(now), req.conversationId, req.userId],
+        );
         return req.conversationId;
       }
     }
@@ -348,7 +425,7 @@ export class AIChatService {
     const id = randomUUID();
     const title = req.message.slice(0, 100) + (req.message.length > 100 ? '...' : '');
 
-    AIChatService.conversations.set(id, {
+    const newConv: StoredConversation = {
       id,
       userId: req.userId,
       projectId: req.context?.projectId,
@@ -359,7 +436,30 @@ export class AIChatService {
       isActive: true,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+
+    // Persist to DB
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO chat_conversations (id, user_id, project_id, context_type, title, messages, token_count, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          req.userId,
+          req.context?.projectId || null,
+          req.context?.type || 'general',
+          title,
+          JSON.stringify([userMsg, assistantMsg]),
+          tokenCount,
+          true,
+          new Date(now),
+          new Date(now),
+        ],
+      );
+    }
+
+    // Also keep in-memory
+    AIChatService.conversations.set(id, newConv);
 
     return id;
   }

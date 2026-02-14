@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ProjectService } from '../services/ProjectService';
 import { authMiddleware } from '../middleware/auth';
+import { dataScopeMiddleware } from '../middleware/dataScope';
 
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -25,9 +26,15 @@ export async function projectRoutes(fastify: FastifyInstance) {
   const projectService = new ProjectService();
 
   fastify.get('/', {
+    preHandler: [authMiddleware, dataScopeMiddleware],
     schema: { description: 'Get all projects', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      if (request.dataScope) {
+        const projects = await projectService.findByScope(request.dataScope);
+        return { projects };
+      }
+      // Fallback for unauthenticated (shouldn't happen with middleware, but safe)
       const user = (request as any).user;
       const userId = user?.userId || '1';
       const projects = await projectService.findByUserId(userId);

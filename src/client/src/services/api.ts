@@ -87,8 +87,11 @@ class ApiService {
   // Project endpoints
   // -------------------------------------------------------------------------
 
-  async getProjects() {
-    const response = await this.api.get('/projects');
+  async getProjects(filters?: { portfolioId?: string | null; pmUserId?: string | null }) {
+    const params: Record<string, string> = {};
+    if (filters?.portfolioId) params.portfolioId = filters.portfolioId;
+    if (filters?.pmUserId) params.pmUserId = filters.pmUserId;
+    const response = await this.api.get('/projects', { params });
     return response.data;
   }
 
@@ -902,6 +905,76 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
 
   async applyAllTaskPriorities(projectId: string, scheduleId: string, changes: Array<{ taskId: string; priority: string }>) {
     const response = await this.api.post(`/task-prioritization/${projectId}/${scheduleId}/apply-all`, { changes });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Dashboard Data (hierarchical views)
+  // -------------------------------------------------------------------------
+
+  async getPmSummaries(portfolioId?: string | null) {
+    const params: Record<string, string> = {};
+    if (portfolioId) params.portfolioId = portfolioId;
+    const response = await this.api.get('/dashboard/pm-summaries', { params });
+    return response.data;
+  }
+
+  async getPortfolioSummaries() {
+    const response = await this.api.get('/dashboard/portfolio-summaries');
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Admin endpoints
+  // -------------------------------------------------------------------------
+
+  async getAdminUsers() {
+    const response = await this.api.get('/admin/users');
+    return response.data;
+  }
+
+  async createAdminUser(data: { username: string; email: string; password: string; fullName: string; role: string }) {
+    const response = await this.api.post('/admin/users', data);
+    return response.data;
+  }
+
+  async updateAdminUser(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/admin/users/${id}`, data);
+    return response.data;
+  }
+
+  async getAdminPortfolios() {
+    const response = await this.api.get('/admin/portfolios');
+    return response.data;
+  }
+
+  async createAdminPortfolio(data: { name: string; description?: string }) {
+    const response = await this.api.post('/admin/portfolios', data);
+    return response.data;
+  }
+
+  async updateAdminPortfolio(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/admin/portfolios/${id}`, data);
+    return response.data;
+  }
+
+  async deleteAdminPortfolio(id: string) {
+    const response = await this.api.delete(`/admin/portfolios/${id}`);
+    return response.data;
+  }
+
+  async getPortfolioAssignments(portfolioId: string) {
+    const response = await this.api.get(`/admin/portfolios/${portfolioId}/assignments`);
+    return response.data;
+  }
+
+  async assignUserToPortfolio(portfolioId: string, userId: string) {
+    const response = await this.api.post(`/admin/portfolios/${portfolioId}/assignments`, { userId });
+    return response.data;
+  }
+
+  async removeUserFromPortfolio(portfolioId: string, userId: string) {
+    const response = await this.api.delete(`/admin/portfolios/${portfolioId}/assignments/${userId}`);
     return response.data;
   }
 }

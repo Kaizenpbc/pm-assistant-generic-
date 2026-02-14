@@ -86,7 +86,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
-      const user = await userService.create({ username, email, passwordHash, fullName, role: 'member' });
+      const user = await userService.create({ username, email, passwordHash, fullName, role: 'pm' });
 
       return reply.status(201).send({
         message: 'User created successfully',

@@ -124,12 +124,18 @@ export function LineChart({ data, xAxisLabel, yAxisLabel }: LineChartProps) {
   const needsRotation = data.length > 6;
   const hovered = hoveredIndex !== null ? points[hoveredIndex] : null;
 
+  // Build text summary for screen readers
+  const chartSummary = `Line chart${xAxisLabel ? ` showing ${xAxisLabel}` : ''}${yAxisLabel ? ` by ${yAxisLabel}` : ''} with ${data.length} data points. ` +
+    data.map(d => `${d.label}: ${formatValue(d.value)}`).join(', ') + '.';
+
   return (
     <div className="relative w-full">
       <svg
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         className="w-full"
         preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label={chartSummary}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoveredIndex(null)}
       >

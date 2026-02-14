@@ -34,7 +34,8 @@ class DatabaseService {
       };
 
       this.pool = mysql.createPool(dbConfig);
-      this.isConnected = true;
+      // Pool created, but not yet verified as connected
+      this.isConnected = false;
       console.log('Database connection pool initialized');
     } catch (error) {
       console.error('Failed to initialize database connection pool:', error);
@@ -89,6 +90,10 @@ class DatabaseService {
       this.isConnected = false;
       console.log('Database connection pool closed');
     }
+  }
+
+  public setConnected(value: boolean): void {
+    this.isConnected = value;
   }
 
   public isHealthy(): boolean {

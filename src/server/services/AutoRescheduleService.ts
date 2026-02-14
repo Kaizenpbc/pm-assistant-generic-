@@ -2,6 +2,8 @@ import { ScheduleService, Task } from './ScheduleService';
 import { CriticalPathService } from './CriticalPathService';
 import { claudeService } from './claudeService';
 import { config } from '../config';
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
 import {
   DelayedTask,
   ProposedChange,
@@ -21,6 +23,19 @@ export class AutoRescheduleService {
 
   private scheduleService = new ScheduleService();
   private criticalPathService = new CriticalPathService();
+
+  private get useDb() { return databaseService.isHealthy(); }
+
+  private rowToProposal(row: any): RescheduleProposal {
+    const c = toCamelCaseKeys(row);
+    return {
+      ...c,
+      delayedTasks: typeof c.delayedTasks === 'string' ? JSON.parse(c.delayedTasks) : c.delayedTasks,
+      proposedChanges: typeof c.proposedChanges === 'string' ? JSON.parse(c.proposedChanges) : c.proposedChanges,
+      estimatedImpact: typeof c.estimatedImpact === 'string' ? JSON.parse(c.estimatedImpact) : c.estimatedImpact,
+      createdAt: new Date(c.createdAt).toISOString(),
+    } as RescheduleProposal;
+  }
 
   // ---------------------------------------------------------------------------
   // Detect Delays
@@ -287,6 +302,25 @@ Please propose date changes to reschedule affected tasks with minimal disruption
       createdAt: new Date().toISOString(),
     };
 
+    // Persist to DB
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO reschedule_proposals (id, schedule_id, status, delayed_tasks, proposed_changes, rationale, estimated_impact, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          proposal.id,
+          proposal.scheduleId,
+          proposal.status,
+          JSON.stringify(proposal.delayedTasks),
+          JSON.stringify(proposal.proposedChanges),
+          proposal.rationale,
+          JSON.stringify(proposal.estimatedImpact),
+          new Date(proposal.createdAt),
+        ],
+      );
+    }
+
+    // Also keep in-memory
     AutoRescheduleService.proposals.push(proposal);
 
     // Log activity
@@ -331,6 +365,15 @@ Please propose date changes to reschedule affected tasks with minimal disruption
       );
     }
 
+    // Update DB
+    if (this.useDb) {
+      await databaseService.query(
+        `UPDATE reschedule_proposals SET status = 'accepted' WHERE id = ?`,
+        [proposalId],
+      );
+    }
+
+    // Update in-memory
     proposal.status = 'accepted';
     return true;
   }
@@ -343,6 +386,15 @@ Please propose date changes to reschedule affected tasks with minimal disruption
     const proposal = AutoRescheduleService.proposals.find((p) => p.id === proposalId);
     if (!proposal || proposal.status !== 'pending') return false;
 
+    // Update DB
+    if (this.useDb) {
+      await databaseService.query(
+        `UPDATE reschedule_proposals SET status = 'rejected', feedback = ? WHERE id = ?`,
+        [feedback || null, proposalId],
+      );
+    }
+
+    // Update in-memory
     proposal.status = 'rejected';
     if (feedback) {
       proposal.feedback = feedback;
@@ -359,6 +411,15 @@ Please propose date changes to reschedule affected tasks with minimal disruption
     const proposal = AutoRescheduleService.proposals.find((p) => p.id === proposalId);
     if (!proposal || proposal.status !== 'pending') return false;
 
+    // Update DB
+    if (this.useDb) {
+      await databaseService.query(
+        `UPDATE reschedule_proposals SET proposed_changes = ?, status = 'modified' WHERE id = ?`,
+        [JSON.stringify(modifications), proposalId],
+      );
+    }
+
+    // Update in-memory
     proposal.proposedChanges = modifications;
     proposal.status = 'modified';
 
@@ -369,7 +430,15 @@ Please propose date changes to reschedule affected tasks with minimal disruption
   // Get Proposals
   // ---------------------------------------------------------------------------
 
-  getProposals(scheduleId: string): RescheduleProposal[] {
+  async getProposals(scheduleId: string): Promise<RescheduleProposal[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query(
+        `SELECT * FROM reschedule_proposals WHERE schedule_id = ? ORDER BY created_at DESC`,
+        [scheduleId],
+      );
+      return rows.map((r: any) => this.rowToProposal(r));
+    }
+
     return AutoRescheduleService.proposals
       .filter((p) => p.scheduleId === scheduleId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

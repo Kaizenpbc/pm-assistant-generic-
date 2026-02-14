@@ -2,6 +2,8 @@ import { claudeService } from './claudeService';
 import { ScheduleService, Task } from './ScheduleService';
 import { ResourceService, Resource } from './ResourceService';
 import { config } from '../config';
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
 import {
   MeetingAnalysis,
   MeetingAIResponse,
@@ -18,6 +20,16 @@ export class MeetingIntelligenceService {
 
   private scheduleService = new ScheduleService();
   private resourceService = new ResourceService();
+
+  private get useDb() { return databaseService.isHealthy(); }
+
+  private rowToAnalysis(row: any): MeetingAnalysis {
+    const c = toCamelCaseKeys(row);
+    return {
+      ...c,
+      createdAt: new Date(c.createdAt).toISOString(),
+    } as MeetingAnalysis;
+  }
 
   // -------------------------------------------------------------------------
   // Analyze a meeting transcript
@@ -125,6 +137,26 @@ Analyze this meeting transcript and extract all actionable information.`;
       createdAt: new Date().toISOString(),
     };
 
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO meeting_analyses (id, project_id, schedule_id, transcript, summary, action_items, decisions, risks, task_updates, applied_items, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          analysis.id,
+          analysis.projectId,
+          analysis.scheduleId,
+          analysis.transcript,
+          analysis.summary,
+          JSON.stringify(analysis.actionItems),
+          JSON.stringify(analysis.decisions),
+          JSON.stringify(analysis.risks),
+          JSON.stringify(analysis.taskUpdates),
+          JSON.stringify(analysis.appliedItems),
+          new Date(analysis.createdAt),
+        ],
+      );
+    }
+
     MeetingIntelligenceService.analyses.push(analysis);
     return analysis;
   }
@@ -138,7 +170,7 @@ Analyze this meeting transcript and extract all actionable information.`;
     selectedIndices: number[],
     userId?: string,
   ): Promise<{ applied: number; errors: string[] }> {
-    const analysis = this.getAnalysis(analysisId);
+    const analysis = await this.getAnalysis(analysisId);
     if (!analysis) {
       return { applied: 0, errors: [`Analysis not found: ${analysisId}`] };
     }
@@ -253,6 +285,14 @@ Analyze this meeting transcript and extract all actionable information.`;
       }
     }
 
+    // Fire-and-forget: persist updated appliedItems to DB
+    if (this.useDb) {
+      databaseService.query(
+        'UPDATE meeting_analyses SET applied_items = ? WHERE id = ?',
+        [JSON.stringify(analysis.appliedItems), analysisId],
+      ).catch(() => {});
+    }
+
     return { applied, errors };
   }
 
@@ -260,13 +300,24 @@ Analyze this meeting transcript and extract all actionable information.`;
   // Getters
   // -------------------------------------------------------------------------
 
-  getAnalysis(id: string): MeetingAnalysis | null {
+  async getAnalysis(id: string): Promise<MeetingAnalysis | null> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM meeting_analyses WHERE id = ?', [id]);
+      return rows.length > 0 ? this.rowToAnalysis(rows[0]) : null;
+    }
     return (
       MeetingIntelligenceService.analyses.find((a) => a.id === id) || null
     );
   }
 
-  getProjectHistory(projectId: string): MeetingAnalysis[] {
+  async getProjectHistory(projectId: string): Promise<MeetingAnalysis[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query(
+        'SELECT * FROM meeting_analyses WHERE project_id = ? ORDER BY created_at DESC',
+        [projectId],
+      );
+      return rows.map((r: any) => this.rowToAnalysis(r));
+    }
     return MeetingIntelligenceService.analyses
       .filter((a) => a.projectId === projectId)
       .sort(

@@ -1,3 +1,6 @@
+import { databaseService } from '../database/connection';
+import { toCamelCaseKeys } from '../utils/caseConverter';
+
 export type ProjectRole = 'owner' | 'manager' | 'editor' | 'viewer';
 
 export interface ProjectMember {
@@ -32,61 +35,120 @@ export class ProjectMemberService {
     { id: 'pm-9', projectId: '3', userId: '7', userName: 'James Brown', email: 'james.b@example.com', role: 'editor', addedAt: new Date().toISOString() },
   ];
 
-  findByProjectId(projectId: string): ProjectMember[] {
+  private get useDb() { return databaseService.isHealthy(); }
+
+  private rowToMember(row: any): ProjectMember {
+    const c = toCamelCaseKeys(row);
+    return {
+      ...c,
+      addedAt: new Date(c.addedAt).toISOString(),
+    } as ProjectMember;
+  }
+
+  async findByProjectId(projectId: string): Promise<ProjectMember[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM project_members WHERE project_id = ?', [projectId]);
+      return rows.map((r: any) => this.rowToMember(r));
+    }
     return ProjectMemberService.members.filter(m => m.projectId === projectId);
   }
 
-  findByUserId(userId: string): ProjectMember[] {
+  async findByUserId(userId: string): Promise<ProjectMember[]> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM project_members WHERE user_id = ?', [userId]);
+      return rows.map((r: any) => this.rowToMember(r));
+    }
     return ProjectMemberService.members.filter(m => m.userId === userId);
   }
 
-  findMembership(projectId: string, userId: string): ProjectMember | undefined {
+  async findMembership(projectId: string, userId: string): Promise<ProjectMember | undefined> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM project_members WHERE project_id = ? AND user_id = ?', [projectId, userId]);
+      return rows.length > 0 ? this.rowToMember(rows[0]) : undefined;
+    }
     return ProjectMemberService.members.find(m => m.projectId === projectId && m.userId === userId);
   }
 
-  hasAccess(projectId: string, userId: string): boolean {
+  async hasAccess(projectId: string, userId: string): Promise<boolean> {
     // Admin bypass
     if (userId === '1') return true;
-    return !!this.findMembership(projectId, userId);
+    return !!(await this.findMembership(projectId, userId));
   }
 
-  hasRole(projectId: string, userId: string, minRole: ProjectRole): boolean {
+  async hasRole(projectId: string, userId: string, minRole: ProjectRole): Promise<boolean> {
     // Admin bypass
     if (userId === '1') return true;
-    const membership = this.findMembership(projectId, userId);
+    const membership = await this.findMembership(projectId, userId);
     if (!membership) return false;
     return ROLE_HIERARCHY[membership.role] >= ROLE_HIERARCHY[minRole];
   }
 
-  addMember(projectId: string, data: { userId: string; userName: string; email: string; role: ProjectRole }): ProjectMember {
+  async addMember(projectId: string, data: { userId: string; userName: string; email: string; role: ProjectRole }): Promise<ProjectMember> {
     // Check if already a member
-    const existing = this.findMembership(projectId, data.userId);
+    const existing = await this.findMembership(projectId, data.userId);
     if (existing) {
+      if (this.useDb) {
+        await databaseService.query('UPDATE project_members SET role = ? WHERE id = ?', [data.role, existing.id]);
+        return { ...existing, role: data.role };
+      }
       existing.role = data.role;
       return existing;
     }
 
+    const id = `pm-${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date();
+
+    if (this.useDb) {
+      await databaseService.query(
+        `INSERT INTO project_members (id, project_id, user_id, user_name, email, role, added_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, projectId, data.userId, data.userName, data.email, data.role, now],
+      );
+      return { id, projectId, userId: data.userId, userName: data.userName, email: data.email, role: data.role, addedAt: now.toISOString() };
+    }
+
     const member: ProjectMember = {
-      id: `pm-${Math.random().toString(36).substr(2, 9)}`,
+      id,
       projectId,
       userId: data.userId,
       userName: data.userName,
       email: data.email,
       role: data.role,
-      addedAt: new Date().toISOString(),
+      addedAt: now.toISOString(),
     };
     ProjectMemberService.members.push(member);
     return member;
   }
 
-  updateRole(memberId: string, role: ProjectRole): ProjectMember | null {
+  async updateRole(memberId: string, role: ProjectRole): Promise<ProjectMember | null> {
+    if (this.useDb) {
+      await databaseService.query('UPDATE project_members SET role = ? WHERE id = ?', [role, memberId]);
+      const rows = await databaseService.query('SELECT * FROM project_members WHERE id = ?', [memberId]);
+      return rows.length > 0 ? this.rowToMember(rows[0]) : null;
+    }
     const member = ProjectMemberService.members.find(m => m.id === memberId);
     if (!member) return null;
     member.role = role;
     return member;
   }
 
-  removeMember(memberId: string): boolean {
+  async removeMember(memberId: string): Promise<boolean> {
+    if (this.useDb) {
+      const rows = await databaseService.query('SELECT * FROM project_members WHERE id = ?', [memberId]);
+      if (rows.length === 0) return false;
+      const member = this.rowToMember(rows[0]);
+      if (member.role === 'owner') {
+        const countRows = await databaseService.query(
+          'SELECT COUNT(*) as cnt FROM project_members WHERE project_id = ? AND role = ?',
+          [member.projectId, 'owner'],
+        );
+        const ownerCount = (countRows[0] as any).cnt ?? (countRows[0] as any).CNT;
+        if (ownerCount <= 1) return false;
+      }
+      await databaseService.query('DELETE FROM project_members WHERE id = ?', [memberId]);
+      return true;
+    }
+
     const idx = ProjectMemberService.members.findIndex(m => m.id === memberId);
     if (idx === -1) return false;
     // Don't allow removing last owner
