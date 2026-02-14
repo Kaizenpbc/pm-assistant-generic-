@@ -104,6 +104,10 @@ export function PieChart({ data }: PieChartProps) {
 
   const total = data.reduce((s, d) => s + Math.max(d.value, 0), 0);
 
+  // Build text summary for screen readers
+  const chartSummary = `Donut chart with ${segments.length} segments totaling ${formatValue(total)}. ` +
+    segments.map(s => `${s.label}: ${formatValue(s.value)} (${s.pct}%)`).join(', ') + '.';
+
   return (
     <div className="w-full flex flex-col items-center">
       <div className="relative" style={{ maxWidth: svgSize }}>
@@ -111,6 +115,8 @@ export function PieChart({ data }: PieChartProps) {
           viewBox={`0 0 ${svgSize} ${svgSize}`}
           className="w-full"
           preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label={chartSummary}
         >
           {/* Segments */}
           {segments.map((seg, i) => (

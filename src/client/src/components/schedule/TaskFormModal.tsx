@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Save, Trash2 } from 'lucide-react';
 import type { GanttTask } from './GanttChart';
 import { TaskActivityPanel } from './TaskActivityPanel';
@@ -61,6 +61,45 @@ export function TaskFormModal({
   scheduleId,
 }: TaskFormModalProps) {
   const isEdit = !!task;
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap and Escape key handler (WCAG 2.1.2, 2.4.3)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      // Focus trap: Tab key cycles through modal focusable elements
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Save previously focused element and restore on close
+    const previouslyFocused = document.activeElement as HTMLElement;
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [onClose]);
 
   const [form, setForm] = useState<TaskFormData>({
     name: '',
@@ -117,22 +156,28 @@ export function TaskFormModal({
   const otherTasks = allTasks.filter((t) => t.id !== task?.id);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="task-modal-title"
+    >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div ref={modalRef} className="relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-base font-bold text-gray-900">
+          <h2 id="task-modal-title" className="text-base font-bold text-gray-900">
             {isEdit ? 'Edit Task' : 'Add Task'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            aria-label="Close dialog"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -140,10 +185,11 @@ export function TaskFormModal({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {/* Task Name */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Task Name <span className="text-red-500">*</span>
+            <label htmlFor="task-name" className="block text-xs font-medium text-gray-600 mb-1">
+              Task Name <span className="text-red-500" aria-hidden="true">*</span>
             </label>
             <input
+              id="task-name"
               type="text"
               name="name"
               value={form.name}
@@ -152,15 +198,17 @@ export function TaskFormModal({
               className="input w-full"
               required
               autoFocus
+              aria-required="true"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label htmlFor="task-description" className="block text-xs font-medium text-gray-600 mb-1">
               Description
             </label>
             <textarea
+              id="task-description"
               name="description"
               value={form.description}
               onChange={handleChange}
@@ -173,8 +221,9 @@ export function TaskFormModal({
           {/* Status + Priority row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+              <label htmlFor="task-status" className="block text-xs font-medium text-gray-600 mb-1">Status</label>
               <select
+                id="task-status"
                 name="status"
                 value={form.status}
                 onChange={handleChange}
@@ -187,8 +236,9 @@ export function TaskFormModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Priority</label>
+              <label htmlFor="task-priority" className="block text-xs font-medium text-gray-600 mb-1">Priority</label>
               <select
+                id="task-priority"
                 name="priority"
                 value={form.priority}
                 onChange={handleChange}
@@ -205,8 +255,9 @@ export function TaskFormModal({
           {/* Dates row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
+              <label htmlFor="task-start-date" className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
               <input
+                id="task-start-date"
                 type="date"
                 name="startDate"
                 value={form.startDate}
@@ -215,8 +266,9 @@ export function TaskFormModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
+              <label htmlFor="task-end-date" className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
               <input
+                id="task-end-date"
                 type="date"
                 name="endDate"
                 value={form.endDate}
@@ -229,10 +281,11 @@ export function TaskFormModal({
           {/* Progress + Estimated Days */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label htmlFor="task-progress" className="block text-xs font-medium text-gray-600 mb-1">
                 Progress: {form.progressPercentage}%
               </label>
               <input
+                id="task-progress"
                 type="range"
                 min="0"
                 max="100"
@@ -248,10 +301,11 @@ export function TaskFormModal({
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label htmlFor="task-est-days" className="block text-xs font-medium text-gray-600 mb-1">
                 Est. Duration (days)
               </label>
               <input
+                id="task-est-days"
                 type="number"
                 name="estimatedDays"
                 value={form.estimatedDays}
@@ -265,8 +319,9 @@ export function TaskFormModal({
 
           {/* Assigned To */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Assigned To</label>
+            <label htmlFor="task-assigned-to" className="block text-xs font-medium text-gray-600 mb-1">Assigned To</label>
             <input
+              id="task-assigned-to"
               type="text"
               name="assignedTo"
               value={form.assignedTo}
@@ -279,8 +334,9 @@ export function TaskFormModal({
           {/* Parent Task + Dependency */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Parent Task</label>
+              <label htmlFor="task-parent" className="block text-xs font-medium text-gray-600 mb-1">Parent Task</label>
               <select
+                id="task-parent"
                 name="parentTaskId"
                 value={form.parentTaskId}
                 onChange={handleChange}
@@ -297,10 +353,11 @@ export function TaskFormModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label htmlFor="task-dependency" className="block text-xs font-medium text-gray-600 mb-1">
                 Depends On
               </label>
               <select
+                id="task-dependency"
                 name="dependency"
                 value={form.dependency}
                 onChange={handleChange}

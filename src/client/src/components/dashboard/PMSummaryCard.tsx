@@ -36,7 +36,8 @@ export const PMSummaryCard: React.FC<PMSummaryCardProps> = ({
   return (
     <button
       onClick={onClick}
-      className="bg-white rounded-xl border border-gray-200 p-5 text-left hover:shadow-lg hover:border-indigo-300 transition-all duration-200 w-full group"
+      className="bg-white rounded-xl border border-gray-200 p-5 text-left hover:shadow-lg hover:border-indigo-300 transition-all duration-200 w-full group focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+      aria-label={`PM: ${fullName}. ${projectCount} projects. ${onTrack} on track, ${atRisk} at risk, ${delayed} delayed.`}
     >
       <div className="flex items-center gap-3 mb-3">
         <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
@@ -50,20 +51,20 @@ export const PMSummaryCard: React.FC<PMSummaryCardProps> = ({
 
       {/* Projects count */}
       <div className="flex items-center gap-2 mb-3">
-        <FolderKanban className="w-3.5 h-3.5 text-gray-400" />
+        <FolderKanban className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
         <span className="text-xs text-gray-600">{projectCount} Projects</span>
       </div>
 
-      {/* Status Pills */}
+      {/* Status Pills (WCAG 1.4.1 - not color-only, includes text labels + icons) */}
       <div className="flex gap-2 mb-3">
         <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700">
-          <TrendingUp className="w-3 h-3" /> {onTrack}
+          <TrendingUp className="w-3 h-3" aria-hidden="true" /> {onTrack} On Track
         </span>
         <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-yellow-50 text-yellow-700">
-          <AlertTriangle className="w-3 h-3" /> {atRisk}
+          <AlertTriangle className="w-3 h-3" aria-hidden="true" /> {atRisk} At Risk
         </span>
         <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-50 text-red-700">
-          <Clock className="w-3 h-3" /> {delayed}
+          <Clock className="w-3 h-3" aria-hidden="true" /> {delayed} Delayed
         </span>
       </div>
 

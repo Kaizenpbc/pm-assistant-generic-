@@ -62,58 +62,69 @@ const FilterBar: React.FC = () => {
   }
 
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-3 text-sm">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1 text-gray-500 text-xs mr-2">
-        {breadcrumbs.map((crumb, i) => (
-          <React.Fragment key={i}>
-            {i > 0 && <ChevronRight className="w-3 h-3" />}
-            <span className={i === breadcrumbs.length - 1 ? 'text-gray-900 font-medium' : ''}>
-              {crumb}
-            </span>
-          </React.Fragment>
-        ))}
-      </div>
-
-      {/* Portfolio Dropdown */}
-      {showPortfolioFilter && (
-        <select
-          value={selectedPortfolioId || ''}
-          onChange={(e) => setPortfolioFilter(e.target.value || null)}
-          className="text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white text-gray-700 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          <option value="">All Portfolios</option>
-          {portfolios.map((p) => (
-            <option key={p.portfolioId} value={p.portfolioId}>
-              {p.portfolioName} ({p.projectCount})
-            </option>
+    <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-3 text-sm" role="toolbar" aria-label="Data filters">
+      {/* Breadcrumb (WCAG 2.4.8) */}
+      <nav aria-label="Filter breadcrumb" className="flex items-center gap-1 text-gray-500 text-xs mr-2">
+        <ol className="flex items-center gap-1">
+          {breadcrumbs.map((crumb, i) => (
+            <li key={i} className="flex items-center gap-1">
+              {i > 0 && <ChevronRight className="w-3 h-3" aria-hidden="true" />}
+              <span className={i === breadcrumbs.length - 1 ? 'text-gray-900 font-medium' : ''} aria-current={i === breadcrumbs.length - 1 ? 'location' : undefined}>
+                {crumb}
+              </span>
+            </li>
           ))}
-        </select>
+        </ol>
+      </nav>
+
+      {/* Portfolio Dropdown (WCAG 1.3.1 -- labelled) */}
+      {showPortfolioFilter && (
+        <div className="flex items-center gap-1.5">
+          <label htmlFor="filter-portfolio" className="sr-only">Filter by portfolio</label>
+          <select
+            id="filter-portfolio"
+            value={selectedPortfolioId || ''}
+            onChange={(e) => setPortfolioFilter(e.target.value || null)}
+            className="text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">All Portfolios</option>
+            {portfolios.map((p) => (
+              <option key={p.portfolioId} value={p.portfolioId}>
+                {p.portfolioName} ({p.projectCount})
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
-      {/* PM Dropdown */}
+      {/* PM Dropdown (WCAG 1.3.1 -- labelled) */}
       {showPmFilter && (
-        <select
-          value={selectedPmUserId || ''}
-          onChange={(e) => setPmFilter(e.target.value || null)}
-          className="text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white text-gray-700 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          <option value="">All PMs</option>
-          {pms.map((pm) => (
-            <option key={pm.userId} value={pm.userId}>
-              {pm.fullName} ({pm.projectCount})
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1.5">
+          <label htmlFor="filter-pm" className="sr-only">Filter by project manager</label>
+          <select
+            id="filter-pm"
+            value={selectedPmUserId || ''}
+            onChange={(e) => setPmFilter(e.target.value || null)}
+            className="text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">All PMs</option>
+            {pms.map((pm) => (
+              <option key={pm.userId} value={pm.userId}>
+                {pm.fullName} ({pm.projectCount})
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
       {/* Clear button */}
       {hasFilters && (
         <button
           onClick={clearFilters}
-          className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
+          className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 focus:ring-2 focus:ring-indigo-500 focus:outline-none rounded px-1 py-0.5"
+          aria-label="Clear all filters"
         >
-          <X className="w-3 h-3" />
+          <X className="w-3 h-3" aria-hidden="true" />
           Clear
         </button>
       )}

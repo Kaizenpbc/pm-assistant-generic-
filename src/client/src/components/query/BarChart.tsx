@@ -121,9 +121,13 @@ export function BarChart({ data, xAxisLabel, yAxisLabel, horizontal = false }: B
   const { bars, yTicks, pad, plotW, plotH } = layout;
   const needsRotation = !horizontal && data.length > 5;
 
+  // Build text summary for screen readers
+  const chartSummary = `Bar chart${xAxisLabel ? ` showing ${xAxisLabel}` : ''}${yAxisLabel ? ` by ${yAxisLabel}` : ''} with ${data.length} items. ` +
+    data.map(d => `${d.label}: ${formatValue(d.value)}`).join(', ') + '.';
+
   return (
     <div className="w-full">
-      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full" preserveAspectRatio="xMidYMid meet" role="img" aria-label={chartSummary}>
         {/* Grid lines */}
         {horizontal
           ? yTicks.map((t, i) => {
