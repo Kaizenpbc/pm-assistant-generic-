@@ -1,13 +1,15 @@
 import { databaseService } from '../database/connection';
 import { toCamelCaseKeys } from '../utils/caseConverter';
 
+export type UserRole = 'admin' | 'pmo_manager' | 'portfolio_manager' | 'pm';
+
 export interface User {
   id: string;
   username: string;
   email: string;
   passwordHash: string;
   fullName: string;
-  role: 'admin' | 'executive' | 'manager' | 'member';
+  role: UserRole;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -18,7 +20,7 @@ export interface CreateUserData {
   email: string;
   passwordHash: string;
   fullName: string;
-  role?: 'admin' | 'executive' | 'manager' | 'member';
+  role?: UserRole;
 }
 
 export class UserService {
@@ -30,6 +32,50 @@ export class UserService {
       passwordHash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
       fullName: 'Administrator',
       role: 'admin',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: '2',
+      username: 'pmo_manager',
+      email: 'pmo@example.com',
+      passwordHash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
+      fullName: 'Maria Lopez',
+      role: 'pmo_manager',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: '3',
+      username: 'portfolio_mgr',
+      email: 'portfolio@example.com',
+      passwordHash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
+      fullName: 'David Kim',
+      role: 'portfolio_manager',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: '4',
+      username: 'john_pm',
+      email: 'john@example.com',
+      passwordHash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
+      fullName: 'John Smith',
+      role: 'pm',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: '5',
+      username: 'sarah_pm',
+      email: 'sarah@example.com',
+      passwordHash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
+      fullName: 'Sarah Chen',
+      role: 'pm',
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -76,7 +122,7 @@ export class UserService {
   async create(data: CreateUserData): Promise<User> {
     const id = Math.random().toString(36).substr(2, 9);
     const now = new Date();
-    const role = data.role || 'member';
+    const role = data.role || 'pm';
 
     if (this.useDb) {
       await databaseService.query(

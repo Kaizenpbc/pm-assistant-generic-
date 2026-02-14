@@ -1,6 +1,20 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
+import type { UserRole } from '../services/UserService';
+
+/**
+ * Factory that creates a preHandler checking the user has one of the allowed roles.
+ * Must run AFTER authMiddleware.
+ */
+export function requireRole(...roles: UserRole[]) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = (request as any).user;
+    if (!user || !roles.includes(user.role)) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Insufficient permissions' });
+    }
+  };
+}
 
 export async function authMiddleware(request: FastifyRequest, reply: FastifyReply) {
   try {

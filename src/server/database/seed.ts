@@ -36,6 +36,70 @@ const USERS = [
     role: 'admin',
     is_active: true,
   },
+  {
+    id: '2',
+    username: 'pmo_manager',
+    email: 'pmo@example.com',
+    password_hash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
+    full_name: 'Maria Lopez',
+    role: 'pmo_manager',
+    is_active: true,
+  },
+  {
+    id: '3',
+    username: 'portfolio_mgr',
+    email: 'portfolio@example.com',
+    password_hash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
+    full_name: 'David Kim',
+    role: 'portfolio_manager',
+    is_active: true,
+  },
+  {
+    id: '4',
+    username: 'john_pm',
+    email: 'john@example.com',
+    password_hash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
+    full_name: 'John Smith',
+    role: 'pm',
+    is_active: true,
+  },
+  {
+    id: '5',
+    username: 'sarah_pm',
+    email: 'sarah@example.com',
+    password_hash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
+    full_name: 'Sarah Chen',
+    role: 'pm',
+    is_active: true,
+  },
+];
+
+const PORTFOLIOS = [
+  {
+    id: 'portfolio-1',
+    name: 'Road Infrastructure 2026',
+    description: 'All road and infrastructure projects for fiscal year 2026',
+    created_by: '1',
+    is_active: true,
+  },
+  {
+    id: 'portfolio-2',
+    name: 'IT Modernization',
+    description: 'Technology modernization and cloud migration initiatives',
+    created_by: '1',
+    is_active: true,
+  },
+];
+
+const USER_PORTFOLIO_ASSIGNMENTS = [
+  // David Kim (portfolio_manager) manages both portfolios
+  { id: 'upa-1', user_id: '3', portfolio_id: 'portfolio-1' },
+  { id: 'upa-2', user_id: '3', portfolio_id: 'portfolio-2' },
+  // John Smith (PM) is in both portfolios
+  { id: 'upa-3', user_id: '4', portfolio_id: 'portfolio-1' },
+  { id: 'upa-4', user_id: '4', portfolio_id: 'portfolio-2' },
+  // Sarah Chen (PM) is in Road Infrastructure portfolio
+  { id: 'upa-5', user_id: '5', portfolio_id: 'portfolio-1' },
 ];
 
 const PROJECTS = [
@@ -55,7 +119,8 @@ const PROJECTS = [
     location_lon: -74.01,
     start_date: '2026-01-15',
     end_date: '2026-12-31',
-    created_by: '1',
+    portfolio_id: 'portfolio-2',
+    created_by: '4',  // John Smith (PM)
   },
   {
     id: '2',
@@ -73,7 +138,8 @@ const PROJECTS = [
     location_lon: -121.89,
     start_date: '2026-03-01',
     end_date: '2028-06-30',
-    created_by: '1',
+    portfolio_id: 'portfolio-1',
+    created_by: '4',  // John Smith (PM)
   },
   {
     id: '3',
@@ -91,20 +157,15 @@ const PROJECTS = [
     location_lon: -87.63,
     start_date: '2025-06-01',
     end_date: '2027-12-31',
-    created_by: '1',
+    portfolio_id: 'portfolio-1',
+    created_by: '5',  // Sarah Chen (PM)
   },
 ];
 
 const PROJECT_MEMBERS = [
-  { id: 'pm-1', project_id: '1', user_id: '1', user_name: 'Admin User', email: 'admin@example.com', role: 'owner' },
-  { id: 'pm-2', project_id: '2', user_id: '1', user_name: 'Admin User', email: 'admin@example.com', role: 'owner' },
-  { id: 'pm-3', project_id: '3', user_id: '1', user_name: 'Admin User', email: 'admin@example.com', role: 'owner' },
-  { id: 'pm-4', project_id: '1', user_id: '2', user_name: 'Sarah Chen', email: 'sarah.chen@example.com', role: 'manager' },
-  { id: 'pm-5', project_id: '1', user_id: '3', user_name: 'Mike Johnson', email: 'mike.j@example.com', role: 'editor' },
-  { id: 'pm-6', project_id: '1', user_id: '4', user_name: 'Emily Davis', email: 'emily.d@example.com', role: 'viewer' },
-  { id: 'pm-7', project_id: '2', user_id: '5', user_name: 'Tom Wilson', email: 'tom.w@example.com', role: 'editor' },
-  { id: 'pm-8', project_id: '3', user_id: '6', user_name: 'Lisa Park', email: 'lisa.p@example.com', role: 'manager' },
-  { id: 'pm-9', project_id: '3', user_id: '7', user_name: 'James Brown', email: 'james.b@example.com', role: 'editor' },
+  { id: 'pm-1', project_id: '1', user_id: '4', user_name: 'John Smith', email: 'john@example.com', role: 'owner' },
+  { id: 'pm-2', project_id: '2', user_id: '4', user_name: 'John Smith', email: 'john@example.com', role: 'owner' },
+  { id: 'pm-3', project_id: '3', user_id: '5', user_name: 'Sarah Chen', email: 'sarah@example.com', role: 'owner' },
 ];
 
 const SCHEDULES = [
@@ -263,6 +324,7 @@ async function seed() {
       'meeting_analyses', 'reschedule_proposals', 'baselines', 'tasks',
       'patterns', 'lessons_learned', 'schedules', 'project_members',
       'audit_events', 'chat_conversations', 'projects',
+      'user_portfolio_assignments', 'portfolios',
       'workflow_rules', 'resources', 'project_templates', 'users',
     ];
 
@@ -275,6 +337,12 @@ async function seed() {
     // Insert in dependency order
     console.log('  Seeding users...');
     await bulkInsert(conn, 'users', USERS);
+
+    console.log('  Seeding portfolios...');
+    await bulkInsert(conn, 'portfolios', PORTFOLIOS);
+
+    console.log('  Seeding user_portfolio_assignments...');
+    await bulkInsert(conn, 'user_portfolio_assignments', USER_PORTFOLIO_ASSIGNMENTS);
 
     console.log('  Seeding projects...');
     await bulkInsert(conn, 'projects', PROJECTS);
@@ -301,6 +369,8 @@ async function seed() {
 
     console.log('\nSeed complete:');
     console.log(`  ${USERS.length} users`);
+    console.log(`  ${PORTFOLIOS.length} portfolios`);
+    console.log(`  ${USER_PORTFOLIO_ASSIGNMENTS.length} portfolio assignments`);
     console.log(`  ${PROJECTS.length} projects`);
     console.log(`  ${PROJECT_MEMBERS.length} project members`);
     console.log(`  ${SCHEDULES.length} schedules`);

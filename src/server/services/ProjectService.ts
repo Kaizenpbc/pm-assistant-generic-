@@ -18,6 +18,7 @@ export interface Project {
   startDate?: Date;
   endDate?: Date;
   projectManagerId?: string;
+  portfolioId?: string;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -37,6 +38,7 @@ export interface CreateProjectData {
   locationLon?: number;
   startDate?: Date;
   endDate?: Date;
+  portfolioId?: string;
   userId: string;
 }
 
@@ -58,7 +60,8 @@ export class ProjectService {
       locationLon: -74.01,
       startDate: new Date('2026-01-15'),
       endDate: new Date('2026-12-31'),
-      createdBy: '1',
+      portfolioId: 'portfolio-2',
+      createdBy: '4',  // John Smith (PM)
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -78,7 +81,8 @@ export class ProjectService {
       locationLon: -121.89,
       startDate: new Date('2026-03-01'),
       endDate: new Date('2028-06-30'),
-      createdBy: '1',
+      portfolioId: 'portfolio-1',
+      createdBy: '4',  // John Smith (PM)
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -98,7 +102,8 @@ export class ProjectService {
       locationLon: -87.63,
       startDate: new Date('2025-06-01'),
       endDate: new Date('2027-12-31'),
-      createdBy: '1',
+      portfolioId: 'portfolio-1',
+      createdBy: '5',  // Sarah Chen (PM)
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -151,6 +156,66 @@ export class ProjectService {
     return this.projects;
   }
 
+  async findByPortfolioIds(portfolioIds: string[]): Promise<Project[]> {
+    if (portfolioIds.length === 0) return [];
+    if (this.useDb) {
+      const placeholders = portfolioIds.map(() => '?').join(', ');
+      const rows = await databaseService.query(
+        `SELECT * FROM projects WHERE portfolio_id IN (${placeholders})`,
+        portfolioIds,
+      );
+      return rows.map((r: any) => this.rowToProject(r));
+    }
+    return this.projects.filter(p => p.portfolioId && portfolioIds.includes(p.portfolioId));
+  }
+
+  /**
+   * Scope-aware query: returns projects based on role-based data scope.
+   * - pmUserIds = specific user IDs → filter by created_by
+   * - pmUserIds = 'all' → no user filter (but may still filter by portfolio)
+   * - portfolioIds = specific IDs → filter by portfolio_id
+   * - portfolioIds = 'all' → no portfolio filter
+   */
+  async findByScope(scope: {
+    portfolioIds: string[] | 'all';
+    pmUserIds: string[] | 'all';
+    filterPortfolioId?: string;
+    filterPmUserId?: string;
+  }): Promise<Project[]> {
+    // Start with all projects and narrow down
+    let projects: Project[];
+
+    if (scope.pmUserIds !== 'all' && scope.pmUserIds.length > 0) {
+      // PM or limited scope — filter by user IDs
+      if (this.useDb) {
+        const placeholders = scope.pmUserIds.map(() => '?').join(', ');
+        const rows = await databaseService.query(
+          `SELECT * FROM projects WHERE created_by IN (${placeholders})`,
+          scope.pmUserIds,
+        );
+        projects = rows.map((r: any) => this.rowToProject(r));
+      } else {
+        projects = this.projects.filter(p => (scope.pmUserIds as string[]).includes(p.createdBy));
+      }
+    } else if (scope.portfolioIds !== 'all' && scope.portfolioIds.length > 0) {
+      // Portfolio manager — filter by portfolio IDs
+      projects = await this.findByPortfolioIds(scope.portfolioIds);
+    } else {
+      // PMO / Admin — see all
+      projects = await this.findAll();
+    }
+
+    // Apply optional filter bar narrowing
+    if (scope.filterPortfolioId) {
+      projects = projects.filter(p => p.portfolioId === scope.filterPortfolioId);
+    }
+    if (scope.filterPmUserId) {
+      projects = projects.filter(p => p.createdBy === scope.filterPmUserId);
+    }
+
+    return projects;
+  }
+
   async create(data: CreateProjectData): Promise<Project> {
     const id = Math.random().toString(36).substr(2, 9);
     const now = new Date();
@@ -161,9 +226,9 @@ export class ProjectService {
 
     if (this.useDb) {
       await databaseService.query(
-        `INSERT INTO projects (id, name, description, category, project_type, status, priority, budget_allocated, budget_spent, currency, location, location_lat, location_lon, start_date, end_date, created_by, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, data.name, data.description ?? null, data.category ?? null, projectType, status, priority, data.budgetAllocated ?? null, 0, currency, data.location ?? null, data.locationLat ?? null, data.locationLon ?? null, data.startDate ?? null, data.endDate ?? null, data.userId, now, now],
+        `INSERT INTO projects (id, name, description, category, project_type, status, priority, budget_allocated, budget_spent, currency, location, location_lat, location_lon, start_date, end_date, portfolio_id, created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, data.name, data.description ?? null, data.category ?? null, projectType, status, priority, data.budgetAllocated ?? null, 0, currency, data.location ?? null, data.locationLat ?? null, data.locationLon ?? null, data.startDate ?? null, data.endDate ?? null, data.portfolioId ?? null, data.userId, now, now],
       );
       return {
         id,
@@ -181,6 +246,7 @@ export class ProjectService {
         locationLon: data.locationLon,
         startDate: data.startDate,
         endDate: data.endDate,
+        portfolioId: data.portfolioId,
         createdBy: data.userId,
         createdAt: now,
         updatedAt: now,
@@ -203,6 +269,7 @@ export class ProjectService {
       locationLon: data.locationLon,
       startDate: data.startDate,
       endDate: data.endDate,
+      portfolioId: data.portfolioId,
       createdBy: data.userId,
       createdAt: now,
       updatedAt: now,
@@ -231,6 +298,7 @@ export class ProjectService {
         startDate: 'start_date',
         endDate: 'end_date',
         projectManagerId: 'project_manager_id',
+        portfolioId: 'portfolio_id',
       };
       for (const [key, col] of Object.entries(fieldMap)) {
         if ((data as any)[key] !== undefined) {

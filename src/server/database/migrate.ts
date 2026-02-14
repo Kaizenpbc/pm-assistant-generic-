@@ -1,7 +1,7 @@
 /**
  * Database Migration Script
  *
- * Creates all 19 tables for the PM Assistant application.
+ * Creates all 21 tables for the PM Assistant application.
  * All statements are idempotent (CREATE TABLE IF NOT EXISTS).
  * No foreign key constraints — the app handles referential integrity.
  *
@@ -34,12 +34,33 @@ const TABLES: string[] = [
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
-    role ENUM('admin','executive','manager','member') NOT NULL DEFAULT 'member',
+    role ENUM('admin','pmo_manager','portfolio_manager','pm') NOT NULL DEFAULT 'pm',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_users_username (username),
     INDEX idx_users_email (email)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  `CREATE TABLE IF NOT EXISTS portfolios (
+    id VARCHAR(36) NOT NULL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_by VARCHAR(36) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_portfolios_active (is_active)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  `CREATE TABLE IF NOT EXISTS user_portfolio_assignments (
+    id VARCHAR(36) NOT NULL PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    portfolio_id VARCHAR(36) NOT NULL,
+    assigned_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_upa_user (user_id),
+    INDEX idx_upa_portfolio (portfolio_id),
+    UNIQUE INDEX idx_upa_user_portfolio (user_id, portfolio_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
   `CREATE TABLE IF NOT EXISTS project_templates (
@@ -99,12 +120,14 @@ const TABLES: string[] = [
     start_date DATE DEFAULT NULL,
     end_date DATE DEFAULT NULL,
     project_manager_id VARCHAR(36) DEFAULT NULL,
+    portfolio_id VARCHAR(36) DEFAULT NULL,
     created_by VARCHAR(36) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_projects_status (status),
     INDEX idx_projects_created_by (created_by),
-    INDEX idx_projects_type (project_type)
+    INDEX idx_projects_type (project_type),
+    INDEX idx_projects_portfolio (portfolio_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
   `CREATE TABLE IF NOT EXISTS chat_conversations (

@@ -36,6 +36,20 @@ vi.mock('../../database/connection', () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Mock dataScope middleware — attach a default admin scope so routes work
+// ---------------------------------------------------------------------------
+vi.mock('../../middleware/dataScope', () => ({
+  dataScopeMiddleware: async (request: any, _reply: any) => {
+    request.dataScope = {
+      role: 'admin',
+      userId: request.user?.userId || '1',
+      portfolioIds: 'all',
+      pmUserIds: 'all',
+    };
+  },
+}));
+
+// ---------------------------------------------------------------------------
 // Mock logger utilities (avoid file-system side effects)
 // ---------------------------------------------------------------------------
 vi.mock('../../utils/logger', () => ({
@@ -70,6 +84,7 @@ let mockProjectDeleteResult: boolean = true;
 vi.mock('../../services/ProjectService', () => ({
   ProjectService: class {
     async findByUserId(_userId: string) { return mockProjectFindByUserIdResult; }
+    async findByScope(_scope: any) { return mockProjectFindByUserIdResult; }
     async findById(id: string, _userId?: string) { return mockProjectFindByIdResult; }
     async findAll() { return mockProjectFindByUserIdResult; }
     async create(data: any) {
