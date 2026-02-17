@@ -8,7 +8,11 @@ const configSchema = z.object({
   DB_HOST: z.string().min(1).default('localhost'),
   DB_PORT: z.coerce.number().min(1).max(65535).default(3306),
   DB_USER: z.string().min(1).default('root'),
-  DB_PASSWORD: z.string().min(1).default('rootpassword'),
+  // SECURITY: In production, DB_PASSWORD must be set via environment variable.
+  // The 'rootpassword' default is only used in development/test.
+  DB_PASSWORD: z.string().min(1).default(
+    process.env['NODE_ENV'] === 'production' ? '' : 'rootpassword'
+  ),
   DB_NAME: z.string().min(1).default('pm_assistant_generic'),
 
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
