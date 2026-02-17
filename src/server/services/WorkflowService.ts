@@ -1,44 +1,18 @@
 import { randomUUID } from 'crypto';
 import { Task, ScheduleService } from './ScheduleService';
+import { createServiceLogger } from '../utils/logger';
+import type {
+  TriggerType,
+  ActionType,
+  TriggerConfig,
+  ActionConfig,
+  WorkflowRule,
+  WorkflowExecution,
+} from '@shared/types';
 
-export type TriggerType = 'status_change' | 'date_passed' | 'progress_threshold';
-export type ActionType = 'update_field' | 'log_activity' | 'send_notification';
+export type { TriggerType, ActionType, TriggerConfig, ActionConfig, WorkflowRule, WorkflowExecution };
 
-export interface TriggerConfig {
-  type: TriggerType;
-  fromStatus?: string;
-  toStatus?: string;
-  progressThreshold?: number;
-  progressDirection?: 'above' | 'below';
-}
-
-export interface ActionConfig {
-  type: ActionType;
-  field?: string;
-  value?: string;
-  message?: string;
-}
-
-export interface WorkflowRule {
-  id: string;
-  name: string;
-  description?: string;
-  enabled: boolean;
-  trigger: TriggerConfig;
-  action: ActionConfig;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface WorkflowExecution {
-  ruleId: string;
-  ruleName: string;
-  taskId: string;
-  taskName: string;
-  actionType: string;
-  result: string;
-  executedAt: string;
-}
+const log = createServiceLogger('workflow');
 
 export class WorkflowService {
   private static rules: WorkflowRule[] = [
@@ -210,7 +184,7 @@ export class WorkflowService {
       }
       case 'send_notification': {
         // In-memory: just log it
-        process.stderr.write(`[Workflow Notification] ${action.message || rule.name} - Task: ${task.name}\n`);
+        log.info({ ruleName: rule.name, taskName: task.name }, `Notification: ${action.message || rule.name}`);
         return {
           ruleId: rule.id,
           ruleName: rule.name,

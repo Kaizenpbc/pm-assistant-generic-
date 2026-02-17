@@ -2,6 +2,9 @@ import { ResourceService, ResourceWorkload, WeeklyUtilization } from './Resource
 import { ScheduleService, Task } from './ScheduleService';
 import { claudeService } from './claudeService';
 import { config } from '../config';
+import { createServiceLogger } from '../utils/logger';
+
+const log = createServiceLogger('resource-optimizer');
 import {
   ResourceForecastResult,
   ResourceForecastResultSchema,
@@ -144,7 +147,7 @@ export class ResourceOptimizerService {
           allResources.map((r) => ({ id: r.id, name: r.name, role: r.role, skills: r.skills })),
         );
       } catch (err) {
-        process.stderr.write(`[ResourceOptimizerService] AI rebalance suggestion failed: ${err}\n`);
+        log.warn({ err }, 'AI rebalance suggestion failed');
         // Continue without AI suggestions
       }
     }

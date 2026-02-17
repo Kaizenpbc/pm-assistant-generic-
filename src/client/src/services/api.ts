@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
 class ApiService {
   private api: AxiosInstance;
+  private csrfToken: string | null = null;
 
   constructor() {
     this.api = axios.create({
@@ -12,15 +13,23 @@ class ApiService {
       },
     });
 
-    // Request interceptor
+    // Request interceptor — attach CSRF token to mutating requests
     this.api.interceptors.request.use(
       (config) => {
+        const method = (config.method || 'get').toLowerCase();
+        if (['post', 'put', 'delete', 'patch'].includes(method) && this.csrfToken) {
+          config.headers = config.headers || {};
+          config.headers['x-csrf-token'] = this.csrfToken;
+        }
         return config;
       },
       (error) => {
         return Promise.reject(error);
       }
     );
+
+    // Fetch CSRF token on initialization
+    this.fetchCsrfToken();
 
     // Response interceptor
     this.api.interceptors.response.use(
@@ -54,12 +63,28 @@ class ApiService {
     );
   }
 
+  /**
+   * Fetch a CSRF token from the server. Called on init and after login.
+   * The token is attached to all mutating requests via the request interceptor.
+   */
+  private async fetchCsrfToken(): Promise<void> {
+    try {
+      const response = await this.api.get('/csrf-token');
+      this.csrfToken = response.data.csrfToken;
+    } catch {
+      // Non-fatal — CSRF endpoint may not be available in dev or when server is down
+      this.csrfToken = null;
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Auth endpoints
   // -------------------------------------------------------------------------
 
   async login(username: string, password: string) {
     const response = await this.api.post('/auth/login', { username, password });
+    // Refresh CSRF token after login (new session cookie issued)
+    await this.fetchCsrfToken();
     return response.data;
   }
 

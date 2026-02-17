@@ -67,6 +67,7 @@ export interface Project {
   startDate?: string;
   endDate?: string;
   completionPercentage?: number;
+  progressPercentage?: number;
   projectManagerId?: string;
   createdBy: string;
   createdAt: string;
@@ -447,4 +448,47 @@ export interface CreateScheduleInput {
 
 export interface UpdateScheduleInput extends Partial<Omit<CreateScheduleInput, 'projectId'>> {
   status?: ScheduleStatus;
+}
+
+// ---------------------------------------------------------------------------
+// Workflows
+// ---------------------------------------------------------------------------
+
+export type TriggerType = 'status_change' | 'date_passed' | 'progress_threshold';
+export type ActionType = 'update_field' | 'log_activity' | 'send_notification';
+
+export interface TriggerConfig {
+  type: TriggerType;
+  fromStatus?: string;
+  toStatus?: string;
+  progressThreshold?: number;
+  progressDirection?: 'above' | 'below';
+}
+
+export interface ActionConfig {
+  type: ActionType;
+  field?: string;
+  value?: string;
+  message?: string;
+}
+
+export interface WorkflowRule {
+  id: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  trigger: TriggerConfig;
+  action: ActionConfig;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkflowExecution {
+  ruleId: string;
+  ruleName: string;
+  taskId: string;
+  taskName: string;
+  actionType: string;
+  result: string;
+  executedAt: string;
 }

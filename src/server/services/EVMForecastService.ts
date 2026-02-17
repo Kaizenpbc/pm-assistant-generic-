@@ -2,6 +2,9 @@ import { claudeService, PromptTemplate } from './claudeService';
 import { SCurveService, SCurveDataPoint } from './SCurveService';
 import { ProjectService, Project } from './ProjectService';
 import { config } from '../config';
+import { createServiceLogger } from '../utils/logger';
+
+const log = createServiceLogger('evm-forecast');
 import {
   EVMForecastAIResponseSchema,
   type EVMForecastResult,
@@ -123,8 +126,7 @@ export class EVMForecastService {
         }
       } catch (err) {
         // AI failure is non-critical — continue with traditional forecasts
-        // AI failure is non-critical — log to stderr without fastify context
-        process.stderr.write(`[EVMForecastService] AI prediction failed, using traditional only: ${err}\n`);
+        log.warn({ err }, 'AI prediction failed, using traditional only');
       }
     }
 

@@ -18,6 +18,19 @@ export async function registerPlugins(fastify: FastifyInstance) {
   // Decorate Fastify with the database pool so services can access it via fastify.db
   fastify.decorate('db', databaseService);
 
+  // Close DB pool when Fastify shuts down — registered early so it runs AFTER
+  // all other onClose hooks (LIFO order), ensuring in-flight requests can still
+  // use the database during drain.
+  fastify.addHook('onClose', async (instance) => {
+    instance.log.info('Closing database connection pool...');
+    try {
+      await databaseService.close();
+      instance.log.info('Database connection pool closed');
+    } catch (err) {
+      instance.log.error({ err }, 'Error closing database connection pool');
+    }
+  });
+
   await fastify.register(websocket);
 
   fastify.addHook('onRequest', requestLogger);

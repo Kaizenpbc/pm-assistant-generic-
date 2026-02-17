@@ -1,5 +1,8 @@
 import mysql from 'mysql2/promise';
 import { config } from '../config';
+import { createServiceLogger } from '../utils/logger';
+
+const log = createServiceLogger('database');
 
 export interface DatabaseConfig {
   host: string;
@@ -35,10 +38,9 @@ class DatabaseService {
 
       this.pool = mysql.createPool(dbConfig);
       this.isConnected = true;
-      // Note: Fastify logger not available during construction; use stderr
-      process.stderr.write('[db] Connection pool initialized\n');
+      log.info('Connection pool initialized');
     } catch (error) {
-      process.stderr.write(`[db] Failed to initialize connection pool: ${error}\n`);
+      log.error({ err: error }, 'Failed to initialize connection pool');
       this.isConnected = false;
     }
   }
@@ -78,7 +80,7 @@ class DatabaseService {
       await this.query('SELECT 1');
       return true;
     } catch (error) {
-      process.stderr.write(`[db] Connection test failed: ${error}\n`);
+      log.error({ err: error }, 'Connection test failed');
       return false;
     }
   }
@@ -88,7 +90,7 @@ class DatabaseService {
       await this.pool.end();
       this.pool = null;
       this.isConnected = false;
-      process.stderr.write('[db] Connection pool closed\n');
+      log.info('Connection pool closed');
     }
   }
 

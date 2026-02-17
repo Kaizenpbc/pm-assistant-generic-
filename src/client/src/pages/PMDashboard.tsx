@@ -13,19 +13,7 @@ import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
 import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
 import { TemplatePicker } from '../components/templates/TemplatePicker';
-
-interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  status: string;
-  priority?: string;
-  budgetAllocated?: number;
-  budgetSpent?: number;
-  progressPercentage?: number;
-  startDate?: string;
-  endDate?: string;
-}
+import type { Project } from '@shared/types';
 
 const statusStyles: Record<string, { label: string; color: string }> = {
   active: { label: 'Active', color: 'bg-green-100 text-green-700' },

@@ -3,6 +3,9 @@ import { CriticalPathService, CPMTaskResult } from './CriticalPathService';
 import { AutoRescheduleService } from './AutoRescheduleService';
 import { claudeService } from './claudeService';
 import { config } from '../config';
+import { createServiceLogger } from '../utils/logger';
+
+const log = createServiceLogger('task-prioritization');
 import {
   PrioritizedTask,
   PrioritizationResult,
@@ -204,7 +207,7 @@ export class TaskPrioritizationService {
           aiPowered = true;
         }
       } catch (error) {
-        process.stderr.write(`[TaskPrioritizationService] AI prioritization failed, using algorithmic fallback: ${error}\n`);
+        log.warn({ err: error }, 'AI prioritization failed, using algorithmic fallback');
       }
     }
 

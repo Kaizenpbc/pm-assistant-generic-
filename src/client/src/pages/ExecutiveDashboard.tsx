@@ -11,19 +11,7 @@ import {
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
 import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
-
-interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  status: string;
-  priority?: string;
-  budgetAllocated?: number;
-  budgetSpent?: number;
-  progressPercentage?: number;
-  startDate?: string;
-  endDate?: string;
-}
+import type { Project } from '@shared/types';
 
 export const ExecutiveDashboard: React.FC = () => {
   const navigate = useNavigate();

@@ -1,13 +1,31 @@
 // ---------------------------------------------------------------------------
-// Request logger hook for Fastify
+// Logging utilities for PM Assistant
 // ---------------------------------------------------------------------------
-// Fastify already uses pino internally (fastify.log), so we do NOT need
-// a separate Winston/pino instance.  This file exports a lightweight
-// request-level hook and convenience functions that delegate to
-// `request.log` (which is the Fastify-managed pino child logger).
+//
+// Provides two logging mechanisms:
+//
+// 1. requestLogger — Fastify onRequest hook that uses request.log (pino child)
+// 2. createServiceLogger — creates a standalone pino logger for services that
+//    don't have access to the Fastify instance (singletons, data providers, etc.)
+//
+// Fastify's built-in logger is pino, so using pino directly for standalone
+// loggers ensures consistent JSON-structured output across the entire app.
 // ---------------------------------------------------------------------------
 
+import pino from 'pino';
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { config } from '../config';
+
+/**
+ * Create a named pino logger for services that don't receive a Fastify instance.
+ * Output format matches Fastify's built-in pino logger.
+ */
+export function createServiceLogger(name: string): pino.Logger {
+  return pino({
+    name,
+    level: config.NODE_ENV === 'production' ? 'info' : 'debug',
+  });
+}
 
 /**
  * onRequest hook — logs every incoming request at debug level.

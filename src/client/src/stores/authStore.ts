@@ -1,13 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { User as SharedUser, UserRole } from '@shared/types';
 
-export interface User {
-  id: string;
-  username: string;
-  email: string;
-  fullName: string;
-  role: 'admin' | 'executive' | 'manager' | 'member';
-}
+/** Frontend user — subset of the shared User (no isActive/createdAt/updatedAt). */
+export type User = Pick<SharedUser, 'id' | 'username' | 'email' | 'fullName' | 'role'>;
+export type { UserRole };
 
 interface AuthState {
   user: User | null;

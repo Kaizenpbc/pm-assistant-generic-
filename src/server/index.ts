@@ -4,6 +4,7 @@ import { config } from './config';
 import { registerPlugins } from './plugins';
 import { registerRoutes } from './routes';
 import { databaseService } from './database/connection';
+import { createServiceLogger } from './utils/logger';
 
 const fastify = Fastify({
   logger: {
@@ -25,26 +26,20 @@ async function gracefulShutdown(signal: string) {
 
   fastify.log.info(`Received ${signal} — starting graceful shutdown...`);
 
-  // Stop accepting new connections, drain existing ones
+  // Stop accepting new connections, drain existing ones.
+  // DB pool is closed via Fastify's onClose hook (registered in plugins.ts),
+  // which ensures it stays open while in-flight requests drain.
   try {
     const drainTimer = setTimeout(() => {
       fastify.log.warn('Drain timeout reached, forcing shutdown');
       process.exit(1);
     }, DRAIN_TIMEOUT_MS);
 
-    await fastify.close();
+    await fastify.close(); // triggers onClose hooks including DB pool close
     clearTimeout(drainTimer);
-    fastify.log.info('Server closed, all requests drained');
+    fastify.log.info('Server closed, all connections drained');
   } catch (err) {
     fastify.log.error({ err }, 'Error during server close');
-  }
-
-  // Close database pool
-  try {
-    await databaseService.close();
-    fastify.log.info('Database pool closed');
-  } catch (err) {
-    fastify.log.error({ err }, 'Error closing database pool');
   }
 
   process.exit(0);
