@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 import { ScheduleService } from '../services/ScheduleService';
 import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
@@ -15,7 +15,8 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
-      const { limit = '50', offset = '0' } = request.query as { limit?: string; offset?: string };
+      const querySchema = z.object({ limit: z.coerce.number().min(1).max(500).default(50), offset: z.coerce.number().min(0).default(0) });
+      const { limit, offset } = querySchema.parse(request.query);
 
       // Verify ownership before returning audit trail
       const project = await verifyProjectAccess(projectId, request.user.userId);
@@ -35,9 +36,9 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
       allActivities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       const total = allActivities.length;
-      const paged = allActivities.slice(Number(offset), Number(offset) + Number(limit));
+      const paged = allActivities.slice(offset, offset + limit);
 
-      return { activities: paged, total, limit: Number(limit), offset: Number(offset) };
+      return { activities: paged, total, limit, offset };
     } catch (error) {
       if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Get audit trail error');

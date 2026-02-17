@@ -304,14 +304,8 @@ export const LessonsLearnedPage: React.FC = () => {
     queryFn: () => apiService.getLessonsKnowledgeBase(),
   });
 
-  const { data: patternsData } = useQuery({
-    queryKey: ['patterns'],
-    queryFn: () => apiService.detectPatterns(),
-  });
-
   const projects: Project[] = projectsData?.projects || [];
   const allLessons: Lesson[] = lessonsData?.lessons || [];
-  const patterns: Pattern[] = patternsData?.patterns || [];
 
   // ---- Filtered lessons ----
 
@@ -351,24 +345,21 @@ export const LessonsLearnedPage: React.FC = () => {
     mutationFn: (projectId: string) => apiService.extractLessons(projectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessons'] });
-      queryClient.invalidateQueries({ queryKey: ['patterns'] });
     },
   });
 
   const detectPatternsMutation = useMutation({
     mutationFn: () => apiService.detectPatterns(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patterns'] });
-    },
   });
 
   const seedMutation = useMutation({
     mutationFn: () => apiService.seedLessons(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessons'] });
-      queryClient.invalidateQueries({ queryKey: ['patterns'] });
     },
   });
+
+  const patterns: Pattern[] = detectPatternsMutation.data?.patterns || [];
 
   return (
     <div className="space-y-6">

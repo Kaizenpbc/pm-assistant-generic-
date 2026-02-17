@@ -28,10 +28,8 @@ export async function nlQueryRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = request.body as any;
-
         // Validate with Zod for stricter checks
-        const parsed = NLQueryRequestSchema.safeParse(body);
+        const parsed = NLQueryRequestSchema.safeParse(request.body);
         if (!parsed.success) {
           const issues = parsed.error.issues
             .map((i) => `${i.path.join('.')}: ${i.message}`)
@@ -39,8 +37,7 @@ export async function nlQueryRoutes(fastify: FastifyInstance) {
           return reply.code(400).send({ error: `Validation failed: ${issues}` });
         }
 
-        const user = request.user;
-        const userId = user.userId;
+        const userId = request.user.userId;
 
         const result = await nlQueryService.processQuery(
           parsed.data.query,

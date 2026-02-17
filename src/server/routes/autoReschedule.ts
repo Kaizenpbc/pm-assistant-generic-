@@ -1,9 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { AutoRescheduleService } from '../services/AutoRescheduleService';
 import { ProposedChangeSchema } from '../schemas/autoRescheduleSchemas';
 import { idParam, scheduleIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyScheduleAccess } from '../middleware/authorize';
 
 const rejectBodySchema = z.object({
   feedback: z.string().optional(),
@@ -23,10 +24,13 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = scheduleIdParam.parse(request.params);
+      const userId = request.user.userId;
+      const schedule = await verifyScheduleAccess(scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const delayedTasks = await service.detectDelays(scheduleId);
       return { delayedTasks };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Detect delays error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -42,12 +46,13 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = scheduleIdParam.parse(request.params);
-      const user = request.user;
       const userId = request.user.userId;
+      const schedule = await verifyScheduleAccess(scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const proposal = await service.generateProposal(scheduleId, userId);
       return { proposal };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Generate proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -63,10 +68,13 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = scheduleIdParam.parse(request.params);
+      const userId = request.user.userId;
+      const schedule = await verifyScheduleAccess(scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const proposals = service.getProposals(scheduleId);
       return { proposals };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Get proposals error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -82,6 +90,11 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = idParam.parse(request.params);
+      const userId = request.user.userId;
+      const proposal = service.getProposalById(id);
+      if (!proposal) return reply.status(404).send({ error: 'Proposal not found', message: 'Proposal does not exist or is not in pending status' });
+      const schedule = await verifyScheduleAccess(proposal.scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const accepted = await service.acceptProposal(id);
       if (!accepted) {
         return reply.status(404).send({
@@ -91,7 +104,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal accepted and changes applied successfully' };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Accept proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -107,6 +120,11 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = idParam.parse(request.params);
+      const userId = request.user.userId;
+      const proposal = service.getProposalById(id);
+      if (!proposal) return reply.status(404).send({ error: 'Proposal not found', message: 'Proposal does not exist or is not in pending status' });
+      const schedule = await verifyScheduleAccess(proposal.scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const body = rejectBodySchema.parse(request.body ?? {});
       const rejected = await service.rejectProposal(id, body.feedback);
       if (!rejected) {
@@ -117,7 +135,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal rejected successfully' };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Reject proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -133,6 +151,11 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = idParam.parse(request.params);
+      const userId = request.user.userId;
+      const proposal = service.getProposalById(id);
+      if (!proposal) return reply.status(404).send({ error: 'Proposal not found', message: 'Proposal does not exist or is not in pending status' });
+      const schedule = await verifyScheduleAccess(proposal.scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const body = modifyBodySchema.parse(request.body);
       const modified = await service.modifyProposal(id, body.modifications);
       if (!modified) {
@@ -143,7 +166,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal modified successfully' };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Modify proposal error');
       return reply.status(500).send({
         error: 'Internal server error',

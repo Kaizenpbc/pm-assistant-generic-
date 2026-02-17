@@ -10,9 +10,9 @@ const configSchema = z.object({
   DB_USER: z.string().min(1).default('root'),
   // SECURITY: In production, DB_PASSWORD must be set via environment variable.
   // The 'rootpassword' default is only used in development/test.
-  DB_PASSWORD: z.string().min(1).default(
-    process.env['NODE_ENV'] === 'production' ? '' : 'rootpassword'
-  ),
+  // Note: default is unconditionally 'rootpassword' — the .refine() below
+  // rejects it when NODE_ENV === 'production'.
+  DB_PASSWORD: z.string().min(1).default('rootpassword'),
   DB_NAME: z.string().min(1).default('pm_assistant_generic'),
 
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
@@ -37,6 +37,10 @@ const configSchema = z.object({
   WEATHER_API_KEY: z.string().optional().default(''),
   WEATHER_CACHE_MINUTES: z.coerce.number().min(1).max(1440).default(30),
 }).refine((data) => {
+  // SECURITY: reject default DB password in production
+  if (data.NODE_ENV === 'production' && data.DB_PASSWORD === 'rootpassword') {
+    throw new Error('DB_PASSWORD must be explicitly set in production (cannot use default)');
+  }
   if (data.JWT_SECRET === data.JWT_REFRESH_SECRET) {
     throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be different');
   }
@@ -47,7 +51,7 @@ const configSchema = z.object({
     throw new Error('JWT_REFRESH_SECRET and COOKIE_SECRET must be different');
   }
   return true;
-}, { message: 'Security secrets must be unique' });
+}, { message: 'Security validation failed' });
 
 export function validateConfiguration() {
   try {

@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 import { ScheduleService } from '../services/ScheduleService';
 import { CriticalPathService } from '../services/CriticalPathService';
 import { idParam } from '../schemas/commonSchemas';
@@ -13,7 +13,8 @@ export async function exportRoutes(fastify: FastifyInstance) {
   fastify.get('/projects/:id/export', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = idParam.parse(request.params);
-      const { format } = request.query as { format?: string };
+      const querySchema = z.object({ format: z.enum(['csv', 'json']) });
+      const { format } = querySchema.parse(request.query);
 
       // Verify ownership before exporting
       const project = await verifyProjectAccess(id, request.user.userId);
@@ -81,10 +82,6 @@ export async function exportRoutes(fastify: FastifyInstance) {
           schedules: schedulesWithTasks.map(({ _rawTasks, ...rest }) => rest),
           generatedAt: new Date().toISOString(),
         });
-      }
-
-      if (format !== 'csv') {
-        return reply.status(400).send({ error: 'Supported formats: csv, json' });
       }
 
       const headers = [

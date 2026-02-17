@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { WorkflowService } from '../services/WorkflowService';
 import { idParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
@@ -39,6 +39,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       const rules = workflowService.findAll();
       return { rules };
     } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err: error }, 'Get workflows error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
@@ -53,6 +54,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       const executions = workflowService.getExecutions();
       return { executions };
     } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err: error }, 'Get executions error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
@@ -68,7 +70,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       const rule = workflowService.create(data);
       return reply.status(201).send({ rule });
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Create workflow error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
@@ -86,7 +88,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (!rule) return reply.status(404).send({ error: 'Workflow rule not found' });
       return { rule };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Update workflow error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
@@ -103,7 +105,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (!deleted) return reply.status(404).send({ error: 'Workflow rule not found' });
       return { message: 'Workflow rule deleted' };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Delete workflow error');
       return reply.status(500).send({ error: 'Internal server error' });
     }

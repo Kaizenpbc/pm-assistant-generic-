@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 import { LessonsLearnedService } from '../services/LessonsLearnedService';
 import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
@@ -41,10 +41,12 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectType, category } = request.query as { projectType?: string; category?: string };
+      const querySchema = z.object({ projectType: z.string().optional(), category: z.string().optional() });
+      const { projectType, category } = querySchema.parse(request.query);
       const lessons = await service.findRelevantLessons(projectType, category);
       return reply.send({ lessons });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to find relevant lessons');
       return reply.status(500).send({ error: 'Failed to find relevant lessons' });
     }

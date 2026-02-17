@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z, ZodError } from 'zod';
 import { AILearningServiceV2 } from '../services/aiLearningService';
 import { AIFeedbackRecordSchema, AIAccuracyRecordSchema } from '../schemas/phase5Schemas';
 import { authMiddleware } from '../middleware/auth';
@@ -34,10 +35,12 @@ export async function learningRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectType } = request.query as { projectType?: string };
+      const querySchema = z.object({ projectType: z.string().optional() });
+      const { projectType } = querySchema.parse(request.query);
       const report = await service.getAccuracyReport({ projectType });
       return reply.send({ data: report });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to get accuracy report');
       return reply.status(500).send({ error: 'Failed to generate accuracy report' });
     }
@@ -48,10 +51,12 @@ export async function learningRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { feature } = request.query as { feature?: string };
+      const querySchema = z.object({ feature: z.string().optional() });
+      const { feature } = querySchema.parse(request.query);
       const stats = await service.getFeedbackStats(feature);
       return reply.send({ data: stats });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to get feedback stats');
       return reply.status(500).send({ error: 'Failed to get feedback statistics' });
     }

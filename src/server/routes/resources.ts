@@ -1,8 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { ResourceService } from '../services/ResourceService';
 import { idParam, projectIdParam, scheduleIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+
+const resourceQuerySchema = z.object({
+  limit: z.coerce.number().min(1).max(500).default(100),
+  offset: z.coerce.number().min(0).default(0),
+});
 
 const createResourceSchema = z.object({
   name: z.string().min(1),
@@ -26,13 +31,17 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   const service = new ResourceService();
 
   // GET /resources - List all resources (with optional pagination)
-  fastify.get('/', { preHandler: [authMiddleware] }, async (request: FastifyRequest, _reply: FastifyReply) => {
-    const { limit = 100, offset = 0 } = request.query as { limit?: number; offset?: number };
-    const all = await service.findAllResources();
-    const capped = Math.min(Number(limit) || 100, 500);
-    const skip = Math.max(Number(offset) || 0, 0);
-    const resources = all.slice(skip, skip + capped);
-    return { resources, total: all.length, limit: capped, offset: skip };
+  fastify.get('/', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { limit, offset } = resourceQuerySchema.parse(request.query);
+      const all = await service.findAllResources();
+      const resources = all.slice(offset, offset + limit);
+      return { resources, total: all.length, limit, offset };
+    } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'List resources error');
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
   });
 
   // POST /resources - Create a resource
@@ -42,6 +51,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       const resource = await service.createResource(data);
       return reply.status(201).send({ resource });
     } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Create resource error');
       return reply.status(400).send({ error: 'Invalid resource data' });
     }
@@ -56,7 +66,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       if (!resource) return reply.status(404).send({ error: 'Resource not found' });
       return { resource };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Update resource error');
       return reply.status(400).send({ error: 'Invalid resource data' });
     }
@@ -70,7 +80,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       if (!deleted) return reply.status(404).send({ error: 'Resource not found' });
       return { message: 'Resource deleted' };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Delete resource error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
@@ -83,7 +93,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       const assignments = await service.findAssignmentsBySchedule(scheduleId);
       return { assignments };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Get assignments error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
@@ -96,6 +106,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       const assignment = await service.createAssignment(data);
       return reply.status(201).send({ assignment });
     } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Create assignment error');
       return reply.status(400).send({ error: 'Invalid assignment data' });
     }
@@ -109,7 +120,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       if (!deleted) return reply.status(404).send({ error: 'Assignment not found' });
       return { message: 'Assignment deleted' };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Delete assignment error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
@@ -122,7 +133,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       const workload = await service.computeWorkload(projectId);
       return { workload };
     } catch (error) {
-      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Compute workload error');
       return reply.status(500).send({ error: 'Internal server error' });
     }

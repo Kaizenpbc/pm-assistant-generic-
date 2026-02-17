@@ -54,7 +54,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { schedules };
     } catch (error) {
       request.log.error({ err: error }, 'Get schedules error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch schedules' });
     }
   });
@@ -76,7 +76,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return reply.status(201).send({ schedule });
     } catch (error) {
       request.log.error({ err: error }, 'Create schedule error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create schedule' });
     }
   });
@@ -99,7 +99,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { schedule };
     } catch (error) {
       request.log.error({ err: error }, 'Update schedule error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update schedule' });
     }
   });
@@ -117,7 +117,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { message: 'Schedule deleted successfully' };
     } catch (error) {
       request.log.error({ err: error }, 'Delete schedule error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete schedule' });
     }
   });
@@ -134,7 +134,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { tasks };
     } catch (error) {
       request.log.error({ err: error }, 'Get tasks error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch tasks' });
     }
   });
@@ -160,7 +160,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return reply.status(201).send({ task });
     } catch (error) {
       request.log.error({ err: error }, 'Create task error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create task' });
     }
   });
@@ -208,7 +208,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { task, cascadedChanges };
     } catch (error) {
       request.log.error({ err: error }, 'Update task error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update task' });
     }
   });
@@ -227,7 +227,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { message: 'Task deleted successfully' };
     } catch (error) {
       request.log.error({ err: error }, 'Delete task error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete task' });
     }
   });
@@ -250,7 +250,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return result;
     } catch (error) {
       request.log.error({ err: error }, 'Critical path error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to compute critical path' });
     }
   });
@@ -273,7 +273,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { baselines };
     } catch (error) {
       request.log.error({ err: error }, 'Get baselines error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch baselines' });
     }
   });
@@ -291,7 +291,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { comparison };
     } catch (error) {
       request.log.error({ err: error }, 'Baseline comparison error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to compare baseline' });
     }
   });
@@ -309,7 +309,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { message: 'Baseline deleted successfully' };
     } catch (error) {
       request.log.error({ err: error }, 'Delete baseline error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete baseline' });
     }
   });
@@ -331,7 +331,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return reply.status(201).send({ baseline });
     } catch (error) {
       request.log.error({ err: error }, 'Create baseline error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create baseline' });
     }
   });
@@ -352,7 +352,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { comments };
     } catch (error) {
       request.log.error({ err: error }, 'Get comments error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch comments' });
     }
   });
@@ -373,7 +373,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return reply.status(201).send({ comment });
     } catch (error) {
       request.log.error({ err: error }, 'Add comment error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to add comment' });
     }
   });
@@ -391,7 +391,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { message: 'Comment deleted' };
     } catch (error) {
       request.log.error({ err: error }, 'Delete comment error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete comment' });
     }
   });
@@ -408,7 +408,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       return { activities };
     } catch (error) {
       request.log.error({ err: error }, 'Get activity error');
-      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.errors.map(e => e.message).join(', ') });
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch activity' });
     }
   });

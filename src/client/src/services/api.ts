@@ -15,6 +15,9 @@ class ApiService {
       },
     });
 
+    // Fetch CSRF token BEFORE registering interceptor so csrfReady is never undefined
+    this.csrfReady = this.fetchCsrfToken();
+
     // Request interceptor — await CSRF readiness then attach token to mutations
     this.api.interceptors.request.use(
       async (config) => {
@@ -33,9 +36,6 @@ class ApiService {
         return Promise.reject(error);
       }
     );
-
-    // Fetch CSRF token on initialization — store promise so interceptor can await it
-    this.csrfReady = this.fetchCsrfToken();
 
     // Response interceptor
     this.api.interceptors.response.use(

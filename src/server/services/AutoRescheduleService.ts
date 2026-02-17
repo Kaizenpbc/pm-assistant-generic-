@@ -370,6 +370,10 @@ Please propose date changes to reschedule affected tasks with minimal disruption
   // Get Proposals
   // ---------------------------------------------------------------------------
 
+  getProposalById(proposalId: string): RescheduleProposal | undefined {
+    return AutoRescheduleService.proposals.find((p) => p.id === proposalId);
+  }
+
   getProposals(scheduleId: string): RescheduleProposal[] {
     return AutoRescheduleService.proposals
       .filter((p) => p.scheduleId === scheduleId)
