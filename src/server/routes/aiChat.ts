@@ -1,11 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { AIChatService } from '../services/aiChatService';
+import { authMiddleware } from '../middleware/auth';
 
 export async function aiChatRoutes(fastify: FastifyInstance) {
   const chatService = new AIChatService(fastify);
 
   // POST /message — non-streaming chat
   fastify.post('/message', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Send a message to the AI assistant (non-streaming)',
       tags: ['ai-chat'],
@@ -28,14 +30,14 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const body = request.body as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         const result = await chatService.sendMessage({
           message: body.message,
           conversationId: body.conversationId,
           context: body.context,
-          userId: user.userId || 'anonymous',
-          userRole: user.role || 'member',
+          userId: user.userId,
+          userRole: user.role,
         });
 
         return result;
@@ -51,6 +53,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // POST /stream — SSE streaming chat
   fastify.post('/stream', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Send a message to the AI assistant (SSE streaming)',
       tags: ['ai-chat'],
@@ -73,7 +76,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const body = request.body as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         reply.raw.writeHead(200, {
           'Content-Type': 'text/event-stream',
@@ -86,8 +89,8 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
           message: body.message,
           conversationId: body.conversationId,
           context: body.context,
-          userId: user.userId || 'anonymous',
-          userRole: user.role || 'member',
+          userId: user.userId,
+          userRole: user.role,
         });
 
         for await (const chunk of stream) {
@@ -114,11 +117,12 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // GET /conversations
   fastify.get('/conversations', {
+    preHandler: [authMiddleware],
     schema: { description: 'List user conversations', tags: ['ai-chat'] },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const user = (request as any).user || {};
-        const conversations = await chatService.getConversations(user.userId || 'anonymous');
+        const user = (request as any).user;
+        const conversations = await chatService.getConversations(user.userId);
         return { conversations };
       } catch (error) {
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Failed to list conversations');
@@ -129,12 +133,13 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // GET /conversations/:id
   fastify.get('/conversations/:id', {
+    preHandler: [authMiddleware],
     schema: { description: 'Load a conversation by ID', tags: ['ai-chat'] },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { id } = request.params as any;
-        const user = (request as any).user || {};
-        const conversation = await chatService.getConversation(id, user.userId || 'anonymous');
+        const user = (request as any).user;
+        const conversation = await chatService.getConversation(id, user.userId);
         if (!conversation) return reply.code(404).send({ error: 'Conversation not found' });
         return { conversation };
       } catch (error) {
@@ -146,12 +151,13 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // DELETE /conversations/:id
   fastify.delete('/conversations/:id', {
+    preHandler: [authMiddleware],
     schema: { description: 'Delete a conversation', tags: ['ai-chat'] },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { id } = request.params as any;
-        const user = (request as any).user || {};
-        const deleted = await chatService.deleteConversation(id, user.userId || 'anonymous');
+        const user = (request as any).user;
+        const deleted = await chatService.deleteConversation(id, user.userId);
         if (!deleted) return reply.code(404).send({ error: 'Conversation not found' });
         return { message: 'Conversation deleted' };
       } catch (error) {
@@ -163,6 +169,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // POST /create-project — create project from natural language
   fastify.post('/create-project', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Create a project from natural language description',
       tags: ['ai-chat'],
@@ -177,13 +184,13 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const body = request.body as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         const { AIProjectCreatorService } = await import('../services/aiProjectCreator');
         const creator = new AIProjectCreatorService(fastify);
         const result = await creator.createProjectFromDescription(
           body.description,
-          user.userId || 'anonymous',
+          user.userId,
         );
 
         return {
@@ -205,6 +212,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // POST /extract-tasks — extract tasks from meeting notes
   fastify.post('/extract-tasks', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Extract tasks from meeting notes',
       tags: ['ai-chat'],
@@ -221,7 +229,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const body = request.body as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         const { claudeService, promptTemplates } = await import('../services/claudeService');
         const { AIMeetingExtractionSchema } = await import('../schemas/aiSchemas');
@@ -256,7 +264,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
               name: task.name,
               description: task.description || '',
               priority: (task.priority as any) || 'medium',
-              createdBy: user.userId || 'anonymous',
+              createdBy: user.userId,
             });
             createdTasks.push(created);
           }

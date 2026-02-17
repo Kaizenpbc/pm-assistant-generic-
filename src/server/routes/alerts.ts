@@ -3,6 +3,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { ProactiveAlertService } from '../services/proactiveAlertService';
 import { AIActionExecutor } from '../services/aiActionExecutor';
+import { authMiddleware } from '../middleware/auth';
 
 export async function alertRoutes(fastify: FastifyInstance) {
   const alertService = new ProactiveAlertService();
@@ -10,6 +11,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
 
   // GET / — Get all proactive alerts
   fastify.get('/', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Get all proactive alerts across projects',
       tags: ['alerts'],
@@ -22,6 +24,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
 
   // GET /summary — Get alert summary counts
   fastify.get('/summary', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Get alert summary with counts by severity and type',
       tags: ['alerts'],
@@ -34,6 +37,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
 
   // GET /project/:projectId — Get alerts for a specific project
   fastify.get('/project/:projectId', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Get alerts for a specific project',
       tags: ['alerts'],
@@ -47,6 +51,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
 
   // POST /execute-action — Execute a suggested action from an alert
   fastify.post('/execute-action', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Execute a suggested action from a proactive alert',
       tags: ['alerts'],
@@ -62,11 +67,11 @@ export async function alertRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { toolName, params } = request.body as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         const result = await actionExecutor.execute(toolName, params, {
-          userId: user.userId || 'anonymous',
-          userRole: user.role || 'member',
+          userId: user.userId,
+          userRole: user.role,
         });
 
         return result;

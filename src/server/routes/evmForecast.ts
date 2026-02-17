@@ -1,16 +1,17 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { EVMForecastService } from '../services/EVMForecastService';
+import { authMiddleware } from '../middleware/auth';
 
 export async function evmForecastRoutes(fastify: FastifyInstance) {
   const service = new EVMForecastService();
 
   // GET /:projectId
-  fastify.get('/:projectId', async (
-    request: FastifyRequest<{ Params: { projectId: string } }>,
+  fastify.get('/:projectId', { preHandler: [authMiddleware] }, async (
+    request: FastifyRequest,
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params;
+      const { projectId } = request.params as { projectId: string };
       const userId = (request as any).userId || undefined;
       const result = await service.generateForecast(projectId, userId);
       return reply.send({

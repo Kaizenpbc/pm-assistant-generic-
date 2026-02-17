@@ -25,11 +25,11 @@ export async function projectRoutes(fastify: FastifyInstance) {
   const projectService = new ProjectService();
 
   fastify.get('/', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get all projects', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
-      const userId = user?.userId || '1';
+      const userId = (request as any).user.userId;
       const projects = await projectService.findByUserId(userId);
       return { projects };
     } catch (error) {
@@ -39,12 +39,12 @@ export async function projectRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:id', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get project by ID', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const user = (request as any).user;
-      const userId = user?.userId || '1';
+      const userId = (request as any).user.userId;
       const project = await projectService.findById(id, userId);
       if (!project) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });

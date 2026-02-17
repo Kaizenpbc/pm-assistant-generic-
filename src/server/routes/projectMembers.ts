@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ProjectMemberService } from '../services/ProjectMemberService';
+import { authMiddleware } from '../middleware/auth';
 
 const addMemberSchema = z.object({
   userId: z.string().min(1),
@@ -18,6 +19,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/projects/:projectId/members
   fastify.get('/:projectId/members', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get project members', tags: ['members'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -32,6 +34,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/projects/:projectId/members
   fastify.post('/:projectId/members', {
+    preHandler: [authMiddleware],
     schema: { description: 'Add a project member', tags: ['members'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -47,6 +50,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
 
   // PUT /api/v1/projects/:projectId/members/:memberId
   fastify.put('/:projectId/members/:memberId', {
+    preHandler: [authMiddleware],
     schema: { description: 'Update member role', tags: ['members'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -63,6 +67,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
 
   // DELETE /api/v1/projects/:projectId/members/:memberId
   fastify.delete('/:projectId/members/:memberId', {
+    preHandler: [authMiddleware],
     schema: { description: 'Remove a project member', tags: ['members'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

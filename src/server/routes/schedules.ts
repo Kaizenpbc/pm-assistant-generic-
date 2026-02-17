@@ -5,6 +5,7 @@ import { CriticalPathService } from '../services/CriticalPathService';
 import { BaselineService } from '../services/BaselineService';
 import { WorkflowService } from '../services/WorkflowService';
 import { WebSocketService } from '../services/WebSocketService';
+import { authMiddleware } from '../middleware/auth';
 
 const createScheduleSchema = z.object({
   projectId: z.string(),
@@ -40,6 +41,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   const workflowService = new WorkflowService();
 
   fastify.get('/project/:projectId', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get schedules for a project', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -53,6 +55,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/', {
+    preHandler: [authMiddleware],
     schema: { description: 'Create a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -62,7 +65,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
         ...data,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
-        createdBy: user?.userId || '1',
+        createdBy: (request as any).user.userId,
       });
       return reply.status(201).send({ schedule });
     } catch (error) {
@@ -72,6 +75,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/:scheduleId', {
+    preHandler: [authMiddleware],
     schema: { description: 'Update a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -91,6 +95,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId', {
+    preHandler: [authMiddleware],
     schema: { description: 'Delete a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -105,6 +110,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:scheduleId/tasks', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get tasks for a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -118,6 +124,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/:scheduleId/tasks', {
+    preHandler: [authMiddleware],
     schema: { description: 'Create a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -130,7 +137,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate ? new Date(data.endDate) : undefined,
-        createdBy: user?.userId || '1',
+        createdBy: (request as any).user.userId,
       });
       WebSocketService.broadcast({ type: 'task_created', payload: { task } });
       return reply.status(201).send({ task });
@@ -141,6 +148,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/:scheduleId/tasks/:taskId', {
+    preHandler: [authMiddleware],
     schema: { description: 'Update a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -185,6 +193,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId/tasks/:taskId', {
+    preHandler: [authMiddleware],
     schema: { description: 'Delete a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -206,6 +215,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   const cpmService = new CriticalPathService();
 
   fastify.get('/:scheduleId/critical-path', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get critical path analysis', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -225,6 +235,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   const baselineService = new BaselineService();
 
   fastify.get('/:scheduleId/baselines', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get baselines for a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -238,6 +249,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:scheduleId/baselines/:baselineId/compare', {
+    preHandler: [authMiddleware],
     schema: { description: 'Compare baseline vs current schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -252,6 +264,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId/baselines/:baselineId', {
+    preHandler: [authMiddleware],
     schema: { description: 'Delete a baseline', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -266,6 +279,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/:scheduleId/baselines', {
+    preHandler: [authMiddleware],
     schema: { description: 'Create a baseline snapshot', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -275,7 +289,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const baseline = await baselineService.create(
         scheduleId,
         name || `Baseline ${new Date().toLocaleDateString()}`,
-        user?.userId || '1',
+        (request as any).user.userId,
       );
       return reply.status(201).send({ baseline });
     } catch (error) {
@@ -289,6 +303,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   // -------------------------------------------------------------------------
 
   fastify.get('/:scheduleId/tasks/:taskId/comments', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get comments for a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -302,6 +317,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/:scheduleId/tasks/:taskId/comments', {
+    preHandler: [authMiddleware],
     schema: { description: 'Add a comment to a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -311,7 +327,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       if (!text || !text.trim()) {
         return reply.status(400).send({ error: 'Comment text is required' });
       }
-      const comment = scheduleService.addComment(taskId, text.trim(), user?.userId || '1', user?.fullName || 'Project Manager');
+      const comment = scheduleService.addComment(taskId, text.trim(), (request as any).user.userId, (request as any).user.username || 'Project Manager');
       return reply.status(201).send({ comment });
     } catch (error) {
       console.error('Add comment error:', error);
@@ -320,6 +336,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId/tasks/:taskId/comments/:commentId', {
+    preHandler: [authMiddleware],
     schema: { description: 'Delete a comment', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -334,6 +351,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:scheduleId/tasks/:taskId/activity', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get activity feed for a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

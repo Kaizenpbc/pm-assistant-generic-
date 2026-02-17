@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { AutoRescheduleService } from '../services/AutoRescheduleService';
 import { ProposedChangeSchema } from '../schemas/autoRescheduleSchemas';
+import { authMiddleware } from '../middleware/auth';
 
 const rejectBodySchema = z.object({
   feedback: z.string().optional(),
@@ -16,6 +17,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // GET /:scheduleId/delays — detect delayed tasks
   fastify.get('/:scheduleId/delays', {
+    preHandler: [authMiddleware],
     schema: { description: 'Detect delayed tasks in a schedule', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -33,12 +35,13 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /:scheduleId/propose — generate a reschedule proposal
   fastify.post('/:scheduleId/propose', {
+    preHandler: [authMiddleware],
     schema: { description: 'Generate an AI-powered reschedule proposal', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
       const user = (request as any).user;
-      const userId = user?.userId || '1';
+      const userId = (request as any).user.userId;
       const proposal = await service.generateProposal(scheduleId, userId);
       return { proposal };
     } catch (error) {
@@ -52,6 +55,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // GET /:scheduleId/proposals — list proposals for a schedule
   fastify.get('/:scheduleId/proposals', {
+    preHandler: [authMiddleware],
     schema: { description: 'List reschedule proposals for a schedule', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -69,6 +73,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /proposals/:id/accept — accept a proposal and apply changes
   fastify.post('/proposals/:id/accept', {
+    preHandler: [authMiddleware],
     schema: { description: 'Accept a reschedule proposal and apply changes', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -92,6 +97,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /proposals/:id/reject — reject a proposal with optional feedback
   fastify.post('/proposals/:id/reject', {
+    preHandler: [authMiddleware],
     schema: { description: 'Reject a reschedule proposal', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -116,6 +122,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /proposals/:id/modify — modify a proposal with new changes
   fastify.post('/proposals/:id/modify', {
+    preHandler: [authMiddleware],
     schema: { description: 'Modify a reschedule proposal with updated changes', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

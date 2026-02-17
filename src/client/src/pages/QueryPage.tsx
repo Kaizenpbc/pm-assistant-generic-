@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
 import {
   MessageSquare,
   Sparkles,
@@ -59,7 +60,8 @@ function renderMarkdown(text: string): string {
     (match) => `<ul class="list-disc space-y-1 mb-3">${match}</ul>`
   );
 
-  return `<p class="text-sm text-gray-700 leading-relaxed mb-2">${html}</p>`;
+  const raw = `<p class="text-sm text-gray-700 leading-relaxed mb-2">${html}</p>`;
+  return DOMPurify.sanitize(raw);
 }
 
 // ---------------------------------------------------------------------------

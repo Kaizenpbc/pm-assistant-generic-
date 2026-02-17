@@ -1,11 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { ScheduleService } from '../services/ScheduleService';
+import { authMiddleware } from '../middleware/auth';
 
 export async function auditTrailRoutes(fastify: FastifyInstance) {
   const scheduleService = new ScheduleService();
 
   // GET /api/v1/audit/:projectId
   fastify.get('/:projectId', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get audit trail for a project', tags: ['audit'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

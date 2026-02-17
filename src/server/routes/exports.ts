@@ -2,12 +2,13 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { ScheduleService } from '../services/ScheduleService';
 import { ProjectService } from '../services/ProjectService';
 import { CriticalPathService } from '../services/CriticalPathService';
+import { authMiddleware } from '../middleware/auth';
 
 export async function exportRoutes(fastify: FastifyInstance) {
   const scheduleService = new ScheduleService();
 
   // GET /exports/projects/:id/export?format=csv|json
-  fastify.get('/projects/:id/export', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/projects/:id/export', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       const { format } = request.query as { format?: string };

@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { WorkflowService } from '../services/WorkflowService';
+import { authMiddleware } from '../middleware/auth';
 
 const triggerSchema = z.object({
   type: z.enum(['status_change', 'date_passed', 'progress_threshold']),
@@ -30,6 +31,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/workflows
   fastify.get('/', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get all workflow rules', tags: ['workflows'] },
   }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -43,6 +45,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/workflows/executions
   fastify.get('/executions', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get workflow execution history', tags: ['workflows'] },
   }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -56,6 +59,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/workflows
   fastify.post('/', {
+    preHandler: [authMiddleware],
     schema: { description: 'Create a workflow rule', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -70,6 +74,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // PUT /api/v1/workflows/:id
   fastify.put('/:id', {
+    preHandler: [authMiddleware],
     schema: { description: 'Update a workflow rule', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -86,6 +91,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // DELETE /api/v1/workflows/:id
   fastify.delete('/:id', {
+    preHandler: [authMiddleware],
     schema: { description: 'Delete a workflow rule', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

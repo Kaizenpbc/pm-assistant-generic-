@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ResourceOptimizerService } from '../services/ResourceOptimizerService';
+import { authMiddleware } from '../middleware/auth';
 
 const forecastQuerySchema = z.object({
   weeksAhead: z.coerce.number().min(1).max(52).default(8),
@@ -16,6 +17,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
 
   // GET /:projectId/forecast
   fastify.get('/:projectId/forecast', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Predict resource bottlenecks and generate capacity forecast for a project',
       tags: ['resource-optimizer'],
@@ -51,6 +53,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
 
   // POST /skill-match
   fastify.post('/skill-match', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Find the best-matched resources for a given task based on skills and availability',
       tags: ['resource-optimizer'],

@@ -4,6 +4,7 @@ import {
   AnalyzeRequestSchema,
   ApplyRequestSchema,
 } from '../schemas/meetingSchemas';
+import { authMiddleware } from '../middleware/auth';
 
 export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   const service = new MeetingIntelligenceService();
@@ -12,7 +13,7 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   // POST /analyze — Analyze a meeting transcript
   // ---------------------------------------------------------------------------
 
-  fastify.post('/analyze', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/analyze', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AnalyzeRequestSchema.parse(request.body);
       const userId = (request as any).userId || undefined;
@@ -38,12 +39,12 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   // POST /:analysisId/apply — Apply selected task changes from an analysis
   // ---------------------------------------------------------------------------
 
-  fastify.post('/:analysisId/apply', async (
-    request: FastifyRequest<{ Params: { analysisId: string } }>,
+  fastify.post('/:analysisId/apply', { preHandler: [authMiddleware] }, async (
+    request: FastifyRequest,
     reply: FastifyReply,
   ) => {
     try {
-      const { analysisId } = request.params;
+      const { analysisId } = request.params as { analysisId: string };
       const parsed = ApplyRequestSchema.parse(request.body);
       const userId = (request as any).userId || undefined;
 
@@ -67,12 +68,12 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   // GET /project/:projectId/history — List analyses for a project
   // ---------------------------------------------------------------------------
 
-  fastify.get('/project/:projectId/history', async (
-    request: FastifyRequest<{ Params: { projectId: string } }>,
+  fastify.get('/project/:projectId/history', { preHandler: [authMiddleware] }, async (
+    request: FastifyRequest,
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params;
+      const { projectId } = request.params as { projectId: string };
       const analyses = service.getProjectHistory(projectId);
       return reply.send({ data: analyses });
     } catch (err) {

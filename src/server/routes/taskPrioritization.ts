@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { TaskPrioritizationService } from '../services/TaskPrioritizationService';
+import { authMiddleware } from '../middleware/auth';
 
 const applyBodySchema = z.object({
   taskId: z.string(),
@@ -21,6 +22,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
 
   // GET /:projectId/:scheduleId/prioritize — get AI-prioritized task list
   fastify.get('/:projectId/:scheduleId/prioritize', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get AI-prioritized task ranking for a schedule', tags: ['task-prioritization'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -44,6 +46,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
 
   // POST /:projectId/:scheduleId/apply — apply a single priority change
   fastify.post('/:projectId/:scheduleId/apply', {
+    preHandler: [authMiddleware],
     schema: { description: 'Apply a single AI-suggested priority change', tags: ['task-prioritization'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -73,6 +76,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
 
   // POST /:projectId/:scheduleId/apply-all — apply all suggested priority changes
   fastify.post('/:projectId/:scheduleId/apply-all', {
+    preHandler: [authMiddleware],
     schema: { description: 'Apply all AI-suggested priority changes', tags: ['task-prioritization'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

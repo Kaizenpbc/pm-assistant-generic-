@@ -21,11 +21,12 @@ export async function securityMiddleware(
     reply.header('X-XSS-Protection', '1; mode=block');
 
     const origin = request.headers.origin;
+    const allowedOrigin = config.CORS_ORIGIN || 'http://localhost:5173';
     const corsOrigin = origin && (
       config.NODE_ENV === 'development' ||
-      origin === config.CORS_ORIGIN ||
+      origin === allowedOrigin ||
       origin.startsWith('http://localhost:')
-    ) ? origin : (config.CORS_ORIGIN || '*');
+    ) ? origin : allowedOrigin;
 
     reply.header('Access-Control-Allow-Origin', corsOrigin);
     reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
