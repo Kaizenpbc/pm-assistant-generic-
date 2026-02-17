@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { FastifyRequest } from 'fastify';
 import { auditLogger } from '../utils/logger';
 
@@ -23,7 +24,7 @@ export class AuditService {
     details: Record<string, any> = {}
   ): void {
     const event: AuditEvent = {
-      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       userId,
       action,
       resource,
@@ -43,7 +44,7 @@ export class AuditService {
     details: Record<string, any> = {}
   ): void {
     const event: AuditEvent = {
-      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       action,
       resource: 'system',
       timestamp: new Date(),

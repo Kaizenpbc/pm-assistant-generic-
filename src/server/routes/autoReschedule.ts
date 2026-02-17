@@ -25,7 +25,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       const delayedTasks = await service.detectDelays(scheduleId);
       return { delayedTasks };
     } catch (error) {
-      console.error('Detect delays error:', error);
+      request.log.error({ err: error }, 'Detect delays error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to detect delays',
@@ -45,7 +45,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       const proposal = await service.generateProposal(scheduleId, userId);
       return { proposal };
     } catch (error) {
-      console.error('Generate proposal error:', error);
+      request.log.error({ err: error }, 'Generate proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to generate reschedule proposal',
@@ -63,7 +63,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       const proposals = service.getProposals(scheduleId);
       return { proposals };
     } catch (error) {
-      console.error('Get proposals error:', error);
+      request.log.error({ err: error }, 'Get proposals error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to fetch proposals',
@@ -87,7 +87,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal accepted and changes applied successfully' };
     } catch (error) {
-      console.error('Accept proposal error:', error);
+      request.log.error({ err: error }, 'Accept proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to accept proposal',
@@ -112,7 +112,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal rejected successfully' };
     } catch (error) {
-      console.error('Reject proposal error:', error);
+      request.log.error({ err: error }, 'Reject proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to reject proposal',
@@ -137,7 +137,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal modified successfully' };
     } catch (error) {
-      console.error('Modify proposal error:', error);
+      request.log.error({ err: error }, 'Modify proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to modify proposal',

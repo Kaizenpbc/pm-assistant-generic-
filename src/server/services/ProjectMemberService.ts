@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 export type ProjectRole = 'owner' | 'manager' | 'editor' | 'viewer';
 
 export interface ProjectMember {
@@ -67,7 +69,7 @@ export class ProjectMemberService {
     }
 
     const member: ProjectMember = {
-      id: `pm-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       projectId,
       userId: data.userId,
       userName: data.userName,

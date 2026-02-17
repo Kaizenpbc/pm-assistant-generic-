@@ -49,7 +49,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const schedules = await scheduleService.findByProjectId(projectId);
       return { schedules };
     } catch (error) {
-      console.error('Get schedules error:', error);
+      request.log.error({ err: error }, 'Get schedules error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch schedules' });
     }
   });
@@ -69,7 +69,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ schedule });
     } catch (error) {
-      console.error('Create schedule error:', error);
+      request.log.error({ err: error }, 'Create schedule error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create schedule' });
     }
   });
@@ -89,7 +89,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       if (!schedule) return reply.status(404).send({ error: 'Not found', message: 'Schedule not found' });
       return { schedule };
     } catch (error) {
-      console.error('Update schedule error:', error);
+      request.log.error({ err: error }, 'Update schedule error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update schedule' });
     }
   });
@@ -104,7 +104,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       if (!deleted) return reply.status(404).send({ error: 'Not found', message: 'Schedule not found' });
       return { message: 'Schedule deleted successfully' };
     } catch (error) {
-      console.error('Delete schedule error:', error);
+      request.log.error({ err: error }, 'Delete schedule error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete schedule' });
     }
   });
@@ -118,7 +118,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
       return { tasks };
     } catch (error) {
-      console.error('Get tasks error:', error);
+      request.log.error({ err: error }, 'Get tasks error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch tasks' });
     }
   });
@@ -142,7 +142,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       WebSocketService.broadcast({ type: 'task_created', payload: { task } });
       return reply.status(201).send({ task });
     } catch (error) {
-      console.error('Create task error:', error);
+      request.log.error({ err: error }, 'Create task error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create task' });
     }
   });
@@ -187,7 +187,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
 
       return { task, cascadedChanges };
     } catch (error) {
-      console.error('Update task error:', error);
+      request.log.error({ err: error }, 'Update task error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update task' });
     }
   });
@@ -203,7 +203,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       WebSocketService.broadcast({ type: 'task_deleted', payload: { taskId } });
       return { message: 'Task deleted successfully' };
     } catch (error) {
-      console.error('Delete task error:', error);
+      request.log.error({ err: error }, 'Delete task error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete task' });
     }
   });
@@ -223,7 +223,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const result = await cpmService.calculateCriticalPath(scheduleId);
       return result;
     } catch (error) {
-      console.error('Critical path error:', error);
+      request.log.error({ err: error }, 'Critical path error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to compute critical path' });
     }
   });
@@ -243,7 +243,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const baselines = await baselineService.findByScheduleId(scheduleId);
       return { baselines };
     } catch (error) {
-      console.error('Get baselines error:', error);
+      request.log.error({ err: error }, 'Get baselines error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch baselines' });
     }
   });
@@ -258,7 +258,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       if (!comparison) return reply.status(404).send({ error: 'Baseline not found' });
       return { comparison };
     } catch (error) {
-      console.error('Baseline comparison error:', error);
+      request.log.error({ err: error }, 'Baseline comparison error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to compare baseline' });
     }
   });
@@ -273,7 +273,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       if (!deleted) return reply.status(404).send({ error: 'Baseline not found' });
       return { message: 'Baseline deleted successfully' };
     } catch (error) {
-      console.error('Delete baseline error:', error);
+      request.log.error({ err: error }, 'Delete baseline error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete baseline' });
     }
   });
@@ -293,7 +293,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       );
       return reply.status(201).send({ baseline });
     } catch (error) {
-      console.error('Create baseline error:', error);
+      request.log.error({ err: error }, 'Create baseline error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create baseline' });
     }
   });
@@ -311,7 +311,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const comments = scheduleService.getComments(taskId);
       return { comments };
     } catch (error) {
-      console.error('Get comments error:', error);
+      request.log.error({ err: error }, 'Get comments error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch comments' });
     }
   });
@@ -330,7 +330,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const comment = scheduleService.addComment(taskId, text.trim(), (request as any).user.userId, (request as any).user.username || 'Project Manager');
       return reply.status(201).send({ comment });
     } catch (error) {
-      console.error('Add comment error:', error);
+      request.log.error({ err: error }, 'Add comment error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to add comment' });
     }
   });
@@ -345,7 +345,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       if (!deleted) return reply.status(404).send({ error: 'Comment not found' });
       return { message: 'Comment deleted' };
     } catch (error) {
-      console.error('Delete comment error:', error);
+      request.log.error({ err: error }, 'Delete comment error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete comment' });
     }
   });
@@ -359,7 +359,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const activities = scheduleService.getActivities(taskId);
       return { activities };
     } catch (error) {
-      console.error('Get activity error:', error);
+      request.log.error({ err: error }, 'Get activity error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch activity' });
     }
   });

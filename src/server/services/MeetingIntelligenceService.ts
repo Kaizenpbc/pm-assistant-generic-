@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { claudeService } from './claudeService';
 import { ScheduleService, Task } from './ScheduleService';
 import { ResourceService, Resource } from './ResourceService';
@@ -112,7 +113,7 @@ Analyze this meeting transcript and extract all actionable information.`;
 
     // 6. Store and return
     const analysis: MeetingAnalysis = {
-      id: `ma-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       projectId,
       scheduleId,
       transcript,

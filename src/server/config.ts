@@ -24,6 +24,9 @@ const configSchema = z.object({
   AI_TEMPERATURE: z.coerce.number().min(0).max(1).default(0.3),
   AI_MAX_TOKENS: z.coerce.number().min(100).max(8192).default(4096),
   AI_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
+  AI_DAILY_TOKEN_BUDGET: z.coerce.number().min(0).default(500000),
+  AI_PER_REQUEST_MAX_TOKENS: z.coerce.number().min(100).max(16384).default(4096),
+  AI_MAX_REQUESTS_PER_USER_PER_HOUR: z.coerce.number().min(1).max(1000).default(60),
 
   // Weather Configuration
   WEATHER_API_PROVIDER: z.enum(['openweathermap', 'weatherapi', 'accuweather', 'mock']).default('mock'),
@@ -63,6 +66,9 @@ export function validateConfiguration() {
       AI_TEMPERATURE: process.env['AI_TEMPERATURE'],
       AI_MAX_TOKENS: process.env['AI_MAX_TOKENS'],
       AI_ENABLED: process.env['AI_ENABLED'],
+      AI_DAILY_TOKEN_BUDGET: process.env['AI_DAILY_TOKEN_BUDGET'],
+      AI_PER_REQUEST_MAX_TOKENS: process.env['AI_PER_REQUEST_MAX_TOKENS'],
+      AI_MAX_REQUESTS_PER_USER_PER_HOUR: process.env['AI_MAX_REQUESTS_PER_USER_PER_HOUR'],
       WEATHER_API_PROVIDER: process.env['WEATHER_API_PROVIDER'],
       WEATHER_API_KEY: process.env['WEATHER_API_KEY'],
       WEATHER_CACHE_MINUTES: process.env['WEATHER_CACHE_MINUTES'],

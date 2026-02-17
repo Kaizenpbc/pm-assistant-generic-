@@ -51,7 +51,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
 
       return { portfolioItems };
     } catch (error) {
-      console.error('Get portfolio error:', error);
+      request.log.error({ err: error }, 'Get portfolio error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch portfolio' });
     }
   });

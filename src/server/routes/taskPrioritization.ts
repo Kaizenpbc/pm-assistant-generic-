@@ -36,7 +36,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
           message: error.issues,
         });
       }
-      console.error('Task prioritization error:', error);
+      request.log.error({ err: error }, 'Task prioritization error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to prioritize tasks',
@@ -66,7 +66,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
           message: error.issues,
         });
       }
-      console.error('Apply priority error:', error);
+      request.log.error({ err: error }, 'Apply priority error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to apply priority change',
@@ -90,7 +90,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
           message: error.issues,
         });
       }
-      console.error('Apply all priorities error:', error);
+      request.log.error({ err: error }, 'Apply all priorities error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to apply priority changes',

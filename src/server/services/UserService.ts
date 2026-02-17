@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 export interface User {
   id: string;
   username: string;
@@ -72,7 +74,7 @@ export class UserService {
 
   async create(data: CreateUserData): Promise<User> {
     const user: User = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: randomUUID(),
       username: data.username,
       email: data.email,
       passwordHash: data.passwordHash,

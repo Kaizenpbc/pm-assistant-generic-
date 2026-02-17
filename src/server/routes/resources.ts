@@ -24,10 +24,14 @@ const createAssignmentSchema = z.object({
 export async function resourceRoutes(fastify: FastifyInstance) {
   const service = new ResourceService();
 
-  // GET /resources - List all resources
-  fastify.get('/', { preHandler: [authMiddleware] }, async (_request: FastifyRequest, _reply: FastifyReply) => {
-    const resources = await service.findAllResources();
-    return { resources };
+  // GET /resources - List all resources (with optional pagination)
+  fastify.get('/', { preHandler: [authMiddleware] }, async (request: FastifyRequest, _reply: FastifyReply) => {
+    const { limit = 100, offset = 0 } = request.query as { limit?: number; offset?: number };
+    const all = await service.findAllResources();
+    const capped = Math.min(Number(limit) || 100, 500);
+    const skip = Math.max(Number(offset) || 0, 0);
+    const resources = all.slice(skip, skip + capped);
+    return { resources, total: all.length, limit: capped, offset: skip };
   });
 
   // POST /resources - Create a resource
@@ -37,7 +41,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       const resource = await service.createResource(data);
       return reply.status(201).send({ resource });
     } catch (error) {
-      console.error('Create resource error:', error);
+      request.log.error({ err: error }, 'Create resource error');
       return reply.status(400).send({ error: 'Invalid resource data' });
     }
   });
@@ -51,7 +55,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       if (!resource) return reply.status(404).send({ error: 'Resource not found' });
       return { resource };
     } catch (error) {
-      console.error('Update resource error:', error);
+      request.log.error({ err: error }, 'Update resource error');
       return reply.status(400).send({ error: 'Invalid resource data' });
     }
   });
@@ -78,7 +82,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       const assignment = await service.createAssignment(data);
       return reply.status(201).send({ assignment });
     } catch (error) {
-      console.error('Create assignment error:', error);
+      request.log.error({ err: error }, 'Create assignment error');
       return reply.status(400).send({ error: 'Invalid assignment data' });
     }
   });

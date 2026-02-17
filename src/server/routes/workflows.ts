@@ -38,7 +38,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       const rules = workflowService.findAll();
       return { rules };
     } catch (error) {
-      console.error('Get workflows error:', error);
+      fastify.log.error({ err: error }, 'Get workflows error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -52,7 +52,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       const executions = workflowService.getExecutions();
       return { executions };
     } catch (error) {
-      console.error('Get executions error:', error);
+      fastify.log.error({ err: error }, 'Get executions error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -67,7 +67,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       const rule = workflowService.create(data);
       return reply.status(201).send({ rule });
     } catch (error) {
-      console.error('Create workflow error:', error);
+      request.log.error({ err: error }, 'Create workflow error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -84,7 +84,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (!rule) return reply.status(404).send({ error: 'Workflow rule not found' });
       return { rule };
     } catch (error) {
-      console.error('Update workflow error:', error);
+      request.log.error({ err: error }, 'Update workflow error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -100,7 +100,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (!deleted) return reply.status(404).send({ error: 'Workflow rule not found' });
       return { message: 'Workflow rule deleted' };
     } catch (error) {
-      console.error('Delete workflow error:', error);
+      request.log.error({ err: error }, 'Delete workflow error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

@@ -1,8 +1,86 @@
 // C:\Users\gerog\Documents\pm-assistant-generic\src\server\services\aiActionExecutor.ts
 
+import { z } from 'zod';
 import { ProjectService, type CreateProjectData } from './ProjectService';
 import { ScheduleService, type CreateTaskData } from './ScheduleService';
 import { UserService } from './UserService';
+
+// ---------------------------------------------------------------------------
+// Zod schemas for AI tool inputs
+// ---------------------------------------------------------------------------
+
+const createTaskInputSchema = z.object({
+  scheduleId: z.string().min(1, 'scheduleId is required'),
+  name: z.string().min(1, 'Task name is required').max(255),
+  description: z.string().max(2000).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  assignedTo: z.string().optional(),
+  dueDate: z.string().optional(),
+  estimatedDays: z.number().positive().optional(),
+  parentTaskId: z.string().optional(),
+});
+
+const updateTaskInputSchema = z.object({
+  taskId: z.string().min(1, 'taskId is required'),
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().max(2000).optional(),
+  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  assignedTo: z.string().optional(),
+  dueDate: z.string().optional(),
+  progressPercentage: z.number().min(0).max(100).optional(),
+});
+
+const deleteTaskInputSchema = z.object({
+  taskId: z.string().min(1, 'taskId is required'),
+});
+
+const createProjectInputSchema = z.object({
+  name: z.string().min(1, 'Project name is required').max(255),
+  description: z.string().max(2000).optional(),
+  projectType: z.enum(['it', 'construction', 'infrastructure', 'roads', 'other']).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  budgetAllocated: z.number().positive().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  location: z.string().max(255).optional(),
+});
+
+const updateProjectInputSchema = z.object({
+  projectId: z.string().min(1, 'projectId is required'),
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().max(2000).optional(),
+  status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  budgetAllocated: z.number().positive().optional(),
+});
+
+const rescheduleTaskInputSchema = z.object({
+  taskId: z.string().min(1, 'taskId is required'),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  dueDate: z.string().optional(),
+  reason: z.string().max(500).optional(),
+});
+
+const cascadeRescheduleInputSchema = z.object({
+  taskId: z.string().min(1, 'taskId is required'),
+  newStartDate: z.string().optional(),
+  newEndDate: z.string().optional(),
+  reason: z.string().max(500).optional(),
+});
+
+const setDependencyInputSchema = z.object({
+  taskId: z.string().min(1, 'taskId is required'),
+  predecessorId: z.string().min(1, 'predecessorId is required'),
+  dependencyType: z.enum(['FS', 'SS', 'FF', 'SF']).optional(),
+});
+
+const getByIdInputSchema = z.object({
+  taskId: z.string().optional(),
+  projectId: z.string().optional(),
+  scheduleId: z.string().optional(),
+});
 
 export interface ActionResult {
   success: boolean;
@@ -67,7 +145,11 @@ export class AIActionExecutor {
   }
 
   private async createTask(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
-    const { scheduleId, name, description, priority, assignedTo, dueDate, estimatedDays, parentTaskId } = input;
+    const parsed = createTaskInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, toolName: 'create_task', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
+    }
+    const { scheduleId, name, description, priority, assignedTo, dueDate, estimatedDays, parentTaskId } = parsed.data;
 
     // Verify schedule exists
     const schedule = await this.scheduleService.findById(scheduleId);
@@ -98,7 +180,11 @@ export class AIActionExecutor {
   }
 
   private async updateTask(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
-    const { taskId, ...updates } = input;
+    const parsed = updateTaskInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, toolName: 'update_task', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
+    }
+    const { taskId, ...updates } = parsed.data;
 
     const existing = await this.scheduleService.findTaskById(taskId);
     if (!existing) {
@@ -121,7 +207,11 @@ export class AIActionExecutor {
   }
 
   private async deleteTask(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
-    const { taskId } = input;
+    const parsed = deleteTaskInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, toolName: 'delete_task', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
+    }
+    const { taskId } = parsed.data;
 
     const existing = await this.scheduleService.findTaskById(taskId);
     if (!existing) {
@@ -138,7 +228,11 @@ export class AIActionExecutor {
   }
 
   private async createProject(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
-    const { name, description, projectType, priority, budgetAllocated, startDate, endDate, location } = input;
+    const parsed = createProjectInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, toolName: 'create_project', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
+    }
+    const { name, description, projectType, priority, budgetAllocated, startDate, endDate, location } = parsed.data;
 
     const projectData: CreateProjectData = {
       name,
@@ -177,7 +271,11 @@ export class AIActionExecutor {
   }
 
   private async updateProject(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
-    const { projectId, ...updates } = input;
+    const parsed = updateProjectInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, toolName: 'update_project', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
+    }
+    const { projectId, ...updates } = parsed.data;
 
     const existing = await this.projectService.findById(projectId);
     if (!existing) {
@@ -196,7 +294,11 @@ export class AIActionExecutor {
   }
 
   private async rescheduleTask(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
-    const { taskId, startDate, endDate, dueDate, reason } = input;
+    const parsed = rescheduleTaskInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, toolName: 'reschedule_task', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
+    }
+    const { taskId, startDate, endDate, dueDate, reason } = parsed.data;
 
     const existing = await this.scheduleService.findTaskById(taskId);
     if (!existing) {
@@ -327,7 +429,11 @@ export class AIActionExecutor {
   }
 
   private async cascadeReschedule(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
-    const { taskId, newStartDate, newEndDate, reason } = input;
+    const parsed = cascadeRescheduleInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, toolName: 'cascade_reschedule', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
+    }
+    const { taskId, newStartDate, newEndDate, reason } = parsed.data;
 
     const target = await this.scheduleService.findTaskById(taskId);
     if (!target) {
@@ -400,7 +506,11 @@ export class AIActionExecutor {
   }
 
   private async setDependency(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
-    const { taskId, predecessorId, dependencyType } = input;
+    const parsed = setDependencyInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, toolName: 'set_dependency', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
+    }
+    const { taskId, predecessorId, dependencyType } = parsed.data;
 
     const task = await this.scheduleService.findTaskById(taskId);
     if (!task) {

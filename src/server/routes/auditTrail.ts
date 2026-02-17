@@ -35,7 +35,7 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
 
       return { activities: paged, total, limit: Number(limit), offset: Number(offset) };
     } catch (error) {
-      console.error('Get audit trail error:', error);
+      request.log.error({ err: error }, 'Get audit trail error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

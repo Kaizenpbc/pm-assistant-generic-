@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 export interface Schedule {
   id: string;
   projectId: string;
@@ -476,7 +478,7 @@ export class ScheduleService {
 
   async create(data: CreateScheduleData): Promise<Schedule> {
     const schedule: Schedule = {
-      id: `sch-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       ...data,
       status: 'active',
       createdAt: new Date(),
@@ -540,7 +542,7 @@ export class ScheduleService {
 
   async createTask(data: CreateTaskData): Promise<Task> {
     const task: Task = {
-      id: `task-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       ...data,
       status: data.status || 'pending',
       priority: data.priority || 'medium',
@@ -587,7 +589,7 @@ export class ScheduleService {
 
   addComment(taskId: string, text: string, userId: string, userName: string): TaskComment {
     const comment: TaskComment = {
-      id: `cmt-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       taskId,
       userId,
       userName,
@@ -625,7 +627,7 @@ export class ScheduleService {
     newValue?: string,
   ): TaskActivityEntry {
     const entry: TaskActivityEntry = {
-      id: `act-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       taskId,
       userId,
       userName,

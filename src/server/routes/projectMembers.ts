@@ -27,7 +27,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       const members = memberService.findByProjectId(projectId);
       return { members };
     } catch (error) {
-      console.error('Get members error:', error);
+      request.log.error({ err: error }, 'Get members error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -43,7 +43,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       const member = memberService.addMember(projectId, data);
       return reply.status(201).send({ member });
     } catch (error) {
-      console.error('Add member error:', error);
+      request.log.error({ err: error }, 'Add member error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -60,7 +60,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       if (!member) return reply.status(404).send({ error: 'Member not found' });
       return { member };
     } catch (error) {
-      console.error('Update member error:', error);
+      request.log.error({ err: error }, 'Update member error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -76,7 +76,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       if (!removed) return reply.status(400).send({ error: 'Cannot remove member (may be last owner)' });
       return { message: 'Member removed' };
     } catch (error) {
-      console.error('Remove member error:', error);
+      request.log.error({ err: error }, 'Remove member error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

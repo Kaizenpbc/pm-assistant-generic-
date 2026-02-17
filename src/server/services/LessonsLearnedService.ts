@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { claudeService, PromptTemplate } from './claudeService';
 import { ProjectService } from './ProjectService';
 import { ScheduleService } from './ScheduleService';
@@ -715,7 +716,7 @@ export class LessonsLearnedService {
     confidence?: number;
   }): Promise<LessonLearned> {
     const lesson: LessonLearned = {
-      id: `ll-manual-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      id: randomUUID(),
       projectId: data.projectId,
       projectName: data.projectName,
       projectType: data.projectType,

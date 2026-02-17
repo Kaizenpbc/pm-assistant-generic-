@@ -130,7 +130,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
       reply.header('Content-Disposition', `attachment; filename="project-${id}-export.csv"`);
       return reply.send(csv);
     } catch (error) {
-      console.error('Export error:', error);
+      request.log.error({ err: error }, 'Export error');
       return reply.status(500).send({ error: 'Failed to export project data' });
     }
   });

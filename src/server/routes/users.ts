@@ -16,7 +16,7 @@ export async function userRoutes(fastify: FastifyInstance) {
         },
       };
     } catch (error) {
-      console.error('Get user profile error:', error);
+      request.log.error({ err: error }, 'Get user profile error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch user profile' });
     }
   });

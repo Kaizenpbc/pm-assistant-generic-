@@ -11,10 +11,16 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-  username: z.string().min(3),
+  username: z.string().min(3).max(100),
   email: z.string().email(),
-  password: z.string().min(6),
-  fullName: z.string().min(2),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must be at most 128 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one digit')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+  fullName: z.string().min(2).max(255),
 });
 
 export async function authRoutes(fastify: FastifyInstance) {
@@ -69,7 +75,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         user: { id: user.id, username: user.username, email: user.email, fullName: user.fullName, role: user.role },
       };
     } catch (error) {
-      console.error('Login error:', error);
+      request.log.error({ err: error }, 'Login error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Login failed' });
     }
   });
@@ -93,7 +99,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         user: { id: user.id, username: user.username, email: user.email, fullName: user.fullName, role: user.role },
       });
     } catch (error) {
-      console.error('Registration error:', error);
+      request.log.error({ err: error }, 'Registration error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Registration failed' });
     }
   });
@@ -141,7 +147,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       return { message: 'Token refreshed successfully' };
     } catch (error) {
-      console.error('Token refresh error:', error);
+      request.log.error({ err: error }, 'Token refresh error');
       return reply.status(401).send({ error: 'Invalid refresh token', message: 'Refresh token is invalid or expired' });
     }
   });

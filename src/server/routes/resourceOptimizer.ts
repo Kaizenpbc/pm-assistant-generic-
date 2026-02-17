@@ -43,7 +43,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
           message: error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
         });
       }
-      console.error('Resource forecast error:', error);
+      request.log.error({ err: error }, 'Resource forecast error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to generate resource forecast',
@@ -81,7 +81,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
           message: error.message,
         });
       }
-      console.error('Skill match error:', error);
+      request.log.error({ err: error }, 'Skill match error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to find resource matches',

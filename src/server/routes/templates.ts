@@ -53,7 +53,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       }));
       return { templates: summaries };
     } catch (error) {
-      console.error('List templates error:', error);
+      request.log.error({ err: error }, 'List templates error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch templates' });
     }
   });
@@ -70,7 +70,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       }
       return { template };
     } catch (error) {
-      console.error('Get template error:', error);
+      request.log.error({ err: error }, 'Get template error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch template' });
     }
   });
@@ -89,7 +89,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ template });
     } catch (error) {
-      console.error('Create template error:', error);
+      request.log.error({ err: error }, 'Create template error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create template' });
     }
   });
@@ -107,7 +107,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       }
       return { template };
     } catch (error) {
-      console.error('Update template error:', error);
+      request.log.error({ err: error }, 'Update template error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update template' });
     }
   });
@@ -124,7 +124,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Template deleted successfully' };
     } catch (error) {
-      console.error('Delete template error:', error);
+      request.log.error({ err: error }, 'Delete template error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete template' });
     }
   });
@@ -143,7 +143,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send(result);
     } catch (error: any) {
-      console.error('Apply template error:', error);
+      request.log.error({ err: error }, 'Apply template error');
       if (error.message === 'Template not found') {
         return reply.status(404).send({ error: 'Template not found' });
       }
@@ -165,7 +165,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ template });
     } catch (error: any) {
-      console.error('Save as template error:', error);
+      request.log.error({ err: error }, 'Save as template error');
       if (error.message === 'Project not found') {
         return reply.status(404).send({ error: 'Project not found' });
       }

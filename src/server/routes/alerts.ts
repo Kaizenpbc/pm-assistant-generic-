@@ -16,9 +16,13 @@ export async function alertRoutes(fastify: FastifyInstance) {
       description: 'Get all proactive alerts across projects',
       tags: ['alerts'],
     },
-    handler: async (_request: FastifyRequest, _reply: FastifyReply) => {
-      const alerts = await alertService.generateAlerts();
-      return { alerts, count: alerts.length };
+    handler: async (request: FastifyRequest, _reply: FastifyReply) => {
+      const { limit = 100, offset = 0 } = request.query as { limit?: number; offset?: number };
+      const allAlerts = await alertService.generateAlerts();
+      const capped = Math.min(Number(limit) || 100, 500);
+      const skip = Math.max(Number(offset) || 0, 0);
+      const alerts = allAlerts.slice(skip, skip + capped);
+      return { alerts, count: alerts.length, total: allAlerts.length, limit: capped, offset: skip };
     },
   });
 

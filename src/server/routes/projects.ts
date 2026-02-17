@@ -33,7 +33,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       const projects = await projectService.findByUserId(userId);
       return { projects };
     } catch (error) {
-      console.error('Get projects error:', error);
+      request.log.error({ err: error }, 'Get projects error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch projects' });
     }
   });
@@ -51,7 +51,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       }
       return { project };
     } catch (error) {
-      console.error('Get project error:', error);
+      request.log.error({ err: error }, 'Get project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch project' });
     }
   });
@@ -71,7 +71,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ project });
     } catch (error) {
-      console.error('Create project error:', error);
+      request.log.error({ err: error }, 'Create project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create project' });
     }
   });
@@ -94,7 +94,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       }
       return { project };
     } catch (error) {
-      console.error('Update project error:', error);
+      request.log.error({ err: error }, 'Update project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update project' });
     }
   });
@@ -112,7 +112,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Project deleted successfully' };
     } catch (error) {
-      console.error('Delete project error:', error);
+      request.log.error({ err: error }, 'Delete project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete project' });
     }
   });

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Task, ScheduleService } from './ScheduleService';
 
 export type TriggerType = 'status_change' | 'date_passed' | 'progress_threshold';
@@ -85,7 +86,7 @@ export class WorkflowService {
 
   create(data: Omit<WorkflowRule, 'id' | 'createdAt' | 'updatedAt'>): WorkflowRule {
     const rule: WorkflowRule = {
-      id: `wf-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       ...data,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
