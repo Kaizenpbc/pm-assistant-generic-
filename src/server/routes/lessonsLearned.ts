@@ -6,19 +6,19 @@ import { authMiddleware } from '../middleware/auth';
 import { verifyProjectAccess } from '../middleware/authorize';
 
 const mitigationsBodySchema = z.object({
-  riskDescription: z.string().min(1, 'riskDescription is required'),
-  projectType: z.string().min(1, 'projectType is required'),
+  riskDescription: z.string().min(1, 'riskDescription is required').max(5000),
+  projectType: z.string().min(1, 'projectType is required').max(100),
 });
 
 const addLessonBodySchema = z.object({
-  projectId: z.string().min(1, 'projectId is required'),
-  projectName: z.string().default(''),
-  projectType: z.string().default('other'),
+  projectId: z.string().min(1, 'projectId is required').max(100),
+  projectName: z.string().max(255).default(''),
+  projectType: z.string().max(100).default('other'),
   category: z.enum(['schedule', 'budget', 'resource', 'risk', 'technical', 'communication', 'stakeholder', 'quality']).default('quality'),
-  title: z.string().min(1, 'title is required'),
-  description: z.string().min(1, 'description is required'),
+  title: z.string().min(1, 'title is required').max(500),
+  description: z.string().min(1, 'description is required').max(5000),
   impact: z.enum(['positive', 'negative', 'neutral']).default('neutral'),
-  recommendation: z.string().min(1, 'recommendation is required'),
+  recommendation: z.string().min(1, 'recommendation is required').max(5000),
   confidence: z.number().min(0).max(100).optional(),
 });
 
@@ -26,9 +26,10 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   const service = new LessonsLearnedService();
 
   // GET /knowledge-base — Aggregated knowledge base overview
-  fastify.get('/knowledge-base', { preHandler: [authMiddleware] }, async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/knowledge-base', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const overview = await service.getKnowledgeBase();
+      const userId = request.user.userId;
+      const overview = await service.getKnowledgeBase(userId);
       return reply.send({ data: overview });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to get knowledge base');
@@ -63,7 +64,8 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
     try {
       const querySchema = z.object({ projectType: z.string().optional(), category: z.string().optional() });
       const { projectType, category } = querySchema.parse(request.query);
-      const lessons = await service.findRelevantLessons(projectType, category);
+      const userId = request.user.userId;
+      const lessons = await service.findRelevantLessons(projectType, category, userId);
       return reply.send({ lessons });
     } catch (err) {
       if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
@@ -121,6 +123,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
         impact: body.impact,
         recommendation: body.recommendation,
         confidence: body.confidence,
+        userId,
       });
       return reply.status(201).send({ lesson });
     } catch (err) {

@@ -13,10 +13,10 @@ const applyBodySchema = z.object({
 const applyAllBodySchema = z.object({
   changes: z.array(
     z.object({
-      taskId: z.string(),
+      taskId: z.string().max(100),
       priority: z.enum(['low', 'medium', 'high', 'urgent']),
     }),
-  ),
+  ).max(500),
 });
 
 export async function taskPrioritizationRoutes(fastify: FastifyInstance) {

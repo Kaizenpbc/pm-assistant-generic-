@@ -14,7 +14,7 @@ const triggerSchema = z.object({
 
 const actionSchema = z.object({
   type: z.enum(['update_field', 'log_activity', 'send_notification']),
-  field: z.string().optional(),
+  field: z.enum(['status', 'priority', 'assignedTo', 'name', 'description', 'progressPercentage']).optional(),
   value: z.string().optional(),
   message: z.string().optional(),
 });

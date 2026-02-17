@@ -78,7 +78,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
 
       const data = updateRoleSchema.parse(request.body);
-      const member = memberService.updateRole(memberId, data.role);
+      const member = memberService.updateRole(memberId, data.role, projectId);
       if (!member) return reply.status(404).send({ error: 'Member not found' });
       return { member };
     } catch (error) {
@@ -101,7 +101,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       const project = await verifyProjectAccess(projectId, userId);
       if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
 
-      const removed = memberService.removeMember(memberId);
+      const removed = memberService.removeMember(memberId, projectId);
       if (!removed) return reply.status(400).send({ error: 'Cannot remove member (may be last owner)' });
       return { message: 'Member removed' };
     } catch (error) {

@@ -6,22 +6,22 @@ import { conversationIdParam } from '../schemas/commonSchemas';
 import { verifyScheduleAccess } from '../middleware/authorize';
 
 const chatMessageBodySchema = z.object({
-  message: z.string().min(1),
-  conversationId: z.string().optional(),
+  message: z.string().min(1).max(10000),
+  conversationId: z.string().max(100).optional(),
   context: z.object({
     type: z.enum(['dashboard', 'project', 'schedule', 'reports', 'general']),
-    projectId: z.string().optional(),
+    projectId: z.string().max(100).optional(),
   }).optional(),
 });
 
 const createProjectBodySchema = z.object({
-  description: z.string().min(10),
+  description: z.string().min(10).max(5000),
 });
 
 const extractTasksBodySchema = z.object({
-  meetingNotes: z.string().min(10),
-  projectId: z.string().optional(),
-  scheduleId: z.string().optional(),
+  meetingNotes: z.string().min(10).max(100000),
+  projectId: z.string().max(100).optional(),
+  scheduleId: z.string().max(100).optional(),
 });
 
 export async function aiChatRoutes(fastify: FastifyInstance) {
@@ -297,7 +297,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
               scheduleId: body.scheduleId,
               name: task.name,
               description: task.description || '',
-              priority: (task.priority as any) || 'medium',
+              priority: (['low', 'medium', 'high', 'urgent'].includes(task.priority) ? task.priority : 'medium') as 'low' | 'medium' | 'high' | 'urgent',
               createdBy: user.userId,
             });
             createdTasks.push(created);

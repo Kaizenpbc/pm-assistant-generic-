@@ -12,26 +12,26 @@ const templateQuerySchema = z.object({
 });
 
 const createTemplateSchema = z.object({
-  name: z.string().min(1),
-  description: z.string(),
+  name: z.string().min(1).max(255),
+  description: z.string().max(5000),
   projectType: z.enum(['it', 'construction', 'infrastructure', 'roads', 'other']),
-  category: z.string(),
+  category: z.string().max(100),
   estimatedDurationDays: z.number().positive(),
   tasks: z.array(z.object({
-    refId: z.string(),
-    name: z.string(),
-    description: z.string().default(''),
+    refId: z.string().max(100),
+    name: z.string().max(500),
+    description: z.string().max(2000).default(''),
     estimatedDays: z.number().min(1),
     priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
-    parentRefId: z.string().nullable().default(null),
-    dependencyRefId: z.string().nullable().default(null),
+    parentRefId: z.string().max(100).nullable().default(null),
+    dependencyRefId: z.string().max(100).nullable().default(null),
     dependencyType: z.enum(['FS', 'SS', 'FF', 'SF']).default('FS'),
     offsetDays: z.number().default(0),
-    skills: z.array(z.string()).default([]),
+    skills: z.array(z.string().max(100)).max(20).default([]),
     isSummary: z.boolean().default(false),
     mandatory: z.boolean().optional(),
-  })),
-  tags: z.array(z.string()).default([]),
+  })).max(500),
+  tags: z.array(z.string().max(100)).max(50).default([]),
 });
 
 export async function templateRoutes(fastify: FastifyInstance) {

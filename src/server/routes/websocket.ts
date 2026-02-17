@@ -56,7 +56,7 @@ export async function websocketRoutes(fastify: FastifyInstance) {
 
     socket.send(JSON.stringify({
       type: 'connected',
-      payload: { message: 'WebSocket connected', clients: WebSocketService.getClientCount() },
+      payload: { message: 'WebSocket connected' },
     }));
   });
 }

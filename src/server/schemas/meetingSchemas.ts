@@ -94,15 +94,15 @@ export type MeetingAnalysis = z.infer<typeof MeetingAnalysisSchema>;
 // ---------------------------------------------------------------------------
 
 export const AnalyzeRequestSchema = z.object({
-  transcript: z.string().min(10, 'Transcript must be at least 10 characters'),
-  projectId: z.string(),
-  scheduleId: z.string(),
+  transcript: z.string().min(10, 'Transcript must be at least 10 characters').max(100000, 'Transcript must not exceed 100,000 characters'),
+  projectId: z.string().max(100),
+  scheduleId: z.string().max(100),
 });
 
 export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>;
 
 export const ApplyRequestSchema = z.object({
-  selectedItems: z.array(z.number()),
+  selectedItems: z.array(z.number()).max(100),
 });
 
 export type ApplyRequest = z.infer<typeof ApplyRequestSchema>;

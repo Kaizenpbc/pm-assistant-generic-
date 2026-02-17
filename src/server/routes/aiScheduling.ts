@@ -11,24 +11,24 @@ import { projectIdParam } from '../schemas/commonSchemas';
 import { verifyProjectAccess, verifyScheduleAccess } from '../middleware/authorize';
 
 const analyzeProjectBodySchema = z.object({
-  projectDescription: z.string().min(1),
-  projectType: z.string().optional(),
+  projectDescription: z.string().min(1).max(10000),
+  projectType: z.string().max(100).optional(),
   projectId: z.string().min(1).max(100).optional(),
 });
 
 const suggestDependenciesBodySchema = z.object({
   tasks: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    description: z.string().optional(),
-    category: z.string().optional(),
-  })),
-  projectContext: z.string().optional(),
+    id: z.string().max(100),
+    name: z.string().max(500),
+    description: z.string().max(2000).optional(),
+    category: z.string().max(100).optional(),
+  })).max(500),
+  projectContext: z.string().max(5000).optional(),
 });
 
 const optimizeScheduleBodySchema = z.object({
   scheduleId: z.string().min(1).max(100),
-  optimizationGoals: z.array(z.string()).optional(),
+  optimizationGoals: z.array(z.string().max(500)).max(20).optional(),
   constraints: z.record(z.string(), z.unknown()).optional(),
 });
 

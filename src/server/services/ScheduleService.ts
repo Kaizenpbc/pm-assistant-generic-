@@ -606,8 +606,10 @@ export class ScheduleService {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  deleteComment(commentId: string): boolean {
-    const idx = ScheduleService.comments.findIndex((c) => c.id === commentId);
+  deleteComment(commentId: string, userId: string): boolean {
+    const idx = ScheduleService.comments.findIndex(
+      (c) => c.id === commentId && c.userId === userId
+    );
     if (idx === -1) return false;
     ScheduleService.comments.splice(idx, 1);
     return true;

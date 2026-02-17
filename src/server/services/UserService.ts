@@ -65,11 +65,13 @@ export class UserService {
   }
 
   async findByUsername(username: string): Promise<User | null> {
-    return this.users.find(user => user.username === username) || null;
+    const normalized = username.toLowerCase();
+    return this.users.find(user => user.username.toLowerCase() === normalized) || null;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.users.find(user => user.email === email) || null;
+    const normalized = email.toLowerCase();
+    return this.users.find(user => user.email.toLowerCase() === normalized) || null;
   }
 
   async create(data: CreateUserData): Promise<User> {

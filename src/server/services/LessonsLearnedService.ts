@@ -231,6 +231,13 @@ export class LessonsLearnedService {
       }
     }
 
+    // Stamp userId on all seeded lessons for ownership filtering
+    if (userId) {
+      for (const lesson of seededLessons) {
+        lesson.userId = userId;
+      }
+    }
+
     LessonsLearnedService.lessons.push(...seededLessons);
     return seededLessons.length;
   }
@@ -239,7 +246,7 @@ export class LessonsLearnedService {
   // Extract lessons from a specific project (AI-enhanced)
   // -----------------------------------------------------------------------
 
-  async extractLessons(projectId: string, _userId?: string): Promise<LessonLearned[]> {
+  async extractLessons(projectId: string, userId?: string): Promise<LessonLearned[]> {
     const projectService = new ProjectService();
     const scheduleService = new ScheduleService();
 
@@ -309,6 +316,7 @@ export class LessonsLearnedService {
           impact: l.impact,
           recommendation: l.recommendation,
           confidence: l.confidence,
+          userId,
           createdAt: new Date().toISOString(),
         }));
 
@@ -321,12 +329,13 @@ export class LessonsLearnedService {
     }
 
     // Deterministic fallback: generate basic lessons from data analysis
-    return this.extractLessonsDeterministic(project, scheduleData);
+    return this.extractLessonsDeterministic(project, scheduleData, userId);
   }
 
   private extractLessonsDeterministic(
     project: { id: string; name: string; projectType: string; budgetAllocated?: number; budgetSpent: number; startDate?: Date; endDate?: Date; status: string },
     scheduleData: Array<{ scheduleName: string; tasks: any[] }>,
+    userId?: string,
   ): LessonLearned[] {
     const newLessons: LessonLearned[] = [];
     const allTasks = scheduleData.flatMap((s) => s.tasks);
@@ -409,6 +418,13 @@ export class LessonsLearnedService {
       });
     }
 
+    // Stamp userId on deterministic lessons for ownership filtering
+    if (userId) {
+      for (const lesson of newLessons) {
+        lesson.userId = userId;
+      }
+    }
+
     LessonsLearnedService.lessons.push(...newLessons);
     return newLessons;
   }
@@ -417,8 +433,10 @@ export class LessonsLearnedService {
   // Knowledge Base Overview
   // -----------------------------------------------------------------------
 
-  async getKnowledgeBase(): Promise<KnowledgeBaseOverview> {
-    const lessons = LessonsLearnedService.lessons;
+  async getKnowledgeBase(userId?: string): Promise<KnowledgeBaseOverview> {
+    const lessons = userId
+      ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
+      : LessonsLearnedService.lessons;
     const patterns = LessonsLearnedService.patterns;
 
     const byCategory: Record<string, number> = {};
@@ -451,8 +469,10 @@ export class LessonsLearnedService {
   // Find relevant lessons (filtered)
   // -----------------------------------------------------------------------
 
-  async findRelevantLessons(projectType?: string, category?: string): Promise<LessonLearned[]> {
-    let results = [...LessonsLearnedService.lessons];
+  async findRelevantLessons(projectType?: string, category?: string, userId?: string): Promise<LessonLearned[]> {
+    let results = userId
+      ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
+      : [...LessonsLearnedService.lessons];
 
     if (projectType) {
       results = results.filter((l) => l.projectType === projectType);
@@ -716,6 +736,7 @@ export class LessonsLearnedService {
     impact: LessonLearned['impact'];
     recommendation: string;
     confidence?: number;
+    userId?: string;
   }): Promise<LessonLearned> {
     const lesson: LessonLearned = {
       id: randomUUID(),
@@ -728,6 +749,7 @@ export class LessonsLearnedService {
       impact: data.impact,
       recommendation: data.recommendation,
       confidence: data.confidence ?? 80,
+      userId: data.userId,
       createdAt: new Date().toISOString(),
     };
 

@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 export const MonteCarloConfigSchema = z.object({
   iterations: z.number().int().min(100).max(100000).default(10000),
-  confidenceLevels: z.array(z.number().min(1).max(99)).default([50, 80, 90]),
+  confidenceLevels: z.array(z.number().min(1).max(99)).max(10).default([50, 80, 90]),
   uncertaintyModel: z.enum(['pert', 'triangular']).default('pert'),
 });
 

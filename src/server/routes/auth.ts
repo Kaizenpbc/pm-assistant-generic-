@@ -29,6 +29,9 @@ const registerSchema = z.object({
   fullName: z.string().min(2).max(255),
 });
 
+/** Dummy bcrypt hash used to equalize timing when user is not found. */
+const DUMMY_HASH = '$2b$12$LJ3m4ys3Lp0Mf0kPrGaXaOQSaZfwGBMqB1G6g/K5GrlGOoH1GCSG';
+
 export async function authRoutes(fastify: FastifyInstance) {
   const userService = new UserService();
 
@@ -39,25 +42,30 @@ export async function authRoutes(fastify: FastifyInstance) {
       const { username, password } = loginSchema.parse(request.body);
 
       const user = await userService.findByUsername(username);
-      if (!user) {
+
+      // Always run bcrypt.compare to prevent timing-based username enumeration
+      const hashToCompare = user?.passwordHash ?? DUMMY_HASH;
+      const isValidPassword = await bcrypt.compare(password, hashToCompare);
+
+      if (!user || !isValidPassword) {
         return reply.status(401).send({ error: 'Invalid credentials', message: 'Username or password is incorrect' });
       }
 
-      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-      if (!isValidPassword) {
+      // Block deactivated accounts
+      if (!user.isActive) {
         return reply.status(401).send({ error: 'Invalid credentials', message: 'Username or password is incorrect' });
       }
 
       const accessToken = jwt.sign(
         { userId: user.id, username: user.username, role: user.role },
         config.JWT_SECRET,
-        { expiresIn: '15m' }
+        { expiresIn: '15m', algorithm: 'HS256' }
       );
 
       const refreshToken = jwt.sign(
         { userId: user.id, type: 'refresh' },
         config.JWT_REFRESH_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: '7d', algorithm: 'HS256' }
       );
 
       reply.setCookie('access_token', accessToken, {
@@ -72,7 +80,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         httpOnly: true,
         secure: config.NODE_ENV === 'production',
         sameSite: 'lax',
-        path: '/',
+        path: '/api/v1/auth',
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
       });
 
@@ -93,18 +101,22 @@ export async function authRoutes(fastify: FastifyInstance) {
     try {
       const { username, email, password, fullName } = registerSchema.parse(request.body);
 
-      const existingUser = await userService.findByUsername(username);
+      // Normalize to prevent case-sensitive duplicates
+      const normalizedUsername = username.toLowerCase();
+      const normalizedEmail = email.toLowerCase();
+
+      const existingUser = await userService.findByUsername(normalizedUsername);
       if (existingUser) {
         return reply.status(409).send({ error: 'User already exists', message: 'Username is already taken' });
       }
 
-      const existingEmail = await userService.findByEmail(email);
+      const existingEmail = await userService.findByEmail(normalizedEmail);
       if (existingEmail) {
         return reply.status(409).send({ error: 'Email already in use', message: 'An account with this email already exists' });
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
-      const user = await userService.create({ username, email, passwordHash, fullName, role: 'member' });
+      const user = await userService.create({ username: normalizedUsername, email: normalizedEmail, passwordHash, fullName, role: 'member' });
 
       return reply.status(201).send({
         message: 'User created successfully',
@@ -121,7 +133,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     schema: { description: 'User logout', tags: ['auth'] },
   }, async (_request: FastifyRequest, reply: FastifyReply) => {
     reply.clearCookie('access_token', { path: '/' });
-    reply.clearCookie('refresh_token', { path: '/' });
+    reply.clearCookie('refresh_token', { path: '/api/v1/auth' });
     return { message: 'Logout successful' };
   });
 
@@ -142,18 +154,40 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'User not found', message: 'User associated with token not found' });
       }
 
-      const accessToken = jwt.sign(
+      // Block deactivated accounts from refreshing
+      if (!user.isActive) {
+        reply.clearCookie('access_token', { path: '/' });
+        reply.clearCookie('refresh_token', { path: '/api/v1/auth' });
+        return reply.status(401).send({ error: 'Account disabled', message: 'Account has been deactivated' });
+      }
+
+      const newAccessToken = jwt.sign(
         { userId: user.id, username: user.username, role: user.role },
         config.JWT_SECRET,
-        { expiresIn: '15m' }
+        { expiresIn: '15m', algorithm: 'HS256' }
       );
 
-      reply.setCookie('access_token', accessToken, {
+      // Rotate refresh token on each use
+      const newRefreshToken = jwt.sign(
+        { userId: user.id, type: 'refresh' },
+        config.JWT_REFRESH_SECRET,
+        { expiresIn: '7d', algorithm: 'HS256' }
+      );
+
+      reply.setCookie('access_token', newAccessToken, {
         httpOnly: true,
         secure: config.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
         maxAge: 15 * 60, // 15 minutes in seconds
+      });
+
+      reply.setCookie('refresh_token', newRefreshToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/api/v1/auth',
+        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
       });
 
       return { message: 'Token refreshed successfully' };

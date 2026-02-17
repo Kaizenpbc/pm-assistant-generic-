@@ -19,21 +19,21 @@ const createScheduleSchema = z.object({
 
 const createTaskSchema = z.object({
   scheduleId: z.string(),
-  name: z.string().min(1),
-  description: z.string().optional(),
+  name: z.string().min(1).max(500),
+  description: z.string().max(5000).optional(),
   status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).default('pending'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
-  assignedTo: z.string().optional(),
+  assignedTo: z.string().max(255).optional(),
   dueDate: z.string().date().optional(),
   estimatedDays: z.number().positive().optional(),
   startDate: z.string().date().optional(),
   endDate: z.string().date().optional(),
   progressPercentage: z.number().min(0).max(100).optional(),
-  dependency: z.string().optional(),
-  risks: z.string().optional(),
-  issues: z.string().optional(),
-  comments: z.string().optional(),
-  parentTaskId: z.string().optional(),
+  dependency: z.string().max(500).optional(),
+  risks: z.string().max(2000).optional(),
+  issues: z.string().max(2000).optional(),
+  comments: z.string().max(5000).optional(),
+  parentTaskId: z.string().max(100).optional(),
 });
 
 const updateTaskSchema = createTaskSchema.partial().omit({ scheduleId: true });
@@ -89,7 +89,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const { scheduleId } = scheduleIdParam.parse(request.params);
       const existing = await verifyScheduleAccess(scheduleId, request.user.userId);
       if (!existing) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
-      const data = createScheduleSchema.partial().parse(request.body);
+      const data = createScheduleSchema.partial().omit({ projectId: true }).parse(request.body);
       const schedule = await scheduleService.update(scheduleId, {
         ...data,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
@@ -383,8 +383,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const { scheduleId, commentId } = scheduleTaskCommentIdParam.parse(request.params);
       const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
       if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
-      const deleted = scheduleService.deleteComment(commentId);
-      if (!deleted) return reply.status(404).send({ error: 'Comment not found' });
+      const deleted = scheduleService.deleteComment(commentId, request.user.userId);
+      if (!deleted) return reply.status(404).send({ error: 'Comment not found or not authored by you' });
       return { message: 'Comment deleted' };
     } catch (error) {
       request.log.error({ err: error }, 'Delete comment error');

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ProjectService, type CreateProjectData } from './ProjectService';
 import { ScheduleService, type CreateTaskData } from './ScheduleService';
 import { UserService } from './UserService';
+import { verifyProjectAccess, verifyScheduleAccess } from '../middleware/authorize';
 
 // ---------------------------------------------------------------------------
 // Zod schemas for AI tool inputs
@@ -151,10 +152,10 @@ export class AIActionExecutor {
     }
     const { scheduleId, name, description, priority, assignedTo, dueDate, estimatedDays, parentTaskId } = parsed.data;
 
-    // Verify schedule exists
-    const schedule = await this.scheduleService.findById(scheduleId);
+    // Verify schedule exists and user has access
+    const schedule = await verifyScheduleAccess(scheduleId, context.userId);
     if (!schedule) {
-      return { success: false, toolName: 'create_task', summary: `Schedule '${scheduleId}' not found`, error: 'Schedule not found' };
+      return { success: false, toolName: 'create_task', summary: `Schedule '${scheduleId}' not found or access denied`, error: 'Schedule not found or access denied' };
     }
 
     const taskData: CreateTaskData = {
@@ -277,9 +278,9 @@ export class AIActionExecutor {
     }
     const { projectId, ...updates } = parsed.data;
 
-    const existing = await this.projectService.findById(projectId);
+    const existing = await verifyProjectAccess(projectId, context.userId);
     if (!existing) {
-      return { success: false, toolName: 'update_project', summary: `Project '${projectId}' not found`, error: 'Project not found' };
+      return { success: false, toolName: 'update_project', summary: `Project '${projectId}' not found or access denied`, error: 'Project not found or access denied' };
     }
 
     const project = await this.projectService.update(projectId, updates);
@@ -293,7 +294,7 @@ export class AIActionExecutor {
     };
   }
 
-  private async rescheduleTask(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
+  private async rescheduleTask(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
     const parsed = rescheduleTaskInputSchema.safeParse(input);
     if (!parsed.success) {
       return { success: false, toolName: 'reschedule_task', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
@@ -303,6 +304,12 @@ export class AIActionExecutor {
     const existing = await this.scheduleService.findTaskById(taskId);
     if (!existing) {
       return { success: false, toolName: 'reschedule_task', summary: `Task '${taskId}' not found`, error: 'Task not found' };
+    }
+
+    // Verify user has access to the schedule containing this task
+    const scheduleAccess = await verifyScheduleAccess(existing.scheduleId, context.userId);
+    if (!scheduleAccess) {
+      return { success: false, toolName: 'reschedule_task', summary: 'Schedule not found or access denied', error: 'Not found' };
     }
 
     const updateData: Record<string, any> = {};
@@ -428,7 +435,7 @@ export class AIActionExecutor {
     };
   }
 
-  private async cascadeReschedule(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
+  private async cascadeReschedule(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
     const parsed = cascadeRescheduleInputSchema.safeParse(input);
     if (!parsed.success) {
       return { success: false, toolName: 'cascade_reschedule', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
@@ -438,6 +445,12 @@ export class AIActionExecutor {
     const target = await this.scheduleService.findTaskById(taskId);
     if (!target) {
       return { success: false, toolName: 'cascade_reschedule', summary: `Task '${taskId}' not found`, error: 'Task not found' };
+    }
+
+    // Verify user has access to the schedule containing this task
+    const scheduleAccess = await verifyScheduleAccess(target.scheduleId, context.userId);
+    if (!scheduleAccess) {
+      return { success: false, toolName: 'cascade_reschedule', summary: 'Schedule not found or access denied', error: 'Not found' };
     }
 
     // Calculate the delta in milliseconds
@@ -505,7 +518,7 @@ export class AIActionExecutor {
     };
   }
 
-  private async setDependency(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
+  private async setDependency(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
     const parsed = setDependencyInputSchema.safeParse(input);
     if (!parsed.success) {
       return { success: false, toolName: 'set_dependency', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
@@ -515,6 +528,12 @@ export class AIActionExecutor {
     const task = await this.scheduleService.findTaskById(taskId);
     if (!task) {
       return { success: false, toolName: 'set_dependency', summary: `Task '${taskId}' not found`, error: 'Task not found' };
+    }
+
+    // Verify user has access to the schedule containing this task
+    const scheduleAccess = await verifyScheduleAccess(task.scheduleId, context.userId);
+    if (!scheduleAccess) {
+      return { success: false, toolName: 'set_dependency', summary: 'Schedule not found or access denied', error: 'Not found' };
     }
 
     const predecessor = await this.scheduleService.findTaskById(predecessorId);

@@ -75,6 +75,11 @@ export async function registerPlugins(fastify: FastifyInstance) {
     hidePoweredBy: true,
   });
 
+  // Permissions-Policy — disable browser features not needed by this application
+  fastify.addHook('onSend', async (_request, reply) => {
+    reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()');
+  });
+
   await fastify.register(cors, {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
@@ -264,7 +269,9 @@ export async function registerPlugins(fastify: FastifyInstance) {
       checks.database = {
         status: 'down',
         latencyMs: Date.now() - dbStart,
-        detail: err instanceof Error ? err.message : 'Unknown error',
+        detail: config.NODE_ENV === 'production'
+          ? 'Connection failed'
+          : (err instanceof Error ? err.message : 'Unknown error'),
       };
     }
 

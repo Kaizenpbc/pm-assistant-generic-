@@ -5,19 +5,19 @@ import { idParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 const createProjectSchema = z.object({
-  name: z.string().min(1, 'Project name is required'),
-  description: z.string().optional(),
-  category: z.string().optional(),
+  name: z.string().min(1, 'Project name is required').max(255),
+  description: z.string().max(5000).optional(),
+  category: z.string().max(100).optional(),
   projectType: z.enum(['it', 'construction', 'infrastructure', 'roads', 'other']).default('other'),
   status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).default('planning'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   budgetAllocated: z.number().positive().optional(),
-  currency: z.string().default('USD'),
-  location: z.string().optional(),
+  currency: z.string().max(10).default('USD'),
+  location: z.string().max(500).optional(),
   locationLat: z.number().min(-90).max(90).optional(),
   locationLon: z.number().min(-180).max(180).optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().date().optional(),
+  endDate: z.string().date().optional(),
 });
 
 const updateProjectSchema = createProjectSchema.partial();

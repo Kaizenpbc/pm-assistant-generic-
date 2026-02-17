@@ -86,15 +86,15 @@ export class ProjectMemberService {
     return member;
   }
 
-  updateRole(memberId: string, role: ProjectRole): ProjectMember | null {
-    const member = ProjectMemberService.members.find(m => m.id === memberId);
+  updateRole(memberId: string, role: ProjectRole, projectId: string): ProjectMember | null {
+    const member = ProjectMemberService.members.find(m => m.id === memberId && m.projectId === projectId);
     if (!member) return null;
     member.role = role;
     return member;
   }
 
-  removeMember(memberId: string): boolean {
-    const idx = ProjectMemberService.members.findIndex(m => m.id === memberId);
+  removeMember(memberId: string, projectId: string): boolean {
+    const idx = ProjectMemberService.members.findIndex(m => m.id === memberId && m.projectId === projectId);
     if (idx === -1) return false;
     // Don't allow removing last owner
     const member = ProjectMemberService.members[idx];
