@@ -55,7 +55,7 @@ export async function aiReportRoutes(fastify: FastifyInstance) {
         );
         return reply.code(500).send({
           error: 'Failed to generate report',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: 'An unexpected error occurred',
         });
       }
     },
@@ -80,7 +80,7 @@ export async function aiReportRoutes(fastify: FastifyInstance) {
         );
         return reply.code(500).send({
           error: 'Failed to list report history',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: 'An unexpected error occurred',
         });
       }
     },

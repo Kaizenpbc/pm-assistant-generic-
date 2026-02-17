@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import websocket from '@fastify/websocket';
@@ -80,6 +81,23 @@ export async function registerPlugins(fastify: FastifyInstance) {
     },
   });
 
+  // Rate limiting — protect against brute force and API abuse
+  await fastify.register(rateLimit, {
+    max: 100,               // 100 requests per window
+    timeWindow: '1 minute',
+    allowList: ['127.0.0.1'],
+    keyGenerator: (request) => {
+      // Use authenticated userId if available, otherwise IP
+      const user = (request as any).user;
+      return user?.userId || request.ip;
+    },
+    errorResponseBuilder: (_request, context) => ({
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: `Rate limit exceeded. Retry in ${Math.ceil(context.ttl / 1000)} seconds.`,
+    }),
+  });
+
   await fastify.register(swagger, {
     swagger: {
       info: {
@@ -107,16 +125,22 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.setErrorHandler(async (err: unknown, request, reply) => {
     const error = err instanceof Error ? err : new Error(String(err));
     const statusCode = (error as { statusCode?: number }).statusCode ?? 500;
-    console.error('Global error handler:', error);
+    fastify.log.error({ err: error, url: request.url, method: request.method }, 'Global error handler');
 
     auditService.logSystemEvent(request, 'error', {
       error: error.message, url: request.url, method: request.method
     });
 
+    // In production, never leak raw error messages for server errors
+    const isProduction = config.NODE_ENV === 'production';
+    const safeMessage = statusCode >= 500 && isProduction
+      ? 'Internal Server Error'
+      : error.message;
+
     reply.status(statusCode).send({
       statusCode,
-      error: statusCode === 500 ? 'Internal Server Error' : error.name || 'Error',
-      message: statusCode === 500 ? 'Internal Server Error' : error.message,
+      error: statusCode >= 500 ? 'Internal Server Error' : error.name || 'Error',
+      message: safeMessage,
       timestamp: new Date().toISOString(),
       path: request.url
     });

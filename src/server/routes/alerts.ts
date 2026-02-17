@@ -79,7 +79,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Alert action execution failed');
         return reply.code(500).send({
           error: 'Failed to execute action',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: 'An unexpected error occurred',
         });
       }
     },

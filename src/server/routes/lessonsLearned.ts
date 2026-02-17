@@ -28,8 +28,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
       return reply.send({ lessons });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to extract lessons');
-      const message = err instanceof Error ? err.message : 'Failed to extract lessons';
-      return reply.status(500).send({ error: message });
+      return reply.status(500).send({ error: 'Failed to extract lessons' });
     }
   });
 

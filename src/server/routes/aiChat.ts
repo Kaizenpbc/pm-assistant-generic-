@@ -45,7 +45,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Chat message failed');
         return reply.code(500).send({
           error: 'Failed to process message',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: 'An unexpected error occurred',
         });
       }
     },
@@ -105,7 +105,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
         if (!reply.raw.headersSent) {
           return reply.code(500).send({
             error: 'Failed to stream message',
-            message: error instanceof Error ? error.message : 'Unknown error',
+            message: 'An unexpected error occurred',
           });
         }
 
@@ -204,7 +204,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Project creation failed');
         return reply.code(500).send({
           error: 'Failed to create project from description',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: 'An unexpected error occurred',
         });
       }
     },
@@ -290,7 +290,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Task extraction failed');
         return reply.code(500).send({
           error: 'Failed to extract tasks from notes',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: 'An unexpected error occurred',
         });
       }
     },

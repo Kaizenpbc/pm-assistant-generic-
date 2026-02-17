@@ -56,14 +56,14 @@ export async function nlQueryRoutes(fastify: FastifyInstance) {
         );
 
         // Distinguish AI-unavailable errors from unexpected errors
-        const message = error instanceof Error ? error.message : 'Unknown error';
+        const errorMsg = error instanceof Error ? error.message : '';
         const isServiceError =
-          message.includes('AI features are disabled') ||
-          message.includes('AI service is unavailable');
+          errorMsg.includes('AI features are disabled') ||
+          errorMsg.includes('AI service is unavailable');
 
         return reply.code(isServiceError ? 503 : 500).send({
           error: isServiceError ? 'AI service unavailable' : 'Failed to process query',
-          message,
+          message: isServiceError ? 'AI service is currently unavailable' : 'An unexpected error occurred',
         });
       }
     },

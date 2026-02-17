@@ -25,7 +25,7 @@ export async function monteCarloRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Invalid configuration', details: err.issues });
       }
       fastify.log.error({ err }, 'Monte Carlo simulation failed');
-      return reply.status(500).send({ error: err.message || 'Failed to run Monte Carlo simulation' });
+      return reply.status(500).send({ error: 'Failed to run Monte Carlo simulation' });
     }
   });
 }
