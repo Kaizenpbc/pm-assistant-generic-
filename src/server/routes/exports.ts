@@ -25,39 +25,44 @@ export async function exportRoutes(fastify: FastifyInstance) {
         // JSON export — full project report data for client-side PDF rendering
         const cpmService = new CriticalPathService();
 
-        const schedulesWithTasks = [];
+        // Parallelize task + critical-path fetches across all schedules
+        const schedulesWithTasks = await Promise.all(
+          schedules.map(async (schedule) => {
+            const [tasks, criticalPath] = await Promise.all([
+              scheduleService.findTasksByScheduleId(schedule.id),
+              cpmService.calculateCriticalPath(schedule.id).catch(() => null),
+            ]);
+            return {
+              id: schedule.id,
+              name: schedule.name,
+              startDate: schedule.startDate,
+              endDate: schedule.endDate,
+              tasks: tasks.map((t) => ({
+                id: t.id,
+                name: t.name,
+                status: t.status,
+                priority: t.priority,
+                assignedTo: t.assignedTo || '',
+                startDate: t.startDate ? new Date(t.startDate).toISOString().slice(0, 10) : '',
+                endDate: t.endDate ? new Date(t.endDate).toISOString().slice(0, 10) : '',
+                progressPercentage: t.progressPercentage ?? 0,
+                dependency: t.dependency || '',
+                parentTaskId: t.parentTaskId || '',
+                estimatedDays: t.estimatedDays,
+              })),
+              criticalPath,
+              _rawTasks: tasks, // kept for progress calculation below
+            };
+          })
+        );
+
         let allTaskCount = 0;
         let allProgressSum = 0;
-        for (const schedule of schedules) {
-          const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
-          let criticalPath = null;
-          try {
-            criticalPath = await cpmService.calculateCriticalPath(schedule.id);
-          } catch { /* ignore */ }
-          for (const t of tasks) {
+        for (const s of schedulesWithTasks) {
+          for (const t of s._rawTasks) {
             allTaskCount++;
             allProgressSum += t.progressPercentage ?? 0;
           }
-          schedulesWithTasks.push({
-            id: schedule.id,
-            name: schedule.name,
-            startDate: schedule.startDate,
-            endDate: schedule.endDate,
-            tasks: tasks.map((t) => ({
-              id: t.id,
-              name: t.name,
-              status: t.status,
-              priority: t.priority,
-              assignedTo: t.assignedTo || '',
-              startDate: t.startDate ? new Date(t.startDate).toISOString().slice(0, 10) : '',
-              endDate: t.endDate ? new Date(t.endDate).toISOString().slice(0, 10) : '',
-              progressPercentage: t.progressPercentage ?? 0,
-              dependency: t.dependency || '',
-              parentTaskId: t.parentTaskId || '',
-              estimatedDays: t.estimatedDays,
-            })),
-            criticalPath,
-          });
         }
 
         const avgProgress = allTaskCount > 0 ? Math.round(allProgressSum / allTaskCount) : 0;
@@ -73,7 +78,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
             startDate: project.startDate,
             endDate: project.endDate,
           },
-          schedules: schedulesWithTasks,
+          schedules: schedulesWithTasks.map(({ _rawTasks, ...rest }) => rest),
           generatedAt: new Date().toISOString(),
         });
       }
@@ -96,10 +101,16 @@ export async function exportRoutes(fastify: FastifyInstance) {
         'Parent Task',
       ];
 
-      const rows: string[][] = [];
+      // Parallelize task fetches for CSV export
+      const scheduleTasks = await Promise.all(
+        schedules.map(async (schedule) => {
+          const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
+          return { schedule, tasks };
+        })
+      );
 
-      for (const schedule of schedules) {
-        const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
+      const rows: string[][] = [];
+      for (const { schedule, tasks } of scheduleTasks) {
         for (const task of tasks) {
           rows.push([
             schedule.name,

@@ -19,11 +19,11 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
       const portfolioItems = await Promise.all(
         projects.map(async (project) => {
           const schedules = await scheduleService.findByProjectId(project.id);
-          const allTasks = [];
-          for (const schedule of schedules) {
-            const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
-            allTasks.push(...tasks);
-          }
+          // Parallelize task fetches across all schedules
+          const taskArrays = await Promise.all(
+            schedules.map((schedule) => scheduleService.findTasksByScheduleId(schedule.id))
+          );
+          const allTasks = taskArrays.flat();
 
           return {
             projectId: project.id,

@@ -21,18 +21,15 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
       const project = await verifyProjectAccess(projectId, request.user.userId);
       if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
 
-      // Find all schedules for the project
+      // Find all schedules for the project and collect activities
       const schedules = await scheduleService.findByProjectId(projectId);
-      const allActivities = [];
-
-      for (const schedule of schedules) {
-        const activities = scheduleService.getActivitiesBySchedule(schedule.id);
-        allActivities.push(...activities.map(a => ({
+      const allActivities = schedules.flatMap((schedule) =>
+        scheduleService.getActivitiesBySchedule(schedule.id).map((a) => ({
           ...a,
           scheduleId: schedule.id,
           scheduleName: schedule.name,
-        })));
-      }
+        }))
+      );
 
       // Sort by date descending
       allActivities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
