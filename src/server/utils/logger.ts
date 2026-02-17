@@ -1,38 +1,32 @@
-import winston from 'winston';
+// ---------------------------------------------------------------------------
+// Request logger hook for Fastify
+// ---------------------------------------------------------------------------
+// Fastify already uses pino internally (fastify.log), so we do NOT need
+// a separate Winston/pino instance.  This file exports a lightweight
+// request-level hook and convenience functions that delegate to
+// `request.log` (which is the Fastify-managed pino child logger).
+// ---------------------------------------------------------------------------
 
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  defaultMeta: { service: 'pm-assistant-generic' },
-  transports: [
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' }),
-  ],
-});
+import { FastifyRequest, FastifyReply } from 'fastify';
 
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
-}
-
-export const requestLogger = (request: any, reply: any, done: any) => {
-  logger.info('Request received', {
-    method: request.method,
-    url: request.url,
-    ip: request.ip,
-    userAgent: request.headers['user-agent']
-  });
+/**
+ * onRequest hook — logs every incoming request at debug level.
+ * Fastify's built-in logger already logs request/response at info level when
+ * `logger: true`, so this only adds extra structured metadata.
+ */
+export const requestLogger = (
+  request: FastifyRequest,
+  _reply: FastifyReply,
+  done: () => void,
+) => {
+  request.log.debug(
+    {
+      method: request.method,
+      url: request.url,
+      ip: request.ip,
+      userAgent: request.headers['user-agent'],
+    },
+    'Incoming request',
+  );
   done();
 };
-
-export const errorLogger = logger;
-export const auditLogger = logger;
-export default logger;

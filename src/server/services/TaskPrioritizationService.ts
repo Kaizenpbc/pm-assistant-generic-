@@ -204,7 +204,7 @@ export class TaskPrioritizationService {
           aiPowered = true;
         }
       } catch (error) {
-        console.error('AI prioritization enhancement failed, using algorithmic fallback:', error);
+        process.stderr.write(`[TaskPrioritizationService] AI prioritization failed, using algorithmic fallback: ${error}\n`);
       }
     }
 

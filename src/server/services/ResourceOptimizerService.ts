@@ -144,7 +144,7 @@ export class ResourceOptimizerService {
           allResources.map((r) => ({ id: r.id, name: r.name, role: r.role, skills: r.skills })),
         );
       } catch (err) {
-        console.error('[ResourceOptimizerService] AI rebalance suggestion failed:', err);
+        process.stderr.write(`[ResourceOptimizerService] AI rebalance suggestion failed: ${err}\n`);
         // Continue without AI suggestions
       }
     }

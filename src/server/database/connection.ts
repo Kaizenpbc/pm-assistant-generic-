@@ -35,9 +35,10 @@ class DatabaseService {
 
       this.pool = mysql.createPool(dbConfig);
       this.isConnected = true;
-      console.log('Database connection pool initialized');
+      // Note: Fastify logger not available during construction; use stderr
+      process.stderr.write('[db] Connection pool initialized\n');
     } catch (error) {
-      console.error('Failed to initialize database connection pool:', error);
+      process.stderr.write(`[db] Failed to initialize connection pool: ${error}\n`);
       this.isConnected = false;
     }
   }
@@ -77,7 +78,7 @@ class DatabaseService {
       await this.query('SELECT 1');
       return true;
     } catch (error) {
-      console.error('Database connection test failed:', error);
+      process.stderr.write(`[db] Connection test failed: ${error}\n`);
       return false;
     }
   }
@@ -87,7 +88,7 @@ class DatabaseService {
       await this.pool.end();
       this.pool = null;
       this.isConnected = false;
-      console.log('Database connection pool closed');
+      process.stderr.write('[db] Connection pool closed\n');
     }
   }
 

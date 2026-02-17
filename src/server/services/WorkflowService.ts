@@ -210,7 +210,7 @@ export class WorkflowService {
       }
       case 'send_notification': {
         // In-memory: just log it
-        console.log(`[Workflow Notification] ${action.message || rule.name} - Task: ${task.name}`);
+        process.stderr.write(`[Workflow Notification] ${action.message || rule.name} - Task: ${task.name}\n`);
         return {
           ruleId: rule.id,
           ruleName: rule.name,

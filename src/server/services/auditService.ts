@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto';
 import { FastifyRequest } from 'fastify';
-import { auditLogger } from '../utils/logger';
 
 export interface AuditEvent {
   id: string;
@@ -35,7 +34,7 @@ export class AuditService {
     };
 
     this.events.push(event);
-    auditLogger.info('User action logged', event);
+    request.log.info({ audit: event }, 'User action logged');
   }
 
   public logSystemEvent(
@@ -54,7 +53,7 @@ export class AuditService {
     };
 
     this.events.push(event);
-    auditLogger.info('System event logged', event);
+    request.log.info({ audit: event }, 'System event logged');
   }
 
   public getEvents(filters: {

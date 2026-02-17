@@ -270,9 +270,9 @@ export class ClaudeService {
 
     if (this.aiEnabled) {
       if (!config.ANTHROPIC_API_KEY) {
-        console.warn(
+        process.stderr.write(
           '[ClaudeService] AI_ENABLED is true but ANTHROPIC_API_KEY is not configured. ' +
-            'AI features will be unavailable until a valid API key is provided.',
+            'AI features will be unavailable until a valid API key is provided.\n',
         );
         this.aiEnabled = false;
       } else {

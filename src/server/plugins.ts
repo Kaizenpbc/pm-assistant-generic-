@@ -186,6 +186,11 @@ export async function registerPlugins(fastify: FastifyInstance) {
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // Health & Readiness endpoints
+  // ---------------------------------------------------------------------------
+
+  // Liveness probe — always returns OK if the process is running
   fastify.get('/health', async (_request, reply) => {
     reply.send({
       status: 'OK',
@@ -193,7 +198,87 @@ export async function registerPlugins(fastify: FastifyInstance) {
       version: '1.0.0',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      environment: config.NODE_ENV
+      environment: config.NODE_ENV,
+    });
+  });
+
+  // Readiness probe — checks all subsystems
+  fastify.get('/health/ready', async (_request, reply) => {
+    const checks: Record<string, { status: 'up' | 'down'; latencyMs?: number; detail?: string }> = {};
+
+    // Database check
+    const dbStart = Date.now();
+    try {
+      const connected = await databaseService.testConnection();
+      checks.database = {
+        status: connected ? 'up' : 'down',
+        latencyMs: Date.now() - dbStart,
+      };
+    } catch (err) {
+      checks.database = {
+        status: 'down',
+        latencyMs: Date.now() - dbStart,
+        detail: err instanceof Error ? err.message : 'Unknown error',
+      };
+    }
+
+    // Claude AI check
+    const { claudeService } = await import('./services/claudeService');
+    checks.ai = {
+      status: claudeService.isAvailable() ? 'up' : 'down',
+      detail: claudeService.isAvailable() ? undefined : 'ANTHROPIC_API_KEY not configured',
+    };
+
+    // Memory check (warn if RSS > 512MB)
+    const memUsage = process.memoryUsage();
+    const rssBytes = memUsage.rss;
+    const heapUsedBytes = memUsage.heapUsed;
+    const heapTotalBytes = memUsage.heapTotal;
+    const RSS_WARNING_BYTES = 512 * 1024 * 1024;
+    checks.memory = {
+      status: rssBytes < RSS_WARNING_BYTES ? 'up' : 'down',
+      detail: `RSS: ${(rssBytes / 1024 / 1024).toFixed(1)}MB, Heap: ${(heapUsedBytes / 1024 / 1024).toFixed(1)}/${(heapTotalBytes / 1024 / 1024).toFixed(1)}MB`,
+    };
+
+    const allUp = Object.values(checks).every((c) => c.status === 'up');
+    const statusCode = allUp ? 200 : 503;
+
+    reply.status(statusCode).send({
+      status: allUp ? 'OK' : 'DEGRADED',
+      service: 'PM Assistant Generic',
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: config.NODE_ENV,
+      checks,
+    });
+  });
+
+  // Basic metrics endpoint (lightweight, no external dependencies)
+  fastify.get('/health/metrics', async (_request, reply) => {
+    const mem = process.memoryUsage();
+    const cpu = process.cpuUsage();
+
+    reply.send({
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: {
+        rssBytes: mem.rss,
+        heapUsedBytes: mem.heapUsed,
+        heapTotalBytes: mem.heapTotal,
+        externalBytes: mem.external,
+        arrayBuffersBytes: mem.arrayBuffers,
+      },
+      cpu: {
+        userMicroseconds: cpu.user,
+        systemMicroseconds: cpu.system,
+      },
+      process: {
+        pid: process.pid,
+        nodeVersion: process.version,
+        platform: process.platform,
+        arch: process.arch,
+      },
     });
   });
 }
