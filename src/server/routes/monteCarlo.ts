@@ -4,6 +4,7 @@ import { MonteCarloService } from '../services/MonteCarloService';
 import { MonteCarloConfigSchema } from '../schemas/monteCarloSchemas';
 import { scheduleIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyScheduleAccess } from '../middleware/authorize';
 
 export async function monteCarloRoutes(fastify: FastifyInstance) {
   const service = new MonteCarloService();
@@ -15,6 +16,8 @@ export async function monteCarloRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { scheduleId } = scheduleIdParam.parse(request.params);
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
 
       // Parse optional config from body, applying defaults
       const rawBody = (request.body as Record<string, unknown>) || {};

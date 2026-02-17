@@ -4,6 +4,7 @@ import { PredictiveIntelligenceService } from '../services/predictiveIntelligenc
 import { SCurveService } from '../services/SCurveService';
 import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess } from '../middleware/authorize';
 
 export async function predictionRoutes(fastify: FastifyInstance) {
   const service = new PredictiveIntelligenceService(fastify);
@@ -11,7 +12,7 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   // GET /dashboard — Portfolio predictions
   fastify.get('/dashboard', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
       const { predictions, aiPowered } = await service.getDashboardPredictions(userId);
       return reply.send({ data: predictions, aiPowered });
     } catch (err) {
@@ -27,7 +28,9 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const { assessment, aiPowered } = await service.assessProjectRisks(projectId, userId);
       return reply.send({ data: assessment, aiPowered });
     } catch (err) {
@@ -44,7 +47,9 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const { impact, aiPowered } = await service.analyzeWeatherImpact(projectId, userId);
       return reply.send({ data: impact, aiPowered });
     } catch (err) {
@@ -61,7 +66,9 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const { forecast, aiPowered } = await service.forecastBudget(projectId, userId);
       return reply.send({ data: forecast, aiPowered });
     } catch (err) {
@@ -78,7 +85,9 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const result = await service.getProjectHealthScore(projectId, userId);
       return reply.send({ data: result });
     } catch (err) {
@@ -97,6 +106,8 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
+      const project = await verifyProjectAccess(projectId, request.user.userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const data = await sCurveService.computeSCurveData(projectId);
       return reply.send({ data });
     } catch (err) {

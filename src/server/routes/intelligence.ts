@@ -6,6 +6,7 @@ import { WhatIfScenarioService } from '../services/whatIfScenarioService';
 import { AIScenarioRequestSchema } from '../schemas/phase5Schemas';
 import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess } from '../middleware/authorize';
 
 export async function intelligenceRoutes(fastify: FastifyInstance) {
   const anomalyService = new AnomalyDetectionService(fastify);
@@ -15,7 +16,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   // Anomaly Detection
   fastify.get('/anomalies', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
       const report = await anomalyService.detectPortfolioAnomalies(userId);
       return reply.send({ data: report, aiPowered: report.aiPowered });
     } catch (err) {
@@ -30,7 +31,9 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const report = await anomalyService.detectProjectAnomalies(projectId, userId);
       return reply.send({ data: report, aiPowered: report.aiPowered });
     } catch (err) {
@@ -43,7 +46,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   // Cross-Project Intelligence
   fastify.get('/cross-project', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
       const { insight, aiPowered } = await crossProjectService.analyzePortfolio(userId);
       return reply.send({ data: insight, aiPowered });
     } catch (err) {
@@ -58,7 +61,9 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const { similar, aiPowered } = await crossProjectService.findSimilarProjects(projectId, userId);
       return reply.send({ data: similar, aiPowered });
     } catch (err) {
@@ -72,7 +77,9 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   fastify.post('/scenarios', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AIScenarioRequestSchema.parse(request.body);
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(parsed.projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const { result, aiPowered } = await scenarioService.modelScenario(parsed, userId);
       return reply.send({ data: result, aiPowered });
     } catch (err) {

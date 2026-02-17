@@ -3,6 +3,7 @@ import { z, ZodError } from 'zod';
 import { AIChatService } from '../services/aiChatService';
 import { authMiddleware } from '../middleware/auth';
 import { conversationIdParam } from '../schemas/commonSchemas';
+import { verifyScheduleAccess } from '../middleware/authorize';
 
 const chatMessageBodySchema = z.object({
   message: z.string().min(1),
@@ -283,9 +284,11 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
           temperature: 0.2,
         });
 
-        // If scheduleId provided, create the extracted tasks
+        // If scheduleId provided, verify ownership then create the extracted tasks
         let createdTasks: any[] = [];
         if (body.scheduleId && result.data.tasks && result.data.tasks.length > 0) {
+          const schedule = await verifyScheduleAccess(body.scheduleId, user.userId);
+          if (!schedule) return reply.code(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
           const { ScheduleService } = await import('../services/ScheduleService');
           const scheduleService = new ScheduleService();
 

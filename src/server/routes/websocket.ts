@@ -3,13 +3,26 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { WebSocketService } from '../services/WebSocketService';
 
+/** Parse a Cookie header string into key-value pairs (handles URL-encoded values). */
+function parseCookieHeader(header: string): Record<string, string> {
+  const cookies: Record<string, string> = {};
+  for (const pair of header.split(';')) {
+    const idx = pair.indexOf('=');
+    if (idx < 0) continue;
+    const key = pair.substring(0, idx).trim();
+    const val = pair.substring(idx + 1).trim();
+    if (key) cookies[key] = decodeURIComponent(val);
+  }
+  return cookies;
+}
+
 export async function websocketRoutes(fastify: FastifyInstance) {
   fastify.get('/', { websocket: true }, (socket, request) => {
     // Authenticate the WebSocket upgrade request via JWT cookie
     try {
       const cookieHeader = request.headers.cookie || '';
-      const tokenMatch = cookieHeader.match(/access_token=([^;]+)/);
-      const token = tokenMatch?.[1];
+      const cookies = parseCookieHeader(cookieHeader);
+      const token = cookies['access_token'];
 
       if (!token) {
         socket.send(JSON.stringify({ type: 'error', payload: { message: 'Authentication required' } }));

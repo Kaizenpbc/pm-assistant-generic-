@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ResourceOptimizerService } from '../services/ResourceOptimizerService';
 import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess, verifyScheduleAccess } from '../middleware/authorize';
 
 const forecastQuerySchema = z.object({
   weeksAhead: z.coerce.number().min(1).max(52).default(8),
@@ -27,8 +28,9 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
     try {
       const { projectId } = projectIdParam.parse(request.params);
       const query = forecastQuerySchema.parse(request.query);
-      const user = request.user;
-      const userId = user?.userId;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
 
       const forecast = await optimizerService.predictBottlenecks(
         projectId,
@@ -57,6 +59,8 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const body = skillMatchBodySchema.parse(request.body);
+      const schedule = await verifyScheduleAccess(body.scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
 
       const matches = await optimizerService.findBestResourceForTask(
         body.taskId,

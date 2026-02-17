@@ -73,6 +73,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ project });
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Create project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create project' });
     }

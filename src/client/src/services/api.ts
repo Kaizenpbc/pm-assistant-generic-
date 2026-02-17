@@ -226,10 +226,16 @@ class ApiService {
     conversationId?: string;
     context?: { type: string; projectId?: string };
   }): Promise<Response> {
+    // Ensure CSRF token is ready before streaming (fetch API bypasses Axios interceptor)
+    await this.csrfReady;
     const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.csrfToken) {
+      headers['x-csrf-token'] = this.csrfToken;
+    }
     return fetch(`${baseURL}/ai-chat/stream`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       credentials: 'include',
       body: JSON.stringify(data),
     });

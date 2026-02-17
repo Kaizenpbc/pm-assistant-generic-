@@ -14,6 +14,7 @@ export async function learningRoutes(fastify: FastifyInstance) {
       service.recordFeedback(parsed, userId);
       return reply.send({ success: true });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to record feedback');
       return reply.status(400).send({ error: 'Invalid feedback data' });
     }
@@ -25,6 +26,7 @@ export async function learningRoutes(fastify: FastifyInstance) {
       service.recordAccuracy(parsed);
       return reply.send({ success: true });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to record accuracy');
       return reply.status(400).send({ error: 'Invalid accuracy data' });
     }
@@ -64,7 +66,7 @@ export async function learningRoutes(fastify: FastifyInstance) {
 
   fastify.get('/insights', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
       const { insights, aiPowered } = await service.getAIAccuracyInsights(userId);
       return reply.send({ data: insights, aiPowered });
     } catch (err) {

@@ -78,7 +78,9 @@ export async function registerPlugins(fastify: FastifyInstance) {
   await fastify.register(cors, {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
+      // Only allow localhost origins in development/test — NOT in production
+      if (config.NODE_ENV !== 'production' &&
+          (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:'))) {
         return callback(null, true);
       }
       if (origin === config.CORS_ORIGIN) return callback(null, true);
@@ -87,7 +89,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-user-role', 'x-user-id', 'x-csrf-token'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-csrf-token'],
   });
 
   await fastify.register(cookie, {
@@ -120,6 +122,28 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.get('/api/v1/csrf-token', async (request, reply) => {
     const token = reply.generateCsrf();
     return { csrfToken: token };
+  });
+
+  // CSRF enforcement — validate token on all mutating requests that have a session.
+  // Skip for: safe methods (GET/HEAD/OPTIONS), auth routes (login/register — no session yet),
+  // health checks, WebSocket upgrades, and requests with no CSRF cookie (pre-auth state).
+  const CSRF_EXEMPT_PATHS = [
+    '/api/v1/auth/login',
+    '/api/v1/auth/register',
+    '/api/v1/auth/logout',
+    '/api/v1/csrf-token',
+  ];
+  fastify.addHook('onRequest', async (request, reply) => {
+    const method = request.method.toUpperCase();
+    if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return;
+    if (CSRF_EXEMPT_PATHS.some(p => request.url.startsWith(p))) return;
+    if (request.url.startsWith('/health')) return;
+    if (request.headers.upgrade?.toLowerCase() === 'websocket') return;
+    // Only enforce CSRF when a CSRF cookie is present (i.e., the client fetched a token).
+    // Requests without a session/CSRF cookie are pre-auth and will fail at authMiddleware.
+    const cookieHeader = request.headers.cookie || '';
+    if (!cookieHeader.includes('_csrf')) return;
+    await (fastify as any).csrfProtection(request, reply);
   });
 
   // Rate limiting — protect against brute force and API abuse

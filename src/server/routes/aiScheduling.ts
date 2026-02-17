@@ -17,14 +17,19 @@ const analyzeProjectBodySchema = z.object({
 });
 
 const suggestDependenciesBodySchema = z.object({
-  tasks: z.array(z.any()),
-  projectContext: z.any().optional(),
+  tasks: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().optional(),
+    category: z.string().optional(),
+  })),
+  projectContext: z.string().optional(),
 });
 
 const optimizeScheduleBodySchema = z.object({
   scheduleId: z.string().min(1).max(100),
   optimizationGoals: z.array(z.string()).optional(),
-  constraints: z.any().optional(),
+  constraints: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function aiSchedulingRoutes(fastify: FastifyInstance) {

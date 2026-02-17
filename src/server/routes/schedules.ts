@@ -322,7 +322,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const { scheduleId } = scheduleIdParam.parse(request.params);
       const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
       if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
-      const { name } = (request.body as { name?: string }) || {};
+      const { name } = z.object({ name: z.string().min(1).max(255).optional() }).parse(request.body);
       const baseline = await baselineService.create(
         scheduleId,
         name || `Baseline ${new Date().toLocaleDateString()}`,
@@ -365,10 +365,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const { scheduleId, taskId } = scheduleAndTaskIdParam.parse(request.params);
       const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
       if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
-      const { text } = (request.body as { text: string });
-      if (!text || !text.trim()) {
-        return reply.status(400).send({ error: 'Comment text is required' });
-      }
+      const { text } = z.object({ text: z.string().min(1).max(10000) }).parse(request.body);
       const comment = scheduleService.addComment(taskId, text.trim(), request.user.userId, request.user.username || 'Project Manager');
       return reply.status(201).send({ comment });
     } catch (error) {

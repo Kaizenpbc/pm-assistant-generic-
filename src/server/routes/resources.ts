@@ -3,6 +3,7 @@ import { z, ZodError } from 'zod';
 import { ResourceService } from '../services/ResourceService';
 import { idParam, projectIdParam, scheduleIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess, verifyScheduleAccess } from '../middleware/authorize';
 
 const resourceQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(500).default(100),
@@ -90,6 +91,8 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   fastify.get('/assignments/:scheduleId', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = scheduleIdParam.parse(request.params);
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const assignments = await service.findAssignmentsBySchedule(scheduleId);
       return { assignments };
     } catch (error) {
@@ -103,6 +106,8 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   fastify.post('/assignments', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createAssignmentSchema.parse(request.body);
+      const schedule = await verifyScheduleAccess(data.scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const assignment = await service.createAssignment(data);
       return reply.status(201).send({ assignment });
     } catch (error) {
@@ -130,6 +135,8 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   fastify.get('/workload/:projectId', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
+      const project = await verifyProjectAccess(projectId, request.user.userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const workload = await service.computeWorkload(projectId);
       return { workload };
     } catch (error) {

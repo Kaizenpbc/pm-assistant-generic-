@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
@@ -7,7 +7,13 @@ import { UserService } from '../services/UserService';
 
 const loginSchema = z.object({
   username: z.string().min(3),
-  password: z.string().min(6),
+  password: z.string().min(1),
+});
+
+/** Schema to validate the refresh-token JWT payload. */
+const refreshPayloadSchema = z.object({
+  userId: z.string().min(1),
+  type: z.literal('refresh'),
 });
 
 const registerSchema = z.object({
@@ -59,7 +65,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         secure: config.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 15 * 60 * 1000,
+        maxAge: 15 * 60, // 15 minutes in seconds
       });
 
       reply.setCookie('refresh_token', refreshToken, {
@@ -67,7 +73,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         secure: config.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
       });
 
       return {
@@ -75,6 +81,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         user: { id: user.id, username: user.username, email: user.email, fullName: user.fullName, role: user.role },
       };
     } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Login error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Login failed' });
     }
@@ -99,6 +106,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         user: { id: user.id, username: user.username, email: user.email, fullName: user.fullName, role: user.role },
       });
     } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Registration error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Registration failed' });
     }
@@ -121,12 +129,10 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'No refresh token', message: 'Refresh token is required' });
       }
 
-      const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET) as any;
-      if (decoded.type !== 'refresh') {
-        return reply.status(401).send({ error: 'Invalid token type', message: 'Token is not a refresh token' });
-      }
+      const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET);
+      const payload = refreshPayloadSchema.parse(decoded);
 
-      const user = await userService.findById(decoded.userId);
+      const user = await userService.findById(payload.userId);
       if (!user) {
         return reply.status(401).send({ error: 'User not found', message: 'User associated with token not found' });
       }
@@ -142,7 +148,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         secure: config.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 15 * 60 * 1000,
+        maxAge: 15 * 60, // 15 minutes in seconds
       });
 
       return { message: 'Token refreshed successfully' };

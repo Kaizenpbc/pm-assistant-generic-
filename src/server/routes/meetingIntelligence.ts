@@ -7,6 +7,7 @@ import {
 } from '../schemas/meetingSchemas';
 import { analysisIdParam, projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess, verifyScheduleAccess } from '../middleware/authorize';
 
 export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   const service = new MeetingIntelligenceService();
@@ -18,7 +19,11 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   fastify.post('/analyze', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AnalyzeRequestSchema.parse(request.body);
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(parsed.projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
+      const schedule = await verifyScheduleAccess(parsed.scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
 
       const analysis = await service.analyzeTranscript(
         parsed.transcript,
@@ -46,7 +51,7 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
     try {
       const { analysisId } = analysisIdParam.parse(request.params);
       const parsed = ApplyRequestSchema.parse(request.body);
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
 
       const result = await service.applyChanges(
         analysisId,
@@ -72,6 +77,8 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
+      const project = await verifyProjectAccess(projectId, request.user.userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const analyses = service.getProjectHistory(projectId);
       return reply.send({ data: analyses });
     } catch (err) {

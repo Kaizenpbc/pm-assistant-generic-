@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { EVMForecastService } from '../services/EVMForecastService';
 import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess } from '../middleware/authorize';
 
 export async function evmForecastRoutes(fastify: FastifyInstance) {
   const service = new EVMForecastService();
@@ -14,7 +15,9 @@ export async function evmForecastRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = projectIdParam.parse(request.params);
-      const userId = request.user.userId || undefined;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const result = await service.generateForecast(projectId, userId);
       return reply.send({
         result,
