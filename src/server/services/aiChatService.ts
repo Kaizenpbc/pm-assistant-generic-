@@ -361,6 +361,18 @@ export class AIChatService {
       updatedAt: now,
     });
 
+    // Cap conversations map to prevent unbounded memory growth
+    const MAX_CONVERSATIONS = 10000;
+    if (AIChatService.conversations.size > MAX_CONVERSATIONS) {
+      // Remove oldest inactive conversations first, then oldest active
+      const sorted = [...AIChatService.conversations.entries()]
+        .sort((a, b) => a[1].updatedAt.localeCompare(b[1].updatedAt));
+      const toRemove = sorted.slice(0, AIChatService.conversations.size - MAX_CONVERSATIONS);
+      for (const [key] of toRemove) {
+        AIChatService.conversations.delete(key);
+      }
+    }
+
     return id;
   }
 }

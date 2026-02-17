@@ -6,8 +6,8 @@ import { config } from '../config';
 import { UserService } from '../services/UserService';
 
 const loginSchema = z.object({
-  username: z.string().min(3),
-  password: z.string().min(1),
+  username: z.string().min(3).max(100),
+  password: z.string().min(1).max(128),
 });
 
 /** Schema to validate the refresh-token JWT payload. */
@@ -118,13 +118,9 @@ export async function authRoutes(fastify: FastifyInstance) {
       const normalizedEmail = email.toLowerCase();
 
       const existingUser = await userService.findByUsername(normalizedUsername);
-      if (existingUser) {
-        return reply.status(409).send({ error: 'User already exists', message: 'Username is already taken' });
-      }
-
       const existingEmail = await userService.findByEmail(normalizedEmail);
-      if (existingEmail) {
-        return reply.status(409).send({ error: 'Email already in use', message: 'An account with this email already exists' });
+      if (existingUser || existingEmail) {
+        return reply.status(409).send({ error: 'Registration failed', message: 'An account with this username or email already exists' });
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
@@ -151,6 +147,12 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   fastify.post('/refresh', {
     schema: { description: 'Refresh access token', tags: ['auth'] },
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute',
+      },
+    },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const refreshToken = request.cookies.refresh_token;

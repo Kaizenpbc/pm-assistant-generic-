@@ -18,7 +18,7 @@ const createScheduleSchema = z.object({
 });
 
 const createTaskSchema = z.object({
-  scheduleId: z.string(),
+  scheduleId: z.string().min(1).max(100),
   name: z.string().min(1).max(500),
   description: z.string().max(5000).optional(),
   status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).default('pending'),
@@ -178,6 +178,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       // Capture old end date before update for cascade detection
       const oldTask = await scheduleService.findTaskById(taskId);
       if (!oldTask) return reply.status(404).send({ error: 'Not found', message: 'Task not found' });
+      if (oldTask.scheduleId !== scheduleId) return reply.status(404).send({ error: 'Not found', message: 'Task not found in this schedule' });
 
       const oldEndDate = oldTask.endDate ? new Date(oldTask.endDate) : null;
 
@@ -221,6 +222,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const { scheduleId, taskId } = scheduleAndTaskIdParam.parse(request.params);
       const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
       if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
+      const taskToDelete = await scheduleService.findTaskById(taskId);
+      if (!taskToDelete) return reply.status(404).send({ error: 'Not found', message: 'Task not found' });
+      if (taskToDelete.scheduleId !== scheduleId) return reply.status(404).send({ error: 'Not found', message: 'Task not found in this schedule' });
       const deleted = await scheduleService.deleteTask(taskId);
       if (!deleted) return reply.status(404).send({ error: 'Not found', message: 'Task not found' });
       WebSocketService.broadcastToUser(request.user.userId, { type: 'task_deleted', payload: { taskId } });
@@ -286,6 +290,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const { scheduleId, baselineId } = scheduleAndBaselineIdParam.parse(request.params);
       const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
       if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
+      const baseline = await baselineService.findById(baselineId);
+      if (!baseline || baseline.scheduleId !== scheduleId) return reply.status(404).send({ error: 'Baseline not found' });
       const comparison = await baselineService.compareBaseline(baselineId);
       if (!comparison) return reply.status(404).send({ error: 'Baseline not found' });
       return { comparison };
@@ -304,6 +310,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const { scheduleId, baselineId } = scheduleAndBaselineIdParam.parse(request.params);
       const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
       if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
+      const baselineToDelete = await baselineService.findById(baselineId);
+      if (!baselineToDelete || baselineToDelete.scheduleId !== scheduleId) return reply.status(404).send({ error: 'Baseline not found' });
       const deleted = await baselineService.delete(baselineId);
       if (!deleted) return reply.status(404).send({ error: 'Baseline not found' });
       return { message: 'Baseline deleted successfully' };

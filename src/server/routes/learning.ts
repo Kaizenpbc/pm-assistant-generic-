@@ -40,7 +40,7 @@ export async function learningRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const querySchema = z.object({ projectType: z.string().optional() });
+      const querySchema = z.object({ projectType: z.string().max(100).optional() });
       const { projectType } = querySchema.parse(request.query);
       const report = await service.getAccuracyReport({ projectType, userId: request.user.userId });
       return reply.send({ data: report });
@@ -56,7 +56,7 @@ export async function learningRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const querySchema = z.object({ feature: z.string().optional() });
+      const querySchema = z.object({ feature: z.string().max(100).optional() });
       const { feature } = querySchema.parse(request.query);
       const stats = await service.getFeedbackStats(feature, request.user.userId);
       return reply.send({ data: stats });

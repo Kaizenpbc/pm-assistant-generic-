@@ -6,7 +6,7 @@ import { authMiddleware } from '../middleware/auth';
 import { verifyProjectAccess } from '../middleware/authorize';
 
 const applyBodySchema = z.object({
-  taskId: z.string(),
+  taskId: z.string().min(1).max(100),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
 });
 

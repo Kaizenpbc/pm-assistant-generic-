@@ -250,7 +250,9 @@ export class LessonsLearnedService {
     const projectService = new ProjectService();
     const scheduleService = new ScheduleService();
 
-    const project = await projectService.findById(projectId);
+    const project = userId
+      ? await projectService.findById(projectId, userId)
+      : await projectService.findById(projectId);
     if (!project) {
       throw new Error(`Project ${projectId} not found`);
     }
@@ -437,6 +439,7 @@ export class LessonsLearnedService {
     const lessons = userId
       ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
       : LessonsLearnedService.lessons;
+    // Patterns are regenerated per-user, so use the cached set (already user-scoped from detectPatterns)
     const patterns = LessonsLearnedService.patterns;
 
     const byCategory: Record<string, number> = {};
@@ -490,8 +493,10 @@ export class LessonsLearnedService {
   // Detect patterns across projects (AI-enhanced)
   // -----------------------------------------------------------------------
 
-  async detectPatterns(_userId?: string): Promise<Pattern[]> {
-    const lessons = LessonsLearnedService.lessons;
+  async detectPatterns(userId?: string): Promise<Pattern[]> {
+    const lessons = userId
+      ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
+      : LessonsLearnedService.lessons;
 
     if (lessons.length === 0) {
       return [];
@@ -543,11 +548,13 @@ export class LessonsLearnedService {
     }
 
     // Deterministic fallback: group lessons by category and find repeating themes
-    return this.detectPatternsDeterministic();
+    return this.detectPatternsDeterministic(userId);
   }
 
-  private detectPatternsDeterministic(): Pattern[] {
-    const lessons = LessonsLearnedService.lessons;
+  private detectPatternsDeterministic(userId?: string): Pattern[] {
+    const lessons = userId
+      ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
+      : LessonsLearnedService.lessons;
     const categoryGroups: Record<string, LessonLearned[]> = {};
 
     for (const lesson of lessons) {
@@ -607,10 +614,13 @@ export class LessonsLearnedService {
   async suggestMitigations(
     riskDescription: string,
     projectType: string,
-    _userId?: string,
+    userId?: string,
   ): Promise<MitigationSuggestion[]> {
-    // Find relevant historical lessons
-    const relevantLessons = LessonsLearnedService.lessons.filter((l) => {
+    // Find relevant historical lessons scoped to user
+    const userLessons = userId
+      ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
+      : LessonsLearnedService.lessons;
+    const relevantLessons = userLessons.filter((l) => {
       const typeMatch = l.projectType === projectType;
       const descLower = riskDescription.toLowerCase();
       const categoryMatch =
@@ -754,6 +764,11 @@ export class LessonsLearnedService {
     };
 
     LessonsLearnedService.lessons.push(lesson);
+    // Cap lessons to prevent unbounded memory growth
+    const MAX_LESSONS = 10000;
+    if (LessonsLearnedService.lessons.length > MAX_LESSONS) {
+      LessonsLearnedService.lessons.splice(0, LessonsLearnedService.lessons.length - MAX_LESSONS);
+    }
     return lesson;
   }
 }
