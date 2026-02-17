@@ -53,6 +53,12 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
       const parsed = ApplyRequestSchema.parse(request.body);
       const userId = request.user.userId;
 
+      // Verify user owns the schedule referenced by this analysis
+      const analysis = service.getAnalysis(analysisId);
+      if (!analysis) return reply.status(404).send({ error: 'Not found', message: 'Analysis not found' });
+      const schedule = await verifyScheduleAccess(analysis.scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
+
       const result = await service.applyChanges(
         analysisId,
         parsed.selectedItems,

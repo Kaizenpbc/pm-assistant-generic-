@@ -131,9 +131,10 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   });
 
   // POST /seed — Seed initial lessons from existing project data
-  fastify.post('/seed', { preHandler: [authMiddleware] }, async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/seed', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const seeded = await service.seedFromProjects();
+      const userId = request.user.userId;
+      const seeded = await service.seedFromProjects(userId);
       return reply.send({ seeded });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to seed lessons');

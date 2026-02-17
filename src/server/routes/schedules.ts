@@ -156,7 +156,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
         endDate: data.endDate ? new Date(data.endDate) : undefined,
         createdBy: request.user.userId,
       });
-      WebSocketService.broadcast({ type: 'task_created', payload: { task } });
+      WebSocketService.broadcastToUser(request.user.userId, { type: 'task_created', payload: { task } });
       return reply.status(201).send({ task });
     } catch (error) {
       request.log.error({ err: error }, 'Create task error');
@@ -203,7 +203,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       workflowService.evaluateTaskChange(task, oldTask, scheduleService);
 
       // WebSocket broadcast
-      WebSocketService.broadcast({ type: 'task_updated', payload: { task, cascadedChanges } });
+      WebSocketService.broadcastToUser(request.user.userId, { type: 'task_updated', payload: { task, cascadedChanges } });
 
       return { task, cascadedChanges };
     } catch (error) {
@@ -223,7 +223,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const deleted = await scheduleService.deleteTask(taskId);
       if (!deleted) return reply.status(404).send({ error: 'Not found', message: 'Task not found' });
-      WebSocketService.broadcast({ type: 'task_deleted', payload: { taskId } });
+      WebSocketService.broadcastToUser(request.user.userId, { type: 'task_deleted', payload: { taskId } });
       return { message: 'Task deleted successfully' };
     } catch (error) {
       request.log.error({ err: error }, 'Delete task error');

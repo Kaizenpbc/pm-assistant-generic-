@@ -820,6 +820,16 @@ class ApiService {
     return response.data;
   }
 
+  /** Escape HTML special characters to prevent XSS in generated reports. */
+  private escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   /**
    * Generate a printable HTML report in a new window and trigger print.
    */
@@ -827,6 +837,7 @@ class ApiService {
     const data = await this.exportProjectJSON(projectId);
     const project = data.project;
     const schedules = data.schedules || [];
+    const esc = (s: string) => this.escapeHtml(s);
 
     const statusColor: Record<string, string> = {
       completed: '#22c55e',
@@ -840,13 +851,13 @@ class ApiService {
       for (const t of sch.tasks) {
         const color = statusColor[t.status] || '#9ca3af';
         taskRowsHtml += `<tr>
-          <td>${sch.name}</td>
-          <td>${t.name}</td>
-          <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:4px"></span>${t.status.replace('_', ' ')}</td>
-          <td>${t.priority}</td>
-          <td>${t.assignedTo}</td>
-          <td>${t.startDate}</td>
-          <td>${t.endDate}</td>
+          <td>${esc(sch.name)}</td>
+          <td>${esc(t.name)}</td>
+          <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:4px"></span>${esc(t.status.replace('_', ' '))}</td>
+          <td>${esc(t.priority)}</td>
+          <td>${esc(t.assignedTo)}</td>
+          <td>${esc(t.startDate)}</td>
+          <td>${esc(t.endDate)}</td>
           <td>
             <div style="background:#e5e7eb;border-radius:4px;height:14px;width:80px;position:relative">
               <div style="background:${color};border-radius:4px;height:100%;width:${t.progressPercentage}%"></div>
@@ -863,7 +874,7 @@ class ApiService {
 
     const html = `<!DOCTYPE html>
 <html><head>
-<title>Project Report - ${project?.name || 'Export'}</title>
+<title>Project Report - ${esc(project?.name || 'Export')}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1f2937; padding: 40px; font-size: 11px; }
@@ -885,8 +896,8 @@ class ApiService {
 </head><body>
 <div class="header">
   <div>
-    <h1>${project?.name || 'Project Report'}</h1>
-    <div class="meta">Status: ${project?.status || 'N/A'} | Generated: ${new Date().toLocaleString()}</div>
+    <h1>${esc(project?.name || 'Project Report')}</h1>
+    <div class="meta">Status: ${esc(project?.status || 'N/A')} | Generated: ${new Date().toLocaleString()}</div>
   </div>
 </div>
 
@@ -920,10 +931,10 @@ ${project ? `<div class="kpis">
 ${schedules.some((s: any) => s.criticalPath?.criticalPathTaskIds?.length) ? `
 <h2>Critical Path</h2>
 ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map((s: any) => `
-  <p style="margin-bottom:4px"><strong>${s.name}</strong> - Duration: ${s.criticalPath.projectDuration} days, Critical tasks: ${s.criticalPath.criticalPathTaskIds.length}</p>
+  <p style="margin-bottom:4px"><strong>${esc(s.name)}</strong> - Duration: ${s.criticalPath.projectDuration} days, Critical tasks: ${s.criticalPath.criticalPathTaskIds.length}</p>
   <p style="color:#6b7280;margin-bottom:12px">${s.criticalPath.criticalPathTaskIds.map((id: string) => {
     const task = s.tasks.find((t: any) => t.id === id);
-    return task ? task.name : id;
+    return task ? esc(task.name) : esc(id);
   }).join(' → ')}</p>
 `).join('')}` : ''}
 

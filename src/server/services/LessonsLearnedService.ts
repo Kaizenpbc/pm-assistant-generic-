@@ -86,7 +86,7 @@ export class LessonsLearnedService {
   // Seed initial lessons deterministically from existing project data
   // -----------------------------------------------------------------------
 
-  async seedFromProjects(): Promise<number> {
+  async seedFromProjects(userId?: string): Promise<number> {
     // Avoid duplicate seeding
     if (LessonsLearnedService.lessons.length > 0) {
       return 0;
@@ -94,7 +94,9 @@ export class LessonsLearnedService {
 
     const projectService = new ProjectService();
     const scheduleService = new ScheduleService();
-    const projects = await projectService.findAll();
+    const projects = userId
+      ? await projectService.findByUserId(userId)
+      : await projectService.findAll();
     const seededLessons: LessonLearned[] = [];
     let counter = 0;
 
