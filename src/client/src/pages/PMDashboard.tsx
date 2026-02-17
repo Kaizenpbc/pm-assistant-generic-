@@ -117,7 +117,7 @@ export const PMDashboard: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {projects.map((project) => {
             const status = statusStyles[project.status] || statusStyles.planning;
-            const progress = project.progressPercentage || 0;
+            const progress = project.completionPercentage || 0;
             const budgetAllocated = project.budgetAllocated || 0;
             const budgetSpent = project.budgetSpent || 0;
             const budgetPct =

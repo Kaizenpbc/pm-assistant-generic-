@@ -69,7 +69,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
             status: project.status,
             budgetAllocated: project.budgetAllocated,
             budgetSpent: project.budgetSpent,
-            progressPercentage: avgProgress,
+            completionPercentage: avgProgress,
             startDate: project.startDate,
             endDate: project.endDate,
           },

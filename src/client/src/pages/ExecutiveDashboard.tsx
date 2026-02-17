@@ -31,7 +31,7 @@ export const ExecutiveDashboard: React.FC = () => {
   const activeProjects = projects.filter((p) => p.status === 'active').length;
   const totalBudget = projects.reduce((sum, p) => sum + (p.budgetAllocated || 0), 0);
   const onTrackCount = projects.filter((p) => {
-    const progress = p.progressPercentage || 0;
+    const progress = p.completionPercentage || 0;
     return p.status === 'active' && progress >= 20;
   }).length;
   const onTrackPct = activeProjects > 0 ? Math.round((onTrackCount / activeProjects) * 100) : 0;
@@ -137,8 +137,8 @@ export const ExecutiveDashboard: React.FC = () => {
                         {project.budgetAllocated && (
                           <span>Budget: ${(project.budgetAllocated / 1000).toFixed(0)}K ({budgetPct}% spent)</span>
                         )}
-                        {project.progressPercentage !== undefined && (
-                          <span>Progress: {project.progressPercentage}%</span>
+                        {project.completionPercentage !== undefined && (
+                          <span>Progress: {project.completionPercentage}%</span>
                         )}
                       </div>
                     </div>

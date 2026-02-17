@@ -882,7 +882,7 @@ class ApiService {
 ${project ? `<div class="kpis">
   <div class="kpi">
     <div class="label">Progress</div>
-    <div class="value" style="color:#3b82f6">${project.progressPercentage || 0}%</div>
+    <div class="value" style="color:#3b82f6">${project.completionPercentage || 0}%</div>
   </div>
   <div class="kpi">
     <div class="label">Budget Spent</div>

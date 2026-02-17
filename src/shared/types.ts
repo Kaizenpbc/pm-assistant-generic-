@@ -67,7 +67,6 @@ export interface Project {
   startDate?: string;
   endDate?: string;
   completionPercentage?: number;
-  progressPercentage?: number;
   projectManagerId?: string;
   createdBy: string;
   createdAt: string;
