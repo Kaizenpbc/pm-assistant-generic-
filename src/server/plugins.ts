@@ -253,7 +253,9 @@ export async function registerPlugins(fastify: FastifyInstance) {
   });
 
   // Readiness probe — checks all subsystems
+  // In production, return only up/down status without operational details
   fastify.get('/health/ready', async (_request, reply) => {
+    const isProduction = config.NODE_ENV === 'production';
     const checks: Record<string, { status: 'up' | 'down'; latencyMs?: number; detail?: string }> = {};
 
     // Database check
@@ -262,35 +264,39 @@ export async function registerPlugins(fastify: FastifyInstance) {
       const connected = await databaseService.testConnection();
       checks.database = {
         status: connected ? 'up' : 'down',
-        latencyMs: Date.now() - dbStart,
+        ...(isProduction ? {} : { latencyMs: Date.now() - dbStart }),
       };
     } catch (err) {
       checks.database = {
         status: 'down',
-        latencyMs: Date.now() - dbStart,
-        detail: config.NODE_ENV === 'production'
-          ? 'Connection failed'
-          : (err instanceof Error ? err.message : 'Unknown error'),
+        ...(isProduction ? {} : {
+          latencyMs: Date.now() - dbStart,
+          detail: err instanceof Error ? err.message : 'Unknown error',
+        }),
       };
     }
 
-    // Claude AI check
-    const { claudeService } = await import('./services/claudeService');
-    checks.ai = {
-      status: claudeService.isAvailable() ? 'up' : 'down',
-      detail: claudeService.isAvailable() ? undefined : 'ANTHROPIC_API_KEY not configured',
-    };
+    // Claude AI check — only expose in non-production
+    if (!isProduction) {
+      const { claudeService } = await import('./services/claudeService');
+      checks.ai = {
+        status: claudeService.isAvailable() ? 'up' : 'down',
+        detail: claudeService.isAvailable() ? undefined : 'ANTHROPIC_API_KEY not configured',
+      };
+    }
 
-    // Memory check (warn if RSS > 512MB)
-    const memUsage = process.memoryUsage();
-    const rssBytes = memUsage.rss;
-    const heapUsedBytes = memUsage.heapUsed;
-    const heapTotalBytes = memUsage.heapTotal;
-    const RSS_WARNING_BYTES = 512 * 1024 * 1024;
-    checks.memory = {
-      status: rssBytes < RSS_WARNING_BYTES ? 'up' : 'down',
-      detail: `RSS: ${(rssBytes / 1024 / 1024).toFixed(1)}MB, Heap: ${(heapUsedBytes / 1024 / 1024).toFixed(1)}/${(heapTotalBytes / 1024 / 1024).toFixed(1)}MB`,
-    };
+    // Memory check (warn if RSS > 512MB) — only expose in non-production
+    if (!isProduction) {
+      const memUsage = process.memoryUsage();
+      const rssBytes = memUsage.rss;
+      const heapUsedBytes = memUsage.heapUsed;
+      const heapTotalBytes = memUsage.heapTotal;
+      const RSS_WARNING_BYTES = 512 * 1024 * 1024;
+      checks.memory = {
+        status: rssBytes < RSS_WARNING_BYTES ? 'up' : 'down',
+        detail: `RSS: ${(rssBytes / 1024 / 1024).toFixed(1)}MB, Heap: ${(heapUsedBytes / 1024 / 1024).toFixed(1)}/${(heapTotalBytes / 1024 / 1024).toFixed(1)}MB`,
+      };
+    }
 
     const allUp = Object.values(checks).every((c) => c.status === 'up');
     const statusCode = allUp ? 200 : 503;
@@ -298,20 +304,30 @@ export async function registerPlugins(fastify: FastifyInstance) {
     reply.status(statusCode).send({
       status: allUp ? 'OK' : 'DEGRADED',
       service: 'PM Assistant Generic',
-      version: '1.0.0',
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: config.NODE_ENV,
+      ...(isProduction ? {} : {
+        version: '1.0.0',
+        uptime: process.uptime(),
+        environment: config.NODE_ENV,
+      }),
       checks,
     });
   });
 
-  // Metrics endpoint — only expose process internals (pid, nodeVersion, etc.) in dev/test
+  // Metrics endpoint — only expose in non-production; production returns 404
   fastify.get('/health/metrics', async (_request, reply) => {
+    if (config.NODE_ENV === 'production') {
+      return reply.status(404).send({
+        statusCode: 404,
+        error: 'Not Found',
+        message: 'The requested resource was not found',
+      });
+    }
+
     const mem = process.memoryUsage();
     const cpu = process.cpuUsage();
 
-    const response: Record<string, unknown> = {
+    reply.send({
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       memory: {
@@ -323,17 +339,12 @@ export async function registerPlugins(fastify: FastifyInstance) {
         userMicroseconds: cpu.user,
         systemMicroseconds: cpu.system,
       },
-    };
-
-    if (config.NODE_ENV !== 'production') {
-      response.process = {
+      process: {
         pid: process.pid,
         nodeVersion: process.version,
         platform: process.platform,
         arch: process.arch,
-      };
-    }
-
-    reply.send(response);
+      },
+    });
   });
 }

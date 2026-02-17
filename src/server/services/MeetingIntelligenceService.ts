@@ -34,8 +34,11 @@ export class MeetingIntelligenceService {
     const existingTasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
     const schedule = await this.scheduleService.findById(scheduleId);
 
-    // 2. Gather resources for assignee matching
-    const resources = await this.resourceService.findAllResources();
+    // 2. Gather resources for assignee matching — scoped to this schedule's assignments
+    const assignments = await this.resourceService.findAssignmentsBySchedule(scheduleId);
+    const assignedResourceIds = new Set(assignments.map(a => a.resourceId));
+    const allResources = await this.resourceService.findAllResources();
+    const resources = allResources.filter(r => assignedResourceIds.has(r.id));
 
     // 3. Build context strings
     const taskContext = existingTasks
