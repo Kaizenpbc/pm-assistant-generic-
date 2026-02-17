@@ -3,6 +3,8 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 class ApiService {
   private api: AxiosInstance;
   private csrfToken: string | null = null;
+  /** Resolves once the initial CSRF token has been fetched (or failed). */
+  private csrfReady: Promise<void>;
 
   constructor() {
     this.api = axios.create({
@@ -13,13 +15,17 @@ class ApiService {
       },
     });
 
-    // Request interceptor — attach CSRF token to mutating requests
+    // Request interceptor — await CSRF readiness then attach token to mutations
     this.api.interceptors.request.use(
-      (config) => {
+      async (config) => {
         const method = (config.method || 'get').toLowerCase();
-        if (['post', 'put', 'delete', 'patch'].includes(method) && this.csrfToken) {
-          config.headers = config.headers || {};
-          config.headers['x-csrf-token'] = this.csrfToken;
+        if (['post', 'put', 'delete', 'patch'].includes(method)) {
+          // Wait for the initial CSRF token fetch to complete before any mutation
+          await this.csrfReady;
+          if (this.csrfToken) {
+            config.headers = config.headers || {};
+            config.headers['x-csrf-token'] = this.csrfToken;
+          }
         }
         return config;
       },
@@ -28,8 +34,8 @@ class ApiService {
       }
     );
 
-    // Fetch CSRF token on initialization
-    this.fetchCsrfToken();
+    // Fetch CSRF token on initialization — store promise so interceptor can await it
+    this.csrfReady = this.fetchCsrfToken();
 
     // Response interceptor
     this.api.interceptors.response.use(
@@ -64,17 +70,26 @@ class ApiService {
   }
 
   /**
-   * Fetch a CSRF token from the server. Called on init and after login.
-   * The token is attached to all mutating requests via the request interceptor.
+   * Fetch a CSRF token from the server with retry.
+   * Called on init and after login. The token is attached to all mutating
+   * requests via the request interceptor which awaits `csrfReady`.
    */
   private async fetchCsrfToken(): Promise<void> {
-    try {
-      const response = await this.api.get('/csrf-token');
-      this.csrfToken = response.data.csrfToken;
-    } catch {
-      // Non-fatal — CSRF endpoint may not be available in dev or when server is down
-      this.csrfToken = null;
+    const MAX_RETRIES = 2;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await this.api.get('/csrf-token');
+        this.csrfToken = response.data.csrfToken;
+        return;
+      } catch {
+        if (attempt < MAX_RETRIES) {
+          // Wait 1s before retrying
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
     }
+    // All retries exhausted — non-fatal, CSRF endpoint may be unavailable
+    this.csrfToken = null;
   }
 
   // -------------------------------------------------------------------------
@@ -84,7 +99,8 @@ class ApiService {
   async login(username: string, password: string) {
     const response = await this.api.post('/auth/login', { username, password });
     // Refresh CSRF token after login (new session cookie issued)
-    await this.fetchCsrfToken();
+    this.csrfReady = this.fetchCsrfToken();
+    await this.csrfReady;
     return response.data;
   }
 
