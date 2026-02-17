@@ -10,7 +10,7 @@ export async function securityMiddleware(
   reply.header('X-Download-Options', 'noopen');
   reply.header('X-Permitted-Cross-Domain-Policies', 'none');
 
-  if (request.url.includes('/api/auth/') || request.url.includes('/api/users/')) {
+  if (request.url.includes('/auth/') || request.url.includes('/users/')) {
     reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     reply.header('Pragma', 'no-cache');
     reply.header('Expires', '0');

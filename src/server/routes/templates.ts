@@ -31,7 +31,9 @@ export async function templateRoutes(fastify: FastifyInstance) {
   const templateService = new TemplateService();
 
   // GET / — List all templates (with optional filters)
-  fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/', {
+    preHandler: [authMiddleware],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectType, category } = request.query as { projectType?: string; category?: string };
       const templates = await templateService.findAll(projectType, category);
@@ -57,7 +59,9 @@ export async function templateRoutes(fastify: FastifyInstance) {
   });
 
   // GET /:id — Get template with full task tree
-  fastify.get('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/:id', {
+    preHandler: [authMiddleware],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       const template = await templateService.findById(id);

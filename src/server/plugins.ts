@@ -124,7 +124,10 @@ export async function registerPlugins(fastify: FastifyInstance) {
 
   fastify.setErrorHandler(async (err: unknown, request, reply) => {
     const error = err instanceof Error ? err : new Error(String(err));
-    const statusCode = (error as { statusCode?: number }).statusCode ?? 500;
+    // Fastify plugins (rate-limit, auth) set statusCode on the error object
+    const statusCode = (err as { statusCode?: number }).statusCode
+      ?? (error as { statusCode?: number }).statusCode
+      ?? 500;
     fastify.log.error({ err: error, url: request.url, method: request.method }, 'Global error handler');
 
     auditService.logSystemEvent(request, 'error', {
