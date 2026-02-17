@@ -272,7 +272,7 @@ export class CrossProjectIntelligenceService {
       const budgetLow = budgetAllocated * 0.5;
       const budgetHigh = budgetAllocated * 1.5;
 
-      const [rows]: any = await db.query(
+      const rows: any[] = await db.query(
         `SELECT p.id, p.name, p.project_type, p.budget_allocated, p.budget_spent, p.status,
                 p.start_date, p.end_date
          FROM projects p

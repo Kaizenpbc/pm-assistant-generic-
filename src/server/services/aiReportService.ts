@@ -169,7 +169,7 @@ export class AIReportService {
            LIMIT ?`;
 
       const params = userId ? [userId, limit] : [limit];
-      const [rows]: any = await db.query(query, params);
+      const rows: any[] = await db.query(query, params);
 
       return rows.map((row: any) => {
         let reportData: any = {};
