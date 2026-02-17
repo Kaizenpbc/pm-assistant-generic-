@@ -260,7 +260,7 @@ export class CrossProjectIntelligenceService {
     projectId: string,
     _userId?: string,
   ): Promise<{ similar: AICrossProjectInsight['similarProjectInsights']; aiPowered: boolean }> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return { similar: [], aiPowered: false };
 
     try {

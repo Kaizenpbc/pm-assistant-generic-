@@ -5,14 +5,19 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import csrfProtection from '@fastify/csrf-protection';
 import websocket from '@fastify/websocket';
 import { config } from './config';
 import { requestLogger } from './utils/logger';
 import { toCamelCaseKeys } from './utils/caseConverter';
 import { auditService } from './services/auditService';
 import { securityMiddleware, securityValidationMiddleware } from './middleware/securityMiddleware';
+import { databaseService } from './database/connection';
 
 export async function registerPlugins(fastify: FastifyInstance) {
+  // Decorate Fastify with the database pool so services can access it via fastify.db
+  fastify.decorate('db', databaseService);
+
   await fastify.register(websocket);
 
   fastify.addHook('onRequest', requestLogger);
@@ -69,7 +74,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-user-role', 'x-user-id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-user-role', 'x-user-id', 'x-csrf-token'],
   });
 
   await fastify.register(cookie, {
@@ -81,11 +86,34 @@ export async function registerPlugins(fastify: FastifyInstance) {
     },
   });
 
+  // CSRF protection — requires cookie plugin to be registered first
+  await fastify.register(csrfProtection, {
+    sessionPlugin: '@fastify/cookie',
+    cookieOpts: {
+      signed: true,
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: config.NODE_ENV === 'production',
+      path: '/',
+    },
+    getToken: (request) => {
+      // Accept token from header (preferred for SPA) or body
+      return request.headers['x-csrf-token'] as string
+        || (request.body as any)?.['_csrf'] as string;
+    },
+  });
+
+  // Expose CSRF token endpoint for SPA clients
+  fastify.get('/api/v1/csrf-token', async (request, reply) => {
+    const token = reply.generateCsrf();
+    return { csrfToken: token };
+  });
+
   // Rate limiting — protect against brute force and API abuse
   await fastify.register(rateLimit, {
     max: 100,               // 100 requests per window
     timeWindow: '1 minute',
-    allowList: ['127.0.0.1'],
+    // No allowList — rate-limit all IPs equally (including localhost behind proxy)
     keyGenerator: (request) => {
       // Use authenticated userId if available, otherwise IP
       const user = (request as any).user;

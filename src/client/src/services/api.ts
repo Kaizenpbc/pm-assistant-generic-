@@ -185,7 +185,8 @@ class ApiService {
     conversationId?: string;
     context?: { type: string; projectId?: string };
   }): Promise<Response> {
-    return fetch('http://localhost:3001/api/v1/ai-chat/stream', {
+    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+    return fetch(`${baseURL}/ai-chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',

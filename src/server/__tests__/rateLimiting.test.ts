@@ -62,12 +62,12 @@ describe('Rate Limiting', () => {
     await freshApp.close();
   }, 30000); // Generous timeout for 101 sequential requests
 
-  it('does not rate-limit localhost (allowList)', async () => {
+  it('rate-limits localhost equally (no allowList bypass)', async () => {
     const freshApp = await buildApp();
 
-    // Fire 105 requests from 127.0.0.1
+    // Fire 101 requests from 127.0.0.1 — should be rate-limited after 100
     let lastRes;
-    for (let i = 0; i < 105; i++) {
+    for (let i = 0; i < 101; i++) {
       lastRes = await freshApp.inject({
         method: 'GET',
         url: '/health',
@@ -75,8 +75,9 @@ describe('Rate Limiting', () => {
       });
     }
 
-    // Should still be 200 (not 429) because localhost is in the allowList
-    expect(lastRes!.statusCode).toBe(200);
+    // Localhost should be blocked just like any other IP (no allowList bypass)
+    expect(lastRes!.statusCode).toBeGreaterThanOrEqual(400);
+    expect(lastRes!.headers['x-ratelimit-remaining']).toBe('0');
 
     await freshApp.close();
   }, 30000);

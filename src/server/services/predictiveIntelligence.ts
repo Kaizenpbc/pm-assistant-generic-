@@ -1146,7 +1146,7 @@ export class PredictiveIntelligenceService {
     projectId: string,
     assessment: AIRiskAssessment,
   ): void {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return;
 
     // Fire-and-forget

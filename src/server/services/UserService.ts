@@ -18,20 +18,43 @@ export interface CreateUserData {
   role?: 'admin' | 'executive' | 'manager' | 'member';
 }
 
+/**
+ * Default admin seed — uses ADMIN_PASSWORD env var when set.
+ * Falls back to a dev-only hash ('admin123') in development/test mode.
+ * In production without ADMIN_PASSWORD, no seed admin is created.
+ */
+function buildSeedUsers(): User[] {
+  const env = process.env['NODE_ENV'] || 'development';
+  const adminPassword = process.env['ADMIN_PASSWORD'];
+
+  let hash: string | null = null;
+
+  if (adminPassword) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const bcrypt = require('bcryptjs');
+    hash = bcrypt.hashSync(adminPassword, 12);
+  } else if (env === 'development' || env === 'test') {
+    // ONLY in dev/test — never ship a known hash to production
+    hash = '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW'; // admin123
+  }
+
+  if (!hash) return [];
+
+  return [{
+    id: '1',
+    username: 'admin',
+    email: 'admin@example.com',
+    passwordHash: hash,
+    fullName: 'Administrator',
+    role: 'admin' as const,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }];
+}
+
 export class UserService {
-  private static users: User[] = [
-    {
-      id: '1',
-      username: 'admin',
-      email: 'admin@example.com',
-      passwordHash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
-      fullName: 'Administrator',
-      role: 'admin',
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ];
+  private static users: User[] = buildSeedUsers();
 
   private get users() { return UserService.users; }
 

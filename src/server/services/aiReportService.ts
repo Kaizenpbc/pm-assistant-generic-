@@ -152,7 +152,7 @@ export class AIReportService {
   }
 
   async getReportHistory(userId?: string, limit: number = 20): Promise<any[]> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return [];
 
     try {
@@ -199,7 +199,7 @@ export class AIReportService {
   }
 
   private async storeReport(report: GeneratedReport, userId: string): Promise<void> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return;
 
     try {

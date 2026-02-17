@@ -43,7 +43,7 @@ export class AILearningServiceV2 {
   // -------------------------------------------------------------------------
 
   recordFeedback(feedback: AIFeedbackRecord, userId: string): void {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return;
 
     const id = randomUUID();
@@ -70,7 +70,7 @@ export class AILearningServiceV2 {
   // -------------------------------------------------------------------------
 
   recordAccuracy(record: AIAccuracyRecord): void {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return;
 
     const id = randomUUID();
@@ -107,7 +107,7 @@ export class AILearningServiceV2 {
     rejected: number;
     acceptanceRate: number;
   }> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return { total: 0, accepted: 0, modified: 0, rejected: 0, acceptanceRate: 0 };
 
     const whereClause = feature ? 'WHERE feature = ?' : '';
@@ -140,7 +140,7 @@ export class AILearningServiceV2 {
   async getAccuracyReport(filters?: {
     projectType?: string;
   }): Promise<AIAccuracyReport> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     const emptyReport: AIAccuracyReport = {
       overall: { totalRecords: 0, averageVariance: 0, accuracy: 0 },
       byMetric: [],
@@ -222,7 +222,7 @@ export class AILearningServiceV2 {
   // -------------------------------------------------------------------------
 
   async buildLearningContext(projectType?: string): Promise<string> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return '';
 
     try {

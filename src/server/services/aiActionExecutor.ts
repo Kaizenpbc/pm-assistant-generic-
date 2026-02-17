@@ -17,6 +17,16 @@ export interface ActionContext {
   userRole: string;
 }
 
+// Tools that modify data and require write permissions
+const MUTATING_TOOLS = new Set([
+  'create_task', 'update_task', 'delete_task',
+  'create_project', 'update_project',
+  'reschedule_task', 'cascade_reschedule', 'set_dependency',
+]);
+
+// Roles allowed to perform mutations via AI chat
+const WRITE_ROLES = new Set(['admin', 'manager']);
+
 export class AIActionExecutor {
   private projectService = new ProjectService();
   private scheduleService = new ScheduleService();
@@ -24,6 +34,16 @@ export class AIActionExecutor {
 
   async execute(toolName: string, input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
     try {
+      // RBAC: Only admins and managers can perform mutating operations via AI
+      if (MUTATING_TOOLS.has(toolName) && !WRITE_ROLES.has(context.userRole)) {
+        return {
+          success: false,
+          toolName,
+          summary: `Permission denied: role '${context.userRole}' cannot perform '${toolName}'`,
+          error: `Insufficient permissions. Only admins and managers can ${toolName.replace(/_/g, ' ')}.`,
+        };
+      }
+
       switch (toolName) {
         case 'create_task': return await this.createTask(input, context);
         case 'update_task': return await this.updateTask(input, context);

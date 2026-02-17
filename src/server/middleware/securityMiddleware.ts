@@ -1,38 +1,28 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { randomUUID } from 'crypto';
-import { config } from '../config';
 
 export async function securityMiddleware(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
+  // Global security headers
   reply.header('X-Robots-Tag', 'noindex, nofollow');
   reply.header('X-Download-Options', 'noopen');
   reply.header('X-Permitted-Cross-Domain-Policies', 'none');
 
+  // No-cache on sensitive routes (auth, user profile)
   if (request.url.includes('/auth/') || request.url.includes('/users/')) {
     reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     reply.header('Pragma', 'no-cache');
     reply.header('Expires', '0');
   }
 
+  // Additional security headers for API routes
+  // NOTE: CORS is handled entirely by @fastify/cors plugin — do NOT set CORS headers here
   if (request.url.startsWith('/api/')) {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('X-Frame-Options', 'DENY');
     reply.header('X-XSS-Protection', '1; mode=block');
-
-    const origin = request.headers.origin;
-    const allowedOrigin = config.CORS_ORIGIN || 'http://localhost:5173';
-    const corsOrigin = origin && (
-      config.NODE_ENV === 'development' ||
-      origin === allowedOrigin ||
-      origin.startsWith('http://localhost:')
-    ) ? origin : allowedOrigin;
-
-    reply.header('Access-Control-Allow-Origin', corsOrigin);
-    reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
-    reply.header('Access-Control-Allow-Credentials', 'true');
   }
 }
 
