@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ProjectService } from '../services/ProjectService';
+import { idParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 const createProjectSchema = z.object({
@@ -43,7 +44,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get project by ID', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const userId = request.user.userId;
       const project = await projectService.findById(id, userId);
       if (!project) {
@@ -51,6 +52,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       }
       return { project };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Get project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch project' });
     }
@@ -81,7 +83,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
     schema: { description: 'Update a project', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const data = updateProjectSchema.parse(request.body);
       const userId = request.user.userId;
       const project = await projectService.update(id, {
@@ -94,6 +96,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       }
       return { project };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Update project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update project' });
     }
@@ -104,7 +107,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
     schema: { description: 'Delete a project', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const userId = request.user.userId;
       const deleted = await projectService.delete(id, userId);
       if (!deleted) {
@@ -112,6 +115,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Project deleted successfully' };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Delete project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete project' });
     }

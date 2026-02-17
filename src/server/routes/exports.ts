@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { ZodError } from 'zod';
 import { ScheduleService } from '../services/ScheduleService';
 import { CriticalPathService } from '../services/CriticalPathService';
+import { idParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 import { verifyProjectAccess } from '../middleware/authorize';
 
@@ -10,7 +12,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
   // GET /exports/projects/:id/export?format=csv|json
   fastify.get('/projects/:id/export', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const { format } = request.query as { format?: string };
 
       // Verify ownership before exporting
@@ -132,6 +134,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
       reply.header('Content-Disposition', `attachment; filename="project-${id}-export.csv"`);
       return reply.send(csv);
     } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Export error');
       return reply.status(500).send({ error: 'Failed to export project data' });
     }

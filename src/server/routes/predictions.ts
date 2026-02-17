@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { ZodError } from 'zod';
 import { PredictiveIntelligenceService } from '../services/predictiveIntelligence';
 import { SCurveService } from '../services/SCurveService';
+import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 export async function predictionRoutes(fastify: FastifyInstance) {
@@ -24,11 +26,12 @@ export async function predictionRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const userId = request.user.userId || undefined;
       const { assessment, aiPowered } = await service.assessProjectRisks(projectId, userId);
       return reply.send({ data: assessment, aiPowered });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Risk assessment failed');
       return reply.status(500).send({ error: 'Failed to generate risk assessment' });
     }
@@ -40,11 +43,12 @@ export async function predictionRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const userId = request.user.userId || undefined;
       const { impact, aiPowered } = await service.analyzeWeatherImpact(projectId, userId);
       return reply.send({ data: impact, aiPowered });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Weather impact analysis failed');
       return reply.status(500).send({ error: 'Failed to analyze weather impact' });
     }
@@ -56,11 +60,12 @@ export async function predictionRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const userId = request.user.userId || undefined;
       const { forecast, aiPowered } = await service.forecastBudget(projectId, userId);
       return reply.send({ data: forecast, aiPowered });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Budget forecast failed');
       return reply.status(500).send({ error: 'Failed to generate budget forecast' });
     }
@@ -72,11 +77,12 @@ export async function predictionRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const userId = request.user.userId || undefined;
       const result = await service.getProjectHealthScore(projectId, userId);
       return reply.send({ data: result });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Health score calculation failed');
       return reply.status(500).send({ error: 'Failed to calculate health score' });
     }
@@ -90,10 +96,11 @@ export async function predictionRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const data = await sCurveService.computeSCurveData(projectId);
       return reply.send({ data });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'S-Curve computation failed');
       return reply.status(500).send({ error: 'Failed to compute S-Curve data' });
     }

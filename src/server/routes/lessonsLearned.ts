@@ -1,5 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { ZodError } from 'zod';
 import { LessonsLearnedService } from '../services/LessonsLearnedService';
+import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
@@ -22,11 +24,12 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const userId = request.user.userId || undefined;
       const lessons = await service.extractLessons(projectId, userId);
       return reply.send({ lessons });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to extract lessons');
       return reply.status(500).send({ error: 'Failed to extract lessons' });
     }

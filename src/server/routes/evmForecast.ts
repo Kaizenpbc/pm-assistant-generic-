@@ -1,5 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { ZodError } from 'zod';
 import { EVMForecastService } from '../services/EVMForecastService';
+import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 export async function evmForecastRoutes(fastify: FastifyInstance) {
@@ -11,7 +13,7 @@ export async function evmForecastRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const userId = request.user.userId || undefined;
       const result = await service.generateForecast(projectId, userId);
       return reply.send({
@@ -19,6 +21,7 @@ export async function evmForecastRoutes(fastify: FastifyInstance) {
         aiPowered: !!result.aiPredictions,
       });
     } catch (err: any) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       if (err.message?.includes('Project not found')) {
         return reply.status(404).send({ error: 'Project not found' });
       }

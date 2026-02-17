@@ -1,9 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { ZodError } from 'zod';
 import { MeetingIntelligenceService } from '../services/MeetingIntelligenceService';
 import {
   AnalyzeRequestSchema,
   ApplyRequestSchema,
 } from '../schemas/meetingSchemas';
+import { analysisIdParam, projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
@@ -27,9 +29,7 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
 
       return reply.send({ data: analysis });
     } catch (err) {
-      if (err instanceof Error && err.name === 'ZodError') {
-        return reply.status(400).send({ error: 'Invalid request data', details: err });
-      }
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Meeting transcript analysis failed');
       return reply.status(500).send({ error: 'Failed to analyze meeting transcript' });
     }
@@ -44,7 +44,7 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { analysisId } = request.params as { analysisId: string };
+      const { analysisId } = analysisIdParam.parse(request.params);
       const parsed = ApplyRequestSchema.parse(request.body);
       const userId = request.user.userId || undefined;
 
@@ -56,9 +56,7 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
 
       return reply.send({ data: result });
     } catch (err) {
-      if (err instanceof Error && err.name === 'ZodError') {
-        return reply.status(400).send({ error: 'Invalid request data', details: err });
-      }
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to apply meeting changes');
       return reply.status(500).send({ error: 'Failed to apply meeting changes' });
     }
@@ -73,10 +71,11 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const analyses = service.getProjectHistory(projectId);
       return reply.send({ data: analyses });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to fetch meeting analysis history');
       return reply.status(500).send({ error: 'Failed to fetch meeting analysis history' });
     }

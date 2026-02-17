@@ -1,5 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { ZodError } from 'zod';
 import { ScheduleService } from '../services/ScheduleService';
+import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 import { verifyProjectAccess } from '../middleware/authorize';
 
@@ -12,7 +14,7 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get audit trail for a project', tags: ['audit'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const { limit = '50', offset = '0' } = request.query as { limit?: string; offset?: string };
 
       // Verify ownership before returning audit trail
@@ -40,6 +42,7 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
 
       return { activities: paged, total, limit: Number(limit), offset: Number(offset) };
     } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Get audit trail error');
       return reply.status(500).send({ error: 'Internal server error' });
     }

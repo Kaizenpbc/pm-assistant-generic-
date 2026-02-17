@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { AutoRescheduleService } from '../services/AutoRescheduleService';
 import { ProposedChangeSchema } from '../schemas/autoRescheduleSchemas';
+import { idParam, scheduleIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 const rejectBodySchema = z.object({
@@ -21,10 +22,11 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Detect delayed tasks in a schedule', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { scheduleId } = request.params as { scheduleId: string };
+      const { scheduleId } = scheduleIdParam.parse(request.params);
       const delayedTasks = await service.detectDelays(scheduleId);
       return { delayedTasks };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Detect delays error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -39,12 +41,13 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Generate an AI-powered reschedule proposal', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { scheduleId } = request.params as { scheduleId: string };
+      const { scheduleId } = scheduleIdParam.parse(request.params);
       const user = request.user;
       const userId = request.user.userId;
       const proposal = await service.generateProposal(scheduleId, userId);
       return { proposal };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Generate proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -59,10 +62,11 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'List reschedule proposals for a schedule', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { scheduleId } = request.params as { scheduleId: string };
+      const { scheduleId } = scheduleIdParam.parse(request.params);
       const proposals = service.getProposals(scheduleId);
       return { proposals };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Get proposals error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -77,7 +81,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Accept a reschedule proposal and apply changes', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const accepted = await service.acceptProposal(id);
       if (!accepted) {
         return reply.status(404).send({
@@ -87,6 +91,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal accepted and changes applied successfully' };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Accept proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -101,7 +106,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Reject a reschedule proposal', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const body = rejectBodySchema.parse(request.body ?? {});
       const rejected = await service.rejectProposal(id, body.feedback);
       if (!rejected) {
@@ -112,6 +117,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal rejected successfully' };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Reject proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -126,7 +132,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Modify a reschedule proposal with updated changes', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const body = modifyBodySchema.parse(request.body);
       const modified = await service.modifyProposal(id, body.modifications);
       if (!modified) {
@@ -137,6 +143,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal modified successfully' };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Modify proposal error');
       return reply.status(500).send({
         error: 'Internal server error',

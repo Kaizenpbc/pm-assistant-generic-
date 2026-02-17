@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { WorkflowService } from '../services/WorkflowService';
+import { idParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 const triggerSchema = z.object({
@@ -67,6 +68,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       const rule = workflowService.create(data);
       return reply.status(201).send({ rule });
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Create workflow error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
@@ -78,12 +80,13 @@ export async function workflowRoutes(fastify: FastifyInstance) {
     schema: { description: 'Update a workflow rule', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const data = createRuleSchema.partial().parse(request.body);
       const rule = workflowService.update(id, data);
       if (!rule) return reply.status(404).send({ error: 'Workflow rule not found' });
       return { rule };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Update workflow error');
       return reply.status(500).send({ error: 'Internal server error' });
     }
@@ -95,11 +98,12 @@ export async function workflowRoutes(fastify: FastifyInstance) {
     schema: { description: 'Delete a workflow rule', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const deleted = workflowService.delete(id);
       if (!deleted) return reply.status(404).send({ error: 'Workflow rule not found' });
       return { message: 'Workflow rule deleted' };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Delete workflow error');
       return reply.status(500).send({ error: 'Internal server error' });
     }

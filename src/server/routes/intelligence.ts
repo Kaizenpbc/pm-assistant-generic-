@@ -1,8 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { ZodError } from 'zod';
 import { AnomalyDetectionService } from '../services/anomalyDetectionService';
 import { CrossProjectIntelligenceService } from '../services/crossProjectIntelligenceService';
 import { WhatIfScenarioService } from '../services/whatIfScenarioService';
 import { AIScenarioRequestSchema } from '../schemas/phase5Schemas';
+import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 export async function intelligenceRoutes(fastify: FastifyInstance) {
@@ -27,11 +29,12 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const userId = request.user.userId || undefined;
       const report = await anomalyService.detectProjectAnomalies(projectId, userId);
       return reply.send({ data: report, aiPowered: report.aiPowered });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Project anomaly detection failed');
       return reply.status(500).send({ error: 'Failed to detect project anomalies' });
     }
@@ -54,11 +57,12 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const userId = request.user.userId || undefined;
       const { similar, aiPowered } = await crossProjectService.findSimilarProjects(projectId, userId);
       return reply.send({ data: similar, aiPowered });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Similar projects search failed');
       return reply.status(500).send({ error: 'Failed to find similar projects' });
     }
@@ -72,9 +76,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
       const { result, aiPowered } = await scenarioService.modelScenario(parsed, userId);
       return reply.send({ data: result, aiPowered });
     } catch (err) {
-      if (err instanceof Error && err.name === 'ZodError') {
-        return reply.status(400).send({ error: 'Invalid scenario request data' });
-      }
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Scenario modeling failed');
       return reply.status(500).send({ error: 'Failed to model scenario' });
     }

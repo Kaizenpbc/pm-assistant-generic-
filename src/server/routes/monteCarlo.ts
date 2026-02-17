@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { ZodError } from 'zod';
 import { MonteCarloService } from '../services/MonteCarloService';
 import { MonteCarloConfigSchema } from '../schemas/monteCarloSchemas';
+import { scheduleIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 export async function monteCarloRoutes(fastify: FastifyInstance) {
@@ -12,7 +14,7 @@ export async function monteCarloRoutes(fastify: FastifyInstance) {
     reply: FastifyReply,
   ) => {
     try {
-      const { scheduleId } = request.params as { scheduleId: string };
+      const { scheduleId } = scheduleIdParam.parse(request.params);
 
       // Parse optional config from body, applying defaults
       const rawBody = (request.body as Record<string, unknown>) || {};
@@ -21,9 +23,7 @@ export async function monteCarloRoutes(fastify: FastifyInstance) {
       const result = await service.runSimulation(scheduleId, config);
       return reply.send({ result });
     } catch (err: any) {
-      if (err.name === 'ZodError') {
-        return reply.status(400).send({ error: 'Invalid configuration', details: err.issues });
-      }
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Monte Carlo simulation failed');
       return reply.status(500).send({ error: 'Failed to run Monte Carlo simulation' });
     }

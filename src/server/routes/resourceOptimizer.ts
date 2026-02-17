@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ResourceOptimizerService } from '../services/ResourceOptimizerService';
+import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 const forecastQuerySchema = z.object({
@@ -24,7 +25,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
     },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { projectId } = request.params as { projectId: string };
+      const { projectId } = projectIdParam.parse(request.params);
       const query = forecastQuerySchema.parse(request.query);
       const user = request.user;
       const userId = user?.userId;
@@ -37,12 +38,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
 
       return { result: forecast };
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.status(400).send({
-          error: 'Validation error',
-          message: error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
-        });
-      }
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Resource forecast error');
       return reply.status(500).send({
         error: 'Internal server error',
@@ -69,12 +65,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
 
       return { matches };
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.status(400).send({
-          error: 'Validation error',
-          message: error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
-        });
-      }
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       if (error instanceof Error && error.message.startsWith('Task not found')) {
         return reply.status(404).send({
           error: 'Not found',

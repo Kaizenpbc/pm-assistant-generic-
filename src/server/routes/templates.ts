@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { TemplateService } from '../services/TemplateService';
 import { createFromTemplateSchema, saveAsTemplateSchema } from '../schemas/templateSchemas';
+import { idParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 const createTemplateSchema = z.object({
@@ -63,13 +64,14 @@ export async function templateRoutes(fastify: FastifyInstance) {
     preHandler: [authMiddleware],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const template = await templateService.findById(id);
       if (!template) {
         return reply.status(404).send({ error: 'Template not found' });
       }
       return { template };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Get template error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch template' });
     }
@@ -89,6 +91,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ template });
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Create template error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create template' });
     }
@@ -99,7 +102,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
     preHandler: [authMiddleware],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const data = createTemplateSchema.partial().parse(request.body);
       const template = await templateService.update(id, data);
       if (!template) {
@@ -107,6 +110,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       }
       return { template };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Update template error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update template' });
     }
@@ -117,13 +121,14 @@ export async function templateRoutes(fastify: FastifyInstance) {
     preHandler: [authMiddleware],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const deleted = await templateService.delete(id);
       if (!deleted) {
         return reply.status(404).send({ error: 'Template not found or is built-in' });
       }
       return { message: 'Template deleted successfully' };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Delete template error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete template' });
     }
@@ -143,6 +148,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send(result);
     } catch (error: any) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Apply template error');
       if (error.message === 'Template not found') {
         return reply.status(404).send({ error: 'Template not found' });
@@ -165,6 +171,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ template });
     } catch (error: any) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Save as template error');
       if (error.message === 'Project not found') {
         return reply.status(404).send({ error: 'Project not found' });
