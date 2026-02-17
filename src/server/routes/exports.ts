@@ -1,8 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { ScheduleService } from '../services/ScheduleService';
-import { ProjectService } from '../services/ProjectService';
 import { CriticalPathService } from '../services/CriticalPathService';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess } from '../middleware/authorize';
 
 export async function exportRoutes(fastify: FastifyInstance) {
   const scheduleService = new ScheduleService();
@@ -13,12 +13,14 @@ export async function exportRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const { format } = request.query as { format?: string };
 
+      // Verify ownership before exporting
+      const project = await verifyProjectAccess(id, request.user.userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
+
       const schedules = await scheduleService.findByProjectId(id);
 
       if (format === 'json') {
         // JSON export — full project report data for client-side PDF rendering
-        const projectService = new ProjectService();
-        const project = await projectService.findById(id);
         const cpmService = new CriticalPathService();
 
         const schedulesWithTasks = [];
@@ -59,7 +61,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
         const avgProgress = allTaskCount > 0 ? Math.round(allProgressSum / allTaskCount) : 0;
 
         return reply.send({
-          project: project ? {
+          project: {
             id: project.id,
             name: project.name,
             status: project.status,
@@ -68,7 +70,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
             progressPercentage: avgProgress,
             startDate: project.startDate,
             endDate: project.endDate,
-          } : null,
+          },
           schedules: schedulesWithTasks,
           generatedAt: new Date().toISOString(),
         });

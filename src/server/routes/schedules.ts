@@ -6,6 +6,7 @@ import { BaselineService } from '../services/BaselineService';
 import { WorkflowService } from '../services/WorkflowService';
 import { WebSocketService } from '../services/WebSocketService';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess, verifyScheduleAccess } from '../middleware/authorize';
 
 const createScheduleSchema = z.object({
   projectId: z.string(),
@@ -46,6 +47,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
+      const project = await verifyProjectAccess(projectId, request.user.userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
       const schedules = await scheduleService.findByProjectId(projectId);
       return { schedules };
     } catch (error) {
@@ -59,8 +62,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = request.user;
       const data = createScheduleSchema.parse(request.body);
+      const project = await verifyProjectAccess(data.projectId, request.user.userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
       const schedule = await scheduleService.create({
         ...data,
         startDate: new Date(data.startDate),
@@ -80,6 +84,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
+      const existing = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!existing) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const data = createScheduleSchema.partial().parse(request.body);
       const schedule = await scheduleService.update(scheduleId, {
         ...data,
@@ -100,6 +106,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
+      const existing = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!existing) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const deleted = await scheduleService.delete(scheduleId);
       if (!deleted) return reply.status(404).send({ error: 'Not found', message: 'Schedule not found' });
       return { message: 'Schedule deleted successfully' };
@@ -115,6 +123,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
       return { tasks };
     } catch (error) {
@@ -128,8 +138,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = request.user;
       const { scheduleId } = request.params as { scheduleId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const data = createTaskSchema.omit({ scheduleId: true }).parse(request.body);
       const task = await scheduleService.createTask({
         scheduleId,
@@ -152,7 +163,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Update a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { taskId } = request.params as { taskId: string };
+      const { scheduleId, taskId } = request.params as { scheduleId: string; taskId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const data = updateTaskSchema.parse(request.body);
 
       // Capture old end date before update for cascade detection
@@ -197,7 +210,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Delete a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { taskId } = request.params as { taskId: string };
+      const { scheduleId, taskId } = request.params as { scheduleId: string; taskId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const deleted = await scheduleService.deleteTask(taskId);
       if (!deleted) return reply.status(404).send({ error: 'Not found', message: 'Task not found' });
       WebSocketService.broadcast({ type: 'task_deleted', payload: { taskId } });
@@ -220,6 +235,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const result = await cpmService.calculateCriticalPath(scheduleId);
       return result;
     } catch (error) {
@@ -240,6 +257,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const baselines = await baselineService.findByScheduleId(scheduleId);
       return { baselines };
     } catch (error) {
@@ -253,7 +272,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Compare baseline vs current schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { baselineId } = request.params as { baselineId: string };
+      const { scheduleId, baselineId } = request.params as { scheduleId: string; baselineId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const comparison = await baselineService.compareBaseline(baselineId);
       if (!comparison) return reply.status(404).send({ error: 'Baseline not found' });
       return { comparison };
@@ -268,7 +289,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Delete a baseline', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { baselineId } = request.params as { baselineId: string };
+      const { scheduleId, baselineId } = request.params as { scheduleId: string; baselineId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const deleted = await baselineService.delete(baselineId);
       if (!deleted) return reply.status(404).send({ error: 'Baseline not found' });
       return { message: 'Baseline deleted successfully' };
@@ -283,8 +306,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a baseline snapshot', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = request.user;
       const { scheduleId } = request.params as { scheduleId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const { name } = (request.body as { name?: string }) || {};
       const baseline = await baselineService.create(
         scheduleId,
@@ -307,7 +331,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get comments for a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { taskId } = request.params as { taskId: string };
+      const { scheduleId, taskId } = request.params as { scheduleId: string; taskId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const comments = scheduleService.getComments(taskId);
       return { comments };
     } catch (error) {
@@ -321,8 +347,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Add a comment to a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = request.user;
-      const { taskId } = request.params as { taskId: string };
+      const { scheduleId, taskId } = request.params as { scheduleId: string; taskId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const { text } = (request.body as { text: string });
       if (!text || !text.trim()) {
         return reply.status(400).send({ error: 'Comment text is required' });
@@ -340,7 +367,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Delete a comment', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { commentId } = request.params as { commentId: string };
+      const { scheduleId, commentId } = request.params as { scheduleId: string; commentId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const deleted = scheduleService.deleteComment(commentId);
       if (!deleted) return reply.status(404).send({ error: 'Comment not found' });
       return { message: 'Comment deleted' };
@@ -355,7 +384,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get activity feed for a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { taskId } = request.params as { taskId: string };
+      const { scheduleId, taskId } = request.params as { scheduleId: string; taskId: string };
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const activities = scheduleService.getActivities(taskId);
       return { activities };
     } catch (error) {
