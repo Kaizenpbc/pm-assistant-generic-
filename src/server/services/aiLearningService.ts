@@ -100,7 +100,7 @@ export class AILearningServiceV2 {
   // Feedback Stats
   // -------------------------------------------------------------------------
 
-  async getFeedbackStats(feature?: string): Promise<{
+  async getFeedbackStats(feature?: string, userId?: string): Promise<{
     total: number;
     accepted: number;
     modified: number;
@@ -110,8 +110,11 @@ export class AILearningServiceV2 {
     const db = (this.fastify as any).db;
     if (!db) return { total: 0, accepted: 0, modified: 0, rejected: 0, acceptanceRate: 0 };
 
-    const whereClause = feature ? 'WHERE feature = ?' : '';
-    const params = feature ? [feature] : [];
+    const conditions: string[] = [];
+    const params: any[] = [];
+    if (feature) { conditions.push('feature = ?'); params.push(feature); }
+    if (userId) { conditions.push('user_id = ?'); params.push(userId); }
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const rows: any[] = await db.query(
       `SELECT user_action, COUNT(*) as cnt
@@ -139,6 +142,7 @@ export class AILearningServiceV2 {
 
   async getAccuracyReport(filters?: {
     projectType?: string;
+    userId?: string;
   }): Promise<AIAccuracyReport> {
     const db = (this.fastify as any).db;
     const emptyReport: AIAccuracyReport = {
@@ -192,7 +196,7 @@ export class AILearningServiceV2 {
     }));
 
     // Feedback summary
-    const feedbackSummary = await this.getFeedbackStats();
+    const feedbackSummary = await this.getFeedbackStats(undefined, filters?.userId);
 
     // Deterministic improvements
     const improvements: string[] = [];

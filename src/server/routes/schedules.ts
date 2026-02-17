@@ -200,7 +200,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       }
 
       // Workflow automation: evaluate rules
-      workflowService.evaluateTaskChange(task, oldTask, scheduleService);
+      workflowService.evaluateTaskChange(task, oldTask, scheduleService, request.user.userId);
 
       // WebSocket broadcast
       WebSocketService.broadcastToUser(request.user.userId, { type: 'task_updated', payload: { task, cascadedChanges } });

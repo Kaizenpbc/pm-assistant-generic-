@@ -192,6 +192,12 @@ export class AIActionExecutor {
       return { success: false, toolName: 'update_task', summary: `Task '${taskId}' not found`, error: 'Task not found' };
     }
 
+    // Verify user has access to the schedule containing this task
+    const scheduleAccess = await verifyScheduleAccess(existing.scheduleId, context.userId);
+    if (!scheduleAccess) {
+      return { success: false, toolName: 'update_task', summary: 'Schedule not found or access denied', error: 'Not found' };
+    }
+
     // Convert date strings
     const updateData: Record<string, any> = { ...updates };
     if (updateData.dueDate) updateData.dueDate = new Date(updateData.dueDate);
@@ -207,7 +213,7 @@ export class AIActionExecutor {
     };
   }
 
-  private async deleteTask(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
+  private async deleteTask(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
     const parsed = deleteTaskInputSchema.safeParse(input);
     if (!parsed.success) {
       return { success: false, toolName: 'delete_task', summary: `Invalid input: ${parsed.error.issues.map(i => i.message).join(', ')}`, error: parsed.error.message };
@@ -217,6 +223,12 @@ export class AIActionExecutor {
     const existing = await this.scheduleService.findTaskById(taskId);
     if (!existing) {
       return { success: false, toolName: 'delete_task', summary: `Task '${taskId}' not found`, error: 'Task not found' };
+    }
+
+    // Verify user has access to the schedule containing this task
+    const scheduleAccess = await verifyScheduleAccess(existing.scheduleId, context.userId);
+    if (!scheduleAccess) {
+      return { success: false, toolName: 'delete_task', summary: 'Schedule not found or access denied', error: 'Not found' };
     }
 
     const deleted = await this.scheduleService.deleteTask(taskId);
@@ -404,11 +416,13 @@ export class AIActionExecutor {
     };
   }
 
-  private async listTasks(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
+  private async listTasks(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
     const { scheduleId } = input;
-    const schedule = await this.scheduleService.findById(scheduleId);
+
+    // Verify user has access to the schedule
+    const schedule = await verifyScheduleAccess(scheduleId, context.userId);
     if (!schedule) {
-      return { success: false, toolName: 'list_tasks', summary: `Schedule '${scheduleId}' not found`, error: 'Schedule not found' };
+      return { success: false, toolName: 'list_tasks', summary: `Schedule '${scheduleId}' not found or access denied`, error: 'Schedule not found or access denied' };
     }
 
     const tasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
@@ -566,12 +580,18 @@ export class AIActionExecutor {
     };
   }
 
-  private async getDependencyChain(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
+  private async getDependencyChain(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
     const { taskId } = input;
 
     const task = await this.scheduleService.findTaskById(taskId);
     if (!task) {
       return { success: false, toolName: 'get_dependency_chain', summary: `Task '${taskId}' not found`, error: 'Task not found' };
+    }
+
+    // Verify user has access to the schedule containing this task
+    const scheduleAccess = await verifyScheduleAccess(task.scheduleId, context.userId);
+    if (!scheduleAccess) {
+      return { success: false, toolName: 'get_dependency_chain', summary: 'Schedule not found or access denied', error: 'Not found' };
     }
 
     // Walk upstream (predecessors)

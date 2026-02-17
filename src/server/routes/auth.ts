@@ -37,6 +37,12 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   fastify.post('/login', {
     schema: { description: 'User login', tags: ['auth'] },
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '1 minute',
+      },
+    },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { username, password } = loginSchema.parse(request.body);
@@ -97,6 +103,12 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   fastify.post('/register', {
     schema: { description: 'User registration', tags: ['auth'] },
+    config: {
+      rateLimit: {
+        max: 3,
+        timeWindow: '1 minute',
+      },
+    },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { username, email, password, fullName } = registerSchema.parse(request.body);

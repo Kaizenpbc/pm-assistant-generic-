@@ -11,11 +11,11 @@ const resourceQuerySchema = z.object({
 });
 
 const createResourceSchema = z.object({
-  name: z.string().min(1),
-  role: z.string().min(1),
-  email: z.string().email(),
+  name: z.string().min(1).max(255),
+  role: z.string().min(1).max(100),
+  email: z.string().email().max(320),
   capacityHoursPerWeek: z.number().positive().default(40),
-  skills: z.array(z.string()).default([]),
+  skills: z.array(z.string().max(100)).max(50).default([]),
   isActive: z.boolean().default(true),
 });
 
@@ -48,6 +48,10 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   // POST /resources - Create a resource
   fastify.post('/', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const role = request.user.role;
+      if (role !== 'admin' && role !== 'manager') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or manager can create resources' });
+      }
       const data = createResourceSchema.parse(request.body);
       const resource = await service.createResource(data);
       return reply.status(201).send({ resource });
@@ -61,6 +65,10 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   // PUT /resources/:id - Update a resource
   fastify.put('/:id', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const role = request.user.role;
+      if (role !== 'admin' && role !== 'manager') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or manager can update resources' });
+      }
       const { id } = idParam.parse(request.params);
       const data = createResourceSchema.partial().parse(request.body);
       const resource = await service.updateResource(id, data);
@@ -76,6 +84,10 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   // DELETE /resources/:id
   fastify.delete('/:id', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const role = request.user.role;
+      if (role !== 'admin' && role !== 'manager') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or manager can delete resources' });
+      }
       const { id } = idParam.parse(request.params);
       const deleted = await service.deleteResource(id);
       if (!deleted) return reply.status(404).send({ error: 'Resource not found' });

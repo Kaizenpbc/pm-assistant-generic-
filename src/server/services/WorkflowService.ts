@@ -116,9 +116,10 @@ export class WorkflowService {
     task: Task,
     oldTask: Task | null,
     scheduleService: ScheduleService,
+    userId?: string,
   ): WorkflowExecution[] {
     const results: WorkflowExecution[] = [];
-    const enabledRules = WorkflowService.rules.filter(r => r.enabled);
+    const enabledRules = WorkflowService.rules.filter(r => r.enabled && (!userId || r.createdBy === userId));
 
     for (const rule of enabledRules) {
       if (this.triggerMatches(rule.trigger, task, oldTask)) {

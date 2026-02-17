@@ -89,7 +89,6 @@ export async function registerPlugins(fastify: FastifyInstance) {
         return callback(null, true);
       }
       if (origin === config.CORS_ORIGIN) return callback(null, true);
-      if (config.NODE_ENV === 'development') return callback(null, true);
       callback(new Error('Not allowed by CORS'), false);
     },
     credentials: true,
@@ -224,7 +223,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
       error: statusCode >= 500 ? 'Internal Server Error' : error.name || 'Error',
       message: safeMessage,
       timestamp: new Date().toISOString(),
-      path: request.url
+      path: request.url.split('?')[0]
     });
   });
 

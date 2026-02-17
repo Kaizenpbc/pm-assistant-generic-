@@ -14,7 +14,11 @@ const alertQuerySchema = z.object({
 });
 
 const executeActionSchema = z.object({
-  toolName: z.string().min(1),
+  toolName: z.enum([
+    'create_task', 'update_task', 'delete_task',
+    'update_project', 'reschedule_task', 'cascade_reschedule', 'set_dependency',
+    'list_projects', 'get_project_details', 'list_tasks', 'get_dependency_chain',
+  ]),
   params: z.record(z.string(), z.unknown()),
 });
 

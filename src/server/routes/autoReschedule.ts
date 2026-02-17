@@ -7,7 +7,7 @@ import { authMiddleware } from '../middleware/auth';
 import { verifyScheduleAccess } from '../middleware/authorize';
 
 const rejectBodySchema = z.object({
-  feedback: z.string().optional(),
+  feedback: z.string().max(5000).optional(),
 });
 
 const modifyBodySchema = z.object({

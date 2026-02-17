@@ -3,6 +3,7 @@ import { z, ZodError } from 'zod';
 import { AILearningServiceV2 } from '../services/aiLearningService';
 import { AIFeedbackRecordSchema, AIAccuracyRecordSchema } from '../schemas/phase5Schemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess } from '../middleware/authorize';
 
 export async function learningRoutes(fastify: FastifyInstance) {
   const service = new AILearningServiceV2(fastify);
@@ -23,6 +24,8 @@ export async function learningRoutes(fastify: FastifyInstance) {
   fastify.post('/accuracy', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AIAccuracyRecordSchema.parse(request.body);
+      const project = await verifyProjectAccess(parsed.projectId, request.user.userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
       service.recordAccuracy(parsed);
       return reply.send({ success: true });
     } catch (err) {
@@ -39,7 +42,7 @@ export async function learningRoutes(fastify: FastifyInstance) {
     try {
       const querySchema = z.object({ projectType: z.string().optional() });
       const { projectType } = querySchema.parse(request.query);
-      const report = await service.getAccuracyReport({ projectType });
+      const report = await service.getAccuracyReport({ projectType, userId: request.user.userId });
       return reply.send({ data: report });
     } catch (err) {
       if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
@@ -55,7 +58,7 @@ export async function learningRoutes(fastify: FastifyInstance) {
     try {
       const querySchema = z.object({ feature: z.string().optional() });
       const { feature } = querySchema.parse(request.query);
-      const stats = await service.getFeedbackStats(feature);
+      const stats = await service.getFeedbackStats(feature, request.user.userId);
       return reply.send({ data: stats });
     } catch (err) {
       if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
