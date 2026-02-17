@@ -478,6 +478,7 @@ export interface WorkflowRule {
   enabled: boolean;
   trigger: TriggerConfig;
   action: ActionConfig;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 }

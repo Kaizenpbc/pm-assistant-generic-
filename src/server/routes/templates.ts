@@ -4,6 +4,7 @@ import { TemplateService } from '../services/TemplateService';
 import { createFromTemplateSchema, saveAsTemplateSchema } from '../schemas/templateSchemas';
 import { idParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess } from '../middleware/authorize';
 
 const templateQuerySchema = z.object({
   projectType: z.string().min(1).max(50).optional(),
@@ -181,10 +182,10 @@ export async function templateRoutes(fastify: FastifyInstance) {
         selectedTaskRefIds: data.selectedTaskRefIds,
       });
       return reply.status(201).send(result);
-    } catch (error: any) {
+    } catch (error) {
       if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Apply template error');
-      if (error.message === 'Template not found') {
+      if (error instanceof Error && error.message === 'Template not found') {
         return reply.status(404).send({ error: 'Template not found' });
       }
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to apply template' });
@@ -198,16 +199,18 @@ export async function templateRoutes(fastify: FastifyInstance) {
     try {
       const data = saveAsTemplateSchema.parse(request.body);
       const userId = request.user.userId;
+      const project = await verifyProjectAccess(data.projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
       const template = await templateService.saveFromProject({
         ...data,
         templateName: data.templateName,
         userId,
       });
       return reply.status(201).send({ template });
-    } catch (error: any) {
+    } catch (error) {
       if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Save as template error');
-      if (error.message === 'Project not found') {
+      if (error instanceof Error && error.message === 'Project not found') {
         return reply.status(404).send({ error: 'Project not found' });
       }
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to save as template' });

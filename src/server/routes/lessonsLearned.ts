@@ -108,6 +108,9 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const body = addLessonBodySchema.parse(request.body);
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(body.projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
       const lesson = await service.addLesson({
         projectId: body.projectId,
         projectName: body.projectName,

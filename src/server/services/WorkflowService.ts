@@ -23,6 +23,7 @@ export class WorkflowService {
       enabled: true,
       trigger: { type: 'progress_threshold', progressThreshold: 100, progressDirection: 'above' },
       action: { type: 'update_field', field: 'status', value: 'completed' },
+      createdBy: '1',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -33,6 +34,7 @@ export class WorkflowService {
       enabled: true,
       trigger: { type: 'status_change', toStatus: 'in_progress' },
       action: { type: 'log_activity', message: 'Task work has started' },
+      createdBy: '1',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -43,6 +45,7 @@ export class WorkflowService {
       enabled: false,
       trigger: { type: 'status_change', toStatus: 'cancelled' },
       action: { type: 'send_notification', message: 'A task has been cancelled' },
+      createdBy: '1',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -54,14 +57,26 @@ export class WorkflowService {
     return [...WorkflowService.rules];
   }
 
+  findByUser(userId: string): WorkflowRule[] {
+    return WorkflowService.rules.filter(r => r.createdBy === userId);
+  }
+
   findById(id: string): WorkflowRule | undefined {
     return WorkflowService.rules.find(r => r.id === id);
   }
 
-  create(data: Omit<WorkflowRule, 'id' | 'createdAt' | 'updatedAt'>): WorkflowRule {
+  getExecutionsByUser(userId: string): WorkflowExecution[] {
+    const userRuleIds = new Set(WorkflowService.rules.filter(r => r.createdBy === userId).map(r => r.id));
+    return [...WorkflowService.executions]
+      .filter(e => userRuleIds.has(e.ruleId))
+      .sort((a, b) => new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime());
+  }
+
+  create(data: Omit<WorkflowRule, 'id' | 'createdAt' | 'updatedAt'>, userId?: string): WorkflowRule {
     const rule: WorkflowRule = {
       id: randomUUID(),
       ...data,
+      createdBy: userId ?? '1',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

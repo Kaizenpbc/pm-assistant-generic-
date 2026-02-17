@@ -6,6 +6,7 @@ import { ProactiveAlertService } from '../services/proactiveAlertService';
 import { AIActionExecutor } from '../services/aiActionExecutor';
 import { projectIdParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess } from '../middleware/authorize';
 
 const alertQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(500).default(100),
@@ -31,7 +32,8 @@ export async function alertRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { limit, offset } = alertQuerySchema.parse(request.query);
-        const allAlerts = await alertService.generateAlerts();
+        const userId = request.user.userId;
+        const allAlerts = await alertService.generateAlerts(userId);
         const alerts = allAlerts.slice(offset, offset + limit);
         return { alerts, count: alerts.length, total: allAlerts.length, limit, offset };
       } catch (error) {
@@ -49,9 +51,10 @@ export async function alertRoutes(fastify: FastifyInstance) {
       description: 'Get alert summary with counts by severity and type',
       tags: ['alerts'],
     },
-    handler: async (_request: FastifyRequest, reply: FastifyReply) => {
+    handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const summary = await alertService.getAlertsSummary();
+        const userId = request.user.userId;
+        const summary = await alertService.getAlertsSummary(userId);
         return summary;
       } catch (error) {
         if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
@@ -71,7 +74,9 @@ export async function alertRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { projectId } = projectIdParam.parse(request.params);
-        const alerts = await alertService.getAlertsByProject(projectId);
+        const project = await verifyProjectAccess(projectId, request.user.userId);
+        if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
+        const alerts = await alertService.getAlertsByProject(projectId, request.user.userId);
         return { alerts, count: alerts.length };
       } catch (error) {
         if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });

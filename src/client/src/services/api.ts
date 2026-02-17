@@ -3,6 +3,7 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 class ApiService {
   private api: AxiosInstance;
   private csrfToken: string | null = null;
+  private refreshPromise: Promise<any> | null = null;
   /** Resolves once the initial CSRF token has been fetched (or failed). */
   private csrfReady: Promise<void>;
 
@@ -53,12 +54,16 @@ class ApiService {
         ) {
           originalRequest._retry = true;
 
+          if (!this.refreshPromise) {
+            this.refreshPromise = this.api.post('/auth/refresh', {}).finally(() => {
+              this.refreshPromise = null;
+            });
+          }
+
           try {
-            // Try to refresh the token (empty body ensures Content-Type is sent)
-            await this.api.post('/auth/refresh', {});
+            await this.refreshPromise;
             return this.api(originalRequest);
           } catch (_refreshError) {
-            // Refresh failed, redirect to login
             window.location.href = '/login';
             return Promise.reject(_refreshError);
           }

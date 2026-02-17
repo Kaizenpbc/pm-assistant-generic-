@@ -10,7 +10,10 @@ const fastify = Fastify({
   logger: {
     level: config.NODE_ENV === 'production' ? 'info' : 'debug',
   },
-  trustProxy: true,
+  // In production, only trust a single proxy hop (e.g. load balancer).
+  // In dev/test, trust all proxies for convenience.
+  trustProxy: config.NODE_ENV === 'production' ? 1 : true,
+  bodyLimit: 10 * 1024 * 1024, // 10MB body limit enforced at stream level
 });
 
 // ---------------------------------------------------------------------------

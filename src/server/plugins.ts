@@ -127,22 +127,28 @@ export async function registerPlugins(fastify: FastifyInstance) {
   // CSRF enforcement — validate token on all mutating requests that have a session.
   // Skip for: safe methods (GET/HEAD/OPTIONS), auth routes (login/register — no session yet),
   // health checks, WebSocket upgrades, and requests with no CSRF cookie (pre-auth state).
-  const CSRF_EXEMPT_PATHS = [
+  // Use a Set with exact-match on the pathname (strip query string) to prevent
+  // prefix-based bypass (e.g. /api/v1/auth/login-history would bypass CSRF if using startsWith).
+  const CSRF_EXEMPT_PATHS = new Set([
     '/api/v1/auth/login',
     '/api/v1/auth/register',
     '/api/v1/auth/logout',
     '/api/v1/csrf-token',
-  ];
+  ]);
   fastify.addHook('onRequest', async (request, reply) => {
     const method = request.method.toUpperCase();
     if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return;
-    if (CSRF_EXEMPT_PATHS.some(p => request.url.startsWith(p))) return;
-    if (request.url.startsWith('/health')) return;
+    // Use pathname without query string for exact match
+    const pathname = request.url.split('?')[0];
+    if (CSRF_EXEMPT_PATHS.has(pathname)) return;
+    if (pathname.startsWith('/health')) return;
     if (request.headers.upgrade?.toLowerCase() === 'websocket') return;
-    // Only enforce CSRF when a CSRF cookie is present (i.e., the client fetched a token).
-    // Requests without a session/CSRF cookie are pre-auth and will fail at authMiddleware.
+    // Enforce CSRF when the request has both session (access_token) AND a CSRF cookie (_csrf).
+    // If only access_token is present (client hasn't fetched /csrf-token yet), skip —
+    // the client will get a CSRF token on next GET. This prevents breaking clients that
+    // have an auth cookie but haven't established a CSRF session yet.
     const cookieHeader = request.headers.cookie || '';
-    if (!cookieHeader.includes('_csrf')) return;
+    if (!cookieHeader.includes('access_token') || !cookieHeader.includes('_csrf')) return;
     await (fastify as any).csrfProtection(request, reply);
   });
 
@@ -163,29 +169,32 @@ export async function registerPlugins(fastify: FastifyInstance) {
     }),
   });
 
-  await fastify.register(swagger, {
-    swagger: {
-      info: {
-        title: 'PM Assistant API',
-        description: 'AI-Powered Project Management API',
-        version: '1.0.0',
+  // Only expose Swagger/API docs in non-production environments
+  if (config.NODE_ENV !== 'production') {
+    await fastify.register(swagger, {
+      swagger: {
+        info: {
+          title: 'PM Assistant API',
+          description: 'AI-Powered Project Management API',
+          version: '1.0.0',
+        },
+        host: `${config.HOST}:${config.PORT}`,
+        schemes: ['http', 'https'],
+        consumes: ['application/json'],
+        produces: ['application/json'],
+        securityDefinitions: {
+          cookieAuth: { type: 'apiKey', in: 'cookie', name: 'access_token' },
+        },
       },
-      host: `${config.HOST}:${config.PORT}`,
-      schemes: ['http', 'https'],
-      consumes: ['application/json'],
-      produces: ['application/json'],
-      securityDefinitions: {
-        cookieAuth: { type: 'apiKey', in: 'cookie', name: 'access_token' },
-      },
-    },
-  });
+    });
 
-  await fastify.register(swaggerUi, {
-    routePrefix: '/documentation',
-    uiConfig: { docExpansion: 'list', deepLinking: false },
-    staticCSP: true,
-    transformSpecificationClone: true,
-  });
+    await fastify.register(swaggerUi, {
+      routePrefix: '/documentation',
+      uiConfig: { docExpansion: 'list', deepLinking: false },
+      staticCSP: true,
+      transformSpecificationClone: true,
+    });
+  }
 
   fastify.setErrorHandler(async (err: unknown, request, reply) => {
     const error = err instanceof Error ? err : new Error(String(err));
@@ -214,11 +223,11 @@ export async function registerPlugins(fastify: FastifyInstance) {
     });
   });
 
-  fastify.setNotFoundHandler(async (request, reply) => {
+  fastify.setNotFoundHandler(async (_request, reply) => {
     reply.status(404).send({
       statusCode: 404,
       error: 'Not Found',
-      message: `Route ${request.method}:${request.url} not found`,
+      message: 'The requested resource was not found',
       timestamp: new Date().toISOString()
     });
   });
@@ -291,31 +300,34 @@ export async function registerPlugins(fastify: FastifyInstance) {
     });
   });
 
-  // Basic metrics endpoint (lightweight, no external dependencies)
+  // Metrics endpoint — only expose process internals (pid, nodeVersion, etc.) in dev/test
   fastify.get('/health/metrics', async (_request, reply) => {
     const mem = process.memoryUsage();
     const cpu = process.cpuUsage();
 
-    reply.send({
+    const response: Record<string, unknown> = {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       memory: {
         rssBytes: mem.rss,
         heapUsedBytes: mem.heapUsed,
         heapTotalBytes: mem.heapTotal,
-        externalBytes: mem.external,
-        arrayBuffersBytes: mem.arrayBuffers,
       },
       cpu: {
         userMicroseconds: cpu.user,
         systemMicroseconds: cpu.system,
       },
-      process: {
+    };
+
+    if (config.NODE_ENV !== 'production') {
+      response.process = {
         pid: process.pid,
         nodeVersion: process.version,
         platform: process.platform,
         arch: process.arch,
-      },
-    });
+      };
+    }
+
+    reply.send(response);
   });
 }

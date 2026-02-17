@@ -162,6 +162,7 @@ function buildToolDefinitions(): Anthropic.Tool[] {
 async function executeToolFn(
   toolName: string,
   toolInput: Record<string, any>,
+  userId?: string,
 ): Promise<string> {
   const projectService = new ProjectService();
   const scheduleService = new ScheduleService();
@@ -172,7 +173,7 @@ async function executeToolFn(
   switch (toolName) {
     // ----- list_projects -----
     case 'list_projects': {
-      const projects = await projectService.findAll();
+      const projects = userId ? await projectService.findByUserId(userId) : await projectService.findAll();
       const summary = projects.map((p) => ({
         id: p.id,
         name: p.name,
@@ -191,7 +192,7 @@ async function executeToolFn(
     // ----- get_project_details -----
     case 'get_project_details': {
       const projectId = toolInput.projectId as string;
-      const project = await projectService.findById(projectId);
+      const project = await projectService.findById(projectId, userId);
       if (!project) return JSON.stringify({ error: `Project ${projectId} not found` });
 
       const schedules = await scheduleService.findByProjectId(projectId);
@@ -318,7 +319,7 @@ async function executeToolFn(
 
     // ----- aggregate_portfolio_stats -----
     case 'aggregate_portfolio_stats': {
-      const projects = await projectService.findAll();
+      const projects = userId ? await projectService.findByUserId(userId) : await projectService.findAll();
       const allTasks = await scheduleService.findAllTasks();
 
       const totalBudgetAllocated = projects.reduce((s, p) => s + (p.budgetAllocated ?? 0), 0);
@@ -416,7 +417,7 @@ export class NLQueryService {
       systemPrompt: TOOL_LOOP_SYSTEM_PROMPT,
       userMessage,
       tools,
-      executeToolFn,
+      executeToolFn: (toolName, toolInput) => executeToolFn(toolName, toolInput, userId),
       maxIterations: 6,
       temperature: 0.2,
     });

@@ -209,6 +209,10 @@ export class ResourceService {
 
   // --- Assignment CRUD ---
 
+  async findAssignmentById(id: string): Promise<ResourceAssignment | null> {
+    return ResourceService.assignments.find(a => a.id === id) || null;
+  }
+
   async findAssignmentsBySchedule(scheduleId: string): Promise<ResourceAssignment[]> {
     return this.assignments.filter((a) => a.scheduleId === scheduleId);
   }

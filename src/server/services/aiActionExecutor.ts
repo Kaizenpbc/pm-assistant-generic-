@@ -325,8 +325,8 @@ export class AIActionExecutor {
     };
   }
 
-  private async listProjects(_context: ActionContext): Promise<ActionResult> {
-    const projects = await this.projectService.findAll();
+  private async listProjects(context: ActionContext): Promise<ActionResult> {
+    const projects = await this.projectService.findByUserId(context.userId);
     const projectList = projects.map(p => ({
       id: p.id,
       name: p.name,
@@ -345,11 +345,11 @@ export class AIActionExecutor {
     };
   }
 
-  private async getProjectDetails(input: Record<string, any>, _context: ActionContext): Promise<ActionResult> {
+  private async getProjectDetails(input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
     const { projectId } = input;
-    const project = await this.projectService.findById(projectId);
+    const project = await this.projectService.findById(projectId, context.userId);
     if (!project) {
-      return { success: false, toolName: 'get_project_details', summary: `Project '${projectId}' not found`, error: 'Project not found' };
+      return { success: false, toolName: 'get_project_details', summary: `Project '${projectId}' not found or access denied`, error: 'Project not found or access denied' };
     }
 
     const schedules = await this.scheduleService.findByProjectId(projectId);

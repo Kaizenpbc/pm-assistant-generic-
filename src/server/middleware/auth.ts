@@ -21,7 +21,7 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
       });
     }
 
-    const decoded = jwt.verify(token, config.JWT_SECRET);
+    const decoded = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] });
     const payload = jwtPayloadSchema.parse(decoded);
 
     request.user = {

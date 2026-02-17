@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { UserService } from './UserService';
 
 export type ProjectRole = 'owner' | 'manager' | 'editor' | 'viewer';
 
@@ -20,6 +21,8 @@ const ROLE_HIERARCHY: Record<ProjectRole, number> = {
 };
 
 export class ProjectMemberService {
+  private userService = new UserService();
+
   private static members: ProjectMember[] = [
     // User '1' is owner of all 3 projects
     { id: 'pm-1', projectId: '1', userId: '1', userName: 'Admin User', email: 'admin@example.com', role: 'owner', addedAt: new Date().toISOString() },
@@ -46,15 +49,17 @@ export class ProjectMemberService {
     return ProjectMemberService.members.find(m => m.projectId === projectId && m.userId === userId);
   }
 
-  hasAccess(projectId: string, userId: string): boolean {
+  async hasAccess(projectId: string, userId: string): Promise<boolean> {
     // Admin bypass
-    if (userId === '1') return true;
+    const user = await this.userService.findById(userId);
+    if (user?.role === 'admin') return true;
     return !!this.findMembership(projectId, userId);
   }
 
-  hasRole(projectId: string, userId: string, minRole: ProjectRole): boolean {
+  async hasRole(projectId: string, userId: string, minRole: ProjectRole): Promise<boolean> {
     // Admin bypass
-    if (userId === '1') return true;
+    const user = await this.userService.findById(userId);
+    if (user?.role === 'admin') return true;
     const membership = this.findMembership(projectId, userId);
     if (!membership) return false;
     return ROLE_HIERARCHY[membership.role] >= ROLE_HIERARCHY[minRole];

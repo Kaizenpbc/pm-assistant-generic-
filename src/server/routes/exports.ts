@@ -127,8 +127,12 @@ export async function exportRoutes(fastify: FastifyInstance) {
 
       // Escape CSV fields
       function escapeCSV(field: string): string {
+        // Guard against CSV formula injection
+        if (/^[=+\-@\t\r]/.test(field)) {
+          field = "'" + field;
+        }
         if (field.includes(',') || field.includes('"') || field.includes('\n')) {
-          return `"${field.replace(/"/g, '""')}"`;
+          return '"' + field.replace(/"/g, '""') + '"';
         }
         return field;
       }

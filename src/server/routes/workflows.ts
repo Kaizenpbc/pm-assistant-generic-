@@ -34,9 +34,10 @@ export async function workflowRoutes(fastify: FastifyInstance) {
   fastify.get('/', {
     preHandler: [authMiddleware],
     schema: { description: 'Get all workflow rules', tags: ['workflows'] },
-  }, async (_request: FastifyRequest, reply: FastifyReply) => {
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const rules = workflowService.findAll();
+      const userId = request.user.userId;
+      const rules = workflowService.findByUser(userId);
       return { rules };
     } catch (error) {
       if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
@@ -49,9 +50,10 @@ export async function workflowRoutes(fastify: FastifyInstance) {
   fastify.get('/executions', {
     preHandler: [authMiddleware],
     schema: { description: 'Get workflow execution history', tags: ['workflows'] },
-  }, async (_request: FastifyRequest, reply: FastifyReply) => {
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const executions = workflowService.getExecutions();
+      const userId = request.user.userId;
+      const executions = workflowService.getExecutionsByUser(userId);
       return { executions };
     } catch (error) {
       if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
@@ -67,7 +69,8 @@ export async function workflowRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createRuleSchema.parse(request.body);
-      const rule = workflowService.create(data);
+      const userId = request.user.userId;
+      const rule = workflowService.create(data, userId);
       return reply.status(201).send({ rule });
     } catch (error) {
       if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
@@ -83,6 +86,10 @@ export async function workflowRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = idParam.parse(request.params);
+      const userId = request.user.userId;
+      const existing = workflowService.findById(id);
+      if (!existing) return reply.status(404).send({ error: 'Workflow rule not found' });
+      if (existing.createdBy !== userId) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const data = createRuleSchema.partial().parse(request.body);
       const rule = workflowService.update(id, data);
       if (!rule) return reply.status(404).send({ error: 'Workflow rule not found' });
@@ -101,6 +108,10 @@ export async function workflowRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = idParam.parse(request.params);
+      const userId = request.user.userId;
+      const existing = workflowService.findById(id);
+      if (!existing) return reply.status(404).send({ error: 'Workflow rule not found' });
+      if (existing.createdBy !== userId) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const deleted = workflowService.delete(id);
       if (!deleted) return reply.status(404).send({ error: 'Workflow rule not found' });
       return { message: 'Workflow rule deleted' };

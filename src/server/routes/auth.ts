@@ -98,6 +98,11 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(409).send({ error: 'User already exists', message: 'Username is already taken' });
       }
 
+      const existingEmail = await userService.findByEmail(email);
+      if (existingEmail) {
+        return reply.status(409).send({ error: 'Email already in use', message: 'An account with this email already exists' });
+      }
+
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await userService.create({ username, email, passwordHash, fullName, role: 'member' });
 
@@ -115,8 +120,8 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/logout', {
     schema: { description: 'User logout', tags: ['auth'] },
   }, async (_request: FastifyRequest, reply: FastifyReply) => {
-    reply.clearCookie('access_token');
-    reply.clearCookie('refresh_token');
+    reply.clearCookie('access_token', { path: '/' });
+    reply.clearCookie('refresh_token', { path: '/' });
     return { message: 'Logout successful' };
   });
 
@@ -129,7 +134,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'No refresh token', message: 'Refresh token is required' });
       }
 
-      const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET);
+      const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
       const payload = refreshPayloadSchema.parse(decoded);
 
       const user = await userService.findById(payload.userId);

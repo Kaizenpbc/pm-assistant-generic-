@@ -121,6 +121,10 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   fastify.delete('/assignments/:id', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = idParam.parse(request.params);
+      const assignment = await service.findAssignmentById(id);
+      if (!assignment) return reply.status(404).send({ error: 'Assignment not found' });
+      const schedule = await verifyScheduleAccess(assignment.scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const deleted = await service.deleteAssignment(id);
       if (!deleted) return reply.status(404).send({ error: 'Assignment not found' });
       return { message: 'Assignment deleted' };

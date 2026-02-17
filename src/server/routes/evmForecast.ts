@@ -23,9 +23,9 @@ export async function evmForecastRoutes(fastify: FastifyInstance) {
         result,
         aiPowered: !!result.aiPredictions,
       });
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
-      if (err.message?.includes('Project not found')) {
+      if (err instanceof Error && err.message.includes('Project not found')) {
         return reply.status(404).send({ error: 'Project not found' });
       }
       fastify.log.error({ err }, 'EVM forecast generation failed');
