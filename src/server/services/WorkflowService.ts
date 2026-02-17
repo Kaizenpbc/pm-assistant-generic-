@@ -126,6 +126,11 @@ export class WorkflowService {
         const result = this.executeAction(rule, task, scheduleService);
         if (result) {
           WorkflowService.executions.push(result);
+          // Cap executions to prevent unbounded memory growth
+          const MAX_EXECUTIONS = 10000;
+          if (WorkflowService.executions.length > MAX_EXECUTIONS) {
+            WorkflowService.executions.splice(0, WorkflowService.executions.length - MAX_EXECUTIONS);
+          }
           results.push(result);
         }
       }

@@ -127,6 +127,11 @@ Analyze this meeting transcript and extract all actionable information.`;
     };
 
     MeetingIntelligenceService.analyses.push(analysis);
+    // Cap analyses to prevent unbounded memory growth
+    const MAX_ANALYSES = 10000;
+    if (MeetingIntelligenceService.analyses.length > MAX_ANALYSES) {
+      MeetingIntelligenceService.analyses.splice(0, MeetingIntelligenceService.analyses.length - MAX_ANALYSES);
+    }
     return analysis;
   }
 

@@ -6,8 +6,8 @@ import { authMiddleware } from '../middleware/auth';
 
 const triggerSchema = z.object({
   type: z.enum(['status_change', 'date_passed', 'progress_threshold']),
-  fromStatus: z.string().optional(),
-  toStatus: z.string().optional(),
+  fromStatus: z.string().max(100).optional(),
+  toStatus: z.string().max(100).optional(),
   progressThreshold: z.number().min(0).max(100).optional(),
   progressDirection: z.enum(['above', 'below']).optional(),
 });
@@ -15,13 +15,13 @@ const triggerSchema = z.object({
 const actionSchema = z.object({
   type: z.enum(['update_field', 'log_activity', 'send_notification']),
   field: z.enum(['status', 'priority', 'assignedTo', 'name', 'description', 'progressPercentage']).optional(),
-  value: z.string().optional(),
-  message: z.string().optional(),
+  value: z.string().max(500).optional(),
+  message: z.string().max(1000).optional(),
 });
 
 const createRuleSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
+  name: z.string().min(1).max(255),
+  description: z.string().max(2000).optional(),
   enabled: z.boolean().default(true),
   trigger: triggerSchema,
   action: actionSchema,

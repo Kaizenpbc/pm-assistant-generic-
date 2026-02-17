@@ -10,9 +10,9 @@ import { authMiddleware } from '../middleware/auth';
 import { verifyProjectAccess, verifyScheduleAccess } from '../middleware/authorize';
 
 const createScheduleSchema = z.object({
-  projectId: z.string(),
-  name: z.string().min(1),
-  description: z.string().optional(),
+  projectId: z.string().min(1).max(100),
+  name: z.string().min(1).max(255),
+  description: z.string().max(5000).optional(),
   startDate: z.string().date(),
   endDate: z.string().date(),
 });

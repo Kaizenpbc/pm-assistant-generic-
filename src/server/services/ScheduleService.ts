@@ -597,6 +597,10 @@ export class ScheduleService {
       createdAt: new Date().toISOString(),
     };
     ScheduleService.comments.push(comment);
+    // Cap comments to prevent unbounded memory growth
+    if (ScheduleService.comments.length > 10000) {
+      ScheduleService.comments.splice(0, ScheduleService.comments.length - 10000);
+    }
     return comment;
   }
 
@@ -640,6 +644,10 @@ export class ScheduleService {
       createdAt: new Date().toISOString(),
     };
     ScheduleService.activities.push(entry);
+    // Cap activities to prevent unbounded memory growth
+    if (ScheduleService.activities.length > 10000) {
+      ScheduleService.activities.splice(0, ScheduleService.activities.length - 10000);
+    }
     return entry;
   }
 

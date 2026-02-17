@@ -13,7 +13,15 @@ export interface AuditEvent {
 }
 
 export class AuditService {
+  private static readonly MAX_EVENTS = 10000;
   private events: AuditEvent[] = [];
+
+  /** Cap events to prevent unbounded memory growth */
+  private capEvents(): void {
+    if (this.events.length > AuditService.MAX_EVENTS) {
+      this.events.splice(0, this.events.length - AuditService.MAX_EVENTS);
+    }
+  }
 
   public logUserAction(
     request: FastifyRequest,
@@ -34,6 +42,7 @@ export class AuditService {
     };
 
     this.events.push(event);
+    this.capEvents();
     request.log.info({ audit: event }, 'User action logged');
   }
 
@@ -53,6 +62,7 @@ export class AuditService {
     };
 
     this.events.push(event);
+    this.capEvents();
     request.log.info({ audit: event }, 'System event logged');
   }
 

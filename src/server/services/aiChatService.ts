@@ -294,14 +294,14 @@ export class AIChatService {
     let projectContext = 'No specific project context.';
     if (req.context?.projectId) {
       try {
-        const ctx = await this.contextBuilder.buildProjectContext(req.context.projectId);
+        const ctx = await this.contextBuilder.buildProjectContext(req.context.projectId, req.userId);
         projectContext = this.contextBuilder.toPromptString(ctx);
       } catch {
         projectContext = `Project ID: ${req.context.projectId} (context unavailable)`;
       }
     } else if (req.context?.type === 'dashboard' || req.context?.type === 'reports') {
       try {
-        const ctx = await this.contextBuilder.buildPortfolioContext();
+        const ctx = await this.contextBuilder.buildPortfolioContext(req.userId);
         projectContext = this.contextBuilder.portfolioToPromptString(ctx);
       } catch {
         projectContext = 'Portfolio context unavailable.';
