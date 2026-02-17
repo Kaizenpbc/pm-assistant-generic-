@@ -81,7 +81,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createTemplateSchema.parse(request.body);
-      const userId = (request as any).user.userId;
+      const userId = request.user.userId;
       const template = await templateService.create({
         ...data,
         isBuiltIn: false,
@@ -135,7 +135,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createFromTemplateSchema.parse(request.body);
-      const userId = (request as any).user.userId;
+      const userId = request.user.userId;
       const result = await templateService.applyTemplate({
         ...data,
         userId,
@@ -157,7 +157,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = saveAsTemplateSchema.parse(request.body);
-      const userId = (request as any).user.userId;
+      const userId = request.user.userId;
       const template = await templateService.saveFromProject({
         ...data,
         templateName: data.templateName,

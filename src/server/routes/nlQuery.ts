@@ -39,7 +39,7 @@ export async function nlQueryRoutes(fastify: FastifyInstance) {
           return reply.code(400).send({ error: `Validation failed: ${issues}` });
         }
 
-        const user = (request as any).user;
+        const user = request.user;
         const userId = user.userId;
 
         const result = await nlQueryService.processQuery(

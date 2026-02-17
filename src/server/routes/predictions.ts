@@ -9,7 +9,7 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   // GET /dashboard — Portfolio predictions
   fastify.get('/dashboard', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
       const { predictions, aiPowered } = await service.getDashboardPredictions(userId);
       return reply.send({ data: predictions, aiPowered });
     } catch (err) {
@@ -25,7 +25,7 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
       const { assessment, aiPowered } = await service.assessProjectRisks(projectId, userId);
       return reply.send({ data: assessment, aiPowered });
     } catch (err) {
@@ -41,7 +41,7 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
       const { impact, aiPowered } = await service.analyzeWeatherImpact(projectId, userId);
       return reply.send({ data: impact, aiPowered });
     } catch (err) {
@@ -57,7 +57,7 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
       const { forecast, aiPowered } = await service.forecastBudget(projectId, userId);
       return reply.send({ data: forecast, aiPowered });
     } catch (err) {
@@ -73,7 +73,7 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
       const result = await service.getProjectHealthScore(projectId, userId);
       return reply.send({ data: result });
     } catch (err) {

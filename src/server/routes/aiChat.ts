@@ -30,7 +30,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const body = request.body as any;
-        const user = (request as any).user;
+        const user = request.user;
 
         const result = await chatService.sendMessage({
           message: body.message,
@@ -76,7 +76,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const body = request.body as any;
-        const user = (request as any).user;
+        const user = request.user;
 
         reply.raw.writeHead(200, {
           'Content-Type': 'text/event-stream',
@@ -121,7 +121,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     schema: { description: 'List user conversations', tags: ['ai-chat'] },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const user = (request as any).user;
+        const user = request.user;
         const conversations = await chatService.getConversations(user.userId);
         return { conversations };
       } catch (error) {
@@ -138,7 +138,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { id } = request.params as any;
-        const user = (request as any).user;
+        const user = request.user;
         const conversation = await chatService.getConversation(id, user.userId);
         if (!conversation) return reply.code(404).send({ error: 'Conversation not found' });
         return { conversation };
@@ -156,7 +156,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { id } = request.params as any;
-        const user = (request as any).user;
+        const user = request.user;
         const deleted = await chatService.deleteConversation(id, user.userId);
         if (!deleted) return reply.code(404).send({ error: 'Conversation not found' });
         return { message: 'Conversation deleted' };
@@ -184,7 +184,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const body = request.body as any;
-        const user = (request as any).user;
+        const user = request.user;
 
         const { AIProjectCreatorService } = await import('../services/aiProjectCreator');
         const creator = new AIProjectCreatorService(fastify);
@@ -229,7 +229,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const body = request.body as any;
-        const user = (request as any).user;
+        const user = request.user;
 
         const { claudeService, promptTemplates } = await import('../services/claudeService');
         const { AIMeetingExtractionSchema } = await import('../schemas/aiSchemas');

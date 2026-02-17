@@ -12,8 +12,8 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get portfolio overview with all projects and tasks', tags: ['portfolio'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
-      const userId = (request as any).user.userId;
+      const user = request.user;
+      const userId = request.user.userId;
       const projects = await projectService.findByUserId(userId);
 
       const portfolioItems = await Promise.all(

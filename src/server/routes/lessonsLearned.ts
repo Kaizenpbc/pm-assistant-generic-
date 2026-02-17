@@ -23,7 +23,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
       const lessons = await service.extractLessons(projectId, userId);
       return reply.send({ lessons });
     } catch (err) {
@@ -50,7 +50,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   // POST /patterns — Detect cross-project patterns
   fastify.post('/patterns', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
       const patterns = await service.detectPatterns(userId);
       return reply.send({ patterns });
     } catch (err) {
@@ -69,7 +69,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
       if (!riskDescription || !projectType) {
         return reply.status(400).send({ error: 'riskDescription and projectType are required' });
       }
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
       const suggestions = await service.suggestMitigations(riskDescription, projectType, userId);
       return reply.send({ suggestions });
     } catch (err) {

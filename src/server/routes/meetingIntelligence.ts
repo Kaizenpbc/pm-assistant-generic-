@@ -16,7 +16,7 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   fastify.post('/analyze', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AnalyzeRequestSchema.parse(request.body);
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
 
       const analysis = await service.analyzeTranscript(
         parsed.transcript,
@@ -46,7 +46,7 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
     try {
       const { analysisId } = request.params as { analysisId: string };
       const parsed = ApplyRequestSchema.parse(request.body);
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
 
       const result = await service.applyChanges(
         analysisId,

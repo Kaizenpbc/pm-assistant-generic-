@@ -26,7 +26,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
     try {
       const { projectId } = request.params as { projectId: string };
       const query = forecastQuerySchema.parse(request.query);
-      const user = (request as any).user;
+      const user = request.user;
       const userId = user?.userId;
 
       const forecast = await optimizerService.predictBottlenecks(

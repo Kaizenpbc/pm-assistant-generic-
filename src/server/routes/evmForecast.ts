@@ -12,7 +12,7 @@ export async function evmForecastRoutes(fastify: FastifyInstance) {
   ) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
       const result = await service.generateForecast(projectId, userId);
       return reply.send({
         result,

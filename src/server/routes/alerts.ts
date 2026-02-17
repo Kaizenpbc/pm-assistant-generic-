@@ -71,7 +71,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { toolName, params } = request.body as any;
-        const user = (request as any).user;
+        const user = request.user;
 
         const result = await actionExecutor.execute(toolName, params, {
           userId: user.userId,

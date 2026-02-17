@@ -9,7 +9,7 @@ export async function learningRoutes(fastify: FastifyInstance) {
   fastify.post('/feedback', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AIFeedbackRecordSchema.parse(request.body);
-      const userId = (request as any).user.userId;
+      const userId = request.user.userId;
       service.recordFeedback(parsed, userId);
       return reply.send({ success: true });
     } catch (err) {
@@ -59,7 +59,7 @@ export async function learningRoutes(fastify: FastifyInstance) {
 
   fastify.get('/insights', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId || undefined;
       const { insights, aiPowered } = await service.getAIAccuracyInsights(userId);
       return reply.send({ data: insights, aiPowered });
     } catch (err) {

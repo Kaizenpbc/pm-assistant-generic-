@@ -40,8 +40,8 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
-      const user = (request as any).user;
-      const userId = (request as any).user.userId;
+      const user = request.user;
+      const userId = request.user.userId;
       const proposal = await service.generateProposal(scheduleId, userId);
       return { proposal };
     } catch (error) {

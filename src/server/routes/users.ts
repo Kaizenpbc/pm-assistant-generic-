@@ -7,7 +7,7 @@ export async function userRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get current user profile', tags: ['users'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user;
       return {
         user: {
           id: user.userId,

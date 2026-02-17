@@ -15,7 +15,7 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
 
     const decoded = jwt.verify(token, config.JWT_SECRET) as any;
 
-    (request as any).user = {
+    request.user = {
       userId: decoded.userId,
       username: decoded.username,
       role: decoded.role,

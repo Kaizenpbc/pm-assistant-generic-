@@ -59,13 +59,13 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user;
       const data = createScheduleSchema.parse(request.body);
       const schedule = await scheduleService.create({
         ...data,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
-        createdBy: (request as any).user.userId,
+        createdBy: request.user.userId,
       });
       return reply.status(201).send({ schedule });
     } catch (error) {
@@ -128,7 +128,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user;
       const { scheduleId } = request.params as { scheduleId: string };
       const data = createTaskSchema.omit({ scheduleId: true }).parse(request.body);
       const task = await scheduleService.createTask({
@@ -137,7 +137,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate ? new Date(data.endDate) : undefined,
-        createdBy: (request as any).user.userId,
+        createdBy: request.user.userId,
       });
       WebSocketService.broadcast({ type: 'task_created', payload: { task } });
       return reply.status(201).send({ task });
@@ -283,13 +283,13 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a baseline snapshot', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user;
       const { scheduleId } = request.params as { scheduleId: string };
       const { name } = (request.body as { name?: string }) || {};
       const baseline = await baselineService.create(
         scheduleId,
         name || `Baseline ${new Date().toLocaleDateString()}`,
-        (request as any).user.userId,
+        request.user.userId,
       );
       return reply.status(201).send({ baseline });
     } catch (error) {
@@ -321,13 +321,13 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Add a comment to a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user;
       const { taskId } = request.params as { taskId: string };
       const { text } = (request.body as { text: string });
       if (!text || !text.trim()) {
         return reply.status(400).send({ error: 'Comment text is required' });
       }
-      const comment = scheduleService.addComment(taskId, text.trim(), (request as any).user.userId, (request as any).user.username || 'Project Manager');
+      const comment = scheduleService.addComment(taskId, text.trim(), request.user.userId, request.user.username || 'Project Manager');
       return reply.status(201).send({ comment });
     } catch (error) {
       request.log.error({ err: error }, 'Add comment error');

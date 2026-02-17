@@ -33,7 +33,7 @@ export async function aiReportRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const body = request.body as any;
-        const user = (request as any).user;
+        const user = request.user;
 
         if (!VALID_REPORT_TYPES.includes(body.reportType)) {
           return reply.code(400).send({
@@ -70,7 +70,7 @@ export async function aiReportRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const user = (request as any).user;
+        const user = request.user;
         const reports = await reportService.getReportHistory(user.userId);
         return { reports };
       } catch (error) {
