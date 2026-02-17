@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { randomUUID } from 'crypto';
 import { config } from '../config';
 
 export async function securityMiddleware(
@@ -57,7 +58,7 @@ export async function securityValidationMiddleware(
     }
   }
 
-  const requestId = `req-${Math.random().toString(36).substr(2, 9)}`;
+  const requestId = request.headers['x-request-id'] as string || `req-${randomUUID()}`;
   request.headers['x-request-id'] = requestId;
   reply.header('X-Request-ID', requestId);
 }
