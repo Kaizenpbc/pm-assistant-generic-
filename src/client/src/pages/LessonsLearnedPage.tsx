@@ -301,12 +301,12 @@ export const LessonsLearnedPage: React.FC = () => {
 
   const { data: lessonsData, isLoading: lessonsLoading } = useQuery({
     queryKey: ['lessons'],
-    queryFn: () => (apiService as any).getLessons(),
+    queryFn: () => apiService.getLessonsKnowledgeBase(),
   });
 
   const { data: patternsData } = useQuery({
     queryKey: ['patterns'],
-    queryFn: () => (apiService as any).getPatterns(),
+    queryFn: () => apiService.detectPatterns(),
   });
 
   const projects: Project[] = projectsData?.projects || [];
@@ -340,7 +340,7 @@ export const LessonsLearnedPage: React.FC = () => {
   // ---- Mutations ----
 
   const addLessonMutation = useMutation({
-    mutationFn: (data: any) => (apiService as any).addLesson(data),
+    mutationFn: (data: any) => apiService.addLesson(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessons'] });
       setShowAddModal(false);
@@ -348,7 +348,7 @@ export const LessonsLearnedPage: React.FC = () => {
   });
 
   const extractLessonsMutation = useMutation({
-    mutationFn: (projectId: string) => (apiService as any).extractLessons(projectId),
+    mutationFn: (projectId: string) => apiService.extractLessons(projectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessons'] });
       queryClient.invalidateQueries({ queryKey: ['patterns'] });
@@ -356,14 +356,14 @@ export const LessonsLearnedPage: React.FC = () => {
   });
 
   const detectPatternsMutation = useMutation({
-    mutationFn: () => (apiService as any).detectPatterns(),
+    mutationFn: () => apiService.detectPatterns(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patterns'] });
     },
   });
 
   const seedMutation = useMutation({
-    mutationFn: () => (apiService as any).seedLessons(),
+    mutationFn: () => apiService.seedLessons(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessons'] });
       queryClient.invalidateQueries({ queryKey: ['patterns'] });

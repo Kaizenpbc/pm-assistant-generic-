@@ -203,7 +203,7 @@ export const QueryPage: React.FC = () => {
   const [result, setResult] = useState<QueryResult | null>(null);
 
   const queryMutation = useMutation({
-    mutationFn: (q: string) => (apiService as any).submitNLQuery({ query: q, context: {} }),
+    mutationFn: (q: string) => apiService.submitNLQuery({ query: q, context: {} }),
     onSuccess: (data: any) => {
       setResult(data?.result || data);
     },
