@@ -378,10 +378,11 @@ Key design decisions:
 ```
 components/
   layout/         AppLayout, Sidebar, TopBar
-  ai/             AIChatPanel, AIChatContext, QuickActions, TaskPrioritizationPanel
-  schedule/       GanttChart, CalendarView, KanbanBoard, TableView,
-                  TaskFormModal, TaskActivityPanel, AutoReschedulePanel, DelayIndicator
-  dashboard/      AISummaryBanner, PredictionCards
+  ai/             AIChatPanel (expandable action results + context attribution),
+                  AIChatContext, QuickActions, TaskPrioritizationPanel (factor breakdown)
+  schedule/       GanttChart, CalendarView, KanbanBoard, TableView, TaskFormModal,
+                  TaskActivityPanel, AutoReschedulePanel (progress bars + CP flags), DelayIndicator
+  dashboard/      AISummaryBanner, PredictionCards (expandable score breakdown + trends)
   evm/            EVMForecastDashboard, EVMTrendChart, ForecastComparisonChart, SCurveChart
   resources/      CapacityChart, WorkloadHeatmap, ResourceForecastPanel, RebalanceSuggestions
   montecarlo/     MonteCarloHistogram, TornadoDiagram, CriticalityIndex
@@ -390,7 +391,7 @@ components/
   meeting/        MeetingResultPanel
   templates/      TemplatePicker, TemplatePreview, TemplateCustomizeForm,
                   TemplateCard, SaveAsTemplateModal
-  notifications/  NotificationBell, AlertActionButton
+  notifications/  NotificationBell (metrics + suggested action buttons), AlertActionButton
 ```
 
 ### State Management
@@ -400,8 +401,8 @@ Three Zustand stores:
 | Store | Purpose | Persistence |
 |-------|---------|------------|
 | `authStore` | User session, isAuthenticated, login/logout | localStorage |
-| `aiChatStore` | Chat messages, streaming state, conversation ID | In-memory |
-| `uiStore` | Sidebar toggle, modal states, theme | In-memory |
+| `aiChatStore` | Chat messages, streaming state, conversation ID, action results with context | In-memory |
+| `uiStore` | Sidebar toggle, modal states, notifications with suggested actions | In-memory |
 
 TanStack React Query handles all server-state caching with automatic invalidation via WebSocket events.
 
@@ -506,6 +507,63 @@ Error response format:
 ```
 
 Query parameters stripped from error paths to prevent sensitive data leakage.
+
+---
+
+## AI Transparency Layer
+
+A core UX principle: every AI-generated insight exposes its full reasoning, not just a summary. This pattern is implemented across all AI-facing components:
+
+### Component Transparency Features
+
+| Component | What It Shows | Expandable Detail |
+|-----------|--------------|-------------------|
+| `AIChatPanel` | Action success/failure badges | Tool name, parameters, full result data, error details |
+| `PredictionCards` | Overall health score (0–100) | Per-dimension breakdown (schedule, budget, risk, weather), trend arrow, recommendation |
+| `NotificationBell` | Alert title + severity badge | Embedded metrics, task context, one-click suggested action buttons |
+| `TaskPrioritizationPanel` | Rank + score bar | Priority factors with impact level, AI explanation |
+| `AutoReschedulePanel` | Delay list + proposals | Actual vs expected progress bars, critical path badges, impact explanation |
+
+### Data Flow
+
+```
+Backend Service                       Frontend Component
+─────────────────────────────────────────────────────────
+predictiveIntelligence                PredictionCards
+  → breakdown: { schedule, budget,     → ScoreBar per dimension
+     risk, weather }                   → TrendIcon (improving/stable/declining)
+  → trend, recommendation             → DashboardSummaryBanner
+
+aiChatService                         AIChatPanel
+  → ActionResult[] {                   → ActionResultCard (expandable)
+     toolName, success, summary,       → Context attribution footer
+     data, error }
+  → context { type, projectId }
+
+proactiveAlertService                 NotificationBell
+  → suggestedAction {                  → AlertActionButton (executes tool)
+     toolName, params, label }         → Severity badge + task context
+  → description (metrics embedded)
+
+TaskPrioritizationService             TaskPrioritizationPanel
+  → factors[] { factor, impact,        → Impact-colored dot per factor
+     description }                     → Score bar with color thresholds
+  → explanation                        → AI explanation panel
+
+AutoRescheduleService                 AutoReschedulePanel
+  → delay { currentProgress,           → Dual-layer progress bar
+     expectedProgress, isCriticalPath }→ Critical path badge
+  → estimatedImpact {                  → Impact explanation panel
+     criticalPathImpact }
+```
+
+### Design Principles
+
+1. **Summary first** — every card shows a one-line summary visible without interaction
+2. **Click to expand** — detailed reasoning available on demand, never forced
+3. **Color semantics** — red/orange/yellow/green consistently map to critical/high/medium/low across all components
+4. **Actionable insights** — where the AI suggests an action, a button executes it in one click
+5. **Context attribution** — AI responses indicate what data scope informed the answer
 
 ---
 
