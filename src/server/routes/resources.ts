@@ -49,8 +49,8 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   fastify.post('/', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const role = request.user.role;
-      if (role !== 'admin' && role !== 'manager') {
-        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or manager can create resources' });
+      if (role !== 'admin' && role !== 'project_manager') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or project manager can create resources' });
       }
       const data = createResourceSchema.parse(request.body);
       const resource = await service.createResource(data);
@@ -66,8 +66,8 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   fastify.put('/:id', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const role = request.user.role;
-      if (role !== 'admin' && role !== 'manager') {
-        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or manager can update resources' });
+      if (role !== 'admin' && role !== 'project_manager') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or project manager can update resources' });
       }
       const { id } = idParam.parse(request.params);
       const data = createResourceSchema.partial().parse(request.body);
@@ -85,8 +85,8 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   fastify.delete('/:id', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const role = request.user.role;
-      if (role !== 'admin' && role !== 'manager') {
-        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or manager can delete resources' });
+      if (role !== 'admin' && role !== 'project_manager') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or project manager can delete resources' });
       }
       const { id } = idParam.parse(request.params);
       const deleted = await service.deleteResource(id);

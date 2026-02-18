@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   email       VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   full_name   VARCHAR(255) NOT NULL DEFAULT '',
-  role        ENUM('admin','executive','manager','member') NOT NULL DEFAULT 'member',
+  role        ENUM('admin','executive','project_manager','member') NOT NULL DEFAULT 'project_manager',
   is_active   BOOLEAN NOT NULL DEFAULT TRUE,
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

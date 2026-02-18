@@ -11,7 +11,7 @@ export function DashboardRouter() {
     case 'admin':
     case 'executive':
       return <ExecutiveDashboard />;
-    case 'manager':
+    case 'project_manager':
     case 'member':
     default:
       return <PMDashboard />;

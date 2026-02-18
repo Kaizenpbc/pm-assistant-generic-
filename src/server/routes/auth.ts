@@ -124,7 +124,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
-      const user = await userService.create({ username: normalizedUsername, email: normalizedEmail, passwordHash, fullName, role: 'member' });
+      const user = await userService.create({ username: normalizedUsername, email: normalizedEmail, passwordHash, fullName, role: 'project_manager' });
 
       return reply.status(201).send({
         message: 'User created successfully',
@@ -134,6 +134,36 @@ export async function authRoutes(fastify: FastifyInstance) {
       if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       request.log.error({ err: error }, 'Registration error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Registration failed' });
+    }
+  });
+
+  fastify.post('/forgot-password', {
+    schema: { description: 'Request password reset', tags: ['auth'] },
+    config: {
+      rateLimit: {
+        max: 3,
+        timeWindow: '5 minutes',
+      },
+    },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(request.body);
+
+      const user = await userService.findByEmail(email.toLowerCase());
+      if (user) {
+        // TODO: Integrate email provider to send actual reset link
+        // For now, log the request for manual handling
+        request.log.info({ userId: user.id, email: user.email }, 'Password reset requested');
+      }
+
+      // Always return success to prevent email enumeration
+      return {
+        message: 'If an account exists with this email, a password reset link has been sent.',
+      };
+    } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: 'Please provide a valid email address' });
+      request.log.error({ err: error }, 'Forgot password error');
+      return reply.status(500).send({ error: 'Internal server error', message: 'Request failed' });
     }
   });
 

@@ -6,7 +6,7 @@ export interface User {
   email: string;
   passwordHash: string;
   fullName: string;
-  role: 'admin' | 'executive' | 'manager' | 'member';
+  role: 'admin' | 'executive' | 'project_manager' | 'member';
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -17,7 +17,7 @@ export interface CreateUserData {
   email: string;
   passwordHash: string;
   fullName: string;
-  role?: 'admin' | 'executive' | 'manager' | 'member';
+  role?: 'admin' | 'executive' | 'project_manager' | 'member';
 }
 
 /**
@@ -81,7 +81,7 @@ export class UserService {
       email: data.email,
       passwordHash: data.passwordHash,
       fullName: data.fullName,
-      role: data.role || 'member',
+      role: data.role || 'project_manager',
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),

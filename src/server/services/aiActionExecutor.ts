@@ -104,7 +104,7 @@ const MUTATING_TOOLS = new Set([
 ]);
 
 // Roles allowed to perform mutations via AI chat
-const WRITE_ROLES = new Set(['admin', 'manager']);
+const WRITE_ROLES = new Set(['admin', 'project_manager']);
 
 export class AIActionExecutor {
   private projectService = new ProjectService();
