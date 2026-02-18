@@ -137,6 +137,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     '/api/v1/auth/login',
     '/api/v1/auth/register',
     '/api/v1/auth/logout',
+    '/api/v1/auth/forgot-password',
     '/api/v1/csrf-token',
   ]);
   fastify.addHook('onRequest', async (request, reply) => {
@@ -153,7 +154,13 @@ export async function registerPlugins(fastify: FastifyInstance) {
     // have an auth cookie but haven't established a CSRF session yet.
     const cookieHeader = request.headers.cookie || '';
     if (!cookieHeader.includes('access_token') || !cookieHeader.includes('_csrf')) return;
-    await (fastify as any).csrfProtection(request, reply);
+    // csrfProtection uses callback-style (req, reply, next) — wrap in a Promise
+    await new Promise<void>((resolve, reject) => {
+      (fastify as any).csrfProtection(request, reply, (err: Error | undefined) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
   });
 
   // Rate limiting — protect against brute force and API abuse
