@@ -27,7 +27,7 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   path: string;
-  roles?: Array<'admin' | 'executive' | 'manager' | 'member'>;
+  roles?: Array<'admin' | 'executive' | 'project_manager' | 'member'>;
 }
 
 const navItems: NavItem[] = [
@@ -85,7 +85,7 @@ const navItems: NavItem[] = [
     label: 'Settings',
     icon: Settings,
     path: '/settings',
-    roles: ['admin', 'manager'],
+    roles: ['admin', 'project_manager'],
   },
 ];
 

@@ -1,6 +1,14 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
 import { config } from '../config';
+
+/** Schema to validate the JWT payload structure. */
+const jwtPayloadSchema = z.object({
+  userId: z.string().min(1),
+  username: z.string().min(1),
+  role: z.string().min(1),
+});
 
 export async function authMiddleware(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -13,12 +21,13 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
       });
     }
 
-    const decoded = jwt.verify(token, config.JWT_SECRET) as any;
+    const decoded = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] });
+    const payload = jwtPayloadSchema.parse(decoded);
 
-    (request as any).user = {
-      userId: decoded.userId,
-      username: decoded.username,
-      role: decoded.role,
+    request.user = {
+      userId: payload.userId,
+      username: payload.username,
+      role: payload.role,
     };
 
   } catch (error) {

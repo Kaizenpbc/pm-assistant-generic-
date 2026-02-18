@@ -24,6 +24,7 @@ export const LessonLearnedSchema = z.object({
   impact: z.enum(['positive', 'negative', 'neutral']),
   recommendation: z.string(),
   confidence: z.number().min(0).max(100),
+  userId: z.string().optional(),
   createdAt: z.string(),
 });
 

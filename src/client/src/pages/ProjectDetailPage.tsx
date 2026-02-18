@@ -216,7 +216,7 @@ export function ProjectDetailPage() {
   }
 
   const status = statusStyles[project.status] || statusStyles.planning;
-  const progress = project.progressPercentage || project.progress_percentage || 0;
+  const progress = project.completionPercentage || 0;
   const budgetAllocated = project.budgetAllocated || project.budget_allocated || 0;
   const budgetSpent = project.budgetSpent || project.budget_spent || 0;
   const budgetPct =

@@ -260,7 +260,7 @@ export class CrossProjectIntelligenceService {
     projectId: string,
     _userId?: string,
   ): Promise<{ similar: AICrossProjectInsight['similarProjectInsights']; aiPowered: boolean }> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return { similar: [], aiPowered: false };
 
     try {
@@ -272,7 +272,7 @@ export class CrossProjectIntelligenceService {
       const budgetLow = budgetAllocated * 0.5;
       const budgetHigh = budgetAllocated * 1.5;
 
-      const [rows]: any = await db.query(
+      const rows: any[] = await db.query(
         `SELECT p.id, p.name, p.project_type, p.budget_allocated, p.budget_spent, p.status,
                 p.start_date, p.end_date
          FROM projects p

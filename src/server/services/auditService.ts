@@ -1,5 +1,5 @@
+import { randomUUID } from 'crypto';
 import { FastifyRequest } from 'fastify';
-import { auditLogger } from '../utils/logger';
 
 export interface AuditEvent {
   id: string;
@@ -13,7 +13,15 @@ export interface AuditEvent {
 }
 
 export class AuditService {
+  private static readonly MAX_EVENTS = 10000;
   private events: AuditEvent[] = [];
+
+  /** Cap events to prevent unbounded memory growth */
+  private capEvents(): void {
+    if (this.events.length > AuditService.MAX_EVENTS) {
+      this.events.splice(0, this.events.length - AuditService.MAX_EVENTS);
+    }
+  }
 
   public logUserAction(
     request: FastifyRequest,
@@ -23,7 +31,7 @@ export class AuditService {
     details: Record<string, any> = {}
   ): void {
     const event: AuditEvent = {
-      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       userId,
       action,
       resource,
@@ -34,7 +42,8 @@ export class AuditService {
     };
 
     this.events.push(event);
-    auditLogger.info('User action logged', event);
+    this.capEvents();
+    request.log.info({ audit: event }, 'User action logged');
   }
 
   public logSystemEvent(
@@ -43,7 +52,7 @@ export class AuditService {
     details: Record<string, any> = {}
   ): void {
     const event: AuditEvent = {
-      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       action,
       resource: 'system',
       timestamp: new Date(),
@@ -53,7 +62,8 @@ export class AuditService {
     };
 
     this.events.push(event);
-    auditLogger.info('System event logged', event);
+    this.capEvents();
+    request.log.info({ audit: event }, 'System event logged');
   }
 
   public getEvents(filters: {

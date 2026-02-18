@@ -13,19 +13,7 @@ import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
 import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
 import { TemplatePicker } from '../components/templates/TemplatePicker';
-
-interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  status: string;
-  priority?: string;
-  budgetAllocated?: number;
-  budgetSpent?: number;
-  progressPercentage?: number;
-  startDate?: string;
-  endDate?: string;
-}
+import type { Project } from '@shared/types';
 
 const statusStyles: Record<string, { label: string; color: string }> = {
   active: { label: 'Active', color: 'bg-green-100 text-green-700' },
@@ -129,7 +117,7 @@ export const PMDashboard: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {projects.map((project) => {
             const status = statusStyles[project.status] || statusStyles.planning;
-            const progress = project.progressPercentage || 0;
+            const progress = project.completionPercentage || 0;
             const budgetAllocated = project.budgetAllocated || 0;
             const budgetSpent = project.budgetSpent || 0;
             const budgetPct =

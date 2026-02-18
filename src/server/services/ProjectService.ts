@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 export interface Project {
   id: string;
   name: string;
@@ -120,7 +122,7 @@ export class ProjectService {
 
   async create(data: CreateProjectData): Promise<Project> {
     const project: Project = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: randomUUID(),
       name: data.name,
       description: data.description,
       category: data.category,

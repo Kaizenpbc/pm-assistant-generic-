@@ -1,13 +1,21 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { ResourceService } from '../services/ResourceService';
+import { idParam, projectIdParam, scheduleIdParam } from '../schemas/commonSchemas';
+import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess, verifyScheduleAccess } from '../middleware/authorize';
+
+const resourceQuerySchema = z.object({
+  limit: z.coerce.number().min(1).max(500).default(100),
+  offset: z.coerce.number().min(0).default(0),
+});
 
 const createResourceSchema = z.object({
-  name: z.string().min(1),
-  role: z.string().min(1),
-  email: z.string().email(),
+  name: z.string().min(1).max(255),
+  role: z.string().min(1).max(100),
+  email: z.string().email().max(320),
   capacityHoursPerWeek: z.number().positive().default(40),
-  skills: z.array(z.string()).default([]),
+  skills: z.array(z.string().max(100)).max(50).default([]),
   isActive: z.boolean().default(true),
 });
 
@@ -23,77 +31,134 @@ const createAssignmentSchema = z.object({
 export async function resourceRoutes(fastify: FastifyInstance) {
   const service = new ResourceService();
 
-  // GET /resources - List all resources
-  fastify.get('/', async (_request: FastifyRequest, _reply: FastifyReply) => {
-    const resources = await service.findAllResources();
-    return { resources };
+  // GET /resources - List all resources (with optional pagination)
+  fastify.get('/', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { limit, offset } = resourceQuerySchema.parse(request.query);
+      const all = await service.findAllResources();
+      const resources = all.slice(offset, offset + limit);
+      return { resources, total: all.length, limit, offset };
+    } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'List resources error');
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
   });
 
   // POST /resources - Create a resource
-  fastify.post('/', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const role = request.user.role;
+      if (role !== 'admin' && role !== 'project_manager') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or project manager can create resources' });
+      }
       const data = createResourceSchema.parse(request.body);
       const resource = await service.createResource(data);
       return reply.status(201).send({ resource });
     } catch (error) {
-      console.error('Create resource error:', error);
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Create resource error');
       return reply.status(400).send({ error: 'Invalid resource data' });
     }
   });
 
   // PUT /resources/:id - Update a resource
-  fastify.put('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.put('/:id', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const role = request.user.role;
+      if (role !== 'admin' && role !== 'project_manager') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or project manager can update resources' });
+      }
+      const { id } = idParam.parse(request.params);
       const data = createResourceSchema.partial().parse(request.body);
       const resource = await service.updateResource(id, data);
       if (!resource) return reply.status(404).send({ error: 'Resource not found' });
       return { resource };
     } catch (error) {
-      console.error('Update resource error:', error);
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Update resource error');
       return reply.status(400).send({ error: 'Invalid resource data' });
     }
   });
 
   // DELETE /resources/:id
-  fastify.delete('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const deleted = await service.deleteResource(id);
-    if (!deleted) return reply.status(404).send({ error: 'Resource not found' });
-    return { message: 'Resource deleted' };
+  fastify.delete('/:id', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const role = request.user.role;
+      if (role !== 'admin' && role !== 'project_manager') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only admin or project manager can delete resources' });
+      }
+      const { id } = idParam.parse(request.params);
+      const deleted = await service.deleteResource(id);
+      if (!deleted) return reply.status(404).send({ error: 'Resource not found' });
+      return { message: 'Resource deleted' };
+    } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Delete resource error');
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
   });
 
   // GET /resources/assignments/:scheduleId
-  fastify.get('/assignments/:scheduleId', async (request: FastifyRequest, _reply: FastifyReply) => {
-    const { scheduleId } = request.params as { scheduleId: string };
-    const assignments = await service.findAssignmentsBySchedule(scheduleId);
-    return { assignments };
+  fastify.get('/assignments/:scheduleId', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { scheduleId } = scheduleIdParam.parse(request.params);
+      const schedule = await verifyScheduleAccess(scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
+      const assignments = await service.findAssignmentsBySchedule(scheduleId);
+      return { assignments };
+    } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Get assignments error');
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
   });
 
   // POST /resources/assignments
-  fastify.post('/assignments', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/assignments', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createAssignmentSchema.parse(request.body);
+      const schedule = await verifyScheduleAccess(data.scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const assignment = await service.createAssignment(data);
       return reply.status(201).send({ assignment });
     } catch (error) {
-      console.error('Create assignment error:', error);
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Create assignment error');
       return reply.status(400).send({ error: 'Invalid assignment data' });
     }
   });
 
   // DELETE /resources/assignments/:id
-  fastify.delete('/assignments/:id', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const deleted = await service.deleteAssignment(id);
-    if (!deleted) return reply.status(404).send({ error: 'Assignment not found' });
-    return { message: 'Assignment deleted' };
+  fastify.delete('/assignments/:id', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = idParam.parse(request.params);
+      const assignment = await service.findAssignmentById(id);
+      if (!assignment) return reply.status(404).send({ error: 'Assignment not found' });
+      const schedule = await verifyScheduleAccess(assignment.scheduleId, request.user.userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
+      const deleted = await service.deleteAssignment(id);
+      if (!deleted) return reply.status(404).send({ error: 'Assignment not found' });
+      return { message: 'Assignment deleted' };
+    } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Delete assignment error');
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
   });
 
   // GET /resources/workload/:projectId
-  fastify.get('/workload/:projectId', async (request: FastifyRequest, _reply: FastifyReply) => {
-    const { projectId } = request.params as { projectId: string };
-    const workload = await service.computeWorkload(projectId);
-    return { workload };
+  fastify.get('/workload/:projectId', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { projectId } = projectIdParam.parse(request.params);
+      const project = await verifyProjectAccess(projectId, request.user.userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
+      const workload = await service.computeWorkload(projectId);
+      return { workload };
+    } catch (error) {
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Compute workload error');
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
   });
 }

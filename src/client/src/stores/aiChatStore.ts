@@ -124,7 +124,7 @@ export const useAIChatStore = create<AIChatState>()((set, get) => ({
       set((state) => ({
         messages: state.messages.map(m =>
           m.id === placeholderMsg.id
-            ? { ...m, content: result.reply, isStreaming: false, actions: result.actions }
+            ? { ...m, content: result.reply, isStreaming: false, actions: result.actions, context: context || undefined }
             : m
         ),
       }));

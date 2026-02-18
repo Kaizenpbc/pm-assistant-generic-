@@ -1,24 +1,56 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z, ZodError } from 'zod';
 import { ClaudeTaskBreakdownService } from '../services/aiTaskBreakdownClaude';
 import {
   suggestDependenciesClaude,
   optimizeScheduleClaude,
   generateProjectInsightsClaude,
 } from '../services/aiSchedulingClaude';
+import { authMiddleware } from '../middleware/auth';
+import { projectIdParam } from '../schemas/commonSchemas';
+import { verifyProjectAccess, verifyScheduleAccess } from '../middleware/authorize';
+
+const analyzeProjectBodySchema = z.object({
+  projectDescription: z.string().min(1).max(10000),
+  projectType: z.string().max(100).optional(),
+  projectId: z.string().min(1).max(100).optional(),
+});
+
+const suggestDependenciesBodySchema = z.object({
+  tasks: z.array(z.object({
+    id: z.string().max(100),
+    name: z.string().max(500),
+    description: z.string().max(2000).optional(),
+    category: z.string().max(100).optional(),
+  })).max(500),
+  projectContext: z.string().max(5000).optional(),
+});
+
+const optimizeScheduleBodySchema = z.object({
+  scheduleId: z.string().min(1).max(100),
+  optimizationGoals: z.array(z.string().max(500)).max(20).optional(),
+  constraints: z.record(z.string(), z.unknown()).optional(),
+});
 
 export async function aiSchedulingRoutes(fastify: FastifyInstance) {
   const claudeBreakdown = new ClaudeTaskBreakdownService(fastify);
 
   // Analyze project and generate AI task breakdown
   fastify.post('/analyze-project', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Analyze project and generate AI task breakdown',
       tags: ['ai-scheduling'],
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { projectDescription, projectType, projectId } = request.body as any;
-        const user = (request as any).user || {};
+        const { projectDescription, projectType, projectId } = analyzeProjectBodySchema.parse(request.body);
+        const user = request.user;
+
+        if (projectId) {
+          const project = await verifyProjectAccess(projectId, user.userId);
+          if (!project) return reply.code(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
+        }
 
         const { analysis, aiPowered } = await claudeBreakdown.analyzeProject(
           projectDescription,
@@ -30,6 +62,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
         const insights = generateInsights(analysis);
         return { analysis, insights, aiPowered };
       } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Error in AI project analysis');
         return reply.code(500).send({ error: 'Failed to analyze project' });
       }
@@ -38,14 +71,15 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
   // Suggest task dependencies
   fastify.post('/suggest-dependencies', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Suggest task dependencies',
       tags: ['ai-scheduling'],
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { tasks, projectContext } = request.body as any;
-        const user = (request as any).user || {};
+        const { tasks, projectContext } = suggestDependenciesBodySchema.parse(request.body);
+        const user = request.user;
 
         const { dependencies, aiPowered } = await suggestDependenciesClaude(
           tasks,
@@ -56,6 +90,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
         return { dependencies, aiPowered };
       } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Error in AI dependency suggestion');
         return reply.code(500).send({ error: 'Failed to suggest dependencies' });
       }
@@ -64,14 +99,18 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
   // Optimize schedule
   fastify.post('/optimize-schedule', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Optimize existing schedule using AI',
       tags: ['ai-scheduling'],
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { scheduleId, optimizationGoals, constraints } = request.body as any;
-        const user = (request as any).user || {};
+        const { scheduleId, optimizationGoals, constraints } = optimizeScheduleBodySchema.parse(request.body);
+        const user = request.user;
+
+        const schedule = await verifyScheduleAccess(scheduleId, user.userId);
+        if (!schedule) return reply.code(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
 
         const { optimizedSchedule, aiPowered } = await optimizeScheduleClaude(
           scheduleId,
@@ -83,6 +122,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
         return { optimizedSchedule, aiPowered };
       } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Error in AI schedule optimization');
         return reply.code(500).send({ error: 'Failed to optimize schedule' });
       }
@@ -91,14 +131,18 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
   // Get AI insights for project
   fastify.get('/insights/:projectId', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Get AI insights for project',
       tags: ['ai-scheduling'],
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { projectId } = request.params as any;
-        const user = (request as any).user || {};
+        const { projectId } = projectIdParam.parse(request.params);
+        const user = request.user;
+
+        const project = await verifyProjectAccess(projectId, user.userId);
+        if (!project) return reply.code(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
 
         const { insights, aiPowered } = await generateProjectInsightsClaude(
           projectId,
@@ -108,6 +152,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
         return { insights, aiPowered };
       } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Error generating AI insights');
         return reply.code(500).send({ error: 'Failed to generate insights' });
       }

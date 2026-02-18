@@ -16,13 +16,13 @@ export type DelayedTask = z.infer<typeof DelayedTaskSchema>;
 
 // A single proposed date change for a task
 export const ProposedChangeSchema = z.object({
-  taskId: z.string(),
-  taskName: z.string(),
-  currentStartDate: z.string(),
-  currentEndDate: z.string(),
-  proposedStartDate: z.string(),
-  proposedEndDate: z.string(),
-  reason: z.string(),
+  taskId: z.string().max(100),
+  taskName: z.string().max(500),
+  currentStartDate: z.string().max(30),
+  currentEndDate: z.string().max(30),
+  proposedStartDate: z.string().max(30),
+  proposedEndDate: z.string().max(30),
+  reason: z.string().max(2000),
 });
 
 export type ProposedChange = z.infer<typeof ProposedChangeSchema>;

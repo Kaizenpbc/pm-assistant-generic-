@@ -1,27 +1,28 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { ProjectService } from '../services/ProjectService';
 import { ScheduleService } from '../services/ScheduleService';
+import { authMiddleware } from '../middleware/auth';
 
 export async function portfolioRoutes(fastify: FastifyInstance) {
   const projectService = new ProjectService();
   const scheduleService = new ScheduleService();
 
   fastify.get('/', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get portfolio overview with all projects and tasks', tags: ['portfolio'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
-      const userId = user?.userId || '1';
+      const userId = request.user.userId;
       const projects = await projectService.findByUserId(userId);
 
       const portfolioItems = await Promise.all(
         projects.map(async (project) => {
           const schedules = await scheduleService.findByProjectId(project.id);
-          const allTasks = [];
-          for (const schedule of schedules) {
-            const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
-            allTasks.push(...tasks);
-          }
+          // Parallelize task fetches across all schedules
+          const taskArrays = await Promise.all(
+            schedules.map((schedule) => scheduleService.findTasksByScheduleId(schedule.id))
+          );
+          const allTasks = taskArrays.flat();
 
           return {
             projectId: project.id,
@@ -49,7 +50,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
 
       return { portfolioItems };
     } catch (error) {
-      console.error('Get portfolio error:', error);
+      request.log.error({ err: error }, 'Get portfolio error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch portfolio' });
     }
   });

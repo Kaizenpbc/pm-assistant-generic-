@@ -1,22 +1,23 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ProjectService } from '../services/ProjectService';
+import { idParam } from '../schemas/commonSchemas';
 import { authMiddleware } from '../middleware/auth';
 
 const createProjectSchema = z.object({
-  name: z.string().min(1, 'Project name is required'),
-  description: z.string().optional(),
-  category: z.string().optional(),
+  name: z.string().min(1, 'Project name is required').max(255),
+  description: z.string().max(5000).optional(),
+  category: z.string().max(100).optional(),
   projectType: z.enum(['it', 'construction', 'infrastructure', 'roads', 'other']).default('other'),
   status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).default('planning'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   budgetAllocated: z.number().positive().optional(),
-  currency: z.string().default('USD'),
-  location: z.string().optional(),
+  currency: z.string().max(10).default('USD'),
+  location: z.string().max(500).optional(),
   locationLat: z.number().min(-90).max(90).optional(),
   locationLon: z.number().min(-180).max(180).optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().date().optional(),
+  endDate: z.string().date().optional(),
 });
 
 const updateProjectSchema = createProjectSchema.partial();
@@ -25,33 +26,34 @@ export async function projectRoutes(fastify: FastifyInstance) {
   const projectService = new ProjectService();
 
   fastify.get('/', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get all projects', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
-      const userId = user?.userId || '1';
+      const userId = request.user.userId;
       const projects = await projectService.findByUserId(userId);
       return { projects };
     } catch (error) {
-      console.error('Get projects error:', error);
+      request.log.error({ err: error }, 'Get projects error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch projects' });
     }
   });
 
   fastify.get('/:id', {
+    preHandler: [authMiddleware],
     schema: { description: 'Get project by ID', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
-      const user = (request as any).user;
-      const userId = user?.userId || '1';
+      const { id } = idParam.parse(request.params);
+      const userId = request.user.userId;
       const project = await projectService.findById(id, userId);
       if (!project) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
       }
       return { project };
     } catch (error) {
-      console.error('Get project error:', error);
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Get project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch project' });
     }
   });
@@ -62,7 +64,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createProjectSchema.parse(request.body);
-      const userId = (request as any).user.userId;
+      const userId = request.user.userId;
       const project = await projectService.create({
         ...data,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
@@ -71,7 +73,8 @@ export async function projectRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ project });
     } catch (error) {
-      console.error('Create project error:', error);
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Create project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create project' });
     }
   });
@@ -81,9 +84,9 @@ export async function projectRoutes(fastify: FastifyInstance) {
     schema: { description: 'Update a project', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
       const data = updateProjectSchema.parse(request.body);
-      const userId = (request as any).user.userId;
+      const userId = request.user.userId;
       const project = await projectService.update(id, {
         ...data,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
@@ -94,7 +97,8 @@ export async function projectRoutes(fastify: FastifyInstance) {
       }
       return { project };
     } catch (error) {
-      console.error('Update project error:', error);
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Update project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update project' });
     }
   });
@@ -104,15 +108,16 @@ export async function projectRoutes(fastify: FastifyInstance) {
     schema: { description: 'Delete a project', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
-      const userId = (request as any).user.userId;
+      const { id } = idParam.parse(request.params);
+      const userId = request.user.userId;
       const deleted = await projectService.delete(id, userId);
       if (!deleted) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
       }
       return { message: 'Project deleted successfully' };
     } catch (error) {
-      console.error('Delete project error:', error);
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Delete project error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete project' });
     }
   });

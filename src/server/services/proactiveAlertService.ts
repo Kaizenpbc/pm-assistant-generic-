@@ -25,9 +25,9 @@ export class ProactiveAlertService {
   private projectService = new ProjectService();
   private scheduleService = new ScheduleService();
 
-  async generateAlerts(): Promise<ProactiveAlert[]> {
+  async generateAlerts(userId?: string): Promise<ProactiveAlert[]> {
     const alerts: ProactiveAlert[] = [];
-    const projects = await this.projectService.findAll();
+    const projects = userId ? await this.projectService.findByUserId(userId) : await this.projectService.findAll();
     const now = new Date();
 
     for (const project of projects) {
@@ -176,13 +176,13 @@ export class ProactiveAlertService {
     return alerts;
   }
 
-  async getAlertsByProject(projectId: string): Promise<ProactiveAlert[]> {
-    const allAlerts = await this.generateAlerts();
+  async getAlertsByProject(projectId: string, userId?: string): Promise<ProactiveAlert[]> {
+    const allAlerts = await this.generateAlerts(userId);
     return allAlerts.filter(a => a.projectId === projectId);
   }
 
-  async getAlertsSummary(): Promise<{ total: number; critical: number; warning: number; info: number; byType: Record<string, number> }> {
-    const alerts = await this.generateAlerts();
+  async getAlertsSummary(userId?: string): Promise<{ total: number; critical: number; warning: number; info: number; byType: Record<string, number> }> {
+    const alerts = await this.generateAlerts(userId);
     const summary = {
       total: alerts.length,
       critical: alerts.filter(a => a.severity === 'critical').length,

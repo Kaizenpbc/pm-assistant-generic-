@@ -1,80 +1,87 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z, ZodError } from 'zod';
 import { ScheduleService } from '../services/ScheduleService';
-import { ProjectService } from '../services/ProjectService';
 import { CriticalPathService } from '../services/CriticalPathService';
+import { idParam } from '../schemas/commonSchemas';
+import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess } from '../middleware/authorize';
 
 export async function exportRoutes(fastify: FastifyInstance) {
   const scheduleService = new ScheduleService();
 
   // GET /exports/projects/:id/export?format=csv|json
-  fastify.get('/projects/:id/export', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/projects/:id/export', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
-      const { format } = request.query as { format?: string };
+      const { id } = idParam.parse(request.params);
+      const querySchema = z.object({ format: z.enum(['csv', 'json']) });
+      const { format } = querySchema.parse(request.query);
+
+      // Verify ownership before exporting
+      const project = await verifyProjectAccess(id, request.user.userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
 
       const schedules = await scheduleService.findByProjectId(id);
 
       if (format === 'json') {
         // JSON export — full project report data for client-side PDF rendering
-        const projectService = new ProjectService();
-        const project = await projectService.findById(id);
         const cpmService = new CriticalPathService();
 
-        const schedulesWithTasks = [];
+        // Parallelize task + critical-path fetches across all schedules
+        const schedulesWithTasks = await Promise.all(
+          schedules.map(async (schedule) => {
+            const [tasks, criticalPath] = await Promise.all([
+              scheduleService.findTasksByScheduleId(schedule.id),
+              cpmService.calculateCriticalPath(schedule.id).catch(() => null),
+            ]);
+            return {
+              id: schedule.id,
+              name: schedule.name,
+              startDate: schedule.startDate,
+              endDate: schedule.endDate,
+              tasks: tasks.map((t) => ({
+                id: t.id,
+                name: t.name,
+                status: t.status,
+                priority: t.priority,
+                assignedTo: t.assignedTo || '',
+                startDate: t.startDate ? new Date(t.startDate).toISOString().slice(0, 10) : '',
+                endDate: t.endDate ? new Date(t.endDate).toISOString().slice(0, 10) : '',
+                progressPercentage: t.progressPercentage ?? 0,
+                dependency: t.dependency || '',
+                parentTaskId: t.parentTaskId || '',
+                estimatedDays: t.estimatedDays,
+              })),
+              criticalPath,
+              _rawTasks: tasks, // kept for progress calculation below
+            };
+          })
+        );
+
         let allTaskCount = 0;
         let allProgressSum = 0;
-        for (const schedule of schedules) {
-          const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
-          let criticalPath = null;
-          try {
-            criticalPath = await cpmService.calculateCriticalPath(schedule.id);
-          } catch { /* ignore */ }
-          for (const t of tasks) {
+        for (const s of schedulesWithTasks) {
+          for (const t of s._rawTasks) {
             allTaskCount++;
             allProgressSum += t.progressPercentage ?? 0;
           }
-          schedulesWithTasks.push({
-            id: schedule.id,
-            name: schedule.name,
-            startDate: schedule.startDate,
-            endDate: schedule.endDate,
-            tasks: tasks.map((t) => ({
-              id: t.id,
-              name: t.name,
-              status: t.status,
-              priority: t.priority,
-              assignedTo: t.assignedTo || '',
-              startDate: t.startDate ? new Date(t.startDate).toISOString().slice(0, 10) : '',
-              endDate: t.endDate ? new Date(t.endDate).toISOString().slice(0, 10) : '',
-              progressPercentage: t.progressPercentage ?? 0,
-              dependency: t.dependency || '',
-              parentTaskId: t.parentTaskId || '',
-              estimatedDays: t.estimatedDays,
-            })),
-            criticalPath,
-          });
         }
 
         const avgProgress = allTaskCount > 0 ? Math.round(allProgressSum / allTaskCount) : 0;
 
         return reply.send({
-          project: project ? {
+          project: {
             id: project.id,
             name: project.name,
             status: project.status,
             budgetAllocated: project.budgetAllocated,
             budgetSpent: project.budgetSpent,
-            progressPercentage: avgProgress,
+            completionPercentage: avgProgress,
             startDate: project.startDate,
             endDate: project.endDate,
-          } : null,
-          schedules: schedulesWithTasks,
+          },
+          schedules: schedulesWithTasks.map(({ _rawTasks, ...rest }) => rest),
           generatedAt: new Date().toISOString(),
         });
-      }
-
-      if (format !== 'csv') {
-        return reply.status(400).send({ error: 'Supported formats: csv, json' });
       }
 
       const headers = [
@@ -91,10 +98,16 @@ export async function exportRoutes(fastify: FastifyInstance) {
         'Parent Task',
       ];
 
-      const rows: string[][] = [];
+      // Parallelize task fetches for CSV export
+      const scheduleTasks = await Promise.all(
+        schedules.map(async (schedule) => {
+          const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
+          return { schedule, tasks };
+        })
+      );
 
-      for (const schedule of schedules) {
-        const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
+      const rows: string[][] = [];
+      for (const { schedule, tasks } of scheduleTasks) {
         for (const task of tasks) {
           rows.push([
             schedule.name,
@@ -114,8 +127,12 @@ export async function exportRoutes(fastify: FastifyInstance) {
 
       // Escape CSV fields
       function escapeCSV(field: string): string {
+        // Guard against CSV formula injection
+        if (/^[=+\-@\t\r]/.test(field)) {
+          field = "'" + field;
+        }
         if (field.includes(',') || field.includes('"') || field.includes('\n')) {
-          return `"${field.replace(/"/g, '""')}"`;
+          return '"' + field.replace(/"/g, '""') + '"';
         }
         return field;
       }
@@ -129,7 +146,8 @@ export async function exportRoutes(fastify: FastifyInstance) {
       reply.header('Content-Disposition', `attachment; filename="project-${id}-export.csv"`);
       return reply.send(csv);
     } catch (error) {
-      console.error('Export error:', error);
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Export error');
       return reply.status(500).send({ error: 'Failed to export project data' });
     }
   });

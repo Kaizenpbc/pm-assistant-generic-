@@ -14,6 +14,8 @@ import { MonteCarloPage } from './pages/MonteCarloPage';
 import { MeetingMinutesPage } from './pages/MeetingMinutesPage';
 import { LessonsLearnedPage } from './pages/LessonsLearnedPage';
 import { QueryPage } from './pages/QueryPage';
+import { CreateAccountPage } from './pages/CreateAccountPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -46,6 +48,14 @@ function App() {
         <Route
           path="/login"
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+        />
+        <Route
+          path="/create-account"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <CreateAccountPage />}
+        />
+        <Route
+          path="/forgot-password"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPasswordPage />}
         />
         <Route
           path="/"

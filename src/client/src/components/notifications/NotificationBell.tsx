@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Bell, Shield, DollarSign, Clock, Users, Info, X, Check } from 'lucide-react';
 import { useUIStore, Notification } from '../../stores/uiStore';
+import { AlertActionButton } from './AlertActionButton';
 import { apiService } from '../../services/api';
 
 const typeIcons: Record<Notification['type'], React.ElementType> = {
@@ -23,6 +24,13 @@ const severityTextColors: Record<Notification['severity'], string> = {
   high: 'text-orange-600',
   medium: 'text-yellow-600',
   low: 'text-blue-600',
+};
+
+const severityBadgeStyles: Record<Notification['severity'], string> = {
+  critical: 'bg-red-100 text-red-700',
+  high: 'bg-orange-100 text-orange-700',
+  medium: 'bg-yellow-100 text-yellow-700',
+  low: 'bg-blue-100 text-blue-700',
 };
 
 function timeAgo(dateString: string): string {
@@ -75,10 +83,13 @@ export function NotificationBell() {
           type: string;
           severity: string;
           title: string;
-          message: string;
+          description: string;
+          message?: string;
           projectId?: string;
           projectName?: string;
-          suggestedActions?: Array<{ toolName: string; params: Record<string, any>; label: string }>;
+          taskId?: string;
+          taskName?: string;
+          suggestedAction?: { toolName: string; params: Record<string, any>; label: string };
         }> = response?.alerts ?? [];
 
         for (const alert of alerts) {
@@ -90,13 +101,21 @@ export function NotificationBell() {
             ? alert.severity
             : 'medium') as Notification['severity'];
 
+          // Map suggestedAction (singular from API) to suggestedActions array
+          const suggestedActions = alert.suggestedAction
+            ? [alert.suggestedAction]
+            : undefined;
+
           addNotification({
             type,
             severity,
             title: alert.title,
-            message: alert.message,
+            message: alert.description || alert.message || '',
             projectId: alert.projectId,
             projectName: alert.projectName,
+            taskId: alert.taskId,
+            taskName: alert.taskName,
+            suggestedActions,
             read: false,
           });
         }
@@ -160,7 +179,7 @@ export function NotificationBell() {
       {open && (
         <div
           className="
-            absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto
+            absolute right-0 mt-2 w-96 max-h-[480px] overflow-y-auto
             bg-white border border-gray-200 shadow-lg rounded-xl
             z-50 animate-fade-in
           "
@@ -200,6 +219,7 @@ export function NotificationBell() {
                 const IconComponent = typeIcons[notification.type] || Info;
                 const severityColor = severityColors[notification.severity] || 'bg-gray-400';
                 const severityText = severityTextColors[notification.severity] || 'text-gray-600';
+                const badgeStyle = severityBadgeStyles[notification.severity] || severityBadgeStyles.medium;
 
                 return (
                   <div
@@ -223,13 +243,18 @@ export function NotificationBell() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <p
-                          className={`text-sm leading-tight truncate ${
-                            notification.read ? 'text-gray-600' : 'text-gray-900 font-medium'
-                          }`}
-                        >
-                          {notification.title}
-                        </p>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p
+                            className={`text-sm leading-tight truncate ${
+                              notification.read ? 'text-gray-600' : 'text-gray-900 font-medium'
+                            }`}
+                          >
+                            {notification.title}
+                          </p>
+                          <span className={`flex-shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase ${badgeStyle}`}>
+                            {notification.severity}
+                          </span>
+                        </div>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -241,9 +266,20 @@ export function NotificationBell() {
                           <X className="w-3 h-3" />
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+
+                      {/* Description with embedded metrics */}
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-3">
                         {notification.message}
                       </p>
+
+                      {/* Task name if applicable */}
+                      {notification.taskName && (
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          Task: <span className="text-gray-600">{notification.taskName}</span>
+                        </p>
+                      )}
+
+                      {/* Metadata row */}
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] text-gray-400">
                           {timeAgo(notification.createdAt)}
@@ -254,6 +290,20 @@ export function NotificationBell() {
                           </span>
                         )}
                       </div>
+
+                      {/* Suggested Action Buttons */}
+                      {notification.suggestedActions && notification.suggestedActions.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {notification.suggestedActions.map((action, idx) => (
+                            <AlertActionButton
+                              key={idx}
+                              toolName={action.toolName}
+                              params={action.params}
+                              label={action.label}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

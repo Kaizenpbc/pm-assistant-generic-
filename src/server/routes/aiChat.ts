@@ -1,11 +1,35 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z, ZodError } from 'zod';
 import { AIChatService } from '../services/aiChatService';
+import { authMiddleware } from '../middleware/auth';
+import { conversationIdParam } from '../schemas/commonSchemas';
+import { verifyScheduleAccess } from '../middleware/authorize';
+
+const chatMessageBodySchema = z.object({
+  message: z.string().min(1).max(10000),
+  conversationId: z.string().max(100).optional(),
+  context: z.object({
+    type: z.enum(['dashboard', 'project', 'schedule', 'reports', 'general']),
+    projectId: z.string().max(100).optional(),
+  }).optional(),
+});
+
+const createProjectBodySchema = z.object({
+  description: z.string().min(10).max(5000),
+});
+
+const extractTasksBodySchema = z.object({
+  meetingNotes: z.string().min(10).max(100000),
+  projectId: z.string().max(100).optional(),
+  scheduleId: z.string().max(100).optional(),
+});
 
 export async function aiChatRoutes(fastify: FastifyInstance) {
   const chatService = new AIChatService(fastify);
 
   // POST /message — non-streaming chat
   fastify.post('/message', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Send a message to the AI assistant (non-streaming)',
       tags: ['ai-chat'],
@@ -27,23 +51,24 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = request.body as any;
-        const user = (request as any).user || {};
+        const body = chatMessageBodySchema.parse(request.body);
+        const user = request.user;
 
         const result = await chatService.sendMessage({
           message: body.message,
           conversationId: body.conversationId,
           context: body.context,
-          userId: user.userId || 'anonymous',
-          userRole: user.role || 'member',
+          userId: user.userId,
+          userRole: user.role,
         });
 
         return result;
       } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Chat message failed');
         return reply.code(500).send({
           error: 'Failed to process message',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: 'An unexpected error occurred',
         });
       }
     },
@@ -51,6 +76,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // POST /stream — SSE streaming chat
   fastify.post('/stream', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Send a message to the AI assistant (SSE streaming)',
       tags: ['ai-chat'],
@@ -72,8 +98,8 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = request.body as any;
-        const user = (request as any).user || {};
+        const body = chatMessageBodySchema.parse(request.body);
+        const user = request.user;
 
         reply.raw.writeHead(200, {
           'Content-Type': 'text/event-stream',
@@ -86,8 +112,8 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
           message: body.message,
           conversationId: body.conversationId,
           context: body.context,
-          userId: user.userId || 'anonymous',
-          userRole: user.role || 'member',
+          userId: user.userId,
+          userRole: user.role,
         });
 
         for await (const chunk of stream) {
@@ -97,12 +123,17 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
         reply.raw.end();
       } catch (error) {
+        if (error instanceof ZodError) {
+          if (!reply.raw.headersSent) {
+            return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+          }
+        }
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Chat stream failed');
 
         if (!reply.raw.headersSent) {
           return reply.code(500).send({
             error: 'Failed to stream message',
-            message: error instanceof Error ? error.message : 'Unknown error',
+            message: 'An unexpected error occurred',
           });
         }
 
@@ -114,13 +145,15 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // GET /conversations
   fastify.get('/conversations', {
+    preHandler: [authMiddleware],
     schema: { description: 'List user conversations', tags: ['ai-chat'] },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const user = (request as any).user || {};
-        const conversations = await chatService.getConversations(user.userId || 'anonymous');
+        const user = request.user;
+        const conversations = await chatService.getConversations(user.userId);
         return { conversations };
       } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Failed to list conversations');
         return reply.code(500).send({ error: 'Failed to list conversations' });
       }
@@ -129,15 +162,17 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // GET /conversations/:id
   fastify.get('/conversations/:id', {
+    preHandler: [authMiddleware],
     schema: { description: 'Load a conversation by ID', tags: ['ai-chat'] },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { id } = request.params as any;
-        const user = (request as any).user || {};
-        const conversation = await chatService.getConversation(id, user.userId || 'anonymous');
+        const { id } = conversationIdParam.parse(request.params);
+        const user = request.user;
+        const conversation = await chatService.getConversation(id, user.userId);
         if (!conversation) return reply.code(404).send({ error: 'Conversation not found' });
         return { conversation };
       } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Failed to load conversation');
         return reply.code(500).send({ error: 'Failed to load conversation' });
       }
@@ -146,15 +181,17 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // DELETE /conversations/:id
   fastify.delete('/conversations/:id', {
+    preHandler: [authMiddleware],
     schema: { description: 'Delete a conversation', tags: ['ai-chat'] },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { id } = request.params as any;
-        const user = (request as any).user || {};
-        const deleted = await chatService.deleteConversation(id, user.userId || 'anonymous');
+        const { id } = conversationIdParam.parse(request.params);
+        const user = request.user;
+        const deleted = await chatService.deleteConversation(id, user.userId);
         if (!deleted) return reply.code(404).send({ error: 'Conversation not found' });
         return { message: 'Conversation deleted' };
       } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Failed to delete conversation');
         return reply.code(500).send({ error: 'Failed to delete conversation' });
       }
@@ -163,6 +200,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // POST /create-project — create project from natural language
   fastify.post('/create-project', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Create a project from natural language description',
       tags: ['ai-chat'],
@@ -176,14 +214,14 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = request.body as any;
-        const user = (request as any).user || {};
+        const body = createProjectBodySchema.parse(request.body);
+        const user = request.user;
 
         const { AIProjectCreatorService } = await import('../services/aiProjectCreator');
         const creator = new AIProjectCreatorService(fastify);
         const result = await creator.createProjectFromDescription(
           body.description,
-          user.userId || 'anonymous',
+          user.userId,
         );
 
         return {
@@ -194,10 +232,11 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
           aiPowered: result.aiPowered,
         };
       } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Project creation failed');
         return reply.code(500).send({
           error: 'Failed to create project from description',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: 'An unexpected error occurred',
         });
       }
     },
@@ -205,6 +244,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // POST /extract-tasks — extract tasks from meeting notes
   fastify.post('/extract-tasks', {
+    preHandler: [authMiddleware],
     schema: {
       description: 'Extract tasks from meeting notes',
       tags: ['ai-chat'],
@@ -220,8 +260,8 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = request.body as any;
-        const user = (request as any).user || {};
+        const body = extractTasksBodySchema.parse(request.body);
+        const user = request.user;
 
         const { claudeService, promptTemplates } = await import('../services/claudeService');
         const { AIMeetingExtractionSchema } = await import('../schemas/aiSchemas');
@@ -244,9 +284,11 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
           temperature: 0.2,
         });
 
-        // If scheduleId provided, create the extracted tasks
+        // If scheduleId provided, verify ownership then create the extracted tasks
         let createdTasks: any[] = [];
         if (body.scheduleId && result.data.tasks && result.data.tasks.length > 0) {
+          const schedule = await verifyScheduleAccess(body.scheduleId, user.userId);
+          if (!schedule) return reply.code(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
           const { ScheduleService } = await import('../services/ScheduleService');
           const scheduleService = new ScheduleService();
 
@@ -255,8 +297,8 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
               scheduleId: body.scheduleId,
               name: task.name,
               description: task.description || '',
-              priority: (task.priority as any) || 'medium',
-              createdBy: user.userId || 'anonymous',
+              priority: (['low', 'medium', 'high', 'urgent'].includes(task.priority) ? task.priority : 'medium') as 'low' | 'medium' | 'high' | 'urgent',
+              createdBy: user.userId,
             });
             createdTasks.push(created);
           }
@@ -279,10 +321,11 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
           aiPowered: true,
         };
       } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Task extraction failed');
         return reply.code(500).send({
           error: 'Failed to extract tasks from notes',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: 'An unexpected error occurred',
         });
       }
     },

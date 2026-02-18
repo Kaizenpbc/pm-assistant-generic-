@@ -1,30 +1,5 @@
 // WorkloadHeatmap component
-
-interface WeeklyUtilization {
-  weekStart: string;
-  allocated: number;
-  capacity: number;
-  utilization: number;
-}
-
-interface ResourceWorkload {
-  resourceId: string;
-  resourceName: string;
-  role: string;
-  weeks: WeeklyUtilization[];
-  averageUtilization: number;
-  isOverAllocated: boolean;
-}
-
-interface Resource {
-  id: string;
-  name: string;
-  role: string;
-  email: string;
-  capacityHoursPerWeek: number;
-  skills: string[];
-  isActive: boolean;
-}
+import type { ResourceWorkload, Resource } from '@shared/types';
 
 interface WorkloadHeatmapProps {
   workload: ResourceWorkload[];

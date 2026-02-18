@@ -1,10 +1,12 @@
+import { randomUUID } from 'crypto';
+
 export interface User {
   id: string;
   username: string;
   email: string;
   passwordHash: string;
   fullName: string;
-  role: 'admin' | 'executive' | 'manager' | 'member';
+  role: 'admin' | 'executive' | 'project_manager' | 'member';
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -15,23 +17,46 @@ export interface CreateUserData {
   email: string;
   passwordHash: string;
   fullName: string;
-  role?: 'admin' | 'executive' | 'manager' | 'member';
+  role?: 'admin' | 'executive' | 'project_manager' | 'member';
+}
+
+/**
+ * Default admin seed — uses ADMIN_PASSWORD env var when set.
+ * Falls back to a dev-only hash ('admin123') in development/test mode.
+ * In production without ADMIN_PASSWORD, no seed admin is created.
+ */
+function buildSeedUsers(): User[] {
+  const env = process.env['NODE_ENV'] || 'development';
+  const adminPassword = process.env['ADMIN_PASSWORD'];
+
+  let hash: string | null = null;
+
+  if (adminPassword) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const bcrypt = require('bcryptjs');
+    hash = bcrypt.hashSync(adminPassword, 12);
+  } else if (env === 'development' || env === 'test') {
+    // ONLY in dev/test — never ship a known hash to production
+    hash = '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW'; // admin123
+  }
+
+  if (!hash) return [];
+
+  return [{
+    id: '1',
+    username: 'admin',
+    email: 'admin@example.com',
+    passwordHash: hash,
+    fullName: 'Administrator',
+    role: 'admin' as const,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }];
 }
 
 export class UserService {
-  private static users: User[] = [
-    {
-      id: '1',
-      username: 'admin',
-      email: 'admin@example.com',
-      passwordHash: '$2b$12$57JV8D4fZCCQPwL7gmJ6n.ar5spwtsb2aYjgfiKho8C9KJh8bFrcW', // admin123
-      fullName: 'Administrator',
-      role: 'admin',
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ];
+  private static users: User[] = buildSeedUsers();
 
   private get users() { return UserService.users; }
 
@@ -40,21 +65,23 @@ export class UserService {
   }
 
   async findByUsername(username: string): Promise<User | null> {
-    return this.users.find(user => user.username === username) || null;
+    const normalized = username.toLowerCase();
+    return this.users.find(user => user.username.toLowerCase() === normalized) || null;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.users.find(user => user.email === email) || null;
+    const normalized = email.toLowerCase();
+    return this.users.find(user => user.email.toLowerCase() === normalized) || null;
   }
 
   async create(data: CreateUserData): Promise<User> {
     const user: User = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: randomUUID(),
       username: data.username,
       email: data.email,
       passwordHash: data.passwordHash,
       fullName: data.fullName,
-      role: data.role || 'member',
+      role: data.role || 'project_manager',
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),

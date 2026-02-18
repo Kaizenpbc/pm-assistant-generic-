@@ -8,6 +8,10 @@ const configSchema = z.object({
   DB_HOST: z.string().min(1).default('localhost'),
   DB_PORT: z.coerce.number().min(1).max(65535).default(3306),
   DB_USER: z.string().min(1).default('root'),
+  // SECURITY: In production, DB_PASSWORD must be set via environment variable.
+  // The 'rootpassword' default is only used in development/test.
+  // Note: default is unconditionally 'rootpassword' — the .refine() below
+  // rejects it when NODE_ENV === 'production'.
   DB_PASSWORD: z.string().min(1).default('rootpassword'),
   DB_NAME: z.string().min(1).default('pm_assistant_generic'),
 
@@ -24,12 +28,19 @@ const configSchema = z.object({
   AI_TEMPERATURE: z.coerce.number().min(0).max(1).default(0.3),
   AI_MAX_TOKENS: z.coerce.number().min(100).max(8192).default(4096),
   AI_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
+  AI_DAILY_TOKEN_BUDGET: z.coerce.number().min(0).default(500000),
+  AI_PER_REQUEST_MAX_TOKENS: z.coerce.number().min(100).max(16384).default(4096),
+  AI_MAX_REQUESTS_PER_USER_PER_HOUR: z.coerce.number().min(1).max(1000).default(60),
 
   // Weather Configuration
   WEATHER_API_PROVIDER: z.enum(['openweathermap', 'weatherapi', 'accuweather', 'mock']).default('mock'),
   WEATHER_API_KEY: z.string().optional().default(''),
   WEATHER_CACHE_MINUTES: z.coerce.number().min(1).max(1440).default(30),
 }).refine((data) => {
+  // SECURITY: reject default DB password in production
+  if (data.NODE_ENV === 'production' && data.DB_PASSWORD === 'rootpassword') {
+    throw new Error('DB_PASSWORD must be explicitly set in production (cannot use default)');
+  }
   if (data.JWT_SECRET === data.JWT_REFRESH_SECRET) {
     throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be different');
   }
@@ -40,7 +51,7 @@ const configSchema = z.object({
     throw new Error('JWT_REFRESH_SECRET and COOKIE_SECRET must be different');
   }
   return true;
-}, { message: 'Security secrets must be unique' });
+}, { message: 'Security validation failed' });
 
 export function validateConfiguration() {
   try {
@@ -63,6 +74,9 @@ export function validateConfiguration() {
       AI_TEMPERATURE: process.env['AI_TEMPERATURE'],
       AI_MAX_TOKENS: process.env['AI_MAX_TOKENS'],
       AI_ENABLED: process.env['AI_ENABLED'],
+      AI_DAILY_TOKEN_BUDGET: process.env['AI_DAILY_TOKEN_BUDGET'],
+      AI_PER_REQUEST_MAX_TOKENS: process.env['AI_PER_REQUEST_MAX_TOKENS'],
+      AI_MAX_REQUESTS_PER_USER_PER_HOUR: process.env['AI_MAX_REQUESTS_PER_USER_PER_HOUR'],
       WEATHER_API_PROVIDER: process.env['WEATHER_API_PROVIDER'],
       WEATHER_API_KEY: process.env['WEATHER_API_KEY'],
       WEATHER_CACHE_MINUTES: process.env['WEATHER_CACHE_MINUTES'],

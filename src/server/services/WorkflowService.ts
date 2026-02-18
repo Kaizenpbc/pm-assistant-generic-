@@ -1,43 +1,18 @@
+import { randomUUID } from 'crypto';
 import { Task, ScheduleService } from './ScheduleService';
+import { createServiceLogger } from '../utils/logger';
+import type {
+  TriggerType,
+  ActionType,
+  TriggerConfig,
+  ActionConfig,
+  WorkflowRule,
+  WorkflowExecution,
+} from '@shared/types';
 
-export type TriggerType = 'status_change' | 'date_passed' | 'progress_threshold';
-export type ActionType = 'update_field' | 'log_activity' | 'send_notification';
+export type { TriggerType, ActionType, TriggerConfig, ActionConfig, WorkflowRule, WorkflowExecution };
 
-export interface TriggerConfig {
-  type: TriggerType;
-  fromStatus?: string;
-  toStatus?: string;
-  progressThreshold?: number;
-  progressDirection?: 'above' | 'below';
-}
-
-export interface ActionConfig {
-  type: ActionType;
-  field?: string;
-  value?: string;
-  message?: string;
-}
-
-export interface WorkflowRule {
-  id: string;
-  name: string;
-  description?: string;
-  enabled: boolean;
-  trigger: TriggerConfig;
-  action: ActionConfig;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface WorkflowExecution {
-  ruleId: string;
-  ruleName: string;
-  taskId: string;
-  taskName: string;
-  actionType: string;
-  result: string;
-  executedAt: string;
-}
+const log = createServiceLogger('workflow');
 
 export class WorkflowService {
   private static rules: WorkflowRule[] = [
@@ -48,6 +23,7 @@ export class WorkflowService {
       enabled: true,
       trigger: { type: 'progress_threshold', progressThreshold: 100, progressDirection: 'above' },
       action: { type: 'update_field', field: 'status', value: 'completed' },
+      createdBy: '1',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -58,6 +34,7 @@ export class WorkflowService {
       enabled: true,
       trigger: { type: 'status_change', toStatus: 'in_progress' },
       action: { type: 'log_activity', message: 'Task work has started' },
+      createdBy: '1',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -68,6 +45,7 @@ export class WorkflowService {
       enabled: false,
       trigger: { type: 'status_change', toStatus: 'cancelled' },
       action: { type: 'send_notification', message: 'A task has been cancelled' },
+      createdBy: '1',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -79,14 +57,26 @@ export class WorkflowService {
     return [...WorkflowService.rules];
   }
 
+  findByUser(userId: string): WorkflowRule[] {
+    return WorkflowService.rules.filter(r => r.createdBy === userId);
+  }
+
   findById(id: string): WorkflowRule | undefined {
     return WorkflowService.rules.find(r => r.id === id);
   }
 
-  create(data: Omit<WorkflowRule, 'id' | 'createdAt' | 'updatedAt'>): WorkflowRule {
+  getExecutionsByUser(userId: string): WorkflowExecution[] {
+    const userRuleIds = new Set(WorkflowService.rules.filter(r => r.createdBy === userId).map(r => r.id));
+    return [...WorkflowService.executions]
+      .filter(e => userRuleIds.has(e.ruleId))
+      .sort((a, b) => new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime());
+  }
+
+  create(data: Omit<WorkflowRule, 'id' | 'createdAt' | 'updatedAt'>, userId?: string): WorkflowRule {
     const rule: WorkflowRule = {
-      id: `wf-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       ...data,
+      createdBy: userId ?? '1',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -126,15 +116,21 @@ export class WorkflowService {
     task: Task,
     oldTask: Task | null,
     scheduleService: ScheduleService,
+    userId?: string,
   ): WorkflowExecution[] {
     const results: WorkflowExecution[] = [];
-    const enabledRules = WorkflowService.rules.filter(r => r.enabled);
+    const enabledRules = WorkflowService.rules.filter(r => r.enabled && (!userId || r.createdBy === userId));
 
     for (const rule of enabledRules) {
       if (this.triggerMatches(rule.trigger, task, oldTask)) {
         const result = this.executeAction(rule, task, scheduleService);
         if (result) {
           WorkflowService.executions.push(result);
+          // Cap executions to prevent unbounded memory growth
+          const MAX_EXECUTIONS = 10000;
+          if (WorkflowService.executions.length > MAX_EXECUTIONS) {
+            WorkflowService.executions.splice(0, WorkflowService.executions.length - MAX_EXECUTIONS);
+          }
           results.push(result);
         }
       }
@@ -209,7 +205,7 @@ export class WorkflowService {
       }
       case 'send_notification': {
         // In-memory: just log it
-        console.log(`[Workflow Notification] ${action.message || rule.name} - Task: ${task.name}`);
+        log.info({ ruleName: rule.name, taskName: task.name }, `Notification: ${action.message || rule.name}`);
         return {
           ruleId: rule.id,
           ruleName: rule.name,

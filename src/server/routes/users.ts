@@ -7,7 +7,7 @@ export async function userRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get current user profile', tags: ['users'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user;
       return {
         user: {
           id: user.userId,
@@ -16,7 +16,7 @@ export async function userRoutes(fastify: FastifyInstance) {
         },
       };
     } catch (error) {
-      console.error('Get user profile error:', error);
+      request.log.error({ err: error }, 'Get user profile error');
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch user profile' });
     }
   });

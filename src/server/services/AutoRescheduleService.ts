@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { ScheduleService, Task } from './ScheduleService';
 import { CriticalPathService } from './CriticalPathService';
 import { claudeService } from './claudeService';
@@ -277,7 +278,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
     }
 
     const proposal: RescheduleProposal = {
-      id: `rp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       scheduleId,
       status: 'pending',
       delayedTasks,
@@ -368,6 +369,10 @@ Please propose date changes to reschedule affected tasks with minimal disruption
   // ---------------------------------------------------------------------------
   // Get Proposals
   // ---------------------------------------------------------------------------
+
+  getProposalById(proposalId: string): RescheduleProposal | undefined {
+    return AutoRescheduleService.proposals.find((p) => p.id === proposalId);
+  }
 
   getProposals(scheduleId: string): RescheduleProposal[] {
     return AutoRescheduleService.proposals

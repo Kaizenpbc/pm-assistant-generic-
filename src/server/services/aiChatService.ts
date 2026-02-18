@@ -294,14 +294,14 @@ export class AIChatService {
     let projectContext = 'No specific project context.';
     if (req.context?.projectId) {
       try {
-        const ctx = await this.contextBuilder.buildProjectContext(req.context.projectId);
+        const ctx = await this.contextBuilder.buildProjectContext(req.context.projectId, req.userId);
         projectContext = this.contextBuilder.toPromptString(ctx);
       } catch {
         projectContext = `Project ID: ${req.context.projectId} (context unavailable)`;
       }
     } else if (req.context?.type === 'dashboard' || req.context?.type === 'reports') {
       try {
-        const ctx = await this.contextBuilder.buildPortfolioContext();
+        const ctx = await this.contextBuilder.buildPortfolioContext(req.userId);
         projectContext = this.contextBuilder.portfolioToPromptString(ctx);
       } catch {
         projectContext = 'Portfolio context unavailable.';
@@ -360,6 +360,18 @@ export class AIChatService {
       createdAt: now,
       updatedAt: now,
     });
+
+    // Cap conversations map to prevent unbounded memory growth
+    const MAX_CONVERSATIONS = 10000;
+    if (AIChatService.conversations.size > MAX_CONVERSATIONS) {
+      // Remove oldest inactive conversations first, then oldest active
+      const sorted = [...AIChatService.conversations.entries()]
+        .sort((a, b) => a[1].updatedAt.localeCompare(b[1].updatedAt));
+      const toRemove = sorted.slice(0, AIChatService.conversations.size - MAX_CONVERSATIONS);
+      for (const [key] of toRemove) {
+        AIChatService.conversations.delete(key);
+      }
+    }
 
     return id;
   }

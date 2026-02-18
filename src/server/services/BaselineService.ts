@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { ScheduleService } from './ScheduleService';
 
 export interface BaselineTask {
@@ -100,7 +101,7 @@ export class BaselineService {
     }));
 
     const baseline: Baseline = {
-      id: `bl-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       scheduleId,
       name,
       createdAt: new Date().toISOString(),

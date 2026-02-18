@@ -6,6 +6,7 @@ import { ResourceService } from '../services/ResourceService';
 import { CriticalPathService } from '../services/CriticalPathService';
 import { SCurveService } from '../services/SCurveService';
 import { config } from '../config';
+import { verifyProjectAccess, verifyScheduleAccess } from '../middleware/authorize';
 import {
   NLQueryAIResponseSchema,
   type NLQueryResult,
@@ -162,6 +163,7 @@ function buildToolDefinitions(): Anthropic.Tool[] {
 async function executeToolFn(
   toolName: string,
   toolInput: Record<string, any>,
+  userId?: string,
 ): Promise<string> {
   const projectService = new ProjectService();
   const scheduleService = new ScheduleService();
@@ -172,7 +174,7 @@ async function executeToolFn(
   switch (toolName) {
     // ----- list_projects -----
     case 'list_projects': {
-      const projects = await projectService.findAll();
+      const projects = userId ? await projectService.findByUserId(userId) : await projectService.findAll();
       const summary = projects.map((p) => ({
         id: p.id,
         name: p.name,
@@ -191,7 +193,7 @@ async function executeToolFn(
     // ----- get_project_details -----
     case 'get_project_details': {
       const projectId = toolInput.projectId as string;
-      const project = await projectService.findById(projectId);
+      const project = await projectService.findById(projectId, userId);
       if (!project) return JSON.stringify({ error: `Project ${projectId} not found` });
 
       const schedules = await scheduleService.findByProjectId(projectId);
@@ -242,6 +244,10 @@ async function executeToolFn(
     // ----- list_tasks -----
     case 'list_tasks': {
       const scheduleId = toolInput.scheduleId as string;
+      if (userId) {
+        const scheduleAccess = await verifyScheduleAccess(scheduleId, userId);
+        if (!scheduleAccess) return JSON.stringify({ error: 'Schedule not found or access denied' });
+      }
       const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
       const summary = tasks.map((t) => ({
         id: t.id,
@@ -261,6 +267,10 @@ async function executeToolFn(
     // ----- get_resource_workload -----
     case 'get_resource_workload': {
       const projectId = toolInput.projectId as string;
+      if (userId) {
+        const projectAccess = await verifyProjectAccess(projectId, userId);
+        if (!projectAccess) return JSON.stringify({ error: 'Project not found or access denied' });
+      }
       const workloads = await resourceService.computeWorkload(projectId);
       return JSON.stringify(workloads, null, 2);
     }
@@ -268,6 +278,10 @@ async function executeToolFn(
     // ----- get_evm_metrics -----
     case 'get_evm_metrics': {
       const projectId = toolInput.projectId as string;
+      if (userId) {
+        const projectAccess = await verifyProjectAccess(projectId, userId);
+        if (!projectAccess) return JSON.stringify({ error: 'Project not found or access denied' });
+      }
       const sCurveData = await sCurveService.computeSCurveData(projectId);
 
       // Compute CPI, SPI, EAC from the latest data point at or before today
@@ -284,7 +298,7 @@ async function executeToolFn(
         cpi = currentPoint.ac > 0 ? +(currentPoint.ev / currentPoint.ac).toFixed(3) : null;
         spi = currentPoint.pv > 0 ? +(currentPoint.ev / currentPoint.pv).toFixed(3) : null;
 
-        const project = await projectService.findById(projectId);
+        const project = await projectService.findById(projectId, userId);
         const bac = project?.budgetAllocated ?? 0;
         eac = cpi && cpi > 0 ? Math.round(bac / cpi) : null;
       }
@@ -312,14 +326,27 @@ async function executeToolFn(
     // ----- get_critical_path -----
     case 'get_critical_path': {
       const scheduleId = toolInput.scheduleId as string;
+      if (userId) {
+        const scheduleAccess = await verifyScheduleAccess(scheduleId, userId);
+        if (!scheduleAccess) return JSON.stringify({ error: 'Schedule not found or access denied' });
+      }
       const result = await criticalPathService.calculateCriticalPath(scheduleId);
       return JSON.stringify(result, null, 2);
     }
 
     // ----- aggregate_portfolio_stats -----
     case 'aggregate_portfolio_stats': {
-      const projects = await projectService.findAll();
-      const allTasks = await scheduleService.findAllTasks();
+      const projects = userId ? await projectService.findByUserId(userId) : await projectService.findAll();
+
+      // Only aggregate tasks from the user's own projects instead of all tasks
+      const allTasks = [];
+      for (const p of projects) {
+        const schedules = await scheduleService.findByProjectId(p.id);
+        for (const sch of schedules) {
+          const tasks = await scheduleService.findTasksByScheduleId(sch.id);
+          allTasks.push(...tasks);
+        }
+      }
 
       const totalBudgetAllocated = projects.reduce((s, p) => s + (p.budgetAllocated ?? 0), 0);
       const totalBudgetSpent = projects.reduce((s, p) => s + (p.budgetSpent ?? 0), 0);
@@ -416,7 +443,7 @@ export class NLQueryService {
       systemPrompt: TOOL_LOOP_SYSTEM_PROMPT,
       userMessage,
       tools,
-      executeToolFn,
+      executeToolFn: (toolName, toolInput) => executeToolFn(toolName, toolInput, userId),
       maxIterations: 6,
       temperature: 0.2,
     });

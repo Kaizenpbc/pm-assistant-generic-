@@ -56,10 +56,10 @@ export type NLQueryResult = z.infer<typeof NLQueryResultSchema>;
 // ---------------------------------------------------------------------------
 
 export const NLQueryRequestSchema = z.object({
-  query: z.string().min(3, 'Query must be at least 3 characters'),
+  query: z.string().min(3, 'Query must be at least 3 characters').max(2000, 'Query must not exceed 2,000 characters'),
   context: z
     .object({
-      projectId: z.string().optional(),
+      projectId: z.string().max(100).optional(),
     })
     .optional(),
 });

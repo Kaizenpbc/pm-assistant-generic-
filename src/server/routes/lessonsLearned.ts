@@ -1,13 +1,35 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z, ZodError } from 'zod';
 import { LessonsLearnedService } from '../services/LessonsLearnedService';
+import { projectIdParam } from '../schemas/commonSchemas';
+import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess } from '../middleware/authorize';
+
+const mitigationsBodySchema = z.object({
+  riskDescription: z.string().min(1, 'riskDescription is required').max(5000),
+  projectType: z.string().min(1, 'projectType is required').max(100),
+});
+
+const addLessonBodySchema = z.object({
+  projectId: z.string().min(1, 'projectId is required').max(100),
+  projectName: z.string().max(255).default(''),
+  projectType: z.string().max(100).default('other'),
+  category: z.enum(['schedule', 'budget', 'resource', 'risk', 'technical', 'communication', 'stakeholder', 'quality']).default('quality'),
+  title: z.string().min(1, 'title is required').max(500),
+  description: z.string().min(1, 'description is required').max(5000),
+  impact: z.enum(['positive', 'negative', 'neutral']).default('neutral'),
+  recommendation: z.string().min(1, 'recommendation is required').max(5000),
+  confidence: z.number().min(0).max(100).optional(),
+});
 
 export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   const service = new LessonsLearnedService();
 
   // GET /knowledge-base — Aggregated knowledge base overview
-  fastify.get('/knowledge-base', async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/knowledge-base', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const overview = await service.getKnowledgeBase();
+      const userId = request.user.userId;
+      const overview = await service.getKnowledgeBase(userId);
       return reply.send({ data: overview });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to get knowledge base');
@@ -16,43 +38,46 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   });
 
   // POST /extract/:projectId — Extract lessons from a project
-  fastify.post('/extract/:projectId', async (
-    request: FastifyRequest<{ Params: { projectId: string } }>,
+  fastify.post('/extract/:projectId', { preHandler: [authMiddleware] }, async (
+    request: FastifyRequest,
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params;
-      const userId = (request as any).userId || undefined;
+      const { projectId } = projectIdParam.parse(request.params);
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const lessons = await service.extractLessons(projectId, userId);
       return reply.send({ lessons });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to extract lessons');
-      const message = err instanceof Error ? err.message : 'Failed to extract lessons';
-      return reply.status(500).send({ error: message });
+      return reply.status(500).send({ error: 'Failed to extract lessons' });
     }
   });
 
   // GET /relevant — Find relevant lessons by projectType and/or category
-  fastify.get('/relevant', async (
-    request: FastifyRequest<{
-      Querystring: { projectType?: string; category?: string };
-    }>,
+  fastify.get('/relevant', { preHandler: [authMiddleware] }, async (
+    request: FastifyRequest,
     reply: FastifyReply,
   ) => {
     try {
-      const { projectType, category } = request.query;
-      const lessons = await service.findRelevantLessons(projectType, category);
+      const querySchema = z.object({ projectType: z.string().optional(), category: z.string().optional() });
+      const { projectType, category } = querySchema.parse(request.query);
+      const userId = request.user.userId;
+      const lessons = await service.findRelevantLessons(projectType, category, userId);
       return reply.send({ lessons });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to find relevant lessons');
       return reply.status(500).send({ error: 'Failed to find relevant lessons' });
     }
   });
 
   // POST /patterns — Detect cross-project patterns
-  fastify.post('/patterns', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/patterns', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId;
       const patterns = await service.detectPatterns(userId);
       return reply.send({ patterns });
     } catch (err) {
@@ -62,70 +87,57 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   });
 
   // POST /mitigations — Suggest mitigations for a risk
-  fastify.post('/mitigations', async (
-    request: FastifyRequest<{
-      Body: { riskDescription: string; projectType: string };
-    }>,
+  fastify.post('/mitigations', { preHandler: [authMiddleware] }, async (
+    request: FastifyRequest,
     reply: FastifyReply,
   ) => {
     try {
-      const { riskDescription, projectType } = request.body;
-      if (!riskDescription || !projectType) {
-        return reply.status(400).send({ error: 'riskDescription and projectType are required' });
-      }
-      const userId = (request as any).userId || undefined;
+      const { riskDescription, projectType } = mitigationsBodySchema.parse(request.body);
+      const userId = request.user.userId;
       const suggestions = await service.suggestMitigations(riskDescription, projectType, userId);
       return reply.send({ suggestions });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to suggest mitigations');
       return reply.status(500).send({ error: 'Failed to suggest mitigations' });
     }
   });
 
   // POST / — Add a lesson manually
-  fastify.post('/', async (
-    request: FastifyRequest<{
-      Body: {
-        projectId: string;
-        projectName: string;
-        projectType: string;
-        category: string;
-        title: string;
-        description: string;
-        impact: string;
-        recommendation: string;
-        confidence?: number;
-      };
-    }>,
+  fastify.post('/', { preHandler: [authMiddleware] }, async (
+    request: FastifyRequest,
     reply: FastifyReply,
   ) => {
     try {
-      const body = request.body;
-      if (!body.projectId || !body.title || !body.description || !body.recommendation) {
-        return reply.status(400).send({ error: 'projectId, title, description, and recommendation are required' });
-      }
+      const body = addLessonBodySchema.parse(request.body);
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(body.projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this project' });
       const lesson = await service.addLesson({
         projectId: body.projectId,
-        projectName: body.projectName || '',
-        projectType: body.projectType || 'other',
-        category: (body.category as any) || 'quality',
+        projectName: body.projectName,
+        projectType: body.projectType,
+        category: body.category,
         title: body.title,
         description: body.description,
-        impact: (body.impact as any) || 'neutral',
+        impact: body.impact,
         recommendation: body.recommendation,
         confidence: body.confidence,
+        userId,
       });
       return reply.status(201).send({ lesson });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Failed to add lesson');
       return reply.status(500).send({ error: 'Failed to add lesson' });
     }
   });
 
   // POST /seed — Seed initial lessons from existing project data
-  fastify.post('/seed', async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/seed', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const seeded = await service.seedFromProjects();
+      const userId = request.user.userId;
+      const seeded = await service.seedFromProjects(userId);
       return reply.send({ seeded });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to seed lessons');

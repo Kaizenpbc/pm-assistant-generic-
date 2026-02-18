@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { ScheduleService } from './ScheduleService';
 
 export interface Resource {
@@ -184,7 +185,7 @@ export class ResourceService {
 
   async createResource(data: Omit<Resource, 'id'>): Promise<Resource> {
     const resource: Resource = {
-      id: `res-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       ...data,
     };
     ResourceService.resources.push(resource);
@@ -208,6 +209,10 @@ export class ResourceService {
 
   // --- Assignment CRUD ---
 
+  async findAssignmentById(id: string): Promise<ResourceAssignment | null> {
+    return ResourceService.assignments.find(a => a.id === id) || null;
+  }
+
   async findAssignmentsBySchedule(scheduleId: string): Promise<ResourceAssignment[]> {
     return this.assignments.filter((a) => a.scheduleId === scheduleId);
   }
@@ -218,7 +223,7 @@ export class ResourceService {
 
   async createAssignment(data: Omit<ResourceAssignment, 'id'>): Promise<ResourceAssignment> {
     const assignment: ResourceAssignment = {
-      id: `asgn-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       ...data,
     };
     ResourceService.assignments.push(assignment);

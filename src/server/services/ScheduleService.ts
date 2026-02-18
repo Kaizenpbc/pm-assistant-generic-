@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 export interface Schedule {
   id: string;
   projectId: string;
@@ -476,7 +478,7 @@ export class ScheduleService {
 
   async create(data: CreateScheduleData): Promise<Schedule> {
     const schedule: Schedule = {
-      id: `sch-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       ...data,
       status: 'active',
       createdAt: new Date(),
@@ -540,7 +542,7 @@ export class ScheduleService {
 
   async createTask(data: CreateTaskData): Promise<Task> {
     const task: Task = {
-      id: `task-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       ...data,
       status: data.status || 'pending',
       priority: data.priority || 'medium',
@@ -587,7 +589,7 @@ export class ScheduleService {
 
   addComment(taskId: string, text: string, userId: string, userName: string): TaskComment {
     const comment: TaskComment = {
-      id: `cmt-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       taskId,
       userId,
       userName,
@@ -595,6 +597,10 @@ export class ScheduleService {
       createdAt: new Date().toISOString(),
     };
     ScheduleService.comments.push(comment);
+    // Cap comments to prevent unbounded memory growth
+    if (ScheduleService.comments.length > 10000) {
+      ScheduleService.comments.splice(0, ScheduleService.comments.length - 10000);
+    }
     return comment;
   }
 
@@ -604,8 +610,10 @@ export class ScheduleService {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  deleteComment(commentId: string): boolean {
-    const idx = ScheduleService.comments.findIndex((c) => c.id === commentId);
+  deleteComment(commentId: string, userId: string): boolean {
+    const idx = ScheduleService.comments.findIndex(
+      (c) => c.id === commentId && c.userId === userId
+    );
     if (idx === -1) return false;
     ScheduleService.comments.splice(idx, 1);
     return true;
@@ -625,7 +633,7 @@ export class ScheduleService {
     newValue?: string,
   ): TaskActivityEntry {
     const entry: TaskActivityEntry = {
-      id: `act-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       taskId,
       userId,
       userName,
@@ -636,6 +644,10 @@ export class ScheduleService {
       createdAt: new Date().toISOString(),
     };
     ScheduleService.activities.push(entry);
+    // Cap activities to prevent unbounded memory growth
+    if (ScheduleService.activities.length > 10000) {
+      ScheduleService.activities.splice(0, ScheduleService.activities.length - 10000);
+    }
     return entry;
   }
 

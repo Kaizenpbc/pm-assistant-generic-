@@ -152,7 +152,7 @@ export class AIReportService {
   }
 
   async getReportHistory(userId?: string, limit: number = 20): Promise<any[]> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return [];
 
     try {
@@ -169,7 +169,7 @@ export class AIReportService {
            LIMIT ?`;
 
       const params = userId ? [userId, limit] : [limit];
-      const [rows]: any = await db.query(query, params);
+      const rows: any[] = await db.query(query, params);
 
       return rows.map((row: any) => {
         let reportData: any = {};
@@ -199,7 +199,7 @@ export class AIReportService {
   }
 
   private async storeReport(report: GeneratedReport, userId: string): Promise<void> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return;
 
     try {

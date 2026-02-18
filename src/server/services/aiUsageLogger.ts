@@ -31,8 +31,8 @@ export function calculateCost(model: string, usage: TokenUsage): number {
 }
 
 export function logAIUsage(fastify: FastifyInstance, entry: AIUsageEntry): void {
-  const db = (fastify as any).mysql || (fastify as any).db;
-  if (!db) return;
+  const db = (fastify as any).db;
+  if (!db || !db.isHealthy()) return;
 
   const id = randomUUID();
   const costEstimate = calculateCost(entry.model, entry.usage);

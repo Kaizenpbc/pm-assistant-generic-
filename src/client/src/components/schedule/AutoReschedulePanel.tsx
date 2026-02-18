@@ -19,6 +19,9 @@ interface Delay {
   severity: 'critical' | 'high' | 'medium' | 'low';
   reason: string;
   isCriticalPath: boolean;
+  // Extended fields (may come from backend if available)
+  currentProgress?: number;
+  expectedProgress?: number;
 }
 
 interface TaskChange {
@@ -35,6 +38,7 @@ interface EstimatedImpact {
   originalEndDate: string;
   proposedEndDate: string;
   daysChange: number;
+  criticalPathImpact?: string;
 }
 
 interface Proposal {
@@ -201,32 +205,71 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
 
             {!delaysLoading && delays.length > 0 && (
               <div className="space-y-2">
+                {/* Summary strip */}
+                <div className="flex items-center gap-3 text-xs text-gray-500 mb-1">
+                  <span>{delays.length} delay{delays.length !== 1 ? 's' : ''} detected</span>
+                  <span className="text-red-500 font-medium">
+                    {delays.filter(d => d.isCriticalPath).length} on critical path
+                  </span>
+                </div>
+
                 {delays.map((delay) => {
                   const colors = severityColors[delay.severity] || severityColors.low;
+                  const hasProgress = delay.currentProgress !== undefined && delay.expectedProgress !== undefined;
+
                   return (
                     <div
                       key={delay.taskId}
-                      className="flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3"
+                      className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3"
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900 truncate">
-                            {delay.taskName}
-                          </span>
-                          {delay.isCriticalPath && (
-                            <Flag className="w-3.5 h-3.5 text-red-500 flex-shrink-0" aria-label="Critical path" />
-                          )}
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900 truncate">
+                              {delay.taskName}
+                            </span>
+                            {delay.isCriticalPath && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-semibold text-red-700 flex-shrink-0">
+                                <Flag className="w-2.5 h-2.5" />
+                                Critical Path
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5 truncate">{delay.reason}</p>
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">{delay.reason}</p>
+                        <span className="text-sm font-semibold text-red-600 whitespace-nowrap">
+                          -{delay.delayDays}d
+                        </span>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${colors.bg} ${colors.text}`}
+                        >
+                          {delay.severity}
+                        </span>
                       </div>
-                      <span className="text-sm font-semibold text-red-600 whitespace-nowrap">
-                        -{delay.delayDays}d
-                      </span>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${colors.bg} ${colors.text}`}
-                      >
-                        {delay.severity}
-                      </span>
+
+                      {/* Progress comparison bar */}
+                      {hasProgress && (
+                        <div className="mt-2 space-y-1">
+                          <div className="flex justify-between text-[10px] text-gray-500">
+                            <span>Progress: {Math.round(delay.currentProgress!)}% actual</span>
+                            <span>{Math.round(delay.expectedProgress!)}% expected</span>
+                          </div>
+                          <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                            {/* Expected progress marker */}
+                            <div
+                              className="absolute top-0 h-full bg-gray-300 rounded-full"
+                              style={{ width: `${Math.min(100, delay.expectedProgress!)}%` }}
+                            />
+                            {/* Actual progress bar */}
+                            <div
+                              className={`absolute top-0 h-full rounded-full ${
+                                delay.currentProgress! >= delay.expectedProgress! ? 'bg-green-500' : 'bg-red-500'
+                              }`}
+                              style={{ width: `${Math.min(100, delay.currentProgress!)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -350,6 +393,17 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                     </p>
                   </div>
                 </div>
+
+                {/* Critical Path Impact explanation */}
+                {proposal.estimatedImpact.criticalPathImpact && (
+                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-red-100 bg-red-50 p-3">
+                    <Flag className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[10px] uppercase font-semibold text-red-600 mb-0.5">Critical Path Impact</p>
+                      <p className="text-xs text-gray-700 leading-relaxed">{proposal.estimatedImpact.criticalPathImpact}</p>
+                    </div>
+                  </div>
+                )}
               </section>
 
               {/* Reject Feedback */}

@@ -1,8 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { ZodError } from 'zod';
 import { AnomalyDetectionService } from '../services/anomalyDetectionService';
 import { CrossProjectIntelligenceService } from '../services/crossProjectIntelligenceService';
 import { WhatIfScenarioService } from '../services/whatIfScenarioService';
 import { AIScenarioRequestSchema } from '../schemas/phase5Schemas';
+import { projectIdParam } from '../schemas/commonSchemas';
+import { authMiddleware } from '../middleware/auth';
+import { verifyProjectAccess } from '../middleware/authorize';
 
 export async function intelligenceRoutes(fastify: FastifyInstance) {
   const anomalyService = new AnomalyDetectionService(fastify);
@@ -10,9 +14,9 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   const scenarioService = new WhatIfScenarioService(fastify);
 
   // Anomaly Detection
-  fastify.get('/anomalies', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/anomalies', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId;
       const report = await anomalyService.detectPortfolioAnomalies(userId);
       return reply.send({ data: report, aiPowered: report.aiPowered });
     } catch (err) {
@@ -21,25 +25,28 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/anomalies/project/:projectId', async (
-    request: FastifyRequest<{ Params: { projectId: string } }>,
+  fastify.get('/anomalies/project/:projectId', { preHandler: [authMiddleware] }, async (
+    request: FastifyRequest,
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params;
-      const userId = (request as any).userId || undefined;
+      const { projectId } = projectIdParam.parse(request.params);
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const report = await anomalyService.detectProjectAnomalies(projectId, userId);
       return reply.send({ data: report, aiPowered: report.aiPowered });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Project anomaly detection failed');
       return reply.status(500).send({ error: 'Failed to detect project anomalies' });
     }
   });
 
   // Cross-Project Intelligence
-  fastify.get('/cross-project', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/cross-project', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId;
       const { insight, aiPowered } = await crossProjectService.analyzePortfolio(userId);
       return reply.send({ data: insight, aiPowered });
     } catch (err) {
@@ -48,32 +55,35 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/cross-project/similar/:projectId', async (
-    request: FastifyRequest<{ Params: { projectId: string } }>,
+  fastify.get('/cross-project/similar/:projectId', { preHandler: [authMiddleware] }, async (
+    request: FastifyRequest,
     reply: FastifyReply,
   ) => {
     try {
-      const { projectId } = request.params;
-      const userId = (request as any).userId || undefined;
+      const { projectId } = projectIdParam.parse(request.params);
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const { similar, aiPowered } = await crossProjectService.findSimilarProjects(projectId, userId);
       return reply.send({ data: similar, aiPowered });
     } catch (err) {
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Similar projects search failed');
       return reply.status(500).send({ error: 'Failed to find similar projects' });
     }
   });
 
   // What-If Scenarios
-  fastify.post('/scenarios', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/scenarios', { preHandler: [authMiddleware] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AIScenarioRequestSchema.parse(request.body);
-      const userId = (request as any).userId || undefined;
+      const userId = request.user.userId;
+      const project = await verifyProjectAccess(parsed.projectId, userId);
+      if (!project) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this resource' });
       const { result, aiPowered } = await scenarioService.modelScenario(parsed, userId);
       return reply.send({ data: result, aiPowered });
     } catch (err) {
-      if (err instanceof Error && err.name === 'ZodError') {
-        return reply.status(400).send({ error: 'Invalid scenario request data' });
-      }
+      if (err instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: err.issues.map(e => e.message).join(', ') });
       fastify.log.error({ err }, 'Scenario modeling failed');
       return reply.status(500).send({ error: 'Failed to model scenario' });
     }

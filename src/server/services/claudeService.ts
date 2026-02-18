@@ -1,6 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { config } from '../config';
+import { createServiceLogger } from '../utils/logger';
+
+const log = createServiceLogger('claude');
 
 // ---------------------------------------------------------------------------
 // Types
@@ -270,8 +273,8 @@ export class ClaudeService {
 
     if (this.aiEnabled) {
       if (!config.ANTHROPIC_API_KEY) {
-        console.warn(
-          '[ClaudeService] AI_ENABLED is true but ANTHROPIC_API_KEY is not configured. ' +
+        log.warn(
+          'AI_ENABLED is true but ANTHROPIC_API_KEY is not configured. ' +
             'AI features will be unavailable until a valid API key is provided.',
         );
         this.aiEnabled = false;

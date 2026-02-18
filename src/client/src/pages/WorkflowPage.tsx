@@ -2,32 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, Zap, Clock } from 'lucide-react';
 import { apiService } from '../services/api';
-
-interface TriggerConfig {
-  type: 'status_change' | 'date_passed' | 'progress_threshold';
-  fromStatus?: string;
-  toStatus?: string;
-  progressThreshold?: number;
-  progressDirection?: 'above' | 'below';
-}
-
-interface ActionConfig {
-  type: 'update_field' | 'log_activity' | 'send_notification';
-  field?: string;
-  value?: string;
-  message?: string;
-}
-
-interface WorkflowRule {
-  id: string;
-  name: string;
-  description?: string;
-  enabled: boolean;
-  trigger: TriggerConfig;
-  action: ActionConfig;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { TriggerConfig, ActionConfig, WorkflowRule } from '@shared/types';
 
 const defaultTrigger: TriggerConfig = { type: 'status_change', toStatus: 'completed' };
 const defaultAction: ActionConfig = { type: 'log_activity', message: '' };

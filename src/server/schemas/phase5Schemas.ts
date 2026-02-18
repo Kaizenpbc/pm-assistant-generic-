@@ -5,12 +5,12 @@ import { z } from 'zod';
 // ---------------------------------------------------------------------------
 
 export const AIFeedbackRecordSchema = z.object({
-  feature: z.string(),
-  projectId: z.string().optional(),
+  feature: z.string().max(100),
+  projectId: z.string().max(100).optional(),
   userAction: z.enum(['accepted', 'modified', 'rejected']),
   suggestionData: z.record(z.string(), z.unknown()).optional(),
   modifiedData: z.record(z.string(), z.unknown()).optional(),
-  feedbackText: z.string().optional(),
+  feedbackText: z.string().max(5000).optional(),
 });
 
 export type AIFeedbackRecord = z.infer<typeof AIFeedbackRecordSchema>;
@@ -83,8 +83,8 @@ export type AILearningContext = z.infer<typeof AILearningContextSchema>;
 // ---------------------------------------------------------------------------
 
 export const AIScenarioRequestSchema = z.object({
-  projectId: z.string(),
-  scenario: z.string(),
+  projectId: z.string().max(100),
+  scenario: z.string().max(10000),
   parameters: z.object({
     budgetChangePct: z.number().optional(),
     workerChange: z.number().optional(),

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { claudeService, PromptTemplate } from './claudeService';
 import { ProjectService } from './ProjectService';
 import { ScheduleService } from './ScheduleService';
@@ -85,7 +86,7 @@ export class LessonsLearnedService {
   // Seed initial lessons deterministically from existing project data
   // -----------------------------------------------------------------------
 
-  async seedFromProjects(): Promise<number> {
+  async seedFromProjects(userId?: string): Promise<number> {
     // Avoid duplicate seeding
     if (LessonsLearnedService.lessons.length > 0) {
       return 0;
@@ -93,7 +94,9 @@ export class LessonsLearnedService {
 
     const projectService = new ProjectService();
     const scheduleService = new ScheduleService();
-    const projects = await projectService.findAll();
+    const projects = userId
+      ? await projectService.findByUserId(userId)
+      : await projectService.findAll();
     const seededLessons: LessonLearned[] = [];
     let counter = 0;
 
@@ -228,6 +231,13 @@ export class LessonsLearnedService {
       }
     }
 
+    // Stamp userId on all seeded lessons for ownership filtering
+    if (userId) {
+      for (const lesson of seededLessons) {
+        lesson.userId = userId;
+      }
+    }
+
     LessonsLearnedService.lessons.push(...seededLessons);
     return seededLessons.length;
   }
@@ -236,11 +246,13 @@ export class LessonsLearnedService {
   // Extract lessons from a specific project (AI-enhanced)
   // -----------------------------------------------------------------------
 
-  async extractLessons(projectId: string, _userId?: string): Promise<LessonLearned[]> {
+  async extractLessons(projectId: string, userId?: string): Promise<LessonLearned[]> {
     const projectService = new ProjectService();
     const scheduleService = new ScheduleService();
 
-    const project = await projectService.findById(projectId);
+    const project = userId
+      ? await projectService.findById(projectId, userId)
+      : await projectService.findById(projectId);
     if (!project) {
       throw new Error(`Project ${projectId} not found`);
     }
@@ -306,6 +318,7 @@ export class LessonsLearnedService {
           impact: l.impact,
           recommendation: l.recommendation,
           confidence: l.confidence,
+          userId,
           createdAt: new Date().toISOString(),
         }));
 
@@ -318,12 +331,13 @@ export class LessonsLearnedService {
     }
 
     // Deterministic fallback: generate basic lessons from data analysis
-    return this.extractLessonsDeterministic(project, scheduleData);
+    return this.extractLessonsDeterministic(project, scheduleData, userId);
   }
 
   private extractLessonsDeterministic(
     project: { id: string; name: string; projectType: string; budgetAllocated?: number; budgetSpent: number; startDate?: Date; endDate?: Date; status: string },
     scheduleData: Array<{ scheduleName: string; tasks: any[] }>,
+    userId?: string,
   ): LessonLearned[] {
     const newLessons: LessonLearned[] = [];
     const allTasks = scheduleData.flatMap((s) => s.tasks);
@@ -406,6 +420,13 @@ export class LessonsLearnedService {
       });
     }
 
+    // Stamp userId on deterministic lessons for ownership filtering
+    if (userId) {
+      for (const lesson of newLessons) {
+        lesson.userId = userId;
+      }
+    }
+
     LessonsLearnedService.lessons.push(...newLessons);
     return newLessons;
   }
@@ -414,8 +435,11 @@ export class LessonsLearnedService {
   // Knowledge Base Overview
   // -----------------------------------------------------------------------
 
-  async getKnowledgeBase(): Promise<KnowledgeBaseOverview> {
-    const lessons = LessonsLearnedService.lessons;
+  async getKnowledgeBase(userId?: string): Promise<KnowledgeBaseOverview> {
+    const lessons = userId
+      ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
+      : LessonsLearnedService.lessons;
+    // Patterns are regenerated per-user, so use the cached set (already user-scoped from detectPatterns)
     const patterns = LessonsLearnedService.patterns;
 
     const byCategory: Record<string, number> = {};
@@ -448,8 +472,10 @@ export class LessonsLearnedService {
   // Find relevant lessons (filtered)
   // -----------------------------------------------------------------------
 
-  async findRelevantLessons(projectType?: string, category?: string): Promise<LessonLearned[]> {
-    let results = [...LessonsLearnedService.lessons];
+  async findRelevantLessons(projectType?: string, category?: string, userId?: string): Promise<LessonLearned[]> {
+    let results = userId
+      ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
+      : [...LessonsLearnedService.lessons];
 
     if (projectType) {
       results = results.filter((l) => l.projectType === projectType);
@@ -467,8 +493,10 @@ export class LessonsLearnedService {
   // Detect patterns across projects (AI-enhanced)
   // -----------------------------------------------------------------------
 
-  async detectPatterns(_userId?: string): Promise<Pattern[]> {
-    const lessons = LessonsLearnedService.lessons;
+  async detectPatterns(userId?: string): Promise<Pattern[]> {
+    const lessons = userId
+      ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
+      : LessonsLearnedService.lessons;
 
     if (lessons.length === 0) {
       return [];
@@ -520,11 +548,13 @@ export class LessonsLearnedService {
     }
 
     // Deterministic fallback: group lessons by category and find repeating themes
-    return this.detectPatternsDeterministic();
+    return this.detectPatternsDeterministic(userId);
   }
 
-  private detectPatternsDeterministic(): Pattern[] {
-    const lessons = LessonsLearnedService.lessons;
+  private detectPatternsDeterministic(userId?: string): Pattern[] {
+    const lessons = userId
+      ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
+      : LessonsLearnedService.lessons;
     const categoryGroups: Record<string, LessonLearned[]> = {};
 
     for (const lesson of lessons) {
@@ -584,10 +614,13 @@ export class LessonsLearnedService {
   async suggestMitigations(
     riskDescription: string,
     projectType: string,
-    _userId?: string,
+    userId?: string,
   ): Promise<MitigationSuggestion[]> {
-    // Find relevant historical lessons
-    const relevantLessons = LessonsLearnedService.lessons.filter((l) => {
+    // Find relevant historical lessons scoped to user
+    const userLessons = userId
+      ? LessonsLearnedService.lessons.filter((l) => l.userId === userId)
+      : LessonsLearnedService.lessons;
+    const relevantLessons = userLessons.filter((l) => {
       const typeMatch = l.projectType === projectType;
       const descLower = riskDescription.toLowerCase();
       const categoryMatch =
@@ -713,9 +746,10 @@ export class LessonsLearnedService {
     impact: LessonLearned['impact'];
     recommendation: string;
     confidence?: number;
+    userId?: string;
   }): Promise<LessonLearned> {
     const lesson: LessonLearned = {
-      id: `ll-manual-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      id: randomUUID(),
       projectId: data.projectId,
       projectName: data.projectName,
       projectType: data.projectType,
@@ -725,10 +759,16 @@ export class LessonsLearnedService {
       impact: data.impact,
       recommendation: data.recommendation,
       confidence: data.confidence ?? 80,
+      userId: data.userId,
       createdAt: new Date().toISOString(),
     };
 
     LessonsLearnedService.lessons.push(lesson);
+    // Cap lessons to prevent unbounded memory growth
+    const MAX_LESSONS = 10000;
+    if (LessonsLearnedService.lessons.length > MAX_LESSONS) {
+      LessonsLearnedService.lessons.splice(0, LessonsLearnedService.lessons.length - MAX_LESSONS);
+    }
     return lesson;
   }
 }

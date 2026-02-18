@@ -71,8 +71,10 @@ export class AIContextBuilder {
     this.scheduleService = new ScheduleService();
   }
 
-  async buildProjectContext(projectId: string): Promise<ProjectContext> {
-    const project = await this.projectService.findById(projectId);
+  async buildProjectContext(projectId: string, userId?: string): Promise<ProjectContext> {
+    const project = userId
+      ? await this.projectService.findById(projectId, userId)
+      : await this.projectService.findById(projectId);
     if (!project) {
       throw new Error(`Project not found: ${projectId}`);
     }
@@ -120,8 +122,10 @@ export class AIContextBuilder {
     };
   }
 
-  async buildPortfolioContext(): Promise<PortfolioContext> {
-    const projects = await this.projectService.findAll();
+  async buildPortfolioContext(userId?: string): Promise<PortfolioContext> {
+    const projects = userId
+      ? await this.projectService.findByUserId(userId)
+      : await this.projectService.findAll();
 
     const byStatus: Record<string, number> = {};
     const byPriority: Record<string, number> = {};

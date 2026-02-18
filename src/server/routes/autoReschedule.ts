@@ -1,10 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { AutoRescheduleService } from '../services/AutoRescheduleService';
 import { ProposedChangeSchema } from '../schemas/autoRescheduleSchemas';
+import { idParam, scheduleIdParam } from '../schemas/commonSchemas';
+import { authMiddleware } from '../middleware/auth';
+import { verifyScheduleAccess } from '../middleware/authorize';
 
 const rejectBodySchema = z.object({
-  feedback: z.string().optional(),
+  feedback: z.string().max(5000).optional(),
 });
 
 const modifyBodySchema = z.object({
@@ -16,14 +19,19 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // GET /:scheduleId/delays — detect delayed tasks
   fastify.get('/:scheduleId/delays', {
+    preHandler: [authMiddleware],
     schema: { description: 'Detect delayed tasks in a schedule', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { scheduleId } = request.params as { scheduleId: string };
+      const { scheduleId } = scheduleIdParam.parse(request.params);
+      const userId = request.user.userId;
+      const schedule = await verifyScheduleAccess(scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const delayedTasks = await service.detectDelays(scheduleId);
       return { delayedTasks };
     } catch (error) {
-      console.error('Detect delays error:', error);
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Detect delays error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to detect delays',
@@ -33,16 +41,19 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /:scheduleId/propose — generate a reschedule proposal
   fastify.post('/:scheduleId/propose', {
+    preHandler: [authMiddleware],
     schema: { description: 'Generate an AI-powered reschedule proposal', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { scheduleId } = request.params as { scheduleId: string };
-      const user = (request as any).user;
-      const userId = user?.userId || '1';
+      const { scheduleId } = scheduleIdParam.parse(request.params);
+      const userId = request.user.userId;
+      const schedule = await verifyScheduleAccess(scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const proposal = await service.generateProposal(scheduleId, userId);
       return { proposal };
     } catch (error) {
-      console.error('Generate proposal error:', error);
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Generate proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to generate reschedule proposal',
@@ -52,14 +63,19 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // GET /:scheduleId/proposals — list proposals for a schedule
   fastify.get('/:scheduleId/proposals', {
+    preHandler: [authMiddleware],
     schema: { description: 'List reschedule proposals for a schedule', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { scheduleId } = request.params as { scheduleId: string };
+      const { scheduleId } = scheduleIdParam.parse(request.params);
+      const userId = request.user.userId;
+      const schedule = await verifyScheduleAccess(scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const proposals = service.getProposals(scheduleId);
       return { proposals };
     } catch (error) {
-      console.error('Get proposals error:', error);
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Get proposals error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to fetch proposals',
@@ -69,10 +85,16 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /proposals/:id/accept — accept a proposal and apply changes
   fastify.post('/proposals/:id/accept', {
+    preHandler: [authMiddleware],
     schema: { description: 'Accept a reschedule proposal and apply changes', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
+      const userId = request.user.userId;
+      const proposal = service.getProposalById(id);
+      if (!proposal) return reply.status(404).send({ error: 'Proposal not found', message: 'Proposal does not exist or is not in pending status' });
+      const schedule = await verifyScheduleAccess(proposal.scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const accepted = await service.acceptProposal(id);
       if (!accepted) {
         return reply.status(404).send({
@@ -82,7 +104,8 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal accepted and changes applied successfully' };
     } catch (error) {
-      console.error('Accept proposal error:', error);
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Accept proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to accept proposal',
@@ -92,10 +115,16 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /proposals/:id/reject — reject a proposal with optional feedback
   fastify.post('/proposals/:id/reject', {
+    preHandler: [authMiddleware],
     schema: { description: 'Reject a reschedule proposal', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
+      const userId = request.user.userId;
+      const proposal = service.getProposalById(id);
+      if (!proposal) return reply.status(404).send({ error: 'Proposal not found', message: 'Proposal does not exist or is not in pending status' });
+      const schedule = await verifyScheduleAccess(proposal.scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const body = rejectBodySchema.parse(request.body ?? {});
       const rejected = await service.rejectProposal(id, body.feedback);
       if (!rejected) {
@@ -106,7 +135,8 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal rejected successfully' };
     } catch (error) {
-      console.error('Reject proposal error:', error);
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Reject proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to reject proposal',
@@ -116,10 +146,16 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /proposals/:id/modify — modify a proposal with new changes
   fastify.post('/proposals/:id/modify', {
+    preHandler: [authMiddleware],
     schema: { description: 'Modify a reschedule proposal with updated changes', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
+      const { id } = idParam.parse(request.params);
+      const userId = request.user.userId;
+      const proposal = service.getProposalById(id);
+      if (!proposal) return reply.status(404).send({ error: 'Proposal not found', message: 'Proposal does not exist or is not in pending status' });
+      const schedule = await verifyScheduleAccess(proposal.scheduleId, userId);
+      if (!schedule) return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this schedule' });
       const body = modifyBodySchema.parse(request.body);
       const modified = await service.modifyProposal(id, body.modifications);
       if (!modified) {
@@ -130,7 +166,8 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal modified successfully' };
     } catch (error) {
-      console.error('Modify proposal error:', error);
+      if (error instanceof ZodError) return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
+      request.log.error({ err: error }, 'Modify proposal error');
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to modify proposal',

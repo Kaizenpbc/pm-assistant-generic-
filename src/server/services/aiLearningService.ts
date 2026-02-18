@@ -43,7 +43,7 @@ export class AILearningServiceV2 {
   // -------------------------------------------------------------------------
 
   recordFeedback(feedback: AIFeedbackRecord, userId: string): void {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return;
 
     const id = randomUUID();
@@ -70,7 +70,7 @@ export class AILearningServiceV2 {
   // -------------------------------------------------------------------------
 
   recordAccuracy(record: AIAccuracyRecord): void {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return;
 
     const id = randomUUID();
@@ -100,20 +100,23 @@ export class AILearningServiceV2 {
   // Feedback Stats
   // -------------------------------------------------------------------------
 
-  async getFeedbackStats(feature?: string): Promise<{
+  async getFeedbackStats(feature?: string, userId?: string): Promise<{
     total: number;
     accepted: number;
     modified: number;
     rejected: number;
     acceptanceRate: number;
   }> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return { total: 0, accepted: 0, modified: 0, rejected: 0, acceptanceRate: 0 };
 
-    const whereClause = feature ? 'WHERE feature = ?' : '';
-    const params = feature ? [feature] : [];
+    const conditions: string[] = [];
+    const params: any[] = [];
+    if (feature) { conditions.push('feature = ?'); params.push(feature); }
+    if (userId) { conditions.push('user_id = ?'); params.push(userId); }
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const [rows]: any = await db.query(
+    const rows: any[] = await db.query(
       `SELECT user_action, COUNT(*) as cnt
        FROM ai_feedback
        ${whereClause}
@@ -139,8 +142,9 @@ export class AILearningServiceV2 {
 
   async getAccuracyReport(filters?: {
     projectType?: string;
+    userId?: string;
   }): Promise<AIAccuracyReport> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     const emptyReport: AIAccuracyReport = {
       overall: { totalRecords: 0, averageVariance: 0, accuracy: 0 },
       byMetric: [],
@@ -157,7 +161,7 @@ export class AILearningServiceV2 {
     const where = conditions.join(' AND ');
 
     // Overall
-    const [overallRows]: any = await db.query(
+    const overallRows: any[] = await db.query(
       `SELECT COUNT(*) as total, AVG(ABS(variance_pct)) as avg_var FROM ai_accuracy_tracking WHERE ${where}`,
       params,
     );
@@ -166,7 +170,7 @@ export class AILearningServiceV2 {
     const accuracy = Math.max(0, Math.min(100, parseFloat((100 - averageVariance).toFixed(1))));
 
     // By metric
-    const [metricRows]: any = await db.query(
+    const metricRows: any[] = await db.query(
       `SELECT metric_type, COUNT(*) as cnt, AVG(ABS(variance_pct)) as avg_var
        FROM ai_accuracy_tracking WHERE ${where} GROUP BY metric_type`,
       params,
@@ -179,7 +183,7 @@ export class AILearningServiceV2 {
     }));
 
     // By project type
-    const [typeRows]: any = await db.query(
+    const typeRows: any[] = await db.query(
       `SELECT project_type, COUNT(*) as cnt, AVG(ABS(variance_pct)) as avg_var
        FROM ai_accuracy_tracking WHERE ${where} AND project_type IS NOT NULL GROUP BY project_type`,
       params,
@@ -192,7 +196,7 @@ export class AILearningServiceV2 {
     }));
 
     // Feedback summary
-    const feedbackSummary = await this.getFeedbackStats();
+    const feedbackSummary = await this.getFeedbackStats(undefined, filters?.userId);
 
     // Deterministic improvements
     const improvements: string[] = [];
@@ -222,7 +226,7 @@ export class AILearningServiceV2 {
   // -------------------------------------------------------------------------
 
   async buildLearningContext(projectType?: string): Promise<string> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
+    const db = (this.fastify as any).db;
     if (!db) return '';
 
     try {
@@ -231,7 +235,7 @@ export class AILearningServiceV2 {
       if (projectType) { conditions.push('project_type = ?'); params.push(projectType); }
       const where = conditions.join(' AND ');
 
-      const [rows]: any = await db.query(
+      const rows: any[] = await db.query(
         `SELECT metric_type, AVG(ABS(variance_pct)) as avg_var, COUNT(*) as cnt
          FROM ai_accuracy_tracking WHERE ${where} GROUP BY metric_type`,
         params,
@@ -246,7 +250,7 @@ export class AILearningServiceV2 {
       }
 
       // Feedback adjustment patterns
-      const [feedbackRows]: any = await db.query(
+      const feedbackRows: any[] = await db.query(
         `SELECT feature, user_action, COUNT(*) as cnt
          FROM ai_feedback
          WHERE created_at > DATE_SUB(NOW(), INTERVAL 90 DAY)

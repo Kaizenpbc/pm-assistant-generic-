@@ -7,6 +7,18 @@ dist/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.test
+
+# Secrets and certificates
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+secrets/
+.credentials
 
 # Logs
 logs/

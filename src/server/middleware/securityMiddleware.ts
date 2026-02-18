@@ -1,36 +1,28 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { config } from '../config';
+import { randomUUID } from 'crypto';
 
 export async function securityMiddleware(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
+  // Global security headers
   reply.header('X-Robots-Tag', 'noindex, nofollow');
   reply.header('X-Download-Options', 'noopen');
   reply.header('X-Permitted-Cross-Domain-Policies', 'none');
 
-  if (request.url.includes('/api/auth/') || request.url.includes('/api/users/')) {
+  // No-cache on sensitive routes (auth, user profile)
+  if (request.url.includes('/auth/') || request.url.includes('/users/')) {
     reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     reply.header('Pragma', 'no-cache');
     reply.header('Expires', '0');
   }
 
+  // Additional security headers for API routes
+  // NOTE: CORS is handled entirely by @fastify/cors plugin — do NOT set CORS headers here
   if (request.url.startsWith('/api/')) {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('X-Frame-Options', 'DENY');
     reply.header('X-XSS-Protection', '1; mode=block');
-
-    const origin = request.headers.origin;
-    const corsOrigin = origin && (
-      config.NODE_ENV === 'development' ||
-      origin === config.CORS_ORIGIN ||
-      origin.startsWith('http://localhost:')
-    ) ? origin : (config.CORS_ORIGIN || '*');
-
-    reply.header('Access-Control-Allow-Origin', corsOrigin);
-    reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
-    reply.header('Access-Control-Allow-Credentials', 'true');
   }
 }
 
@@ -56,7 +48,7 @@ export async function securityValidationMiddleware(
     }
   }
 
-  const requestId = `req-${Math.random().toString(36).substr(2, 9)}`;
+  const requestId = request.headers['x-request-id'] as string || `req-${randomUUID()}`;
   request.headers['x-request-id'] = requestId;
   reply.header('X-Request-ID', requestId);
 }

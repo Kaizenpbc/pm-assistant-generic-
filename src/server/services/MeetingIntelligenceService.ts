@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { claudeService } from './claudeService';
 import { ScheduleService, Task } from './ScheduleService';
 import { ResourceService, Resource } from './ResourceService';
@@ -33,8 +34,11 @@ export class MeetingIntelligenceService {
     const existingTasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
     const schedule = await this.scheduleService.findById(scheduleId);
 
-    // 2. Gather resources for assignee matching
-    const resources = await this.resourceService.findAllResources();
+    // 2. Gather resources for assignee matching — scoped to this schedule's assignments
+    const assignments = await this.resourceService.findAssignmentsBySchedule(scheduleId);
+    const assignedResourceIds = new Set(assignments.map(a => a.resourceId));
+    const allResources = await this.resourceService.findAllResources();
+    const resources = allResources.filter(r => assignedResourceIds.has(r.id));
 
     // 3. Build context strings
     const taskContext = existingTasks
@@ -112,7 +116,7 @@ Analyze this meeting transcript and extract all actionable information.`;
 
     // 6. Store and return
     const analysis: MeetingAnalysis = {
-      id: `ma-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       projectId,
       scheduleId,
       transcript,
@@ -126,6 +130,11 @@ Analyze this meeting transcript and extract all actionable information.`;
     };
 
     MeetingIntelligenceService.analyses.push(analysis);
+    // Cap analyses to prevent unbounded memory growth
+    const MAX_ANALYSES = 10000;
+    if (MeetingIntelligenceService.analyses.length > MAX_ANALYSES) {
+      MeetingIntelligenceService.analyses.splice(0, MeetingIntelligenceService.analyses.length - MAX_ANALYSES);
+    }
     return analysis;
   }
 

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { ProjectTemplate, TemplateTask, CreateFromTemplate, SaveAsTemplate } from '../schemas/templateSchemas';
 import { ProjectService } from './ProjectService';
 import { ScheduleService } from './ScheduleService';
@@ -343,7 +344,7 @@ export class TemplateService {
   async create(data: Omit<ProjectTemplate, 'id' | 'usageCount'>): Promise<ProjectTemplate> {
     const template: ProjectTemplate = {
       ...data,
-      id: `tpl-${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(),
       usageCount: 0,
     };
     TemplateService.templates.push(template);
