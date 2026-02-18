@@ -6,13 +6,92 @@ import {
   Bot,
   User,
   ChevronDown,
+  ChevronRight,
   CheckCircle,
   XCircle,
+  Wrench,
+  Info,
 } from 'lucide-react';
 import { useAIChatStore, dashboardQuickActions, projectQuickActions, type QuickAction, type ActionResult } from '../../stores/aiChatStore';
 import { AIChatContext } from './AIChatContext';
 import { QuickActions } from './QuickActions';
 import type { AIPanelContext } from '../../stores/uiStore';
+
+// ---------------------------------------------------------------------------
+// Expandable Action Result Card
+// ---------------------------------------------------------------------------
+
+function ActionResultCard({ action }: { action: ActionResult }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const dataEntries = action.data
+    ? Object.entries(action.data).filter(
+        ([, v]) => v !== null && v !== undefined && v !== '',
+      )
+    : [];
+
+  return (
+    <div
+      className={`rounded-lg text-xs ${
+        action.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+      }`}
+    >
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-start gap-2 px-2.5 py-1.5 text-left"
+      >
+        {action.success ? (
+          <CheckCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+        ) : (
+          <XCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+        )}
+        <span className="flex-1">{action.summary}</span>
+        {(dataEntries.length > 0 || action.error) && (
+          <span className="flex items-center gap-0.5 text-[10px] opacity-60">
+            {expanded ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
+            )}
+          </span>
+        )}
+      </button>
+
+      {expanded && (
+        <div className="border-t border-current/10 px-2.5 py-1.5 space-y-1">
+          {action.toolName && (
+            <div className="flex items-center gap-1 text-[10px] opacity-70">
+              <Wrench className="h-2.5 w-2.5" />
+              <span className="font-mono">{action.toolName}</span>
+            </div>
+          )}
+          {action.error && (
+            <p className="text-[10px] text-red-600">{action.error}</p>
+          )}
+          {dataEntries.length > 0 && (
+            <div className="space-y-0.5">
+              {dataEntries.slice(0, 8).map(([key, value]) => (
+                <div key={key} className="flex gap-1.5 text-[10px]">
+                  <span className="font-medium opacity-70 min-w-[60px]">{key}:</span>
+                  <span className="truncate opacity-90">
+                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                  </span>
+                </div>
+              ))}
+              {dataEntries.length > 8 && (
+                <span className="text-[10px] opacity-50">+{dataEntries.length - 8} more fields</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Component
+// ---------------------------------------------------------------------------
 
 interface AIChatPanelProps {
   context: AIPanelContext;
@@ -127,22 +206,19 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
                 {message.actions && message.actions.length > 0 && (
                   <div className="mt-2 space-y-1.5 border-t border-gray-200 pt-2">
                     {message.actions.map((action, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
-                          action.success
-                            ? 'bg-green-50 text-green-700'
-                            : 'bg-red-50 text-red-700'
-                        }`}
-                      >
-                        {action.success ? (
-                          <CheckCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-                        ) : (
-                          <XCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-                        )}
-                        <span>{action.summary}</span>
-                      </div>
+                      <ActionResultCard key={idx} action={action} />
                     ))}
+                  </div>
+                )}
+                {/* Context Attribution */}
+                {message.role === 'assistant' && message.context && (
+                  <div className="mt-2 border-t border-gray-200 pt-1.5">
+                    <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                      <Info className="h-2.5 w-2.5" />
+                      <span>
+                        Context: {message.context.type === 'project' ? `Project ${message.context.projectId?.slice(0, 8)}...` : message.context.type}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>

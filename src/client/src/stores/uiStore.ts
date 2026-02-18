@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface SuggestedAction {
+  toolName: string;
+  params: Record<string, any>;
+  label: string;
+}
+
 export interface Notification {
   id: string;
   type: 'risk' | 'budget' | 'schedule' | 'resource' | 'info';
@@ -9,6 +15,9 @@ export interface Notification {
   message: string;
   projectId?: string;
   projectName?: string;
+  taskId?: string;
+  taskName?: string;
+  suggestedActions?: SuggestedAction[];
   read: boolean;
   createdAt: string;
 }
