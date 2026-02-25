@@ -3,7 +3,7 @@ import { z } from 'zod';
 const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().min(1000).max(65535).default(3001),
-  HOST: z.string().min(1).default('localhost'),
+  HOST: z.string().min(1).default('0.0.0.0'),
 
   DB_HOST: z.string().min(1).default('localhost'),
   DB_PORT: z.coerce.number().min(1).max(65535).default(3306),
@@ -15,7 +15,7 @@ const configSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
   COOKIE_SECRET: z.string().min(32, 'COOKIE_SECRET must be at least 32 characters'),
 
-  CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
+  CORS_ORIGIN: z.string().default('http://localhost:5173'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']).default('debug'),
 
   // AI Configuration

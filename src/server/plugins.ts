@@ -1,4 +1,6 @@
+import path from 'path';
 import { FastifyInstance } from 'fastify';
+import fastifyStatic from '@fastify/static';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -33,14 +35,16 @@ export async function registerPlugins(fastify: FastifyInstance) {
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         scriptSrc: [
           "'self'",
-          ...(config.NODE_ENV === 'development' ? ["'unsafe-eval'", "'unsafe-inline'"] : [])
+          ...(config.NODE_ENV === 'development' ? ["'unsafe-eval'", "'unsafe-inline'"] : ["'unsafe-inline'"])
         ],
         imgSrc: ["'self'", "data:", "blob:", "https:"],
         connectSrc: [
           "'self'",
           ...(config.NODE_ENV === 'development' ? [
             "http://localhost:3001", "ws://localhost:3001", "wss://localhost:3001"
-          ] : [])
+          ] : [
+            "wss:",
+          ])
         ],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
@@ -122,14 +126,38 @@ export async function registerPlugins(fastify: FastifyInstance) {
     });
   });
 
-  fastify.setNotFoundHandler(async (request, reply) => {
-    reply.status(404).send({
-      statusCode: 404,
-      error: 'Not Found',
-      message: `Route ${request.method}:${request.url} not found`,
-      timestamp: new Date().toISOString()
+  // Serve static client build in production
+  if (config.NODE_ENV === 'production') {
+    const clientDistPath = path.join(__dirname, '..', '..', 'src', 'client', 'dist');
+    await fastify.register(fastifyStatic, {
+      root: clientDistPath,
+      prefix: '/',
+      wildcard: false,
     });
-  });
+
+    // SPA fallback: serve index.html for non-API routes
+    fastify.setNotFoundHandler(async (request, reply) => {
+      if (request.url.startsWith('/api/') || request.url.startsWith('/documentation')) {
+        reply.status(404).send({
+          statusCode: 404,
+          error: 'Not Found',
+          message: `Route ${request.method}:${request.url} not found`,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        return reply.sendFile('index.html');
+      }
+    });
+  } else {
+    fastify.setNotFoundHandler(async (request, reply) => {
+      reply.status(404).send({
+        statusCode: 404,
+        error: 'Not Found',
+        message: `Route ${request.method}:${request.url} not found`,
+        timestamp: new Date().toISOString()
+      });
+    });
+  }
 
   fastify.get('/health', async (_request, reply) => {
     reply.send({
