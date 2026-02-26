@@ -37,6 +37,11 @@ coverage/
 *.tmp
 *.temp
 .cache/
+cookies.txt
+nul
+*.png
+*mc_test.json
+.claude/
 
 # Playwright
 test-results/
