@@ -5,7 +5,7 @@ class ApiService {
 
   constructor() {
     this.api = axios.create({
-      baseURL: 'http://localhost:3001/api/v1',
+      baseURL: import.meta.env.DEV ? 'http://localhost:3001/api/v1' : '/api/v1',
       withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
@@ -185,7 +185,8 @@ class ApiService {
     conversationId?: string;
     context?: { type: string; projectId?: string };
   }): Promise<Response> {
-    return fetch('http://localhost:3001/api/v1/ai-chat/stream', {
+    const streamBase = import.meta.env.DEV ? 'http://localhost:3001' : '';
+    return fetch(`${streamBase}/api/v1/ai-chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',

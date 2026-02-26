@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-const WS_URL = 'ws://localhost:3001/api/v1/ws';
+const WS_URL = import.meta.env.DEV
+  ? 'ws://localhost:3001/api/v1/ws'
+  : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v1/ws`;
 const RECONNECT_DELAY = 3000;
 
 export function useWebSocket() {

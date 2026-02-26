@@ -20,9 +20,9 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.addHook('onRequest', securityMiddleware);
   fastify.addHook('preHandler', securityValidationMiddleware);
 
-  // Normalize DB snake_case keys to camelCase in all JSON responses
-  fastify.addHook('preSerialization', async (_request, _reply, payload) => {
-    if (payload && typeof payload === 'object') {
+  // Normalize DB snake_case keys to camelCase in JSON API responses only
+  fastify.addHook('preSerialization', async (request, _reply, payload) => {
+    if (request.url.startsWith('/api/') && payload && typeof payload === 'object') {
       return toCamelCaseKeys(payload);
     }
     return payload;
@@ -50,7 +50,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
         objectSrc: ["'none'"],
         frameSrc: ["'none'"],
       },
-      reportOnly: config.NODE_ENV === 'development'
+      reportOnly: true
     },
     hsts: config.NODE_ENV === 'production' ? {
       maxAge: 31536000, includeSubDomains: true, preload: true
