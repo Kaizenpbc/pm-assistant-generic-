@@ -25,6 +25,17 @@ const configSchema = z.object({
   AI_MAX_TOKENS: z.coerce.number().min(100).max(8192).default(4096),
   AI_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
 
+  // Email Configuration (Resend)
+  RESEND_API_KEY: z.string().optional().default(''),
+  RESEND_FROM_EMAIL: z.string().default('noreply@kpbc.ca'),
+  APP_URL: z.string().default('http://localhost:5173'),
+
+  // Stripe Configuration
+  STRIPE_SECRET_KEY: z.string().optional().default(''),
+  STRIPE_PUBLISHABLE_KEY: z.string().optional().default(''),
+  STRIPE_WEBHOOK_SECRET: z.string().optional().default(''),
+  STRIPE_PRO_PRICE_ID: z.string().optional().default(''),
+
   // Weather Configuration
   WEATHER_API_PROVIDER: z.enum(['openweathermap', 'weatherapi', 'accuweather', 'mock']).default('mock'),
   WEATHER_API_KEY: z.string().optional().default(''),
@@ -63,6 +74,13 @@ export function validateConfiguration() {
       AI_TEMPERATURE: process.env['AI_TEMPERATURE'],
       AI_MAX_TOKENS: process.env['AI_MAX_TOKENS'],
       AI_ENABLED: process.env['AI_ENABLED'],
+      RESEND_API_KEY: process.env['RESEND_API_KEY'],
+      RESEND_FROM_EMAIL: process.env['RESEND_FROM_EMAIL'],
+      APP_URL: process.env['APP_URL'],
+      STRIPE_SECRET_KEY: process.env['STRIPE_SECRET_KEY'],
+      STRIPE_PUBLISHABLE_KEY: process.env['STRIPE_PUBLISHABLE_KEY'],
+      STRIPE_WEBHOOK_SECRET: process.env['STRIPE_WEBHOOK_SECRET'],
+      STRIPE_PRO_PRICE_ID: process.env['STRIPE_PRO_PRICE_ID'],
       WEATHER_API_PROVIDER: process.env['WEATHER_API_PROVIDER'],
       WEATHER_API_KEY: process.env['WEATHER_API_KEY'],
       WEATHER_CACHE_MINUTES: process.env['WEATHER_CACHE_MINUTES'],

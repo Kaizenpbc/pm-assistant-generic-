@@ -7,6 +7,7 @@ import helmet from '@fastify/helmet';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import websocket from '@fastify/websocket';
+import rawBody from 'fastify-raw-body';
 import { config } from './config';
 import { requestLogger } from './utils/logger';
 import { toCamelCaseKeys } from './utils/caseConverter';
@@ -15,6 +16,7 @@ import { securityMiddleware, securityValidationMiddleware } from './middleware/s
 
 export async function registerPlugins(fastify: FastifyInstance) {
   await fastify.register(websocket);
+  await fastify.register(rawBody, { field: 'rawBody', global: false, runFirst: true });
 
   fastify.addHook('onRequest', requestLogger);
   fastify.addHook('onRequest', securityMiddleware);
@@ -48,7 +50,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
         ],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
-        frameSrc: ["'none'"],
+        frameSrc: ["'self'", "https://checkout.stripe.com", "https://js.stripe.com"],
       },
       reportOnly: true
     },

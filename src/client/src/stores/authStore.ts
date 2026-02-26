@@ -7,6 +7,8 @@ export interface User {
   email: string;
   fullName: string;
   role: 'admin' | 'executive' | 'manager' | 'member';
+  subscriptionTier?: 'free' | 'pro' | 'business';
+  subscriptionStatus?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
 }
 
 interface AuthState {

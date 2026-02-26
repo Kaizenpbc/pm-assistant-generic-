@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
 
@@ -22,8 +22,13 @@ export const LoginPage: React.FC = () => {
       setUser(response.user);
       navigate('/dashboard');
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { message?: string } } };
-      const errorMessage = axiosError.response?.data?.message || 'Login failed';
+      const axiosError = err as { response?: { status?: number; data?: { message?: string } } };
+      let errorMessage = 'Login failed';
+      if (axiosError.response?.status === 403) {
+        errorMessage = 'Please verify your email address before logging in. Check your inbox for the verification link.';
+      } else if (axiosError.response?.data?.message) {
+        errorMessage = axiosError.response.data.message;
+      }
       setError(errorMessage);
       setAuthError(errorMessage);
     } finally {
@@ -98,9 +103,14 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Link to="/forgot-password" className="text-xs text-indigo-600 hover:text-indigo-700">
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 id="password"
                 name="password"
@@ -129,8 +139,9 @@ export const LoginPage: React.FC = () => {
             </button>
 
             <div className="text-center">
-              <p className="text-xs text-gray-400">
-                Demo: Use any username/password to login
+              <p className="text-sm text-gray-500">
+                Don't have an account?{' '}
+                <Link to="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">Sign up</Link>
               </p>
             </div>
           </form>

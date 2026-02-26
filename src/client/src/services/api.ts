@@ -78,8 +78,42 @@ class ApiService {
     return response.data;
   }
 
+  async verifyEmail(token: string) {
+    const response = await this.api.get(`/auth/verify-email?token=${encodeURIComponent(token)}`);
+    return response.data;
+  }
+
+  async forgotPassword(email: string) {
+    const response = await this.api.post('/auth/forgot-password', { email });
+    return response.data;
+  }
+
+  async resetPassword(token: string, password: string) {
+    const response = await this.api.post('/auth/reset-password', { token, password });
+    return response.data;
+  }
+
   async getCurrentUser() {
     const response = await this.api.get('/users/me');
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Stripe / Subscription endpoints
+  // -------------------------------------------------------------------------
+
+  async createCheckoutSession() {
+    const response = await this.api.post('/stripe/create-checkout-session');
+    return response.data;
+  }
+
+  async createPortalSession() {
+    const response = await this.api.post('/stripe/create-portal-session');
+    return response.data;
+  }
+
+  async getSubscriptionStatus() {
+    const response = await this.api.get('/stripe/subscription-status');
     return response.data;
   }
 
