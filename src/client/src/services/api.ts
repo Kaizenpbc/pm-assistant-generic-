@@ -909,7 +909,7 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
   }).join(' → ')}</p>
 `).join('')}` : ''}
 
-<div class="footer">PM Assistant - Project Report</div>
+<div class="footer">Kovarti PM Assistant - Project Report</div>
 
 <script>window.onload = function() { window.print(); }</script>
 </body></html>`;
@@ -937,6 +937,39 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
 
   async applyAllTaskPriorities(projectId: string, scheduleId: string, changes: Array<{ taskId: string; priority: string }>) {
     const response = await this.api.post(`/task-prioritization/${projectId}/${scheduleId}/apply-all`, { changes });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Notifications
+  // -------------------------------------------------------------------------
+
+  async getNotifications(limit = 50, offset = 0) {
+    const response = await this.api.get('/notifications', { params: { limit, offset } });
+    return response.data;
+  }
+
+  async getUnreadNotificationCount() {
+    const response = await this.api.get('/notifications/unread-count');
+    return response.data;
+  }
+
+  async markNotificationRead(id: string) {
+    const response = await this.api.post(`/notifications/${id}/read`);
+    return response.data;
+  }
+
+  async markAllNotificationsRead() {
+    const response = await this.api.post('/notifications/mark-all-read');
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Agent
+  // -------------------------------------------------------------------------
+
+  async triggerAgentScan() {
+    const response = await this.api.post('/agent/trigger');
     return response.data;
   }
 }

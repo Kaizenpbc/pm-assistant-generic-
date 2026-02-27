@@ -83,31 +83,31 @@ export const RegisterPage: React.FC = () => {
 
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <input id="fullName" type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)}
+              <input id="fullName" type="text" required autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)}
                 className="input" placeholder="John Doe" />
             </div>
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+              <input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 className="input" placeholder="john@example.com" />
             </div>
 
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-              <input id="username" type="text" required value={username} onChange={(e) => setUsername(e.target.value)}
+              <input id="username" type="text" required autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)}
                 className="input" placeholder="johndoe" minLength={3} />
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+              <input id="password" type="password" required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)}
                 className="input" placeholder="Min. 6 characters" minLength={6} />
             </div>
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-              <input id="confirmPassword" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+              <input id="confirmPassword" type="password" required autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                 className="input" placeholder="Confirm your password" minLength={6} />
             </div>
 

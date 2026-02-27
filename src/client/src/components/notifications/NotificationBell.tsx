@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Bell, Shield, DollarSign, Clock, Users, Info, X, Check } from 'lucide-react';
+import { Bell, Shield, DollarSign, Clock, Users, Info, X, Check, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useUIStore, Notification } from '../../stores/uiStore';
 import { apiService } from '../../services/api';
 
@@ -9,6 +10,7 @@ const typeIcons: Record<Notification['type'], React.ElementType> = {
   schedule: Clock,
   resource: Users,
   info: Info,
+  reschedule_proposal: RefreshCw,
 };
 
 const severityColors: Record<Notification['severity'], string> = {
@@ -48,7 +50,9 @@ function timeAgo(dateString: string): string {
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [fetchedOnce, setFetchedOnce] = useState(false);
+  const [fetchedPersisted, setFetchedPersisted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const notifications = useUIStore((state) => state.notifications);
   const unreadCount = useUIStore((state) => state.unreadCount);
@@ -112,6 +116,111 @@ export function NotificationBell() {
       cancelled = true;
     };
   }, [fetchedOnce, addNotification]);
+
+  // Fetch persisted notifications from DB
+  useEffect(() => {
+    if (fetchedPersisted) return;
+
+    let cancelled = false;
+
+    async function fetchPersisted() {
+      try {
+        const response = await apiService.getNotifications(50, 0);
+        if (cancelled) return;
+
+        const items: Array<{
+          id: string;
+          type: string;
+          severity: string;
+          title: string;
+          message: string;
+          projectId?: string;
+          scheduleId?: string;
+          linkType?: string;
+          linkId?: string;
+          isRead: boolean;
+          createdAt: string;
+        }> = response?.notifications ?? [];
+
+        for (const item of items) {
+          const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal'].includes(item.type)
+            ? item.type
+            : 'info') as Notification['type'];
+
+          const severity = (['critical', 'high', 'medium', 'low'].includes(item.severity)
+            ? item.severity
+            : 'medium') as Notification['severity'];
+
+          addNotification({
+            type,
+            severity,
+            title: item.title,
+            message: item.message,
+            projectId: item.projectId,
+            scheduleId: item.scheduleId,
+            linkType: item.linkType,
+            linkId: item.linkId,
+            read: item.isRead,
+          });
+        }
+
+        setFetchedPersisted(true);
+      } catch {
+        // Silently fail — persisted notifications are non-critical
+      }
+    }
+
+    fetchPersisted();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchedPersisted, addNotification]);
+
+  // Listen for real-time WebSocket notifications
+  useEffect(() => {
+    const wsBase = import.meta.env.DEV ? 'ws://localhost:3001' : `ws://${window.location.host}`;
+    let ws: WebSocket | null = null;
+
+    try {
+      ws = new WebSocket(`${wsBase}/api/v1/ws`);
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'notification' && msg.payload) {
+            const p = msg.payload;
+            const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal'].includes(p.type)
+              ? p.type
+              : 'info') as Notification['type'];
+
+            const severity = (['critical', 'high', 'medium', 'low'].includes(p.severity)
+              ? p.severity
+              : 'medium') as Notification['severity'];
+
+            addNotification({
+              type,
+              severity,
+              title: p.title,
+              message: p.message,
+              projectId: p.projectId,
+              scheduleId: p.scheduleId,
+              linkType: p.linkType,
+              linkId: p.linkId,
+              read: false,
+            });
+          }
+        } catch {
+          // Ignore malformed messages
+        }
+      };
+    } catch {
+      // WebSocket connection failed — non-critical
+    }
+
+    return () => {
+      if (ws) ws.close();
+    };
+  }, [addNotification]);
 
   // Close dropdown when clicking outside
   const handleClickOutside = useCallback((event: MouseEvent) => {
@@ -201,13 +310,23 @@ export function NotificationBell() {
                 const severityColor = severityColors[notification.severity] || 'bg-gray-400';
                 const severityText = severityTextColors[notification.severity] || 'text-gray-600';
 
+                const isClickable = notification.linkType === 'proposal' && notification.projectId;
+
                 return (
                   <div
                     key={notification.id}
+                    onClick={() => {
+                      if (isClickable) {
+                        setOpen(false);
+                        dismissNotification(notification.id);
+                        navigate(`/projects/${notification.projectId}/schedule`);
+                      }
+                    }}
                     className={`
                       flex items-start gap-3 px-4 py-3 border-b border-gray-50
                       hover:bg-gray-50 transition-colors duration-150 relative
                       ${notification.read ? 'opacity-60' : ''}
+                      ${isClickable ? 'cursor-pointer' : ''}
                     `}
                   >
                     {/* Severity color bar */}

@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws';
 
 export interface WSMessage {
-  type: 'task_updated' | 'task_created' | 'task_deleted' | 'schedule_updated';
+  type: 'task_updated' | 'task_created' | 'task_deleted' | 'schedule_updated' | 'notification';
   payload: unknown;
 }
 

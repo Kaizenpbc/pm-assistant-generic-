@@ -2,6 +2,8 @@ import { ScheduleService, Task } from './ScheduleService';
 import { CriticalPathService } from './CriticalPathService';
 import { claudeService } from './claudeService';
 import { config } from '../config';
+import { databaseService } from '../database/connection';
+import { v4 as uuidv4 } from 'uuid';
 import {
   DelayedTask,
   ProposedChange,
@@ -16,9 +18,37 @@ function toDateStr(d: Date): string {
   return d.toISOString().split('T')[0];
 }
 
-export class AutoRescheduleService {
-  private static proposals: RescheduleProposal[] = [];
+interface ProposalRow {
+  id: string;
+  schedule_id: string;
+  status: string;
+  proposal_data: string;
+  source: string;
+  feedback: string | null;
+  created_at: string;
+}
 
+function rowToProposal(row: ProposalRow): RescheduleProposal {
+  const data = JSON.parse(row.proposal_data);
+  return {
+    id: row.id,
+    scheduleId: row.schedule_id,
+    status: row.status as RescheduleProposal['status'],
+    delayedTasks: data.delayedTasks ?? [],
+    proposedChanges: data.proposedChanges ?? [],
+    rationale: data.rationale ?? '',
+    estimatedImpact: data.estimatedImpact ?? {
+      originalEndDate: '',
+      proposedEndDate: '',
+      daysChange: 0,
+      criticalPathImpact: '',
+    },
+    createdAt: row.created_at,
+    feedback: row.feedback ?? undefined,
+  };
+}
+
+export class AutoRescheduleService {
   private scheduleService = new ScheduleService();
   private criticalPathService = new CriticalPathService();
 
@@ -112,7 +142,7 @@ export class AutoRescheduleService {
   // Generate Proposal
   // ---------------------------------------------------------------------------
 
-  async generateProposal(scheduleId: string, userId?: string): Promise<RescheduleProposal> {
+  async generateProposal(scheduleId: string, userId?: string, source: 'manual' | 'agent' = 'manual'): Promise<RescheduleProposal> {
     const delayedTasks = await this.detectDelays(scheduleId);
     const criticalPathResult = await this.criticalPathService.calculateCriticalPath(scheduleId);
     const allTasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
@@ -276,18 +306,32 @@ Please propose date changes to reschedule affected tasks with minimal disruption
       };
     }
 
+    const proposalId = uuidv4();
+    const now = new Date().toISOString();
+
     const proposal: RescheduleProposal = {
-      id: `rp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: proposalId,
       scheduleId,
       status: 'pending',
       delayedTasks,
       proposedChanges,
       rationale,
       estimatedImpact,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
     };
 
-    AutoRescheduleService.proposals.push(proposal);
+    // Persist to DB
+    const proposalData = JSON.stringify({ delayedTasks, proposedChanges, rationale, estimatedImpact });
+    try {
+      await databaseService.query(
+        `INSERT INTO reschedule_proposals (id, schedule_id, status, proposal_data, source, created_at)
+         VALUES (?, ?, 'pending', ?, ?, ?)`,
+        [proposalId, scheduleId, proposalData, source, now.replace('T', ' ').substring(0, 19)],
+      );
+    } catch {
+      // Table may not exist yet — log and continue with in-memory behavior
+      console.warn('[AutoReschedule] Could not persist proposal to DB');
+    }
 
     // Log activity
     if (userId) {
@@ -310,7 +354,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
   // ---------------------------------------------------------------------------
 
   async acceptProposal(proposalId: string): Promise<boolean> {
-    const proposal = AutoRescheduleService.proposals.find((p) => p.id === proposalId);
+    const proposal = await this.getProposalById(proposalId);
     if (!proposal || proposal.status !== 'pending') return false;
 
     // Apply all proposed changes
@@ -331,7 +375,15 @@ Please propose date changes to reschedule affected tasks with minimal disruption
       );
     }
 
-    proposal.status = 'accepted';
+    try {
+      await databaseService.query(
+        `UPDATE reschedule_proposals SET status = 'accepted' WHERE id = ?`,
+        [proposalId],
+      );
+    } catch {
+      console.warn('[AutoReschedule] Could not update proposal status in DB');
+    }
+
     return true;
   }
 
@@ -340,12 +392,16 @@ Please propose date changes to reschedule affected tasks with minimal disruption
   // ---------------------------------------------------------------------------
 
   async rejectProposal(proposalId: string, feedback?: string): Promise<boolean> {
-    const proposal = AutoRescheduleService.proposals.find((p) => p.id === proposalId);
+    const proposal = await this.getProposalById(proposalId);
     if (!proposal || proposal.status !== 'pending') return false;
 
-    proposal.status = 'rejected';
-    if (feedback) {
-      proposal.feedback = feedback;
+    try {
+      await databaseService.query(
+        `UPDATE reschedule_proposals SET status = 'rejected', feedback = ? WHERE id = ?`,
+        [feedback || null, proposalId],
+      );
+    } catch {
+      console.warn('[AutoReschedule] Could not update proposal status in DB');
     }
 
     return true;
@@ -356,11 +412,25 @@ Please propose date changes to reschedule affected tasks with minimal disruption
   // ---------------------------------------------------------------------------
 
   async modifyProposal(proposalId: string, modifications: ProposedChange[]): Promise<boolean> {
-    const proposal = AutoRescheduleService.proposals.find((p) => p.id === proposalId);
+    const proposal = await this.getProposalById(proposalId);
     if (!proposal || proposal.status !== 'pending') return false;
 
     proposal.proposedChanges = modifications;
-    proposal.status = 'modified';
+    const proposalData = JSON.stringify({
+      delayedTasks: proposal.delayedTasks,
+      proposedChanges: modifications,
+      rationale: proposal.rationale,
+      estimatedImpact: proposal.estimatedImpact,
+    });
+
+    try {
+      await databaseService.query(
+        `UPDATE reschedule_proposals SET status = 'modified', proposal_data = ? WHERE id = ?`,
+        [proposalData, proposalId],
+      );
+    } catch {
+      console.warn('[AutoReschedule] Could not update proposal in DB');
+    }
 
     return true;
   }
@@ -369,9 +439,30 @@ Please propose date changes to reschedule affected tasks with minimal disruption
   // Get Proposals
   // ---------------------------------------------------------------------------
 
-  getProposals(scheduleId: string): RescheduleProposal[] {
-    return AutoRescheduleService.proposals
-      .filter((p) => p.scheduleId === scheduleId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  async getProposals(scheduleId: string): Promise<RescheduleProposal[]> {
+    try {
+      const rows = await databaseService.query<ProposalRow>(
+        `SELECT * FROM reschedule_proposals WHERE schedule_id = ? ORDER BY created_at DESC`,
+        [scheduleId],
+      );
+      return rows.map(rowToProposal);
+    } catch {
+      console.warn('[AutoReschedule] Could not read proposals from DB');
+      return [];
+    }
+  }
+
+  private async getProposalById(proposalId: string): Promise<RescheduleProposal | null> {
+    try {
+      const rows = await databaseService.query<ProposalRow>(
+        `SELECT * FROM reschedule_proposals WHERE id = ?`,
+        [proposalId],
+      );
+      if (rows.length === 0) return null;
+      return rowToProposal(rows[0]);
+    } catch {
+      console.warn('[AutoReschedule] Could not read proposal from DB');
+      return null;
+    }
   }
 }

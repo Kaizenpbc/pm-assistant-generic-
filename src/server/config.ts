@@ -40,6 +40,11 @@ const configSchema = z.object({
   WEATHER_API_PROVIDER: z.enum(['openweathermap', 'weatherapi', 'accuweather', 'mock']).default('mock'),
   WEATHER_API_KEY: z.string().optional().default(''),
   WEATHER_CACHE_MINUTES: z.coerce.number().min(1).max(1440).default(30),
+
+  // Agent Configuration
+  AGENT_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
+  AGENT_CRON_SCHEDULE: z.string().default('0 2 * * *'),
+  AGENT_DELAY_THRESHOLD_DAYS: z.coerce.number().min(1).default(3),
 }).refine((data) => {
   if (data.JWT_SECRET === data.JWT_REFRESH_SECRET) {
     throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be different');
@@ -84,6 +89,9 @@ export function validateConfiguration() {
       WEATHER_API_PROVIDER: process.env['WEATHER_API_PROVIDER'],
       WEATHER_API_KEY: process.env['WEATHER_API_KEY'],
       WEATHER_CACHE_MINUTES: process.env['WEATHER_CACHE_MINUTES'],
+      AGENT_ENABLED: process.env['AGENT_ENABLED'],
+      AGENT_CRON_SCHEDULE: process.env['AGENT_CRON_SCHEDULE'],
+      AGENT_DELAY_THRESHOLD_DAYS: process.env['AGENT_DELAY_THRESHOLD_DAYS'],
     };
 
     console.log('Validating configuration...');

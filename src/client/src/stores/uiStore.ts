@@ -3,12 +3,15 @@ import { persist } from 'zustand/middleware';
 
 export interface Notification {
   id: string;
-  type: 'risk' | 'budget' | 'schedule' | 'resource' | 'info';
+  type: 'risk' | 'budget' | 'schedule' | 'resource' | 'info' | 'reschedule_proposal';
   severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   message: string;
   projectId?: string;
   projectName?: string;
+  scheduleId?: string;
+  linkType?: string;
+  linkId?: string;
   read: boolean;
   createdAt: string;
 }

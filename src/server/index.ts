@@ -4,6 +4,7 @@ import { config } from './config';
 import { registerPlugins } from './plugins';
 import { registerRoutes } from './routes';
 import { databaseService } from './database/connection';
+import { agentScheduler } from './services/AgentSchedulerService';
 
 const fastify = Fastify({
   logger: {
@@ -13,7 +14,7 @@ const fastify = Fastify({
 
 async function start() {
   try {
-    console.log('Initializing PM Assistant...');
+    console.log('Initializing Kovarti PM Assistant...');
 
     console.log('Testing database connection...');
     const isConnected = await databaseService.testConnection();
@@ -37,9 +38,12 @@ async function start() {
       host: config.HOST
     });
 
-    console.log(`PM Assistant running on http://${config.HOST}:${config.PORT}`);
+    console.log(`Kovarti PM Assistant running on http://${config.HOST}:${config.PORT}`);
     console.log(`API Documentation: http://${config.HOST}:${config.PORT}/documentation`);
     console.log(`Health Check: http://${config.HOST}:${config.PORT}/health`);
+
+    // Start agent scheduler (no-op if AGENT_ENABLED is false)
+    agentScheduler.start();
 
   } catch (err) {
     console.error('Failed to start server:', err);
@@ -50,6 +54,7 @@ async function start() {
 
 process.on('SIGINT', async () => {
   console.log('Shutting down server...');
+  agentScheduler.stop();
   await fastify.close();
   await databaseService.close();
   process.exit(0);
@@ -57,6 +62,7 @@ process.on('SIGINT', async () => {
 
 process.on('SIGTERM', async () => {
   console.log('Shutting down server...');
+  agentScheduler.stop();
   await fastify.close();
   await databaseService.close();
   process.exit(0);

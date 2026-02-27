@@ -187,7 +187,7 @@ export const UserGuideContent: React.FC = () => {
     <div className="max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">User Guide</h1>
       <p className="text-gray-500 mb-8">
-        Everything you need to know to get the most out of PM Assistant.
+        Everything you need to know to get the most out of Kovarti PM Assistant.
       </p>
 
       {/* Table of Contents */}

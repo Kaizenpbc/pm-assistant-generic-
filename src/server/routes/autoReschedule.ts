@@ -56,7 +56,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
-      const proposals = service.getProposals(scheduleId);
+      const proposals = await service.getProposals(scheduleId);
       return { proposals };
     } catch (error) {
       console.error('Get proposals error:', error);

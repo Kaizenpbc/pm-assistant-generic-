@@ -68,7 +68,10 @@ export async function registerPlugins(fastify: FastifyInstance) {
       if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
         return callback(null, true);
       }
-      if (origin === config.CORS_ORIGIN) return callback(null, true);
+      // Accept both http and https variants of the configured origin
+      const corsHost = config.CORS_ORIGIN.replace(/^https?:\/\//, '');
+      const originHost = origin.replace(/^https?:\/\//, '');
+      if (originHost === corsHost) return callback(null, true);
       if (config.NODE_ENV === 'development') return callback(null, true);
       callback(new Error('Not allowed by CORS'), false);
     },
@@ -89,7 +92,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
   await fastify.register(swagger, {
     swagger: {
       info: {
-        title: 'PM Assistant API',
+        title: 'Kovarti PM Assistant API',
         description: 'AI-Powered Project Management API',
         version: '1.0.0',
       },
@@ -164,7 +167,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.get('/health', async (_request, reply) => {
     reply.send({
       status: 'OK',
-      service: 'PM Assistant Generic',
+      service: 'Kovarti PM Assistant Generic',
       version: '1.0.0',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),

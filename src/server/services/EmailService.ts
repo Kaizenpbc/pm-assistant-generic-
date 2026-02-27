@@ -30,11 +30,11 @@ class EmailService {
     await this.getClient().emails.send({
       from: config.RESEND_FROM_EMAIL,
       to,
-      subject: 'Verify your PM Assistant account',
+      subject: 'Verify your Kovarti PM Assistant account',
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #4f46e5; margin: 0;">PM Assistant</h1>
+            <h1 style="color: #4f46e5; margin: 0;">Kovarti PM Assistant</h1>
           </div>
           <h2 style="color: #1f2937;">Verify your email address</h2>
           <p style="color: #4b5563; line-height: 1.6;">
@@ -50,7 +50,7 @@ class EmailService {
           </p>
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
           <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-            PM Assistant - AI-Powered Project Management
+            Kovarti PM Assistant - AI-Powered Project Management
           </p>
         </div>
       `,
@@ -69,11 +69,11 @@ class EmailService {
     await this.getClient().emails.send({
       from: config.RESEND_FROM_EMAIL,
       to,
-      subject: 'Reset your PM Assistant password',
+      subject: 'Reset your Kovarti PM Assistant password',
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #4f46e5; margin: 0;">PM Assistant</h1>
+            <h1 style="color: #4f46e5; margin: 0;">Kovarti PM Assistant</h1>
           </div>
           <h2 style="color: #1f2937;">Reset your password</h2>
           <p style="color: #4b5563; line-height: 1.6;">
@@ -89,7 +89,7 @@ class EmailService {
           </p>
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
           <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-            PM Assistant - AI-Powered Project Management
+            Kovarti PM Assistant - AI-Powered Project Management
           </p>
         </div>
       `,
@@ -105,11 +105,11 @@ class EmailService {
     await this.getClient().emails.send({
       from: config.RESEND_FROM_EMAIL,
       to,
-      subject: 'Welcome to PM Assistant!',
+      subject: 'Welcome to Kovarti PM Assistant!',
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #4f46e5; margin: 0;">PM Assistant</h1>
+            <h1 style="color: #4f46e5; margin: 0;">Kovarti PM Assistant</h1>
           </div>
           <h2 style="color: #1f2937;">Welcome, ${name}!</h2>
           <p style="color: #4b5563; line-height: 1.6;">
@@ -122,7 +122,7 @@ class EmailService {
           </div>
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
           <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-            PM Assistant - AI-Powered Project Management
+            Kovarti PM Assistant - AI-Powered Project Management
           </p>
         </div>
       `,

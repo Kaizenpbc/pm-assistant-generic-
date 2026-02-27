@@ -13,7 +13,7 @@ export const TermsPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
-              <span className="ml-2 text-xl font-bold text-gray-900">PM Assistant</span>
+              <span className="ml-2 text-xl font-bold text-gray-900">Kovarti PM Assistant</span>
             </Link>
           </div>
         </div>
@@ -25,10 +25,10 @@ export const TermsPage: React.FC = () => {
           <p><strong>Last updated:</strong> February 2026</p>
 
           <h2 className="text-lg font-semibold text-gray-900 mt-8">1. Acceptance of Terms</h2>
-          <p>By accessing or using PM Assistant ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
+          <p>By accessing or using Kovarti PM Assistant ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
 
           <h2 className="text-lg font-semibold text-gray-900 mt-8">2. Description of Service</h2>
-          <p>PM Assistant is an AI-powered project management application that provides scheduling, risk analysis, reporting, and collaboration tools. The Service is provided on a subscription basis with free and paid tiers.</p>
+          <p>Kovarti PM Assistant is an AI-powered project management application that provides scheduling, risk analysis, reporting, and collaboration tools. The Service is provided on a subscription basis with free and paid tiers.</p>
 
           <h2 className="text-lg font-semibold text-gray-900 mt-8">3. Account Registration</h2>
           <p>You must provide accurate, complete information when creating an account. You are responsible for maintaining the security of your account credentials. You must be at least 18 years old to use the Service.</p>
