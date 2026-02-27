@@ -12,6 +12,7 @@ const features = [
     ),
     accent: 'from-amber-400 to-orange-500',
     iconBg: 'bg-amber-100 text-amber-600',
+    cardBg: 'bg-amber-50 border-amber-200',
   },
   {
     title: 'Monte Carlo Simulations',
@@ -23,6 +24,7 @@ const features = [
     ),
     accent: 'from-emerald-400 to-teal-500',
     iconBg: 'bg-emerald-100 text-emerald-600',
+    cardBg: 'bg-emerald-50 border-emerald-200',
   },
   {
     title: 'Smart Risk Detection',
@@ -34,6 +36,7 @@ const features = [
     ),
     accent: 'from-rose-400 to-pink-500',
     iconBg: 'bg-rose-100 text-rose-600',
+    cardBg: 'bg-rose-50 border-rose-200',
   },
   {
     title: 'Meeting Intelligence',
@@ -45,6 +48,7 @@ const features = [
     ),
     accent: 'from-violet-400 to-purple-500',
     iconBg: 'bg-violet-100 text-violet-600',
+    cardBg: 'bg-violet-50 border-violet-200',
   },
   {
     title: 'Portfolio Dashboard',
@@ -56,6 +60,7 @@ const features = [
     ),
     accent: 'from-sky-400 to-blue-500',
     iconBg: 'bg-sky-100 text-sky-600',
+    cardBg: 'bg-sky-50 border-sky-200',
   },
   {
     title: 'Natural Language Queries',
@@ -67,6 +72,7 @@ const features = [
     ),
     accent: 'from-cyan-400 to-indigo-500',
     iconBg: 'bg-cyan-100 text-cyan-600',
+    cardBg: 'bg-cyan-50 border-cyan-200',
   },
 ];
 
@@ -205,7 +211,7 @@ export const LandingPage: React.FC = () => {
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="group relative bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                className={`group relative rounded-2xl p-6 shadow-sm border hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${feature.cardBg}`}
               >
                 {/* Top accent gradient bar */}
                 <div className={`absolute top-0 left-6 right-6 h-1 rounded-b-full bg-gradient-to-r ${feature.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
