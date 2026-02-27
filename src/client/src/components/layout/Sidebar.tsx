@@ -15,6 +15,7 @@ import {
   MessageSquare,
   BookOpen,
   Search,
+  CreditCard,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -80,6 +81,11 @@ const navItems: NavItem[] = [
     label: 'Ask AI',
     icon: Search,
     path: '/query',
+  },
+  {
+    label: 'Account',
+    icon: CreditCard,
+    path: '/account',
   },
   {
     label: 'Settings',
