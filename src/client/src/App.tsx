@@ -23,6 +23,8 @@ import { MeetingMinutesPage } from './pages/MeetingMinutesPage';
 import { LessonsLearnedPage } from './pages/LessonsLearnedPage';
 import { QueryPage } from './pages/QueryPage';
 import { AccountBillingPage } from './pages/AccountBillingPage';
+import { UserGuidePublicPage } from './pages/UserGuidePublicPage';
+import { UserGuidePage } from './pages/UserGuidePage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -61,6 +63,7 @@ function App() {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/guide" element={<UserGuidePublicPage />} />
 
         {/* Protected routes */}
         <Route path="/dashboard" element={<PrivateRoute><DashboardRouter /></PrivateRoute>} />
@@ -75,6 +78,7 @@ function App() {
         <Route path="/lessons" element={<PrivateRoute><LessonsLearnedPage /></PrivateRoute>} />
         <Route path="/query" element={<PrivateRoute><QueryPage /></PrivateRoute>} />
         <Route path="/account" element={<PrivateRoute><AccountBillingPage /></PrivateRoute>} />
+        <Route path="/help" element={<PrivateRoute><UserGuidePage /></PrivateRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

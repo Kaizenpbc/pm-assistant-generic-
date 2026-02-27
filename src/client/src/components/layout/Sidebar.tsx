@@ -16,6 +16,7 @@ import {
   BookOpen,
   Search,
   CreditCard,
+  HelpCircle,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -81,6 +82,11 @@ const navItems: NavItem[] = [
     label: 'Ask AI',
     icon: Search,
     path: '/query',
+  },
+  {
+    label: 'Help',
+    icon: HelpCircle,
+    path: '/help',
   },
   {
     label: 'Account',
