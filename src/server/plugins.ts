@@ -52,7 +52,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
         objectSrc: ["'none'"],
         frameSrc: ["'self'", "https://checkout.stripe.com", "https://js.stripe.com"],
       },
-      reportOnly: true
+      reportOnly: config.NODE_ENV !== 'production'
     },
     hsts: config.NODE_ENV === 'production' ? {
       maxAge: 31536000, includeSubDomains: true, preload: true

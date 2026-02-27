@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export interface Notification {
   id: string;
-  type: 'risk' | 'budget' | 'schedule' | 'resource' | 'info' | 'reschedule_proposal';
+  type: 'risk' | 'budget' | 'schedule' | 'resource' | 'info' | 'reschedule_proposal' | 'budget_alert' | 'monte_carlo_alert' | 'meeting_followup';
   severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   message: string;

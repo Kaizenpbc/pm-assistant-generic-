@@ -172,6 +172,14 @@ Build an AI-native project management platform that combines the scheduling powe
 - AI suggests corrective actions with estimated impact
 - Compare AI forecast vs traditional EAC formulas
 
+### 3.8 Agent Activity Log
+- Per-project decision log for all 4 agentic agents (Auto-Reschedule, Budget, Monte Carlo, Meeting)
+- Every agent run records its decision: alert created, skipped (with reason), or error
+- Structured details include thresholds, metrics, and context for each decision
+- Filterable by agent, paginated API and UI
+- "Agent Activity" tab on project detail page
+- Full transparency into why alerts were or weren't created
+
 ---
 
 ## Priority 4: Production Polish (Make It Shippable)
@@ -303,6 +311,7 @@ Build an AI-native project management platform that combines the scheduling powe
 | AI Lessons Learned | Done | P3 |
 | Monte Carlo Simulation | Done | P3 |
 | AI EVM Forecasting | Done | P3 |
+| Agent Activity Log | Done | P3 |
 | Notification System | Not Started | P4 |
 | File Attachments & Documents | Not Started | P4 |
 | Time Tracking & Timesheets | Not Started | P4 |

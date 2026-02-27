@@ -12,6 +12,7 @@ import {
   BookOpen,
   Search,
   CreditCard,
+  Activity,
 } from 'lucide-react';
 
 interface Section {
@@ -165,6 +166,20 @@ const sections: Section[] = [
       'AI generates charts and tables from your data',
       'Get contextual recommendations and insights',
       'Export AI-generated visualizations',
+    ],
+  },
+  {
+    id: 'agent-activity',
+    title: 'Agent Activity',
+    icon: Activity,
+    description:
+      'See what each AI agent decided for your project and why.',
+    items: [
+      'View the "Agent Activity" tab on any project detail page',
+      'Each agent run logs its decision: alert created, skipped, or error',
+      'Filter by agent (Auto-Reschedule, Budget, Monte Carlo, Meeting)',
+      'Summaries explain why an alert was or wasn\'t created (e.g., thresholds, metrics)',
+      'Paginated log with timestamps for full audit trail',
     ],
   },
   {

@@ -45,6 +45,9 @@ const configSchema = z.object({
   AGENT_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
   AGENT_CRON_SCHEDULE: z.string().default('0 2 * * *'),
   AGENT_DELAY_THRESHOLD_DAYS: z.coerce.number().min(1).default(3),
+  AGENT_BUDGET_CPI_THRESHOLD: z.coerce.number().min(0).max(2).default(0.9),
+  AGENT_BUDGET_OVERRUN_THRESHOLD: z.coerce.number().min(0).max(100).default(50),
+  AGENT_MC_CONFIDENCE_LEVEL: z.coerce.number().min(1).max(99).default(80),
 }).refine((data) => {
   if (data.JWT_SECRET === data.JWT_REFRESH_SECRET) {
     throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be different');
@@ -92,6 +95,9 @@ export function validateConfiguration() {
       AGENT_ENABLED: process.env['AGENT_ENABLED'],
       AGENT_CRON_SCHEDULE: process.env['AGENT_CRON_SCHEDULE'],
       AGENT_DELAY_THRESHOLD_DAYS: process.env['AGENT_DELAY_THRESHOLD_DAYS'],
+      AGENT_BUDGET_CPI_THRESHOLD: process.env['AGENT_BUDGET_CPI_THRESHOLD'],
+      AGENT_BUDGET_OVERRUN_THRESHOLD: process.env['AGENT_BUDGET_OVERRUN_THRESHOLD'],
+      AGENT_MC_CONFIDENCE_LEVEL: process.env['AGENT_MC_CONFIDENCE_LEVEL'],
     };
 
     console.log('Validating configuration...');

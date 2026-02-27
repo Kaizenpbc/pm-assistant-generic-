@@ -51,7 +51,7 @@ import { AutoReschedulePanel } from '../components/schedule/AutoReschedulePanel'
 import { TaskPrioritizationPanel } from '../components/ai/TaskPrioritizationPanel';
 import { SaveAsTemplateModal } from '../components/templates/SaveAsTemplateModal';
 
-type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team';
+type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity';
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -60,6 +60,7 @@ const tabs: { id: Tab; label: string }[] = [
   { id: 'evm-forecast', label: 'EVM Forecast' },
   { id: 'scenarios', label: 'What-If' },
   { id: 'team', label: 'Team' },
+  { id: 'agent-activity', label: 'Agent Activity' },
 ];
 
 const statusStyles: Record<string, { label: string; color: string }> = {
@@ -367,6 +368,7 @@ export function ProjectDetailPage() {
       {activeTab === 'evm-forecast' && <EVMForecastTab projectId={id!} />}
       {activeTab === 'scenarios' && <ScenariosTab projectId={id!} />}
       {activeTab === 'team' && <TeamTab />}
+      {activeTab === 'agent-activity' && <AgentActivityTab projectId={id!} />}
 
       {project && (
         <SaveAsTemplateModal
@@ -2005,6 +2007,119 @@ function ResourceOptimizerSection({ projectId }: { projectId: string }) {
         <RebalanceSuggestions suggestions={forecast.rebalanceSuggestions} />
       )}
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Agent Activity Tab
+// ---------------------------------------------------------------------------
+
+const agentLabels: Record<string, string> = {
+  auto_reschedule: 'Auto-Reschedule',
+  budget: 'Budget',
+  monte_carlo: 'Monte Carlo',
+  meeting: 'Meeting',
+};
+
+const resultBadgeColors: Record<string, string> = {
+  alert_created: 'bg-red-100 text-red-700',
+  skipped: 'bg-gray-100 text-gray-600',
+  error: 'bg-orange-100 text-orange-700',
+};
+
+function AgentActivityTab({ projectId }: { projectId: string }) {
+  const [agentFilter, setAgentFilter] = useState<string>('');
+  const [page, setPage] = useState(0);
+  const limit = 25;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['agentActivityLog', projectId, agentFilter, page],
+    queryFn: () => apiService.getAgentActivityLog(projectId, limit, page * limit, agentFilter || undefined),
+    enabled: !!projectId,
+  });
+
+  const entries = data?.entries ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.ceil(total / limit);
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Agent Activity Log</h3>
+        <select
+          value={agentFilter}
+          onChange={(e) => { setAgentFilter(e.target.value); setPage(0); }}
+          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+        >
+          <option value="">All Agents</option>
+          <option value="auto_reschedule">Auto-Reschedule</option>
+          <option value="budget">Budget</option>
+          <option value="monte_carlo">Monte Carlo</option>
+          <option value="meeting">Meeting</option>
+        </select>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-8 text-gray-500">Loading...</div>
+      ) : entries.length === 0 ? (
+        <div className="text-center py-8 text-gray-400">No agent activity recorded yet</div>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500">Time</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500">Agent</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500">Result</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500">Summary</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {entries.map((entry: any) => (
+                  <tr key={entry.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                      {new Date(entry.createdAt).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap font-medium text-gray-700">
+                      {agentLabels[entry.agentName] || entry.agentName}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${resultBadgeColors[entry.result] || 'bg-gray-100 text-gray-600'}`}>
+                        {entry.result === 'alert_created' ? 'Alert Created' : entry.result === 'skipped' ? 'Skipped' : 'Error'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-gray-600">{entry.summary}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between text-sm text-gray-500">
+              <span>Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total}</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="rounded border px-3 py-1 disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page >= totalPages - 1}
+                  className="rounded border px-3 py-1 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 

@@ -972,6 +972,17 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     const response = await this.api.post('/agent/trigger');
     return response.data;
   }
+
+  // -------------------------------------------------------------------------
+  // Agent Activity Log
+  // -------------------------------------------------------------------------
+
+  async getAgentActivityLog(projectId: string, limit = 50, offset = 0, agent?: string) {
+    const params: Record<string, string | number> = { limit, offset };
+    if (agent) params.agent = agent;
+    const response = await this.api.get(`/agent-log/${projectId}`, { params });
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

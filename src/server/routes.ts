@@ -29,6 +29,7 @@ import { taskPrioritizationRoutes } from './routes/taskPrioritization';
 import { stripeRoutes } from './routes/stripe';
 import { notificationRoutes } from './routes/notifications';
 import { agentRoutes } from './routes/agent';
+import { agentActivityLogRoutes } from './routes/agentActivityLog';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
@@ -61,4 +62,5 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(stripeRoutes, { prefix: '/api/v1/stripe' });
   await fastify.register(notificationRoutes, { prefix: '/api/v1/notifications' });
   await fastify.register(agentRoutes, { prefix: '/api/v1/agent' });
+  await fastify.register(agentActivityLogRoutes, { prefix: '/api/v1/agent-log' });
 }

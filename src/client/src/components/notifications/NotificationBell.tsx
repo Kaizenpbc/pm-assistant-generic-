@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Bell, Shield, DollarSign, Clock, Users, Info, X, Check, RefreshCw } from 'lucide-react';
+import { Bell, Shield, DollarSign, Clock, Users, Info, X, Check, RefreshCw, TrendingDown, BarChart2, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore, Notification } from '../../stores/uiStore';
 import { apiService } from '../../services/api';
@@ -11,6 +11,9 @@ const typeIcons: Record<Notification['type'], React.ElementType> = {
   resource: Users,
   info: Info,
   reschedule_proposal: RefreshCw,
+  budget_alert: TrendingDown,
+  monte_carlo_alert: BarChart2,
+  meeting_followup: MessageSquare,
 };
 
 const severityColors: Record<Notification['severity'], string> = {
@@ -86,7 +89,7 @@ export function NotificationBell() {
         }> = response?.alerts ?? [];
 
         for (const alert of alerts) {
-          const type = (['risk', 'budget', 'schedule', 'resource', 'info'].includes(alert.type)
+          const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(alert.type)
             ? alert.type
             : 'info') as Notification['type'];
 
@@ -143,7 +146,7 @@ export function NotificationBell() {
         }> = response?.notifications ?? [];
 
         for (const item of items) {
-          const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal'].includes(item.type)
+          const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(item.type)
             ? item.type
             : 'info') as Notification['type'];
 
@@ -189,7 +192,7 @@ export function NotificationBell() {
           const msg = JSON.parse(event.data);
           if (msg.type === 'notification' && msg.payload) {
             const p = msg.payload;
-            const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal'].includes(p.type)
+            const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(p.type)
               ? p.type
               : 'info') as Notification['type'];
 
