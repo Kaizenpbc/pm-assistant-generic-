@@ -91,8 +91,8 @@ export async function authRoutes(fastify: FastifyInstance) {
           email: user.email,
           fullName: user.fullName,
           role: user.role,
-          subscriptionTier: user.subscriptionTier,
-          subscriptionStatus: user.subscriptionStatus,
+          subscriptionTier: user.role === 'admin' ? 'pro' : user.subscriptionTier,
+          subscriptionStatus: user.role === 'admin' ? 'active' : user.subscriptionStatus,
         },
       };
     } catch (error) {

@@ -106,9 +106,10 @@ class StripeService {
     );
 
     const sub = rows[0];
+    const isAdmin = user.role === 'admin';
     return {
-      tier: user.subscriptionTier,
-      status: user.subscriptionStatus,
+      tier: isAdmin ? 'pro' : user.subscriptionTier,
+      status: isAdmin ? 'active' : user.subscriptionStatus,
       trialEndsAt: user.trialEndsAt,
       currentPeriodEnd: sub ? sub.current_period_end : null,
       cancelAtPeriodEnd: sub ? Boolean(sub.cancel_at_period_end) : false,

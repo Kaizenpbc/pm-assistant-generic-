@@ -68,7 +68,7 @@ export const ExecutiveDashboard: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Executive Overview</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Executive Overview</h1>
         <p className="mt-1 text-sm text-gray-500">
           Portfolio-level view of all projects and key metrics.
         </p>
@@ -108,7 +108,7 @@ export const ExecutiveDashboard: React.FC = () => {
       {/* Project List */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-900">All Projects</h2>
+          <h2 className="text-lg font-semibold text-gray-900">All Projects</h2>
           <span className="text-xs text-gray-400">{totalProjects} projects</span>
         </div>
 
@@ -135,17 +135,17 @@ export const ExecutiveDashboard: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+                        <h3 className="text-base font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
                           {project.name}
                         </h3>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${status.color}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
                           {status.label}
                         </span>
                       </div>
                       {project.description && (
-                        <p className="mt-1 text-xs text-gray-500 truncate">{project.description}</p>
+                        <p className="mt-1 text-sm text-gray-500 truncate">{project.description}</p>
                       )}
-                      <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
+                      <div className="mt-2 flex items-center gap-4 text-sm text-gray-400">
                         {project.budgetAllocated && (
                           <span>Budget: ${(project.budgetAllocated / 1000).toFixed(0)}K ({budgetPct}% spent)</span>
                         )}
@@ -183,7 +183,7 @@ function StatsCard({
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
           <Icon className="h-4 w-4" />
         </div>
-        <span className="text-xs font-medium text-gray-500">{label}</span>
+        <span className="text-sm font-medium text-gray-500">{label}</span>
       </div>
       <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
     </div>

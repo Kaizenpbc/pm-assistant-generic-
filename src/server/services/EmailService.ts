@@ -20,9 +20,10 @@ class EmailService {
 
   async sendVerificationEmail(to: string, token: string): Promise<void> {
     if (!this.isConfigured) {
-      console.log(`[EmailService] Verification email would be sent to ${to} with token ${token}`);
+      console.warn(`[EmailService] RESEND_API_KEY not set — skipping verification email to ${to}`);
       return;
     }
+    console.log(`[EmailService] Sending verification email to ${to}`);
 
     const verifyUrl = `${config.APP_URL}/verify-email?token=${token}`;
 
@@ -58,9 +59,10 @@ class EmailService {
 
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
     if (!this.isConfigured) {
-      console.log(`[EmailService] Password reset email would be sent to ${to} with token ${token}`);
+      console.warn(`[EmailService] RESEND_API_KEY not set — skipping password reset email to ${to}`);
       return;
     }
+    console.log(`[EmailService] Sending password reset email to ${to}`);
 
     const resetUrl = `${config.APP_URL}/reset-password?token=${token}`;
 

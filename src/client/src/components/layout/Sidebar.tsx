@@ -137,10 +137,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               ${collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}
             `}
           >
-            <h1 className="text-base font-bold text-white whitespace-nowrap tracking-tight">
+            <h1 className="text-lg font-bold text-white whitespace-nowrap tracking-tight">
               PM Assistant
             </h1>
-            <p className="text-[10px] text-sidebar-text/60 whitespace-nowrap leading-none mt-0.5">
+            <p className="text-xs text-sidebar-text/60 whitespace-nowrap leading-none mt-0.5">
               AI-Powered Project Management
             </p>
           </div>

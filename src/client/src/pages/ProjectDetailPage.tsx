@@ -136,7 +136,7 @@ function formatDollar(value: number | undefined | null): string {
 
 function AIPoweredBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600">
+    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
       <Sparkles className="h-3 w-3" />
       AI Powered
     </span>
@@ -245,7 +245,7 @@ export function ProjectDetailPage() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-900">{project.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${status.color}`}
               >
@@ -422,7 +422,7 @@ function OverviewTab({ project }: { project: any }) {
       {/* Project Details */}
       <div className="lg:col-span-2">
         <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <h3 className="mb-3 text-sm font-semibold text-gray-900">Project Details</h3>
+          <h3 className="mb-3 text-base font-semibold text-gray-900">Project Details</h3>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             {project.code && <DetailRow label="Code" value={project.code} />}
             {project.category && <DetailRow label="Category" value={project.category} />}
@@ -453,7 +453,7 @@ function OverviewTab({ project }: { project: any }) {
       {/* Quick Info Sidebar */}
       <div className="space-y-4">
         <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <h3 className="mb-3 text-sm font-semibold text-gray-900">Quick Info</h3>
+          <h3 className="mb-3 text-base font-semibold text-gray-900">Quick Info</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Status</span>
@@ -499,7 +499,7 @@ function ScheduleTab({ projectId }: { projectId: string }) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
         <Calendar className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-        <h3 className="text-sm font-semibold text-gray-900">No Schedules</h3>
+        <h3 className="text-base font-semibold text-gray-900">No Schedules</h3>
         <p className="mt-1 text-sm text-gray-500">
           No schedules have been created for this project yet.
         </p>
@@ -688,7 +688,7 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
           <button
             onClick={() => createBaselineMutation.mutate()}
             disabled={createBaselineMutation.isPending}
-            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
           >
             <Save className="w-3 h-3" />
             Save Baseline
@@ -699,7 +699,7 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
               <select
                 value={selectedBaselineId}
                 onChange={(e) => { setSelectedBaselineId(e.target.value); setShowComparison(false); }}
-                className="text-[10px] border border-gray-200 rounded-md px-2 py-1 text-gray-600 bg-white"
+                className="text-xs border border-gray-200 rounded-md px-2 py-1 text-gray-600 bg-white"
               >
                 <option value="">No baseline overlay</option>
                 {baselines.map((b: any) => (
@@ -711,7 +711,7 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
               {selectedBaselineId && (
                 <button
                   onClick={() => setShowComparison(!showComparison)}
-                  className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-md transition-colors ${
+                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     showComparison
                       ? 'bg-indigo-600 text-white'
                       : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100'
@@ -728,14 +728,14 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
 
           <button
             onClick={() => setShowReschedulePanel(true)}
-            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors"
           >
             <Sparkles className="w-3 h-3" />
             AI Reschedule
           </button>
 
           {cpmData && showCriticalPath && (
-            <span className="text-[10px] text-gray-400 ml-auto">
+            <span className="text-xs text-gray-400 ml-auto">
               Project duration: {cpmData.projectDuration} days | Critical tasks: {cpmData.criticalPathTaskIds?.length || 0}
             </span>
           )}
@@ -783,10 +783,10 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-indigo-500" />
-              <h3 className="text-sm font-semibold text-gray-900">
+              <h3 className="text-base font-semibold text-gray-900">
                 Baseline Variance Report — {comparison.baselineName}
               </h3>
-              <span className="text-[10px] text-gray-400">
+              <span className="text-xs text-gray-400">
                 Saved {new Date(comparison.baselineDate).toLocaleDateString()}
               </span>
             </div>
@@ -801,7 +801,7 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 mb-4">
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-[10px] font-medium text-gray-400 uppercase">Health</div>
+              <div className="text-xs font-medium text-gray-400 uppercase">Health</div>
               <div className={`mt-1 text-lg font-bold ${
                 comparison.summary.scheduleHealthPct >= 70 ? 'text-green-600' :
                 comparison.summary.scheduleHealthPct >= 40 ? 'text-yellow-600' : 'text-red-600'
@@ -810,19 +810,19 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
               </div>
             </div>
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-[10px] font-medium text-gray-400 uppercase">Slipped</div>
+              <div className="text-xs font-medium text-gray-400 uppercase">Slipped</div>
               <div className="mt-1 text-lg font-bold text-red-600">{comparison.summary.tasksSlipped}</div>
             </div>
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-[10px] font-medium text-gray-400 uppercase">On Track</div>
+              <div className="text-xs font-medium text-gray-400 uppercase">On Track</div>
               <div className="mt-1 text-lg font-bold text-green-600">{comparison.summary.tasksOnTrack}</div>
             </div>
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-[10px] font-medium text-gray-400 uppercase">Ahead</div>
+              <div className="text-xs font-medium text-gray-400 uppercase">Ahead</div>
               <div className="mt-1 text-lg font-bold text-blue-600">{comparison.summary.tasksAhead}</div>
             </div>
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-[10px] font-medium text-gray-400 uppercase">Avg End Var</div>
+              <div className="text-xs font-medium text-gray-400 uppercase">Avg End Var</div>
               <div className={`mt-1 text-lg font-bold ${
                 comparison.summary.avgEndVarianceDays > 0 ? 'text-red-600' : 'text-green-600'
               }`}>
@@ -830,14 +830,14 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
               </div>
             </div>
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-[10px] font-medium text-gray-400 uppercase">New Tasks</div>
+              <div className="text-xs font-medium text-gray-400 uppercase">New Tasks</div>
               <div className="mt-1 text-lg font-bold text-gray-900">{comparison.summary.newTasks}</div>
             </div>
           </div>
 
           {/* Task Variance Table */}
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
-            <table className="w-full text-[10px]">
+            <table className="w-full text-xs">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
                   <th className="text-left px-2 py-1.5 font-semibold text-gray-500 uppercase">Task</th>
@@ -981,7 +981,7 @@ function EVMSCurveSection({ projectId }: { projectId: string }) {
     <div className="rounded-xl border border-gray-200 bg-white p-5">
       <div className="mb-4 flex items-center gap-2">
         <BarChart3 className="h-5 w-5 text-indigo-500" />
-        <h3 className="text-sm font-semibold text-gray-900">Earned Value Management — S-Curve</h3>
+        <h3 className="text-base font-semibold text-gray-900">Earned Value Management — S-Curve</h3>
       </div>
 
       {/* Extended EVM Metrics */}
@@ -1060,7 +1060,7 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ShieldAlert className="h-5 w-5 text-red-500" />
-          <h3 className="text-sm font-semibold text-gray-900">Risk Assessment</h3>
+          <h3 className="text-base font-semibold text-gray-900">Risk Assessment</h3>
         </div>
         {riskData?.aiPowered && <AIPoweredBadge />}
       </div>
@@ -1079,7 +1079,7 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
               <div className={`text-3xl font-bold ${riskScoreColor(riskData.overallRiskScore)}`}>
                 {riskData.overallRiskScore}
               </div>
-              <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+              <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
                 Risk Score
               </div>
             </div>
@@ -1106,7 +1106,7 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
                       <span className="text-xs font-semibold capitalize">{risk.severity}</span>
                     </div>
                     {risk.trend && (
-                      <span className="text-[10px] text-gray-500 capitalize">{risk.trend}</span>
+                      <span className="text-xs text-gray-500 capitalize">{risk.trend}</span>
                     )}
                   </div>
                   <h4 className="text-sm font-medium text-gray-900">{risk.title}</h4>
@@ -1117,7 +1117,7 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
                   )}
                   <div className="mt-2 flex gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center justify-between text-[10px] text-gray-500 mb-0.5">
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-0.5">
                         <span>Probability</span>
                         <span>{Math.round((risk.probability || 0) * 100)}%</span>
                       </div>
@@ -1129,7 +1129,7 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center justify-between text-[10px] text-gray-500 mb-0.5">
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-0.5">
                         <span>Impact</span>
                         <span>{Math.round((risk.impact || 0) * 100)}%</span>
                       </div>
@@ -1169,7 +1169,7 @@ function WeatherImpactSection({ projectId }: { projectId: string }) {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CloudRain className="h-5 w-5 text-blue-500" />
-          <h3 className="text-sm font-semibold text-gray-900">Weather Impact</h3>
+          <h3 className="text-base font-semibold text-gray-900">Weather Impact</h3>
         </div>
         {weather?.aiPowered && <AIPoweredBadge />}
       </div>
@@ -1282,7 +1282,7 @@ function BudgetForecastSection({ projectId }: { projectId: string }) {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <PieChart className="h-5 w-5 text-green-500" />
-          <h3 className="text-sm font-semibold text-gray-900">Budget Forecast</h3>
+          <h3 className="text-base font-semibold text-gray-900">Budget Forecast</h3>
         </div>
         {budget?.aiPowered && <AIPoweredBadge />}
       </div>
@@ -1397,7 +1397,7 @@ function MetricCard({
 }) {
   return (
     <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center" title={tooltip}>
-      <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{label}</div>
+      <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">{label}</div>
       <div className={`mt-1 text-lg font-bold ${color}`}>{value}</div>
     </div>
   );
@@ -1426,7 +1426,7 @@ function EVMForecastTab({ projectId }: { projectId: string }) {
 
           {forecast.historicalTrends?.weeklyData?.length > 0 && (
             <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">CPI / SPI Trend</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-4">CPI / SPI Trend</h3>
               <EVMTrendChart
                 historicalData={forecast.historicalTrends.weeklyData}
                 predictions={forecast.aiPredictions?.predictedCPI}
@@ -1436,7 +1436,7 @@ function EVMForecastTab({ projectId }: { projectId: string }) {
 
           {forecast.forecastComparison?.length > 0 && (
             <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">Forecast Method Comparison</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-4">Forecast Method Comparison</h3>
               <ForecastComparisonChart
                 data={forecast.forecastComparison}
                 bac={forecast.currentMetrics?.BAC || 0}
@@ -1496,7 +1496,7 @@ function ScenariosTab({ projectId }: { projectId: string }) {
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <div className="flex items-center gap-2 mb-4">
           <SlidersHorizontal className="h-5 w-5 text-indigo-500" />
-          <h3 className="text-sm font-semibold text-gray-900">Model a Scenario</h3>
+          <h3 className="text-base font-semibold text-gray-900">Model a Scenario</h3>
         </div>
 
         <div className="space-y-4">
@@ -1724,7 +1724,7 @@ function SliderInput({
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full accent-indigo-600"
       />
-      <div className="flex justify-between text-[10px] text-gray-400">
+      <div className="flex justify-between text-xs text-gray-400">
         <span>
           {min}
           {unit}
@@ -1840,12 +1840,12 @@ function TeamTab() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-indigo-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Team Members</h3>
+            <h3 className="text-base font-semibold text-gray-900">Team Members</h3>
             <span className="text-xs text-gray-400">({members.length})</span>
           </div>
           <button
             onClick={() => setShowAddMember(!showAddMember)}
-            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
           >
             <Plus className="w-3 h-3" />
             Add Member
@@ -1905,11 +1905,11 @@ function TeamTab() {
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">{member.userName}</div>
-                    <div className="text-[10px] text-gray-400">{member.email}</div>
+                    <div className="text-xs text-gray-400">{member.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${roleColors[member.role] || roleColors.viewer}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${roleColors[member.role] || roleColors.viewer}`}>
                     {member.role}
                   </span>
                   {member.role !== 'owner' && (
@@ -1932,7 +1932,7 @@ function TeamTab() {
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <div className="flex items-center gap-2 mb-4">
           <Activity className="h-5 w-5 text-green-500" />
-          <h3 className="text-sm font-semibold text-gray-900">Activity Log</h3>
+          <h3 className="text-base font-semibold text-gray-900">Activity Log</h3>
         </div>
 
         {auditLoading ? (
@@ -1955,7 +1955,7 @@ function TeamTab() {
                       <span className="text-gray-400"> from "{entry.oldValue}" to "{entry.newValue}"</span>
                     )}
                   </p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
+                  <p className="text-xs text-gray-400 mt-0.5">
                     {new Date(entry.createdAt).toLocaleString()}
                   </p>
                 </div>
@@ -1996,7 +1996,7 @@ function ResourceOptimizerSection({ projectId }: { projectId: string }) {
 
       {forecast.capacityForecast?.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Capacity Forecast</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Capacity Forecast</h3>
           <CapacityChart data={forecast.capacityForecast} />
         </div>
       )}

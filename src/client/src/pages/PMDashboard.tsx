@@ -70,7 +70,7 @@ export const PMDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">My Projects</h1>
+          <h1 className="text-2xl font-bold text-gray-900">My Projects</h1>
           <p className="mt-1 text-sm text-gray-500">
             Manage your projects and track progress.
           </p>
@@ -120,7 +120,7 @@ export const PMDashboard: React.FC = () => {
       {projects.length === 0 ? (
         <div className="card text-center py-12">
           <FolderKanban className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-          <h3 className="text-sm font-semibold text-gray-900">No projects yet</h3>
+          <h3 className="text-base font-semibold text-gray-900">No projects yet</h3>
           <p className="mt-1 text-sm text-gray-500">
             Create your first project to get started.
           </p>
@@ -143,15 +143,15 @@ export const PMDashboard: React.FC = () => {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+                    <h3 className="text-base font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
                       {project.name}
                     </h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${status.color}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
                         {status.label}
                       </span>
                       {project.priority && (
-                        <span className={`text-[10px] font-medium capitalize ${priorityStyles[project.priority] || 'text-gray-500'}`}>
+                        <span className={`text-xs font-medium capitalize ${priorityStyles[project.priority] || 'text-gray-500'}`}>
                           {project.priority}
                         </span>
                       )}
@@ -161,12 +161,12 @@ export const PMDashboard: React.FC = () => {
                 </div>
 
                 {project.description && (
-                  <p className="text-xs text-gray-500 line-clamp-2 mb-3">{project.description}</p>
+                  <p className="text-sm text-gray-500 line-clamp-2 mb-3">{project.description}</p>
                 )}
 
                 {/* Progress bar */}
                 <div className="mb-3">
-                  <div className="flex items-center justify-between text-xs mb-1">
+                  <div className="flex items-center justify-between text-sm mb-1">
                     <span className="text-gray-500">Progress</span>
                     <span className="font-medium text-gray-900">{progress}%</span>
                   </div>
@@ -180,7 +180,7 @@ export const PMDashboard: React.FC = () => {
 
                 {/* Budget info */}
                 {budgetAllocated > 0 && (
-                  <div className="flex items-center gap-1 text-xs text-gray-400">
+                  <div className="flex items-center gap-1 text-sm text-gray-400">
                     <DollarSign className="w-3 h-3" />
                     <span>
                       ${(budgetSpent / 1000).toFixed(0)}K / ${(budgetAllocated / 1000).toFixed(0)}K
