@@ -584,13 +584,14 @@ class ApiService {
   // Workflows
   // -------------------------------------------------------------------------
 
-  async getWorkflows() {
-    const response = await this.api.get('/workflows');
+  async getWorkflows(projectId?: string) {
+    const params = projectId ? `?projectId=${projectId}` : '';
+    const response = await this.api.get(`/workflows${params}`);
     return response.data;
   }
 
-  async getWorkflowExecutions() {
-    const response = await this.api.get('/workflows/executions');
+  async getWorkflow(id: string) {
+    const response = await this.api.get(`/workflows/${id}`);
     return response.data;
   }
 
@@ -606,6 +607,32 @@ class ApiService {
 
   async deleteWorkflow(id: string) {
     const response = await this.api.delete(`/workflows/${id}`);
+    return response.data;
+  }
+
+  async toggleWorkflow(id: string, enabled: boolean) {
+    const response = await this.api.patch(`/workflows/${id}/toggle`, { enabled });
+    return response.data;
+  }
+
+  async triggerWorkflow(id: string, entityType: string, entityId: string) {
+    const response = await this.api.post(`/workflows/${id}/trigger`, { entityType, entityId });
+    return response.data;
+  }
+
+  async getWorkflowExecutions(filters?: Record<string, string>) {
+    const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
+    const response = await this.api.get(`/workflows/executions${params}`);
+    return response.data;
+  }
+
+  async getWorkflowExecution(id: string) {
+    const response = await this.api.get(`/workflows/executions/${id}`);
+    return response.data;
+  }
+
+  async resumeWorkflowExecution(id: string, nodeId: string, result: Record<string, unknown> = {}) {
+    const response = await this.api.post(`/workflows/executions/${id}/resume`, { nodeId, result });
     return response.data;
   }
 

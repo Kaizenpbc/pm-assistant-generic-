@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { ScheduleService } from '../services/ScheduleService';
 import { CriticalPathService } from '../services/CriticalPathService';
 import { BaselineService } from '../services/BaselineService';
-import { WorkflowService } from '../services/WorkflowService';
+import { dagWorkflowService } from '../services/DagWorkflowService';
 import { WebSocketService } from '../services/WebSocketService';
 import { webhookService } from '../services/WebhookService';
 import { authMiddleware } from '../middleware/auth';
@@ -42,7 +42,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   const scheduleService = new ScheduleService();
-  const workflowService = new WorkflowService();
+  // dagWorkflowService is a singleton — no instantiation needed
 
   fastify.get('/project/:projectId', {
     preHandler: [requireScope('read')],
@@ -183,7 +183,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       }
 
       // Workflow automation: evaluate rules
-      await workflowService.evaluateTaskChange(task, oldTask, scheduleService);
+      await dagWorkflowService.evaluateTaskChange(task, oldTask, scheduleService);
 
       // WebSocket broadcast
       WebSocketService.broadcast({ type: 'task_updated', payload: { task, cascadedChanges } });

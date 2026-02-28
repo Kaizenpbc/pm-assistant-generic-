@@ -1,134 +1,214 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, Zap, Clock } from 'lucide-react';
+import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, Zap, Clock, ChevronDown, ChevronRight, ArrowRight, Eye } from 'lucide-react';
 import { apiService } from '../services/api';
+import { WorkflowNodeEditor } from '../components/workflows/WorkflowNodeEditor';
+import { ExecutionDetail } from '../components/workflows/ExecutionDetail';
 
-interface TriggerConfig {
-  type: 'status_change' | 'date_passed' | 'progress_threshold';
-  fromStatus?: string;
-  toStatus?: string;
-  progressThreshold?: number;
-  progressDirection?: 'above' | 'below';
+// ── Types ──────────────────────────────────────────────────────────────────
+
+type NodeType = 'trigger' | 'condition' | 'action' | 'approval' | 'delay';
+
+interface NodeDraft {
+  nodeType: NodeType;
+  name: string;
+  config: Record<string, any>;
 }
 
-interface ActionConfig {
-  type: 'update_field' | 'log_activity' | 'send_notification';
-  field?: string;
-  value?: string;
-  message?: string;
+interface EdgeDraft {
+  sourceIndex: number;
+  targetIndex: number;
+  label?: string;
+  conditionExpr?: Record<string, any>;
 }
 
-interface WorkflowRule {
+interface WorkflowDef {
   id: string;
   name: string;
-  description?: string;
-  enabled: boolean;
-  trigger: TriggerConfig;
-  action: ActionConfig;
+  description: string | null;
+  isEnabled: boolean;
+  version: number;
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
+  nodes?: any[];
+  edges?: any[];
 }
 
-const defaultTrigger: TriggerConfig = { type: 'status_change', toStatus: 'completed' };
-const defaultAction: ActionConfig = { type: 'log_activity', message: '' };
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+const defaultNodes: NodeDraft[] = [
+  { nodeType: 'trigger', name: 'Trigger', config: { triggerType: 'status_change' } },
+  { nodeType: 'action', name: 'Action', config: { actionType: 'log_activity', message: '' } },
+];
+
+const defaultEdges: EdgeDraft[] = [
+  { sourceIndex: 0, targetIndex: 1 },
+];
+
+const nodeTypeColors: Record<string, string> = {
+  trigger: 'border-blue-200 bg-blue-50',
+  condition: 'border-yellow-200 bg-yellow-50',
+  action: 'border-green-200 bg-green-50',
+  approval: 'border-purple-200 bg-purple-50',
+  delay: 'border-orange-200 bg-orange-50',
+};
+
+const nodeTypeLabel: Record<string, string> = {
+  trigger: 'Trigger',
+  condition: 'Condition',
+  action: 'Action',
+  approval: 'Approval Gate',
+  delay: 'Delay',
+};
+
+// ── Component ──────────────────────────────────────────────────────────────
 
 export function WorkflowPage() {
   const queryClient = useQueryClient();
+  const [tab, setTab] = useState<'definitions' | 'executions'>('definitions');
   const [showForm, setShowForm] = useState(false);
-  const [editingRule, setEditingRule] = useState<WorkflowRule | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewExecId, setViewExecId] = useState<string | null>(null);
 
+  // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [trigger, setTrigger] = useState<TriggerConfig>(defaultTrigger);
-  const [action, setAction] = useState<ActionConfig>(defaultAction);
+  const [nodes, setNodes] = useState<NodeDraft[]>([...defaultNodes]);
+  const [edges, setEdges] = useState<EdgeDraft[]>([...defaultEdges]);
 
-  const { data, isLoading } = useQuery({
+  // Queries
+  const { data: defsData, isLoading } = useQuery({
     queryKey: ['workflows'],
     queryFn: () => apiService.getWorkflows(),
   });
 
-  const { data: execData } = useQuery({
+  const { data: execsData } = useQuery({
     queryKey: ['workflowExecutions'],
     queryFn: () => apiService.getWorkflowExecutions(),
   });
 
-  const rules: WorkflowRule[] = data?.rules || [];
-  const executions = execData?.executions || [];
+  const { data: execDetail } = useQuery({
+    queryKey: ['workflowExecution', viewExecId],
+    queryFn: () => apiService.getWorkflowExecution(viewExecId!),
+    enabled: !!viewExecId,
+  });
 
-  const createMutation = useMutation({
+  const definitions: WorkflowDef[] = defsData?.definitions || [];
+  const executions = execsData?.executions || [];
+
+  // Mutations
+  const createMut = useMutation({
     mutationFn: (data: any) => apiService.createWorkflow(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workflows'] });
-      resetForm();
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['workflows'] }); resetForm(); },
   });
 
-  const updateMutation = useMutation({
+  const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => apiService.updateWorkflow(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workflows'] });
-      resetForm();
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['workflows'] }); resetForm(); },
   });
 
-  const deleteMutation = useMutation({
+  const deleteMut = useMutation({
     mutationFn: (id: string) => apiService.deleteWorkflow(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workflows'] }),
   });
 
-  const toggleMutation = useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      apiService.updateWorkflow(id, { enabled }),
+  const toggleMut = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) => apiService.toggleWorkflow(id, enabled),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workflows'] }),
   });
 
+  const resumeMut = useMutation({
+    mutationFn: ({ execId, nodeId }: { execId: string; nodeId: string }) =>
+      apiService.resumeWorkflowExecution(execId, nodeId, { approved: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workflowExecutions'] });
+      queryClient.invalidateQueries({ queryKey: ['workflowExecution', viewExecId] });
+    },
+  });
+
+  // Form helpers
   const resetForm = () => {
     setShowForm(false);
-    setEditingRule(null);
+    setEditingId(null);
     setName('');
     setDescription('');
-    setTrigger(defaultTrigger);
-    setAction(defaultAction);
+    setNodes([...defaultNodes]);
+    setEdges([...defaultEdges]);
   };
 
-  const openEditForm = (rule: WorkflowRule) => {
-    setEditingRule(rule);
-    setName(rule.name);
-    setDescription(rule.description || '');
-    setTrigger(rule.trigger);
-    setAction(rule.action);
+  const openEdit = async (def: WorkflowDef) => {
+    const full = await apiService.getWorkflow(def.id);
+    const d = full.definition;
+    setEditingId(d.id);
+    setName(d.name);
+    setDescription(d.description || '');
+    // Map server nodes/edges to drafts
+    const nodeList: NodeDraft[] = (d.nodes || []).map((n: any) => ({
+      nodeType: n.nodeType,
+      name: n.name,
+      config: n.config,
+    }));
+    setNodes(nodeList.length > 0 ? nodeList : [...defaultNodes]);
+    // Build edges from server data using node index mapping
+    const nodeIdToIdx = new Map<string, number>();
+    (d.nodes || []).forEach((n: any, i: number) => nodeIdToIdx.set(n.id, i));
+    const edgeList: EdgeDraft[] = (d.edges || []).map((e: any) => ({
+      sourceIndex: nodeIdToIdx.get(e.sourceNodeId) ?? 0,
+      targetIndex: nodeIdToIdx.get(e.targetNodeId) ?? 1,
+      label: e.label || undefined,
+      conditionExpr: e.conditionExpr || undefined,
+    }));
+    setEdges(edgeList.length > 0 ? edgeList : [...defaultEdges]);
     setShowForm(true);
   };
 
   const handleSave = () => {
-    const payload = { name, description, enabled: true, trigger, action };
-    if (editingRule) {
-      updateMutation.mutate({ id: editingRule.id, data: payload });
+    const payload = { name, description, nodes, edges };
+    if (editingId) {
+      updateMut.mutate({ id: editingId, data: payload });
     } else {
-      createMutation.mutate(payload);
+      createMut.mutate(payload);
     }
   };
 
-  const triggerLabel = (t: TriggerConfig) => {
-    switch (t.type) {
-      case 'status_change': return `Status changes${t.fromStatus ? ` from ${t.fromStatus}` : ''}${t.toStatus ? ` to ${t.toStatus}` : ''}`;
-      case 'progress_threshold': return `Progress ${t.progressDirection === 'below' ? '<=' : '>='} ${t.progressThreshold}%`;
-      case 'date_passed': return 'End date has passed';
-      default: return t.type;
+  const addNode = (type: NodeType) => {
+    const newNode: NodeDraft = {
+      nodeType: type,
+      name: nodeTypeLabel[type] || type,
+      config: type === 'trigger' ? { triggerType: 'status_change' }
+        : type === 'action' ? { actionType: 'log_activity' }
+        : type === 'condition' ? { field: '', operator: 'equals', value: '' }
+        : {},
+    };
+    const newIdx = nodes.length;
+    setNodes([...nodes, newNode]);
+    // Auto-connect from last node
+    if (newIdx > 0) {
+      setEdges([...edges, { sourceIndex: newIdx - 1, targetIndex: newIdx }]);
     }
   };
 
-  const actionLabel = (a: ActionConfig) => {
-    switch (a.type) {
-      case 'update_field': return `Set ${a.field} to "${a.value}"`;
-      case 'log_activity': return `Log: ${a.message || 'activity'}`;
-      case 'send_notification': return `Notify: ${a.message || 'notification'}`;
-      default: return a.type;
-    }
+  const removeNode = (idx: number) => {
+    if (nodes.length <= 1) return;
+    setNodes(nodes.filter((_, i) => i !== idx));
+    setEdges(edges
+      .filter(e => e.sourceIndex !== idx && e.targetIndex !== idx)
+      .map(e => ({
+        ...e,
+        sourceIndex: e.sourceIndex > idx ? e.sourceIndex - 1 : e.sourceIndex,
+        targetIndex: e.targetIndex > idx ? e.targetIndex - 1 : e.targetIndex,
+      })),
+    );
+  };
+
+  const updateNode = (idx: number, updates: Partial<NodeDraft>) => {
+    setNodes(nodes.map((n, i) => i === idx ? { ...n, ...updates } : n));
   };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100">
@@ -136,7 +216,7 @@ export function WorkflowPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Workflow Automation</h1>
-            <p className="text-sm text-gray-500">Define rules to automate task actions</p>
+            <p className="text-sm text-gray-500">DAG-based workflow engine with conditions, approvals, and execution history</p>
           </div>
         </div>
         <button
@@ -144,257 +224,227 @@ export function WorkflowPage() {
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          New Rule
+          New Workflow
         </button>
       </div>
 
-      {/* Rule Builder Form */}
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-gray-200">
+        <button
+          onClick={() => setTab('definitions')}
+          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'definitions' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Definitions ({definitions.length})
+        </button>
+        <button
+          onClick={() => setTab('executions')}
+          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'executions' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Executions ({executions.length})
+        </button>
+      </div>
+
+      {/* Builder Form */}
       {showForm && (
         <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-900">{editingRule ? 'Edit Rule' : 'Create Rule'}</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{editingId ? 'Edit Workflow' : 'Create Workflow'}</h3>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Rule Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
+              <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)}
                 className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                placeholder="e.g., Auto-complete on 100%"
-              />
+                placeholder="e.g., Auto-complete on 100%" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
-              <input
-                type="text"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
+              <input type="text" value={description} onChange={e => setDescription(e.target.value)}
                 className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                placeholder="Optional description"
-              />
+                placeholder="Optional description" />
             </div>
           </div>
 
-          {/* Trigger */}
-          <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <h4 className="text-xs font-semibold text-blue-700 mb-2">WHEN (Trigger)</h4>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <select
-                value={trigger.type}
-                onChange={e => setTrigger({ type: e.target.value as TriggerConfig['type'] })}
-                className="text-xs border border-gray-300 rounded-md px-2 py-1.5"
-              >
-                <option value="status_change">Status Changes</option>
-                <option value="progress_threshold">Progress Threshold</option>
-                <option value="date_passed">End Date Passed</option>
-              </select>
-              {trigger.type === 'status_change' && (
-                <>
-                  <select
-                    value={trigger.toStatus || ''}
-                    onChange={e => setTrigger({ ...trigger, toStatus: e.target.value || undefined })}
-                    className="text-xs border border-gray-300 rounded-md px-2 py-1.5"
-                  >
-                    <option value="">Any status</option>
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                  <select
-                    value={trigger.fromStatus || ''}
-                    onChange={e => setTrigger({ ...trigger, fromStatus: e.target.value || undefined })}
-                    className="text-xs border border-gray-300 rounded-md px-2 py-1.5"
-                  >
-                    <option value="">From any</option>
-                    <option value="pending">From Pending</option>
-                    <option value="in_progress">From In Progress</option>
-                    <option value="completed">From Completed</option>
-                  </select>
-                </>
-              )}
-              {trigger.type === 'progress_threshold' && (
-                <>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={trigger.progressThreshold || 0}
-                    onChange={e => setTrigger({ ...trigger, progressThreshold: Number(e.target.value) })}
-                    className="text-xs border border-gray-300 rounded-md px-2 py-1.5"
-                    placeholder="Threshold %"
-                  />
-                  <select
-                    value={trigger.progressDirection || 'above'}
-                    onChange={e => setTrigger({ ...trigger, progressDirection: e.target.value as 'above' | 'below' })}
-                    className="text-xs border border-gray-300 rounded-md px-2 py-1.5"
-                  >
-                    <option value="above">At or above</option>
-                    <option value="below">At or below</option>
-                  </select>
-                </>
-              )}
+          {/* Nodes */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-semibold text-gray-700">Nodes ({nodes.length})</h4>
+              <div className="flex gap-1">
+                {(['condition', 'action', 'approval', 'delay'] as NodeType[]).map(t => (
+                  <button key={t} onClick={() => addNode(t)}
+                    className="px-2 py-1 text-[10px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors">
+                    + {nodeTypeLabel[t]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {nodes.map((node, idx) => (
+                <div key={idx}>
+                  {idx > 0 && (
+                    <div className="flex justify-center py-1">
+                      <ArrowRight className="w-3.5 h-3.5 text-gray-300 rotate-90" />
+                    </div>
+                  )}
+                  <div className={`p-3 rounded-lg border ${nodeTypeColors[node.nodeType] || 'border-gray-200 bg-gray-50'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/60 font-medium uppercase tracking-wide text-gray-600">
+                          {nodeTypeLabel[node.nodeType]}
+                        </span>
+                        <input type="text" value={node.name} onChange={e => updateNode(idx, { name: e.target.value })}
+                          className="text-xs font-medium text-gray-800 bg-transparent border-0 border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none px-1 py-0.5" />
+                      </div>
+                      {idx > 0 && (
+                        <button onClick={() => removeNode(idx)} className="p-0.5 text-gray-300 hover:text-red-500 transition-colors">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                    <WorkflowNodeEditor
+                      nodeType={node.nodeType}
+                      config={node.config}
+                      onChange={config => updateNode(idx, { config })}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Action */}
-          <div className="p-3 bg-green-50 rounded-lg border border-green-100">
-            <h4 className="text-xs font-semibold text-green-700 mb-2">THEN (Action)</h4>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <select
-                value={action.type}
-                onChange={e => setAction({ type: e.target.value as ActionConfig['type'] })}
-                className="text-xs border border-gray-300 rounded-md px-2 py-1.5"
-              >
-                <option value="update_field">Update Field</option>
-                <option value="log_activity">Log Activity</option>
-                <option value="send_notification">Send Notification</option>
-              </select>
-              {action.type === 'update_field' && (
-                <>
-                  <select
-                    value={action.field || ''}
-                    onChange={e => setAction({ ...action, field: e.target.value })}
-                    className="text-xs border border-gray-300 rounded-md px-2 py-1.5"
-                  >
-                    <option value="">Select field</option>
-                    <option value="status">Status</option>
-                    <option value="priority">Priority</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={action.value || ''}
-                    onChange={e => setAction({ ...action, value: e.target.value })}
-                    className="text-xs border border-gray-300 rounded-md px-2 py-1.5"
-                    placeholder="New value"
-                  />
-                </>
-              )}
-              {(action.type === 'log_activity' || action.type === 'send_notification') && (
-                <input
-                  type="text"
-                  value={action.message || ''}
-                  onChange={e => setAction({ ...action, message: e.target.value })}
-                  className="text-xs border border-gray-300 rounded-md px-2 py-1.5 sm:col-span-2"
-                  placeholder="Message"
-                />
-              )}
-            </div>
-          </div>
-
+          {/* Save/Cancel */}
           <div className="flex justify-end gap-2">
-            <button
-              onClick={resetForm}
-              className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
+            <button onClick={resetForm} className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
               Cancel
             </button>
-            <button
-              onClick={handleSave}
-              disabled={!name.trim() || createMutation.isPending || updateMutation.isPending}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {editingRule ? 'Update Rule' : 'Create Rule'}
+            <button onClick={handleSave}
+              disabled={!name.trim() || nodes.length === 0 || createMut.isPending || updateMut.isPending}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50">
+              {editingId ? 'Update Workflow' : 'Create Workflow'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Rules List */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-sm font-semibold text-gray-700">Rules ({rules.length})</h3>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+      {/* Definitions List */}
+      {tab === 'definitions' && (
+        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+            <h3 className="text-sm font-semibold text-gray-700">Workflows ({definitions.length})</h3>
           </div>
-        ) : rules.length === 0 ? (
-          <div className="text-center py-8 text-sm text-gray-400">No workflow rules defined yet.</div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {rules.map((rule) => (
-              <div key={rule.id} className="px-4 py-3 hover:bg-gray-50/50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => toggleMutation.mutate({ id: rule.id, enabled: !rule.enabled })}
-                      title={rule.enabled ? 'Disable rule' : 'Enable rule'}
-                    >
-                      {rule.enabled ? (
-                        <ToggleRight className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <ToggleLeft className="w-5 h-5 text-gray-300" />
-                      )}
-                    </button>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-medium ${rule.enabled ? 'text-gray-900' : 'text-gray-400'}`}>
-                          {rule.name}
-                        </span>
-                        {!rule.enabled && (
-                          <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Disabled</span>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            </div>
+          ) : definitions.length === 0 ? (
+            <div className="text-center py-8 text-sm text-gray-400">No workflows defined yet.</div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {definitions.map((def) => (
+                <div key={def.id} className="px-4 py-3 hover:bg-gray-50/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => toggleMut.mutate({ id: def.id, enabled: !def.isEnabled })}
+                        title={def.isEnabled ? 'Disable' : 'Enable'}
+                      >
+                        {def.isEnabled ? (
+                          <ToggleRight className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5 text-gray-300" />
+                        )}
+                      </button>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-medium ${def.isEnabled ? 'text-gray-900' : 'text-gray-400'}`}>
+                            {def.name}
+                          </span>
+                          <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">v{def.version}</span>
+                          {!def.isEnabled && (
+                            <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Disabled</span>
+                          )}
+                        </div>
+                        {def.description && (
+                          <p className="text-[10px] text-gray-400 mt-0.5">{def.description}</p>
                         )}
                       </div>
-                      {rule.description && (
-                        <p className="text-[10px] text-gray-400 mt-0.5">{rule.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 mt-1 text-[10px]">
-                        <span className="text-blue-600">When: {triggerLabel(rule.trigger)}</span>
-                        <span className="text-green-600">Then: {actionLabel(rule.action)}</span>
-                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => openEdit(def)}
+                        className="px-2 py-1 text-[10px] text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
+                        Edit
+                      </button>
+                      <button onClick={() => deleteMut.mutate(def.id)}
+                        className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => openEditForm(rule)}
-                      className="px-2 py-1 text-[10px] text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteMutation.mutate(rule.id)}
-                      className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Execution History */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-gray-400" />
-            <h3 className="text-sm font-semibold text-gray-700">Execution History</h3>
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-        {executions.length === 0 ? (
-          <div className="text-center py-6 text-xs text-gray-400">No workflow executions yet. Rules fire when tasks are updated.</div>
-        ) : (
-          <div className="divide-y divide-gray-50 max-h-48 overflow-y-auto">
-            {executions.slice(0, 20).map((exec: any, idx: number) => (
-              <div key={idx} className="px-4 py-2 text-xs flex items-center gap-3">
-                <Zap className="w-3 h-3 text-yellow-500 flex-shrink-0" />
-                <div className="flex-1">
-                  <span className="font-medium text-gray-700">{exec.ruleName}</span>
-                  <span className="text-gray-400"> on </span>
-                  <span className="text-gray-600">{exec.taskName}</span>
-                  <span className="text-gray-400"> — {exec.result}</span>
-                </div>
-                <span className="text-gray-300 flex-shrink-0">{new Date(exec.executedAt).toLocaleString()}</span>
+      )}
+
+      {/* Executions Tab */}
+      {tab === 'executions' && (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <h3 className="text-sm font-semibold text-gray-700">Execution History</h3>
               </div>
-            ))}
+            </div>
+            {executions.length === 0 ? (
+              <div className="text-center py-6 text-xs text-gray-400">No workflow executions yet.</div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {executions.map((exec: any) => (
+                  <div key={exec.id} className="px-4 py-2 text-xs flex items-center gap-3 hover:bg-gray-50/50 cursor-pointer"
+                    onClick={() => setViewExecId(viewExecId === exec.id ? null : exec.id)}>
+                    <div className="flex-shrink-0">
+                      {viewExecId === exec.id ? <ChevronDown className="w-3 h-3 text-gray-400" /> : <ChevronRight className="w-3 h-3 text-gray-400" />}
+                    </div>
+                    <Zap className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-700">{exec.workflowId}</span>
+                      <span className="text-gray-400"> — {exec.entityType}:{exec.entityId}</span>
+                    </div>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] capitalize ${
+                      exec.status === 'completed' ? 'bg-green-100 text-green-700' :
+                      exec.status === 'failed' ? 'bg-red-100 text-red-700' :
+                      exec.status === 'waiting' ? 'bg-amber-100 text-amber-700' :
+                      exec.status === 'running' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-500'
+                    }`}>
+                      {exec.status}
+                    </span>
+                    <span className="text-gray-300 flex-shrink-0">{new Date(exec.startedAt).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Execution detail */}
+          {viewExecId && execDetail?.execution && (
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Eye className="w-4 h-4 text-gray-400" />
+                <h4 className="text-sm font-semibold text-gray-700">Execution Detail</h4>
+                <span className="text-[10px] text-gray-400 font-mono">{viewExecId}</span>
+              </div>
+              <ExecutionDetail
+                execution={execDetail.execution}
+                onResume={(nodeId) => resumeMut.mutate({ execId: viewExecId, nodeId })}
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
