@@ -36,16 +36,19 @@ export async function authRoutes(fastify: FastifyInstance) {
     schema: { description: 'User login', tags: ['auth'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // TEMP DEBUG: log raw body
+      const rawBody = request.body as Record<string, unknown>;
+      reply.header('X-Debug-Received', JSON.stringify({ keys: Object.keys(rawBody || {}), hasUsername: !!rawBody?.username, hasPassword: !!rawBody?.password }));
       const { username, password } = loginSchema.parse(request.body);
 
       const user = await userService.findByUsername(username);
       if (!user) {
-        return reply.status(401).send({ error: 'Invalid credentials', message: 'Username or password is incorrect' });
+        return reply.status(401).send({ error: 'Invalid credentials', message: 'User not found', debug: 'no_user' });
       }
 
       const isValidPassword = await bcrypt.compare(password, user.passwordHash);
       if (!isValidPassword) {
-        return reply.status(401).send({ error: 'Invalid credentials', message: 'Username or password is incorrect' });
+        return reply.status(401).send({ error: 'Invalid credentials', message: 'Password mismatch', debug: 'bad_password' });
       }
 
       if (!user.emailVerified) {

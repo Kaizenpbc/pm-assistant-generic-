@@ -17,12 +17,19 @@ import {
   Search,
   CreditCard,
   HelpCircle,
+  Clock,
+  Plug,
+  FileBarChart,
+  ClipboardList,
+  BarChart3,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 interface NavItem {
@@ -54,6 +61,11 @@ const navItems: NavItem[] = [
     path: '/portfolio',
   },
   {
+    label: 'Analytics',
+    icon: BarChart3,
+    path: '/analytics',
+  },
+  {
     label: 'Workflows',
     icon: Workflow,
     path: '/workflows',
@@ -79,6 +91,26 @@ const navItems: NavItem[] = [
     path: '/lessons',
   },
   {
+    label: 'Timesheets',
+    icon: Clock,
+    path: '/timesheet',
+  },
+  {
+    label: 'Integrations',
+    icon: Plug,
+    path: '/integrations',
+  },
+  {
+    label: 'Report Builder',
+    icon: FileBarChart,
+    path: '/report-builder',
+  },
+  {
+    label: 'Intake',
+    icon: ClipboardList,
+    path: '/intake',
+  },
+  {
     label: 'Ask AI',
     icon: Search,
     path: '/query',
@@ -101,9 +133,17 @@ const navItems: NavItem[] = [
   },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMobileClose }) => {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
+
+  // Close mobile sidebar on route change
+  React.useEffect(() => {
+    if (mobileOpen && onMobileClose) {
+      onMobileClose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const isActive = (path: string): boolean => {
     if (path === '/dashboard') {
@@ -128,15 +168,27 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     : '??';
 
   return (
-    <aside
-      className={`
-        fixed top-0 left-0 z-40 h-screen flex flex-col
-        bg-sidebar-bg text-sidebar-text
-        transition-all duration-300 ease-in-out
-        ${collapsed ? 'w-sidebar-collapsed' : 'w-sidebar'}
-      `}
-      aria-label="Main navigation"
-    >
+    <>
+      {/* Mobile backdrop overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={onMobileClose}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        className={`
+          fixed top-0 left-0 z-50 h-screen flex flex-col
+          bg-sidebar-bg text-sidebar-text
+          transition-all duration-300 ease-in-out
+          ${collapsed ? 'md:w-sidebar-collapsed' : 'md:w-sidebar'}
+          w-sidebar
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+        `}
+        aria-label="Main navigation"
+      >
       {/* Logo / Branding */}
       <div className="flex items-center h-16 px-4 flex-shrink-0 border-b border-white/10">
         <div className="flex items-center min-w-0">
@@ -240,11 +292,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           </div>
         </div>
 
-        {/* Collapse Toggle */}
+        {/* Collapse Toggle (hidden on mobile) */}
         <button
           onClick={onToggle}
           className={`
-            w-full flex items-center justify-center
+            hidden md:flex w-full items-center justify-center
             py-3 text-sidebar-text/70 hover:text-white hover:bg-sidebar-hover
             transition-colors duration-200
             border-t border-white/5
@@ -262,7 +314,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           )}
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

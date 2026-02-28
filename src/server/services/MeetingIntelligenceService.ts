@@ -174,7 +174,7 @@ Analyze this meeting transcript and extract all actionable information.`;
               createdBy: userId || 'meeting-intelligence',
             });
 
-            this.scheduleService.logActivity(
+            await this.scheduleService.logActivity(
               'system',
               userId || '1',
               'Meeting Intelligence',
@@ -233,9 +233,9 @@ Analyze this meeting transcript and extract all actionable information.`;
 
             const rescheduleData: Partial<Task> = {};
             if (update.newStartDate)
-              rescheduleData.startDate = new Date(update.newStartDate);
+              rescheduleData.startDate = update.newStartDate;
             if (update.newEndDate)
-              rescheduleData.endDate = new Date(update.newEndDate);
+              rescheduleData.endDate = update.newEndDate;
             if (update.assignee) rescheduleData.assignedTo = update.assignee;
 
             await this.scheduleService.updateTask(rescheduleTaskId, rescheduleData);

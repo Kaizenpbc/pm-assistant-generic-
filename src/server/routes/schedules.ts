@@ -67,8 +67,6 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const data = createScheduleSchema.parse(request.body);
       const schedule = await scheduleService.create({
         ...data,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
         createdBy: user.userId,
       });
       return reply.status(201).send({ schedule });
@@ -87,8 +85,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const data = createScheduleSchema.partial().parse(request.body);
       const schedule = await scheduleService.update(scheduleId, {
         ...data,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        startDate: data.startDate || undefined,
+        endDate: data.endDate || undefined,
       });
       if (!schedule) return reply.status(404).send({ error: 'Not found', message: 'Schedule not found' });
       return { schedule };
@@ -138,9 +136,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const task = await scheduleService.createTask({
         scheduleId,
         ...data,
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        dueDate: data.dueDate || undefined,
+        startDate: data.startDate || undefined,
+        endDate: data.endDate || undefined,
         createdBy: user.userId,
       });
       WebSocketService.broadcast({ type: 'task_created', payload: { task } });
@@ -168,9 +166,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
 
       const task = await scheduleService.updateTask(taskId, {
         ...data,
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        dueDate: data.dueDate || undefined,
+        startDate: data.startDate || undefined,
+        endDate: data.endDate || undefined,
       });
       if (!task) return reply.status(404).send({ error: 'Not found', message: 'Task not found' });
 
@@ -185,7 +183,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       }
 
       // Workflow automation: evaluate rules
-      workflowService.evaluateTaskChange(task, oldTask, scheduleService);
+      await workflowService.evaluateTaskChange(task, oldTask, scheduleService);
 
       // WebSocket broadcast
       WebSocketService.broadcast({ type: 'task_updated', payload: { task, cascadedChanges } });
@@ -317,7 +315,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { taskId } = request.params as { taskId: string };
-      const comments = scheduleService.getComments(taskId);
+      const comments = await scheduleService.getComments(taskId);
       return { comments };
     } catch (error) {
       console.error('Get comments error:', error);
@@ -336,7 +334,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       if (!text || !text.trim()) {
         return reply.status(400).send({ error: 'Comment text is required' });
       }
-      const comment = scheduleService.addComment(taskId, text.trim(), user.userId, user.fullName || 'Project Manager');
+      const comment = await scheduleService.addComment(taskId, text.trim(), user.userId, user.fullName || 'Project Manager');
       return reply.status(201).send({ comment });
     } catch (error) {
       console.error('Add comment error:', error);
@@ -350,7 +348,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { commentId } = request.params as { commentId: string };
-      const deleted = scheduleService.deleteComment(commentId);
+      const deleted = await scheduleService.deleteComment(commentId);
       if (!deleted) return reply.status(404).send({ error: 'Comment not found' });
       return { message: 'Comment deleted' };
     } catch (error) {
@@ -365,7 +363,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { taskId } = request.params as { taskId: string };
-      const activities = scheduleService.getActivities(taskId);
+      const activities = await scheduleService.getActivities(taskId);
       return { activities };
     } catch (error) {
       console.error('Get activity error:', error);

@@ -1,0 +1,210 @@
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  FileBarChart,
+  Plus,
+  Trash2,
+  Eye,
+  Activity,
+} from 'lucide-react';
+import { apiService } from '../services/api';
+import { ReportDesigner } from '../components/reports/ReportDesigner';
+import { ReportPreview } from '../components/reports/ReportPreview';
+
+type View = 'list' | 'designer' | 'preview';
+
+interface ReportTemplate {
+  id: string;
+  name: string;
+  description: string;
+  isShared: boolean;
+  createdAt: string;
+  updatedAt: string;
+  sections: unknown[];
+}
+
+export const ReportBuilderPage: React.FC = () => {
+  const queryClient = useQueryClient();
+  const [view, setView] = useState<View>('list');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['reportTemplates'],
+    queryFn: () => apiService.getReportTemplates(),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiService.deleteReportTemplate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reportTemplates'] });
+    },
+  });
+
+  const templates: ReportTemplate[] = data?.templates || data || [];
+
+  const handleNewReport = () => {
+    setSelectedTemplateId(undefined);
+    setView('designer');
+  };
+
+  const handleEdit = (id: string) => {
+    setSelectedTemplateId(id);
+    setView('designer');
+  };
+
+  const handleGenerate = (id: string) => {
+    setSelectedTemplateId(id);
+    setView('preview');
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this report template?')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const handleDesignerClose = () => {
+    setSelectedTemplateId(undefined);
+    setView('list');
+  };
+
+  const handleDesignerSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ['reportTemplates'] });
+    setView('list');
+    setSelectedTemplateId(undefined);
+  };
+
+  const handlePreviewClose = () => {
+    setSelectedTemplateId(undefined);
+    setView('list');
+  };
+
+  if (view === 'designer') {
+    return (
+      <ReportDesigner
+        templateId={selectedTemplateId}
+        onClose={handleDesignerClose}
+        onSaved={handleDesignerSaved}
+      />
+    );
+  }
+
+  if (view === 'preview' && selectedTemplateId) {
+    return (
+      <ReportPreview
+        templateId={selectedTemplateId}
+        onClose={handlePreviewClose}
+      />
+    );
+  }
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <FileBarChart className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Report Builder</h1>
+            <p className="text-sm text-gray-500">Create custom reports with KPIs, charts, and tables</p>
+          </div>
+        </div>
+        <button
+          onClick={handleNewReport}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+        >
+          <Plus className="w-4 h-4" />
+          New Report
+        </button>
+      </div>
+
+      {/* Loading */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+          Failed to load report templates. Please try again.
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && !error && templates.length === 0 && (
+        <div className="text-center py-20">
+          <FileBarChart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-700 mb-1">No report templates yet</h3>
+          <p className="text-sm text-gray-500 mb-4">Create your first custom report template to get started.</p>
+          <button
+            onClick={handleNewReport}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            New Report
+          </button>
+        </div>
+      )}
+
+      {/* Template Grid */}
+      {!isLoading && templates.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {templates.map((template) => (
+            <div
+              key={template.id}
+              className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-indigo-500" />
+                  <h3 className="font-semibold text-gray-900 text-sm">{template.name}</h3>
+                </div>
+                {template.isShared && (
+                  <span className="text-[10px] font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Shared
+                  </span>
+                )}
+              </div>
+
+              {template.description && (
+                <p className="text-xs text-gray-500 mb-3 line-clamp-2">{template.description}</p>
+              )}
+
+              <p className="text-[10px] text-gray-400 mb-4">
+                Created {new Date(template.createdAt).toLocaleDateString()}
+                {template.sections && ` \u00b7 ${template.sections.length} section${template.sections.length !== 1 ? 's' : ''}`}
+              </p>
+
+              <div className="flex items-center gap-2 border-t border-gray-100 pt-3">
+                <button
+                  onClick={() => handleEdit(template.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleGenerate(template.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Generate
+                </button>
+                <button
+                  onClick={() => handleDelete(template.id)}
+                  disabled={deleteMutation.isPending}
+                  className="flex items-center justify-center p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};

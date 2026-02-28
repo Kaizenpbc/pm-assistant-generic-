@@ -93,6 +93,8 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
   const [rejectFeedback, setRejectFeedback] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [rejected, setRejected] = useState(false);
+  const [isModifying, setIsModifying] = useState(false);
+  const [modifiedChanges, setModifiedChanges] = useState<Record<string, { proposedStart: string; proposedEnd: string }>>({});
 
   // Fetch detected delays
   const {
@@ -132,6 +134,17 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
     },
   });
 
+  // Modify proposal mutation
+  const modifyMutation = useMutation({
+    mutationFn: ({ proposalId, modifications }: { proposalId: string; modifications: any[] }) =>
+      apiService.modifyRescheduleProposal(proposalId, modifications),
+    onSuccess: (data) => {
+      setProposal(data.proposal || data);
+      setIsModifying(false);
+      setModifiedChanges({});
+    },
+  });
+
   const handleAccept = () => {
     if (proposal) {
       acceptMutation.mutate(proposal.id);
@@ -142,6 +155,42 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
     if (proposal) {
       rejectMutation.mutate({ proposalId: proposal.id, feedback: rejectFeedback || undefined });
     }
+  };
+
+  const handleStartModify = () => {
+    if (!proposal) return;
+    // Initialize modified changes with current proposed values
+    const initial: Record<string, { proposedStart: string; proposedEnd: string }> = {};
+    for (const change of proposal.changes) {
+      initial[change.taskId] = {
+        proposedStart: change.proposedStart,
+        proposedEnd: change.proposedEnd,
+      };
+    }
+    setModifiedChanges(initial);
+    setIsModifying(true);
+  };
+
+  const handleModifyDateChange = (taskId: string, field: 'proposedStart' | 'proposedEnd', value: string) => {
+    setModifiedChanges((prev) => ({
+      ...prev,
+      [taskId]: { ...prev[taskId], [field]: value },
+    }));
+  };
+
+  const handleSaveModifications = () => {
+    if (!proposal) return;
+    const modifications = Object.entries(modifiedChanges).map(([taskId, dates]) => ({
+      taskId,
+      proposedStart: dates.proposedStart,
+      proposedEnd: dates.proposedEnd,
+    }));
+    modifyMutation.mutate({ proposalId: proposal.id, modifications });
+  };
+
+  const handleCancelModify = () => {
+    setIsModifying(false);
+    setModifiedChanges({});
   };
 
   return (
@@ -265,7 +314,36 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
             <>
               {/* Diff Table */}
               <section>
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">Proposed Changes</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-800">Proposed Changes</h3>
+                  {isModifying && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleCancelModify}
+                        className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveModifications}
+                        disabled={modifyMutation.isPending}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-yellow-500 text-white text-xs font-medium hover:bg-yellow-600 transition-colors disabled:opacity-50"
+                      >
+                        {modifyMutation.isPending ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-3 h-3" />
+                        )}
+                        Save Changes
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {modifyMutation.isError && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-700 mb-3">
+                    Failed to save modifications. Please try again.
+                  </div>
+                )}
                 <div className="overflow-x-auto rounded-lg border border-gray-200">
                   <table className="w-full text-xs">
                     <thead>
@@ -280,10 +358,13 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {proposal.changes.map((change) => {
-                        const startDir = dateMoved(change.currentStart, change.proposedStart);
-                        const endDir = dateMoved(change.currentEnd, change.proposedEnd);
+                        const modDates = modifiedChanges[change.taskId];
+                        const displayStart = isModifying && modDates ? modDates.proposedStart : change.proposedStart;
+                        const displayEnd = isModifying && modDates ? modDates.proposedEnd : change.proposedEnd;
+                        const startDir = dateMoved(change.currentStart, displayStart);
+                        const endDir = dateMoved(change.currentEnd, displayEnd);
                         return (
-                          <tr key={change.taskId} className="hover:bg-gray-50 transition-colors">
+                          <tr key={change.taskId} className={`hover:bg-gray-50 transition-colors ${isModifying ? 'bg-yellow-50/30' : ''}`}>
                             <td className="px-3 py-2 font-medium text-gray-900 whitespace-nowrap">
                               {change.taskName}
                             </td>
@@ -293,11 +374,29 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                             <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
                               {formatDate(change.currentEnd)}
                             </td>
-                            <td className={`px-3 py-2 whitespace-nowrap ${dateTextClass(startDir)}`}>
-                              {formatDate(change.proposedStart)}
+                            <td className={`px-3 py-2 whitespace-nowrap ${isModifying ? '' : dateTextClass(startDir)}`}>
+                              {isModifying ? (
+                                <input
+                                  type="date"
+                                  value={modDates?.proposedStart ?? change.proposedStart}
+                                  onChange={(e) => handleModifyDateChange(change.taskId, 'proposedStart', e.target.value)}
+                                  className="border border-gray-300 rounded px-1.5 py-0.5 text-xs focus:border-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-400 w-[130px]"
+                                />
+                              ) : (
+                                formatDate(change.proposedStart)
+                              )}
                             </td>
-                            <td className={`px-3 py-2 whitespace-nowrap ${dateTextClass(endDir)}`}>
-                              {formatDate(change.proposedEnd)}
+                            <td className={`px-3 py-2 whitespace-nowrap ${isModifying ? '' : dateTextClass(endDir)}`}>
+                              {isModifying ? (
+                                <input
+                                  type="date"
+                                  value={modDates?.proposedEnd ?? change.proposedEnd}
+                                  onChange={(e) => handleModifyDateChange(change.taskId, 'proposedEnd', e.target.value)}
+                                  className="border border-gray-300 rounded px-1.5 py-0.5 text-xs focus:border-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-400 w-[130px]"
+                                />
+                              ) : (
+                                formatDate(change.proposedEnd)
+                              )}
                             </td>
                             <td className="px-3 py-2 text-gray-500 max-w-[160px] truncate" title={change.reason}>
                               {change.reason}
@@ -405,7 +504,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
         </div>
 
         {/* Footer action buttons */}
-        {proposal && !accepted && !rejected && !showRejectFeedback && (
+        {proposal && !accepted && !rejected && !showRejectFeedback && !isModifying && (
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
             <button
               onClick={() => setShowRejectFeedback(true)}
@@ -415,10 +514,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
               Reject
             </button>
             <button
-              onClick={() => {
-                // TODO: implement modify flow
-                alert('Modify flow coming soon');
-              }}
+              onClick={handleStartModify}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-yellow-500 text-white text-sm font-medium hover:bg-yellow-600 transition-colors"
             >
               <Pencil className="w-4 h-4" />

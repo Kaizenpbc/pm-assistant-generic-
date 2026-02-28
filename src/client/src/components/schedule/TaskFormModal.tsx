@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2 } from 'lucide-react';
 import type { GanttTask } from './GanttChart';
 import { TaskActivityPanel } from './TaskActivityPanel';
+import { TimeLogForm } from '../timetracking/TimeLogForm';
+import { CustomFieldsSection } from '../customfields/CustomFieldsSection';
+import { AttachmentPanel } from '../attachments/AttachmentPanel';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,6 +35,8 @@ interface TaskFormModalProps {
   isSaving?: boolean;
   /** Schedule ID for comments/activity panel */
   scheduleId?: string;
+  /** Project ID for custom fields, time tracking, and attachments */
+  projectId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -59,6 +64,7 @@ export function TaskFormModal({
   onClose,
   isSaving,
   scheduleId,
+  projectId,
 }: TaskFormModalProps) {
   const isEdit = !!task;
 
@@ -315,6 +321,21 @@ export function TaskFormModal({
               </select>
             </div>
           </div>
+
+          {/* Time Tracking (edit mode only) */}
+          {isEdit && scheduleId && projectId && task && (
+            <TimeLogForm taskId={task.id} scheduleId={scheduleId} projectId={projectId} />
+          )}
+
+          {/* Custom Fields (edit mode only) */}
+          {isEdit && projectId && task && (
+            <CustomFieldsSection entityType="task" entityId={task.id} projectId={projectId} />
+          )}
+
+          {/* Attachments (edit mode only) */}
+          {isEdit && task && (
+            <AttachmentPanel entityType="task" entityId={task.id} />
+          )}
 
           {/* Comments & Activity (edit mode only) */}
           {isEdit && scheduleId && task && (

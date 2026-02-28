@@ -98,7 +98,46 @@
       "Bash(cd /c/Users/gerog/Documents/pm-assistant-generic/src/client && scp -r dist/* kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/src/client/dist/ 2>&1)",
       "WebFetch(domain:www.whois.com)",
       "Bash(cd:*)",
-      "WebFetch(domain:pm.kpbc.ca)"
+      "WebFetch(domain:pm.kpbc.ca)",
+      "Bash(cd /c/Users/gerog/Documents/pm-assistant-generic && scp scripts/backup-db.sh scripts/restore-db.sh kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/scripts/ 2>&1)",
+      "Bash(cd /c/Users/gerog/Documents/pm-assistant-generic && scp src/server/database/migrations/004_agent_activity_log.sql kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/src/server/database/migrations/ 2>&1 && scp package.json kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/package.json 2>&1)",
+      "Bash(grep:*)",
+      "Bash(# Kill the test server netstat -ano)",
+      "Bash(xargs -I{} taskkill //PID {} //F echo \"Server stopped\")",
+      "Bash(cd \"C:\\\\Users\\\\gerog\\\\Documents\\\\pm-assistant-generic\" && scp dist/server/*.js kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/dist/server/ 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\gerog\\\\Documents\\\\pm-assistant-generic\" && scp -r dist/server/services/ kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/dist/server/services/ 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\gerog\\\\Documents\\\\pm-assistant-generic\" && scp -r dist/server/middleware/ kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/dist/server/middleware/ 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\gerog\\\\Documents\\\\pm-assistant-generic\" && scp -r dist/server/routes/ kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/dist/server/routes/ 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\gerog\\\\Documents\\\\pm-assistant-generic\" && scp -r src/client/dist/* kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/src/client/dist/ 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\gerog\\\\Documents\\\\pm-assistant-generic\" && scp -r dist/server/ kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/dist/server/ 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\gerog\\\\Documents\\\\pm-assistant-generic\" && scp dist/server/middleware/* kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/dist/server/middleware/ 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\gerog\\\\Documents\\\\pm-assistant-generic\" && scp dist/server/routes.js dist/server/routes.js.map dist/server/plugins.js dist/server/plugins.js.map kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/dist/server/ 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\gerog\\\\Documents\\\\pm-assistant-generic\" && npx tsc 2>&1 | grep -v aiContextBuilder && scp dist/server/services/ApiKeyService.js kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/dist/server/services/ 2>&1)",
+      "Bash(scp:*)",
+      "Bash(printf:*)",
+      "Bash(__NEW_LINE_374ea8373016a396__ echo:*)",
+      "Bash(PM_API_KEY=kpm_cdf46398b633d79f589339c81b19eb89991e7ea0 PM_BASE_URL=https://pm.kpbc.ca npx tsx:*)",
+      "Bash(npm login:*)",
+      "Bash(npm publish:*)",
+      "Bash(npm whoami:*)",
+      "Bash(npx:*)",
+      "Bash(PM_API_KEY=kpm_cdf46398b633d79f589339c81b19eb89991e7ea0 npx:*)",
+      "Bash(npm run:*)",
+      "WebFetch(domain:support.claude.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "Bash(chmod +x:*)",
+      "Bash(rm:*)",
+      "Bash(node:*)",
+      "Bash(echo === Step 1: Protected Resource Metadata ===:*)",
+      "Bash(\"/c/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\":*)",
+      "Bash(net start:*)",
+      "Bash(sc query:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "pm-assistant"
+  ]
 }

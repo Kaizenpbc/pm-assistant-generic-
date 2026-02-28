@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, ChevronRight, LogOut, User } from 'lucide-react';
+import { Search, ChevronRight, LogOut, User, Moon, Sun, Menu } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import { useThemeStore } from '../../stores/themeStore';
 import { NotificationBell } from '../notifications/NotificationBell';
+import CommandPalette from './CommandPalette';
 
 interface Breadcrumb {
   label: string;
@@ -41,12 +43,17 @@ function buildBreadcrumbs(pathname: string): Breadcrumb[] {
   return crumbs;
 }
 
-const TopBar: React.FC = () => {
+interface TopBarProps {
+  onMobileMenuToggle?: () => void;
+}
+
+const TopBar: React.FC<TopBarProps> = ({ onMobileMenuToggle }) => {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const { isDark, toggle: toggleTheme } = useThemeStore();
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +80,18 @@ const TopBar: React.FC = () => {
     setDropdownOpen(false);
   }, [location.pathname]);
 
+  // Global Cmd+K / Ctrl+K to open command palette
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette((prev) => !prev);
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleLogout = () => {
     setDropdownOpen(false);
     logout();
@@ -88,7 +107,18 @@ const TopBar: React.FC = () => {
     : '??';
 
   return (
-    <header className="sticky top-0 z-30 flex items-center h-16 bg-white border-b border-gray-200 px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex items-center h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 lg:px-6">
+      {/* Mobile hamburger menu button */}
+      {onMobileMenuToggle && (
+        <button
+          onClick={onMobileMenuToggle}
+          className="md:hidden mr-2 p-2 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Left: Breadcrumbs */}
       <nav className="hidden sm:flex items-center min-w-0 flex-shrink" aria-label="Breadcrumb">
         <ol className="flex items-center space-x-1 text-sm">
@@ -101,13 +131,13 @@ const TopBar: React.FC = () => {
                   <ChevronRight className="w-4 h-4 text-gray-400 mx-1 flex-shrink-0" />
                 )}
                 {isLast ? (
-                  <span className="font-medium text-gray-900 truncate" aria-current="page">
+                  <span className="font-medium text-gray-900 dark:text-gray-100 truncate" aria-current="page">
                     {crumb.label}
                   </span>
                 ) : (
                   <Link
                     to={crumb.path}
-                    className="text-gray-500 hover:text-indigo-600 transition-colors duration-150 truncate"
+                    className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 transition-colors duration-150 truncate"
                   >
                     {crumb.label}
                   </Link>
@@ -120,41 +150,52 @@ const TopBar: React.FC = () => {
 
       {/* Mobile: Current page name only */}
       <div className="sm:hidden flex items-center min-w-0">
-        <span className="text-sm font-medium text-gray-900 truncate">
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
           {breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].label : 'Dashboard'}
         </span>
       </div>
 
-      {/* Center: Search */}
-      <div className="flex-1 flex justify-center px-4 lg:px-8 max-w-xl mx-auto">
-        <div className="w-full relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="w-4 h-4 text-gray-400" />
-          </div>
-          <input
-            type="search"
-            placeholder="Search projects, tasks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="
-              w-full h-9 pl-10 pr-4 text-sm
-              bg-gray-50 border border-gray-200 rounded-lg
-              placeholder-gray-400 text-gray-900
-              focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400
-              transition-colors duration-200
-            "
-            aria-label="Search"
-          />
-        </div>
+      {/* Center: Search Trigger */}
+      <div className="flex-1 flex justify-center px-2 sm:px-4 lg:px-8 max-w-xl mx-auto">
+        <button
+          onClick={() => setShowCommandPalette(true)}
+          className="
+            w-full h-9 pl-3 pr-3 text-sm flex items-center gap-2
+            bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg
+            text-gray-400 hover:border-gray-300 dark:hover:border-gray-500
+            hover:bg-gray-100 dark:hover:bg-gray-600
+            transition-colors duration-200 cursor-pointer
+          "
+          aria-label="Open search"
+        >
+          <Search className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1 text-left">Search...</span>
+          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-white dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-500">
+            {navigator.platform?.includes('Mac') ? '\u2318K' : 'Ctrl+K'}
+          </kbd>
+        </button>
       </div>
+
+      {/* Command Palette */}
+      <CommandPalette isOpen={showCommandPalette} onClose={() => setShowCommandPalette(false)} />
 
       {/* Right: Notifications + User */}
       <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="hidden sm:block p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+
         {/* Notification Bell */}
         <NotificationBell />
 
         {/* Divider */}
-        <div className="hidden sm:block w-px h-6 bg-gray-200" />
+        <div className="hidden sm:block w-px h-6 bg-gray-200 dark:bg-gray-600" />
 
         {/* User Dropdown */}
         <div className="relative" ref={dropdownRef}>
@@ -162,7 +203,7 @@ const TopBar: React.FC = () => {
             onClick={() => setDropdownOpen((prev) => !prev)}
             className="
               flex items-center gap-2 p-1.5 rounded-lg
-              hover:bg-gray-100 transition-colors duration-150
+              hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150
             "
             aria-expanded={dropdownOpen}
             aria-haspopup="true"
@@ -175,10 +216,10 @@ const TopBar: React.FC = () => {
 
             {/* Name + Role (hidden on small screens) */}
             <div className="hidden md:block text-left min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate leading-tight">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
                 {user?.fullName || 'User'}
               </p>
-              <p className="text-xs text-gray-500 truncate leading-tight capitalize">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate leading-tight capitalize">
                 {user?.role || 'Member'}
               </p>
             </div>
@@ -189,7 +230,7 @@ const TopBar: React.FC = () => {
             <div
               className="
                 absolute right-0 mt-2 w-64 rounded-xl
-                bg-white border border-gray-200 shadow-lg
+                bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg
                 py-1 z-50 animate-fade-in
               "
               role="menu"
@@ -197,11 +238,11 @@ const TopBar: React.FC = () => {
               aria-label="User menu"
             >
               {/* User info header */}
-              <div className="px-4 py-3 border-b border-gray-100">
-                <p className="text-sm font-semibold text-gray-900 truncate">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                   {user?.fullName || 'User'}
                 </p>
-                <p className="text-xs text-gray-500 truncate mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                   {user?.email || 'No email'}
                 </p>
               </div>
@@ -210,7 +251,7 @@ const TopBar: React.FC = () => {
               <div className="py-1">
                 <Link
                   to="/settings"
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150"
                   role="menuitem"
                   onClick={() => setDropdownOpen(false)}
                 >
@@ -220,7 +261,7 @@ const TopBar: React.FC = () => {
               </div>
 
               {/* Logout */}
-              <div className="border-t border-gray-100 py-1">
+              <div className="border-t border-gray-100 dark:border-gray-700 py-1">
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"

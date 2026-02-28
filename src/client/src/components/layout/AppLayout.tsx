@@ -63,6 +63,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
     readLocalStorageBool(SIDEBAR_STORAGE_KEY, false)
   );
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(() =>
     readLocalStorageBool(AI_PANEL_STORAGE_KEY, true)
   );
@@ -100,19 +101,30 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     setAiPanelOpen((prev) => !prev);
   }, []);
 
-  const showSidebar = breakpoint !== 'mobile';
+  const isMobile = breakpoint === 'mobile';
   const showAiPanel = breakpoint === 'desktop' && aiPanelOpen;
-  const effectiveCollapsed = breakpoint === 'mobile' ? true : sidebarCollapsed;
+  const effectiveCollapsed = isMobile ? false : sidebarCollapsed;
 
-  const sidebarWidth = showSidebar ? (effectiveCollapsed ? 64 : 240) : 0;
+  const sidebarWidth = isMobile ? 0 : (sidebarCollapsed ? 64 : 240);
   const aiPanelWidth = showAiPanel ? 380 : 0;
 
+  const handleMobileSidebarToggle = useCallback(() => {
+    setMobileSidebarOpen((prev) => !prev);
+  }, []);
+
+  const handleMobileSidebarClose = useCallback(() => {
+    setMobileSidebarOpen(false);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
-      {showSidebar && (
-        <Sidebar collapsed={effectiveCollapsed} onToggle={handleSidebarToggle} />
-      )}
+      <Sidebar
+        collapsed={effectiveCollapsed}
+        onToggle={handleSidebarToggle}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={handleMobileSidebarClose}
+      />
 
       {/* Main Wrapper */}
       <div
@@ -123,7 +135,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         }}
       >
         {/* Top Bar */}
-        <TopBar />
+        <TopBar onMobileMenuToggle={isMobile ? handleMobileSidebarToggle : undefined} />
 
         {/* Main Content */}
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto" id="main-content">
@@ -137,7 +149,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           className={`
             fixed top-0 right-0 z-30 h-screen
             flex flex-col
-            bg-white border-l border-gray-200
+            bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700
             transition-all duration-300 ease-in-out
             ${showAiPanel ? 'w-ai-panel translate-x-0' : 'w-0 translate-x-full'}
           `}
@@ -146,21 +158,21 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           {showAiPanel && (
             <>
               {/* AI Panel Header */}
-              <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
                     <Sparkles className="w-4 h-4 text-indigo-600" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-gray-900">AI Assistant</h2>
-                    <p className="text-[10px] text-gray-500 leading-none mt-0.5">
+                    <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI Assistant</h2>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-none mt-0.5">
                       Powered by Claude
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={handleAiPanelToggle}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150"
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                   aria-label="Close AI panel"
                 >
                   <X className="w-4 h-4" />

@@ -50,14 +50,34 @@ import { CapacityChart } from '../components/resources/CapacityChart';
 import { AutoReschedulePanel } from '../components/schedule/AutoReschedulePanel';
 import { TaskPrioritizationPanel } from '../components/ai/TaskPrioritizationPanel';
 import { SaveAsTemplateModal } from '../components/templates/SaveAsTemplateModal';
+import { AttachmentPanel } from '../components/attachments/AttachmentPanel';
+import { CustomFieldManager } from '../components/customfields/CustomFieldManager';
+import { CustomFieldsSection } from '../components/customfields/CustomFieldsSection';
+import { NetworkDiagramView } from '../components/network/NetworkDiagramView';
+import { BurndownPanel } from '../components/burndown/BurndownPanel';
+import { ChangeRequestList } from '../components/approvals/ChangeRequestList';
+import { ChangeRequestForm } from '../components/approvals/ChangeRequestForm';
+import { ChangeRequestDetail } from '../components/approvals/ChangeRequestDetail';
+import { WorkflowEditor } from '../components/approvals/WorkflowEditor';
+import { PortalLinkManager } from '../components/portal/PortalLinkManager';
+import { ResourceLevelingPanel } from '../components/resources/ResourceLevelingPanel';
+import { SprintList } from '../components/sprints/SprintList';
+import { SprintPlanningPanel } from '../components/sprints/SprintPlanningPanel';
+import { SprintBoard } from '../components/sprints/SprintBoard';
+import { SprintBurndownChart } from '../components/sprints/SprintBurndownChart';
 
-type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity';
+type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resource-leveling';
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'schedule', label: 'Schedule' },
+  { id: 'change-requests', label: 'Change Requests' },
+  { id: 'sprints', label: 'Sprints' },
+  { id: 'resource-leveling', label: 'Resource Leveling' },
   { id: 'ai-insights', label: 'AI Insights' },
   { id: 'evm-forecast', label: 'EVM Forecast' },
+  { id: 'network-diagram', label: 'Network Diagram' },
+  { id: 'burndown', label: 'Burndown' },
   { id: 'scenarios', label: 'What-If' },
   { id: 'team', label: 'Team' },
   { id: 'agent-activity', label: 'Agent Activity' },
@@ -243,10 +263,10 @@ export function ProjectDetailPage() {
           Back to Dashboard
         </button>
 
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{project.name}</h1>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${status.color}`}
               >
@@ -257,7 +277,7 @@ export function ProjectDetailPage() {
               <p className="mt-1 text-sm text-gray-500">{project.description}</p>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
             <button
               onClick={() => setShowSaveTemplate(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-lg transition-colors"
@@ -344,12 +364,12 @@ export function ProjectDetailPage() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="flex gap-6">
+        <nav className="-mb-px flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`border-b-2 pb-3 text-sm font-medium transition-colors ${
+              className={`border-b-2 pb-3 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === tab.id
                   ? 'border-indigo-600 text-indigo-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -369,6 +389,11 @@ export function ProjectDetailPage() {
       {activeTab === 'scenarios' && <ScenariosTab projectId={id!} />}
       {activeTab === 'team' && <TeamTab />}
       {activeTab === 'agent-activity' && <AgentActivityTab projectId={id!} />}
+      {activeTab === 'network-diagram' && <NetworkDiagramTab projectId={id!} />}
+      {activeTab === 'burndown' && <BurndownTab projectId={id!} />}
+      {activeTab === 'change-requests' && <ChangeRequestsTab projectId={id!} />}
+      {activeTab === 'sprints' && <SprintsTab projectId={id!} />}
+      {activeTab === 'resource-leveling' && <ResourceLevelingTab projectId={id!} />}
 
       {project && (
         <SaveAsTemplateModal
@@ -452,7 +477,7 @@ function OverviewTab({ project }: { project: any }) {
         </div>
       </div>
 
-      {/* Quick Info Sidebar */}
+      {/* Right sidebar */}
       <div className="space-y-4">
         <div className="rounded-xl border border-gray-200 bg-white p-4">
           <h3 className="mb-3 text-base font-semibold text-gray-900">Quick Info</h3>
@@ -469,6 +494,30 @@ function OverviewTab({ project }: { project: any }) {
             </div>
           </div>
         </div>
+
+        {/* Attachments */}
+        <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <AttachmentPanel entityType="project" entityId={project.id} />
+        </div>
+
+        {/* Custom Fields */}
+        {project.id && (
+          <>
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <CustomFieldsSection entityType="project" entityId={project.id} projectId={project.id} />
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <CustomFieldManager projectId={project.id} entityType="task" />
+            </div>
+          </>
+        )}
+
+        {/* Portal Links */}
+        {project.id && (
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <PortalLinkManager projectId={project.id} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -543,7 +592,7 @@ function ScheduleTab({ projectId }: { projectId: string }) {
   );
 }
 
-function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule: any; viewMode: 'gantt' | 'kanban' | 'table' | 'calendar'; projectId: string }) {
+function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewMode: 'gantt' | 'kanban' | 'table' | 'calendar'; projectId: string }) {
   const queryClient = useQueryClient();
   const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -768,6 +817,7 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
       {viewMode === 'table' && (
         <TableView
           tasks={tasks}
+          scheduleId={schedule.id}
           onTaskClick={(task) => setEditingTask(task)}
           onTaskUpdate={(taskId, data) => updateMutation.mutate({ taskId, data })}
         />
@@ -895,6 +945,7 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
           task={editingTask}
           allTasks={tasks}
           scheduleId={schedule.id}
+          projectId={projectId}
           onSave={(data) => updateMutation.mutate({ taskId: editingTask.id, data })}
           onDelete={(taskId) => deleteMutation.mutate(taskId)}
           onClose={() => setEditingTask(null)}
@@ -908,6 +959,7 @@ function ScheduleGantt({ schedule, viewMode, projectId: _projectId }: { schedule
           task={null}
           allTasks={tasks}
           scheduleId={schedule.id}
+          projectId={projectId}
           onSave={(data) => createMutation.mutate(data)}
           onClose={() => setShowAddForm(false)}
           isSaving={createMutation.isPending}
@@ -988,7 +1040,7 @@ function EVMSCurveSection({ projectId }: { projectId: string }) {
 
       {/* Extended EVM Metrics */}
       {evm && (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-7 mb-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7 mb-4">
           <MetricCard
             label="PV"
             value={formatDollar(evm.plannedValue)}
@@ -2119,6 +2171,277 @@ function AgentActivityTab({ projectId }: { projectId: string }) {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Network Diagram Tab
+// ---------------------------------------------------------------------------
+
+function NetworkDiagramTab({ projectId }: { projectId: string }) {
+  const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
+    queryKey: ['schedules', projectId],
+    queryFn: () => apiService.getSchedules(projectId),
+    enabled: !!projectId,
+  });
+
+  const schedules: any[] = schedulesData?.schedules || [];
+  const [selectedScheduleId, setSelectedScheduleId] = useState('');
+
+  // Auto-select first schedule
+  React.useEffect(() => {
+    if (schedules.length > 0 && !selectedScheduleId) {
+      setSelectedScheduleId(schedules[0].id);
+    }
+  }, [schedules, selectedScheduleId]);
+
+  if (schedulesLoading) return <SectionSpinner />;
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Network Diagram</h3>
+        {schedules.length > 1 && (
+          <select
+            value={selectedScheduleId}
+            onChange={(e) => setSelectedScheduleId(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          >
+            {schedules.map((s: any) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        )}
+      </div>
+      {selectedScheduleId && <NetworkDiagramView scheduleId={selectedScheduleId} />}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Burndown Tab
+// ---------------------------------------------------------------------------
+
+function BurndownTab({ projectId }: { projectId: string }) {
+  const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
+    queryKey: ['schedules', projectId],
+    queryFn: () => apiService.getSchedules(projectId),
+    enabled: !!projectId,
+  });
+
+  const schedules: any[] = schedulesData?.schedules || [];
+  const [selectedScheduleId, setSelectedScheduleId] = useState('');
+
+  React.useEffect(() => {
+    if (schedules.length > 0 && !selectedScheduleId) {
+      setSelectedScheduleId(schedules[0].id);
+    }
+  }, [schedules, selectedScheduleId]);
+
+  if (schedulesLoading) return <SectionSpinner />;
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Burndown / Burnup</h3>
+        {schedules.length > 1 && (
+          <select
+            value={selectedScheduleId}
+            onChange={(e) => setSelectedScheduleId(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          >
+            {schedules.map((s: any) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        )}
+      </div>
+      {selectedScheduleId && <BurndownPanel scheduleId={selectedScheduleId} />}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Change Requests Tab
+// ---------------------------------------------------------------------------
+
+function ChangeRequestsTab({ projectId }: { projectId: string }) {
+  const [view, setView] = useState<'list' | 'form' | 'detail' | 'workflow'>('list');
+  const [selectedCrId, setSelectedCrId] = useState<string | undefined>();
+
+  if (view === 'form') {
+    return (
+      <div className="mt-6">
+        <ChangeRequestForm
+          projectId={projectId}
+          crId={selectedCrId}
+          onClose={() => { setView('list'); setSelectedCrId(undefined); }}
+          onSaved={() => { setView('list'); setSelectedCrId(undefined); }}
+        />
+      </div>
+    );
+  }
+
+  if (view === 'detail' && selectedCrId) {
+    return (
+      <div className="mt-6">
+        <ChangeRequestDetail
+          crId={selectedCrId}
+          onBack={() => { setView('list'); setSelectedCrId(undefined); }}
+        />
+      </div>
+    );
+  }
+
+  if (view === 'workflow') {
+    return (
+      <div className="mt-6">
+        <WorkflowEditor
+          projectId={projectId}
+          onClose={() => setView('list')}
+          onSaved={() => setView('list')}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Change Requests</h3>
+        <button
+          onClick={() => setView('workflow')}
+          className="text-sm text-indigo-600 hover:text-indigo-800"
+        >
+          Manage Workflows
+        </button>
+      </div>
+      <ChangeRequestList
+        projectId={projectId}
+        onSelect={(id) => { setSelectedCrId(id); setView('detail'); }}
+        onNew={() => { setSelectedCrId(undefined); setView('form'); }}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sprints Tab
+// ---------------------------------------------------------------------------
+
+function SprintsTab({ projectId }: { projectId: string }) {
+  const { data: schedulesData } = useQuery({
+    queryKey: ['schedules', projectId],
+    queryFn: () => apiService.getSchedules(projectId),
+    enabled: !!projectId,
+  });
+
+  const schedules: any[] = schedulesData?.schedules || [];
+  const [selectedScheduleId, setSelectedScheduleId] = useState('');
+  const [selectedSprintId, setSelectedSprintId] = useState<string | undefined>();
+  const [sprintView, setSprintView] = useState<'list' | 'planning' | 'board' | 'burndown'>('list');
+
+  React.useEffect(() => {
+    if (schedules.length > 0 && !selectedScheduleId) {
+      setSelectedScheduleId(schedules[0].id);
+    }
+  }, [schedules, selectedScheduleId]);
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Sprint Planning</h3>
+        <div className="flex items-center gap-3">
+          {schedules.length > 1 && (
+            <select
+              value={selectedScheduleId}
+              onChange={(e) => setSelectedScheduleId(e.target.value)}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+            >
+              {schedules.map((s: any) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          )}
+          {selectedSprintId && (
+            <div className="flex gap-1">
+              {(['list', 'planning', 'board', 'burndown'] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setSprintView(v)}
+                  className={`px-3 py-1 text-xs rounded-md capitalize ${sprintView === v ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      {sprintView === 'list' && (
+        <SprintList
+          projectId={projectId}
+          onSelect={(id) => { setSelectedSprintId(id); setSprintView('planning'); }}
+          onCreate={() => { setSelectedSprintId(undefined); setSprintView('planning'); }}
+        />
+      )}
+      {sprintView === 'planning' && selectedScheduleId && (
+        <SprintPlanningPanel
+          projectId={projectId}
+          scheduleId={selectedScheduleId}
+          sprintId={selectedSprintId || ''}
+        />
+      )}
+      {sprintView === 'board' && selectedSprintId && (
+        <SprintBoard sprintId={selectedSprintId} />
+      )}
+      {sprintView === 'burndown' && selectedSprintId && (
+        <SprintBurndownChart sprintId={selectedSprintId} />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Resource Leveling Tab
+// ---------------------------------------------------------------------------
+
+function ResourceLevelingTab({ projectId }: { projectId: string }) {
+  const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
+    queryKey: ['schedules', projectId],
+    queryFn: () => apiService.getSchedules(projectId),
+    enabled: !!projectId,
+  });
+
+  const schedules: any[] = schedulesData?.schedules || [];
+  const [selectedScheduleId, setSelectedScheduleId] = useState('');
+
+  React.useEffect(() => {
+    if (schedules.length > 0 && !selectedScheduleId) {
+      setSelectedScheduleId(schedules[0].id);
+    }
+  }, [schedules, selectedScheduleId]);
+
+  if (schedulesLoading) return <SectionSpinner />;
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Resource Leveling</h3>
+        {schedules.length > 1 && (
+          <select
+            value={selectedScheduleId}
+            onChange={(e) => setSelectedScheduleId(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          >
+            {schedules.map((s: any) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        )}
+      </div>
+      {selectedScheduleId && <ResourceLevelingPanel projectId={projectId} scheduleId={selectedScheduleId} />}
     </div>
   );
 }

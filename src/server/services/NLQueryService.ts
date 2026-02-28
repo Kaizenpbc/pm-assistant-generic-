@@ -182,8 +182,8 @@ async function executeToolFn(
         budgetAllocated: p.budgetAllocated,
         budgetSpent: p.budgetSpent,
         currency: p.currency,
-        startDate: p.startDate?.toISOString().slice(0, 10) ?? null,
-        endDate: p.endDate?.toISOString().slice(0, 10) ?? null,
+        startDate: p.startDate ?? null,
+        endDate: p.endDate ?? null,
       }));
       return JSON.stringify(summary, null, 2);
     }
@@ -202,16 +202,16 @@ async function executeToolFn(
           id: sch.id,
           name: sch.name,
           status: sch.status,
-          startDate: sch.startDate?.toISOString().slice(0, 10) ?? null,
-          endDate: sch.endDate?.toISOString().slice(0, 10) ?? null,
+          startDate: sch.startDate ?? null,
+          endDate: sch.endDate ?? null,
           tasks: tasks.map((t) => ({
             id: t.id,
             name: t.name,
             status: t.status,
             priority: t.priority,
             progressPercentage: t.progressPercentage ?? 0,
-            startDate: t.startDate?.toISOString().slice(0, 10) ?? null,
-            endDate: t.endDate?.toISOString().slice(0, 10) ?? null,
+            startDate: t.startDate ?? null,
+            endDate: t.endDate ?? null,
             dependency: t.dependency ?? null,
             assignedTo: t.assignedTo ?? null,
           })),
@@ -230,8 +230,8 @@ async function executeToolFn(
           budgetSpent: project.budgetSpent,
           currency: project.currency,
           location: project.location,
-          startDate: project.startDate?.toISOString().slice(0, 10) ?? null,
-          endDate: project.endDate?.toISOString().slice(0, 10) ?? null,
+          startDate: project.startDate ?? null,
+          endDate: project.endDate ?? null,
           schedules: schedulesWithTasks,
         },
         null,
@@ -249,8 +249,8 @@ async function executeToolFn(
         status: t.status,
         priority: t.priority,
         progressPercentage: t.progressPercentage ?? 0,
-        startDate: t.startDate?.toISOString().slice(0, 10) ?? null,
-        endDate: t.endDate?.toISOString().slice(0, 10) ?? null,
+        startDate: t.startDate ?? null,
+        endDate: t.endDate ?? null,
         dependency: t.dependency ?? null,
         parentTaskId: t.parentTaskId ?? null,
         assignedTo: t.assignedTo ?? null,
@@ -271,10 +271,10 @@ async function executeToolFn(
       const sCurveData = await sCurveService.computeSCurveData(projectId);
 
       // Compute CPI, SPI, EAC from the latest data point at or before today
-      const now = new Date().toISOString().slice(0, 10);
+      const now = new Date();
       const currentPoint = [...sCurveData]
         .reverse()
-        .find((dp) => dp.date <= now) ?? sCurveData[sCurveData.length - 1];
+        .find((dp) => new Date(dp.date) <= now) ?? sCurveData[sCurveData.length - 1];
 
       let cpi: number | null = null;
       let spi: number | null = null;

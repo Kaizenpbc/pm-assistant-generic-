@@ -256,9 +256,9 @@ export class LessonsLearnedService {
           status: t.status,
           priority: t.priority,
           progress: t.progressPercentage ?? 0,
-          startDate: t.startDate?.toISOString().split('T')[0] ?? null,
-          endDate: t.endDate?.toISOString().split('T')[0] ?? null,
-          dueDate: t.dueDate?.toISOString().split('T')[0] ?? null,
+          startDate: t.startDate ?? null,
+          endDate: t.endDate ?? null,
+          dueDate: t.dueDate ?? null,
           dependency: t.dependency ?? null,
         })),
       });
@@ -272,8 +272,8 @@ export class LessonsLearnedService {
         priority: project.priority,
         budgetAllocated: project.budgetAllocated,
         budgetSpent: project.budgetSpent,
-        startDate: project.startDate?.toISOString().split('T')[0] ?? null,
-        endDate: project.endDate?.toISOString().split('T')[0] ?? null,
+        startDate: project.startDate ?? null,
+        endDate: project.endDate ?? null,
       },
       null,
       2,
@@ -322,7 +322,7 @@ export class LessonsLearnedService {
   }
 
   private extractLessonsDeterministic(
-    project: { id: string; name: string; projectType: string; budgetAllocated?: number; budgetSpent: number; startDate?: Date; endDate?: Date; status: string },
+    project: { id: string; name: string; projectType: string; budgetAllocated?: number; budgetSpent: number; startDate?: string; endDate?: string; status: string },
     scheduleData: Array<{ scheduleName: string; tasks: any[] }>,
   ): LessonLearned[] {
     const newLessons: LessonLearned[] = [];

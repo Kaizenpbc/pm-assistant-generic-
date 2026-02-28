@@ -88,7 +88,7 @@ export const PMDashboard: React.FC = () => {
       <AISummaryBanner />
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
             <FolderKanban className="w-4 h-4" />

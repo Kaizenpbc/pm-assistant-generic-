@@ -8,6 +8,7 @@ import { notificationService } from './NotificationService';
 import { ProjectService, type Project } from './ProjectService';
 import { ScheduleService } from './ScheduleService';
 import { AgentActivityLogService } from './AgentActivityLogService';
+import { webhookService } from './WebhookService';
 
 export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
@@ -207,6 +208,7 @@ export class AgentSchedulerService {
     }
 
     console.log('[Agent] Scan complete:', stats);
+    webhookService.dispatch('agent.scan_completed', { stats }, undefined);
     return stats;
   }
 
@@ -291,7 +293,7 @@ export class AgentSchedulerService {
 
   private async runMonteCarloConfidenceAgent(
     project: Project,
-    schedules: Array<{ id: string; name: string; endDate: Date }>,
+    schedules: Array<{ id: string; name: string; endDate: string }>,
   ): Promise<number> {
     let alertCount = 0;
     const confidenceLevel = config.AGENT_MC_CONFIDENCE_LEVEL;

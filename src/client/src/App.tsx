@@ -26,6 +26,13 @@ import { QueryPage } from './pages/QueryPage';
 import { AccountBillingPage } from './pages/AccountBillingPage';
 import { UserGuidePublicPage } from './pages/UserGuidePublicPage';
 import { UserGuidePage } from './pages/UserGuidePage';
+import { TimesheetPage } from './pages/TimesheetPage';
+import PortalViewPage from './pages/PortalViewPage';
+import { IntegrationsPage } from './pages/IntegrationsPage';
+import { ReportBuilderPage } from './pages/ReportBuilderPage';
+import { IntakeFormsPage } from './pages/IntakeFormsPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -66,6 +73,7 @@ function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/guide" element={<UserGuidePublicPage />} />
+        <Route path="/portal/:token" element={<PortalViewPage />} />
 
         {/* Protected routes */}
         <Route path="/dashboard" element={<PrivateRoute><DashboardRouter /></PrivateRoute>} />
@@ -74,13 +82,19 @@ function App() {
         <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
         <Route path="/scenarios" element={<PrivateRoute><ScenarioModelingPage /></PrivateRoute>} />
         <Route path="/portfolio" element={<PrivateRoute><PortfolioPage /></PrivateRoute>} />
+        <Route path="/analytics" element={<PrivateRoute><AnalyticsPage /></PrivateRoute>} />
         <Route path="/workflows" element={<PrivateRoute><WorkflowPage /></PrivateRoute>} />
         <Route path="/monte-carlo" element={<PrivateRoute><MonteCarloPage /></PrivateRoute>} />
         <Route path="/meetings" element={<PrivateRoute><MeetingMinutesPage /></PrivateRoute>} />
         <Route path="/lessons" element={<PrivateRoute><LessonsLearnedPage /></PrivateRoute>} />
+        <Route path="/timesheet" element={<PrivateRoute><TimesheetPage /></PrivateRoute>} />
         <Route path="/query" element={<PrivateRoute><QueryPage /></PrivateRoute>} />
         <Route path="/account" element={<PrivateRoute><AccountBillingPage /></PrivateRoute>} />
+        <Route path="/integrations" element={<PrivateRoute><IntegrationsPage /></PrivateRoute>} />
+        <Route path="/report-builder" element={<PrivateRoute><ReportBuilderPage /></PrivateRoute>} />
+        <Route path="/intake" element={<PrivateRoute><IntakeFormsPage /></PrivateRoute>} />
         <Route path="/help" element={<PrivateRoute><UserGuidePage /></PrivateRoute>} />
+        <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
