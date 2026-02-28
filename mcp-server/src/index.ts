@@ -58,6 +58,22 @@ async function startHttp() {
   const sessions = new Map<string, { server: McpServer; transport: StreamableHTTPServerTransport }>();
 
   const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+    // Log all incoming requests for debugging
+    console.error(`[MCP HTTP] ${req.method} ${req.url} from ${req.headers.origin || 'no-origin'}`);
+
+    // CORS headers for all responses
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Mcp-Session-Id, Authorization');
+    res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id');
+
+    // Handle CORS preflight for any path
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
     // Only handle /mcp endpoint
     if (req.url !== '/mcp') {
       res.writeHead(404, { 'Content-Type': 'application/json' });

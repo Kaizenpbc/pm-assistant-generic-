@@ -1,9 +1,26 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import http from 'node:http';
 
+// Headers to strip from proxied response (added by Helmet/Fastify, not relevant for MCP)
+const STRIP_HEADERS = new Set([
+  'content-security-policy',
+  'content-security-policy-report-only',
+  'cross-origin-opener-policy',
+  'cross-origin-resource-policy',
+  'origin-agent-cluster',
+  'referrer-policy',
+  'strict-transport-security',
+  'x-content-type-options',
+  'x-dns-prefetch-control',
+  'x-download-options',
+  'x-frame-options',
+  'x-permitted-cross-domain-policies',
+  'x-xss-protection',
+  'x-powered-by',
+]);
+
 /**
  * Reverse-proxy /mcp requests to the local MCP HTTP server on port 3100.
- * Supports POST (JSON-RPC), GET (SSE), and DELETE (session termination).
  */
 export async function mcpProxyRoutes(fastify: FastifyInstance) {
   const MCP_PORT = 3100;
@@ -19,6 +36,19 @@ export async function mcpProxyRoutes(fastify: FastifyInstance) {
   );
 
   const handler = async (request: FastifyRequest, reply: FastifyReply) => {
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+      reply.raw.writeHead(204, {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
+        'access-control-allow-headers': 'Content-Type, Accept, Mcp-Session-Id, Authorization',
+        'access-control-expose-headers': 'Mcp-Session-Id',
+      });
+      reply.raw.end();
+      reply.hijack();
+      return;
+    }
+
     const headers: Record<string, string> = {};
     if (request.headers['content-type']) {
       headers['content-type'] = request.headers['content-type'] as string;
@@ -35,6 +65,9 @@ export async function mcpProxyRoutes(fastify: FastifyInstance) {
       headers['content-length'] = String(body.length);
     }
 
+    // Hijack the reply so Fastify doesn't try to add headers after we write them
+    reply.hijack();
+
     return new Promise<void>((resolve) => {
       const proxyReq = http.request(
         {
@@ -45,7 +78,19 @@ export async function mcpProxyRoutes(fastify: FastifyInstance) {
           headers,
         },
         (proxyRes) => {
-          reply.raw.writeHead(proxyRes.statusCode || 502, proxyRes.headers);
+          // Build clean response headers: keep MCP headers, strip Helmet headers
+          const responseHeaders: Record<string, string | string[]> = {
+            'access-control-allow-origin': '*',
+            'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
+            'access-control-allow-headers': 'Content-Type, Accept, Mcp-Session-Id, Authorization',
+            'access-control-expose-headers': 'Mcp-Session-Id',
+          };
+          for (const [key, value] of Object.entries(proxyRes.headers)) {
+            if (value && !STRIP_HEADERS.has(key.toLowerCase())) {
+              responseHeaders[key] = value as string | string[];
+            }
+          }
+          reply.raw.writeHead(proxyRes.statusCode || 502, responseHeaders);
           proxyRes.pipe(reply.raw, { end: true });
           proxyRes.on('end', resolve);
           proxyRes.on('error', () => resolve());

@@ -129,12 +129,17 @@ export async function registerPlugins(fastify: FastifyInstance) {
       const corsHost = config.CORS_ORIGIN.replace(/^https?:\/\//, '');
       const originHost = origin.replace(/^https?:\/\//, '');
       if (originHost === corsHost) return callback(null, true);
+      // Allow Anthropic/Claude domains to access the /mcp endpoint
+      if (originHost === 'claude.ai' || originHost.endsWith('.anthropic.com') || originHost.endsWith('.claude.ai')) {
+        return callback(null, true);
+      }
       if (config.NODE_ENV === 'development') return callback(null, true);
       callback(new Error('Not allowed by CORS'), false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-user-role', 'x-user-id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-user-role', 'x-user-id', 'Mcp-Session-Id'],
+    exposedHeaders: ['Mcp-Session-Id'],
   });
 
   await fastify.register(cookie, {
