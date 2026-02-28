@@ -1,0 +1,49 @@
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import { api, jsonResult } from '../api-client.js';
+
+export function registerProjectTools(server: McpServer) {
+  server.tool('list-projects', 'List all projects', {}, async () =>
+    jsonResult(await api.get('/projects'))
+  );
+
+  server.tool('get-project', 'Get detailed info about a specific project', {
+    projectId: z.string().describe('Project ID'),
+  }, async ({ projectId }) =>
+    jsonResult(await api.get(`/projects/${projectId}`))
+  );
+
+  server.tool('create-project', 'Create a new project', {
+    name: z.string().describe('Project name'),
+    description: z.string().optional().describe('Project description'),
+    category: z.string().optional().describe('Project category'),
+    projectType: z.enum(['it', 'construction', 'infrastructure', 'roads', 'other']).optional().describe('Project type'),
+    status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional().describe('Project status'),
+    priority: z.enum(['low', 'medium', 'high', 'urgent']).optional().describe('Priority level'),
+    budgetAllocated: z.number().optional().describe('Budget amount'),
+    currency: z.string().optional().describe('Currency code (e.g. USD)'),
+    startDate: z.string().optional().describe('Start date (YYYY-MM-DD)'),
+    endDate: z.string().optional().describe('End date (YYYY-MM-DD)'),
+  }, async (params) =>
+    jsonResult(await api.post('/projects', params))
+  );
+
+  server.tool('update-project', 'Update an existing project', {
+    projectId: z.string().describe('Project ID'),
+    name: z.string().optional().describe('Project name'),
+    description: z.string().optional().describe('Project description'),
+    status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional().describe('Project status'),
+    priority: z.enum(['low', 'medium', 'high', 'urgent']).optional().describe('Priority level'),
+    budgetAllocated: z.number().optional().describe('Budget amount'),
+    startDate: z.string().optional().describe('Start date (YYYY-MM-DD)'),
+    endDate: z.string().optional().describe('End date (YYYY-MM-DD)'),
+  }, async ({ projectId, ...data }) =>
+    jsonResult(await api.put(`/projects/${projectId}`, data))
+  );
+
+  server.tool('delete-project', 'Delete a project', {
+    projectId: z.string().describe('Project ID'),
+  }, async ({ projectId }) =>
+    jsonResult(await api.delete(`/projects/${projectId}`))
+  );
+}

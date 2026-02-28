@@ -2,6 +2,8 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ProjectService } from '../services/ProjectService';
 import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
+import { webhookService } from '../services/WebhookService';
 
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -22,14 +24,16 @@ const createProjectSchema = z.object({
 const updateProjectSchema = createProjectSchema.partial();
 
 export async function projectRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const projectService = new ProjectService();
 
   fastify.get('/', {
+    preHandler: [requireScope('read')],
     schema: { description: 'Get all projects', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
-      const userId = user?.userId || '1';
+      const userId = (request as any).user.userId;
       const projects = await projectService.findByUserId(userId);
       return { projects };
     } catch (error) {
@@ -39,12 +43,12 @@ export async function projectRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:id', {
+    preHandler: [requireScope('read')],
     schema: { description: 'Get project by ID', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const user = (request as any).user;
-      const userId = user?.userId || '1';
+      const userId = (request as any).user.userId;
       const project = await projectService.findById(id, userId);
       if (!project) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
@@ -57,7 +61,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/', {
-    preHandler: [authMiddleware],
+    preHandler: [requireScope('write')],
     schema: { description: 'Create a new project', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -69,6 +73,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
         endDate: data.endDate ? new Date(data.endDate) : undefined,
         userId,
       });
+      webhookService.dispatch('project.created', { project }, userId);
       return reply.status(201).send({ project });
     } catch (error) {
       console.error('Create project error:', error);
@@ -77,7 +82,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/:id', {
-    preHandler: [authMiddleware],
+    preHandler: [requireScope('write')],
     schema: { description: 'Update a project', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -92,6 +97,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       if (!project) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
       }
+      webhookService.dispatch('project.updated', { project }, userId);
       return { project };
     } catch (error) {
       console.error('Update project error:', error);
@@ -100,7 +106,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:id', {
-    preHandler: [authMiddleware],
+    preHandler: [requireScope('admin')],
     schema: { description: 'Delete a project', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

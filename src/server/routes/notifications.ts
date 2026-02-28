@@ -1,17 +1,18 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { notificationService } from '../services/NotificationService';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function notificationRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   // GET / — list notifications for authenticated user
   fastify.get('/', {
     schema: { description: 'List notifications for the current user', tags: ['notifications'] },
+    preHandler: [requireScope('read')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = (request as any).user;
-      if (!user?.userId) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-
       const { limit = '50', offset = '0' } = request.query as { limit?: string; offset?: string };
       const notifications = await notificationService.getByUserId(
         user.userId,
@@ -28,13 +29,10 @@ export async function notificationRoutes(fastify: FastifyInstance) {
   // GET /unread-count — unread count
   fastify.get('/unread-count', {
     schema: { description: 'Get unread notification count', tags: ['notifications'] },
+    preHandler: [requireScope('read')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = (request as any).user;
-      if (!user?.userId) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-
       const count = await notificationService.getUnreadCount(user.userId);
       return { count };
     } catch (error) {
@@ -46,6 +44,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
   // POST /:id/read — mark one read
   fastify.post('/:id/read', {
     schema: { description: 'Mark a notification as read', tags: ['notifications'] },
+    preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
@@ -60,13 +59,10 @@ export async function notificationRoutes(fastify: FastifyInstance) {
   // POST /mark-all-read — mark all read for user
   fastify.post('/mark-all-read', {
     schema: { description: 'Mark all notifications as read', tags: ['notifications'] },
+    preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = (request as any).user;
-      if (!user?.userId) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-
       await notificationService.markAllRead(user.userId);
       return { message: 'All notifications marked as read' };
     } catch (error) {

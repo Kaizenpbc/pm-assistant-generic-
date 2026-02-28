@@ -7,16 +7,20 @@ import helmet from '@fastify/helmet';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import websocket from '@fastify/websocket';
+import multipart from '@fastify/multipart';
 import rawBody from 'fastify-raw-body';
 import { config } from './config';
 import { requestLogger } from './utils/logger';
 import { toCamelCaseKeys } from './utils/caseConverter';
 import { auditService } from './services/auditService';
 import { securityMiddleware, securityValidationMiddleware } from './middleware/securityMiddleware';
+import { rateLimiter } from './middleware/rateLimiter';
+import { apiKeyService } from './services/ApiKeyService';
 
 export async function registerPlugins(fastify: FastifyInstance) {
   await fastify.register(websocket);
   await fastify.register(rawBody, { field: 'rawBody', global: false, runFirst: true });
+  await fastify.register(multipart, { limits: { fileSize: config.MAX_UPLOAD_SIZE_MB * 1024 * 1024 } });
 
   fastify.addHook('onRequest', requestLogger);
   fastify.addHook('onRequest', securityMiddleware);
@@ -28,6 +32,59 @@ export async function registerPlugins(fastify: FastifyInstance) {
       return toCamelCaseKeys(payload);
     }
     return payload;
+  });
+
+  // Global API key resolution — sets apiKeyId on request for all API routes (even those without authMiddleware)
+  fastify.addHook('onRequest', async (request) => {
+    const authHeader = request.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ') && request.url.startsWith('/api/')) {
+      try {
+        const keyInfo = await apiKeyService.validateKey(authHeader.slice(7));
+        if (keyInfo) {
+          (request as any).apiKeyId = keyInfo.keyId;
+          (request as any).apiKeyScopes = keyInfo.scopes;
+          (request as any).apiKeyRateLimit = keyInfo.rateLimit;
+          // Also set user if not already set (for routes without authMiddleware)
+          if (!(request as any).user) {
+            (request as any).user = {
+              userId: keyInfo.userId,
+              username: 'api-key',
+              role: keyInfo.scopes.includes('admin') ? 'admin' : 'member',
+            };
+          }
+        }
+      } catch {
+        // Silently fail — route-level authMiddleware will handle auth errors
+      }
+    }
+  });
+
+  // Rate limiting for API key requests — runs after API key resolution hook above
+  fastify.addHook('onRequest', async (request, reply) => {
+    const apiKeyId = (request as any).apiKeyId;
+    if (apiKeyId && request.url.startsWith('/api/')) {
+      const limit = (request as any).apiKeyRateLimit || 100;
+      const result = rateLimiter.check(apiKeyId, limit);
+      reply.header('X-RateLimit-Limit', String(limit));
+      reply.header('X-RateLimit-Remaining', String(result.remaining));
+      reply.header('X-RateLimit-Reset', String(Math.ceil(result.resetAt / 1000)));
+      if (!result.allowed) {
+        return reply.status(429).send({
+          error: 'Rate limit exceeded',
+          retryAfter: Math.ceil((result.resetAt - Date.now()) / 1000),
+        });
+      }
+    }
+  });
+
+  // Log API key usage on response
+  fastify.addHook('onResponse', async (request, reply) => {
+    const apiKeyId = (request as any).apiKeyId;
+    if (apiKeyId) {
+      const responseTime = Math.round(reply.elapsedTime || 0);
+      const ip = request.ip || '';
+      apiKeyService.logUsage(apiKeyId, request.method, request.url, reply.statusCode, responseTime, ip);
+    }
   });
 
   await fastify.register(helmet, {
@@ -102,6 +159,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
       produces: ['application/json'],
       securityDefinitions: {
         cookieAuth: { type: 'apiKey', in: 'cookie', name: 'access_token' },
+        bearerAuth: { type: 'apiKey', in: 'header', name: 'Authorization', description: 'Bearer <api-key>' },
       },
     },
   });

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { TemplateService } from '../services/TemplateService';
 import { createFromTemplateSchema, saveAsTemplateSchema } from '../schemas/templateSchemas';
 import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 const createTemplateSchema = z.object({
   name: z.string().min(1),
@@ -29,9 +30,10 @@ const createTemplateSchema = z.object({
 
 export async function templateRoutes(fastify: FastifyInstance) {
   const templateService = new TemplateService();
+  fastify.addHook('preHandler', authMiddleware);
 
   // GET / — List all templates (with optional filters)
-  fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectType, category } = request.query as { projectType?: string; category?: string };
       const templates = await templateService.findAll(projectType, category);
@@ -57,7 +59,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
   });
 
   // GET /:id — Get template with full task tree
-  fastify.get('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/:id', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       const template = await templateService.findById(id);
@@ -73,7 +75,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
 
   // POST / — Create custom template
   fastify.post('/', {
-    preHandler: [authMiddleware],
+    preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createTemplateSchema.parse(request.body);
@@ -92,7 +94,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
 
   // PUT /:id — Update custom template
   fastify.put('/:id', {
-    preHandler: [authMiddleware],
+    preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
@@ -110,7 +112,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
 
   // DELETE /:id — Delete custom template
   fastify.delete('/:id', {
-    preHandler: [authMiddleware],
+    preHandler: [requireScope('admin')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
@@ -127,7 +129,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
 
   // POST /apply — Apply template to create new project
   fastify.post('/apply', {
-    preHandler: [authMiddleware],
+    preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createFromTemplateSchema.parse(request.body);
@@ -149,7 +151,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
 
   // POST /save-from-project — Save existing project as template
   fastify.post('/save-from-project', {
-    preHandler: [authMiddleware],
+    preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = saveAsTemplateSchema.parse(request.body);

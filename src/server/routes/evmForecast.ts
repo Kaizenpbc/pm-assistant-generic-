@@ -1,17 +1,20 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { EVMForecastService } from '../services/EVMForecastService';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function evmForecastRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const service = new EVMForecastService();
 
   // GET /:projectId
-  fastify.get('/:projectId', async (
-    request: FastifyRequest<{ Params: { projectId: string } }>,
-    reply: FastifyReply,
-  ) => {
+  fastify.get('/:projectId', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { projectId } = request.params;
-      const userId = (request as any).userId || undefined;
+      const { projectId } = request.params as { projectId: string };
+      const userId = (request as any).user.userId;
       const result = await service.generateForecast(projectId, userId);
       return reply.send({
         result,

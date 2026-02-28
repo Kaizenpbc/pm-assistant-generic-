@@ -5,12 +5,17 @@ import {
   optimizeScheduleClaude,
   generateProjectInsightsClaude,
 } from '../services/aiSchedulingClaude';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function aiSchedulingRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const claudeBreakdown = new ClaudeTaskBreakdownService(fastify);
 
   // Analyze project and generate AI task breakdown
   fastify.post('/analyze-project', {
+    preHandler: [requireScope('write')],
     schema: {
       description: 'Analyze project and generate AI task breakdown',
       tags: ['ai-scheduling'],
@@ -18,7 +23,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { projectDescription, projectType, projectId } = request.body as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         const { analysis, aiPowered } = await claudeBreakdown.analyzeProject(
           projectDescription,
@@ -38,6 +43,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
   // Suggest task dependencies
   fastify.post('/suggest-dependencies', {
+    preHandler: [requireScope('write')],
     schema: {
       description: 'Suggest task dependencies',
       tags: ['ai-scheduling'],
@@ -45,7 +51,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { tasks, projectContext } = request.body as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         const { dependencies, aiPowered } = await suggestDependenciesClaude(
           tasks,
@@ -64,6 +70,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
   // Optimize schedule
   fastify.post('/optimize-schedule', {
+    preHandler: [requireScope('write')],
     schema: {
       description: 'Optimize existing schedule using AI',
       tags: ['ai-scheduling'],
@@ -71,7 +78,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { scheduleId, optimizationGoals, constraints } = request.body as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         const { optimizedSchedule, aiPowered } = await optimizeScheduleClaude(
           scheduleId,
@@ -91,6 +98,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
   // Get AI insights for project
   fastify.get('/insights/:projectId', {
+    preHandler: [requireScope('read')],
     schema: {
       description: 'Get AI insights for project',
       tags: ['ai-scheduling'],
@@ -98,7 +106,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { projectId } = request.params as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         const { insights, aiPowered } = await generateProjectInsightsClaude(
           projectId,

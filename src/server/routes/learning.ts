@@ -1,14 +1,20 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { AILearningServiceV2 } from '../services/aiLearningService';
 import { AIFeedbackRecordSchema, AIAccuracyRecordSchema } from '../schemas/phase5Schemas';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function learningRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const service = new AILearningServiceV2(fastify);
 
-  fastify.post('/feedback', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/feedback', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AIFeedbackRecordSchema.parse(request.body);
-      const userId = (request as any).userId || 'anonymous';
+      const userId = (request as any).user.userId;
       service.recordFeedback(parsed, userId);
       return reply.send({ success: true });
     } catch (err) {
@@ -17,7 +23,9 @@ export async function learningRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.post('/accuracy', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/accuracy', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AIAccuracyRecordSchema.parse(request.body);
       service.recordAccuracy(parsed);
@@ -28,12 +36,11 @@ export async function learningRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/accuracy-report', async (
-    request: FastifyRequest<{ Querystring: { projectType?: string } }>,
-    reply: FastifyReply,
-  ) => {
+  fastify.get('/accuracy-report', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { projectType } = request.query;
+      const { projectType } = request.query as { projectType?: string };
       const report = await service.getAccuracyReport({ projectType });
       return reply.send({ data: report });
     } catch (err) {
@@ -42,12 +49,11 @@ export async function learningRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/feedback-stats', async (
-    request: FastifyRequest<{ Querystring: { feature?: string } }>,
-    reply: FastifyReply,
-  ) => {
+  fastify.get('/feedback-stats', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { feature } = request.query;
+      const { feature } = request.query as { feature?: string };
       const stats = await service.getFeedbackStats(feature);
       return reply.send({ data: stats });
     } catch (err) {
@@ -56,9 +62,11 @@ export async function learningRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/insights', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/insights', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || undefined;
+      const userId = (request as any).user.userId;
       const { insights, aiPowered } = await service.getAIAccuracyInsights(userId);
       return reply.send({ data: insights, aiPowered });
     } catch (err) {

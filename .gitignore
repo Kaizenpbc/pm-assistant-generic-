@@ -43,6 +43,9 @@ nul
 *mc_test.json
 .claude/
 
+# MCP config (contains API keys)
+.mcp.json
+
 # Playwright
 test-results/
 playwright-report/

@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ResourceService } from '../services/ResourceService';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 const createResourceSchema = z.object({
   name: z.string().min(1),
@@ -21,16 +23,18 @@ const createAssignmentSchema = z.object({
 });
 
 export async function resourceRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const service = new ResourceService();
 
   // GET /resources - List all resources
-  fastify.get('/', async (_request: FastifyRequest, _reply: FastifyReply) => {
+  fastify.get('/', { preHandler: [requireScope('read')] }, async (_request: FastifyRequest, _reply: FastifyReply) => {
     const resources = await service.findAllResources();
     return { resources };
   });
 
   // POST /resources - Create a resource
-  fastify.post('/', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createResourceSchema.parse(request.body);
       const resource = await service.createResource(data);
@@ -42,7 +46,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // PUT /resources/:id - Update a resource
-  fastify.put('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.put('/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       const data = createResourceSchema.partial().parse(request.body);
@@ -56,7 +60,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // DELETE /resources/:id
-  fastify.delete('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.delete('/:id', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
     const deleted = await service.deleteResource(id);
     if (!deleted) return reply.status(404).send({ error: 'Resource not found' });
@@ -64,14 +68,14 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // GET /resources/assignments/:scheduleId
-  fastify.get('/assignments/:scheduleId', async (request: FastifyRequest, _reply: FastifyReply) => {
+  fastify.get('/assignments/:scheduleId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, _reply: FastifyReply) => {
     const { scheduleId } = request.params as { scheduleId: string };
     const assignments = await service.findAssignmentsBySchedule(scheduleId);
     return { assignments };
   });
 
   // POST /resources/assignments
-  fastify.post('/assignments', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/assignments', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createAssignmentSchema.parse(request.body);
       const assignment = await service.createAssignment(data);
@@ -83,7 +87,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // DELETE /resources/assignments/:id
-  fastify.delete('/assignments/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.delete('/assignments/:id', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
     const deleted = await service.deleteAssignment(id);
     if (!deleted) return reply.status(404).send({ error: 'Assignment not found' });
@@ -91,7 +95,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // GET /resources/workload/:projectId
-  fastify.get('/workload/:projectId', async (request: FastifyRequest, _reply: FastifyReply) => {
+  fastify.get('/workload/:projectId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, _reply: FastifyReply) => {
     const { projectId } = request.params as { projectId: string };
     const workload = await service.computeWorkload(projectId);
     return { workload };

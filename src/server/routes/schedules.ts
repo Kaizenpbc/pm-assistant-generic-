@@ -5,6 +5,9 @@ import { CriticalPathService } from '../services/CriticalPathService';
 import { BaselineService } from '../services/BaselineService';
 import { WorkflowService } from '../services/WorkflowService';
 import { WebSocketService } from '../services/WebSocketService';
+import { webhookService } from '../services/WebhookService';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 const createScheduleSchema = z.object({
   projectId: z.string(),
@@ -36,10 +39,13 @@ const createTaskSchema = z.object({
 const updateTaskSchema = createTaskSchema.partial().omit({ scheduleId: true });
 
 export async function scheduleRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const scheduleService = new ScheduleService();
   const workflowService = new WorkflowService();
 
   fastify.get('/project/:projectId', {
+    preHandler: [requireScope('read')],
     schema: { description: 'Get schedules for a project', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -53,6 +59,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/', {
+    preHandler: [requireScope('write')],
     schema: { description: 'Create a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -62,7 +69,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
         ...data,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
-        createdBy: user?.userId || '1',
+        createdBy: user.userId,
       });
       return reply.status(201).send({ schedule });
     } catch (error) {
@@ -72,6 +79,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/:scheduleId', {
+    preHandler: [requireScope('write')],
     schema: { description: 'Update a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -91,6 +99,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId', {
+    preHandler: [requireScope('admin')],
     schema: { description: 'Delete a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -105,6 +114,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:scheduleId/tasks', {
+    preHandler: [requireScope('read')],
     schema: { description: 'Get tasks for a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -118,6 +128,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/:scheduleId/tasks', {
+    preHandler: [requireScope('write')],
     schema: { description: 'Create a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -130,9 +141,10 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate ? new Date(data.endDate) : undefined,
-        createdBy: user?.userId || '1',
+        createdBy: user.userId,
       });
       WebSocketService.broadcast({ type: 'task_created', payload: { task } });
+      webhookService.dispatch('task.created', { task }, user?.userId);
       return reply.status(201).send({ task });
     } catch (error) {
       console.error('Create task error:', error);
@@ -141,6 +153,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/:scheduleId/tasks/:taskId', {
+    preHandler: [requireScope('write')],
     schema: { description: 'Update a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -176,6 +189,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
 
       // WebSocket broadcast
       WebSocketService.broadcast({ type: 'task_updated', payload: { task, cascadedChanges } });
+      const user = (request as any).user;
+      webhookService.dispatch('task.updated', { task, cascadedChanges }, user?.userId);
 
       return { task, cascadedChanges };
     } catch (error) {
@@ -185,6 +200,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId/tasks/:taskId', {
+    preHandler: [requireScope('admin')],
     schema: { description: 'Delete a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -192,6 +208,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const deleted = await scheduleService.deleteTask(taskId);
       if (!deleted) return reply.status(404).send({ error: 'Not found', message: 'Task not found' });
       WebSocketService.broadcast({ type: 'task_deleted', payload: { taskId } });
+      const user = (request as any).user;
+      webhookService.dispatch('task.deleted', { taskId }, user?.userId);
       return { message: 'Task deleted successfully' };
     } catch (error) {
       console.error('Delete task error:', error);
@@ -206,6 +224,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   const cpmService = new CriticalPathService();
 
   fastify.get('/:scheduleId/critical-path', {
+    preHandler: [requireScope('read')],
     schema: { description: 'Get critical path analysis', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -225,6 +244,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   const baselineService = new BaselineService();
 
   fastify.get('/:scheduleId/baselines', {
+    preHandler: [requireScope('read')],
     schema: { description: 'Get baselines for a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -238,6 +258,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:scheduleId/baselines/:baselineId/compare', {
+    preHandler: [requireScope('read')],
     schema: { description: 'Compare baseline vs current schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -252,6 +273,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId/baselines/:baselineId', {
+    preHandler: [requireScope('admin')],
     schema: { description: 'Delete a baseline', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -266,6 +288,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/:scheduleId/baselines', {
+    preHandler: [requireScope('write')],
     schema: { description: 'Create a baseline snapshot', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -275,7 +298,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const baseline = await baselineService.create(
         scheduleId,
         name || `Baseline ${new Date().toLocaleDateString()}`,
-        user?.userId || '1',
+        user.userId,
       );
       return reply.status(201).send({ baseline });
     } catch (error) {
@@ -289,6 +312,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   // -------------------------------------------------------------------------
 
   fastify.get('/:scheduleId/tasks/:taskId/comments', {
+    preHandler: [requireScope('read')],
     schema: { description: 'Get comments for a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -302,6 +326,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/:scheduleId/tasks/:taskId/comments', {
+    preHandler: [requireScope('write')],
     schema: { description: 'Add a comment to a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -311,7 +336,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       if (!text || !text.trim()) {
         return reply.status(400).send({ error: 'Comment text is required' });
       }
-      const comment = scheduleService.addComment(taskId, text.trim(), user?.userId || '1', user?.fullName || 'Project Manager');
+      const comment = scheduleService.addComment(taskId, text.trim(), user.userId, user.fullName || 'Project Manager');
       return reply.status(201).send({ comment });
     } catch (error) {
       console.error('Add comment error:', error);
@@ -320,6 +345,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId/tasks/:taskId/comments/:commentId', {
+    preHandler: [requireScope('admin')],
     schema: { description: 'Delete a comment', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -334,6 +360,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:scheduleId/tasks/:taskId/activity', {
+    preHandler: [requireScope('read')],
     schema: { description: 'Get activity feed for a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

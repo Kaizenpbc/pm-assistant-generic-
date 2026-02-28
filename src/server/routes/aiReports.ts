@@ -1,5 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { AIReportService, ReportType } from '../services/aiReportService';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 const VALID_REPORT_TYPES: ReportType[] = [
   'weekly-status',
@@ -9,10 +11,13 @@ const VALID_REPORT_TYPES: ReportType[] = [
 ];
 
 export async function aiReportRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const reportService = new AIReportService(fastify);
 
   // POST /generate — generate a report
   fastify.post('/generate', {
+    preHandler: [requireScope('write')],
     schema: {
       description: 'Generate an AI report',
       tags: ['ai-reports'],
@@ -31,7 +36,7 @@ export async function aiReportRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const body = request.body as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         if (!VALID_REPORT_TYPES.includes(body.reportType)) {
           return reply.code(400).send({
@@ -42,7 +47,7 @@ export async function aiReportRoutes(fastify: FastifyInstance) {
         const report = await reportService.generateReport(
           body.reportType,
           { projectId: body.projectId },
-          user.userId || 'anonymous',
+          user.userId,
         );
 
         return report;
@@ -61,14 +66,15 @@ export async function aiReportRoutes(fastify: FastifyInstance) {
 
   // GET /history — list past generated reports
   fastify.get('/history', {
+    preHandler: [requireScope('read')],
     schema: {
       description: 'List past generated reports',
       tags: ['ai-reports'],
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const user = (request as any).user || {};
-        const reports = await reportService.getReportHistory(user.userId || 'anonymous');
+        const user = (request as any).user;
+        const reports = await reportService.getReportHistory(user.userId);
         return { reports };
       } catch (error) {
         fastify.log.error(

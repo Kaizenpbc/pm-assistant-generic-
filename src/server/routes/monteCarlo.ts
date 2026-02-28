@@ -1,17 +1,21 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { MonteCarloService } from '../services/MonteCarloService';
 import { MonteCarloConfigSchema } from '../schemas/monteCarloSchemas';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function monteCarloRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const service = new MonteCarloService();
 
   // POST /:scheduleId/simulate — Run Monte Carlo simulation for a schedule
-  fastify.post('/:scheduleId/simulate', async (
-    request: FastifyRequest<{ Params: { scheduleId: string } }>,
+  fastify.post('/:scheduleId/simulate', { preHandler: [requireScope('write')] }, async (
+    request: FastifyRequest,
     reply: FastifyReply,
   ) => {
     try {
-      const { scheduleId } = request.params;
+      const { scheduleId } = request.params as { scheduleId: string };
 
       // Parse optional config from body, applying defaults
       const rawBody = (request.body as Record<string, unknown>) || {};

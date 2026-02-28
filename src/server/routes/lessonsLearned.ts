@@ -1,11 +1,17 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { LessonsLearnedService } from '../services/LessonsLearnedService';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const service = new LessonsLearnedService();
 
   // GET /knowledge-base — Aggregated knowledge base overview
-  fastify.get('/knowledge-base', async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/knowledge-base', {
+    preHandler: [requireScope('read')],
+  }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const overview = await service.getKnowledgeBase();
       return reply.send({ data: overview });
@@ -16,13 +22,12 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   });
 
   // POST /extract/:projectId — Extract lessons from a project
-  fastify.post('/extract/:projectId', async (
-    request: FastifyRequest<{ Params: { projectId: string } }>,
-    reply: FastifyReply,
-  ) => {
+  fastify.post('/extract/:projectId', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { projectId } = request.params;
-      const userId = (request as any).userId || undefined;
+      const { projectId } = request.params as { projectId: string };
+      const userId = (request as any).user.userId;
       const lessons = await service.extractLessons(projectId, userId);
       return reply.send({ lessons });
     } catch (err) {
@@ -33,14 +38,11 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   });
 
   // GET /relevant — Find relevant lessons by projectType and/or category
-  fastify.get('/relevant', async (
-    request: FastifyRequest<{
-      Querystring: { projectType?: string; category?: string };
-    }>,
-    reply: FastifyReply,
-  ) => {
+  fastify.get('/relevant', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { projectType, category } = request.query;
+      const { projectType, category } = request.query as { projectType?: string; category?: string };
       const lessons = await service.findRelevantLessons(projectType, category);
       return reply.send({ lessons });
     } catch (err) {
@@ -50,9 +52,11 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   });
 
   // POST /patterns — Detect cross-project patterns
-  fastify.post('/patterns', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/patterns', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || undefined;
+      const userId = (request as any).user.userId;
       const patterns = await service.detectPatterns(userId);
       return reply.send({ patterns });
     } catch (err) {
@@ -62,18 +66,15 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   });
 
   // POST /mitigations — Suggest mitigations for a risk
-  fastify.post('/mitigations', async (
-    request: FastifyRequest<{
-      Body: { riskDescription: string; projectType: string };
-    }>,
-    reply: FastifyReply,
-  ) => {
+  fastify.post('/mitigations', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { riskDescription, projectType } = request.body;
+      const { riskDescription, projectType } = request.body as { riskDescription: string; projectType: string };
       if (!riskDescription || !projectType) {
         return reply.status(400).send({ error: 'riskDescription and projectType are required' });
       }
-      const userId = (request as any).userId || undefined;
+      const userId = (request as any).user.userId;
       const suggestions = await service.suggestMitigations(riskDescription, projectType, userId);
       return reply.send({ suggestions });
     } catch (err) {
@@ -83,9 +84,11 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   });
 
   // POST / — Add a lesson manually
-  fastify.post('/', async (
-    request: FastifyRequest<{
-      Body: {
+  fastify.post('/', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const body = request.body as {
         projectId: string;
         projectName: string;
         projectType: string;
@@ -96,11 +99,6 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
         recommendation: string;
         confidence?: number;
       };
-    }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      const body = request.body;
       if (!body.projectId || !body.title || !body.description || !body.recommendation) {
         return reply.status(400).send({ error: 'projectId, title, description, and recommendation are required' });
       }
@@ -123,7 +121,9 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   });
 
   // POST /seed — Seed initial lessons from existing project data
-  fastify.post('/seed', async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/seed', {
+    preHandler: [requireScope('write')],
+  }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const seeded = await service.seedFromProjects();
       return reply.send({ seeded });

@@ -1,9 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function userRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   fastify.get('/me', {
-    preHandler: [authMiddleware],
+    preHandler: [requireScope('read')],
     schema: { description: 'Get current user profile', tags: ['users'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ResourceOptimizerService } from '../services/ResourceOptimizerService';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 const forecastQuerySchema = z.object({
   weeksAhead: z.coerce.number().min(1).max(52).default(8),
@@ -12,10 +14,13 @@ const skillMatchBodySchema = z.object({
 });
 
 export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const optimizerService = new ResourceOptimizerService();
 
   // GET /:projectId/forecast
   fastify.get('/:projectId/forecast', {
+    preHandler: [requireScope('read')],
     schema: {
       description: 'Predict resource bottlenecks and generate capacity forecast for a project',
       tags: ['resource-optimizer'],
@@ -25,7 +30,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
       const { projectId } = request.params as { projectId: string };
       const query = forecastQuerySchema.parse(request.query);
       const user = (request as any).user;
-      const userId = user?.userId;
+      const userId = user.userId;
 
       const forecast = await optimizerService.predictBottlenecks(
         projectId,
@@ -51,6 +56,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
 
   // POST /skill-match
   fastify.post('/skill-match', {
+    preHandler: [requireScope('write')],
     schema: {
       description: 'Find the best-matched resources for a given task based on skills and availability',
       tags: ['resource-optimizer'],

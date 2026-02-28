@@ -3,16 +3,22 @@ import { AnomalyDetectionService } from '../services/anomalyDetectionService';
 import { CrossProjectIntelligenceService } from '../services/crossProjectIntelligenceService';
 import { WhatIfScenarioService } from '../services/whatIfScenarioService';
 import { AIScenarioRequestSchema } from '../schemas/phase5Schemas';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function intelligenceRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const anomalyService = new AnomalyDetectionService(fastify);
   const crossProjectService = new CrossProjectIntelligenceService(fastify);
   const scenarioService = new WhatIfScenarioService(fastify);
 
   // Anomaly Detection
-  fastify.get('/anomalies', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/anomalies', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || undefined;
+      const userId = (request as any).user.userId;
       const report = await anomalyService.detectPortfolioAnomalies(userId);
       return reply.send({ data: report, aiPowered: report.aiPowered });
     } catch (err) {
@@ -21,13 +27,12 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/anomalies/project/:projectId', async (
-    request: FastifyRequest<{ Params: { projectId: string } }>,
-    reply: FastifyReply,
-  ) => {
+  fastify.get('/anomalies/project/:projectId', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { projectId } = request.params;
-      const userId = (request as any).userId || undefined;
+      const { projectId } = request.params as { projectId: string };
+      const userId = (request as any).user.userId;
       const report = await anomalyService.detectProjectAnomalies(projectId, userId);
       return reply.send({ data: report, aiPowered: report.aiPowered });
     } catch (err) {
@@ -37,9 +42,11 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   });
 
   // Cross-Project Intelligence
-  fastify.get('/cross-project', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/cross-project', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || undefined;
+      const userId = (request as any).user.userId;
       const { insight, aiPowered } = await crossProjectService.analyzePortfolio(userId);
       return reply.send({ data: insight, aiPowered });
     } catch (err) {
@@ -48,13 +55,12 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/cross-project/similar/:projectId', async (
-    request: FastifyRequest<{ Params: { projectId: string } }>,
-    reply: FastifyReply,
-  ) => {
+  fastify.get('/cross-project/similar/:projectId', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { projectId } = request.params;
-      const userId = (request as any).userId || undefined;
+      const { projectId } = request.params as { projectId: string };
+      const userId = (request as any).user.userId;
       const { similar, aiPowered } = await crossProjectService.findSimilarProjects(projectId, userId);
       return reply.send({ data: similar, aiPowered });
     } catch (err) {
@@ -64,10 +70,12 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   });
 
   // What-If Scenarios
-  fastify.post('/scenarios', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/scenarios', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AIScenarioRequestSchema.parse(request.body);
-      const userId = (request as any).userId || undefined;
+      const userId = (request as any).user.userId;
       const { result, aiPowered } = await scenarioService.modelScenario(parsed, userId);
       return reply.send({ data: result, aiPowered });
     } catch (err) {

@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { config } from '../config';
 import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 import { UserService } from '../services/UserService';
 import { stripeService } from '../services/StripeService';
 
@@ -33,7 +34,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
 
   // Authenticated routes
   fastify.post('/create-checkout-session', {
-    preHandler: [authMiddleware],
+    preHandler: [authMiddleware, requireScope('write')],
     schema: { description: 'Create Stripe checkout session', tags: ['stripe'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -65,7 +66,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/create-portal-session', {
-    preHandler: [authMiddleware],
+    preHandler: [authMiddleware, requireScope('write')],
     schema: { description: 'Create Stripe billing portal session', tags: ['stripe'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -88,7 +89,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/subscription-status', {
-    preHandler: [authMiddleware],
+    preHandler: [authMiddleware, requireScope('read')],
     schema: { description: 'Get subscription status', tags: ['stripe'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

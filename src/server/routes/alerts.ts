@@ -3,13 +3,18 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { ProactiveAlertService } from '../services/proactiveAlertService';
 import { AIActionExecutor } from '../services/aiActionExecutor';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function alertRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const alertService = new ProactiveAlertService();
   const actionExecutor = new AIActionExecutor();
 
   // GET / — Get all proactive alerts
   fastify.get('/', {
+    preHandler: [requireScope('read')],
     schema: {
       description: 'Get all proactive alerts across projects',
       tags: ['alerts'],
@@ -22,6 +27,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
 
   // GET /summary — Get alert summary counts
   fastify.get('/summary', {
+    preHandler: [requireScope('read')],
     schema: {
       description: 'Get alert summary with counts by severity and type',
       tags: ['alerts'],
@@ -34,6 +40,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
 
   // GET /project/:projectId — Get alerts for a specific project
   fastify.get('/project/:projectId', {
+    preHandler: [requireScope('read')],
     schema: {
       description: 'Get alerts for a specific project',
       tags: ['alerts'],
@@ -47,6 +54,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
 
   // POST /execute-action — Execute a suggested action from an alert
   fastify.post('/execute-action', {
+    preHandler: [requireScope('write')],
     schema: {
       description: 'Execute a suggested action from a proactive alert',
       tags: ['alerts'],
@@ -62,10 +70,10 @@ export async function alertRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { toolName, params } = request.body as any;
-        const user = (request as any).user || {};
+        const user = (request as any).user;
 
         const result = await actionExecutor.execute(toolName, params, {
-          userId: user.userId || 'anonymous',
+          userId: user.userId,
           userRole: user.role || 'member',
         });
 

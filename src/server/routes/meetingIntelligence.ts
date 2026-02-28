@@ -4,18 +4,24 @@ import {
   AnalyzeRequestSchema,
   ApplyRequestSchema,
 } from '../schemas/meetingSchemas';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const service = new MeetingIntelligenceService();
 
   // ---------------------------------------------------------------------------
   // POST /analyze — Analyze a meeting transcript
   // ---------------------------------------------------------------------------
 
-  fastify.post('/analyze', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/analyze', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AnalyzeRequestSchema.parse(request.body);
-      const userId = (request as any).userId || undefined;
+      const userId = (request as any).user.userId;
 
       const analysis = await service.analyzeTranscript(
         parsed.transcript,
@@ -38,14 +44,13 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   // POST /:analysisId/apply — Apply selected task changes from an analysis
   // ---------------------------------------------------------------------------
 
-  fastify.post('/:analysisId/apply', async (
-    request: FastifyRequest<{ Params: { analysisId: string } }>,
-    reply: FastifyReply,
-  ) => {
+  fastify.post('/:analysisId/apply', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { analysisId } = request.params;
+      const { analysisId } = request.params as { analysisId: string };
       const parsed = ApplyRequestSchema.parse(request.body);
-      const userId = (request as any).userId || undefined;
+      const userId = (request as any).user.userId;
 
       const result = await service.applyChanges(
         analysisId,
@@ -67,12 +72,11 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   // GET /project/:projectId/history — List analyses for a project
   // ---------------------------------------------------------------------------
 
-  fastify.get('/project/:projectId/history', async (
-    request: FastifyRequest<{ Params: { projectId: string } }>,
-    reply: FastifyReply,
-  ) => {
+  fastify.get('/project/:projectId/history', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { projectId } = request.params;
+      const { projectId } = request.params as { projectId: string };
       const analyses = service.getProjectHistory(projectId);
       return reply.send({ data: analyses });
     } catch (err) {

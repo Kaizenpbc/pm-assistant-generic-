@@ -1,12 +1,17 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { NLQueryService } from '../services/NLQueryService';
 import { NLQueryRequestSchema } from '../schemas/nlQuerySchemas';
+import { authMiddleware } from '../middleware/auth';
+import { requireScope } from '../middleware/requireScope';
 
 export async function nlQueryRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
   const nlQueryService = new NLQueryService();
 
   // POST / — process a natural-language query
   fastify.post('/', {
+    preHandler: [requireScope('write')],
     schema: {
       description: 'Process a natural-language query about project data and return an answer with optional chart visualizations',
       tags: ['nl-query'],
@@ -37,8 +42,8 @@ export async function nlQueryRoutes(fastify: FastifyInstance) {
           return reply.code(400).send({ error: `Validation failed: ${issues}` });
         }
 
-        const user = (request as any).user || {};
-        const userId = user.userId || 'anonymous';
+        const user = (request as any).user;
+        const userId = user.userId;
 
         const result = await nlQueryService.processQuery(
           parsed.data.query,
