@@ -1,6 +1,6 @@
 {
   "name": "pm-assistant-mcp",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "MCP server exposing PM Assistant API as Claude Code tools",
   "type": "module",
   "bin": {
@@ -16,10 +16,15 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.7",
+    "express": "^4.21.0",
+    "mysql2": "^3.11.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.0",
     "tsx": "^4.19.4",
     "typescript": "^5.7.3"
   }

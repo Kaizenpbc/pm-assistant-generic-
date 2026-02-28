@@ -3,7 +3,6 @@ import 'dotenv/config';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 
 import { registerProjectTools } from './tools/projects.js';
@@ -25,7 +24,7 @@ import { registerTemplateTools } from './tools/templates.js';
 function createMcpServer(): McpServer {
   const server = new McpServer({
     name: 'pm-assistant',
-    version: '2.1.0',
+    version: '2.2.0',
   });
 
   // Register all tool groups
@@ -55,101 +54,189 @@ async function startStdio() {
 }
 
 async function startHttp() {
-  const sessions = new Map<string, { server: McpServer; transport: StreamableHTTPServerTransport }>();
+  // Dynamic imports for Express + OAuth (only needed in HTTP mode)
+  const express = (await import('express')).default;
+  const { mcpAuthRouter } = await import('@modelcontextprotocol/sdk/server/auth/router.js');
+  const { requireBearerAuth } = await import('@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js');
+  const bcryptModule = await import('bcryptjs');
+  const bcrypt = bcryptModule.default ?? bcryptModule;
+  const { PmOAuthProvider } = await import('./oauth/provider.js');
+  const { query } = await import('./db.js');
 
-  const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-    // Log all incoming requests for debugging
-    console.error(`[MCP HTTP] ${req.method} ${req.url} from ${req.headers.origin || 'no-origin'}`);
+  const provider = new PmOAuthProvider();
 
-    // CORS headers for all responses
+  const baseUrl = process.env.PM_BASE_URL || 'https://pm.kpbc.ca';
+  const issuerUrl = new URL(baseUrl);
+  const resourceServerUrl = new URL('/mcp', baseUrl);
+
+  const app = express();
+
+  // CORS headers for all responses
+  app.use((_req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Mcp-Session-Id, Authorization');
     res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id');
-
-    // Handle CORS preflight for any path
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
+    if (_req.method === 'OPTIONS') {
+      res.sendStatus(204);
       return;
     }
+    next();
+  });
 
-    // Only handle /mcp endpoint
-    if (req.url !== '/mcp') {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Not found' }));
-      return;
+  // Trust reverse proxy (LiteSpeed) for X-Forwarded-For
+  app.set('trust proxy', 1);
+
+  // Request logging
+  app.use((req, _res, next) => {
+    console.error(`[MCP HTTP] ${req.method} ${req.url} from ${req.headers.origin || 'no-origin'}`);
+    next();
+  });
+
+  // POST /authorize/submit — MUST be mounted BEFORE mcpAuthRouter
+  // so the SDK's /authorize handler doesn't capture /authorize/submit
+  app.post('/authorize/submit', express.urlencoded({ extended: false }), async (req, res) => {
+    try {
+      const { username, password, client_id, redirect_uri, code_challenge, state, scope } = req.body;
+
+      if (!username || !password || !client_id || !redirect_uri || !code_challenge) {
+        res.status(400).type('html').send('<h1>Missing required fields</h1>');
+        return;
+      }
+
+      // Validate credentials against users table
+      interface UserRow { id: string; username: string; password_hash: string }
+      const users = await query<UserRow & import('mysql2/promise').RowDataPacket>(
+        'SELECT id, username, password_hash FROM users WHERE username = ? AND is_active = 1',
+        [username],
+      );
+
+      if (users.length === 0) {
+        // Re-render login with error
+        const { renderAuthorizePage } = await import('./oauth/authorizePage.js');
+        res.status(401).type('html').send(renderAuthorizePage({
+          clientId: client_id,
+          redirectUri: redirect_uri,
+          state,
+          codeChallenge: code_challenge,
+          scope,
+          error: 'Invalid username or password.',
+        }));
+        return;
+      }
+
+      const user = users[0];
+      const passwordValid = await bcrypt.compare(password, user.password_hash);
+      if (!passwordValid) {
+        const { renderAuthorizePage } = await import('./oauth/authorizePage.js');
+        res.status(401).type('html').send(renderAuthorizePage({
+          clientId: client_id,
+          redirectUri: redirect_uri,
+          state,
+          codeChallenge: code_challenge,
+          scope,
+          error: 'Invalid username or password.',
+        }));
+        return;
+      }
+
+      // Issue authorization code
+      const code = randomUUID();
+      await query(
+        `INSERT INTO oauth_auth_codes (code, client_id, user_id, redirect_uri, code_challenge, scope, state, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE))`,
+        [code, client_id, user.id, redirect_uri, code_challenge, scope || null, state || null],
+      );
+
+      // Redirect back to Claude's callback
+      const redirectUrl = new URL(redirect_uri);
+      redirectUrl.searchParams.set('code', code);
+      if (state) redirectUrl.searchParams.set('state', state);
+      res.redirect(302, redirectUrl.toString());
+    } catch (err) {
+      console.error('[OAuth] /authorize/submit error:', err);
+      res.status(500).type('html').send('<h1>Internal server error</h1>');
     }
+  });
 
-    if (req.method === 'POST') {
-      // Check for existing session
+  // Mount OAuth auth router (handles /.well-known/*, /authorize, /token, /register, /revoke)
+  app.use(mcpAuthRouter({
+    provider,
+    issuerUrl,
+    baseUrl: issuerUrl,
+    resourceServerUrl,
+    resourceName: 'PM Assistant MCP',
+  }));
+
+  // Bearer auth for MCP endpoint
+  const bearerAuth = requireBearerAuth({ verifier: provider });
+
+  // Session management
+  const sessions = new Map<string, { server: McpServer; transport: StreamableHTTPServerTransport }>();
+
+  // MCP endpoint with auth
+  app.post('/mcp', bearerAuth, async (req, res) => {
+    try {
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
       if (sessionId && sessions.has(sessionId)) {
-        // Existing session — route to its transport
         const session = sessions.get(sessionId)!;
         await session.transport.handleRequest(req, res);
         return;
       }
 
-      // New session — create server + transport
+      // New session
       const server = createMcpServer();
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
       });
 
-      // Clean up on close
       transport.onclose = () => {
         const sid = transport.sessionId;
         if (sid) sessions.delete(sid);
       };
 
       await server.connect(transport);
-
-      // Handle the initialize request (which sets the session ID)
       await transport.handleRequest(req, res);
 
-      // Store the session after handleRequest sets the sessionId
       if (transport.sessionId) {
         sessions.set(transport.sessionId, { server, transport });
       }
-      return;
-    }
-
-    if (req.method === 'GET') {
-      // SSE stream for server-initiated messages
-      const sessionId = req.headers['mcp-session-id'] as string | undefined;
-      if (sessionId && sessions.has(sessionId)) {
-        const session = sessions.get(sessionId)!;
-        await session.transport.handleRequest(req, res);
-        return;
+    } catch (err) {
+      console.error('[MCP] POST /mcp error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal server error' });
       }
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
+    }
+  });
+
+  app.get('/mcp', bearerAuth, async (req, res) => {
+    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    if (sessionId && sessions.has(sessionId)) {
+      const session = sessions.get(sessionId)!;
+      await session.transport.handleRequest(req, res);
       return;
     }
+    res.status(400).json({ error: 'Invalid or missing session ID' });
+  });
 
-    if (req.method === 'DELETE') {
-      // Session termination
-      const sessionId = req.headers['mcp-session-id'] as string | undefined;
-      if (sessionId && sessions.has(sessionId)) {
-        const session = sessions.get(sessionId)!;
-        await session.transport.handleRequest(req, res);
-        sessions.delete(sessionId);
-        return;
-      }
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
+  app.delete('/mcp', bearerAuth, async (req, res) => {
+    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    if (sessionId && sessions.has(sessionId)) {
+      const session = sessions.get(sessionId)!;
+      await session.transport.handleRequest(req, res);
+      sessions.delete(sessionId);
       return;
     }
-
-    res.writeHead(405, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    res.status(400).json({ error: 'Invalid or missing session ID' });
   });
 
   const port = parseInt(process.env.PM_PORT || '3100', 10);
-  httpServer.listen(port, () => {
-    console.error(`PM Assistant MCP server (HTTP) listening on http://localhost:${port}/mcp`);
+  app.listen(port, () => {
+    console.error(`PM Assistant MCP server (HTTP+OAuth) listening on http://localhost:${port}`);
+    console.error(`  MCP endpoint: /mcp`);
+    console.error(`  OAuth metadata: /.well-known/oauth-authorization-server`);
+    console.error(`  Resource metadata: /.well-known/oauth-protected-resource/mcp`);
   });
 }
 

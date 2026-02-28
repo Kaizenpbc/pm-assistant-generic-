@@ -1,16 +1,16 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { api, jsonResult } from '../api-client.js';
+import { getApiClientFromExtra, jsonResult } from '../api-client.js';
 
 export function registerProjectTools(server: McpServer) {
-  server.tool('list-projects', 'List all projects', {}, async () =>
-    jsonResult(await api.get('/projects'))
+  server.tool('list-projects', 'List all projects', {}, async (_args, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).get('/projects'))
   );
 
   server.tool('get-project', 'Get detailed info about a specific project', {
     projectId: z.string().describe('Project ID'),
-  }, async ({ projectId }) =>
-    jsonResult(await api.get(`/projects/${projectId}`))
+  }, async ({ projectId }, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).get(`/projects/${projectId}`))
   );
 
   server.tool('create-project', 'Create a new project', {
@@ -24,8 +24,8 @@ export function registerProjectTools(server: McpServer) {
     currency: z.string().optional().describe('Currency code (e.g. USD)'),
     startDate: z.string().optional().describe('Start date (YYYY-MM-DD)'),
     endDate: z.string().optional().describe('End date (YYYY-MM-DD)'),
-  }, async (params) =>
-    jsonResult(await api.post('/projects', params))
+  }, async (params, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).post('/projects', params))
   );
 
   server.tool('update-project', 'Update an existing project', {
@@ -37,13 +37,13 @@ export function registerProjectTools(server: McpServer) {
     budgetAllocated: z.number().optional().describe('Budget amount'),
     startDate: z.string().optional().describe('Start date (YYYY-MM-DD)'),
     endDate: z.string().optional().describe('End date (YYYY-MM-DD)'),
-  }, async ({ projectId, ...data }) =>
-    jsonResult(await api.put(`/projects/${projectId}`, data))
+  }, async ({ projectId, ...data }, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).put(`/projects/${projectId}`, data))
   );
 
   server.tool('delete-project', 'Delete a project', {
     projectId: z.string().describe('Project ID'),
-  }, async ({ projectId }) =>
-    jsonResult(await api.delete(`/projects/${projectId}`))
+  }, async ({ projectId }, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).delete(`/projects/${projectId}`))
   );
 }
