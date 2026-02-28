@@ -30,11 +30,13 @@ class ApiService {
       async (error) => {
         const originalRequest = error.config;
 
-        // Handle 401 errors (token expired)
+        // Handle 401 errors (token expired) — skip for login/register requests
         if (
           error.response?.status === 401 &&
           !originalRequest._retry &&
-          !originalRequest.url?.includes('/auth/refresh')
+          !originalRequest.url?.includes('/auth/refresh') &&
+          !originalRequest.url?.includes('/auth/login') &&
+          !originalRequest.url?.includes('/auth/register')
         ) {
           originalRequest._retry = true;
 
@@ -59,8 +61,24 @@ class ApiService {
   // -------------------------------------------------------------------------
 
   async login(username: string, password: string) {
-    const response = await this.api.post('/auth/login', { username, password });
-    return response.data;
+    try {
+      const response = await this.api.post('/auth/login', { username, password });
+      return response.data;
+    } catch (err: unknown) {
+      // Debug: use fetch as fallback to bypass Axios issues
+      const baseURL = import.meta.env.DEV ? 'http://localhost:3001/api/v1' : '/api/v1';
+      const res = await fetch(`${baseURL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw { response: { status: res.status, data: body } };
+      }
+      return res.json();
+    }
   }
 
   async register(userData: {
@@ -977,10 +995,633 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
   // Agent Activity Log
   // -------------------------------------------------------------------------
 
+  // -------------------------------------------------------------------------
+  // File Attachments
+  // -------------------------------------------------------------------------
+
+  async uploadAttachment(entityType: string, entityId: string, file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await this.api.post(`/attachments/${entityType}/${entityId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
+
+  async getAttachments(entityType: string, entityId: string) {
+    const response = await this.api.get(`/attachments/${entityType}/${entityId}`);
+    return response.data;
+  }
+
+  async downloadAttachment(id: string) {
+    const response = await this.api.get(`/attachments/${id}/download`, { responseType: 'blob' });
+    return response.data;
+  }
+
+  async uploadAttachmentVersion(id: string, file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await this.api.post(`/attachments/${id}/version`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
+
+  async getAttachmentVersions(id: string) {
+    const response = await this.api.get(`/attachments/${id}/versions`);
+    return response.data;
+  }
+
+  async deleteAttachment(id: string) {
+    const response = await this.api.delete(`/attachments/${id}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Time Entries
+  // -------------------------------------------------------------------------
+
+  async createTimeEntry(data: {
+    taskId: string; scheduleId: string; projectId: string;
+    date: string; hours: number; description?: string; billable?: boolean;
+  }) {
+    const response = await this.api.post('/time-entries', data);
+    return response.data;
+  }
+
+  async getTaskTimeEntries(taskId: string) {
+    const response = await this.api.get(`/time-entries/task/${taskId}`);
+    return response.data;
+  }
+
+  async getProjectTimeEntries(projectId: string, startDate?: string, endDate?: string) {
+    const params: Record<string, string> = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await this.api.get(`/time-entries/project/${projectId}`, { params });
+    return response.data;
+  }
+
+  async getWeeklyTimesheet(weekStart: string) {
+    const response = await this.api.get('/time-entries/timesheet', { params: { weekStart } });
+    return response.data;
+  }
+
+  async getActualVsEstimated(scheduleId: string) {
+    const response = await this.api.get(`/time-entries/actual-vs-estimated/${scheduleId}`);
+    return response.data;
+  }
+
+  async updateTimeEntry(id: string, data: { date?: string; hours?: number; description?: string; billable?: boolean }) {
+    const response = await this.api.put(`/time-entries/${id}`, data);
+    return response.data;
+  }
+
+  async deleteTimeEntry(id: string) {
+    const response = await this.api.delete(`/time-entries/${id}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Custom Fields
+  // -------------------------------------------------------------------------
+
+  async getCustomFields(projectId: string, entityType?: string) {
+    const params: Record<string, string> = {};
+    if (entityType) params.entityType = entityType;
+    const response = await this.api.get(`/custom-fields/project/${projectId}`, { params });
+    return response.data;
+  }
+
+  async createCustomField(projectId: string, data: {
+    entityType: string; fieldName: string; fieldLabel: string;
+    fieldType: string; options?: string[]; isRequired?: boolean; sortOrder?: number;
+  }) {
+    const response = await this.api.post(`/custom-fields/project/${projectId}`, data);
+    return response.data;
+  }
+
+  async updateCustomField(id: string, data: { fieldLabel?: string; fieldType?: string; options?: string[]; isRequired?: boolean; sortOrder?: number }) {
+    const response = await this.api.put(`/custom-fields/${id}`, data);
+    return response.data;
+  }
+
+  async deleteCustomField(id: string) {
+    const response = await this.api.delete(`/custom-fields/${id}`);
+    return response.data;
+  }
+
+  async getCustomFieldValues(entityType: string, entityId: string, projectId: string) {
+    const response = await this.api.get(`/custom-fields/values/${entityType}/${entityId}`, { params: { projectId } });
+    return response.data;
+  }
+
+  async saveCustomFieldValues(entityType: string, entityId: string, values: Array<{ fieldId: string; text?: string; number?: number; date?: string; boolean?: boolean }>) {
+    const response = await this.api.post(`/custom-fields/values/${entityType}/${entityId}`, { values });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Network Diagram
+  // -------------------------------------------------------------------------
+
+  async getNetworkDiagram(scheduleId: string) {
+    const response = await this.api.get(`/network-diagram/${scheduleId}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Burndown / Burnup
+  // -------------------------------------------------------------------------
+
+  async getBurndownData(scheduleId: string) {
+    const response = await this.api.get(`/burndown/${scheduleId}`);
+    return response.data;
+  }
+
+  async getVelocityData(scheduleId: string) {
+    const response = await this.api.get(`/burndown/${scheduleId}/velocity`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Agent Activity Log
+  // -------------------------------------------------------------------------
+
   async getAgentActivityLog(projectId: string, limit = 50, offset = 0, agent?: string) {
     const params: Record<string, string | number> = { limit, offset };
     if (agent) params.agent = agent;
     const response = await this.api.get(`/agent-log/${projectId}`, { params });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Approval Workflows & Change Requests
+  // -------------------------------------------------------------------------
+
+  async createApprovalWorkflow(projectId: string, data: { name: string; description?: string; entityType: string; steps: any[] }) {
+    const response = await this.api.post(`/approvals/workflows/${projectId}`, data);
+    return response.data;
+  }
+
+  async getApprovalWorkflows(projectId: string) {
+    const response = await this.api.get(`/approvals/workflows/${projectId}`);
+    return response.data;
+  }
+
+  async updateApprovalWorkflow(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/approvals/workflows/${id}`, data);
+    return response.data;
+  }
+
+  async deleteApprovalWorkflow(id: string) {
+    const response = await this.api.delete(`/approvals/workflows/${id}`);
+    return response.data;
+  }
+
+  async createChangeRequest(projectId: string, data: { title: string; description: string; category: string; priority?: string; impactSummary?: string }) {
+    const response = await this.api.post(`/approvals/change-requests/${projectId}`, data);
+    return response.data;
+  }
+
+  async getChangeRequests(projectId: string, status?: string) {
+    const params: Record<string, string> = {};
+    if (status) params.status = status;
+    const response = await this.api.get(`/approvals/change-requests/${projectId}`, { params });
+    return response.data;
+  }
+
+  async getChangeRequestDetail(id: string) {
+    const response = await this.api.get(`/approvals/change-requests/${id}/detail`);
+    return response.data;
+  }
+
+  async submitChangeRequestForApproval(id: string, workflowId: string) {
+    const response = await this.api.post(`/approvals/change-requests/${id}/submit`, { workflowId });
+    return response.data;
+  }
+
+  async actOnChangeRequest(id: string, action: string, comment?: string) {
+    const response = await this.api.post(`/approvals/change-requests/${id}/action`, { action, comment });
+    return response.data;
+  }
+
+  async withdrawChangeRequest(id: string) {
+    const response = await this.api.post(`/approvals/change-requests/${id}/withdraw`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Client / Stakeholder Portal
+  // -------------------------------------------------------------------------
+
+  async createPortalLink(projectId: string, data: { permissions: Record<string, boolean>; label?: string; expiresAt?: string }) {
+    const response = await this.api.post(`/portal/links/${projectId}`, data);
+    return response.data;
+  }
+
+  async getPortalLinks(projectId: string) {
+    const response = await this.api.get(`/portal/links/${projectId}`);
+    return response.data;
+  }
+
+  async updatePortalLink(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/portal/links/${id}`, data);
+    return response.data;
+  }
+
+  async deletePortalLink(id: string) {
+    const response = await this.api.delete(`/portal/links/${id}`);
+    return response.data;
+  }
+
+  async getPortalComments(projectId: string) {
+    const response = await this.api.get(`/portal/comments/${projectId}`);
+    return response.data;
+  }
+
+  async getPortalView(token: string) {
+    const response = await this.api.get(`/portal/view/${token}`);
+    return response.data;
+  }
+
+  async addPortalComment(token: string, data: { entityType: string; entityId: string; authorName: string; content: string }) {
+    const response = await this.api.post(`/portal/view/${token}/comment`, data);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Resource Leveling
+  // -------------------------------------------------------------------------
+
+  async getResourceHistogram(scheduleId: string) {
+    const response = await this.api.get(`/resource-leveling/${scheduleId}/histogram`);
+    return response.data;
+  }
+
+  async levelResources(scheduleId: string) {
+    const response = await this.api.post(`/resource-leveling/${scheduleId}/level`);
+    return response.data;
+  }
+
+  async applyResourceLeveling(scheduleId: string, adjustments: any[]) {
+    const response = await this.api.post(`/resource-leveling/${scheduleId}/apply`, { adjustments });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // External Integrations
+  // -------------------------------------------------------------------------
+
+  async createIntegration(data: { provider: string; config: Record<string, unknown>; projectId?: string }) {
+    const response = await this.api.post('/integrations', data);
+    return response.data;
+  }
+
+  async getIntegrations() {
+    const response = await this.api.get('/integrations');
+    return response.data;
+  }
+
+  async getIntegration(id: string) {
+    const response = await this.api.get(`/integrations/${id}`);
+    return response.data;
+  }
+
+  async updateIntegration(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/integrations/${id}`, data);
+    return response.data;
+  }
+
+  async deleteIntegration(id: string) {
+    const response = await this.api.delete(`/integrations/${id}`);
+    return response.data;
+  }
+
+  async testIntegrationConnection(id: string) {
+    const response = await this.api.post(`/integrations/${id}/test`);
+    return response.data;
+  }
+
+  async syncIntegration(id: string, direction: string) {
+    const response = await this.api.post(`/integrations/${id}/sync`, { direction });
+    return response.data;
+  }
+
+  async getIntegrationSyncLog(id: string) {
+    const response = await this.api.get(`/integrations/${id}/log`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Sprint Planning / Agile Mode
+  // -------------------------------------------------------------------------
+
+  async createSprint(data: { projectId: string; scheduleId: string; name: string; goal?: string; startDate: string; endDate: string; velocityCommitment?: number }) {
+    const response = await this.api.post('/sprints', data);
+    return response.data;
+  }
+
+  async getSprints(projectId: string) {
+    const response = await this.api.get(`/sprints/project/${projectId}`);
+    return response.data;
+  }
+
+  async getSprint(id: string) {
+    const response = await this.api.get(`/sprints/${id}`);
+    return response.data;
+  }
+
+  async updateSprint(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/sprints/${id}`, data);
+    return response.data;
+  }
+
+  async deleteSprint(id: string) {
+    const response = await this.api.delete(`/sprints/${id}`);
+    return response.data;
+  }
+
+  async addSprintTask(sprintId: string, taskId: string, storyPoints?: number) {
+    const response = await this.api.post(`/sprints/${sprintId}/tasks`, { taskId, storyPoints });
+    return response.data;
+  }
+
+  async removeSprintTask(sprintId: string, taskId: string) {
+    const response = await this.api.delete(`/sprints/${sprintId}/tasks/${taskId}`);
+    return response.data;
+  }
+
+  async startSprint(id: string) {
+    const response = await this.api.post(`/sprints/${id}/start`);
+    return response.data;
+  }
+
+  async completeSprint(id: string) {
+    const response = await this.api.post(`/sprints/${id}/complete`);
+    return response.data;
+  }
+
+  async getSprintBoard(sprintId: string) {
+    const response = await this.api.get(`/sprints/${sprintId}/board`);
+    return response.data;
+  }
+
+  async getSprintBurndown(sprintId: string) {
+    const response = await this.api.get(`/sprints/${sprintId}/burndown`);
+    return response.data;
+  }
+
+  async getVelocityHistory(projectId: string) {
+    const response = await this.api.get(`/sprints/velocity/${projectId}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Custom Report Builder
+  // -------------------------------------------------------------------------
+
+  async createReportTemplate(data: { name: string; description?: string; config: Record<string, unknown>; isShared?: boolean }) {
+    const response = await this.api.post('/report-builder/templates', data);
+    return response.data;
+  }
+
+  async getReportTemplates() {
+    const response = await this.api.get('/report-builder/templates');
+    return response.data;
+  }
+
+  async getReportTemplate(id: string) {
+    const response = await this.api.get(`/report-builder/templates/${id}`);
+    return response.data;
+  }
+
+  async updateReportTemplate(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/report-builder/templates/${id}`, data);
+    return response.data;
+  }
+
+  async deleteReportTemplate(id: string) {
+    const response = await this.api.delete(`/report-builder/templates/${id}`);
+    return response.data;
+  }
+
+  async generateReportFromTemplate(templateId: string, params?: Record<string, unknown>) {
+    const response = await this.api.post(`/report-builder/templates/${templateId}/generate`, params || {});
+    return response.data;
+  }
+
+  async exportReportFromTemplate(templateId: string, format: string) {
+    const response = await this.api.post(`/report-builder/templates/${templateId}/export`, { format });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Project Intake Forms
+  // -------------------------------------------------------------------------
+
+  async createIntakeForm(data: { name: string; description?: string; fields: any[] }) {
+    const response = await this.api.post('/intake/forms', data);
+    return response.data;
+  }
+
+  async getIntakeForms() {
+    const response = await this.api.get('/intake/forms');
+    return response.data;
+  }
+
+  async getIntakeForm(id: string) {
+    const response = await this.api.get(`/intake/forms/${id}`);
+    return response.data;
+  }
+
+  async updateIntakeForm(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/intake/forms/${id}`, data);
+    return response.data;
+  }
+
+  async deleteIntakeForm(id: string) {
+    const response = await this.api.delete(`/intake/forms/${id}`);
+    return response.data;
+  }
+
+  async submitIntakeForm(formId: string, values: Record<string, unknown>) {
+    const response = await this.api.post(`/intake/forms/${formId}/submit`, { values });
+    return response.data;
+  }
+
+  async getIntakeSubmissions(formId?: string, status?: string) {
+    const params: Record<string, string> = {};
+    if (formId) params.formId = formId;
+    if (status) params.status = status;
+    const response = await this.api.get('/intake/submissions', { params });
+    return response.data;
+  }
+
+  async getIntakeSubmission(id: string) {
+    const response = await this.api.get(`/intake/submissions/${id}`);
+    return response.data;
+  }
+
+  async reviewIntakeSubmission(id: string, data: { status: string; notes?: string }) {
+    const response = await this.api.post(`/intake/submissions/${id}/review`, data);
+    return response.data;
+  }
+
+  async convertIntakeToProject(submissionId: string) {
+    const response = await this.api.post(`/intake/submissions/${submissionId}/convert`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Global Search
+  // -------------------------------------------------------------------------
+
+  async search(q: string) {
+    const response = await this.api.get('/search', { params: { q } });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // API Keys
+  // -------------------------------------------------------------------------
+
+  async createApiKey(data: { name: string; scopes?: string[]; rateLimit?: number; expiresAt?: string }) {
+    const response = await this.api.post('/api-keys', data);
+    return response.data;
+  }
+
+  async listApiKeys() {
+    const response = await this.api.get('/api-keys');
+    return response.data;
+  }
+
+  async revokeApiKey(id: string) {
+    const response = await this.api.delete(`/api-keys/${id}`);
+    return response.data;
+  }
+
+  async getApiKeyUsage(id: string, since?: string) {
+    const response = await this.api.get(`/api-keys/${id}/usage`, { params: { since } });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Webhooks
+  // -------------------------------------------------------------------------
+
+  async createWebhook(data: { url: string; events: string[] }) {
+    const response = await this.api.post('/webhooks', data);
+    return response.data;
+  }
+
+  async listWebhooks() {
+    const response = await this.api.get('/webhooks');
+    return response.data;
+  }
+
+  async updateWebhook(id: string, data: { url?: string; events?: string[]; isActive?: boolean }) {
+    const response = await this.api.put(`/webhooks/${id}`, data);
+    return response.data;
+  }
+
+  async deleteWebhook(id: string) {
+    const response = await this.api.delete(`/webhooks/${id}`);
+    return response.data;
+  }
+
+  async testWebhook(id: string) {
+    const response = await this.api.post(`/webhooks/${id}/test`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Analytics Summary
+  // -------------------------------------------------------------------------
+
+  async getAnalyticsSummary() {
+    const response = await this.api.get('/analytics/summary');
+    return response.data;
+  }
+
+  async getProjectAnalyticsSummary(projectId: string) {
+    const response = await this.api.get(`/analytics/summary/project/${projectId}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Bulk Operations
+  // -------------------------------------------------------------------------
+
+  async bulkCreateTasks(scheduleId: string, tasks: any[]) {
+    const response = await this.api.post('/bulk/tasks', { scheduleId, tasks });
+    return response.data;
+  }
+
+  async bulkUpdateTasks(updates: Array<{ id: string; scheduleId: string; [key: string]: any }>) {
+    const response = await this.api.put('/bulk/tasks', { updates });
+    return response.data;
+  }
+
+  async bulkUpdateTaskStatus(scheduleId: string, taskIds: string[], status: string) {
+    const response = await this.api.put('/bulk/tasks/status', { scheduleId, taskIds, status });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Audit Ledger & Compliance
+  // -------------------------------------------------------------------------
+
+  async verifyAuditChain(projectId?: string) {
+    const params = projectId ? { projectId } : {};
+    const response = await this.api.get('/audit/verify', { params });
+    return response.data;
+  }
+
+  async getComplianceExport(projectId: string, format: 'csv' | 'pdf' = 'csv', from?: string, to?: string) {
+    const params: Record<string, string> = { format };
+    if (from) params.from = from;
+    if (to) params.to = to;
+    const response = await this.api.get(`/audit/${projectId}/compliance-export`, { params });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Policy Engine
+  // -------------------------------------------------------------------------
+
+  async getPolicies(projectId?: string) {
+    const params = projectId ? { projectId } : {};
+    const response = await this.api.get('/policies', { params });
+    return response.data;
+  }
+
+  async createPolicy(data: Record<string, unknown>) {
+    const response = await this.api.post('/policies', data);
+    return response.data;
+  }
+
+  async updatePolicy(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/policies/${id}`, data);
+    return response.data;
+  }
+
+  async deletePolicy(id: string) {
+    const response = await this.api.delete(`/policies/${id}`);
+    return response.data;
+  }
+
+  async getPolicyEvaluationStats(projectId?: string, since?: string) {
+    const params: Record<string, string> = {};
+    if (projectId) params.projectId = projectId;
+    if (since) params.since = since;
+    const response = await this.api.get('/policies/evaluations/stats', { params });
+    return response.data;
+  }
+
+  /** Generic request helper for one-off API calls */
+  async request(method: 'get' | 'post' | 'put' | 'delete', path: string, data?: unknown) {
+    const response = await this.api[method](path, data as any);
     return response.data;
   }
 }

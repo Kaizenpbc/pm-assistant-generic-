@@ -3,6 +3,8 @@
 import { ProjectService, type CreateProjectData } from './ProjectService';
 import { ScheduleService, type CreateTaskData } from './ScheduleService';
 import { UserService } from './UserService';
+import { auditLedgerService } from './AuditLedgerService';
+import { policyEngineService } from './PolicyEngineService';
 
 export interface ActionResult {
   success: boolean;
@@ -24,22 +26,66 @@ export class AIActionExecutor {
 
   async execute(toolName: string, input: Record<string, any>, context: ActionContext): Promise<ActionResult> {
     try {
+      // Policy gate for all AI actions
+      const policyResult = await policyEngineService.evaluate(`ai.action.${toolName}`, {
+        actorId: context.userId,
+        actorRole: context.userRole,
+        entityType: input.taskId ? 'task' : input.projectId ? 'project' : undefined,
+        entityId: input.taskId || input.projectId || input.scheduleId,
+        projectId: input.projectId,
+        data: { ...input, tool: toolName },
+      });
+
+      if (!policyResult.allowed) {
+        const blocked: ActionResult = {
+          success: false,
+          toolName,
+          summary: `Blocked by policy: ${policyResult.matchedPolicies.map(p => p.policyName).join(', ')}`,
+          error: 'Action blocked by policy',
+        };
+        auditLedgerService.append({
+          actorId: context.userId,
+          actorType: 'user',
+          action: `ai.action.${toolName}`,
+          entityType: input.taskId ? 'task' : input.projectId ? 'project' : 'unknown',
+          entityId: input.taskId || input.projectId || input.scheduleId || 'unknown',
+          payload: { input, result: blocked, policyBlock: policyResult.matchedPolicies },
+          source: 'api',
+        }).catch(() => {});
+        return blocked;
+      }
+
+      let result: ActionResult;
       switch (toolName) {
-        case 'create_task': return await this.createTask(input, context);
-        case 'update_task': return await this.updateTask(input, context);
-        case 'delete_task': return await this.deleteTask(input, context);
-        case 'create_project': return await this.createProject(input, context);
-        case 'update_project': return await this.updateProject(input, context);
-        case 'reschedule_task': return await this.rescheduleTask(input, context);
-        case 'list_projects': return await this.listProjects(context);
-        case 'get_project_details': return await this.getProjectDetails(input, context);
-        case 'list_tasks': return await this.listTasks(input, context);
-        case 'cascade_reschedule': return await this.cascadeReschedule(input, context);
-        case 'set_dependency': return await this.setDependency(input, context);
-        case 'get_dependency_chain': return await this.getDependencyChain(input, context);
+        case 'create_task': result = await this.createTask(input, context); break;
+        case 'update_task': result = await this.updateTask(input, context); break;
+        case 'delete_task': result = await this.deleteTask(input, context); break;
+        case 'create_project': result = await this.createProject(input, context); break;
+        case 'update_project': result = await this.updateProject(input, context); break;
+        case 'reschedule_task': result = await this.rescheduleTask(input, context); break;
+        case 'list_projects': result = await this.listProjects(context); break;
+        case 'get_project_details': result = await this.getProjectDetails(input, context); break;
+        case 'list_tasks': result = await this.listTasks(input, context); break;
+        case 'cascade_reschedule': result = await this.cascadeReschedule(input, context); break;
+        case 'set_dependency': result = await this.setDependency(input, context); break;
+        case 'get_dependency_chain': result = await this.getDependencyChain(input, context); break;
         default:
           return { success: false, toolName, summary: `Unknown tool: ${toolName}`, error: `Tool '${toolName}' is not recognized` };
       }
+
+      // Audit log every AI action
+      auditLedgerService.append({
+        actorId: context.userId,
+        actorType: 'user',
+        action: `ai.action.${toolName}`,
+        entityType: input.taskId ? 'task' : input.projectId ? 'project' : input.scheduleId ? 'schedule' : 'unknown',
+        entityId: input.taskId || input.projectId || input.scheduleId || result.data?.taskId || result.data?.projectId || 'unknown',
+        projectId: input.projectId || result.data?.projectId || null,
+        payload: { input, result: { success: result.success, summary: result.summary, data: result.data } },
+        source: 'api',
+      }).catch(() => {});
+
+      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return { success: false, toolName, summary: `Error executing ${toolName}: ${message}`, error: message };
@@ -443,8 +489,8 @@ export class AIActionExecutor {
     const downstreamList = downstream.map(d => ({
       id: d.id,
       name: d.name,
-      startDate: d.startDate?.toISOString().split('T')[0],
-      endDate: d.endDate?.toISOString().split('T')[0],
+      startDate: d.startDate,
+      endDate: d.endDate,
     }));
 
     return {

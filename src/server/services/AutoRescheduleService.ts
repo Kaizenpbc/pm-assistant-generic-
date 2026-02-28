@@ -4,6 +4,7 @@ import { claudeService } from './claudeService';
 import { config } from '../config';
 import { databaseService } from '../database/connection';
 import { v4 as uuidv4 } from 'uuid';
+import { auditLedgerService } from './AuditLedgerService';
 import {
   DelayedTask,
   ProposedChange,
@@ -335,7 +336,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
 
     // Log activity
     if (userId) {
-      this.scheduleService.logActivity(
+      await this.scheduleService.logActivity(
         scheduleId,
         userId,
         'System',
@@ -360,11 +361,11 @@ Please propose date changes to reschedule affected tasks with minimal disruption
     // Apply all proposed changes
     for (const change of proposal.proposedChanges) {
       await this.scheduleService.updateTask(change.taskId, {
-        startDate: new Date(change.proposedStartDate),
-        endDate: new Date(change.proposedEndDate),
+        startDate: change.proposedStartDate,
+        endDate: change.proposedEndDate,
       });
 
-      this.scheduleService.logActivity(
+      await this.scheduleService.logActivity(
         change.taskId,
         '1',
         'System',
@@ -373,6 +374,22 @@ Please propose date changes to reschedule affected tasks with minimal disruption
         `${change.currentStartDate} - ${change.currentEndDate}`,
         `${change.proposedStartDate} - ${change.proposedEndDate}`,
       );
+
+      auditLedgerService.append({
+        actorId: 'system',
+        actorType: 'system',
+        action: 'schedule.auto_reschedule',
+        entityType: 'task',
+        entityId: change.taskId,
+        projectId: null,
+        payload: {
+          proposalId,
+          before: { startDate: change.currentStartDate, endDate: change.currentEndDate },
+          after: { startDate: change.proposedStartDate, endDate: change.proposedEndDate },
+          reason: change.reason,
+        },
+        source: 'system',
+      }).catch(() => {});
     }
 
     try {

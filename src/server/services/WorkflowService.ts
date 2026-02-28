@@ -1,4 +1,5 @@
 import { Task, ScheduleService } from './ScheduleService';
+import { auditLedgerService } from './AuditLedgerService';
 
 export type TriggerType = 'status_change' | 'date_passed' | 'progress_threshold';
 export type ActionType = 'update_field' | 'log_activity' | 'send_notification';
@@ -122,20 +123,36 @@ export class WorkflowService {
    * Evaluate all enabled rules against a task change.
    * Returns list of executed actions.
    */
-  evaluateTaskChange(
+  async evaluateTaskChange(
     task: Task,
     oldTask: Task | null,
     scheduleService: ScheduleService,
-  ): WorkflowExecution[] {
+  ): Promise<WorkflowExecution[]> {
     const results: WorkflowExecution[] = [];
     const enabledRules = WorkflowService.rules.filter(r => r.enabled);
 
     for (const rule of enabledRules) {
       if (this.triggerMatches(rule.trigger, task, oldTask)) {
-        const result = this.executeAction(rule, task, scheduleService);
+        const result = await this.executeAction(rule, task, scheduleService);
         if (result) {
           WorkflowService.executions.push(result);
           results.push(result);
+
+          auditLedgerService.append({
+            actorId: 'system',
+            actorType: 'system',
+            action: 'workflow.action',
+            entityType: 'task',
+            entityId: task.id,
+            payload: {
+              ruleId: rule.id,
+              ruleName: rule.name,
+              trigger: rule.trigger,
+              actionType: result.actionType,
+              result: result.result,
+            },
+            source: 'system',
+          }).catch(() => {});
         }
       }
     }
@@ -169,11 +186,11 @@ export class WorkflowService {
     }
   }
 
-  private executeAction(
+  private async executeAction(
     rule: WorkflowRule,
     task: Task,
     scheduleService: ScheduleService,
-  ): WorkflowExecution | null {
+  ): Promise<WorkflowExecution | null> {
     const action = rule.action;
 
     switch (action.type) {
@@ -193,7 +210,7 @@ export class WorkflowService {
         return null;
       }
       case 'log_activity': {
-        scheduleService.logActivity(
+        await scheduleService.logActivity(
           task.id, '1', 'Workflow', 'workflow-action',
           undefined, undefined, action.message || rule.name
         );

@@ -1,4 +1,7 @@
+import { v4 as uuidv4 } from 'uuid';
+import { databaseService } from '../database/connection';
 import { ScheduleService } from './ScheduleService';
+import { auditLedgerService } from './AuditLedgerService';
 
 export interface Resource {
   id: string;
@@ -24,7 +27,7 @@ export interface WeeklyUtilization {
   weekStart: string;
   allocated: number;
   capacity: number;
-  utilization: number; // percentage
+  utilization: number;
 }
 
 export interface ResourceWorkload {
@@ -36,200 +39,170 @@ export interface ResourceWorkload {
   isOverAllocated: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Row mappers
+// ---------------------------------------------------------------------------
+
+function rowToResource(row: any): Resource {
+  let skills: string[] = [];
+  if (row.skills) {
+    try {
+      skills = typeof row.skills === 'string' ? JSON.parse(row.skills) : row.skills;
+    } catch { skills = []; }
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    email: row.email,
+    capacityHoursPerWeek: Number(row.capacity_hours_per_week),
+    skills,
+    isActive: Boolean(row.is_active),
+  };
+}
+
+function rowToAssignment(row: any): ResourceAssignment {
+  return {
+    id: row.id,
+    resourceId: row.resource_id,
+    taskId: row.task_id,
+    scheduleId: row.schedule_id,
+    hoursPerWeek: Number(row.hours_per_week),
+    startDate: String(row.start_date),
+    endDate: String(row.end_date),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
 export class ResourceService {
-  private static resources: Resource[] = [
-    {
-      id: 'res-1',
-      name: 'Alice Chen',
-      role: 'Project Manager',
-      email: 'alice.chen@example.com',
-      capacityHoursPerWeek: 40,
-      skills: ['Planning', 'Scheduling', 'Risk Management'],
-      isActive: true,
-    },
-    {
-      id: 'res-2',
-      name: 'Bob Martinez',
-      role: 'Lead Engineer',
-      email: 'bob.martinez@example.com',
-      capacityHoursPerWeek: 40,
-      skills: ['Structural Engineering', 'Design', 'Inspection'],
-      isActive: true,
-    },
-    {
-      id: 'res-3',
-      name: 'Carol Davis',
-      role: 'Site Supervisor',
-      email: 'carol.davis@example.com',
-      capacityHoursPerWeek: 45,
-      skills: ['Construction', 'Safety', 'Equipment'],
-      isActive: true,
-    },
-    {
-      id: 'res-4',
-      name: 'David Kim',
-      role: 'Software Developer',
-      email: 'david.kim@example.com',
-      capacityHoursPerWeek: 40,
-      skills: ['AWS', 'Docker', 'Node.js', 'React'],
-      isActive: true,
-    },
-    {
-      id: 'res-5',
-      name: 'Emily Johnson',
-      role: 'QA Engineer',
-      email: 'emily.j@example.com',
-      capacityHoursPerWeek: 40,
-      skills: ['Testing', 'Automation', 'Performance Testing'],
-      isActive: true,
-    },
-  ];
-
-  private static assignments: ResourceAssignment[] = [
-    {
-      id: 'asgn-1',
-      resourceId: 'res-1',
-      taskId: 'task-2',
-      scheduleId: 'sch-1',
-      hoursPerWeek: 20,
-      startDate: '2025-09-01',
-      endDate: '2026-06-30',
-    },
-    {
-      id: 'asgn-2',
-      resourceId: 'res-2',
-      taskId: 'task-2-2',
-      scheduleId: 'sch-1',
-      hoursPerWeek: 35,
-      startDate: '2026-01-01',
-      endDate: '2026-06-30',
-    },
-    {
-      id: 'asgn-3',
-      resourceId: 'res-3',
-      taskId: 'task-2-1',
-      scheduleId: 'sch-1',
-      hoursPerWeek: 40,
-      startDate: '2025-09-01',
-      endDate: '2025-12-31',
-    },
-    {
-      id: 'asgn-4',
-      resourceId: 'res-3',
-      taskId: 'task-3',
-      scheduleId: 'sch-1',
-      hoursPerWeek: 45,
-      startDate: '2026-07-01',
-      endDate: '2027-09-30',
-    },
-    {
-      id: 'asgn-5',
-      resourceId: 'res-4',
-      taskId: 'task-c2',
-      scheduleId: 'sch-2',
-      hoursPerWeek: 40,
-      startDate: '2026-03-01',
-      endDate: '2026-05-31',
-    },
-    {
-      id: 'asgn-6',
-      resourceId: 'res-4',
-      taskId: 'task-c3',
-      scheduleId: 'sch-2',
-      hoursPerWeek: 35,
-      startDate: '2026-06-01',
-      endDate: '2026-09-30',
-    },
-    {
-      id: 'asgn-7',
-      resourceId: 'res-5',
-      taskId: 'task-c4',
-      scheduleId: 'sch-2',
-      hoursPerWeek: 40,
-      startDate: '2026-10-01',
-      endDate: '2026-12-31',
-    },
-    {
-      id: 'asgn-8',
-      resourceId: 'res-1',
-      taskId: 'task-c1',
-      scheduleId: 'sch-2',
-      hoursPerWeek: 15,
-      startDate: '2026-01-15',
-      endDate: '2026-02-28',
-    },
-    {
-      id: 'asgn-9',
-      resourceId: 'res-2',
-      taskId: 'task-h2',
-      scheduleId: 'sch-3',
-      hoursPerWeek: 20,
-      startDate: '2026-09-01',
-      endDate: '2027-02-28',
-    },
-  ];
-
-  private get resources() { return ResourceService.resources; }
-  private get assignments() { return ResourceService.assignments; }
-
   // --- Resource CRUD ---
 
   async findAllResources(): Promise<Resource[]> {
-    return [...this.resources];
+    const rows = await databaseService.query('SELECT * FROM resources ORDER BY name');
+    return rows.map(rowToResource);
   }
 
   async findResourceById(id: string): Promise<Resource | null> {
-    return this.resources.find((r) => r.id === id) || null;
+    const rows = await databaseService.query('SELECT * FROM resources WHERE id = ?', [id]);
+    return rows.length > 0 ? rowToResource(rows[0]) : null;
   }
 
   async createResource(data: Omit<Resource, 'id'>): Promise<Resource> {
-    const resource: Resource = {
-      id: `res-${Math.random().toString(36).substr(2, 9)}`,
-      ...data,
-    };
-    ResourceService.resources.push(resource);
-    return resource;
+    const id = uuidv4();
+    await databaseService.query(
+      `INSERT INTO resources (id, name, role, email, capacity_hours_per_week, skills, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        data.name,
+        data.role,
+        data.email,
+        data.capacityHoursPerWeek,
+        JSON.stringify(data.skills || []),
+        data.isActive ? 1 : 0,
+      ],
+    );
+    return (await this.findResourceById(id))!;
   }
 
   async updateResource(id: string, data: Partial<Omit<Resource, 'id'>>): Promise<Resource | null> {
-    const idx = this.resources.findIndex((r) => r.id === id);
-    if (idx === -1) return null;
-    ResourceService.resources[idx] = { ...this.resources[idx], ...data };
-    return ResourceService.resources[idx];
+    const existing = await this.findResourceById(id);
+    if (!existing) return null;
+
+    const columnMap: Record<string, string> = {
+      name: 'name',
+      role: 'role',
+      email: 'email',
+      capacityHoursPerWeek: 'capacity_hours_per_week',
+      skills: 'skills',
+      isActive: 'is_active',
+    };
+
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    for (const [key, column] of Object.entries(columnMap)) {
+      if (key in data) {
+        let val = (data as any)[key];
+        if (key === 'skills') val = JSON.stringify(val || []);
+        if (key === 'isActive') val = val ? 1 : 0;
+        fields.push(`${column} = ?`);
+        values.push(val);
+      }
+    }
+
+    if (fields.length === 0) return existing;
+
+    values.push(id);
+    await databaseService.query(`UPDATE resources SET ${fields.join(', ')} WHERE id = ?`, values);
+    const updated = (await this.findResourceById(id))!;
+
+    auditLedgerService.append({
+      actorId: 'system',
+      actorType: 'system',
+      action: 'resource.update',
+      entityType: 'resource',
+      entityId: id,
+      payload: { before: existing, after: updated, changes: data },
+      source: 'web',
+    }).catch(() => {});
+
+    return updated;
   }
 
   async deleteResource(id: string): Promise<boolean> {
-    const idx = this.resources.findIndex((r) => r.id === id);
-    if (idx === -1) return false;
-    ResourceService.resources.splice(idx, 1);
-    ResourceService.assignments = ResourceService.assignments.filter((a) => a.resourceId !== id);
-    return true;
+    // resource_assignments has ON DELETE CASCADE
+    const result: any = await databaseService.query('DELETE FROM resources WHERE id = ?', [id]);
+    return (result.affectedRows ?? 0) > 0;
   }
 
   // --- Assignment CRUD ---
 
   async findAssignmentsBySchedule(scheduleId: string): Promise<ResourceAssignment[]> {
-    return this.assignments.filter((a) => a.scheduleId === scheduleId);
+    const rows = await databaseService.query(
+      'SELECT * FROM resource_assignments WHERE schedule_id = ?',
+      [scheduleId],
+    );
+    return rows.map(rowToAssignment);
   }
 
   async findAssignmentsByResource(resourceId: string): Promise<ResourceAssignment[]> {
-    return this.assignments.filter((a) => a.resourceId === resourceId);
+    const rows = await databaseService.query(
+      'SELECT * FROM resource_assignments WHERE resource_id = ?',
+      [resourceId],
+    );
+    return rows.map(rowToAssignment);
   }
 
   async createAssignment(data: Omit<ResourceAssignment, 'id'>): Promise<ResourceAssignment> {
-    const assignment: ResourceAssignment = {
-      id: `asgn-${Math.random().toString(36).substr(2, 9)}`,
-      ...data,
-    };
-    ResourceService.assignments.push(assignment);
+    const id = uuidv4();
+    await databaseService.query(
+      `INSERT INTO resource_assignments (id, resource_id, task_id, schedule_id, hours_per_week, start_date, end_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [id, data.resourceId, data.taskId, data.scheduleId, data.hoursPerWeek, data.startDate, data.endDate],
+    );
+    const rows = await databaseService.query('SELECT * FROM resource_assignments WHERE id = ?', [id]);
+    const assignment = rowToAssignment(rows[0]);
+
+    auditLedgerService.append({
+      actorId: 'system',
+      actorType: 'system',
+      action: 'resource.assign',
+      entityType: 'resource_assignment',
+      entityId: id,
+      payload: { after: assignment },
+      source: 'web',
+    }).catch(() => {});
+
     return assignment;
   }
 
   async deleteAssignment(id: string): Promise<boolean> {
-    const idx = this.assignments.findIndex((a) => a.id === id);
-    if (idx === -1) return false;
-    ResourceService.assignments.splice(idx, 1);
-    return true;
+    const result: any = await databaseService.query('DELETE FROM resource_assignments WHERE id = ?', [id]);
+    return (result.affectedRows ?? 0) > 0;
   }
 
   // --- Workload computation ---
@@ -237,10 +210,17 @@ export class ResourceService {
   async computeWorkload(projectId: string): Promise<ResourceWorkload[]> {
     const scheduleService = new ScheduleService();
     const schedules = await scheduleService.findByProjectId(projectId);
-    const scheduleIds = new Set(schedules.map((s) => s.id));
+    const scheduleIds = schedules.map((s) => s.id);
 
-    // Get all assignments for this project
-    const projectAssignments = this.assignments.filter((a) => scheduleIds.has(a.scheduleId));
+    if (scheduleIds.length === 0) return [];
+
+    // Get all assignments for this project's schedules
+    const placeholders = scheduleIds.map(() => '?').join(',');
+    const assignmentRows = await databaseService.query(
+      `SELECT * FROM resource_assignments WHERE schedule_id IN (${placeholders})`,
+      scheduleIds,
+    );
+    const projectAssignments = assignmentRows.map(rowToAssignment);
 
     // Determine date range
     const DAY_MS = 86_400_000;
@@ -254,7 +234,6 @@ export class ResourceService {
     }
 
     if (minDate === Infinity) {
-      // Default range if no assignments
       const now = Date.now();
       minDate = now;
       maxDate = now + 12 * WEEK_MS;
@@ -264,12 +243,10 @@ export class ResourceService {
     const startWeek = new Date(minDate);
     startWeek.setDate(startWeek.getDate() - ((startWeek.getDay() + 6) % 7));
 
-    // Generate week starts
     const weeks: Date[] = [];
     for (let t = startWeek.getTime(); t <= maxDate; t += WEEK_MS) {
       weeks.push(new Date(t));
     }
-    // Ensure at least 8 weeks
     while (weeks.length < 8) {
       const last = weeks[weeks.length - 1];
       weeks.push(new Date(last.getTime() + WEEK_MS));
@@ -281,7 +258,7 @@ export class ResourceService {
     const workloads: ResourceWorkload[] = [];
 
     for (const resId of involvedResourceIds) {
-      const resource = this.resources.find((r) => r.id === resId);
+      const resource = await this.findResourceById(resId);
       if (!resource) continue;
 
       const resAssignments = projectAssignments.filter((a) => a.resourceId === resId);
@@ -296,7 +273,6 @@ export class ResourceService {
         for (const a of resAssignments) {
           const aStart = new Date(a.startDate).getTime();
           const aEnd = new Date(a.endDate).getTime();
-          // Check if assignment overlaps this week
           if (aStart < weekEnd.getTime() && aEnd >= weekStart.getTime()) {
             allocated += a.hoursPerWeek;
           }

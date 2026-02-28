@@ -69,8 +69,8 @@ export async function projectRoutes(fastify: FastifyInstance) {
       const userId = (request as any).user.userId;
       const project = await projectService.create({
         ...data,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        startDate: data.startDate || undefined,
+        endDate: data.endDate || undefined,
         userId,
       });
       webhookService.dispatch('project.created', { project }, userId);
@@ -91,8 +91,8 @@ export async function projectRoutes(fastify: FastifyInstance) {
       const userId = (request as any).user.userId;
       const project = await projectService.update(id, {
         ...data,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        startDate: data.startDate || undefined,
+        endDate: data.endDate || undefined,
       }, userId);
       if (!project) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });

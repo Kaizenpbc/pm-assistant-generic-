@@ -1,3 +1,8 @@
+import { v4 as uuidv4 } from 'uuid';
+import { databaseService } from '../database/connection';
+import { auditLedgerService } from './AuditLedgerService';
+import { policyEngineService } from './PolicyEngineService';
+
 export interface Project {
   id: string;
   name: string;
@@ -12,12 +17,12 @@ export interface Project {
   location?: string;
   locationLat?: number;
   locationLon?: number;
-  startDate?: Date;
-  endDate?: Date;
+  startDate?: string;
+  endDate?: string;
   projectManagerId?: string;
   createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateProjectData {
@@ -32,132 +37,225 @@ export interface CreateProjectData {
   location?: string;
   locationLat?: number;
   locationLon?: number;
-  startDate?: Date;
-  endDate?: Date;
+  startDate?: Date | string;
+  endDate?: Date | string;
   userId: string;
 }
 
+function toDateStr(val: any): string | undefined {
+  if (!val) return undefined;
+  if (val instanceof Date) return val.toISOString().slice(0, 10);
+  return String(val).slice(0, 10);
+}
+
+function rowToProject(row: any): Project {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description ?? undefined,
+    category: row.category ?? undefined,
+    projectType: row.project_type,
+    status: row.status,
+    priority: row.priority,
+    budgetAllocated: row.budget_allocated != null ? Number(row.budget_allocated) : undefined,
+    budgetSpent: Number(row.budget_spent),
+    currency: row.currency,
+    location: row.location ?? undefined,
+    locationLat: row.location_lat != null ? Number(row.location_lat) : undefined,
+    locationLon: row.location_lon != null ? Number(row.location_lon) : undefined,
+    startDate: row.start_date ? String(row.start_date) : undefined,
+    endDate: row.end_date ? String(row.end_date) : undefined,
+    projectManagerId: row.project_manager_id ?? undefined,
+    createdBy: row.created_by,
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
 export class ProjectService {
-  private static projects: Project[] = [
-    {
-      id: '1',
-      name: 'Cloud Migration Project',
-      description: 'Migrate on-premise infrastructure to AWS cloud services',
-      category: 'technology',
-      projectType: 'it',
-      status: 'active',
-      priority: 'high',
-      budgetAllocated: 500000,
-      budgetSpent: 175000,
-      currency: 'USD',
-      location: 'New York, NY',
-      locationLat: 40.71,
-      locationLon: -74.01,
-      startDate: new Date('2026-01-15'),
-      endDate: new Date('2026-12-31'),
-      createdBy: '1',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: '2',
-      name: 'Highway 101 Expansion',
-      description: 'Widen Highway 101 from 4 to 6 lanes between Exit 12 and Exit 18',
-      category: 'transportation',
-      projectType: 'roads',
-      status: 'planning',
-      priority: 'high',
-      budgetAllocated: 8000000,
-      budgetSpent: 1200000,
-      currency: 'USD',
-      location: 'San Jose, CA',
-      locationLat: 37.34,
-      locationLon: -121.89,
-      startDate: new Date('2026-03-01'),
-      endDate: new Date('2028-06-30'),
-      createdBy: '1',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: '3',
-      name: 'Downtown Office Complex',
-      description: 'Construction of a 12-story mixed-use office and retail building',
-      category: 'commercial',
-      projectType: 'construction',
-      status: 'active',
-      priority: 'urgent',
-      budgetAllocated: 25000000,
-      budgetSpent: 8500000,
-      currency: 'USD',
-      location: 'Chicago, IL',
-      locationLat: 41.88,
-      locationLon: -87.63,
-      startDate: new Date('2025-06-01'),
-      endDate: new Date('2027-12-31'),
-      createdBy: '1',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ];
-
-  private get projects() { return ProjectService.projects; }
-
   async findById(id: string, userId?: string): Promise<Project | null> {
-    if (userId) {
-      return this.projects.find(p => p.id === id && p.createdBy === userId) || null;
-    }
-    return this.projects.find(p => p.id === id) || null;
+    const sql = userId
+      ? 'SELECT * FROM projects WHERE id = ? AND created_by = ?'
+      : 'SELECT * FROM projects WHERE id = ?';
+    const params = userId ? [id, userId] : [id];
+    const rows = await databaseService.query(sql, params);
+    return rows.length > 0 ? rowToProject(rows[0]) : null;
   }
 
   async findByUserId(userId: string): Promise<Project[]> {
-    return this.projects.filter(project => project.createdBy === userId);
+    const rows = await databaseService.query(
+      'SELECT * FROM projects WHERE created_by = ? ORDER BY created_at DESC',
+      [userId],
+    );
+    return rows.map(rowToProject);
   }
 
   async findAll(): Promise<Project[]> {
-    return this.projects;
+    const rows = await databaseService.query('SELECT * FROM projects ORDER BY created_at DESC');
+    return rows.map(rowToProject);
   }
 
   async create(data: CreateProjectData): Promise<Project> {
-    const project: Project = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: data.name,
-      description: data.description,
-      category: data.category,
-      projectType: data.projectType || 'other',
-      status: data.status || 'planning',
-      priority: data.priority || 'medium',
-      budgetAllocated: data.budgetAllocated,
-      budgetSpent: 0,
-      currency: data.currency || 'USD',
-      location: data.location,
-      locationLat: data.locationLat,
-      locationLon: data.locationLon,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      createdBy: data.userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    ProjectService.projects.push(project);
+    // Policy check
+    const policyResult = await policyEngineService.evaluate('project.create', {
+      actorId: data.userId,
+      entityType: 'project',
+      data: { budget_impact: data.budgetAllocated ?? 0 },
+    });
+    if (!policyResult.allowed) {
+      throw new Error(`Blocked by policy: ${policyResult.matchedPolicies.map(p => p.policyName).join(', ')}`);
+    }
+
+    const id = uuidv4();
+    await databaseService.query(
+      `INSERT INTO projects (id, name, description, category, project_type, status, priority,
+        budget_allocated, budget_spent, currency, location, location_lat, location_lon,
+        start_date, end_date, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        data.name,
+        data.description || null,
+        data.category || null,
+        data.projectType || 'other',
+        data.status || 'planning',
+        data.priority || 'medium',
+        data.budgetAllocated ?? null,
+        0,
+        data.currency || 'USD',
+        data.location || null,
+        data.locationLat ?? null,
+        data.locationLon ?? null,
+        toDateStr(data.startDate) || null,
+        toDateStr(data.endDate) || null,
+        data.userId,
+      ],
+    );
+    const project = (await this.findById(id))!;
+
+    auditLedgerService.append({
+      actorId: data.userId,
+      actorType: 'user',
+      action: 'project.create',
+      entityType: 'project',
+      entityId: id,
+      projectId: id,
+      payload: { after: project },
+      source: 'web',
+    }).catch(() => {});
+
     return project;
   }
 
   async update(id: string, data: Partial<Omit<Project, 'id' | 'createdBy' | 'createdAt' | 'updatedAt'>>, userId?: string): Promise<Project | null> {
-    const projectIndex = userId
-      ? this.projects.findIndex(p => p.id === id && p.createdBy === userId)
-      : this.projects.findIndex(p => p.id === id);
-    if (projectIndex === -1) return null;
-    ProjectService.projects[projectIndex] = { ...this.projects[projectIndex], ...data, updatedAt: new Date() };
-    return ProjectService.projects[projectIndex];
+    const existing = await this.findById(id, userId);
+    if (!existing) return null;
+
+    // Policy check
+    if (userId) {
+      const policyResult = await policyEngineService.evaluate('project.update', {
+        actorId: userId,
+        entityType: 'project',
+        entityId: id,
+        projectId: id,
+        data: { budget_impact: data.budgetAllocated ?? existing.budgetAllocated ?? 0, status: data.status },
+      });
+      if (!policyResult.allowed) {
+        throw new Error(`Blocked by policy: ${policyResult.matchedPolicies.map(p => p.policyName).join(', ')}`);
+      }
+    }
+
+    const columnMap: Record<string, string> = {
+      name: 'name',
+      description: 'description',
+      category: 'category',
+      projectType: 'project_type',
+      status: 'status',
+      priority: 'priority',
+      budgetAllocated: 'budget_allocated',
+      budgetSpent: 'budget_spent',
+      currency: 'currency',
+      location: 'location',
+      locationLat: 'location_lat',
+      locationLon: 'location_lon',
+      startDate: 'start_date',
+      endDate: 'end_date',
+      projectManagerId: 'project_manager_id',
+    };
+
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    for (const [key, column] of Object.entries(columnMap)) {
+      if (key in data) {
+        fields.push(`${column} = ?`);
+        let val = (data as any)[key];
+        if ((key === 'startDate' || key === 'endDate') && val) {
+          val = toDateStr(val);
+        }
+        values.push(val ?? null);
+      }
+    }
+
+    if (fields.length === 0) return existing;
+
+    values.push(id);
+    await databaseService.query(
+      `UPDATE projects SET ${fields.join(', ')} WHERE id = ?`,
+      values,
+    );
+    const updated = (await this.findById(id))!;
+
+    auditLedgerService.append({
+      actorId: userId || existing.createdBy,
+      actorType: 'user',
+      action: 'project.update',
+      entityType: 'project',
+      entityId: id,
+      projectId: id,
+      payload: { before: existing, after: updated, changes: data },
+      source: 'web',
+    }).catch(() => {});
+
+    return updated;
   }
 
   async delete(id: string, userId?: string): Promise<boolean> {
-    const projectIndex = userId
-      ? this.projects.findIndex(p => p.id === id && p.createdBy === userId)
-      : this.projects.findIndex(p => p.id === id);
-    if (projectIndex === -1) return false;
-    ProjectService.projects.splice(projectIndex, 1);
-    return true;
+    const existing = await this.findById(id, userId);
+
+    // Policy check
+    if (userId) {
+      const policyResult = await policyEngineService.evaluate('project.delete', {
+        actorId: userId,
+        entityType: 'project',
+        entityId: id,
+        projectId: id,
+      });
+      if (!policyResult.allowed) {
+        throw new Error(`Blocked by policy: ${policyResult.matchedPolicies.map(p => p.policyName).join(', ')}`);
+      }
+    }
+
+    const sql = userId
+      ? 'DELETE FROM projects WHERE id = ? AND created_by = ?'
+      : 'DELETE FROM projects WHERE id = ?';
+    const params = userId ? [id, userId] : [id];
+    const result: any = await databaseService.query(sql, params);
+    const deleted = (result.affectedRows ?? 0) > 0;
+
+    if (deleted && existing) {
+      auditLedgerService.append({
+        actorId: userId || existing.createdBy,
+        actorType: 'user',
+        action: 'project.delete',
+        entityType: 'project',
+        entityId: id,
+        projectId: id,
+        payload: { before: existing },
+        source: 'web',
+      }).catch(() => {});
+    }
+
+    return deleted;
   }
 }
