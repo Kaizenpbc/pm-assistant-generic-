@@ -30,6 +30,24 @@ import { stripeRoutes } from './routes/stripe';
 import { notificationRoutes } from './routes/notifications';
 import { agentRoutes } from './routes/agent';
 import { agentActivityLogRoutes } from './routes/agentActivityLog';
+import { fileAttachmentRoutes } from './routes/fileAttachments';
+import { timeEntryRoutes } from './routes/timeEntries';
+import { customFieldRoutes } from './routes/customFields';
+import { networkDiagramRoutes } from './routes/networkDiagram';
+import { burndownRoutes } from './routes/burndown';
+import { approvalWorkflowRoutes } from './routes/approvalWorkflows';
+import { portalRoutes } from './routes/portal';
+import { resourceLevelingRoutes } from './routes/resourceLeveling';
+import { integrationRoutes } from './routes/integrations';
+import { sprintRoutes } from './routes/sprints';
+import { reportBuilderRoutes } from './routes/reportBuilder';
+import { intakeFormRoutes } from './routes/intakeForms';
+import { searchRoutes } from './routes/search';
+import { apiKeyRoutes } from './routes/apiKeys';
+import { webhookRoutes } from './routes/webhooks';
+import { analyticsSummaryRoutes } from './routes/analyticsSummary';
+import { bulkRoutes } from './routes/bulk';
+import { mcpProxyRoutes } from './routes/mcpProxy';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
@@ -63,4 +81,22 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(notificationRoutes, { prefix: '/api/v1/notifications' });
   await fastify.register(agentRoutes, { prefix: '/api/v1/agent' });
   await fastify.register(agentActivityLogRoutes, { prefix: '/api/v1/agent-log' });
+  await fastify.register(fileAttachmentRoutes, { prefix: '/api/v1/attachments' });
+  await fastify.register(timeEntryRoutes, { prefix: '/api/v1/time-entries' });
+  await fastify.register(customFieldRoutes, { prefix: '/api/v1/custom-fields' });
+  await fastify.register(networkDiagramRoutes, { prefix: '/api/v1/network-diagram' });
+  await fastify.register(burndownRoutes, { prefix: '/api/v1/burndown' });
+  await fastify.register(approvalWorkflowRoutes, { prefix: '/api/v1/approvals' });
+  await fastify.register(portalRoutes, { prefix: '/api/v1/portal' });
+  await fastify.register(resourceLevelingRoutes, { prefix: '/api/v1/resource-leveling' });
+  await fastify.register(integrationRoutes, { prefix: '/api/v1/integrations' });
+  await fastify.register(sprintRoutes, { prefix: '/api/v1/sprints' });
+  await fastify.register(reportBuilderRoutes, { prefix: '/api/v1/report-builder' });
+  await fastify.register(intakeFormRoutes, { prefix: '/api/v1/intake' });
+  await fastify.register(searchRoutes, { prefix: '/api/v1/search' });
+  await fastify.register(apiKeyRoutes, { prefix: '/api/v1/api-keys' });
+  await fastify.register(webhookRoutes, { prefix: '/api/v1/webhooks' });
+  await fastify.register(analyticsSummaryRoutes, { prefix: '/api/v1/analytics' });
+  await fastify.register(bulkRoutes, { prefix: '/api/v1/bulk' });
+  await fastify.register(mcpProxyRoutes, { prefix: '/mcp' });
 }
