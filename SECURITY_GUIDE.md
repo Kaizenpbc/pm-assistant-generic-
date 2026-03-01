@@ -347,6 +347,8 @@ curl -X POST -H "Authorization: Bearer kpm_read_only_key" \
 | `src/server/services/PortalService.ts` | Portal token management |
 | `src/server/middleware/auth.ts` | JWT authentication middleware |
 | `src/server/routes/users.ts` | User management routes |
+| `mcp-server/src/oauth/provider.ts` | OAuth 2.1 authorization server (MCP transport) |
+| `mcp-server/src/oauth/clientsStore.ts` | OAuth client registration (MCP transport) |
 | `src/client/index.html` | Client-side security meta tags |
 | `src/client/src/services/securityService.ts` | Client-side security utilities |
 

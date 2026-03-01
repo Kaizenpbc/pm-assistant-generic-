@@ -452,8 +452,8 @@ Model Context Protocol server for Claude Desktop and Claude Web integration:
 | `search` | Search projects and tasks by keyword |
 | `get-portfolio` | Full portfolio overview |
 
-**Authentication:** API key via `Authorization: Bearer` header
-**Transport:** stdio (MCP SDK); HTTP reverse proxy support via `/mcp` route
+**Authentication:** API key (stdio transport); OAuth 2.1 with PKCE (HTTP transport)
+**Transport:** stdio (MCP SDK); HTTP reverse proxy via `/mcp` route with OAuth 2.1 authorization server
 
 ---
 

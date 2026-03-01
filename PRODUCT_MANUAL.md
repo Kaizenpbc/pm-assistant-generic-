@@ -570,6 +570,7 @@ The `WebhookService` allows registering outbound webhook endpoints that fire on 
 - **Registration**: username, email, password, full name
 - **Password reset**: token-based email flow via `EmailService`
 - **Session management**: refresh token rotation
+- **OAuth 2.1**: PKCE-based authorization for MCP HTTP transport (per-user access from Claude Desktop/Web)
 
 ### API Keys
 
