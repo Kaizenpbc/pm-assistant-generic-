@@ -1,854 +1,459 @@
 # AI Design Features - PM Assistant
 
-**Created:** February 7, 2026
-**LLM Provider:** Claude API (Anthropic)
-**Approach:** Retrofit into existing application — UI redesigned to be AI-centric
-**Architecture Principle:** Build foundational AI layer first, then layer capabilities on top
+**Last updated:** February 28, 2026
+**LLM Provider:** Claude API (Anthropic SDK)
+**Architecture:** Fastify + TypeScript backend, React frontend, MySQL database
+**AI Kill Switch:** `AI_ENABLED` environment variable disables all AI features globally
 
 ---
 
-## Priority Order Rationale
+## Overview
 
-Features are ordered by **developer build efficiency**:
-- Phase 0 establishes the new UI shell so every subsequent feature drops into the right layout
-- Foundation layers come first (everything else depends on them)
-- Each phase unlocks the next
-- External API integrations are abstracted early so they can be swapped
-- High-value PM features ship as soon as the foundation supports them
+PM Assistant embeds AI across the entire project management lifecycle. Every AI capability is powered by the Anthropic Claude SDK, with structured JSON output validated by Zod schemas. All features degrade gracefully when AI is unavailable -- the application remains fully functional without AI.
 
----
-
-## Phase 0: UI Architecture Redesign (AI-Centric)
-
-> Restructure the frontend layout so AI is the core interaction model, not a bolted-on modal.
-
-### Design Philosophy
-
-The current UI is **dashboard-table-centric**: a giant 18-column project table with 15+ scattered AI action buttons that open disconnected modals. The redesign makes **AI the primary interaction layer** — the assistant is always present, insights surface automatically, and data views support the AI rather than the other way around.
-
-**Principles:**
-- AI is ambient, not hidden behind clicks
-- Risks and insights surface proactively (push, not pull)
-- Every page is context-aware — the AI panel knows what you're looking at
-- Clean, focused layouts — remove button clutter, let AI handle complexity
-- Role-adaptive — Minister sees national view, PM sees project detail, Citizen sees public info
-
-### 0.1 New Application Shell & Layout
-
-**Current:** Simple header with action buttons, full-width content area, modals for everything.
-
-**New:** Three-column responsive layout:
-
-```
-+------------------+------------------------+--------------------+
-|                  |                        |                    |
-|    Sidebar Nav   |    Main Content        |   AI Panel         |
-|    (collapsible) |    (context pages)     |   (collapsible)    |
-|                  |                        |                    |
-|  - Dashboard     |                        |  - Chat input      |
-|  - Projects      |                        |  - Context cards   |
-|  - Risks         |                        |  - Quick actions   |
-|  - Reports       |                        |  - Suggestions     |
-|  - Settings      |                        |                    |
-|                  |                        |                    |
-+------------------+------------------------+--------------------+
-```
-
-**Responsive behavior:**
-- Desktop (>1280px): All three columns visible
-- Tablet (768-1280px): Sidebar collapsed to icons, AI panel as overlay
-- Mobile (<768px): Bottom nav, AI panel as full-screen sheet
-
-**Components:**
-- `AppLayout.tsx` — New root layout replacing current AppShell
-- `Sidebar.tsx` — Persistent navigation with role-based menu items
-- `AIChatPanel.tsx` — Always-visible AI assistant (replaces AIAssistant modal)
-- `TopBar.tsx` — Breadcrumbs, search, user menu, notification bell
-
-### 0.2 Redesigned Dashboard
-
-**Current:** 4 stat cards + 18-column sticky table + 15 action buttons in header.
-
-**New:** AI-first dashboard with layered information:
-
-```
-+------------------------------------------------------------------+
-|  AI Summary Banner                                                |
-|  "3 projects at risk this week. Region 5 bridge delayed by       |
-|   weather. Budget alert on Highway Project."                     |
-+------------------------------------------------------------------+
-|                                                                    |
-|  +------------------+ +------------------+ +------------------+   |
-|  | Risk Alerts (3)  | | Weather Forecast | | Budget Health    |   |
-|  | Critical: 1      | | Rain in Region 5 | | 2 over budget   |   |
-|  | High: 2          | | Clear elsewhere  | | 8 on track      |   |
-|  +------------------+ +------------------+ +------------------+   |
-|                                                                    |
-|  Active Projects                                    [+ New] [Grid/List] |
-|  +-------------+ +-------------+ +-------------+ +-------------+ |
-|  | Project Card | | Project Card | | Project Card | | Project Card | |
-|  | Progress bar | | Progress bar | | Progress bar | | Progress bar | |
-|  | Risk badge   | | Risk badge   | | Risk badge   | | Risk badge   | |
-|  | AI status    | | AI status    | | AI status    | | AI status   | |
-|  +-------------+ +-------------+ +-------------+ +-------------+ |
-+------------------------------------------------------------------+
-```
-
-**Key changes:**
-- Replace 18-column table with **project cards** (grid/list toggle)
-- AI Summary Banner at top — auto-generated, highlights what needs attention today
-- Prediction cards row — risks, weather, budget at a glance
-- Remove 15 scattered action buttons — those actions move to AI panel context menu
-- Each project card shows AI-generated health indicator and top risk
-
-**Components:**
-- `AISummaryBanner.tsx` — AI-generated daily briefing
-- `PredictionCards.tsx` — Row of forecast cards (risk, weather, budget)
-- `ProjectCardGrid.tsx` — Card-based project list (replaces table)
-- `ProjectCard.tsx` — Redesigned card with AI health indicator
-
-### 0.3 Redesigned Project Detail Page
-
-**Current:** 9 tabs (mostly placeholder), 4 context cards, 8 smart tool buttons.
-
-**New:** Focused layout with real AI content:
-
-```
-+------------------------------------------------------------------+
-|  Project Header: Name, Status, Health Score (AI), Key Dates      |
-+------------------------------------------------------------------+
-|  Tabs: Overview | Schedule | Risks & Predictions | Activity      |
-+------------------------------------------------------------------+
-|                                                                    |
-|  [Overview Tab]                                                   |
-|  +------------------+ +------------------+ +------------------+   |
-|  | Progress         | | Budget Forecast  | | Timeline Risk    |   |
-|  | 45% complete     | | Predicted: $1.2M | | 3 days late      |   |
-|  | AI: on track     | | AI: 12% over     | | AI: recoverable  |   |
-|  +------------------+ +------------------+ +------------------+   |
-|                                                                    |
-|  AI Insights Feed                                                 |
-|  - "Foundation phase completed 2 days early. Recommend pulling   |
-|     Phase 2 start date forward."                                 |
-|  - "Resource conflict: John assigned to 3 tasks next week."     |
-|  - "Weather risk: Heavy rain forecast Feb 15-22, affects         |
-|     outdoor tasks."                                              |
-+------------------------------------------------------------------+
-```
-
-**Tab changes:**
-| Current Tab | Action |
-|-------------|--------|
-| Overview | Keep — redesign with AI insight cards |
-| Schedule | Keep — add weather overlay and AI optimization suggestions |
-| RAID | Merge into → **Risks & Predictions** (AI-powered) |
-| Analytics | Merge into Overview cards |
-| Health | Merge into Overview header (health score badge) |
-| Resources | Move to AI panel context (ask "who is overloaded?") |
-| Risks | Merge into → **Risks & Predictions** |
-| Checklist | Move to AI panel (AI generates checklists on demand) |
-| AI Tasks | Remove — AI task breakdown available through AI panel |
-
-**Result:** 9 tabs → 4 tabs (Overview, Schedule, Risks & Predictions, Activity)
-
-**Components:**
-- `ProjectHeader.tsx` — Project name, status, AI health score badge
-- `AIInsightFeed.tsx` — Scrollable list of AI-generated observations
-- `ForecastCard.tsx` — Budget/timeline/resource prediction with confidence
-- `RiskPredictionPanel.tsx` — Risk register with AI severity scoring
-- `WeatherOverlay.tsx` — Weather forecast overlay on schedule Gantt chart
-
-### 0.4 AI Chat Panel (Persistent)
-
-**Current:** `AIAssistant.tsx` is a modal that opens per-action, no persistence, hardcoded responses.
-
-**New:** Always-visible side panel, context-aware, with real Claude responses:
-
-```
-+-----------------------------+
-|  AI Assistant        [_] [x]|
-+-----------------------------+
-|  Context: Dashboard         |
-|  Viewing: All Projects      |
-+-----------------------------+
-|                             |
-|  Bot: Good morning. 3       |
-|  projects need attention    |
-|  today. Region 5 bridge     |
-|  has a weather risk...      |
-|                             |
-|  You: What should I focus   |
-|  on today?                  |
-|                             |
-|  Bot: Based on your         |
-|  projects, I recommend:     |
-|  1. Review Region 5 delay   |
-|  2. Approve Phase 2 budget  |
-|  3. Check resource conflict |
-|     on Highway Project      |
-|                             |
-+-----------------------------+
-|  Quick Actions:             |
-|  [Create Project] [Report]  |
-|  [Risk Scan] [Optimize]     |
-+-----------------------------+
-|  Type a message...    [Send]|
-+-----------------------------+
-```
-
-**Features:**
-- Persists across page navigation (conversation continues)
-- Context-aware: knows which page/project you're viewing
-- Quick action buttons change based on context (dashboard vs project vs schedule)
-- Streaming responses (typewriter effect as Claude responds)
-- Can reference and link to specific projects, tasks, risks in responses
-- Conversation history saved per user (database-backed)
-- Collapsible to icon-only mode for more screen space
-
-**Components:**
-- `AIChatPanel.tsx` — Main panel container with collapse/expand
-- `AIChatMessages.tsx` — Message list with streaming support
-- `AIChatInput.tsx` — Input with send button and quick actions
-- `AIChatContext.tsx` — Context display bar (what page/project is active)
-- `QuickActions.tsx` — Context-sensitive action buttons
-
-### 0.5 Risk & Alert System UI
-
-**Current:** No persistent alert system. Risks are in a RAID tab that's mostly placeholder.
-
-**New:** Proactive alert system that surfaces risks without user action:
-
-```
-+--------------------------------------------------+
-|  🔴 Critical: Region 5 Bridge — weather delay     |  [View] [Dismiss]
-|  🟡 Warning: Highway Project — budget 87% spent   |  [View] [Dismiss]
-|  🔵 Info: 3 tasks completed ahead of schedule     |  [View] [Dismiss]
-+--------------------------------------------------+
-```
-
-**Features:**
-- Notification bell in top bar with unread count
-- Alert dropdown with categorized notifications (critical, warning, info)
-- Each alert links to the relevant project/task
-- AI-generated alert descriptions (not just "budget exceeded" but "budget at 87% with 40% work remaining — projected 15% overrun")
-- Alerts generated by background risk scanning (Phase 3)
-- User can dismiss, snooze, or escalate alerts
-
-**Components:**
-- `NotificationBell.tsx` — Top bar icon with unread count
-- `AlertDropdown.tsx` — Notification list dropdown
-- `AlertBanner.tsx` — Page-level critical alert banner
-- `AlertItem.tsx` — Single alert with actions
-
-### 0.6 Role-Adaptive Views
-
-**Current:** Same dashboard for all roles, some buttons hidden by role check.
-
-**New:** Fundamentally different experiences per role:
-
-**Minister View:**
-- National overview map with region health indicators
-- Cross-region comparison charts
-- AI-generated national briefing
-- Portfolio-level risk heat map
-- No project-level detail (drill down to region first)
-
-**REO View:**
-- Region-focused dashboard
-- Projects in their region only
-- Regional risk and weather forecasts
-- Citizen issue queue (future)
-- AI regional briefing
-
-**PM View:**
-- Project-focused dashboard (their assigned projects)
-- Detailed task and schedule management
-- AI assistant tuned for execution questions
-- Resource and budget tracking
-
-**Citizen View:**
-- Public region information
-- Project transparency (status, timeline)
-- Issue reporting (future)
-- No management capabilities
-
-**Components:**
-- `MinisterDashboard.tsx` — National overview with region map
-- `REODashboard.tsx` — Regional focus with project list
-- `PMDashboard.tsx` — Project execution focus
-- `CitizenPortal.tsx` — Public-facing information view
-- Dashboard router selects component based on `user.role`
-
-### 0.7 Report Views
-
-**Current:** No report pages exist.
-
-**New:** Dedicated report section for AI-generated reports:
-
-- Weekly/monthly status reports (auto-generated by AI)
-- Risk assessment reports
-- Budget forecast reports
-- Resource utilization reports
-- Export to PDF
-- Report scheduling (auto-generate every Monday)
-- Report history and comparison
-
-**Components:**
-- `ReportsPage.tsx` — Report list and generation
-- `ReportViewer.tsx` — View a generated report
-- `ReportScheduler.tsx` — Configure automatic report generation
-
-### 0.8 Design System Updates
-
-**Keep:**
-- Tailwind CSS (utility-first approach)
-- Lucide React icons
-- Blue/gray color palette
-- Responsive grid system
-
-**Add:**
-- CSS custom properties for theme tokens (prep for dark mode later)
-- Consistent spacing scale documented
-- AI-specific colors: confidence indicators (green/yellow/red gradient)
-- Streaming text animation styles
-- Skeleton loaders for AI loading states
-- Pulse/glow animation for new AI insights
-
-**New Tailwind config additions:**
-```js
-// AI-specific colors
-colors: {
-  ai: {
-    primary: '#6366f1',    // Indigo for AI elements
-    surface: '#eef2ff',    // Light indigo background
-    border: '#c7d2fe',     // Indigo border
-  },
-  confidence: {
-    high: '#22c55e',       // Green
-    medium: '#f59e0b',     // Amber
-    low: '#ef4444',        // Red
-  },
-  risk: {
-    critical: '#dc2626',
-    high: '#f97316',
-    medium: '#eab308',
-    low: '#22c55e',
-  }
-}
-```
+Key architectural components:
+- **Claude Service** (`claudeService.ts`) -- Core SDK integration with streaming, JSON schema mode, tool use, rate limiting, retry logic, and token tracking
+- **AI Context Builder** (`aiContextBuilder.ts`) -- Assembles rich project/portfolio context for every AI call from database records
+- **AI Action Executor** (`aiActionExecutor.ts`) -- Executes AI-recommended mutations (create/update tasks, projects) with policy-engine gating and audit logging
+- **AI Tool Definitions** (`aiToolDefinitions.ts`) -- Claude tool schemas for agentic tool-use in chat
+- **AI Usage Logger** (`aiUsageLogger.ts`) -- Tracks every AI request: tokens, cost, latency, success/failure
+- **Prompt Templates** -- Versioned `PromptTemplate` class with variable interpolation; all prompts are version-controlled, not hardcoded strings
+- **Agent Scheduler** (`AgentSchedulerService.ts`) -- Cron-based background AI analysis across all active projects
+- **MCP Server** (`mcp-server/`) -- Model Context Protocol server exposing 15+ tool categories to Claude Desktop and Claude Web
 
 ---
 
-## Phase 0 Deliverables Summary
+## 1. AI Chat
 
-| Component | Replaces | Purpose |
-|-----------|----------|---------|
-| `AppLayout.tsx` | `AppShell.tsx` | Three-column layout shell |
-| `Sidebar.tsx` | Header action buttons | Persistent navigation |
-| `TopBar.tsx` | Current header | Breadcrumbs, search, alerts, user menu |
-| `AIChatPanel.tsx` | `AIAssistant.tsx` modal | Always-visible AI assistant |
-| `AISummaryBanner.tsx` | — | AI daily briefing on dashboard |
-| `PredictionCards.tsx` | — | Risk/weather/budget forecast cards |
-| `ProjectCardGrid.tsx` | 18-column table | Card-based project list |
-| `AIInsightFeed.tsx` | — | Scrollable AI observations |
-| `NotificationBell.tsx` | — | Alert system with unread count |
-| `AlertDropdown.tsx` | — | Alert notification list |
-| `MinisterDashboard.tsx` | — | Role: national overview |
-| `REODashboard.tsx` | — | Role: regional focus |
-| `PMDashboard.tsx` | `DashboardPage.tsx` | Role: project execution |
-| `CitizenPortal.tsx` | `RegionInfoPage.tsx` | Role: public view |
-| `ReportsPage.tsx` | — | AI-generated reports |
-| `ForecastCard.tsx` | — | Prediction display with confidence |
-| `RiskPredictionPanel.tsx` | RAID tab | AI risk register |
-| `WeatherOverlay.tsx` | — | Weather on Gantt chart |
+**Service:** `AIChatService` (`aiChatService.ts`)
+**Endpoint:** `POST /api/ai/chat` (streaming via SSE)
 
-**Note:** Phase 0 builds the **shell and layout** with placeholder data. Real AI data flows in as Phases 1-5 are completed. This means the UI is ready to receive AI content the moment the backend produces it.
+A persistent, context-aware conversational assistant available throughout the application.
+
+**Capabilities:**
+- Streaming responses delivered via Server-Sent Events (typewriter effect)
+- Context-aware: knows which page and project the user is viewing (`dashboard`, `project`, `schedule`, `reports`, `general`)
+- Agentic tool use: Claude can call tools to create tasks, update projects, assign resources, and more -- all gated by the policy engine
+- Conversation history maintained per user with database persistence
+- Action results embedded in responses (e.g., "I created task X" with confirmation)
+- Conversation continues across page navigation
+
+**Tool-use flow:**
+1. User sends a message with optional context (project ID, page type)
+2. AIChatService builds project context via AIContextBuilder
+3. Claude receives the message with tool definitions from `aiToolDefinitions.ts`
+4. If Claude invokes a tool, AIActionExecutor runs the action with policy checks and audit logging
+5. Results stream back to the client via SSE
 
 ---
 
-## Phase 1: AI Foundation Layer (Build First)
+## 2. Auto-Rescheduling
 
-> Everything depends on this. No AI features work without it.
+**Service:** `AutoRescheduleService` (`AutoRescheduleService.ts`)
+**Endpoints:** `GET /api/auto-reschedule/delays/:scheduleId`, `POST /api/auto-reschedule/propose/:scheduleId`, `POST /api/auto-reschedule/apply/:proposalId`
 
-### 1.1 Claude API Integration Service
+Detects schedule delays and generates AI-powered reschedule proposals.
 
-**What:** A clean, reusable service layer for calling Claude API from the backend.
+**Capabilities:**
+- Scans tasks for delays by comparing actual progress to planned dates
+- Uses critical path analysis to assess downstream impact
+- Claude generates reschedule proposals with per-task date adjustments
+- Each proposal includes rationale, estimated impact (original vs proposed end date, days change, critical path effect)
+- Proposals are persisted to the database with status tracking (`pending`, `accepted`, `rejected`)
+- Users review and accept/reject proposals; accepted proposals apply date changes automatically
+- Integrated with audit ledger for accountability
 
-**Why first:** Every AI feature in Phases 2-5 calls through this layer. Build it once, use it everywhere.
+---
 
-**Details:**
-- Anthropic SDK integration (`@anthropic-ai/sdk`)
-- Configuration: API key, model selection, token limits, temperature via environment variables
-- Request/response abstraction so the LLM provider can be swapped later (Claude today, OpenAI tomorrow)
-- Structured output parsing (JSON mode for reliable data extraction)
-- Prompt template management system (versioned prompts stored as templates, not hardcoded strings)
-- Rate limiting and retry logic with exponential backoff
-- Token usage tracking and cost monitoring per request
-- Streaming support for long-running AI responses
-- Error handling with graceful fallbacks (if AI is down, app still works)
+## 3. Natural Language Queries
 
-**Config additions:**
+**Service:** `NLQueryService` (`NLQueryService.ts`)
+**Endpoint:** `POST /api/ai/nl-query`
+
+Ask questions about projects in plain English, get answers with auto-generated charts.
+
+**Capabilities:**
+- Two-phase AI pipeline:
+  1. **Tool-loop phase:** Claude uses read-only tools (`list_projects`, `get_project_details`, `get_evm_metrics`, `get_critical_path`, `get_resource_workload`, `aggregate_portfolio_stats`) to gather real data
+  2. **Structuring phase:** A second Claude call formats the answer into structured JSON with markdown text, chart specifications, and follow-up suggestions
+- Chart types: bar, line, pie, horizontal bar -- rendered client-side
+- Follow-up question suggestions for drill-down exploration
+- All answers grounded in real data; no hallucinated numbers
+
+---
+
+## 4. Meeting Intelligence
+
+**Service:** `MeetingIntelligenceService` (`MeetingIntelligenceService.ts`)
+**Endpoint:** `POST /api/meetings/analyze`
+
+Upload meeting notes or transcripts; AI extracts action items and updates tasks.
+
+**Capabilities:**
+- Accepts plain-text meeting transcripts
+- Claude analyzes against existing tasks and resources for context
+- Extracts: action items, responsible parties, deadlines, decisions made, key discussion points
+- Maps extracted items to existing tasks (updates) or creates new tasks
+- Matches assignees to known resources by name and role
+- Confidence scoring on each extraction
+- Validates output against `MeetingAIResponseSchema`
+
+---
+
+## 5. Lessons Learned
+
+**Service:** `LessonsLearnedService` (`LessonsLearnedService.ts`)
+**Endpoint:** `POST /api/lessons-learned/extract`, `POST /api/lessons-learned/patterns`, `POST /api/lessons-learned/mitigate`
+
+AI-driven pattern recognition across projects with mitigation suggestions.
+
+**Capabilities:**
+- **Lesson extraction:** Analyzes project and schedule data to extract actionable lessons categorized by type (schedule, budget, resource, risk, technical, communication, stakeholder, quality) with positive/negative impact classification
+- **Pattern detection:** Cross-project analysis identifies recurring patterns with frequency counts and strategic recommendations
+- **Mitigation suggestions:** For identified patterns, generates specific mitigation strategies
+- Confidence scoring on all outputs
+- Evidence-based: observations drawn from actual project data, not generic advice
+
+---
+
+## 6. Task Prioritization
+
+**Service:** `TaskPrioritizationService` (`TaskPrioritizationService.ts`)
+**Endpoint:** `POST /api/task-prioritization/:projectId/:scheduleId`
+
+AI-ranked task importance combining algorithmic scoring with Claude analysis.
+
+**Capabilities:**
+- Gathers task data, critical path results, and delay detection
+- Algorithmic scoring based on: critical path membership, delay severity, dependency count, float/slack
+- Claude provides qualitative AI reasoning for each priority assignment
+- Priority tiers: urgent (76-100), high (51-75), medium (26-50), low (0-25)
+- Output: prioritized task list with scores, factors, and AI explanations
+- Validated against `PrioritizationAIResponseSchema`
+
+---
+
+## 7. Predictive Intelligence
+
+**Service:** `predictiveIntelligence.ts`
+**Endpoints:** `GET /api/predictions/risks/:projectId`, `GET /api/predictions/weather/:projectId`, `GET /api/predictions/budget/:projectId`, `GET /api/predictions/dashboard`
+
+Multi-factor risk forecasting and health scoring.
+
+**Capabilities:**
+- **Risk assessment:** AI-powered risk analysis combining schedule variance, budget utilization, task completion rates, and overdue counts into severity-scored risk items with suggested mitigations
+- **Weather impact:** Integrates with pluggable weather data providers to predict outdoor task delays; Claude maps weather conditions to task sensitivity
+- **Budget forecasting:** EVM-based (CPI, SPI, EAC, ETC) cost predictions with AI-interpreted narrative explaining trends and corrective actions
+- **Dashboard predictions:** Aggregated portfolio-level health predictions across all active projects
+- All outputs validated against Zod schemas (`AIRiskAssessmentSchema`, `AIWeatherImpactSchema`, `AIBudgetForecastSchema`, `AIDashboardPredictionsSchema`)
+
+**Deterministic helpers (no AI required):**
+- `computeEVMMetrics()` -- Pure math EVM calculations
+- `computeDeterministicRiskScore()` -- Algorithmic risk scoring as baseline
+
+---
+
+## 8. Anomaly Detection
+
+**Service:** `AnomalyDetectionService` (`anomalyDetectionService.ts`)
+**Endpoint:** `GET /api/anomalies`
+
+Identifies unusual patterns in project data and explains their significance.
+
+**Capabilities:**
+- Algorithmic detection of anomalies: sudden completion rate drops, unusual budget spending patterns, stalled tasks, projects with no activity
+- Computes metrics from project context: completion rate, budget utilization, overdue tasks, days elapsed/remaining
+- Claude provides root-cause analysis, enhanced descriptions, prioritized recommendations, and overall health trend assessment (improving/stable/deteriorating)
+- Portfolio-wide scanning across all active projects
+
+---
+
+## 9. Cross-Project Intelligence
+
+**Service:** `CrossProjectIntelligenceService` (`crossProjectIntelligenceService.ts`)
+**Endpoint:** `GET /api/cross-project-intelligence`
+
+Strategic insights spanning the entire project portfolio.
+
+**Capabilities:**
+- Detects resource conflicts across projects
+- Identifies budget reallocation candidates (underspent projects that could fund overspent ones)
+- Finds similar projects and extracts lessons learned from successful approaches
+- Claude generates strategic portfolio-level recommendations
+- EVM metrics computed per project for portfolio comparison
+
+---
+
+## 10. What-If Scenarios
+
+**Service:** `WhatIfScenarioService` (`whatIfScenarioService.ts`)
+**Endpoint:** `POST /api/scenarios`
+
+Scenario modeling with cascading impact analysis.
+
+**Capabilities:**
+- User describes a scenario in natural language (e.g., "What if we add 3 more developers?" or "What if the budget is cut by 20%?")
+- Numeric parameters applied deterministically as a baseline
+- Claude models cascading effects on schedule, budget, resources, and risk profile
+- Impact analysis covers: downstream task dependencies, resource reallocation needs, risk profile changes, external factors
+- Confidence scoring (0.5-0.9) on scenario outcomes
+- Output validated against `AIScenarioResultSchema`
+
+---
+
+## 11. Proactive Alerts
+
+**Service:** `ProactiveAlertService` (`proactiveAlertService.ts`)
+**Endpoint:** `GET /api/proactive-alerts`
+
+Auto-generated warnings based on real-time project data analysis.
+
+**Alert types:**
+- `overdue_task` -- Tasks past their due date
+- `budget_threshold` -- Budget utilization at 90%+ (warning) or 100%+ (critical)
+- `stalled_task` -- In-progress tasks with no activity
+- `resource_overload` -- Resources over-allocated
+- `approaching_deadline` -- Projects nearing end dates with insufficient progress
+
+**Each alert includes:**
+- Severity level (info, warning, critical)
+- Descriptive title and explanation with real numbers
+- Suggested action with tool name and parameters (actionable by AI chat)
+
+---
+
+## 12. AI Report Synthesis
+
+**Service:** `AIReportService` (`aiReportService.ts`)
+**Endpoint:** `POST /api/reports/generate`
+
+AI-generated executive summaries and status reports.
+
+**Report types:**
+- `weekly-status` -- Weekly project status summary
+- `risk-assessment` -- Risk analysis report
+- `budget-forecast` -- Budget projection report
+- `resource-utilization` -- Resource allocation report
+
+**Capabilities:**
+- Builds full project context via AIContextBuilder
+- Claude generates narrative reports tailored to the data
+- Reports include AI-generated insights, not just data dumps
+- Each report tracked with token count and generation metadata
+
+---
+
+## 13. AI Task Breakdown
+
+**Service:** `ClaudeTaskBreakdownService` (`aiTaskBreakdownClaude.ts`)
+**Endpoint:** `POST /api/ai/analyze-project`
+
+AI-powered project decomposition into tasks with durations and dependencies.
+
+**Capabilities:**
+- PM describes project in natural language
+- Claude generates tailored task breakdown specific to the project (not generic templates)
+- Estimates durations, suggests dependencies, assigns complexity and risk levels
+- Uses project context from AIContextBuilder when available
+- Falls back to `FallbackTaskBreakdownService` (keyword-based templates) when AI is unavailable
+- Output validated against `AIProjectAnalysisSchema`
+
+---
+
+## 14. AI Project Creation
+
+**Service:** `AIProjectCreatorService` (`aiProjectCreator.ts`)
+**Endpoint:** `POST /api/ai/create-project`
+
+Natural language project setup: describe a project, get a fully structured project with schedule and tasks.
+
+**Capabilities:**
+- User provides a plain-English project description
+- Chains AI task breakdown to generate the full work breakdown structure
+- Automatically creates: project record, schedule, all tasks with dependencies and durations
+- Derives project name, dates, budget estimates from the AI analysis
+- Returns the complete project structure for immediate use
+
+---
+
+## 15. Resource Optimization
+
+**Service:** `ResourceOptimizerService` (`ResourceOptimizerService.ts`)
+**Endpoints:** `GET /api/resource-optimizer/bottlenecks/:projectId`, `POST /api/resource-optimizer/rebalance/:projectId`
+
+AI-suggested resource rebalancing and bottleneck prediction.
+
+**Capabilities:**
+- **Bottleneck prediction:** Scans resource workloads for upcoming weeks, detects over-allocation periods and burnout risks
+- **Capacity forecasting:** Projects weekly capacity vs demand, identifies gaps
+- **Skill matching:** Matches available resources to task requirements by skills
+- **Rebalancing suggestions:** Claude generates specific reassignment recommendations with effort levels and priorities
+- Output validated against `ResourceForecastResultSchema` and `RebalanceSuggestionSchema`
+
+---
+
+## 16. EVM Forecasting
+
+**Service:** `EVMForecastService` (`EVMForecastService.ts`)
+**Endpoint:** `GET /api/evm-forecast/:projectId`
+
+AI-enhanced Earned Value Management predictions.
+
+**Capabilities:**
+- Computes standard EVM metrics from S-curve data: CPI, SPI, EAC, ETC, VAC, TCPI
+- Tracks historical weekly CPI/SPI trends
+- Detects early warnings (cost overrun trending, schedule slippage, TCPI exceeding thresholds)
+- Traditional forecasting methods (cumulative CPI, composite CPI/SPI, 3-period moving average)
+- Claude analyzes all metrics and provides:
+  - 4-week CPI/SPI predictions with trend direction
+  - AI-adjusted EAC with confidence range
+  - Cost overrun probability estimate
+  - Corrective action recommendations with effort and priority
+  - Narrative summary in plain language
+- Output validated against `EVMForecastAIResponseSchema`
+
+---
+
+## 17. Monte Carlo Simulation
+
+**Service:** `MonteCarloService` (`MonteCarloService.ts`)
+**Endpoint:** `POST /api/monte-carlo/:scheduleId`
+
+Probabilistic schedule simulation for completion date confidence intervals.
+
+**Capabilities:**
+- Pure computational service (no AI required)
+- Configurable iterations (default: 10,000)
+- Supports PERT and triangular distribution models for task duration uncertainty
+- Configurable uncertainty factor per task based on status, complexity, and risk
+- Forward-pass network simulation respecting task dependencies (via critical path service)
+- Outputs: P50/P80/P90 completion dates, histogram bins, sensitivity analysis (which tasks most affect duration), criticality index (how often each task lands on the critical path)
+
+---
+
+## AI Scheduling Services
+
+**Service:** `aiSchedulingClaude.ts`
+**Endpoints:** `POST /api/ai/dependencies`, `POST /api/ai/optimize-schedule`, `POST /api/ai/insights`
+
+Three AI-powered scheduling capabilities:
+
+- **Dependency Detection:** Claude reads all tasks in a project and identifies logical dependencies (finish-to-start, start-to-start, finish-to-finish) with confidence scores and reasoning
+- **Schedule Optimization:** Analyzes current schedule for inefficiencies and suggests task reordering, resource leveling, fast-tracking, and compression opportunities
+- **Project Insights:** AI-generated health analysis with trends, risks, strengths, and actionable recommendations
+
+All outputs validated against Zod schemas (`AIDependencyResponseSchema`, `AIScheduleOptimizationSchema`, `AIProjectInsightsSchema`).
+
+---
+
+## AI Learning System
+
+**Service:** `AILearningServiceV2` (`aiLearningService.ts`)
+
+Persistent learning from user feedback on AI suggestions.
+
+**Capabilities:**
+- Records user feedback on AI predictions: accepted, modified, or rejected
+- Tracks actual vs estimated values (duration, cost, risk) after completion
+- Computes accuracy reports with mean variance, bias direction, and sample counts per metric type
+- Claude analyzes accuracy reports and suggests calibration improvements
+- Database-backed persistence (`ai_feedback`, `ai_accuracy_tracking` tables)
+
+---
+
+## Architecture: Supporting Infrastructure
+
+### Claude Service (`claudeService.ts`)
+
+The core integration layer for all AI features:
+
+- Anthropic SDK (`@anthropic-ai/sdk`) with configurable model, max tokens, and temperature
+- **Completion modes:** standard text, JSON schema (structured output with Zod validation), streaming (SSE chunks), and tool-use (agentic loops)
+- Versioned prompt templates with `{{variable}}` interpolation
+- Rate limiting and retry with exponential backoff
+- Request timeout (30s default)
+- Token usage tracking with per-model cost calculation (supports Sonnet, Haiku, Opus pricing)
+- Graceful degradation: `isAvailable()` check guards all AI features
+
+**Configuration:**
 ```
 ANTHROPIC_API_KEY=
 AI_MODEL=claude-sonnet-4-5-20250929
 AI_MAX_TOKENS=4096
 AI_TEMPERATURE=0.3
-AI_ENABLED=true  # Kill switch to disable all AI features
+AI_ENABLED=true
 ```
 
-**Database additions:**
-```sql
-CREATE TABLE ai_usage_log (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36),
-    feature VARCHAR(100),        -- e.g., 'task_breakdown', 'risk_assessment'
-    model VARCHAR(100),
-    input_tokens INT,
-    output_tokens INT,
-    cost_estimate DECIMAL(10,6),
-    latency_ms INT,
-    success BOOLEAN,
-    error_message TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+### AI Context Builder (`aiContextBuilder.ts`)
 
-### 1.2 AI Context Builder
+Assembles rich context for every AI call:
 
-**What:** A service that assembles rich project context for every AI call.
+- `buildProjectContext(projectId)` -- Pulls project metadata, schedules, tasks, team, budget into a `ProjectContext` object
+- `buildPortfolioContext()` -- Aggregates all projects into a `PortfolioContext` for cross-project features
+- `toPromptString(context)` -- Serializes context into a compact string for prompt injection
+- Keeps token usage efficient by structuring data compactly
 
-**Why:** Claude gives better answers when it understands the full project. Every AI feature needs project context.
+### AI Action Executor (`aiActionExecutor.ts`)
 
-**Details:**
-- Pulls project metadata, tasks, schedules, team, budget, history into a structured context object
-- Compresses context intelligently to fit token limits (summarize old data, keep recent data detailed)
-- Builds role-aware context (PM sees different AI insights than Minister)
-- Caches assembled context to avoid redundant DB queries
-- Includes region-specific context (local conditions, regulatory requirements)
+Executes AI-recommended mutations safely:
 
-### 1.3 External Data Provider Abstraction
+- Supports: `create_task`, `update_task`, `create_project`, `update_project`, and more
+- Every action passes through the **policy engine** for role-based authorization
+- Every action is recorded in the **audit ledger** for accountability
+- Returns structured `ActionResult` with success/failure, summary, and data
 
-**What:** A pluggable adapter pattern for external data sources (weather, economics, supply chain).
+### AI Usage Logger (`aiUsageLogger.ts`)
 
-**Why:** AI predictions are only as good as their input data. Build the abstraction now so any data source can plug in later.
+Tracks all AI API usage for cost monitoring:
 
-**Details:**
-- `DataProvider` interface: `{ fetchData(params): Promise<ExternalData> }`
-- Weather provider adapter (pluggable - OpenWeatherMap, WeatherAPI, AccuWeather, or any provider)
-- Placeholder adapters for future sources (supply chain, economic indicators, resource markets)
-- Response normalization (every provider returns the same shape)
-- Caching layer (weather doesn't change every second)
-- Fallback behavior when external APIs are unavailable
-- Configuration per provider (API keys, refresh intervals, region mappings)
+- Logs: user, feature name, model, input/output tokens, cost estimate, latency, success/failure
+- Per-model pricing tables (Sonnet, Haiku, Opus)
+- Database-backed (`ai_usage_log` table)
 
-**Config additions:**
-```
-WEATHER_API_PROVIDER=openweathermap  # or weatherapi, accuweather, etc.
-WEATHER_API_KEY=
-WEATHER_CACHE_MINUTES=60
-```
+### Agent Scheduler (`AgentSchedulerService.ts`)
 
-**Database additions:**
-```sql
-CREATE TABLE external_data_cache (
-    id VARCHAR(36) PRIMARY KEY,
-    provider VARCHAR(100),
-    data_type VARCHAR(100),      -- 'weather_forecast', 'supply_price', etc.
-    region_id VARCHAR(36),
-    query_params JSON,
-    response_data JSON,
-    fetched_at TIMESTAMP,
-    expires_at TIMESTAMP,
-    INDEX idx_provider_type (provider, data_type),
-    INDEX idx_region (region_id),
-    INDEX idx_expires (expires_at)
-);
-```
+Cron-based background AI analysis:
+
+- Runs on configurable schedule (`AGENT_CRON_SCHEDULE`)
+- Scans all active projects for: delays (AutoRescheduleService), EVM forecasts, Monte Carlo simulations
+- Generates notifications and webhook events for detected issues
+- Logs all agent activity via `AgentActivityLogService`
+- Controlled by `AGENT_ENABLED` environment variable
+
+### MCP Server (`mcp-server/`)
+
+Model Context Protocol server for Claude Desktop and Claude Web integration:
+
+**15 tool categories:**
+| Category | File | Description |
+|----------|------|-------------|
+| Projects | `projects.ts` | CRUD operations on projects |
+| Tasks | `tasks.ts` | Task management |
+| Schedules | `schedules.ts` | Schedule operations |
+| Resources | `resources.ts` | Resource management |
+| Sprints | `sprints.ts` | Sprint planning and tracking |
+| Reports | `reports.ts` | Report generation |
+| Time Tracking | `time-tracking.ts` | Time entry management |
+| Auto-Reschedule | `auto-reschedule.ts` | Delay detection and proposals |
+| AI Insights | `ai-insights.ts` | AI analysis endpoints |
+| Approvals | `approvals.ts` | Approval workflows |
+| Custom Fields | `custom-fields.ts` | Custom field management |
+| Intake | `intake.ts` | Project intake forms |
+| Integrations | `integrations.ts` | External integrations |
+| Templates | `templates.ts` | Project templates |
+| Admin | `admin.ts` | Administrative operations |
+
+**Authentication:** OAuth 2.1 with per-user token management
+**Transport:** HTTP with reverse proxy support via `/mcp` route
 
 ---
 
-## Phase 2: Replace Fake AI with Real AI
-
-> Retrofit existing "AI" features with actual Claude-powered intelligence.
-
-### 2.1 Intelligent Task Breakdown (Replace Current Stub)
-
-**What:** Replace the keyword-matching + hardcoded templates with Claude-powered project analysis.
-
-**Current state:** `aiTaskBreakdown.ts` uses `string.includes()` and returns from 6 hardcoded template lists.
-
-**New behavior:**
-- PM describes project in natural language
-- Claude analyzes description, asks clarifying questions if needed
-- Generates tailored task breakdown specific to THIS project (not generic templates)
-- Estimates durations based on project context, team size, complexity
-- Suggests dependencies based on actual task relationships
-- Assigns complexity and risk levels with reasoning
-- Considers region-specific factors (climate, regulations, logistics)
-- Output validated against Zod schema before returning to client
-
-**Prompt strategy:** System prompt includes project management best practices, PMBOK framework, and construction/infrastructure domain knowledge relevant to government projects.
-
-### 2.2 Smart Dependency Detection (Replace Current Stub)
-
-**What:** Replace hardcoded "planning before design" rules with context-aware dependency analysis.
-
-**Current state:** `generateDependencySuggestions()` uses hardcoded category keyword rules.
-
-**New behavior:**
-- Claude reads all tasks in a project and identifies logical dependencies
-- Considers resource sharing (same person can't do two tasks simultaneously)
-- Identifies critical path and flags it
-- Explains WHY each dependency exists (not just "planning before design")
-- Suggests parallel tracks where tasks can run concurrently
-- Detects circular dependency risks before they happen
-
-### 2.3 Schedule Optimization (Replace Current Stub)
-
-**What:** Implement the completely stubbed `optimizeSchedule()` endpoint.
-
-**Current state:** Returns empty arrays with a TODO comment.
-
-**New behavior:**
-- Analyzes current schedule for inefficiencies
-- Identifies resource over-allocation and suggests leveling
-- Finds schedule compression opportunities (fast-tracking, crashing)
-- Suggests task reordering to reduce total project duration
-- Considers resource availability and constraints
-- Provides before/after comparison with improvement metrics
-- Claude explains each optimization recommendation
-
-### 2.4 Project Insights (Replace Current Stub)
-
-**What:** Implement the completely stubbed `generateProjectInsights()` endpoint.
-
-**Current state:** Returns empty objects with a TODO comment.
-
-**New behavior:**
-- Analyzes project health based on task completion rates, budget burn, and schedule variance
-- Generates natural language summary of project status
-- Identifies trends (is the project accelerating or decelerating?)
-- Compares against similar past projects if historical data exists
-- Provides actionable recommendations (not just "project is behind")
-- Risk indicators with severity and suggested mitigations
-
----
-
-## Phase 3: Predictive Intelligence (New Capabilities)
-
-> This is where the app starts doing things no traditional PM tool can do.
-
-### 3.1 Risk Prediction Engine
-
-**What:** Proactive risk identification and scoring using AI + external data.
-
-**Why:** PMs currently discover risks reactively. This flips it to proactive.
-
-**Details:**
-- Continuous background risk scanning for active projects
-- Multi-factor risk scoring:
-  - **Schedule risk:** Tasks behind schedule, dependency chain fragility, critical path slack
-  - **Resource risk:** Overallocation, single points of failure, skill gaps
-  - **Budget risk:** Burn rate vs. progress, cost variance trends
-  - **External risk:** Weather impact on outdoor work, supply chain delays
-  - **Scope risk:** Requirement changes, task additions mid-project
-- Claude synthesizes all risk factors into prioritized risk register
-- Risk evolution tracking (is a risk growing or shrinking?)
-- Automated risk alerts when thresholds are crossed
-- Suggested mitigation strategies for each risk
-
-**Database additions:**
-```sql
-CREATE TABLE ai_risk_assessments (
-    id VARCHAR(36) PRIMARY KEY,
-    project_id VARCHAR(36) NOT NULL,
-    risk_type ENUM('schedule', 'resource', 'budget', 'weather', 'supply_chain', 'scope', 'quality', 'external'),
-    severity ENUM('low', 'medium', 'high', 'critical'),
-    probability DECIMAL(3,2),        -- 0.00 to 1.00
-    impact_score INT,                -- 1-100
-    overall_risk_score INT,          -- 1-100 (probability x impact)
-    title VARCHAR(255),
-    description TEXT,
-    affected_tasks JSON,             -- Array of task IDs
-    data_sources JSON,               -- What data informed this risk
-    ai_reasoning TEXT,               -- Claude's explanation
-    suggested_mitigations JSON,      -- Array of mitigation strategies
-    status ENUM('identified', 'monitoring', 'mitigating', 'resolved', 'accepted') DEFAULT 'identified',
-    identified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    resolved_at TIMESTAMP NULL,
-    FOREIGN KEY (project_id) REFERENCES projects(id),
-    INDEX idx_project_severity (project_id, severity),
-    INDEX idx_status (status),
-    INDEX idx_risk_score (overall_risk_score DESC)
-);
-```
-
-### 3.2 Weather Impact Analysis
-
-**What:** Correlate weather forecasts with project schedules to predict delays.
-
-**Details:**
-- Fetch weather forecasts for project regions via pluggable weather API
-- Identify outdoor/weather-sensitive tasks (construction, surveying, transport)
-- Claude analyzes which tasks are affected by upcoming weather conditions
-- Predict delay days based on weather severity and task type
-- Suggest schedule adjustments (move indoor tasks forward during bad weather)
-- Historical weather pattern analysis for long-term planning
-- Configurable weather sensitivity per task type (heavy rain stops concrete pouring, light rain doesn't stop painting indoors)
-
-**Output example:**
-```json
-{
-  "project": "Region 5 Bridge Construction",
-  "weather_risks": [
-    {
-      "period": "Feb 15-22",
-      "condition": "Heavy rainfall (120mm expected)",
-      "affected_tasks": ["Foundation Pouring", "Steel Erection"],
-      "estimated_delay_days": 5,
-      "recommendation": "Accelerate indoor prefab work this week, reschedule foundation pour to Feb 23",
-      "confidence": 0.78
-    }
-  ]
-}
-```
-
-### 3.3 Resource Conflict Prediction
-
-**What:** Detect and predict resource bottlenecks before they happen.
-
-**Details:**
-- Analyze resource allocation across ALL projects (not just one)
-- Detect when the same person/team is over-committed in future weeks
-- Predict skill shortages based on upcoming task requirements
-- Suggest resource rebalancing across projects
-- "What happens if Person X is unavailable for 2 weeks?" scenario modeling
-- Flag single points of failure (only one person can do a critical task)
-
-### 3.4 Budget Overrun Forecasting
-
-**What:** Predict budget outcomes based on spending patterns and progress.
-
-**Details:**
-- Track actual vs. planned spending over time
-- Calculate Earned Value metrics (CPI, SPI, EAC, ETC) and have Claude interpret them
-- Predict final project cost based on current burn rate and remaining work
-- Identify cost drivers (which tasks are over budget and why)
-- Compare against similar completed projects
-- Early warning when a project is trending toward overrun
-- Suggest corrective actions (reduce scope, increase efficiency, reallocate budget)
-
----
-
-## Phase 4: AI-Powered PM Workflows
-
-> Automate the tedious parts of project management.
-
-### 4.1 Natural Language Project Creation
-
-**What:** PM describes project in plain English, AI creates the full project structure.
-
-**Details:**
-- Conversational interface: "Build a 2km road in Region 3, budget $500K, needs to be done by December"
-- Claude creates: project record, phases, task breakdown, schedule, dependencies, milestones
-- PM reviews and adjusts before confirming
-- Learns from PM's adjustments to improve future suggestions
-- Handles follow-up: "Actually, add a drainage component too"
-
-### 4.2 AI Status Report Generator
-
-**What:** Automatically generate weekly/monthly project status reports.
-
-**Details:**
-- Pulls all project data (task progress, budget, risks, recent activity)
-- Claude generates executive summary tailored to audience:
-  - Minister: high-level, multi-region summary
-  - REO: regional detail with action items
-  - PM: detailed technical status with blockers
-- Highlights what changed since last report
-- Includes risk callouts and recommended actions
-- Export to PDF/email format
-
-### 4.3 Meeting Notes to Tasks
-
-**What:** Upload meeting notes or minutes, AI extracts action items and creates tasks.
-
-**Details:**
-- Accept text input (paste meeting notes) or file upload
-- Claude identifies: action items, owners, deadlines, decisions made
-- Maps action items to existing projects and creates tasks
-- Links related tasks and updates dependencies
-- Flags items that don't map to any existing project (new project needed?)
-
-### 4.4 Conversational Project Query ("Ask Your Project")
-
-**What:** PMs can ask questions about their projects in natural language.
-
-**Details:**
-- "Which tasks are at risk this week?"
-- "Who is overloaded right now?"
-- "What's blocking the foundation work?"
-- "Compare Region 3 vs Region 7 project progress"
-- "What should I focus on today?"
-- Context-aware: Claude knows the PM's projects, role, and region
-- Can drill down: "Tell me more about that risk" (maintains conversation context)
-- Backed by real data queries, not hallucinated answers
-
-**Database additions:**
-```sql
-CREATE TABLE ai_conversations (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,
-    project_id VARCHAR(36),          -- NULL for cross-project queries
-    context_type ENUM('project', 'portfolio', 'region', 'system'),
-    messages JSON,                    -- Array of {role, content, timestamp}
-    token_count INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    INDEX idx_user (user_id),
-    INDEX idx_project (project_id)
-);
-```
-
----
-
-## Phase 5: Learning & Advanced Intelligence
-
-> The system gets smarter over time.
-
-### 5.1 Historical Learning System (Replace Current Stub)
-
-**What:** Replace the in-memory-only learning stub with real persistent learning.
-
-**Current state:** `aiLearning.ts` never saves data, all methods return original values unchanged.
-
-**New behavior:**
-- Persist all PM feedback on AI suggestions (accepted, modified, rejected)
-- Track actual vs. estimated task durations after project completion
-- Build accuracy profiles per project type, region, and team
-- Feed historical patterns back into AI prompts for better predictions
-- Dashboard showing AI accuracy metrics over time
-
-**Database additions:**
-```sql
-CREATE TABLE ai_feedback (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,
-    project_id VARCHAR(36),
-    feature VARCHAR(100),            -- 'task_breakdown', 'risk_prediction', etc.
-    suggestion_data JSON,            -- What the AI suggested
-    user_action ENUM('accepted', 'modified', 'rejected'),
-    modified_data JSON,              -- What the user changed it to (if modified)
-    feedback_text TEXT,              -- Optional user comment
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    INDEX idx_feature (feature),
-    INDEX idx_action (user_action)
-);
-
-CREATE TABLE ai_accuracy_tracking (
-    id VARCHAR(36) PRIMARY KEY,
-    project_id VARCHAR(36) NOT NULL,
-    task_id VARCHAR(36),
-    metric_type ENUM('duration_estimate', 'cost_estimate', 'risk_prediction', 'dependency_accuracy'),
-    predicted_value DECIMAL(10,2),
-    actual_value DECIMAL(10,2),
-    variance_pct DECIMAL(5,2),
-    project_type VARCHAR(100),
-    region_id VARCHAR(36),
-    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES projects(id),
-    INDEX idx_metric (metric_type),
-    INDEX idx_project_type (project_type),
-    INDEX idx_region (region_id)
-);
-```
-
-### 5.2 What-If Scenario Modeling
-
-**What:** PMs can model scenarios and see predicted outcomes.
-
-**Details:**
-- "What if we add 3 more workers to Region 5?"
-- "What if the budget is cut by 20%?"
-- "What if monsoon season extends 2 weeks?"
-- "What if we delay Phase 2 by a month?"
-- Claude models the cascading effects across tasks, schedule, budget, and resources
-- Side-by-side comparison of scenarios
-- Saves scenarios for review and decision-making
-
-### 5.3 Cross-Project Intelligence
-
-**What:** AI insights across the entire project portfolio.
-
-**Details:**
-- Detect resource conflicts between projects in the same region
-- Identify projects that could share resources or learnings
-- Portfolio-level risk heat map
-- Budget reallocation suggestions across projects
-- "Project X succeeded with this approach, Project Y (similar scope) should consider the same"
-- Minister-level dashboard: AI-generated national project health summary
-
-### 5.4 Anomaly Detection
-
-**What:** Automatically detect unusual patterns that might indicate problems.
-
-**Details:**
-- Sudden drop in task completion rate
-- Unusual budget spending patterns (spike or flatline)
-- Tasks that keep getting rescheduled
-- Projects where no one has logged activity in X days
-- Cost anomalies compared to similar projects
-- Claude explains what the anomaly might mean and recommends investigation
-
----
-
-## Summary: Build Order & Dependencies
-
-```
-Phase 0 (UI Redesign)
-========================
-0.1 App Shell & Layout ----+
-0.2 Dashboard Redesign     |
-0.3 Project Detail Redesign|---> Ready to receive AI data
-0.4 AI Chat Panel          |
-0.5 Alert System UI        |
-0.6 Role-Adaptive Views    |
-0.7 Report Views           |
-0.8 Design System Updates -+
-
-        |
-        v
-
-Phase 1 (Foundation)          Phase 2 (Replace Stubs)       Phase 3 (Predictions)
-========================      ========================      ========================
-1.1 Claude API Service   ---> 2.1 Task Breakdown       ---> 3.1 Risk Engine
-1.2 Context Builder      ---> 2.2 Dependency Detection  ---> 3.2 Weather Impact
-1.3 Data Provider Layer  ---> 2.3 Schedule Optimization ---> 3.3 Resource Prediction
-                              2.4 Project Insights      ---> 3.4 Budget Forecasting
-
-Phase 4 (Workflows)           Phase 5 (Learning)
-========================      ========================
-4.1 NL Project Creation       5.1 Historical Learning
-4.2 Status Reports            5.2 What-If Scenarios
-4.3 Meeting -> Tasks          5.3 Cross-Project Intel
-4.4 Ask Your Project          5.4 Anomaly Detection
-```
-
-**Phase 0** builds the UI shell with placeholder data — can run in parallel with Phase 1.
-**Phase 1** must be complete before Phases 2-5.
-**Phases 2-4** can be worked on in parallel once Phase 1 is done.
-**Phase 5** benefits from data accumulated during Phases 2-4.
-
----
-
-## Non-Functional Requirements (All Phases)
-
-- **Graceful degradation:** If Claude API is down, app works normally without AI features
-- **Cost control:** Token budget per user/project, usage dashboard for admins
-- **Latency:** AI responses should target <5s for interactive features, background tasks can be async
-- **Privacy:** No sensitive project data sent to AI without user consent configuration
-- **Audit trail:** Every AI interaction logged (who asked, what context, what was returned)
-- **Prompt versioning:** All prompts version-controlled, A/B testable
-- **Feature flags:** Each AI feature can be toggled independently
+## Non-Functional Requirements
+
+- **Graceful degradation:** All AI features check `claudeService.isAvailable()` before calling the API. When unavailable, fallback logic provides non-AI responses or the feature is skipped.
+- **Cost control:** Every AI request is logged with token counts and cost estimates. Per-model pricing is tracked automatically.
+- **Latency:** Interactive features target sub-5-second responses. Background agent tasks run asynchronously on cron schedules.
+- **Audit trail:** Every AI interaction is logged (who asked, what context, what was returned). Mutating actions go through the policy engine and audit ledger.
+- **Schema validation:** All AI outputs are validated against Zod schemas before being returned to clients, preventing malformed or hallucinated data from reaching the UI.
+- **Prompt versioning:** All prompts use the `PromptTemplate` class with semantic version numbers.
+- **Feature flags:** AI is globally controlled by `AI_ENABLED`; the agent scheduler by `AGENT_ENABLED`. Individual features degrade independently.
