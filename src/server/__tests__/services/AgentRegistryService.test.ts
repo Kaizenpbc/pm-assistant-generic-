@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
+import { resolveTemplates } from '../../services/DagWorkflowService';
 
 // Mock dependencies before importing the registry
 vi.mock('../../database/connection', () => ({
@@ -193,5 +194,152 @@ describe('AgentRegistry', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unknown capability');
     });
+  });
+});
+
+// ── resolveTemplates ──────────────────────────────────────────────────────
+
+describe('resolveTemplates', () => {
+  const task = { id: 'task-1', name: 'My Task', status: 'in_progress', progressPercentage: 50 } as any;
+  const nodeOutputs: Record<string, any> = {
+    'node-a': { agentOutput: { forecast: 42, details: { confidence: 0.95 } }, durationMs: 100 },
+  };
+
+  it('resolves {{task.id}} from task context', () => {
+    const result = resolveTemplates({ taskId: '{{task.id}}' }, {}, task);
+    expect(result.taskId).toBe('task-1');
+  });
+
+  it('resolves {{task.name}} preserving string type', () => {
+    const result = resolveTemplates({ label: '{{task.name}}' }, {}, task);
+    expect(result.label).toBe('My Task');
+  });
+
+  it('resolves {{nodes.<id>.agentOutput.field}} from node outputs', () => {
+    const result = resolveTemplates(
+      { value: '{{nodes.node-a.agentOutput.forecast}}' },
+      nodeOutputs,
+      null,
+    );
+    expect(result.value).toBe(42);
+  });
+
+  it('resolves deeply nested node output paths', () => {
+    const result = resolveTemplates(
+      { conf: '{{nodes.node-a.agentOutput.details.confidence}}' },
+      nodeOutputs,
+      null,
+    );
+    expect(result.conf).toBe(0.95);
+  });
+
+  it('does mixed string interpolation', () => {
+    const result = resolveTemplates(
+      { msg: 'Project {{task.name}} is {{task.status}}' },
+      {},
+      task,
+    );
+    expect(result.msg).toBe('Project My Task is in_progress');
+  });
+
+  it('preserves non-template values unchanged', () => {
+    const result = resolveTemplates(
+      { plain: 'hello', num: 42, nested: { keep: true } },
+      {},
+      task,
+    );
+    expect(result).toEqual({ plain: 'hello', num: 42, nested: { keep: true } });
+  });
+
+  it('leaves unresolved templates as-is', () => {
+    const result = resolveTemplates(
+      { missing: '{{nodes.unknown.value}}', also: '{{task.nonexistent}}' },
+      {},
+      task,
+    );
+    expect(result.missing).toBe('{{nodes.unknown.value}}');
+    expect(result.also).toBe('{{task.nonexistent}}');
+  });
+
+  it('handles null task gracefully', () => {
+    const result = resolveTemplates({ x: '{{task.id}}' }, {}, null);
+    expect(result.x).toBe('{{task.id}}');
+  });
+});
+
+// ── Output piping (integration-style) ────────────────────────────────────
+
+describe('Output piping via resolveTemplates', () => {
+  it('chains output from one node into input of another', () => {
+    const nodeOutputs: Record<string, any> = {};
+
+    // Simulate first node completing
+    nodeOutputs['step-1'] = { agentOutput: { scheduleId: 'sched-99' }, durationMs: 50 };
+
+    // Second node resolves templates referencing first node
+    const input = resolveTemplates(
+      { scheduleId: '{{nodes.step-1.agentOutput.scheduleId}}' },
+      nodeOutputs,
+      null,
+    );
+    expect(input.scheduleId).toBe('sched-99');
+  });
+
+  it('supports multiple node references in one input', () => {
+    const nodeOutputs: Record<string, any> = {
+      'a': { agentOutput: { x: 1 } },
+      'b': { agentOutput: { y: 2 } },
+    };
+    const input = resolveTemplates(
+      { x: '{{nodes.a.agentOutput.x}}', y: '{{nodes.b.agentOutput.y}}' },
+      nodeOutputs,
+      null,
+    );
+    expect(input.x).toBe(1);
+    expect(input.y).toBe(2);
+  });
+});
+
+// ── Retry logic (unit-style) ─────────────────────────────────────────────
+
+describe('Agent retry logic', () => {
+  it('succeeds on first try with 0 retries', async () => {
+    const handler = vi.fn().mockResolvedValue({ result: 'ok' });
+    agentRegistry.clear();
+    agentRegistry.register(makeCapability({ id: 'retry-test-v1', handler }));
+
+    const result = await agentRegistry.invoke('retry-test-v1', { value: 'hi' }, ctx);
+    expect(result.success).toBe(true);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('simulates fail-then-succeed pattern used by retry loop', async () => {
+    const handler = vi.fn()
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockResolvedValueOnce({ result: 'recovered' });
+    agentRegistry.clear();
+    agentRegistry.register(makeCapability({ id: 'retry-sim-v1', handler }));
+
+    // First call fails
+    const r1 = await agentRegistry.invoke('retry-sim-v1', { value: 'hi' }, ctx);
+    expect(r1.success).toBe(false);
+
+    // Second call succeeds (simulating retry)
+    const r2 = await agentRegistry.invoke('retry-sim-v1', { value: 'hi' }, ctx);
+    expect(r2.success).toBe(true);
+    expect(r2.output).toEqual({ result: 'recovered' });
+  });
+
+  it('all retries exhausted yields failure', async () => {
+    const handler = vi.fn().mockRejectedValue(new Error('permanent'));
+    agentRegistry.clear();
+    agentRegistry.register(makeCapability({ id: 'retry-fail-v1', handler }));
+
+    // Simulate 3 attempts all failing
+    for (let i = 0; i < 3; i++) {
+      const r = await agentRegistry.invoke('retry-fail-v1', { value: 'hi' }, ctx);
+      expect(r.success).toBe(false);
+    }
+    expect(handler).toHaveBeenCalledTimes(3);
   });
 });

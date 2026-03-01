@@ -130,6 +130,70 @@ function rowToNodeExec(r: any): WorkflowNodeExecution {
   };
 }
 
+// ── Template resolution ────────────────────────────────────────────────────
+
+/**
+ * Replace `{{source.path}}` patterns in an input object with runtime values.
+ * - `{{task.field}}` → value from the triggering task
+ * - `{{nodes.<nodeId>.path}}` → value from a previous node's output
+ * If the entire string is a single template, the resolved type is preserved.
+ * Mixed strings do string interpolation. Unresolved templates remain as-is.
+ */
+export function resolveTemplates(
+  input: Record<string, any>,
+  nodeOutputs: Record<string, any>,
+  task: Task | null,
+): Record<string, any> {
+  const clone = JSON.parse(JSON.stringify(input));
+
+  function resolvePath(source: Record<string, any> | null, path: string[]): any {
+    if (!source) return undefined;
+    let current: any = source;
+    for (const key of path) {
+      if (current == null || typeof current !== 'object') return undefined;
+      current = current[key];
+    }
+    return current;
+  }
+
+  function resolveToken(token: string): any {
+    if (token.startsWith('task.')) {
+      return resolvePath(task as any, token.slice(5).split('.'));
+    }
+    if (token.startsWith('nodes.')) {
+      const parts = token.slice(6).split('.');
+      const nodeId = parts[0];
+      return resolvePath(nodeOutputs[nodeId] ?? null, parts.slice(1));
+    }
+    return undefined;
+  }
+
+  function walk(obj: any): any {
+    if (typeof obj === 'string') {
+      // Check if the entire string is a single template
+      const singleMatch = obj.match(/^\{\{(.+?)\}\}$/);
+      if (singleMatch) {
+        const resolved = resolveToken(singleMatch[1]);
+        return resolved !== undefined ? resolved : obj;
+      }
+      // Mixed string interpolation
+      return obj.replace(/\{\{(.+?)\}\}/g, (full, token) => {
+        const resolved = resolveToken(token);
+        return resolved !== undefined ? String(resolved) : full;
+      });
+    }
+    if (Array.isArray(obj)) return obj.map(walk);
+    if (obj && typeof obj === 'object') {
+      for (const key of Object.keys(obj)) {
+        obj[key] = walk(obj[key]);
+      }
+    }
+    return obj;
+  }
+
+  return walk(clone);
+}
+
 // ── Service ────────────────────────────────────────────────────────────────
 
 class DagWorkflowService {
@@ -419,13 +483,19 @@ class DagWorkflowService {
     const adjacency = this.buildAdjacencyList(def);
     const visited = new Set<string>();
 
-    // Gather already-completed nodes
+    // Rebuild nodeOutputs from completed node executions
+    const nodeOutputs: Record<string, any> = {};
     for (const ne of exec.nodeExecutions) {
+      if (ne.status === 'completed' && ne.outputData) {
+        nodeOutputs[ne.nodeId] = ne.outputData;
+      }
       if (ne.status === 'completed') visited.add(ne.nodeId);
     }
+    // Include the just-resumed node's result
+    nodeOutputs[nodeId] = result;
     visited.add(nodeId);
 
-    await this.advanceExecution(executionId, nodeId, def, adjacency, visited, task, scheduleService);
+    await this.advanceExecution(executionId, nodeId, def, adjacency, visited, task, scheduleService, nodeOutputs);
 
     return this.getExecution(executionId);
   }
@@ -517,8 +587,9 @@ class DagWorkflowService {
     // Build adjacency & advance
     const adjacency = this.buildAdjacencyList(def);
     const visited = new Set<string>([triggerNode.id]);
+    const nodeOutputs: Record<string, any> = {};
 
-    await this.advanceExecution(execId, triggerNode.id, def, adjacency, visited, task, scheduleService);
+    await this.advanceExecution(execId, triggerNode.id, def, adjacency, visited, task, scheduleService, nodeOutputs);
 
     // Check final status
     const exec = await this.getExecution(execId);
@@ -552,6 +623,7 @@ class DagWorkflowService {
     visited: Set<string>,
     task: Task | null,
     scheduleService: ScheduleService,
+    nodeOutputs: Record<string, any>,
   ): Promise<void> {
     const outEdges = adjacency.get(fromNodeId) || [];
     if (outEdges.length === 0) {
@@ -581,7 +653,7 @@ class DagWorkflowService {
       if (!targetNode) continue;
 
       visited.add(edge.targetNodeId);
-      await this.executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService);
+      await this.executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService, nodeOutputs);
     }
   }
 
@@ -593,6 +665,7 @@ class DagWorkflowService {
     visited: Set<string>,
     task: Task | null,
     scheduleService: ScheduleService,
+    nodeOutputs: Record<string, any>,
   ): Promise<void> {
     const nodeExecId = uuidv4();
     await databaseService.query(
@@ -605,10 +678,14 @@ class DagWorkflowService {
       switch (node.nodeType) {
         case 'condition': {
           const condResult = this.evaluateCondition(node.config, task);
+          const condOutput = { result: condResult };
+          nodeOutputs[node.id] = condOutput;
           await databaseService.query(
             `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
-            [JSON.stringify({ result: condResult }), nodeExecId],
+            [JSON.stringify(condOutput), nodeExecId],
           );
+          // Persist nodeOutputs to execution context
+          await this.persistNodeOutputs(execId, nodeOutputs);
           // Only follow edges matching the condition result
           const outEdges = adjacency.get(node.id) || [];
           for (const edge of outEdges) {
@@ -620,13 +697,15 @@ class DagWorkflowService {
             const targetNode = def.nodes.find(n => n.id === edge.targetNodeId);
             if (!targetNode) continue;
             visited.add(edge.targetNodeId);
-            await this.executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService);
+            await this.executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService, nodeOutputs);
           }
           return; // Don't call advanceExecution (we handled branching)
         }
 
         case 'action': {
-          const output = await this.executeAction(node.config, task, scheduleService);
+          const resolvedConfig = resolveTemplates(node.config, nodeOutputs, task);
+          const output = await this.executeAction(resolvedConfig, task, scheduleService);
+          nodeOutputs[node.id] = output;
           await databaseService.query(
             `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
             [JSON.stringify(output), nodeExecId],
@@ -637,16 +716,32 @@ class DagWorkflowService {
         case 'agent': {
           const { agentRegistry } = await import('./AgentRegistryService');
           const capabilityId = node.config.capabilityId as string;
-          const agentInput = node.config.input ?? {};
-          const result = await agentRegistry.invoke(capabilityId, agentInput, {
-            actorId: 'system', actorType: 'system', source: 'system',
-            projectId: node.config.projectId as string | undefined,
-          });
-          if (!result.success) throw new Error(result.error || 'Agent invocation failed');
-          await databaseService.query(
-            `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
-            [JSON.stringify({ agentOutput: result.output, durationMs: result.durationMs }), nodeExecId],
-          );
+          const maxRetries = (node.config.retries as number) ?? 0;
+          const backoffMs = (node.config.backoffMs as number) ?? 1000;
+
+          let lastError: string | undefined;
+          for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            if (attempt > 0) {
+              await new Promise(r => setTimeout(r, backoffMs * attempt));
+            }
+            const resolvedInput = resolveTemplates(node.config.input ?? {}, nodeOutputs, task);
+            const result = await agentRegistry.invoke(capabilityId, resolvedInput, {
+              actorId: 'system', actorType: 'system', source: 'system',
+              projectId: node.config.projectId as string | undefined,
+            });
+            if (result.success) {
+              const agentOutput = { agentOutput: result.output, durationMs: result.durationMs };
+              nodeOutputs[node.id] = agentOutput;
+              await databaseService.query(
+                `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
+                [JSON.stringify(agentOutput), nodeExecId],
+              );
+              lastError = undefined;
+              break;
+            }
+            lastError = result.error || 'Agent invocation failed';
+          }
+          if (lastError) throw new Error(lastError);
           break;
         }
 
@@ -692,8 +787,11 @@ class DagWorkflowService {
       return;
     }
 
+    // Persist nodeOutputs to execution context after successful node completion
+    await this.persistNodeOutputs(execId, nodeOutputs);
+
     // Continue advancing
-    await this.advanceExecution(execId, node.id, def, adjacency, visited, task, scheduleService);
+    await this.advanceExecution(execId, node.id, def, adjacency, visited, task, scheduleService, nodeOutputs);
   }
 
   private async executeAction(
@@ -726,6 +824,15 @@ class DagWorkflowService {
       default:
         return { action: actionType, skipped: true };
     }
+  }
+
+  private async persistNodeOutputs(execId: string, nodeOutputs: Record<string, any>): Promise<void> {
+    const rows = await databaseService.query('SELECT context FROM workflow_executions WHERE id = ?', [execId]);
+    const existing = rows.length > 0 ? parseJson(rows[0].context) : {};
+    await databaseService.query(
+      `UPDATE workflow_executions SET context = ? WHERE id = ?`,
+      [JSON.stringify({ ...existing, nodeOutputs }), execId],
+    );
   }
 
   private async checkCompletion(execId: string): Promise<void> {
