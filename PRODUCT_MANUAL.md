@@ -1,628 +1,754 @@
-# 📚 PM Application v2 - Complete Product Manual
+# PM Assistant -- Product Manual
 
-## 🎯 **Product Overview**
+## Product Overview
 
-The PM Application v2 is a **production-ready, enterprise-grade Project Management System** with advanced AI capabilities, comprehensive security, and modern web technologies. Built with TypeScript, React, and Fastify, it provides intelligent project scheduling, real-time collaboration, and robust security features.
-
----
-
-## 🚀 **Core Features**
-
-### **📋 Project Management**
-- ✅ **Project Creation & Management** - Full CRUD operations
-- ✅ **Task Scheduling** - Comprehensive task management with dependencies
-- ✅ **Timeline Management** - Gantt-style scheduling with auto-calculation
-- ✅ **Resource Allocation** - Team member assignment and workload tracking
-- ✅ **Progress Tracking** - Real-time project status monitoring
-- ✅ **Phase-based Organization** - Logical project phase breakdown
-
-### **🤖 AI-Powered Features**
-- ✅ **Smart Task Breakdown** - AI automatically decomposes complex projects
-- ✅ **Intelligent Phase Creation** - Context-aware phase generation for construction projects
-- ✅ **Dependency Detection** - AI suggests task dependencies and relationships
-- ✅ **Time Estimation** - AI-powered duration and work effort calculations
-- ✅ **Schedule Optimization** - Dynamic schedule adjustments based on changes
-- ✅ **Project Analysis** - AI insights and recommendations
-
-### **🔐 Enterprise Security**
-- ✅ **Comprehensive CSP** - Content Security Policy with violation reporting
-- ✅ **Security Headers** - X-Frame-Options, X-XSS-Protection, HSTS, etc.
-- ✅ **Input Sanitization** - XSS prevention and data validation
-- ✅ **Secure Authentication** - HttpOnly cookies with JWT tokens
-- ✅ **CORS Protection** - Environment-aware cross-origin security
-- ✅ **Rate Limiting** - DDoS protection and abuse prevention
-- ✅ **Audit Logging** - Comprehensive security event tracking
-
-### **📱 Progressive Web App (PWA)**
-- ✅ **Offline Capabilities** - Service worker with intelligent caching
-- ✅ **App Installation** - Install as native app on mobile/desktop
-- ✅ **Push Notifications** - Real-time updates and alerts
-- ✅ **Responsive Design** - Mobile-first responsive interface
-- ✅ **Dynamic Path Resolution** - Deployment-flexible asset management
-- ✅ **Error Handling** - User-visible notifications for PWA status
-- ✅ **Share Target API** - Receive shared content from other apps
-- ✅ **App Shortcuts** - Quick access to common actions via context menu
-- ✅ **Enhanced Install Prompts** - Beautiful UI with benefits and smart display logic
-- ✅ **IndexedDB Integration** - Persistent offline storage for shared content
-
-### **🛡️ Fallback Content & Loading States**
-- ✅ **JavaScript Disabled Support** - Beautiful fallback for no-JS browsers
-- ✅ **Loading State Management** - Progressive loading with realistic steps
-- ✅ **Error Boundary Recovery** - Graceful error handling with user-friendly screens
-- ✅ **Accessibility Compliance** - Screen reader and keyboard navigation support
-- ✅ **Performance Optimization** - Fast loading with smooth transitions
-- ✅ **User Experience** - No blank screens, clear communication, professional appearance
-
-### **🌐 Deployment Flexibility**
-- ✅ **Multi-Environment Support** - Domain root, subdirectory, subdomain
-- ✅ **Dynamic Path Resolution** - Automatic asset path adjustment
-- ✅ **Environment Configuration** - Development vs production settings
-- ✅ **Build Optimization** - Vite-powered fast builds
-- ✅ **Static Asset Management** - Optimized caching and delivery
+PM Assistant is an enterprise-grade project management platform built with TypeScript, React, and Fastify. It combines traditional PM discipline (CPM, EVM, baselines) with AI-powered intelligence (auto-reschedule, natural language queries, predictive analytics) in a single SaaS application. The platform supports the full project lifecycle from intake through execution, monitoring, and closeout.
 
 ---
 
-## 🏗️ **Technical Architecture**
+## 1. Project Management
 
-### **Backend Stack**
-```typescript
-// Core Technologies
-- Fastify (High-performance Node.js framework)
-- TypeScript (Type-safe development)
-- MySQL (Production database)
-- Zod (Runtime validation)
-- Helmet (Security middleware)
-- Swagger (API documentation)
-```
+### Projects
 
-### **Frontend Stack**
-```typescript
-// Modern React Architecture
-- React 18 (Component framework)
-- TypeScript (Type safety)
-- Vite (Build tool)
-- Zustand (State management)
-- React Query (Server state)
-- Tailwind CSS (Styling)
-```
+Full CRUD lifecycle for projects with the following attributes:
 
-### **Security Stack**
-```typescript
-// Enterprise Security
-- Content Security Policy (CSP)
-- HttpOnly Cookies
-- JWT Authentication
-- CORS Protection
-- Input Sanitization
-- Rate Limiting
-```
+- **Status tracking**: planning, active, on_hold, completed
+- **Priority levels**: low, medium, high, urgent
+- **Budget management**: allocated budget, spent budget, budget variance
+- **Date management**: start date, end date, auto-calculated duration
+- **Team assignment**: project members with role-based access
 
----
+### Schedules
 
-## 📊 **Feature Documentation**
+Each project contains one or more schedules. A schedule groups tasks into a logical timeline and serves as the unit for critical path analysis, baselines, and Monte Carlo simulation.
 
-### **1. Project Management System**
+### Tasks
 
-#### **Project Creation**
-```typescript
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  status: 'planning' | 'active' | 'on_hold' | 'completed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  startDate: string;
-  endDate: string;
-  budget?: number;
-  assignedTo: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-```
+Tasks are the atomic unit of work. Each task supports:
 
-#### **Task Management**
-```typescript
-interface ScheduleTask {
-  id: string;
-  name: string;
-  description: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'blocked';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo?: string;
-  dueDate?: string;
-  estimatedDays?: number;
-  workEffort: string;
-  dependency?: string;
-  parentTaskId?: string;
-  risks?: string;
-  issues?: string;
-  comments?: string;
-}
-```
+- Status: pending, in_progress, completed, blocked
+- Priority: low, medium, high, urgent
+- Dependency linking (finish-to-start)
+- Estimated duration (days) and work effort
+- Assigned resource
+- Parent-child hierarchy (subtasks)
+- Risk and issue annotations
+- Progress percentage tracking
 
-#### **Schedule Management**
-```typescript
-interface ProjectSchedule {
-  id: string;
-  projectId: string;
-  name: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  tasks: ScheduleTask[];
-  phases: ProjectPhase[];
-  createdAt: string;
-  updatedAt: string;
-}
-```
+### Views
 
-### **2. AI-Powered Features**
+- **Gantt chart** -- interactive timeline with dependency arrows and critical path highlighting
+- **Kanban board** -- drag-and-drop cards grouped by status
+- **Calendar view** -- tasks plotted on a monthly/weekly calendar
+- **Table view** -- sortable, filterable spreadsheet-style listing
 
-#### **Smart Task Breakdown**
-- **Automatic Project Decomposition**: AI analyzes project scope and breaks it into optimal tasks
-- **Context-Aware Generation**: Different templates for construction, software, marketing projects
-- **Dependency Detection**: AI suggests logical task dependencies and relationships
-- **Time Estimation**: Intelligent duration and work effort calculations
+### Bulk Operations
 
-#### **Intelligent Phase Creation**
-- **Construction Projects**: Planning, Procurement, Construction, Completion phases
-- **Software Projects**: Planning, Development, Testing, Deployment phases
-- **Marketing Projects**: Research, Strategy, Execution, Analysis phases
+Bulk create, update, and status-change endpoints allow operating on multiple tasks or projects in a single request.
 
-#### **AI Task Suggestions**
-```typescript
-interface TaskSuggestion {
-  name: string;
-  description: string;
-  estimatedDays: number;
-  workEffort: string;
-  dependencies: string[];
-  risks: string[];
-  recommendations: string[];
-}
-```
+### Search
 
-### **3. Security Implementation**
-
-#### **Content Security Policy**
-```html
-<meta http-equiv="Content-Security-Policy" content="
-  default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline';
-  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-  font-src 'self' https://fonts.gstatic.com;
-  img-src 'self' data: blob: https:;
-  connect-src 'self' http://localhost:3001 ws://localhost:3000;
-  media-src 'self';
-  object-src 'none';
-  frame-src 'none';
-  base-uri 'self';
-  form-action 'self';
-  upgrade-insecure-requests;
-" />
-```
-
-#### **Security Headers**
-- **X-Content-Type-Options**: `nosniff` - Prevents MIME sniffing
-- **X-Frame-Options**: `DENY` - Prevents clickjacking
-- **X-XSS-Protection**: `1; mode=block` - Browser XSS filtering
-- **Referrer-Policy**: `strict-origin-when-cross-origin` - Controls referrer leakage
-- **Permissions-Policy**: Restricts browser APIs (camera, microphone, etc.)
-
-#### **Authentication & Authorization**
-```typescript
-// Secure cookie configuration
-{
-  httpOnly: true,        // No client-side access
-  secure: true,          // HTTPS only in production
-  sameSite: 'lax',       // CSRF protection
-  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-}
-```
-
-### **4. Progressive Web App Features**
-
-#### **Service Worker Implementation**
-```javascript
-// Dynamic path resolution for deployment flexibility
-const BASE_PATH = getBasePath();
-const STATIC_FILES = [
-  BASE_PATH,
-  BASE_PATH + 'dashboard',
-  BASE_PATH + 'manifest.json',
-  BASE_PATH + 'favicon.ico'
-];
-```
-
-#### **PWA Manifest**
-```json
-{
-  "name": "PM Application v2",
-  "short_name": "PM App",
-  "description": "Production-ready Project Management Application",
-  "start_url": ".",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
-  "icons": [
-    {
-      "src": "./icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    }
-  ]
-}
-```
-
-#### **Notification System**
-```typescript
-// PWA notification service
-class PWAService {
-  async showNotification(title: string, options?: NotificationOptions): Promise<void>
-  async requestNotificationPermission(): Promise<NotificationPermission>
-  private registerServiceWorker(): Promise<void>
-  private handleServiceWorkerUpdate(): void
-}
-```
-
-#### **Share Target API**
-```json
-// Manifest configuration for receiving shared content
-{
-  "share_target": {
-    "action": "/share-target",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text", 
-      "url": "url",
-      "files": [
-        {
-          "name": "files",
-          "accept": [
-            "text/plain",
-            "application/pdf",
-            "image/*",
-            ".doc",
-            ".docx",
-            ".xls",
-            ".xlsx",
-            ".ppt",
-            ".pptx"
-          ]
-        }
-      ]
-    }
-  }
-}
-```
-
-#### **App Shortcuts**
-```json
-// Quick access shortcuts in app context menu
-{
-  "shortcuts": [
-    {
-      "name": "Create New Project",
-      "short_name": "New Project",
-      "description": "Create a new project quickly",
-      "url": "/dashboard?action=create-project"
-    },
-    {
-      "name": "AI Task Breakdown", 
-      "short_name": "AI Tasks",
-      "description": "Generate AI-powered task breakdown",
-      "url": "/dashboard?action=ai-tasks"
-    }
-  ]
-}
-```
-
-#### **Enhanced Install Prompt**
-```typescript
-// Smart install prompt with dismissal memory
-const PWAInstallPrompt = () => {
-  const [dismissed, setDismissed] = useState(
-    localStorage.getItem('pwa-install-dismissed') === 'true'
-  );
-  
-  // Beautiful gradient UI with benefits list
-  // Smart display logic based on install capability
-  // Persistent user preferences
-};
-```
-
-### **5. Deployment & Configuration**
-
-#### **Multi-Environment Support**
-```typescript
-// Path service for deployment flexibility
-class PathService {
-  private getBasePath(): string {
-    // Supports:
-    // - Domain root: https://example.com/
-    // - Subdirectory: https://example.com/pm-assistant/
-    // - Subdomain: https://pm.example.com/
-  }
-}
-```
-
-#### **Environment Configuration**
-```typescript
-// Development vs Production
-const isDevelopment = import.meta.env.DEV;
-const isProduction = import.meta.env.PROD;
-
-// Dynamic CSP based on environment
-scriptSrc: [
-  "'self'",
-  ...(isDevelopment ? ["'unsafe-eval'", "'unsafe-inline'"] : [])
-]
-```
+Full-text search across projects, tasks, and schedules with keyword matching.
 
 ---
 
-## 🎮 **User Interface Features**
+## 2. Critical Path and Baselines
 
-### **Dashboard**
-- **Project Overview**: Visual project status and progress
-- **Quick Actions**: Create projects, view schedules, access AI features
-- **Recent Activity**: Timeline of recent project activities
-- **AI Assistant**: Chat interface for project insights
+### Critical Path Method (CPM)
 
-### **Schedule Page**
-- **Task Management**: Create, edit, delete tasks with drag-and-drop
-- **Timeline View**: Gantt-style project timeline
-- **AI Task Breakdown**: One-click intelligent task generation
-- **Phase Management**: Organize tasks into logical phases
-- **Auto-Calculation**: Dynamic date and duration calculations
+The `CriticalPathService` performs a full forward and backward pass across the task dependency graph to compute:
 
-### **Project Management**
-- **Project Creation**: Guided project setup with templates
-- **Team Assignment**: Assign team members to projects and tasks
-- **Progress Tracking**: Real-time progress monitoring
-- **Document Management**: Upload and manage project documents
+- **Early Start (ES)** and **Early Finish (EF)** for every task
+- **Late Start (LS)** and **Late Finish (LF)**
+- **Total float** and **free float**
+- **Critical path identification** -- tasks with zero total float
+- **Project duration** -- the minimum schedule span
 
-### **AI Features Interface**
-- **Smart Breakdown Button**: Context-aware task generation
-- **AI Insights Panel**: Project analysis and recommendations
-- **Template Selection**: Choose from construction, software, marketing templates
-- **Learning Feedback**: Rate AI suggestions to improve accuracy
+Results feed into Gantt chart highlighting, Monte Carlo simulation, and resource leveling.
 
----
+### Baselines
 
-## 🔧 **API Documentation**
+The `BaselineService` captures point-in-time snapshots of a schedule. Each baseline records every task's start date, end date, estimated days, progress, and status. Baselines are immutable once created.
 
-### **Core Endpoints**
+### Variance Tracking
 
-#### **Authentication**
-```typescript
-POST /api/v1/auth/login
-POST /api/v1/auth/logout
-POST /api/v1/auth/refresh
-GET  /api/v1/auth/me
-```
+Comparing a baseline against current schedule state produces per-task variance metrics:
 
-#### **Projects**
-```typescript
-GET    /api/v1/projects           // List all projects
-POST   /api/v1/projects           // Create new project
-GET    /api/v1/projects/:id       // Get project details
-PUT    /api/v1/projects/:id       // Update project
-DELETE /api/v1/projects/:id       // Delete project
-```
-
-#### **Schedules**
-```typescript
-GET    /api/v1/schedules/project/:projectId  // Get project schedules
-POST   /api/v1/schedules                     // Create schedule
-PUT    /api/v1/schedules/:id                 // Update schedule
-DELETE /api/v1/schedules/:id                 // Delete schedule
-```
-
-#### **Tasks**
-```typescript
-GET    /api/v1/schedules/:scheduleId/tasks   // Get schedule tasks
-POST   /api/v1/schedules/:scheduleId/tasks   // Create task
-PUT    /api/v1/schedules/:scheduleId/tasks/:taskId  // Update task
-DELETE /api/v1/schedules/:scheduleId/tasks/:taskId  // Delete task
-```
-
-#### **AI Features**
-```typescript
-POST /api/v1/ai-scheduling/breakdown        // AI task breakdown
-POST /api/v1/ai-scheduling/analyze          // Project analysis
-POST /api/v1/ai-scheduling/optimize         // Schedule optimization
-POST /api/v1/ai-scheduling/learn            // AI learning feedback
-```
-
-### **Security Endpoints**
-```typescript
-POST /api/security/csp-report               // CSP violation reporting
-GET  /api/security/headers                  // Security header validation
-POST /api/security/audit                    // Security audit logging
-```
+- Start variance (days slipped)
+- End variance (days slipped)
+- Duration variance (longer or shorter than planned)
+- Progress variance (percentage points ahead or behind)
+- Status change detection
 
 ---
 
-## 🚀 **Getting Started**
+## 3. Earned Value Management (EVM)
 
-### **Prerequisites**
-- Node.js 18+ 
-- MySQL 8.0+
-- npm or yarn
+### S-Curve Data
 
-### **Installation**
+The `SCurveService` computes cumulative Planned Value (PV), Earned Value (EV), and Actual Cost (AC) data points over time, derived from task durations, progress percentages, and project budgets. These data points render as the classic S-curve chart.
+
+### EVM Metrics
+
+Standard earned value indicators computed from S-curve data:
+
+| Metric | Formula | Meaning |
+|--------|---------|---------|
+| CPI | EV / AC | Cost Performance Index |
+| SPI | EV / PV | Schedule Performance Index |
+| CV | EV - AC | Cost Variance |
+| SV | EV - PV | Schedule Variance |
+| EAC | BAC / CPI | Estimate at Completion |
+| ETC | EAC - AC | Estimate to Complete |
+| VAC | BAC - EAC | Variance at Completion |
+
+### EVM Forecasting
+
+The `EVMForecastService` extends basic EVM with AI-powered forecasting:
+
+- Predicted CPI and SPI for the next 4 weeks based on trend momentum
+- AI-adjusted EAC with confidence range (low/high)
+- Trend direction assessment: improving, stable, or deteriorating
+- Cost overrun probability (0-100%)
+- Corrective action recommendations with effort, priority, and estimated impact
+- Narrative summary in plain language
+
+### Early Warnings
+
+Proactive alerts fire when CPI or SPI drop below configurable thresholds, enabling intervention before projects go off-track.
+
+---
+
+## 4. Resource Management
+
+### Resource Pool
+
+The `ResourceService` maintains a central resource registry. Each resource has:
+
+- Name, email, role, department
+- Hourly rate and availability (hours per day)
+- Skill tags
+- Active/inactive status
+
+### Workload Heatmap
+
+The resource workload endpoint aggregates task assignments across projects to produce a per-resource, per-day demand profile. Over-allocated days are flagged.
+
+### Resource Histogram
+
+The `ResourceLevelingService` generates daily demand histograms showing hours demanded vs. capacity for each resource. Over-allocations are returned as structured data for visualization.
+
+### Resource Leveling
+
+When over-allocations are detected, the leveling algorithm shifts non-critical tasks within their float to smooth demand below capacity. The result includes:
+
+- Original vs. leveled demand profiles
+- List of adjusted tasks with original and new dates
+- Remaining over-allocations (if any cannot be resolved within float)
+
+### Resource Optimization
+
+The `ResourceOptimizerService` uses AI to analyze resource utilization patterns and recommend:
+
+- Reallocation of underutilized resources
+- Load balancing across team members
+- Skill-based assignment optimization
+
+---
+
+## 5. Workflow Automation (DAG Engine)
+
+### Overview
+
+The `DagWorkflowService` implements a directed acyclic graph (DAG) execution engine. Workflows are composed of nodes connected by edges, with optional condition expressions on edges for branching.
+
+### Node Types
+
+| Node Type | Purpose |
+|-----------|---------|
+| **Trigger** | Entry point -- fires on entity events (e.g., task status change, new project) |
+| **Condition** | Evaluates a boolean expression against execution context |
+| **Action** | Executes a side effect (update task, send notification, call webhook) |
+| **Approval** | Pauses execution until an authorized user approves or rejects |
+| **Delay** | Pauses execution for a configurable duration |
+
+### Execution Model
+
+- Each workflow definition is versioned and can be project-scoped or global
+- Edges support condition expressions and sort ordering for deterministic branching
+- Execution state is persisted per-node with statuses: pending, running, completed, failed, skipped, waiting
+- Full execution history is retained with start/end timestamps and error messages
+- Executions can be running, completed, failed, cancelled, or waiting (paused at an approval or delay node)
+- All workflow actions are recorded in the audit ledger
+
+---
+
+## 6. Approval and Change Management
+
+### Approval Workflows
+
+The `ApprovalWorkflowService` defines multi-step approval chains scoped to a project and entity type. Each step specifies an approver role and execution order.
+
+### Change Requests
+
+Change requests capture proposed modifications with:
+
+- Title, description, category, and priority
+- Impact summary
+- Status progression through workflow steps
+- Link to an approval workflow (optional)
+- Full action history with comments per step
+
+### Approval Actions
+
+Each step in a change request records: who acted, what action they took (approve/reject), optional comment, and timestamp. All actions are written to the audit ledger.
+
+---
+
+## 7. Sprint / Agile
+
+### Sprint Planning
+
+The `SprintService` manages time-boxed iterations with:
+
+- Sprint name, goal, start date, end date
+- Status: planning, active, completed
+- Task assignment to sprints
+- Sprint capacity tracking
+
+### Sprint Board
+
+A Kanban-style board scoped to a single sprint, showing tasks grouped by status with drag-and-drop support.
+
+### Burndown Charts
+
+The `BurndownService` computes daily remaining work for a sprint, producing the classic burndown line. Ideal burndown is plotted alongside actual for comparison.
+
+### Velocity Tracking
+
+Historical sprint velocity (story points or task count completed per sprint) is tracked across sprints to support future capacity planning.
+
+---
+
+## 8. Time Tracking
+
+### Time Entries
+
+The `TimeEntryService` records individual time logs:
+
+- Associated task and project
+- Hours worked, date, description
+- Billable flag
+- Created-by user
+
+### Timesheets
+
+Aggregated time entry views per user per week, suitable for approval workflows and payroll integration.
+
+### Actual vs. Estimated
+
+Compare logged hours against task estimated effort to identify underestimation patterns and improve future planning accuracy.
+
+---
+
+## 9. Custom Fields
+
+### Per-Project Field Definitions
+
+The `CustomFieldService` allows each project to define additional metadata fields:
+
+| Field Type | Description |
+|------------|-------------|
+| **text** | Free-form string |
+| **number** | Numeric value |
+| **date** | Date picker |
+| **dropdown** | Single-select from predefined options |
+| **checkbox** | Boolean toggle |
+
+Custom field values are stored per-entity (task, project) and included in search, filtering, and report outputs.
+
+---
+
+## 10. File Attachments
+
+### Upload and Storage
+
+The `FileAttachmentService` handles file uploads with:
+
+- Configurable storage backend
+- File size and type validation
+- Unique file naming to prevent collisions
+
+### Versioning
+
+Multiple versions of a file can be uploaded to the same attachment slot. Previous versions are retained.
+
+### Entity Linking
+
+Attachments can be linked to any entity type (project, task, change request) via entity_type and entity_id references.
+
+---
+
+## 11. Monte Carlo Simulation
+
+### Probabilistic Schedule Analysis
+
+The `MonteCarloService` runs configurable simulations (default: 10,000 iterations) over the task dependency graph using PERT or triangular distributions derived from optimistic, most-likely, and pessimistic duration estimates.
+
+### Outputs
+
+- **Confidence levels**: P50, P80, P90 (or any custom percentiles) for project completion duration
+- **Histogram**: distribution of simulated project durations in configurable bin widths
+- **Sensitivity analysis**: which tasks contribute most to overall schedule variance
+- **Criticality index**: percentage of iterations in which each task appears on the critical path
+- **Tornado diagram data**: ranked sensitivity items for visualization
+
+---
+
+## 12. Network Diagrams
+
+### PERT / Precedence Visualization
+
+The `NetworkDiagramService` computes a layout of the task dependency graph suitable for rendering as a precedence diagram (Activity-on-Node). Each node includes:
+
+- Task name, duration, ES, EF, LS, LF, total float
+- Critical path flag
+- X/Y position coordinates for rendering
+
+Edges connect predecessor to successor nodes with critical-path highlighting.
+
+---
+
+## 13. AI Features
+
+All AI features use the Anthropic Claude SDK and are gated behind the `AI_ENABLED` environment variable. When disabled, the system operates as a fully functional non-AI PM tool.
+
+### Auto-Reschedule
+
+The `AutoRescheduleService` detects delayed tasks and generates reschedule proposals:
+
+1. Identifies tasks that have slipped past their planned dates
+2. Analyzes downstream impact through the dependency graph
+3. Uses AI to generate proposed date changes with rationale
+4. Proposals are stored for review -- users accept, reject, or provide feedback
+
+### Natural Language Queries
+
+The `NLQueryService` implements a multi-step AI pipeline:
+
+1. **Tool-loop phase**: Claude gathers real data using read-only tools (list projects, get EVM metrics, get critical path, get resource workload, etc.)
+2. **Structuring phase**: raw answer is formatted into structured JSON with narrative, data tables, suggested charts, and follow-up questions
+
+Users ask questions like "Which projects are over budget?" or "Show me the critical path for Project Alpha" and receive data-backed answers.
+
+### Meeting Intelligence
+
+The `MeetingIntelligenceService` processes meeting transcripts or notes to extract:
+
+- Action items with assignees and due dates
+- Key decisions made
+- Risk items identified
+- Follow-up topics
+
+### Lessons Learned
+
+The `LessonsLearnedService` captures and retrieves project retrospective insights, categorized and searchable, to improve future project execution.
+
+### Task Prioritization
+
+The `TaskPrioritizationService` uses AI to rank tasks based on:
+
+- Dependency criticality
+- Resource availability
+- Deadline proximity
+- Business impact
+
+### Predictive Intelligence
+
+The `predictiveIntelligence` module provides AI-driven assessments:
+
+- **Project health scoring**: overall health grade with contributing factors
+- **Risk assessment**: identified risks with probability, impact, and mitigation strategies
+- **Budget forecasting**: AI-adjusted budget projections considering trends and project context
+- **Dashboard predictions**: aggregated portfolio-level predictions
+
+### Anomaly Detection
+
+The `anomalyDetectionService` identifies unusual patterns in project data such as sudden progress drops, budget spikes, or resource utilization anomalies.
+
+### What-If Scenarios
+
+The `whatIfScenarioService` allows users to model hypothetical changes (adding resources, extending deadlines, changing scope) and see projected impacts before committing.
+
+### Cross-Project Intelligence
+
+The `crossProjectIntelligenceService` analyzes patterns across the entire portfolio to surface systemic risks, resource conflicts, and optimization opportunities.
+
+### AI Chat
+
+The `aiChatService` provides a conversational interface where users can ask open-ended questions about their projects and receive AI-generated responses grounded in actual project data.
+
+### AI Reports
+
+The `aiReportService` generates narrative project reports using AI, summarizing status, risks, and recommendations in natural language.
+
+### Proactive Alerts
+
+The `proactiveAlertService` continuously monitors project metrics and generates alerts when thresholds are breached (schedule slip, budget overrun, resource over-allocation).
+
+---
+
+## 14. Reporting
+
+### Custom Report Builder
+
+The `ReportBuilderService` provides a configurable report engine:
+
+- **Report templates**: saved configurations with named sections, sharable across users
+- **Section types**: KPI cards, tables, bar charts, line charts, pie charts
+- **Data sources**: projects, tasks, time entries, budgets
+- **Filters**: date range, project, status
+- **Group-by**: aggregate data by any dimension
+
+### AI-Generated Reports
+
+The AI report endpoint generates narrative compliance and status reports using Claude, grounded in real project data.
+
+### Portfolio Analytics
+
+The `AnalyticsSummaryService` computes portfolio-level KPIs:
+
+- Total projects by status
+- Budget utilization across portfolio
+- Resource allocation summary
+- Schedule performance overview
+
+---
+
+## 15. Notifications
+
+### In-App Alerts
+
+The `NotificationService` delivers notifications to users with:
+
+- **Severity levels**: critical, high, medium, low
+- **Type classification**: system, task, project, approval, alert
+- **Entity linking**: link to specific project, schedule, or entity
+- **Read/unread tracking**
+- **WebSocket delivery**: real-time push via the `WebSocketService`
+- **Bulk mark-as-read**
+
+---
+
+## 16. Stakeholder Portal
+
+### Token-Based Access
+
+The `PortalService` generates shareable portal links with:
+
+- Unique token per link
+- Configurable permissions (read-only by default)
+- Optional expiration date
+- Active/inactive toggle
+- Label for identification
+
+### Public Views
+
+Portal token holders can access without authentication:
+
+- Project overview and status
+- Gantt chart view
+- Task listing
+
+### Stakeholder Comments
+
+External stakeholders can submit comments on project entities through the portal, identified by author name rather than system user account.
+
+---
+
+## 17. Intake Forms
+
+### Dynamic Form Builder
+
+The `IntakeFormService` supports creating intake forms with configurable fields:
+
+- Field types: text, number, date, select, checkbox, textarea
+- Required/optional validation
+- Dropdown option lists
+- Active/inactive form status
+
+### Submission Tracking
+
+Submissions flow through a review pipeline:
+
+- Submitted -> Under Review -> Approved / Rejected
+- Reviewer assignment and notes
+- Conversion to project: approved submissions can be automatically converted into new projects
+
+---
+
+## 18. Templates
+
+### Project Templates
+
+The `TemplateService` allows saving a project's structure as a reusable template:
+
+- Template name, description, category
+- Serialized project configuration (tasks, phases, dependencies, custom fields)
+- Shared or private visibility
+- Apply a template to create a new project with pre-populated structure
+
+---
+
+## 19. Integrations
+
+### Supported Providers
+
+| Provider | Adapter | Capabilities |
+|----------|---------|-------------|
+| **Jira** | `JiraAdapter` | Bi-directional task sync, status mapping |
+| **GitHub** | `GitHubAdapter` | Issue sync, PR status tracking |
+| **Slack** | `SlackAdapter` | Notification delivery, channel updates |
+| **Trello** | `TrelloAdapter` | Card sync, board mapping |
+
+### Webhooks
+
+The `WebhookService` allows registering outbound webhook endpoints that fire on configurable events (task created, status changed, project updated, etc.). Each delivery is logged with status and retry support.
+
+### Integration Management
+
+- Per-project or global integration configuration
+- Credential storage in encrypted config blobs
+- Sync logging with direction (inbound/outbound), item counts, and error tracking
+- Last-sync timestamp for monitoring
+
+---
+
+## 20. Security
+
+### Authentication
+
+- **JWT tokens**: issued on login, stored in HttpOnly cookies with configurable expiration
+- **Password hashing**: bcrypt with configurable salt rounds
+- **Registration**: username, email, password, full name
+- **Password reset**: token-based email flow via `EmailService`
+- **Session management**: refresh token rotation
+
+### OAuth 2.1
+
+The MCP HTTP transport supports OAuth 2.1 for per-user access from Claude Desktop and Claude Web, with PKCE flow.
+
+### API Keys
+
+The `ApiKeyService` issues scoped API keys for programmatic access:
+
+- Scope-based permissions (read, write, admin)
+- Key hashing (only prefix stored in plaintext for identification)
+- Expiration support
+- Revocation
+
+### Audit Ledger (Hash-Chain)
+
+The `AuditLedgerService` maintains a tamper-evident append-only log:
+
+- Every entry references the previous entry's SHA-256 hash, forming a hash chain
+- Entries record: actor (user/api_key/system), action, entity type/ID, project, payload, source (web/mcp/api/system), IP address, session
+- Chain integrity can be verified at any time
+- Filterable by project, entity, actor, action, date range
+
+### Policy Engine
+
+The `PolicyEngineService` enforces configurable governance rules:
+
+- **Action patterns**: match against specific operations (e.g., `task.delete`, `budget.update`)
+- **Condition expressions**: field-based conditions with operators (>, <, ==, !=, in, contains, etc.)
+- **Enforcement levels**: log_only, require_approval, block
+- **Evaluation logging**: every policy evaluation is recorded with context snapshot
+- Project-scoped or global policies
+
+### Security Middleware
+
+- Content Security Policy (CSP) via Helmet
+- Rate limiting per endpoint
+- CORS protection with environment-aware origins
+- Input validation via Zod schemas on all routes
+- Scope-based route protection via `requireScope` middleware
+
+---
+
+## 21. MCP Server
+
+### Overview
+
+A standalone Model Context Protocol (MCP) server (`mcp-server/server.ts`) enables Claude Desktop and Claude Web to interact with PM Assistant directly. It communicates over stdio transport and authenticates via API key.
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `list-projects` | List all projects |
+| `get-project` | Get project details by ID |
+| `get-schedules` | Get all schedules for a project |
+| `get-tasks` | Get all tasks in a schedule |
+| `get-project-health` | AI health score for a project |
+| `get-project-risks` | AI risk assessment for a project |
+| `get-project-budget` | AI budget forecast for a project |
+| `get-analytics` | Portfolio-level analytics summary |
+| `get-alerts` | Proactive alerts across all projects |
+| `search` | Search projects and tasks by keyword |
+| `get-portfolio` | Full portfolio overview |
+
+### MCP Proxy
+
+The main application also exposes an `/mcp` reverse proxy route for HTTP-based MCP transport, allowing browser-based Claude integrations to connect through the production domain.
+
+---
+
+## 22. Billing
+
+### Stripe Integration
+
+The `StripeService` manages subscription billing:
+
+- **Customer creation**: linked to user accounts
+- **Checkout sessions**: redirect-based Stripe Checkout with 14-day free trial
+- **Billing portal**: self-service subscription management via Stripe's portal
+- **Webhook handling**: processes Stripe events for subscription lifecycle (created, updated, cancelled, payment succeeded/failed)
+- **Tier support**: free, pro, business plans mapped to Stripe price IDs
+
+---
+
+## Technical Architecture
+
+### Backend
+
+- **Runtime**: Node.js 22 with TypeScript
+- **Framework**: Fastify (high-performance HTTP server)
+- **Database**: MySQL (MariaDB compatible)
+- **Validation**: Zod schemas on all API inputs
+- **AI**: Anthropic Claude SDK (gated by `AI_ENABLED` env var)
+- **Real-time**: WebSocket service for live notifications
+- **Email**: Configurable email service for password reset and notifications
+
+### Frontend
+
+- **Framework**: React 18
+- **Build tool**: Vite
+- **State management**: Zustand
+- **Server state**: React Query (TanStack Query)
+- **Styling**: Tailwind CSS
+- **PWA**: Service worker with offline caching, install prompts, push notifications
+
+### API Structure
+
+All API routes are prefixed with `/api` and organized by domain:
+
+```
+/api/auth              Authentication (login, register, reset password)
+/api/projects          Project CRUD
+/api/schedules         Schedule and task management
+/api/resources         Resource pool management
+/api/sprints           Sprint lifecycle
+/api/time-entries      Time logging
+/api/custom-fields     Custom field definitions and values
+/api/file-attachments  File upload and management
+/api/notifications     In-app notifications
+/api/portal            Stakeholder portal (public + admin)
+/api/intake-forms      Form builder and submissions
+/api/templates         Project templates
+/api/integrations      Third-party integration management
+/api/webhooks          Outbound webhook configuration
+/api/workflows         DAG workflow definitions and execution
+/api/approval-workflows  Change request approval chains
+/api/report-builder    Custom report templates and generation
+/api/ai-reports        AI-generated narrative reports
+/api/stripe            Billing and subscription management
+/api/api-keys          API key management
+/api/audit-trail       Audit ledger queries
+/api/policies          Policy engine rules
+/api/search            Full-text search
+/api/bulk              Bulk operations
+/api/portfolio         Portfolio overview
+/api/analytics         Portfolio analytics summary
+/api/alerts            Proactive alert feed
+/api/predictions       AI health, risk, and budget predictions
+/api/intelligence      Cross-project intelligence and anomaly detection
+/api/evm-forecast      Earned value forecasting
+/api/monte-carlo       Monte Carlo simulation
+/api/network-diagram   Precedence diagram layout
+/api/burndown          Sprint burndown data
+/api/resource-leveling Resource histogram and leveling
+/api/resource-optimizer AI resource optimization
+/api/auto-reschedule   Auto-reschedule proposals
+/api/nl-query          Natural language queries
+/api/ai-scheduling     AI task breakdown and scheduling
+/api/ai-chat           Conversational AI interface
+/api/task-prioritization  AI task ranking
+/api/meeting-intelligence Meeting transcript analysis
+/api/lessons-learned   Retrospective knowledge base
+/api/learning          AI learning feedback
+/api/exports           Data export
+/api/agent             Agent scheduler
+/api/users             User management
+/api/project-members   Project membership
+/mcp                   MCP HTTP transport proxy
+```
+
+### Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `NODE_ENV` | production / development |
+| `DATABASE_URL` | MySQL connection string |
+| `JWT_SECRET` | Token signing secret |
+| `COOKIE_SECRET` | Cookie signing secret |
+| `CORS_ORIGIN` | Allowed origin for CORS |
+| `AI_ENABLED` | Enable/disable AI features (true/false) |
+| `ANTHROPIC_API_KEY` | Claude API key (required if AI_ENABLED) |
+| `STRIPE_SECRET_KEY` | Stripe secret key (optional) |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `APP_URL` | Public application URL |
+| `PM_API_KEY` | API key for MCP server |
+| `PM_BASE_URL` | Base URL for MCP server API calls |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 22+
+- MySQL 8.0+ (or MariaDB 10.5+)
+- npm
+
+### Installation
+
 ```bash
-# Clone repository
 git clone <repository-url>
-cd pm-assistant
-
-# Install dependencies
+cd pm-assistant-generic
 npm install
 
-# Environment setup
+# Copy and configure environment
 cp env.example .env
-# Edit .env with your configuration
+# Edit .env with your database credentials and secrets
 
 # Start development servers
 npm run dev
 ```
 
-### **Access Points**
-- **Application**: http://localhost:3000
-- **API**: http://localhost:3001
-- **Documentation**: http://localhost:3001/documentation
-- **Health Check**: http://localhost:3001/health
+### Access Points
 
----
+| Endpoint | URL |
+|----------|-----|
+| Application | http://localhost:3000 |
+| API | http://localhost:3001 |
+| API Documentation | http://localhost:3001/documentation |
+| Health Check | http://localhost:3001/health |
 
-## 🧪 **Testing & Quality Assurance**
+### Production Build
 
-### **Test Coverage**
-- ✅ **Unit Tests**: Component and service testing with Vitest
-- ✅ **Integration Tests**: API endpoint testing
-- ✅ **System Connectivity Tests**: Health endpoints, database connectivity, and system monitoring
-- ✅ **Configuration Validation Tests**: Environment validation and secret generation
-- ✅ **Health Check Script Tests**: Automated health monitoring and reporting
-- ✅ **E2E Tests**: Full user workflow testing with Playwright
-- ✅ **Security Tests**: CSP violation and security header validation
-- ✅ **PWA Tests**: Service worker and offline functionality
-
-### **Code Quality**
-- ✅ **TypeScript**: Full type safety and compilation
-- ✅ **ESLint**: Code linting and style enforcement
-- ✅ **Prettier**: Code formatting
-- ✅ **Security Scanning**: Automated vulnerability detection
-
----
-
-## 📈 **Performance & Monitoring**
-
-### **Performance Features**
-- ✅ **Vite Build**: Fast development and optimized production builds
-- ✅ **Service Worker Caching**: Intelligent offline caching
-- ✅ **Lazy Loading**: Component and route-based code splitting
-- ✅ **Image Optimization**: Responsive images and compression
-
-### **Monitoring & Analytics**
-- ✅ **Request Logging**: Comprehensive API request tracking
-- ✅ **Error Tracking**: Automatic error reporting and analysis
-- ✅ **Security Monitoring**: CSP violations and security events
-- ✅ **Performance Metrics**: Load time and user experience tracking
-
----
-
-## 🔄 **Deployment Guide**
-
-### **Supported Deployment Scenarios**
-1. **Domain Root**: `https://example.com/`
-2. **Subdirectory**: `https://example.com/pm-assistant/`
-3. **Subdomain**: `https://pm.example.com/`
-
-### **Production Deployment**
 ```bash
-# Build for production
 npm run build
-
-# Deploy to server
-# Copy dist/ contents to web server directory
-# Configure web server (Nginx/Apache)
-# Set up SSL certificates
-# Configure environment variables
 ```
 
-### **Environment Variables**
-```bash
-# Production configuration
-NODE_ENV=production
-DATABASE_URL=mysql://user:pass@host:port/database
-JWT_SECRET=your-jwt-secret
-COOKIE_SECRET=your-cookie-secret
-CORS_ORIGIN=https://your-domain.com
-```
-
----
-
-## 🎯 **Roadmap & Future Features**
-
-### **Phase 1: Core Features** ✅ **COMPLETED**
-- [x] Project management system
-- [x] Task scheduling and management
-- [x] AI-powered task breakdown
-- [x] Security implementation
-- [x] PWA features
-- [x] Deployment flexibility
-
-### **Phase 2: Advanced Features** 🚧 **IN PROGRESS**
-- [ ] Real-time collaboration
-- [ ] Advanced AI insights
-- [ ] Resource optimization
-- [ ] Time tracking integration
-- [ ] Document management
-- [ ] Reporting and analytics
-
-### **Phase 3: Enterprise Features** 📋 **PLANNED**
-- [ ] Multi-tenant support
-- [ ] Advanced role management
-- [ ] Integration APIs
-- [x] DAG Workflow Engine (trigger → condition → action → approval → delay)
-- [ ] Advanced reporting
-- [ ] Mobile applications
-
----
-
-## 📞 **Support & Documentation**
-
-### **Documentation Files**
-- **README.md**: Quick start and overview
-- **PRODUCT_MANUAL.md**: Complete feature documentation (this file)
-- **SECURITY_GUIDE.md**: Comprehensive security implementation
-- **DEPLOYMENT_GUIDE.md**: Deployment scenarios and configuration
-- **Smart Scheduling.md**: AI features and capabilities
-- **FALLBACK_CONTENT_GUIDE.md**: Loading states and error handling
-- **PWA_FEATURES_TEST_GUIDE.md**: PWA features testing and verification
-
-### **API Documentation**
-- **Swagger UI**: http://localhost:3001/documentation
-- **OpenAPI Spec**: Auto-generated API specification
-- **Postman Collection**: Import-ready API collection
-
-### **Development Resources**
-- **TypeScript Definitions**: Full type coverage
-- **Component Library**: Reusable UI components
-- **Service Layer**: API service abstractions
-- **Utility Functions**: Common helper functions
-
----
-
-## 🏆 **Production Benefits**
-
-### **Security**
-- **Enterprise-grade authentication** with HttpOnly cookies
-- **Comprehensive security headers** and CSP protection
-- **Input validation** and XSS prevention
-- **Audit logging** and security monitoring
-
-### **Performance**
-- **Fastify backend** with high-performance routing
-- **Vite frontend** with optimized builds and HMR
-- **Service worker caching** for offline capabilities
-- **Responsive design** for all device types
-
-### **Developer Experience**
-- **Full TypeScript** coverage for type safety
-- **Hot module replacement** for fast development
-- **Comprehensive testing** infrastructure
-- **Auto-generated API** documentation
-
-### **User Experience**
-- **Progressive Web App** with native app capabilities
-- **AI-powered features** for intelligent project management
-- **Real-time updates** and notifications
-- **Intuitive interface** with modern design patterns
-
----
-
-**🎉 The PM Application v2 is a production-ready, enterprise-grade project management solution with cutting-edge AI capabilities and comprehensive security features!**
+The build produces a `dist/` directory with compiled server and optimized client assets. In production, static files are served by the web server (e.g., LiteSpeed, Nginx) and API requests are proxied to the Fastify process.
