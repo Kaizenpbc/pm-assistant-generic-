@@ -414,11 +414,24 @@ Tracks all AI API usage for cost monitoring:
 
 Cron-based background AI analysis:
 
-- Runs on configurable schedule (`AGENT_CRON_SCHEDULE`)
-- Scans all active projects for: delays (AutoRescheduleService), EVM forecasts, Monte Carlo simulations
-- Generates notifications and webhook events for detected issues
-- Logs all agent activity via `AgentActivityLogService`
+- **Daily scan** on configurable schedule (`AGENT_CRON_SCHEDULE`, default: 2 AM)
+  - Scans all active projects for: delays (AutoRescheduleService), EVM forecasts, Monte Carlo simulations
+  - Generates notifications and webhook events for detected issues
+  - Logs all agent activity via `AgentActivityLogService`
+- **Overdue-task scanner** runs every N minutes (`AGENT_OVERDUE_SCAN_MINUTES`, default: 15)
+  - Detects tasks where `end_date < NOW()` and status is not completed/cancelled
+  - Fires `date_passed` workflow triggers via `dagWorkflowService.evaluateTaskChange()`
+  - Deduplicates to avoid re-triggering for the same task
 - Controlled by `AGENT_ENABLED` environment variable
+
+### Event-Driven Workflow Integration
+
+Task and project lifecycle events automatically trigger DAG workflows:
+
+- `ScheduleService.createTask()` and `updateTask()` call `dagWorkflowService.evaluateTaskChange()` (fire-and-forget)
+- `ProjectService.update()` calls `dagWorkflowService.evaluateProjectChange()` on budget or status changes
+- Trigger types: `task_created`, `status_change`, `priority_change`, `assignment_change`, `dependency_change`, `budget_threshold`, `project_status_change`, `date_passed`, `progress_threshold`, `manual`
+- Actions include `send_notification` (creates real notifications), `invoke_agent` (calls registered agent capabilities), `update_field`, and `log_activity`
 
 ### MCP Server (`mcp-server/`)
 

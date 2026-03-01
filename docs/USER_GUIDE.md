@@ -385,11 +385,12 @@ Build your workflow by adding nodes of these types:
 
 | Node Type   | Purpose |
 |-------------|---------|
-| **Trigger** | Starts the workflow (e.g., task status change, schedule event). |
+| **Trigger** | Starts the workflow (e.g., task status change, priority escalation, task creation, overdue detection). |
 | **Condition** | Evaluates a rule and branches the flow (if/else logic). |
-| **Action** | Performs an automated step (e.g., update task status, send notification, assign resource). |
+| **Action** | Performs an automated step (e.g., update task status, send notification, invoke agent). |
 | **Approval** | Pauses execution until a designated approver accepts or rejects. |
 | **Delay** | Waits for a specified duration before continuing. |
+| **Agent** | Invokes an AI agent capability (e.g., auto-reschedule) with retry logic. |
 
 ### Connecting Nodes
 
@@ -407,7 +408,11 @@ Each node has optional X/Y position coordinates for visual layout in the workflo
 Workflows can be triggered:
 
 - **Manually** -- By providing an entity type (e.g., "task") and entity ID.
-- **Automatically** -- When configured triggers detect matching events.
+- **Automatically on task events** -- Creating or updating a task fires matching triggers (status_change, task_created, priority_change, assignment_change, dependency_change).
+- **Automatically on project events** -- Budget or status changes on projects fire budget_threshold and project_status_change triggers.
+- **Automatically by overdue scanner** -- A 15-minute cron scans for newly-overdue tasks and fires date_passed triggers.
+
+All automatic triggers are non-blocking and will not slow down the originating operation.
 
 ### Execution History
 

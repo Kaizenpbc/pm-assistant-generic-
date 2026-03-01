@@ -120,7 +120,7 @@ curl -s -b cookies.txt https://pm.kpbc.ca/api/v1/projects | jq .
 
 ## 4. Testing the Workflow Engine
 
-The workflow engine is a DAG-based system at `/api/v1/workflows`. Workflows are composed of nodes (trigger, condition, action, approval, delay) connected by edges.
+The workflow engine is a DAG-based system at `/api/v1/workflows`. Workflows are composed of nodes (trigger, condition, action, approval, delay, agent) connected by edges. Workflows fire automatically on task create/update events, project budget/status changes, and via a 15-minute overdue-task scanner.
 
 ### 4a. Create a workflow definition
 
@@ -281,6 +281,58 @@ curl -s -b cookies.txt -H 'Content-Type: application/json' \
 ```
 
 After resuming, re-fetch the execution detail to confirm status changed to `completed` (or continued to the next node).
+
+---
+
+## 5e. Testing Event-Driven Triggers
+
+Workflows now fire automatically on task and project lifecycle events. No manual trigger is needed.
+
+### Test: Task update triggers workflow
+
+Update a task's status and verify a workflow execution was created:
+
+```bash
+# Update a task status to trigger status_change workflows
+curl -s -b cookies.txt -X PATCH -H 'Content-Type: application/json' \
+  -d '{"status": "completed"}' \
+  https://pm.kpbc.ca/api/v1/schedules/SCHEDULE_ID/tasks/TASK_ID | jq .
+
+# Check workflow executions — should see a new execution
+curl -s -b cookies.txt \
+  'https://pm.kpbc.ca/api/v1/workflows/executions?entityId=TASK_ID' | jq .
+```
+
+### Test: Priority escalation triggers notification
+
+Change a task priority to `urgent` and verify the "On task marked urgent" workflow fires:
+
+```bash
+curl -s -b cookies.txt -X PATCH -H 'Content-Type: application/json' \
+  -d '{"priority": "urgent"}' \
+  https://pm.kpbc.ca/api/v1/schedules/SCHEDULE_ID/tasks/TASK_ID | jq .
+
+# Check notifications for the project manager
+curl -s -b cookies.txt https://pm.kpbc.ca/api/v1/notifications | jq .
+```
+
+### Test: New task triggers task_created workflows
+
+Create a task and verify `task_created` trigger workflows execute:
+
+```bash
+curl -s -b cookies.txt -H 'Content-Type: application/json' \
+  -d '{"name": "New event test task", "scheduleId": "SCHEDULE_ID", "status": "pending"}' \
+  https://pm.kpbc.ca/api/v1/schedules/SCHEDULE_ID/tasks | jq .
+```
+
+### Test: Overdue scanner
+
+The overdue scanner runs every 15 minutes (configurable via `AGENT_OVERDUE_SCAN_MINUTES`). To verify:
+
+1. Create a task with `endDate` in the past
+2. Wait for the next scanner cycle (or restart the server)
+3. Check `workflow_executions` table for a `date_passed` trigger execution
 
 ---
 

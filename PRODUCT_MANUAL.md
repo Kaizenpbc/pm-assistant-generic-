@@ -166,11 +166,46 @@ The `DagWorkflowService` implements a directed acyclic graph (DAG) execution eng
 
 | Node Type | Purpose |
 |-----------|---------|
-| **Trigger** | Entry point -- fires on entity events (e.g., task status change, new project) |
+| **Trigger** | Entry point -- fires on entity events (e.g., task status change, priority escalation, task creation) |
 | **Condition** | Evaluates a boolean expression against execution context |
-| **Action** | Executes a side effect (update task, send notification, call webhook) |
+| **Action** | Executes a side effect (update task, send notification, invoke agent, log activity) |
 | **Approval** | Pauses execution until an authorized user approves or rejects |
 | **Delay** | Pauses execution for a configurable duration |
+| **Agent** | Invokes a registered AI agent capability with retry logic and configurable backoff |
+
+### Trigger Types
+
+| Trigger | Fires When | Optional Filters |
+|---------|-----------|-----------------|
+| `status_change` | Task status changes | `fromStatus`, `toStatus` |
+| `progress_threshold` | Progress crosses a threshold | `progressThreshold`, `progressDirection` |
+| `date_passed` | Task end date is in the past | -- |
+| `task_created` | New task is created (oldTask is null) | `statusFilter` |
+| `priority_change` | Task priority changes | `toPriority` |
+| `assignment_change` | Task assignee changes | `toAssignee` |
+| `dependency_change` | Task dependency changes | -- |
+| `budget_threshold` | Project budget utilization crosses threshold | `thresholdPercent` |
+| `project_status_change` | Project status changes | `fromStatus`, `toStatus` |
+| `manual` | Triggered via API | -- |
+
+### Action Types
+
+| Action | Effect |
+|--------|--------|
+| `update_field` | Updates a task field to a specified value |
+| `log_activity` | Logs an activity entry on the task |
+| `send_notification` | Creates a real notification via NotificationService (notifies the project manager) |
+| `invoke_agent` | Invokes a registered agent capability inline (e.g., auto-reschedule) |
+
+### Event-Driven Execution
+
+Workflows are triggered automatically by task and project lifecycle events:
+
+- **Task events:** `ScheduleService.createTask()` and `updateTask()` call `evaluateTaskChange()` (fire-and-forget)
+- **Project events:** `ProjectService.update()` calls `evaluateProjectChange()` on budget or status changes
+- **Overdue scanner:** A 15-minute cron in `AgentSchedulerService` detects newly-overdue tasks and fires `date_passed` triggers
+
+All event-driven calls are non-blocking -- they use `.catch()` so workflow failures never break task or project operations.
 
 ### Execution Model
 

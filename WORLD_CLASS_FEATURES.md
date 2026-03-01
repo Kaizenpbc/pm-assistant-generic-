@@ -87,16 +87,19 @@ Build an AI-native project management platform that combines the scheduling powe
 
 ### 2.2 Workflow Automation Builder (DAG Engine)
 - Declarative DAG-based workflow engine with DB persistence
-- Node types: trigger, condition, action, approval gate, delay
-- Triggers: status_change, progress_threshold, date_passed, manual
+- Node types: trigger, condition, action, approval gate, delay, agent
+- Triggers: status_change, progress_threshold, date_passed, task_created, priority_change, assignment_change, dependency_change, budget_threshold, project_status_change, manual
+- Event-driven: task create/update and project budget/status changes automatically fire matching workflows
 - Conditions: field-based evaluation with operators (equals, greater_than, contains, etc.)
-- Actions: update_field, log_activity, send_notification
+- Actions: update_field, log_activity, send_notification (real notifications via NotificationService), invoke_agent
+- Agent nodes: invoke registered AI agent capabilities inline with retry logic and backoff
 - Approval gates: pause execution until resumed via API/UI
 - Multi-step workflows with branching (yes/no edges on conditions)
 - Persistent execution history with per-node status tracking
+- 15-minute overdue-task scanner triggers date_passed workflows automatically
 - Cycle protection, graceful degradation, audit integration
 - 5 DB tables: workflow_definitions, workflow_nodes, workflow_edges, workflow_executions, workflow_node_executions
-- **Benchmark:** Monday.com, Wrike, Smartsheet (exceeds with DAG support + approval gates)
+- **Benchmark:** Monday.com, Wrike, Smartsheet (exceeds with DAG support + approval gates + agent nodes)
 
 ### 2.3 Custom Dashboards
 - Drag-and-drop widget builder

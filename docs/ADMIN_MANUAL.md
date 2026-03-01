@@ -167,7 +167,14 @@ Key variables in `.env` (never commit secrets):
 
 ### DAG Workflow Engine
 - Create directed acyclic graph (DAG) workflows under **Settings > Workflows**.
+- Six node types: trigger, condition, action, approval, delay, agent.
 - Define stages, transitions, and approval gates visually or via JSON.
+
+### Event-Driven Triggers
+- Workflows fire automatically on task events (create, update, priority change, assignment change, dependency change).
+- Project-level triggers fire on budget threshold crossings and status changes.
+- A 15-minute overdue-task scanner detects past-due tasks and fires `date_passed` triggers.
+- Configure the scan interval with `AGENT_OVERDUE_SCAN_MINUTES` (default: 15).
 
 ### Monitoring Executions
 - View active workflow instances under **Projects > Workflows**.
@@ -176,6 +183,11 @@ Key variables in `.env` (never commit secrets):
 ### Approval Gates
 - Configure stages that require one or more approvers before progressing.
 - Approvers are notified via email and in-app notifications.
+
+### Agent Nodes
+- Agent nodes invoke registered AI capabilities (e.g., auto-reschedule) inline within a workflow.
+- Support retry logic with configurable backoff.
+- Use template variables (e.g., `{{task.scheduleId}}`) to pass task context to agents.
 
 ---
 

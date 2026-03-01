@@ -107,7 +107,13 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 ### DAG Workflow Engine
 - Declarative directed acyclic graph workflows
-- Five node types: trigger, condition, action, approval, delay
+- Six node types: trigger, condition, action, approval, delay, agent
+- Event-driven triggers: status_change, progress_threshold, date_passed, task_created, priority_change, assignment_change, dependency_change, budget_threshold, project_status_change
+- Task lifecycle events (create/update) automatically fire matching workflows
+- Project-level events (budget changes, status changes) trigger workflows via `evaluateProjectChange()`
+- Actions: update_field, log_activity, send_notification (creates real notifications), invoke_agent
+- Agent nodes with retry logic and configurable backoff
+- 15-minute overdue-task scanner triggers `date_passed` workflows automatically
 - Persistent execution with per-node status tracking
 - Approval gates that pause execution pending human review
 - Condition branching with field-based operator evaluation
