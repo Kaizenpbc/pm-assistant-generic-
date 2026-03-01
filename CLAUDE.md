@@ -74,9 +74,7 @@ Only update docs that are actually affected by the change. Don't update docs for
 
 - **Atomic commits** with descriptive messages (what was changed + why).
 - **Stage specific files** — never `git add -A` or `git add .`. Name each file explicitly.
-- **Push to both remotes** after every successful commit:
-  - `git push local master` (local backup)
-  - `git push origin master` (GitHub)
+- **Push to origin** after every successful commit: `git push origin master`
 
 ## Phase 8: Performance Review
 
