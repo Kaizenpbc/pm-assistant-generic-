@@ -185,4 +185,98 @@ describe('EmbeddingService', () => {
       );
     });
   });
+
+  // --- embedding cache ---
+  describe('embedding cache', () => {
+    const queryVector = [1, 0, 0];
+    const goodMatch = [0.9, 0.1, 0];
+    const dbRows = [
+      { document_type: 'lesson', document_id: 'doc-1', embedding: JSON.stringify(goodMatch) },
+    ];
+
+    function mockEmbed() {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: [{ embedding: queryVector }] }),
+      } as any);
+    }
+
+    it('cache hit: second search skips DB query', async () => {
+      // First search — DB hit
+      mockEmbed();
+      vi.mocked(databaseService.query).mockResolvedValueOnce(dbRows as any);
+      await service.searchSimilar('test', 'lesson');
+
+      // Second search — should NOT query DB again
+      mockEmbed();
+      const results = await service.searchSimilar('test', 'lesson');
+
+      // embed is called twice (once per search), but DB query only once
+      expect(databaseService.query).toHaveBeenCalledTimes(1);
+      expect(results.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('upsertEmbedding invalidates cache', async () => {
+      // Populate cache
+      mockEmbed();
+      vi.mocked(databaseService.query).mockResolvedValueOnce(dbRows as any);
+      await service.searchSimilar('test', 'lesson');
+
+      // Upsert clears cache
+      vi.mocked(databaseService.query)
+        .mockResolvedValueOnce([] as any) // SELECT for existing
+        .mockResolvedValueOnce([] as any); // INSERT
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: [{ embedding: [0.1, 0.2, 0.3] }] }),
+      } as any);
+      await service.upsertEmbedding('lesson', 'new-doc', 'text');
+
+      // Next search should hit DB again
+      mockEmbed();
+      vi.mocked(databaseService.query).mockResolvedValueOnce(dbRows as any);
+      await service.searchSimilar('test', 'lesson');
+
+      // DB queried for: first search (1) + upsert SELECT (2) + upsert INSERT (3) + second search (4)
+      expect(databaseService.query).toHaveBeenCalledTimes(4);
+    });
+
+    it('deleteEmbedding invalidates cache', async () => {
+      // Populate cache
+      mockEmbed();
+      vi.mocked(databaseService.query).mockResolvedValueOnce(dbRows as any);
+      await service.searchSimilar('test', 'lesson');
+
+      // Delete clears cache
+      vi.mocked(databaseService.query).mockResolvedValueOnce([] as any);
+      await service.deleteEmbedding('lesson', 'doc-1');
+
+      // Next search should hit DB again
+      mockEmbed();
+      vi.mocked(databaseService.query).mockResolvedValueOnce(dbRows as any);
+      await service.searchSimilar('test', 'lesson');
+
+      // DB queried for: first search (1) + delete (2) + second search (3)
+      expect(databaseService.query).toHaveBeenCalledTimes(3);
+    });
+
+    it('cache expires after TTL', async () => {
+      // Populate cache
+      mockEmbed();
+      vi.mocked(databaseService.query).mockResolvedValueOnce(dbRows as any);
+      await service.searchSimilar('test', 'lesson');
+
+      // Advance time past TTL (5 minutes + 1ms)
+      vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 5 * 60 * 1000 + 1);
+
+      // Next search should hit DB again because cache expired
+      mockEmbed();
+      vi.mocked(databaseService.query).mockResolvedValueOnce(dbRows as any);
+      await service.searchSimilar('test', 'lesson');
+
+      expect(databaseService.query).toHaveBeenCalledTimes(2);
+
+      vi.restoreAllMocks();
+    });
+  });
 });

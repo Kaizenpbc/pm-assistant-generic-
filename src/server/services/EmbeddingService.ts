@@ -28,6 +28,10 @@ export interface SimilarityResult {
 // ---------------------------------------------------------------------------
 
 export class EmbeddingService {
+  private cache: Map<string, { vector: number[]; documentType: string; documentId: string }[]> = new Map();
+  private cacheTimestamps: Map<string, number> = new Map();
+  private readonly cacheTtlMs = 5 * 60 * 1000; // 5 minutes
+
   isAvailable(): boolean {
     return !!(config.EMBEDDING_ENABLED && config.OPENAI_API_KEY);
   }
@@ -105,6 +109,7 @@ export class EmbeddingService {
       ],
     );
 
+    this.clearCache();
     return { id, skipped: false };
   }
 
@@ -123,27 +128,39 @@ export class EmbeddingService {
 
     const queryVector = await this.embed(query);
 
-    // Load all embeddings of the requested type(s)
-    let sql = 'SELECT document_type, document_id, embedding FROM embeddings';
-    const params: any[] = [];
-    if (documentType) {
-      sql += ' WHERE document_type = ?';
-      params.push(documentType);
-    }
+    // Check cache for parsed embeddings
+    const cacheKey = documentType ?? 'all';
+    let entries = this.getCachedEntries(cacheKey);
 
-    const rows = await databaseService.query<Pick<EmbeddingRow, 'document_type' | 'document_id' | 'embedding'>>(sql, params);
+    if (!entries) {
+      // Cache miss — load from DB and parse JSON
+      let sql = 'SELECT document_type, document_id, embedding FROM embeddings';
+      const params: any[] = [];
+      if (documentType) {
+        sql += ' WHERE document_type = ?';
+        params.push(documentType);
+      }
+
+      const rows = await databaseService.query<Pick<EmbeddingRow, 'document_type' | 'document_id' | 'embedding'>>(sql, params);
+
+      entries = rows.map(row => ({
+        vector: typeof row.embedding === 'string' ? JSON.parse(row.embedding) : row.embedding,
+        documentType: row.document_type,
+        documentId: row.document_id,
+      }));
+
+      this.cache.set(cacheKey, entries);
+      this.cacheTimestamps.set(cacheKey, Date.now());
+    }
 
     // Compute cosine similarity in JS
     const scored: SimilarityResult[] = [];
-    for (const row of rows) {
-      const storedVector: number[] = typeof row.embedding === 'string'
-        ? JSON.parse(row.embedding)
-        : row.embedding;
-      const score = EmbeddingService.cosineSimilarity(queryVector, storedVector);
+    for (const entry of entries) {
+      const score = EmbeddingService.cosineSimilarity(queryVector, entry.vector);
       if (score >= minScore) {
         scored.push({
-          documentType: row.document_type,
-          documentId: row.document_id,
+          documentType: entry.documentType as 'lesson' | 'meeting',
+          documentId: entry.documentId,
           score,
         });
       }
@@ -163,6 +180,26 @@ export class EmbeddingService {
       'DELETE FROM embeddings WHERE document_type = ? AND document_id = ?',
       [documentType, documentId],
     );
+    this.clearCache();
+  }
+
+  // -------------------------------------------------------------------------
+  // Cache helpers
+  // -------------------------------------------------------------------------
+
+  private getCachedEntries(key: string): { vector: number[]; documentType: string; documentId: string }[] | null {
+    const ts = this.cacheTimestamps.get(key);
+    if (ts == null || Date.now() - ts > this.cacheTtlMs) {
+      this.cache.delete(key);
+      this.cacheTimestamps.delete(key);
+      return null;
+    }
+    return this.cache.get(key) ?? null;
+  }
+
+  private clearCache(): void {
+    this.cache.clear();
+    this.cacheTimestamps.clear();
   }
 
   // -------------------------------------------------------------------------
