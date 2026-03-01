@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
 import { auditLedgerService } from './AuditLedgerService';
+import { dagWorkflowService } from './DagWorkflowService';
 
 export interface Schedule {
   id: string;
@@ -360,6 +361,11 @@ export class ScheduleService {
       source: 'web',
     }).catch(() => {});
 
+    // Fire event-driven workflow triggers (non-blocking)
+    dagWorkflowService.evaluateTaskChange(task, null, this).catch(err =>
+      console.error('[Workflow] evaluateTaskChange error:', err)
+    );
+
     return task;
   }
 
@@ -433,6 +439,11 @@ export class ScheduleService {
       payload: { before: oldTask, after: updated, changes: data },
       source: 'web',
     }).catch(() => {});
+
+    // Fire event-driven workflow triggers (non-blocking)
+    dagWorkflowService.evaluateTaskChange(updated, oldTask, this).catch(err =>
+      console.error('[Workflow] evaluateTaskChange error:', err)
+    );
 
     return updated;
   }

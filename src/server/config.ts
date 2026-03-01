@@ -48,6 +48,7 @@ const configSchema = z.object({
   AGENT_BUDGET_CPI_THRESHOLD: z.coerce.number().min(0).max(2).default(0.9),
   AGENT_BUDGET_OVERRUN_THRESHOLD: z.coerce.number().min(0).max(100).default(50),
   AGENT_MC_CONFIDENCE_LEVEL: z.coerce.number().min(1).max(99).default(80),
+  AGENT_OVERDUE_SCAN_MINUTES: z.coerce.number().min(1).max(1440).default(15),
 
   // Embedding / RAG Configuration
   OPENAI_API_KEY: z.string().optional().default(''),
@@ -110,6 +111,7 @@ export function validateConfiguration() {
       AGENT_BUDGET_CPI_THRESHOLD: process.env['AGENT_BUDGET_CPI_THRESHOLD'],
       AGENT_BUDGET_OVERRUN_THRESHOLD: process.env['AGENT_BUDGET_OVERRUN_THRESHOLD'],
       AGENT_MC_CONFIDENCE_LEVEL: process.env['AGENT_MC_CONFIDENCE_LEVEL'],
+      AGENT_OVERDUE_SCAN_MINUTES: process.env['AGENT_OVERDUE_SCAN_MINUTES'],
       OPENAI_API_KEY: process.env['OPENAI_API_KEY'],
       EMBEDDING_ENABLED: process.env['EMBEDDING_ENABLED'],
       EMBEDDING_MODEL: process.env['EMBEDDING_MODEL'],

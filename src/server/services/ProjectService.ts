@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
 import { auditLedgerService } from './AuditLedgerService';
 import { policyEngineService } from './PolicyEngineService';
+import { dagWorkflowService } from './DagWorkflowService';
 
 export interface Project {
   id: string;
@@ -216,6 +217,20 @@ export class ProjectService {
       payload: { before: existing, after: updated, changes: data },
       source: 'web',
     }).catch(() => {});
+
+    // Fire project-level workflow triggers (non-blocking)
+    if ('budgetSpent' in data && data.budgetSpent !== existing.budgetSpent) {
+      const budgetAllocated = updated.budgetAllocated ?? 0;
+      const utilization = budgetAllocated > 0 ? (updated.budgetSpent / budgetAllocated) * 100 : 0;
+      dagWorkflowService.evaluateProjectChange(id, 'budget_update', {
+        budgetAllocated, budgetSpent: updated.budgetSpent, utilization,
+      }).catch(err => console.error('[Workflow] evaluateProjectChange error:', err));
+    }
+    if ('status' in data && data.status !== existing.status) {
+      dagWorkflowService.evaluateProjectChange(id, 'project_status_change', {
+        oldStatus: existing.status, newStatus: updated.status,
+      }).catch(err => console.error('[Workflow] evaluateProjectChange error:', err));
+    }
 
     return updated;
   }

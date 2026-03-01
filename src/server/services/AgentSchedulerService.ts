@@ -7,9 +7,13 @@ import { ProjectService, type Project } from './ProjectService';
 import { ScheduleService } from './ScheduleService';
 import { AgentActivityLogService } from './AgentActivityLogService';
 import { webhookService } from './WebhookService';
+import { dagWorkflowService } from './DagWorkflowService';
+import { databaseService } from '../database/connection';
 
 export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
+  private overdueTask: cron.ScheduledTask | null = null;
+  private flaggedOverdue = new Set<string>();
   private projectService = new ProjectService();
   private scheduleService = new ScheduleService();
   private activityLog = new AgentActivityLogService();
@@ -31,14 +35,31 @@ export class AgentSchedulerService {
         console.error('[Agent] Scan failed:', error);
       }
     });
+
+    // Overdue-task scanner — runs more frequently to trigger date_passed workflows
+    const overdueMinutes = config.AGENT_OVERDUE_SCAN_MINUTES;
+    const overdueCron = `*/${overdueMinutes} * * * *`;
+    console.log(`[Agent] Starting overdue-task scanner on cron: "${overdueCron}"`);
+
+    this.overdueTask = cron.schedule(overdueCron, async () => {
+      try {
+        await this.runOverdueScan();
+      } catch (error) {
+        console.error('[Agent] Overdue scan failed:', error);
+      }
+    });
   }
 
   stop(): void {
     if (this.task) {
       this.task.stop();
       this.task = null;
-      console.log('[Agent] Stopped agent scheduler');
     }
+    if (this.overdueTask) {
+      this.overdueTask.stop();
+      this.overdueTask = null;
+    }
+    console.log('[Agent] Stopped agent scheduler');
   }
 
   async runScan(): Promise<{
@@ -199,6 +220,43 @@ export class AgentSchedulerService {
     console.log('[Agent] Scan complete:', stats);
     webhookService.dispatch('agent.scan_completed', { stats }, undefined);
     return stats;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Overdue-Task Scanner (frequent cron)
+  // ---------------------------------------------------------------------------
+
+  async runOverdueScan(): Promise<number> {
+    let rows: any[];
+    try {
+      rows = await databaseService.query(
+        `SELECT * FROM tasks WHERE end_date < CURDATE() AND status NOT IN ('completed', 'cancelled')`,
+      );
+    } catch {
+      // Tables may not exist yet
+      return 0;
+    }
+
+    let triggered = 0;
+    for (const row of rows) {
+      const taskId = row.id;
+      if (this.flaggedOverdue.has(taskId)) continue;
+
+      this.flaggedOverdue.add(taskId);
+      const task = await this.scheduleService.findTaskById(taskId);
+      if (!task) continue;
+
+      // Fire date_passed triggers via workflow engine
+      dagWorkflowService.evaluateTaskChange(task, task, this.scheduleService).catch(err =>
+        console.error('[Agent] Overdue workflow trigger error:', err)
+      );
+      triggered++;
+    }
+
+    if (triggered > 0) {
+      console.log(`[Agent] Overdue scan: triggered workflows for ${triggered} newly-overdue task(s)`);
+    }
+    return triggered;
   }
 
   // ---------------------------------------------------------------------------

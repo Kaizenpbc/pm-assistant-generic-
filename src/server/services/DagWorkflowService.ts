@@ -424,6 +424,51 @@ class DagWorkflowService {
     }
   }
 
+  /** Evaluate project-level changes (budget, status) against workflows */
+  async evaluateProjectChange(
+    projectId: string,
+    changeType: string,
+    data: Record<string, any>,
+  ): Promise<void> {
+    if (!(await this.ensureTablesExist())) return;
+
+    try {
+      const defs = await databaseService.query(
+        'SELECT * FROM workflow_definitions WHERE is_enabled = 1',
+      );
+
+      for (const defRow of defs) {
+        const def = rowToDef(defRow);
+        const fullDef = await this.getDefinition(def.id);
+        if (!fullDef) continue;
+
+        const triggerNodes = fullDef.nodes.filter(n => n.nodeType === 'trigger');
+        for (const triggerNode of triggerNodes) {
+          const config = triggerNode.config;
+          let matched = false;
+
+          if (changeType === 'budget_update' && config.triggerType === 'budget_threshold') {
+            const utilization = data.utilization ?? 0;
+            const threshold = config.thresholdPercent ?? 90;
+            matched = utilization >= threshold;
+          } else if (changeType === 'project_status_change' && config.triggerType === 'project_status_change') {
+            if (config.toStatus && data.newStatus !== config.toStatus) continue;
+            if (config.fromStatus && data.oldStatus !== config.fromStatus) continue;
+            matched = true;
+          }
+
+          if (matched) {
+            // Build a synthetic task-like context for the workflow engine
+            const scheduleService = new ScheduleService();
+            await this.executeWorkflow(fullDef, triggerNode, null, scheduleService);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[DagWorkflow] evaluateProjectChange error:', err);
+    }
+  }
+
   /** Manual trigger for a workflow */
   async triggerManual(
     workflowId: string,
@@ -522,6 +567,30 @@ class DagWorkflowService {
         if (!task.endDate) return false;
         return new Date(task.endDate) < new Date();
       }
+      case 'task_created':
+        if (oldTask !== null) return false;
+        if (config.statusFilter && task.status !== config.statusFilter) return false;
+        return true;
+      case 'assignment_change':
+        if (!oldTask) return false;
+        if ((oldTask.assignedTo ?? '') === (task.assignedTo ?? '')) return false;
+        if (config.toAssignee && task.assignedTo !== config.toAssignee) return false;
+        return true;
+      case 'dependency_change':
+        if (!oldTask) return false;
+        return (oldTask.dependency ?? '') !== (task.dependency ?? '');
+      case 'priority_change': {
+        if (!oldTask) return false;
+        if (oldTask.priority === task.priority) return false;
+        if (config.toPriority && task.priority !== config.toPriority) return false;
+        return true;
+      }
+      case 'budget_threshold':
+        // Handled by evaluateProjectChange, not task triggers
+        return false;
+      case 'project_status_change':
+        // Handled by evaluateProjectChange, not task triggers
+        return false;
       case 'manual':
         return true;
       default:
@@ -819,7 +888,42 @@ class DagWorkflowService {
       }
       case 'send_notification': {
         console.log(`[Workflow Notification] ${config.message || 'Notification'} - Task: ${task?.name || 'N/A'}`);
-        return { action: 'send_notification', message: config.message };
+        try {
+          const { notificationService } = await import('./NotificationService');
+          const schedule = task ? await scheduleService.findById(task.scheduleId) : null;
+          const projectId = schedule?.projectId ?? config.projectId;
+          if (projectId) {
+            const { ProjectService } = await import('./ProjectService');
+            const projectService = new ProjectService();
+            const project = await projectService.findById(projectId);
+            const userId = project?.projectManagerId || project?.createdBy;
+            if (userId) {
+              await notificationService.create({
+                userId,
+                type: config.notificationType || 'workflow_action',
+                severity: config.severity || 'medium',
+                title: config.title || config.message || 'Workflow notification',
+                message: config.message || 'A workflow action was triggered.',
+                projectId,
+                linkType: config.linkType,
+                linkId: config.linkId,
+              });
+              return { action: 'send_notification', message: config.message, notified: true };
+            }
+          }
+        } catch (err) {
+          console.error('[Workflow] send_notification error:', err);
+        }
+        return { action: 'send_notification', message: config.message, notified: false };
+      }
+      case 'invoke_agent': {
+        const { agentRegistry } = await import('./AgentRegistryService');
+        const resolvedInput = resolveTemplates(config.input ?? {}, {}, task);
+        const result = await agentRegistry.invoke(config.capabilityId, resolvedInput, {
+          actorId: 'system', actorType: 'system', source: 'system',
+          projectId: config.projectId,
+        });
+        return { action: 'invoke_agent', capabilityId: config.capabilityId, success: result.success, output: result.output };
       }
       default:
         return { action: actionType, skipped: true };
