@@ -2,6 +2,8 @@ import { claudeService } from './claudeService';
 import { ScheduleService, Task } from './ScheduleService';
 import { ResourceService, Resource } from './ResourceService';
 import { config } from '../config';
+import { databaseService } from '../database/connection';
+import { RagService } from './RagService';
 import {
   MeetingAnalysis,
   MeetingAIResponse,
@@ -10,14 +12,66 @@ import {
 } from '../schemas/meetingSchemas';
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function parseJson(val: any): any {
+  if (typeof val === 'string') return JSON.parse(val);
+  return val ?? [];
+}
+
+function rowToMeetingAnalysis(row: any): MeetingAnalysis {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    scheduleId: row.schedule_id,
+    transcript: row.transcript,
+    summary: row.summary,
+    actionItems: parseJson(row.action_items),
+    decisions: parseJson(row.decisions),
+    risks: parseJson(row.risks),
+    taskUpdates: parseJson(row.task_updates),
+    appliedItems: parseJson(row.applied_items),
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // MeetingIntelligenceService
 // ---------------------------------------------------------------------------
 
 export class MeetingIntelligenceService {
-  private static analyses: MeetingAnalysis[] = [];
-
   private scheduleService = new ScheduleService();
   private resourceService = new ResourceService();
+  private ragService = new RagService();
+
+  // -------------------------------------------------------------------------
+  // Persist an analysis to DB and index for RAG
+  // -------------------------------------------------------------------------
+
+  private async persistAnalysis(analysis: MeetingAnalysis): Promise<void> {
+    await databaseService.query(
+      `INSERT INTO meeting_analyses (id, project_id, schedule_id, transcript, summary, action_items, decisions, risks, task_updates, applied_items, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE summary = VALUES(summary), action_items = VALUES(action_items), decisions = VALUES(decisions), risks = VALUES(risks), task_updates = VALUES(task_updates), applied_items = VALUES(applied_items)`,
+      [
+        analysis.id,
+        analysis.projectId,
+        analysis.scheduleId,
+        analysis.transcript,
+        analysis.summary,
+        JSON.stringify(analysis.actionItems),
+        JSON.stringify(analysis.decisions),
+        JSON.stringify(analysis.risks),
+        JSON.stringify(analysis.taskUpdates),
+        JSON.stringify(analysis.appliedItems),
+        analysis.createdAt,
+      ],
+    );
+
+    // Fire-and-forget RAG indexing
+    this.ragService.indexMeeting(analysis).catch(() => {});
+  }
 
   // -------------------------------------------------------------------------
   // Analyze a meeting transcript
@@ -125,7 +179,7 @@ Analyze this meeting transcript and extract all actionable information.`;
       createdAt: new Date().toISOString(),
     };
 
-    MeetingIntelligenceService.analyses.push(analysis);
+    await this.persistAnalysis(analysis);
     return analysis;
   }
 
@@ -138,7 +192,7 @@ Analyze this meeting transcript and extract all actionable information.`;
     selectedIndices: number[],
     userId?: string,
   ): Promise<{ applied: number; errors: string[] }> {
-    const analysis = this.getAnalysis(analysisId);
+    const analysis = await this.getAnalysis(analysisId);
     if (!analysis) {
       return { applied: 0, errors: [`Analysis not found: ${analysisId}`] };
     }
@@ -253,48 +307,54 @@ Analyze this meeting transcript and extract all actionable information.`;
       }
     }
 
+    // Persist updated appliedItems back to DB
+    await databaseService.query(
+      'UPDATE meeting_analyses SET applied_items = ? WHERE id = ?',
+      [JSON.stringify(analysis.appliedItems), analysisId],
+    );
+
     return { applied, errors };
   }
 
   // -------------------------------------------------------------------------
-  // Getters
+  // Getters (DB-backed)
   // -------------------------------------------------------------------------
 
-  getAnalysis(id: string): MeetingAnalysis | null {
-    return (
-      MeetingIntelligenceService.analyses.find((a) => a.id === id) || null
+  async getAnalysis(id: string): Promise<MeetingAnalysis | null> {
+    const rows = await databaseService.query<any>(
+      'SELECT * FROM meeting_analyses WHERE id = ?',
+      [id],
     );
+    if (rows.length === 0) return null;
+    return rowToMeetingAnalysis(rows[0]);
   }
 
-  getProjectHistory(projectId: string): MeetingAnalysis[] {
-    return MeetingIntelligenceService.analyses
-      .filter((a) => a.projectId === projectId)
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+  getProjectHistory(projectId: string): Promise<MeetingAnalysis[]> {
+    return this.getProjectHistoryAsync(projectId);
+  }
+
+  async getProjectHistoryAsync(projectId: string): Promise<MeetingAnalysis[]> {
+    const rows = await databaseService.query<any>(
+      'SELECT * FROM meeting_analyses WHERE project_id = ? ORDER BY created_at DESC',
+      [projectId],
+    );
+    return rows.map(rowToMeetingAnalysis);
   }
 
   // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------
 
-  /**
-   * Fuzzy match an assignee name to a known resource.
-   * Uses lowercase comparison and substring includes check.
-   */
   private matchAssigneeName(name: string, resources: Resource[]): string {
     if (!name) return name;
 
     const lower = name.toLowerCase().trim();
 
-    // Exact match (case-insensitive)
     const exact = resources.find(
       (r) => r.name.toLowerCase() === lower,
     );
     if (exact) return exact.name;
 
-    // Partial match: resource name includes the input or input includes resource name
     const partial = resources.find(
       (r) =>
         r.name.toLowerCase().includes(lower) ||
@@ -302,21 +362,15 @@ Analyze this meeting transcript and extract all actionable information.`;
     );
     if (partial) return partial.name;
 
-    // Match by first or last name
     const byPart = resources.find((r) => {
       const parts = r.name.toLowerCase().split(/\s+/);
       return parts.some((part) => part === lower || lower.includes(part));
     });
     if (byPart) return byPart.name;
 
-    // No match found, return original
     return name;
   }
 
-  /**
-   * Try to find an existing task ID that matches a task update by name.
-   * Only applies to update_status and reschedule types.
-   */
   private findMatchingTaskId(
     update: MeetingTaskUpdate,
     existingTasks: Task[],
@@ -325,13 +379,11 @@ Analyze this meeting transcript and extract all actionable information.`;
 
     const updateName = update.taskName.toLowerCase().trim();
 
-    // Exact name match
     const exact = existingTasks.find(
       (t) => t.name.toLowerCase() === updateName,
     );
     if (exact) return exact.id;
 
-    // Substring match
     const partial = existingTasks.find(
       (t) =>
         t.name.toLowerCase().includes(updateName) ||
@@ -342,9 +394,6 @@ Analyze this meeting transcript and extract all actionable information.`;
     return undefined;
   }
 
-  /**
-   * Build a fallback response when AI is not available.
-   */
   private buildFallbackResponse(transcript: string): MeetingAIResponse {
     return {
       summary:

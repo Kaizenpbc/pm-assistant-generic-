@@ -49,6 +49,14 @@ const configSchema = z.object({
   AGENT_BUDGET_OVERRUN_THRESHOLD: z.coerce.number().min(0).max(100).default(50),
   AGENT_MC_CONFIDENCE_LEVEL: z.coerce.number().min(1).max(99).default(80),
 
+  // Embedding / RAG Configuration
+  OPENAI_API_KEY: z.string().optional().default(''),
+  EMBEDDING_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
+  EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+  EMBEDDING_DIMENSIONS: z.coerce.number().min(256).max(3072).default(1536),
+  RAG_TOP_K: z.coerce.number().min(1).max(50).default(5),
+  RAG_SIMILARITY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.3),
+
   // File Upload Configuration
   UPLOAD_DIR: z.string().default(process.env['HOME'] || process.env['USERPROFILE'] ? `${process.env['HOME'] || process.env['USERPROFILE']}/uploads/pm-assistant` : './uploads/pm-assistant'),
   MAX_UPLOAD_SIZE_MB: z.coerce.number().min(1).max(100).default(10),
@@ -102,6 +110,12 @@ export function validateConfiguration() {
       AGENT_BUDGET_CPI_THRESHOLD: process.env['AGENT_BUDGET_CPI_THRESHOLD'],
       AGENT_BUDGET_OVERRUN_THRESHOLD: process.env['AGENT_BUDGET_OVERRUN_THRESHOLD'],
       AGENT_MC_CONFIDENCE_LEVEL: process.env['AGENT_MC_CONFIDENCE_LEVEL'],
+      OPENAI_API_KEY: process.env['OPENAI_API_KEY'],
+      EMBEDDING_ENABLED: process.env['EMBEDDING_ENABLED'],
+      EMBEDDING_MODEL: process.env['EMBEDDING_MODEL'],
+      EMBEDDING_DIMENSIONS: process.env['EMBEDDING_DIMENSIONS'],
+      RAG_TOP_K: process.env['RAG_TOP_K'],
+      RAG_SIMILARITY_THRESHOLD: process.env['RAG_SIMILARITY_THRESHOLD'],
       UPLOAD_DIR: process.env['UPLOAD_DIR'],
       MAX_UPLOAD_SIZE_MB: process.env['MAX_UPLOAD_SIZE_MB'],
     };

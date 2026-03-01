@@ -120,6 +120,23 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // POST /similar — Find semantically similar lessons via RAG
+  fastify.post('/similar', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { query, topK } = request.body as { query: string; topK?: number };
+      if (!query) {
+        return reply.status(400).send({ error: 'query is required' });
+      }
+      const lessons = await service.findSimilarLessons(query, topK);
+      return reply.send({ lessons });
+    } catch (err) {
+      fastify.log.error({ err }, 'Failed to find similar lessons');
+      return reply.status(500).send({ error: 'Failed to find similar lessons' });
+    }
+  });
+
   // POST /seed — Seed initial lessons from existing project data
   fastify.post('/seed', {
     preHandler: [requireScope('write')],

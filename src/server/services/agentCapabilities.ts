@@ -4,12 +4,19 @@ import { AutoRescheduleService } from './AutoRescheduleService';
 import { EVMForecastService } from './EVMForecastService';
 import { MonteCarloService } from './MonteCarloService';
 import { MeetingIntelligenceService } from './MeetingIntelligenceService';
+import { LessonsLearnedService } from './LessonsLearnedService';
+import { RagService } from './RagService';
+
+// Register RAG agent capability (side-effect import)
+import './ragAgentCapability';
 
 // Lazily instantiate services to avoid circular dependency issues
 let rescheduleService: AutoRescheduleService;
 let evmForecastService: EVMForecastService;
 let monteCarloService: MonteCarloService;
 let meetingIntelligenceService: MeetingIntelligenceService;
+let lessonsLearnedService: LessonsLearnedService;
+let ragService: RagService;
 
 function getRescheduleService() {
   if (!rescheduleService) rescheduleService = new AutoRescheduleService();
@@ -26,6 +33,14 @@ function getMonteCarloService() {
 function getMeetingIntelligenceService() {
   if (!meetingIntelligenceService) meetingIntelligenceService = new MeetingIntelligenceService();
   return meetingIntelligenceService;
+}
+function getLessonsLearnedService() {
+  if (!lessonsLearnedService) lessonsLearnedService = new LessonsLearnedService();
+  return lessonsLearnedService;
+}
+function getRagService() {
+  if (!ragService) ragService = new RagService();
+  return ragService;
 }
 
 // --- Auto-Reschedule Agent ---
@@ -111,18 +126,33 @@ agentRegistry.register({
   id: 'meeting-followup-v1',
   capability: 'meeting.extract',
   version: '1.0.0',
-  description: 'Extracts meeting history and identifies follow-up items',
+  description: 'Extracts meeting history and identifies follow-up items, optionally enriched with related lessons',
   inputSchema: z.object({
     projectId: z.string(),
   }),
   outputSchema: z.object({
     analyses: z.any(),
+    relatedLessons: z.any().optional(),
   }),
   permissions: ['agent:meeting'],
   timeoutMs: 60000,
   handler: async (input: { projectId: string }) => {
     const svc = getMeetingIntelligenceService();
-    const analyses = svc.getProjectHistory(input.projectId);
-    return { analyses };
+    const analyses = await svc.getProjectHistory(input.projectId);
+
+    // Enrich with related lessons via RAG if available
+    let relatedLessons: any[] | undefined;
+    const rag = getRagService();
+    if (rag.isAvailable() && analyses.length > 0) {
+      try {
+        const latestSummary = analyses[0].summary;
+        const llService = getLessonsLearnedService();
+        relatedLessons = await llService.findSimilarLessons(latestSummary, 3);
+      } catch {
+        // RAG enrichment is optional
+      }
+    }
+
+    return { analyses, relatedLessons };
   },
 });

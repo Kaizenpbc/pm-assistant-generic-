@@ -2,6 +2,8 @@ import { claudeService, PromptTemplate } from './claudeService';
 import { ProjectService } from './ProjectService';
 import { ScheduleService } from './ScheduleService';
 import { config } from '../config';
+import { databaseService } from '../database/connection';
+import { RagService } from './RagService';
 import {
   LessonsExtractionAISchema,
   PatternDetectionAISchema,
@@ -74,20 +76,72 @@ Be specific and base suggestions on the historical data provided.`,
 );
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function rowToLesson(row: any): LessonLearned {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    projectName: row.project_name,
+    projectType: row.project_type,
+    category: row.category,
+    title: row.title,
+    description: row.description,
+    impact: row.impact,
+    recommendation: row.recommendation,
+    confidence: row.confidence,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // LessonsLearnedService
 // ---------------------------------------------------------------------------
 
 export class LessonsLearnedService {
-  private static lessons: LessonLearned[] = [];
   private static patterns: Pattern[] = [];
+  private ragService = new RagService();
+
+  // -----------------------------------------------------------------------
+  // Persist a lesson to DB and index for RAG
+  // -----------------------------------------------------------------------
+
+  private async persistLesson(lesson: LessonLearned): Promise<void> {
+    await databaseService.query(
+      `INSERT INTO lessons_learned (id, project_id, project_name, project_type, category, title, description, impact, recommendation, confidence, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE title = VALUES(title), description = VALUES(description), recommendation = VALUES(recommendation), confidence = VALUES(confidence)`,
+      [
+        lesson.id,
+        lesson.projectId,
+        lesson.projectName,
+        lesson.projectType,
+        lesson.category,
+        lesson.title,
+        lesson.description,
+        lesson.impact,
+        lesson.recommendation,
+        lesson.confidence,
+        lesson.createdAt,
+      ],
+    );
+
+    // Fire-and-forget RAG indexing
+    this.ragService.indexLesson(lesson).catch(() => {});
+  }
 
   // -----------------------------------------------------------------------
   // Seed initial lessons deterministically from existing project data
   // -----------------------------------------------------------------------
 
   async seedFromProjects(): Promise<number> {
-    // Avoid duplicate seeding
-    if (LessonsLearnedService.lessons.length > 0) {
+    // Check DB for existing lessons to avoid duplicate seeding
+    const existing = await databaseService.query<{ cnt: number }>(
+      'SELECT COUNT(*) as cnt FROM lessons_learned WHERE id LIKE ?',
+      ['ll-seed-%'],
+    );
+    if (existing[0]?.cnt > 0) {
       return 0;
     }
 
@@ -228,7 +282,11 @@ export class LessonsLearnedService {
       }
     }
 
-    LessonsLearnedService.lessons.push(...seededLessons);
+    // Persist all seeded lessons to DB
+    for (const lesson of seededLessons) {
+      await this.persistLesson(lesson);
+    }
+
     return seededLessons.length;
   }
 
@@ -309,8 +367,11 @@ export class LessonsLearnedService {
           createdAt: new Date().toISOString(),
         }));
 
-        // Store and return
-        LessonsLearnedService.lessons.push(...newLessons);
+        // Persist to DB
+        for (const lesson of newLessons) {
+          await this.persistLesson(lesson);
+        }
+
         return newLessons;
       } catch {
         // Fall through to deterministic extraction
@@ -321,10 +382,10 @@ export class LessonsLearnedService {
     return this.extractLessonsDeterministic(project, scheduleData);
   }
 
-  private extractLessonsDeterministic(
+  private async extractLessonsDeterministic(
     project: { id: string; name: string; projectType: string; budgetAllocated?: number; budgetSpent: number; startDate?: string; endDate?: string; status: string },
     scheduleData: Array<{ scheduleName: string; tasks: any[] }>,
-  ): LessonLearned[] {
+  ): Promise<LessonLearned[]> {
     const newLessons: LessonLearned[] = [];
     const allTasks = scheduleData.flatMap((s) => s.tasks);
     const totalTasks = allTasks.length;
@@ -406,7 +467,11 @@ export class LessonsLearnedService {
       });
     }
 
-    LessonsLearnedService.lessons.push(...newLessons);
+    // Persist to DB
+    for (const lesson of newLessons) {
+      await this.persistLesson(lesson);
+    }
+
     return newLessons;
   }
 
@@ -415,7 +480,7 @@ export class LessonsLearnedService {
   // -----------------------------------------------------------------------
 
   async getKnowledgeBase(): Promise<KnowledgeBaseOverview> {
-    const lessons = LessonsLearnedService.lessons;
+    const lessons = await this.getAllLessons();
     const patterns = LessonsLearnedService.patterns;
 
     const byCategory: Record<string, number> = {};
@@ -445,22 +510,45 @@ export class LessonsLearnedService {
   }
 
   // -----------------------------------------------------------------------
-  // Find relevant lessons (filtered)
+  // Find relevant lessons (filtered via DB)
   // -----------------------------------------------------------------------
 
   async findRelevantLessons(projectType?: string, category?: string): Promise<LessonLearned[]> {
-    let results = [...LessonsLearnedService.lessons];
+    let sql = 'SELECT * FROM lessons_learned WHERE 1=1';
+    const params: any[] = [];
 
     if (projectType) {
-      results = results.filter((l) => l.projectType === projectType);
+      sql += ' AND project_type = ?';
+      params.push(projectType);
     }
     if (category) {
-      results = results.filter((l) => l.category === category);
+      sql += ' AND category = ?';
+      params.push(category);
     }
 
-    // Sort by confidence descending
-    results.sort((a, b) => b.confidence - a.confidence);
-    return results;
+    sql += ' ORDER BY confidence DESC';
+
+    const rows = await databaseService.query<any>(sql, params);
+    return rows.map(rowToLesson);
+  }
+
+  // -----------------------------------------------------------------------
+  // Find similar lessons via RAG (semantic search)
+  // -----------------------------------------------------------------------
+
+  async findSimilarLessons(query: string, topK?: number): Promise<LessonLearned[]> {
+    if (!this.ragService.isAvailable()) {
+      return [];
+    }
+
+    const results = await this.ragService.search(query, {
+      documentType: 'lesson',
+      topK,
+    });
+
+    return results
+      .filter((r) => r.document !== null)
+      .map((r) => r.document as LessonLearned);
   }
 
   // -----------------------------------------------------------------------
@@ -468,7 +556,7 @@ export class LessonsLearnedService {
   // -----------------------------------------------------------------------
 
   async detectPatterns(_userId?: string): Promise<Pattern[]> {
-    const lessons = LessonsLearnedService.lessons;
+    const lessons = await this.getAllLessons();
 
     if (lessons.length === 0) {
       return [];
@@ -519,12 +607,11 @@ export class LessonsLearnedService {
       }
     }
 
-    // Deterministic fallback: group lessons by category and find repeating themes
-    return this.detectPatternsDeterministic();
+    // Deterministic fallback
+    return this.detectPatternsDeterministic(lessons);
   }
 
-  private detectPatternsDeterministic(): Pattern[] {
-    const lessons = LessonsLearnedService.lessons;
+  private detectPatternsDeterministic(lessons: LessonLearned[]): Pattern[] {
     const categoryGroups: Record<string, LessonLearned[]> = {};
 
     for (const lesson of lessons) {
@@ -540,7 +627,6 @@ export class LessonsLearnedService {
     for (const [category, categoryLessons] of Object.entries(categoryGroups)) {
       if (categoryLessons.length < 2) continue;
 
-      // Count negative vs positive
       const negativeCount = categoryLessons.filter((l) => l.impact === 'negative').length;
       const positiveCount = categoryLessons.filter((l) => l.impact === 'positive').length;
       const projectTypes = Array.from(new Set(categoryLessons.map((l) => l.projectType)));
@@ -586,16 +672,27 @@ export class LessonsLearnedService {
     projectType: string,
     _userId?: string,
   ): Promise<MitigationSuggestion[]> {
-    // Find relevant historical lessons
-    const relevantLessons = LessonsLearnedService.lessons.filter((l) => {
-      const typeMatch = l.projectType === projectType;
-      const descLower = riskDescription.toLowerCase();
-      const categoryMatch =
-        descLower.includes(l.category) ||
-        l.title.toLowerCase().includes(descLower.split(' ')[0]) ||
-        l.description.toLowerCase().includes(descLower.split(' ')[0]);
-      return typeMatch || categoryMatch;
-    });
+    // Use RAG search if available for better relevance
+    let relevantLessons: LessonLearned[];
+
+    if (this.ragService.isAvailable()) {
+      relevantLessons = await this.findSimilarLessons(
+        `${riskDescription} ${projectType}`,
+        10,
+      );
+    } else {
+      // Fallback to DB filter
+      const allLessons = await this.getAllLessons();
+      relevantLessons = allLessons.filter((l) => {
+        const typeMatch = l.projectType === projectType;
+        const descLower = riskDescription.toLowerCase();
+        const categoryMatch =
+          descLower.includes(l.category) ||
+          l.title.toLowerCase().includes(descLower.split(' ')[0]) ||
+          l.description.toLowerCase().includes(descLower.split(' ')[0]);
+        return typeMatch || categoryMatch;
+      });
+    }
 
     if (config.AI_ENABLED && claudeService.isAvailable() && relevantLessons.length > 0) {
       try {
@@ -648,7 +745,6 @@ export class LessonsLearnedService {
     relevantLessons: LessonLearned[],
   ): MitigationSuggestion[] {
     if (relevantLessons.length === 0) {
-      // No historical data — provide generic suggestions based on risk keywords
       const suggestions: MitigationSuggestion[] = [];
       const descLower = riskDescription.toLowerCase();
 
@@ -685,7 +781,6 @@ export class LessonsLearnedService {
       return suggestions;
     }
 
-    // Build suggestions from relevant historical lessons
     return relevantLessons.slice(0, 5).map((lesson) => ({
       lessonId: lesson.id,
       source: lesson.projectName,
@@ -728,7 +823,18 @@ export class LessonsLearnedService {
       createdAt: new Date().toISOString(),
     };
 
-    LessonsLearnedService.lessons.push(lesson);
+    await this.persistLesson(lesson);
     return lesson;
+  }
+
+  // -----------------------------------------------------------------------
+  // Private: get all lessons from DB
+  // -----------------------------------------------------------------------
+
+  private async getAllLessons(): Promise<LessonLearned[]> {
+    const rows = await databaseService.query<any>(
+      'SELECT * FROM lessons_learned ORDER BY created_at DESC',
+    );
+    return rows.map(rowToLesson);
   }
 }
