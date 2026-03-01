@@ -1,286 +1,388 @@
-# PM Application v2 - Production-Ready Architecture
+# PM Assistant
 
-## 🚀 **Modern Tech Stack**
+**Enterprise Project Management Platform with AI Co-Pilot**
 
-### **Backend**
-- **Fastify** - High-performance Node.js framework
-- **TypeScript** - Type-safe development
-- **MySQL** - Production database
-- **HttpOnly Cookies** - Secure authentication
-- **JWT** - Access & refresh tokens
-- **Zod** - Runtime type validation
-- **Swagger** - API documentation
+A full-featured, production-grade project management SaaS application combining traditional PM methodologies (CPM, EVM, Agile) with AI-powered intelligence. Built with Fastify, React, and the Anthropic Claude SDK.
 
-### **Frontend** ✅ **COMPLETED**
-- **React 18** - Modern component framework
-- **TypeScript** - Type-safe development
-- **Vite** - Fast build tool
-- **Zustand** - State management
-- **React Query** - Server state management
-- **Tailwind CSS** - Utility-first CSS
-- **PWA** - Progressive Web App capabilities
+**Live:** [https://pm.kpbc.ca](https://pm.kpbc.ca)
 
-### **DevOps**
-- **Docker** - Containerization
-- **Playwright** - E2E testing
-- **Vitest** - Unit testing
-- **ESLint** - Code linting
-- **Prettier** - Code formatting
+---
 
-## 🏗️ **Architecture Features**
+## Table of Contents
 
-### **🔐 Security**
-- ✅ **Content Security Policy** - Comprehensive CSP with violation reporting
-- ✅ **Security Headers** - X-Frame-Options, X-XSS-Protection, HSTS, etc.
-- ✅ **HttpOnly cookies** - No client-side token storage
-- ✅ **Refresh tokens** - Secure token rotation
-- ✅ **Input sanitization** - XSS prevention and validation
-- ✅ **CORS protection** - Environment-aware cross-origin security
-- ✅ **Rate limiting** - DDoS protection and abuse prevention
-- ✅ **Audit logging** - Comprehensive security event tracking
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Feature Overview](#feature-overview)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [MCP Server](#mcp-server)
+- [Development Commands](#development-commands)
+- [Environment Variables](#environment-variables)
+- [API Documentation](#api-documentation)
+- [License](#license)
 
-### **📊 API Design**
-- ✅ **Versioned REST** - `/api/v1/` endpoints
-- ✅ **OpenAPI/Swagger** - Auto-generated documentation
-- ✅ **Consistent errors** - Standardized error responses
-- ✅ **Type safety** - Full TypeScript coverage
-- ✅ **Validation** - Request/response validation
+---
 
-### **⚡ Workflow Automation (DAG Engine)**
-- ✅ **Declarative DAG Workflows** - Multi-step workflows with branching, conditions, and approval gates
-- ✅ **5 Node Types** - Trigger, condition, action, approval, delay
-- ✅ **Persistent Execution** - DB-backed execution history with per-node status tracking
-- ✅ **Approval Gates** - Pause workflow execution pending human approval, resume via API/UI
-- ✅ **Condition Branching** - Field-based yes/no branching with operator evaluation
-- ✅ **Audit Integration** - All executions logged to immutable audit ledger
+## Tech Stack
 
-### **🤖 AI Features**
-- ✅ **Smart Task Breakdown** - AI-powered project decomposition
-- ✅ **Intelligent Scheduling** - Context-aware phase creation
-- ✅ **Dependency Detection** - AI suggests task relationships
-- ✅ **Time Estimation** - Machine learning-based duration calculations
-- ✅ **Schedule Optimization** - Dynamic schedule adjustments
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Fastify 5 + TypeScript, Node.js 22 |
+| **Frontend** | React 18 + Vite + Tailwind CSS + Zustand |
+| **Database** | MySQL / MariaDB |
+| **AI** | Anthropic Claude SDK (optional, via `AI_ENABLED` env var) |
+| **Auth** | JWT (access + refresh tokens) with HttpOnly cookies, OAuth 2.1 |
+| **Real-time** | WebSocket + Server-Sent Events (SSE) |
+| **Billing** | Stripe |
+| **Validation** | Zod |
+| **API Docs** | OpenAPI / Swagger |
+| **MCP** | Model Context Protocol server for Claude Desktop and Claude Web |
+| **Deployment** | LiteSpeed (static assets) + Passenger (Node.js API) on TMD Hosting |
 
-### **📱 PWA Features**
-- ✅ **Offline Capabilities** - Service worker with intelligent caching
-- ✅ **App Installation** - Install as native app on mobile/desktop
-- ✅ **Push Notifications** - Real-time updates and alerts
-- ✅ **Dynamic Path Resolution** - Deployment-flexible asset management
-- ✅ **Error Handling** - User-visible notifications for PWA status
+---
 
-### **🛡️ Fallback Content & Loading**
-- ✅ **JavaScript Disabled Support** - Beautiful fallback for no-JS browsers
-- ✅ **Loading State Management** - Progressive loading with realistic steps
-- ✅ **Error Boundary Recovery** - Graceful error handling with user-friendly screens
-- ✅ **Accessibility Compliance** - Screen reader and keyboard navigation support
-- ✅ **No Blank Screens** - Professional appearance from first load
+## Quick Start
 
-### **♿ Accessibility**
-- ✅ **ARIA support** - Screen reader compatibility
-- ✅ **Keyboard navigation** - Full keyboard support
-- ✅ **Focus management** - Proper focus handling
-- ✅ **Reduced motion** - Respects user preferences
+### 1. Install Dependencies
 
-### **🧪 Testing**
-- ✅ **Unit tests** - Vitest for components
-- ✅ **System connectivity tests** - Health endpoints, database connectivity, monitoring
-- ✅ **Configuration validation tests** - Environment validation and secret generation
-- ✅ **E2E tests** - Playwright for user flows
-- ✅ **Accessibility tests** - A11y testing
-- ✅ **API tests** - Backend testing
-
-## 🐳 **Docker Setup (Recommended)**
-
-**Start the complete application stack in one command:**
-```bash
-# Clone and start everything
-git clone <repository-url>
-cd pm-application-v2
-npm run docker:dev
-```
-
-**Access the application:**
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:3001  
-- **Database:** localhost:3306
-- **Login:** `test/password`
-
-**Docker Commands:**
-```bash
-npm run docker:dev           # Start all services
-npm run docker:dev:detached  # Start in background
-npm run docker:stop          # Stop all services
-npm run docker:clean         # Stop and remove containers/volumes
-npm run docker:logs          # View logs from all services
-npm run docker:health        # Check service health
-npm run docker:mysql         # Start only MySQL database
-```
-
-**Benefits of Docker Setup:**
-- ✅ **No environment setup required**
-- ✅ **Consistent database connection**
-- ✅ **Automatic service dependencies**
-- ✅ **Easy development environment**
-- ✅ **Production-ready configuration**
-
-## 🚀 **Quick Start (Local Development)**
-
-### **1. Install Dependencies**
 ```bash
 npm install
+cd src/client && npm install && cd ../..
 ```
 
-### **2. Environment Setup**
+### 2. Environment Setup
+
 ```bash
 cp env.example .env
-# Edit .env with your configuration
 ```
 
-### **3. Generate Secrets**
-```bash
-# Generate JWT secrets
-openssl rand -base64 32
+Edit `.env` with your database credentials, JWT secrets, and optional integrations. See [Environment Variables](#environment-variables) for the full list.
 
-# Generate cookie secret
-openssl rand -base64 32
-```
+### 3. Start Development
 
-### **4. Start Development**
 ```bash
 npm run dev
 ```
 
-### **5. Access Application**
-- **Application**: http://localhost:3000
-- **API**: http://localhost:3001
-- **Documentation**: http://localhost:3001/documentation
-- **Health Check**: http://localhost:3001/health
+This starts both the Fastify API server and the Vite dev server concurrently.
 
-## 📁 **Project Structure**
+- **Application:** http://localhost:5173
+- **API:** http://localhost:3001
+- **Swagger Docs:** http://localhost:3001/documentation
+- **Health Check:** http://localhost:3001/health
+
+**Default login:** `admin` / `admin123`
+
+---
+
+## Feature Overview
+
+### Project & Schedule Management
+- Full CRUD for projects, tasks, and schedules
+- Multiple views: Gantt chart, Kanban board, Calendar, Table
+- Task hierarchy with summary task auto-calculation
+- Dependency management with predecessor/successor relationships
+- Drag-and-drop scheduling
+
+### Critical Path Method (CPM)
+- Forward and backward pass computation
+- Critical path identification and highlighting
+- Float/slack calculation
+- Network diagram visualization
+
+### Baseline Management
+- Create, compare, and track schedule baselines
+- Variance analysis between baseline and current schedule
+
+### Earned Value Management (EVM)
+- PV, EV, AC, SPI, CPI, EAC, ETC, VAC, TCPI metrics
+- S-curve visualization
+- Performance forecasting with trend analysis
+
+### Resource Management
+- Resource pool with roles, capacity, and cost rates
+- Workload heatmap visualization
+- Resource leveling algorithm
+- Resource optimization suggestions
+
+### DAG Workflow Engine
+- Declarative directed acyclic graph workflows
+- Five node types: trigger, condition, action, approval, delay
+- Persistent execution with per-node status tracking
+- Approval gates that pause execution pending human review
+- Condition branching with field-based operator evaluation
+- Full audit integration
+
+### Approval Workflows & Change Requests
+- Multi-level approval chains
+- Change request tracking with impact analysis
+- Status lifecycle management
+
+### Sprint / Agile Management
+- Sprint planning with backlog grooming
+- Kanban sprint board
+- Burndown and velocity charts
+- Sprint retrospective support
+
+### Time Tracking & Timesheets
+- Per-task time entry logging
+- Weekly timesheet views
+- Actual vs. estimated comparison
+
+### Custom Fields
+- Per-project custom field definitions
+- Text, number, date, select, and multi-select types
+
+### File Attachments
+- Upload and attach files to tasks and projects
+- Version history tracking
+
+### Monte Carlo Simulation
+- Schedule risk analysis via Monte Carlo simulation
+- Probability distribution for project completion dates
+
+### AI Features (requires `AI_ENABLED=true`)
+- **Auto-Reschedule** -- AI-driven schedule optimization
+- **Natural Language Queries** -- Ask questions about project data in plain English
+- **Meeting Intelligence** -- Automated meeting minutes and action item extraction
+- **Lessons Learned** -- AI-assisted capture and retrieval of project lessons
+- **Task Prioritization** -- Intelligent priority scoring
+- **Predictive Intelligence** -- Forecast delays, cost overruns, and risks
+- **Anomaly Detection** -- Proactive alerts for unusual patterns
+- **Cross-Project Intelligence** -- Insights across the portfolio
+- **What-If Scenario Modeling** -- Simulate schedule and resource changes
+
+### Reporting & Analytics
+- Custom report builder with saved templates
+- Portfolio-level analytics and executive dashboards
+- Project health scoring
+- Exportable reports
+
+### Notifications
+- In-app notification center
+- Real-time WebSocket push notifications
+- Configurable notification preferences
+
+### Client / Stakeholder Portal
+- External-facing read-only project views
+- Scoped access for stakeholders
+
+### Intake Forms
+- Configurable intake form builder
+- Submission review and approval workflow
+
+### Project Templates
+- Save and apply project templates
+- Pre-configured task structures and workflows
+
+### External Integrations
+- Jira, GitHub, and Slack integrations
+- Bi-directional sync support
+
+### Webhooks
+- Configurable outbound webhooks for project events
+- Retry logic and delivery logs
+
+### API Key Management
+- API key generation and revocation
+- Per-key rate limiting and scope control
+
+### Immutable Audit Ledger
+- Hash-chain integrity for all audit records
+- Tamper-evident logging of every mutation
+- Full audit trail with actor, action, and timestamp
+
+### Policy Engine
+- Configurable policy rules evaluated on project events
+- Automated enforcement of organizational standards
+
+### Billing (Stripe)
+- Subscription management with tiered pricing
+- Usage-based billing support
+- Stripe Checkout and customer portal integration
+
+### OAuth 2.1
+- OAuth 2.1 authorization server for MCP and third-party access
+- PKCE flow support
+
+### Progressive Web App (PWA)
+- Offline capability via service worker
+- Installable on desktop and mobile
+- Push notification support
+
+---
+
+## Architecture
 
 ```
-src/
-├── server/                 # Backend API
-│   ├── routes/            # API endpoints
-│   ├── services/          # Business logic
-│   ├── middleware/        # Request middleware
-│   └── config.ts         # Configuration
-├── client/                # Frontend (React)
-│   ├── components/        # React components
-│   ├── pages/            # Page components
-│   ├── hooks/            # Custom hooks
-│   └── services/         # API services
-└── shared/                # Shared code
-    ├── types/            # TypeScript types
-    ├── schemas/          # Zod schemas
-    └── utils/            # Utility functions
+                    +-----------+
+                    | LiteSpeed |  (static assets: HTML, CSS, JS, images)
+                    +-----+-----+
+                          |
+              +-----------+-----------+
+              |                       |
+        /api/* routes           static files
+              |
+     +--------v--------+
+     |  Passenger (Node) |
+     +--------+---------+
+              |
+     +--------v---------+
+     |   Fastify Server  |
+     |  (TypeScript API) |
+     +--------+---------+
+              |
+    +---------+---------+
+    |         |         |
+    v         v         v
+  MySQL    Claude    Stripe
+ (MariaDB)  (AI)   (Billing)
 ```
 
-## 🔧 **Development Commands**
+- **Frontend** is a Vite-built React SPA served as static files by LiteSpeed.
+- **Backend** is a Fastify app running under Passenger, handling all `/api/v1/` routes.
+- **WebSocket** connections are managed by `@fastify/websocket` for real-time updates.
+- **MCP Server** runs as a separate process, exposing PM tools via the Model Context Protocol.
+
+---
+
+## Project Structure
+
+```
+pm-assistant-generic/
+├── src/
+│   ├── server/                  # Fastify backend
+│   │   ├── routes/              # 40+ route modules
+│   │   ├── services/            # Business logic & AI services
+│   │   ├── middleware/          # Auth, rate limiting, policies
+│   │   ├── database/            # Migrations, seeds, connection pool
+│   │   └── config.ts            # Environment-based configuration
+│   ├── client/                  # React frontend (Vite)
+│   │   ├── src/
+│   │   │   ├── pages/           # 30+ page components
+│   │   │   ├── components/      # Reusable UI components
+│   │   │   ├── hooks/           # Custom React hooks
+│   │   │   ├── services/        # API client layer
+│   │   │   └── stores/          # Zustand state stores
+│   │   └── vite.config.ts
+│   └── shared/                  # Shared types, schemas, utilities
+├── mcp-server/                  # MCP server for Claude integration
+│   ├── server.ts                # MCP tool definitions & handlers
+│   └── package.json
+├── demo-agent/                  # CLI demo agent
+│   ├── agent.ts
+│   └── package.json
+├── scripts/                     # DB backup/restore, deployment
+├── env.example                  # Environment variable template
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+## MCP Server
+
+The MCP (Model Context Protocol) server exposes 15 tool categories that allow Claude Desktop and Claude Web to interact with PM Assistant directly:
+
+- Project & task CRUD
+- Schedule & baseline management
+- Sprint operations
+- Resource allocation
+- Time entry logging
+- Workflow triggering
+- Report generation
+- Portfolio analytics
+- Search and natural language queries
+- And more
+
+See `mcp-server/` for setup instructions and tool definitions.
+
+---
+
+## Development Commands
 
 ```bash
 # Development
-npm run dev                 # Start both server and client
-npm run server:dev         # Start server only
-npm run client:dev         # Start client only
+npm run dev                  # Start API + client concurrently
+npm run server:dev           # Start Fastify server only (with nodemon)
+npm run client:dev           # Start Vite dev server only
 
-# Building
-npm run build              # Build both server and client
-npm run build:server       # Build server only
-npm run build:client       # Build client only
+# Build
+npm run build                # Build server + client for production
+npm run build:server         # TypeScript compile (server)
+npm run build:client         # Vite build (client)
+
+# Production
+npm run start                # Start compiled server (serves API + static)
+
+# Database
+npm run db:migrate           # Run database migrations
+npm run db:seed              # Seed initial data
 
 # Testing
-npm run test               # Run unit tests
-npm run test:system        # Run system connectivity tests
-npm run test:connectivity  # Run health endpoint tests
-npm run test:health-scripts # Run health check script tests
-npm run test:config-validation # Run configuration validation tests
-npm run test:e2e           # Run E2E tests
+npm run test                 # Run tests (Vitest)
+npm run test:unit            # Run unit tests once
 
 # Code Quality
-npm run lint               # Run ESLint
-npm run lint:fix           # Fix ESLint issues
-npm run type-check         # TypeScript type checking
+npm run lint                 # ESLint check
+npm run lint:fix             # ESLint auto-fix
+npm run type-check           # TypeScript type check (no emit)
 ```
 
-## 🎯 **Next Steps**
+---
 
-### **Phase 1: Backend Complete** ✅
-- [x] Fastify server setup
-- [x] Authentication with HttpOnly cookies
-- [x] JWT access & refresh tokens
-- [x] API endpoints with validation
-- [x] Swagger documentation
-- [x] Security middleware
+## Environment Variables
 
-### **Phase 2: Frontend Complete** ✅
-- [x] React + TypeScript setup
-- [x] Vite build configuration
-- [x] Component architecture
-- [x] State management (Zustand)
-- [x] API service layer
-- [x] Authentication integration
+Copy `env.example` to `.env` and configure:
 
-### **Phase 3: Production Features** ✅
-- [x] Database integration (MySQL)
-- [x] Error boundaries
-- [x] Logging & monitoring
-- [x] PWA features
-- [x] AI-powered scheduling
-- [x] Security implementation
-- [x] Deployment flexibility
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DB_HOST` | MySQL host | Yes |
+| `DB_PORT` | MySQL port (default: 3306) | Yes |
+| `DB_USER` | MySQL username | Yes |
+| `DB_PASSWORD` | MySQL password | Yes |
+| `DB_NAME` | MySQL database name | Yes |
+| `JWT_SECRET` | Secret for signing access tokens | Yes |
+| `JWT_REFRESH_SECRET` | Secret for signing refresh tokens | Yes |
+| `COOKIE_SECRET` | Secret for cookie signing | Yes |
+| `PORT` | API server port (default: 3001) | No |
+| `AI_ENABLED` | Enable AI features (`true` / `false`) | No |
+| `ANTHROPIC_API_KEY` | Anthropic API key (required if AI enabled) | No |
+| `STRIPE_SECRET_KEY` | Stripe secret key | No |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | No |
+| `RESEND_API_KEY` | Resend API key for transactional email | No |
 
-## 🏆 **Production Benefits**
+Generate secrets with:
 
-### **Security**
-- **Comprehensive security headers** - CSP, X-Frame-Options, HSTS
-- **Enterprise-grade authentication** - HttpOnly cookies + JWT
-- **Input sanitization** - XSS prevention and validation
-- **CORS protection** - Environment-aware cross-origin security
-- **Rate limiting** - DDoS protection and abuse prevention
+```bash
+openssl rand -base64 32
+```
 
-### **Performance**
-- **Fastify** - High-performance Node.js framework
-- **Vite** - Fast development and optimized builds
-- **Service Worker** - Intelligent caching and offline capabilities
-- **TypeScript** - Compile-time error catching
-- **Tree shaking** - Minimal bundle sizes
+---
 
-### **Developer Experience**
-- **Type safety** - Full TypeScript coverage
-- **Auto-completion** - IDE support
-- **Hot reload** - Fast development
-- **API documentation** - Auto-generated Swagger
+## API Documentation
 
-### **Maintainability**
-- **Modular architecture** - Clean separation of concerns
-- **Test coverage** - Comprehensive testing
-- **Code quality** - ESLint + Prettier
-- **Documentation** - Comprehensive docs
+Interactive Swagger documentation is available at `/documentation` when the server is running.
 
-## 🚨 **Migration from v1**
+All API endpoints are versioned under `/api/v1/`. Key endpoint groups:
 
-The current PM Application v1 is a **functional prototype** but not production-ready. This v2 architecture provides:
+- `/api/v1/auth` -- Authentication (login, register, refresh, OAuth)
+- `/api/v1/projects` -- Project CRUD and members
+- `/api/v1/schedules` -- Schedule and task management
+- `/api/v1/sprints` -- Sprint lifecycle
+- `/api/v1/resources` -- Resource pool and workload
+- `/api/v1/time-entries` -- Time tracking
+- `/api/v1/workflows` -- DAG workflow engine
+- `/api/v1/reports` -- Report builder
+- `/api/v1/portfolio` -- Portfolio analytics
+- `/api/v1/integrations` -- External integrations
+- `/api/v1/webhooks` -- Webhook management
+- `/api/v1/audit-trail` -- Immutable audit ledger
+- `/api/v1/notifications` -- Notification center
+- `/api/v1/stripe` -- Billing and subscriptions
 
-- ✅ **Production-ready security** - HttpOnly cookies vs localStorage
-- ✅ **Proper authentication** - JWT + refresh tokens vs basic auth
-- ✅ **Type safety** - TypeScript vs vanilla JavaScript
-- ✅ **API versioning** - Structured endpoints vs basic routes
-- ✅ **Testing infrastructure** - Comprehensive testing vs no tests
-- ✅ **Modern tooling** - Professional development setup
+---
 
-## 📚 **Documentation**
+## License
 
-### **Complete Documentation**
-- **[PRODUCT_MANUAL.md](./PRODUCT_MANUAL.md)** - Complete feature documentation and user guide
-- **[SECURITY_GUIDE.md](./SECURITY_GUIDE.md)** - Comprehensive security implementation
-- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Deployment scenarios and configuration
-- **[Smart Scheduling.md](./Smart%20Scheduling.md)** - AI features and capabilities
-- **[FALLBACK_CONTENT_GUIDE.md](./FALLBACK_CONTENT_GUIDE.md)** - Loading states and error handling
-
-### **Quick Links**
-- **API Documentation**: http://localhost:3001/documentation
-- **Health Check**: http://localhost:3001/health
-- **Application**: http://localhost:3000
-
-**🎉 This is a production-ready, enterprise-grade PM Application with AI capabilities!**
+MIT
