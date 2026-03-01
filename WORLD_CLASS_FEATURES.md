@@ -85,12 +85,18 @@ Build an AI-native project management platform that combines the scheduling powe
 - Resource constraint-aware scheduling
 - **Benchmark:** MS Project, Primavera P6
 
-### 2.2 Workflow Automation Builder
-- Visual if/then rule builder
-- Triggers: status change, date reached, field updated
-- Actions: notify, update field, create task, send email
-- Pre-built templates for common workflows
-- **Benchmark:** Monday.com, Wrike, Smartsheet
+### 2.2 Workflow Automation Builder (DAG Engine)
+- Declarative DAG-based workflow engine with DB persistence
+- Node types: trigger, condition, action, approval gate, delay
+- Triggers: status_change, progress_threshold, date_passed, manual
+- Conditions: field-based evaluation with operators (equals, greater_than, contains, etc.)
+- Actions: update_field, log_activity, send_notification
+- Approval gates: pause execution until resumed via API/UI
+- Multi-step workflows with branching (yes/no edges on conditions)
+- Persistent execution history with per-node status tracking
+- Cycle protection, graceful degradation, audit integration
+- 5 DB tables: workflow_definitions, workflow_nodes, workflow_edges, workflow_executions, workflow_node_executions
+- **Benchmark:** Monday.com, Wrike, Smartsheet (exceeds with DAG support + approval gates)
 
 ### 2.3 Custom Dashboards
 - Drag-and-drop widget builder
