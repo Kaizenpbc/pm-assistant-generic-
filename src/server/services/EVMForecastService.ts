@@ -1,6 +1,6 @@
 import { claudeService, PromptTemplate } from './claudeService';
-import { SCurveService, SCurveDataPoint } from './SCurveService';
-import { ProjectService, Project } from './ProjectService';
+import { sCurveService, SCurveDataPoint } from './SCurveService';
+import { projectService, Project } from './ProjectService';
 import { config } from '../config';
 import {
   EVMForecastAIResponseSchema,
@@ -51,22 +51,19 @@ Return a JSON object matching the schema.`,
 // ---------------------------------------------------------------------------
 
 export class EVMForecastService {
-  private sCurveService = new SCurveService();
-  private projectService = new ProjectService();
-
   // -------------------------------------------------------------------------
   // Main entry point
   // -------------------------------------------------------------------------
 
   async generateForecast(projectId: string, userId?: string): Promise<EVMForecastResult> {
     // 1. Get project
-    const project = await this.projectService.findById(projectId);
+    const project = await projectService.findById(projectId);
     if (!project) {
       throw new Error(`Project not found: ${projectId}`);
     }
 
     // 2. Compute S-curve data
-    const sCurveData = await this.sCurveService.computeSCurveData(projectId);
+    const sCurveData = await sCurveService.computeSCurveData(projectId);
 
     // 3. Compute current EVM metrics
     const BAC = project.budgetAllocated || 0;
@@ -406,3 +403,5 @@ export class EVMForecastService {
     return result.data;
   }
 }
+
+export const evmForecastService = new EVMForecastService();

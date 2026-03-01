@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
-import { ProjectService, Project } from './ProjectService';
+import { projectService, Project } from './ProjectService';
 
 export interface IntakeFormField {
   id: string;
@@ -101,8 +101,6 @@ function submissionRowToDTO(row: IntakeSubmissionRow): IntakeSubmission {
 }
 
 class IntakeFormService {
-  private projectService = new ProjectService();
-
   async createForm(data: { name: string; description?: string; fields: IntakeFormField[] }, userId: string): Promise<IntakeForm> {
     const id = uuidv4();
     await databaseService.query(
@@ -230,7 +228,7 @@ class IntakeFormService {
     projectDescription = descriptionParts.join('\n');
 
     // 3. Create the project
-    const project = await this.projectService.create({
+    const project = await projectService.create({
       name: projectName,
       description: projectDescription,
       status: 'planning',

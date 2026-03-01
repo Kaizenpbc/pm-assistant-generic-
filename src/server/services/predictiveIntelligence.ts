@@ -14,8 +14,7 @@ import {
   type AIDashboardPredictions,
 } from '../schemas/predictiveSchemas';
 import type { WeatherForecast } from './dataProviders';
-import { ProjectService } from './ProjectService';
-import { ScheduleService } from './ScheduleService';
+import { projectService } from './ProjectService';
 
 // ---------------------------------------------------------------------------
 // Project Metrics (computed inline since AIContextBuilder doesn't carry them)
@@ -340,7 +339,6 @@ export class PredictiveIntelligenceService {
   private async getProjectCoordinates(
     projectId: string,
   ): Promise<{ lat: number; lon: number } | null> {
-    const projectService = new ProjectService();
     const project = await projectService.findById(projectId);
     if (project?.locationLat && project?.locationLon) {
       return { lat: project.locationLat, lon: project.locationLon };
@@ -353,7 +351,6 @@ export class PredictiveIntelligenceService {
   // -----------------------------------------------------------------------
 
   private async getProjectBudgetSpent(projectId: string): Promise<number> {
-    const projectService = new ProjectService();
     const project = await projectService.findById(projectId);
     return project?.budgetSpent ?? 0;
   }
@@ -691,7 +688,6 @@ export class PredictiveIntelligenceService {
     let weatherImpactStr = 'No weather impacts expected';
     let weatherOverview = 'Weather data unavailable';
     try {
-      const projectService = new ProjectService();
       const allProjects = await projectService.findAll();
       const projectWithCoords = allProjects.find(
         (p) => p.locationLat && p.locationLon,

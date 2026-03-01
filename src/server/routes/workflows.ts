@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { dagWorkflowService } from '../services/DagWorkflowService';
-import { ScheduleService } from '../services/ScheduleService';
+import { scheduleService } from '../services/ScheduleService';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 
@@ -53,8 +53,6 @@ const resumeSchema = z.object({
 
 export async function workflowRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
-
-  const scheduleService = new ScheduleService();
 
   // GET /api/v1/workflows — list definitions
   fastify.get('/', {

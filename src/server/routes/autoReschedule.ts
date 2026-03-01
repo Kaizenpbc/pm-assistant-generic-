@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { AutoRescheduleService } from '../services/AutoRescheduleService';
+import { autoRescheduleService } from '../services/AutoRescheduleService';
 import { ProposedChangeSchema } from '../schemas/autoRescheduleSchemas';
 import { webhookService } from '../services/WebhookService';
 import { authMiddleware } from '../middleware/auth';
@@ -17,8 +17,6 @@ const modifyBodySchema = z.object({
 export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
-  const service = new AutoRescheduleService();
-
   // GET /:scheduleId/delays — detect delayed tasks
   fastify.get('/:scheduleId/delays', {
     preHandler: [requireScope('read')],
@@ -26,7 +24,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
-      const delayedTasks = await service.detectDelays(scheduleId);
+      const delayedTasks = await autoRescheduleService.detectDelays(scheduleId);
       return { delayedTasks };
     } catch (error) {
       console.error('Detect delays error:', error);
@@ -46,7 +44,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       const { scheduleId } = request.params as { scheduleId: string };
       const user = (request as any).user;
       const userId = user.userId;
-      const proposal = await service.generateProposal(scheduleId, userId);
+      const proposal = await autoRescheduleService.generateProposal(scheduleId, userId);
       webhookService.dispatch('proposal.created', { proposal }, userId);
       return { proposal };
     } catch (error) {
@@ -65,7 +63,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
-      const proposals = await service.getProposals(scheduleId);
+      const proposals = await autoRescheduleService.getProposals(scheduleId);
       return { proposals };
     } catch (error) {
       console.error('Get proposals error:', error);
@@ -83,7 +81,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const accepted = await service.acceptProposal(id);
+      const accepted = await autoRescheduleService.acceptProposal(id);
       if (!accepted) {
         return reply.status(404).send({
           error: 'Proposal not found',
@@ -110,7 +108,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string };
       const body = rejectBodySchema.parse(request.body ?? {});
-      const rejected = await service.rejectProposal(id, body.feedback);
+      const rejected = await autoRescheduleService.rejectProposal(id, body.feedback);
       if (!rejected) {
         return reply.status(404).send({
           error: 'Proposal not found',
@@ -135,7 +133,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string };
       const body = modifyBodySchema.parse(request.body);
-      const modified = await service.modifyProposal(id, body.modifications);
+      const modified = await autoRescheduleService.modifyProposal(id, body.modifications);
       if (!modified) {
         return reply.status(404).send({
           error: 'Proposal not found',

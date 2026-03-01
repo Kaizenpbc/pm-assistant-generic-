@@ -1,4 +1,4 @@
-import { ScheduleService, Task } from './ScheduleService';
+import { scheduleService, Task } from './ScheduleService';
 
 export interface BurndownDataPoint {
   date: string;
@@ -28,11 +28,9 @@ export interface VelocityData {
 }
 
 export class BurndownService {
-  private scheduleService = new ScheduleService();
-
   async getBurndownData(scheduleId: string): Promise<BurndownData> {
-    const schedule = await this.scheduleService.findById(scheduleId);
-    const tasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
+    const schedule = await scheduleService.findById(scheduleId);
+    const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
 
     if (!schedule || tasks.length === 0) {
       return {
@@ -103,8 +101,8 @@ export class BurndownService {
   }
 
   async getVelocityData(scheduleId: string): Promise<VelocityData> {
-    const schedule = await this.scheduleService.findById(scheduleId);
-    const tasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
+    const schedule = await scheduleService.findById(scheduleId);
+    const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
 
     if (!schedule || tasks.length === 0) {
       return { weeks: [], averageVelocity: 0, trend: 'stable' };

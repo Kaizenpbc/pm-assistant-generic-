@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { ProjectService } from '../services/ProjectService';
+import { projectService } from '../services/ProjectService';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 import { webhookService } from '../services/WebhookService';
@@ -25,8 +25,6 @@ const updateProjectSchema = createProjectSchema.partial();
 
 export async function projectRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
-
-  const projectService = new ProjectService();
 
   fastify.get('/', {
     preHandler: [requireScope('read')],

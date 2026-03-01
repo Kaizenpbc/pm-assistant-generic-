@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
-import { ScheduleService } from './ScheduleService';
+import { scheduleService } from './ScheduleService';
 
 export interface TimeEntry {
   id: string;
@@ -47,7 +47,6 @@ function rowToDTO(row: TimeEntryRow): TimeEntry {
 }
 
 class TimeEntryService {
-  private scheduleService = new ScheduleService();
 
   async create(data: {
     taskId: string;
@@ -137,7 +136,7 @@ class TimeEntryService {
       actualHours: number;
     }>;
   }> {
-    const tasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
+    const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
 
     // Get actual hours per task
     const rows = await databaseService.query<{ task_id: string; total: number }>(

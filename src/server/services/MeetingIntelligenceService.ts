@@ -1,9 +1,9 @@
 import { claudeService } from './claudeService';
-import { ScheduleService, Task } from './ScheduleService';
-import { ResourceService, Resource } from './ResourceService';
+import { scheduleService, Task } from './ScheduleService';
+import { resourceService, Resource } from './ResourceService';
 import { config } from '../config';
 import { databaseService } from '../database/connection';
-import { RagService } from './RagService';
+import { ragService } from './RagService';
 import {
   MeetingAnalysis,
   MeetingAIResponse,
@@ -41,10 +41,6 @@ function rowToMeetingAnalysis(row: any): MeetingAnalysis {
 // ---------------------------------------------------------------------------
 
 export class MeetingIntelligenceService {
-  private scheduleService = new ScheduleService();
-  private resourceService = new ResourceService();
-  private ragService = new RagService();
-
   // -------------------------------------------------------------------------
   // Persist an analysis to DB and index for RAG
   // -------------------------------------------------------------------------
@@ -70,7 +66,7 @@ export class MeetingIntelligenceService {
     );
 
     // Fire-and-forget RAG indexing
-    this.ragService.indexMeeting(analysis).catch((err) => {
+    ragService.indexMeeting(analysis).catch((err) => {
       console.error(`[RAG] Failed to index meeting ${analysis.id}:`, (err as Error).message);
     });
   }
@@ -86,11 +82,11 @@ export class MeetingIntelligenceService {
     userId?: string,
   ): Promise<MeetingAnalysis> {
     // 1. Gather context: existing tasks
-    const existingTasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
-    const schedule = await this.scheduleService.findById(scheduleId);
+    const existingTasks = await scheduleService.findTasksByScheduleId(scheduleId);
+    const schedule = await scheduleService.findById(scheduleId);
 
     // 2. Gather resources for assignee matching
-    const resources = await this.resourceService.findAllResources();
+    const resources = await resourceService.findAllResources();
 
     // 3. Build context strings
     const taskContext = existingTasks
@@ -218,7 +214,7 @@ Analyze this meeting transcript and extract all actionable information.`;
       try {
         switch (update.type) {
           case 'create': {
-            await this.scheduleService.createTask({
+            await scheduleService.createTask({
               scheduleId: analysis.scheduleId,
               name: update.taskName,
               description: update.description,
@@ -230,7 +226,7 @@ Analyze this meeting transcript and extract all actionable information.`;
               createdBy: userId || 'meeting-intelligence',
             });
 
-            await this.scheduleService.logActivity(
+            await scheduleService.logActivity(
               'system',
               userId || '1',
               'Meeting Intelligence',
@@ -254,7 +250,7 @@ Analyze this meeting transcript and extract all actionable information.`;
               continue;
             }
 
-            const existingTask = await this.scheduleService.findTaskById(taskId);
+            const existingTask = await scheduleService.findTaskById(taskId);
             if (!existingTask) {
               errors.push(`Task not found: ${taskId} for "${update.taskName}"`);
               continue;
@@ -265,7 +261,7 @@ Analyze this meeting transcript and extract all actionable information.`;
             if (update.assignee) updateData.assignedTo = update.assignee;
             if (update.priority) updateData.priority = update.priority;
 
-            await this.scheduleService.updateTask(taskId, updateData);
+            await scheduleService.updateTask(taskId, updateData);
             applied++;
             analysis.appliedItems.push(index);
             break;
@@ -281,7 +277,7 @@ Analyze this meeting transcript and extract all actionable information.`;
             }
 
             const taskToReschedule =
-              await this.scheduleService.findTaskById(rescheduleTaskId);
+              await scheduleService.findTaskById(rescheduleTaskId);
             if (!taskToReschedule) {
               errors.push(`Task not found: ${rescheduleTaskId} for "${update.taskName}"`);
               continue;
@@ -294,7 +290,7 @@ Analyze this meeting transcript and extract all actionable information.`;
               rescheduleData.endDate = update.newEndDate;
             if (update.assignee) rescheduleData.assignedTo = update.assignee;
 
-            await this.scheduleService.updateTask(rescheduleTaskId, rescheduleData);
+            await scheduleService.updateTask(rescheduleTaskId, rescheduleData);
             applied++;
             analysis.appliedItems.push(index);
             break;
@@ -407,3 +403,5 @@ Analyze this meeting transcript and extract all actionable information.`;
     };
   }
 }
+
+export const meetingIntelligenceService = new MeetingIntelligenceService();

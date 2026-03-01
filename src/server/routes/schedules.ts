@@ -1,8 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { ScheduleService } from '../services/ScheduleService';
-import { CriticalPathService } from '../services/CriticalPathService';
-import { BaselineService } from '../services/BaselineService';
+import { scheduleService } from '../services/ScheduleService';
+import { criticalPathService } from '../services/CriticalPathService';
+import { baselineService } from '../services/BaselineService';
 import { dagWorkflowService } from '../services/DagWorkflowService';
 import { WebSocketService } from '../services/WebSocketService';
 import { webhookService } from '../services/WebhookService';
@@ -41,7 +41,6 @@ const updateTaskSchema = createTaskSchema.partial().omit({ scheduleId: true });
 export async function scheduleRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
-  const scheduleService = new ScheduleService();
   // dagWorkflowService is a singleton — no instantiation needed
 
   fastify.get('/project/:projectId', {
@@ -219,15 +218,13 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   // Critical Path
   // -------------------------------------------------------------------------
 
-  const cpmService = new CriticalPathService();
-
   fastify.get('/:scheduleId/critical-path', {
     preHandler: [requireScope('read')],
     schema: { description: 'Get critical path analysis', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
-      const result = await cpmService.calculateCriticalPath(scheduleId);
+      const result = await criticalPathService.calculateCriticalPath(scheduleId);
       return result;
     } catch (error) {
       console.error('Critical path error:', error);
@@ -238,8 +235,6 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   // -------------------------------------------------------------------------
   // Baselines
   // -------------------------------------------------------------------------
-
-  const baselineService = new BaselineService();
 
   fastify.get('/:scheduleId/baselines', {
     preHandler: [requireScope('read')],

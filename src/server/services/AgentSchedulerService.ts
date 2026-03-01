@@ -3,8 +3,8 @@ import { config } from '../config';
 import { agentRegistry } from './AgentRegistryService';
 import './agentCapabilities';
 import { notificationService } from './NotificationService';
-import { ProjectService, type Project } from './ProjectService';
-import { ScheduleService } from './ScheduleService';
+import { projectService, type Project } from './ProjectService';
+import { scheduleService } from './ScheduleService';
 import { AgentActivityLogService } from './AgentActivityLogService';
 import { webhookService } from './WebhookService';
 import { dagWorkflowService } from './DagWorkflowService';
@@ -14,8 +14,6 @@ export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
   private overdueTask: cron.ScheduledTask | null = null;
   private flaggedOverdue = new Set<string>();
-  private projectService = new ProjectService();
-  private scheduleService = new ScheduleService();
   private activityLog = new AgentActivityLogService();
 
   start(): void {
@@ -88,7 +86,7 @@ export class AgentSchedulerService {
     const thresholdDays = config.AGENT_DELAY_THRESHOLD_DAYS;
 
     // Get all active/planning projects
-    const allProjects = await this.projectService.findAll();
+    const allProjects = await projectService.findAll();
     const projects = allProjects.filter(
       (p) => p.status === 'active' || p.status === 'planning',
     );
@@ -98,7 +96,7 @@ export class AgentSchedulerService {
     for (const project of projects) {
       stats.projectsScanned++;
 
-      const schedules = await this.scheduleService.findByProjectId(project.id);
+      const schedules = await scheduleService.findByProjectId(project.id);
 
       // --- Agent 1: Auto-Reschedule ---
       for (const schedule of schedules) {
@@ -243,11 +241,11 @@ export class AgentSchedulerService {
       if (this.flaggedOverdue.has(taskId)) continue;
 
       this.flaggedOverdue.add(taskId);
-      const task = await this.scheduleService.findTaskById(taskId);
+      const task = await scheduleService.findTaskById(taskId);
       if (!task) continue;
 
       // Fire date_passed triggers via workflow engine
-      dagWorkflowService.evaluateTaskChange(task, task, this.scheduleService).catch(err =>
+      dagWorkflowService.evaluateTaskChange(task, task, scheduleService).catch(err =>
         console.error('[Agent] Overdue workflow trigger error:', err)
       );
       triggered++;

@@ -161,7 +161,9 @@ export class UserService {
   }
 
   async list(): Promise<User[]> {
-    const rows = await databaseService.query('SELECT * FROM users ORDER BY created_at DESC');
+    const rows = await databaseService.query('SELECT * FROM users ORDER BY created_at DESC LIMIT 1000');
     return rows.map(rowToUser);
   }
 }
+
+export const userService = new UserService();

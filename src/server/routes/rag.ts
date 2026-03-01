@@ -1,12 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { RagService } from '../services/RagService';
+import { ragService } from '../services/RagService';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 
 export async function ragRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
-
-  const ragService = new RagService();
 
   // POST /search — Semantic search across lessons and meetings
   fastify.post('/search', {

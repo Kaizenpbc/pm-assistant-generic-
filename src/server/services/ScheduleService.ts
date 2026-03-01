@@ -307,7 +307,7 @@ export class ScheduleService {
   }
 
   async findAllTasks(): Promise<Task[]> {
-    const rows = await databaseService.query('SELECT * FROM tasks ORDER BY created_at');
+    const rows = await databaseService.query('SELECT * FROM tasks ORDER BY created_at LIMIT 1000');
     return rows.map(rowToTask);
   }
 
@@ -631,3 +631,5 @@ export class ScheduleService {
     return { triggeredByTaskId: taskId, deltaDays, affectedTasks };
   }
 }
+
+export const scheduleService = new ScheduleService();

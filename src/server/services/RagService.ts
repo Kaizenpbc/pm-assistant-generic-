@@ -1,5 +1,5 @@
 import { databaseService } from '../database/connection';
-import { EmbeddingService, type SimilarityResult } from './EmbeddingService';
+import { embeddingService as embeddingServiceSingleton, EmbeddingService, type SimilarityResult } from './EmbeddingService';
 import type { LessonLearned } from '../schemas/lessonsLearnedSchemas';
 import type { MeetingAnalysis } from '../schemas/meetingSchemas';
 
@@ -28,7 +28,7 @@ export class RagService {
   private embeddingService: EmbeddingService;
 
   constructor(embeddingService?: EmbeddingService) {
-    this.embeddingService = embeddingService ?? new EmbeddingService();
+    this.embeddingService = embeddingService ?? embeddingServiceSingleton;
   }
 
   isAvailable(): boolean {
@@ -223,3 +223,5 @@ export class RagService {
     };
   }
 }
+
+export const ragService = new RagService();

@@ -225,3 +225,5 @@ export class EmbeddingService {
     return dotProduct / denominator;
   }
 }
+
+export const embeddingService = new EmbeddingService();

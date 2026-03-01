@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { TemplateService } from '../services/TemplateService';
+import { templateService } from '../services/TemplateService';
 import { createFromTemplateSchema, saveAsTemplateSchema } from '../schemas/templateSchemas';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
@@ -29,7 +29,6 @@ const createTemplateSchema = z.object({
 });
 
 export async function templateRoutes(fastify: FastifyInstance) {
-  const templateService = new TemplateService();
   fastify.addHook('preHandler', authMiddleware);
 
   // GET / — List all templates (with optional filters)

@@ -1,4 +1,4 @@
-import { ScheduleService } from './ScheduleService';
+import { scheduleService } from './ScheduleService';
 
 export interface BaselineTask {
   taskId: string;
@@ -86,7 +86,6 @@ export class BaselineService {
   }
 
   async create(scheduleId: string, name: string, createdBy: string): Promise<Baseline> {
-    const scheduleService = new ScheduleService();
     const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
 
     const baselineTasks: BaselineTask[] = tasks.map((t) => ({
@@ -131,7 +130,6 @@ export class BaselineService {
     const baseline = await this.findById(baselineId);
     if (!baseline) return null;
 
-    const scheduleService = new ScheduleService();
     const currentTasks = await scheduleService.findTasksByScheduleId(baseline.scheduleId);
 
     const currentMap = new Map(currentTasks.map((t) => [t.id, t]));
@@ -218,3 +216,5 @@ export class BaselineService {
     };
   }
 }
+
+export const baselineService = new BaselineService();

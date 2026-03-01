@@ -1,6 +1,6 @@
 import { ProjectTemplate, TemplateTask, CreateFromTemplate, SaveAsTemplate } from '../schemas/templateSchemas';
-import { ProjectService } from './ProjectService';
-import { ScheduleService } from './ScheduleService';
+import { projectService } from './ProjectService';
+import { scheduleService } from './ScheduleService';
 
 // ─── Built-in Templates ──────────────────────────────────────────────────────
 
@@ -383,9 +383,6 @@ export class TemplateService {
     const idx = this.templates.findIndex(t => t.id === input.templateId);
     if (idx !== -1) TemplateService.templates[idx].usageCount++;
 
-    const projectService = new ProjectService();
-    const scheduleService = new ScheduleService();
-
     const startDate = new Date(input.startDate);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + template.estimatedDurationDays);
@@ -508,9 +505,6 @@ export class TemplateService {
     tags: string[];
     userId: string;
   }): Promise<ProjectTemplate> {
-    const projectService = new ProjectService();
-    const scheduleService = new ScheduleService();
-
     const project = await projectService.findById(input.projectId);
     if (!project) throw new Error('Project not found');
 
@@ -606,3 +600,5 @@ export class TemplateService {
     return result;
   }
 }
+
+export const templateService = new TemplateService();

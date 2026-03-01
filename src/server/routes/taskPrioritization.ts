@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { TaskPrioritizationService } from '../services/TaskPrioritizationService';
+import { taskPrioritizationService } from '../services/TaskPrioritizationService';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 
@@ -21,8 +21,6 @@ const applyAllBodySchema = z.object({
 export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
-  const service = new TaskPrioritizationService();
-
   // GET /:projectId/:scheduleId/prioritize — get AI-prioritized task list
   fastify.get('/:projectId/:scheduleId/prioritize', {
     preHandler: [requireScope('read')],
@@ -30,7 +28,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId, scheduleId } = request.params as { projectId: string; scheduleId: string };
-      const result = await service.prioritizeTasks(projectId, scheduleId);
+      const result = await taskPrioritizationService.prioritizeTasks(projectId, scheduleId);
       return result;
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -54,7 +52,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const body = applyBodySchema.parse(request.body);
-      const applied = await service.applyPriorityChange(body.taskId, body.priority);
+      const applied = await taskPrioritizationService.applyPriorityChange(body.taskId, body.priority);
       if (!applied) {
         return reply.status(404).send({
           error: 'Task not found',
@@ -84,7 +82,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const body = applyAllBodySchema.parse(request.body);
-      const applied = await service.applyAllPriorityChanges(body.changes);
+      const applied = await taskPrioritizationService.applyAllPriorityChanges(body.changes);
       return { message: `Applied ${applied} priority change(s) successfully`, applied };
     } catch (error) {
       if (error instanceof z.ZodError) {

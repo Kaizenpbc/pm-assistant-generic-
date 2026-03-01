@@ -92,7 +92,7 @@ export class ProjectService {
   }
 
   async findAll(): Promise<Project[]> {
-    const rows = await databaseService.query('SELECT * FROM projects ORDER BY created_at DESC');
+    const rows = await databaseService.query('SELECT * FROM projects ORDER BY created_at DESC LIMIT 1000');
     return rows.map(rowToProject);
   }
 
@@ -274,3 +274,5 @@ export class ProjectService {
     return deleted;
   }
 }
+
+export const projectService = new ProjectService();

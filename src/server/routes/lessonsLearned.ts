@@ -1,19 +1,17 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { LessonsLearnedService } from '../services/LessonsLearnedService';
+import { lessonsLearnedService } from '../services/LessonsLearnedService';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 
 export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
-  const service = new LessonsLearnedService();
-
   // GET /knowledge-base — Aggregated knowledge base overview
   fastify.get('/knowledge-base', {
     preHandler: [requireScope('read')],
   }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const overview = await service.getKnowledgeBase();
+      const overview = await lessonsLearnedService.getKnowledgeBase();
       return reply.send({ data: overview });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to get knowledge base');
@@ -28,7 +26,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
     try {
       const { projectId } = request.params as { projectId: string };
       const userId = (request as any).user.userId;
-      const lessons = await service.extractLessons(projectId, userId);
+      const lessons = await lessonsLearnedService.extractLessons(projectId, userId);
       return reply.send({ lessons });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to extract lessons');
@@ -43,7 +41,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectType, category } = request.query as { projectType?: string; category?: string };
-      const lessons = await service.findRelevantLessons(projectType, category);
+      const lessons = await lessonsLearnedService.findRelevantLessons(projectType, category);
       return reply.send({ lessons });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to find relevant lessons');
@@ -57,7 +55,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = (request as any).user.userId;
-      const patterns = await service.detectPatterns(userId);
+      const patterns = await lessonsLearnedService.detectPatterns(userId);
       return reply.send({ patterns });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to detect patterns');
@@ -75,7 +73,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'riskDescription and projectType are required' });
       }
       const userId = (request as any).user.userId;
-      const suggestions = await service.suggestMitigations(riskDescription, projectType, userId);
+      const suggestions = await lessonsLearnedService.suggestMitigations(riskDescription, projectType, userId);
       return reply.send({ suggestions });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to suggest mitigations');
@@ -102,7 +100,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
       if (!body.projectId || !body.title || !body.description || !body.recommendation) {
         return reply.status(400).send({ error: 'projectId, title, description, and recommendation are required' });
       }
-      const lesson = await service.addLesson({
+      const lesson = await lessonsLearnedService.addLesson({
         projectId: body.projectId,
         projectName: body.projectName || '',
         projectType: body.projectType || 'other',
@@ -129,7 +127,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
       if (!query) {
         return reply.status(400).send({ error: 'query is required' });
       }
-      const lessons = await service.findSimilarLessons(query, topK);
+      const lessons = await lessonsLearnedService.findSimilarLessons(query, topK);
       return reply.send({ lessons });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to find similar lessons');
@@ -142,7 +140,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('write')],
   }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const seeded = await service.seedFromProjects();
+      const seeded = await lessonsLearnedService.seedFromProjects();
       return reply.send({ seeded });
     } catch (err) {
       fastify.log.error({ err }, 'Failed to seed lessons');

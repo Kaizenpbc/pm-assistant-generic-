@@ -1,9 +1,9 @@
 import { claudeService, PromptTemplate } from './claudeService';
-import { ProjectService } from './ProjectService';
-import { ScheduleService } from './ScheduleService';
+import { projectService } from './ProjectService';
+import { scheduleService } from './ScheduleService';
 import { config } from '../config';
 import { databaseService } from '../database/connection';
-import { RagService } from './RagService';
+import { ragService } from './RagService';
 import {
   LessonsExtractionAISchema,
   PatternDetectionAISchema,
@@ -101,7 +101,6 @@ function rowToLesson(row: any): LessonLearned {
 
 export class LessonsLearnedService {
   private static patterns: Pattern[] = [];
-  private ragService = new RagService();
 
   // -----------------------------------------------------------------------
   // Persist a lesson to DB and index for RAG
@@ -128,7 +127,7 @@ export class LessonsLearnedService {
     );
 
     // Fire-and-forget RAG indexing
-    this.ragService.indexLesson(lesson).catch((err) => {
+    ragService.indexLesson(lesson).catch((err) => {
       console.error(`[RAG] Failed to index lesson ${lesson.id}:`, (err as Error).message);
     });
   }
@@ -147,8 +146,6 @@ export class LessonsLearnedService {
       return 0;
     }
 
-    const projectService = new ProjectService();
-    const scheduleService = new ScheduleService();
     const projects = await projectService.findAll();
     const seededLessons: LessonLearned[] = [];
     let counter = 0;
@@ -297,9 +294,6 @@ export class LessonsLearnedService {
   // -----------------------------------------------------------------------
 
   async extractLessons(projectId: string, _userId?: string): Promise<LessonLearned[]> {
-    const projectService = new ProjectService();
-    const scheduleService = new ScheduleService();
-
     const project = await projectService.findById(projectId);
     if (!project) {
       throw new Error(`Project ${projectId} not found`);
@@ -539,11 +533,11 @@ export class LessonsLearnedService {
   // -----------------------------------------------------------------------
 
   async findSimilarLessons(query: string, topK?: number): Promise<LessonLearned[]> {
-    if (!this.ragService.isAvailable()) {
+    if (!ragService.isAvailable()) {
       return [];
     }
 
-    const results = await this.ragService.search(query, {
+    const results = await ragService.search(query, {
       documentType: 'lesson',
       topK,
     });
@@ -677,7 +671,7 @@ export class LessonsLearnedService {
     // Use RAG search if available for better relevance
     let relevantLessons: LessonLearned[];
 
-    if (this.ragService.isAvailable()) {
+    if (ragService.isAvailable()) {
       relevantLessons = await this.findSimilarLessons(
         `${riskDescription} ${projectType}`,
         10,
@@ -835,8 +829,10 @@ export class LessonsLearnedService {
 
   private async getAllLessons(): Promise<LessonLearned[]> {
     const rows = await databaseService.query<any>(
-      'SELECT * FROM lessons_learned ORDER BY created_at DESC',
+      'SELECT * FROM lessons_learned ORDER BY created_at DESC LIMIT 1000',
     );
     return rows.map(rowToLesson);
   }
 }
+
+export const lessonsLearnedService = new LessonsLearnedService();

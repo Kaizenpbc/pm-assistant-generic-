@@ -1,5 +1,5 @@
-import { CriticalPathService, CriticalPathResult, CPMTaskResult } from './CriticalPathService';
-import { ScheduleService, Task } from './ScheduleService';
+import { criticalPathService, CriticalPathResult, CPMTaskResult } from './CriticalPathService';
+import { scheduleService, Task } from './ScheduleService';
 
 export interface NetworkNode {
   taskId: string;
@@ -35,12 +35,9 @@ export interface NetworkDiagramData {
 }
 
 export class NetworkDiagramService {
-  private criticalPathService = new CriticalPathService();
-  private scheduleService = new ScheduleService();
-
   async getNetworkDiagram(scheduleId: string): Promise<NetworkDiagramData> {
-    const cpResult = await this.criticalPathService.calculateCriticalPath(scheduleId);
-    const tasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
+    const cpResult = await criticalPathService.calculateCriticalPath(scheduleId);
+    const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
 
     if (cpResult.tasks.length === 0) {
       return { nodes: [], edges: [], width: 0, height: 0 };

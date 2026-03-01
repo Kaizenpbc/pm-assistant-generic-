@@ -2,12 +2,10 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { config } from '../config';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
-import { UserService } from '../services/UserService';
+import { userService } from '../services/UserService';
 import { stripeService } from '../services/StripeService';
 
 export async function stripeRoutes(fastify: FastifyInstance) {
-  const userService = new UserService();
-
   // Stripe webhook — must receive raw body, no auth
   fastify.post('/webhook', {
     config: { rawBody: true },

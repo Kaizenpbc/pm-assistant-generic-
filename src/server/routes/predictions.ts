@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { PredictiveIntelligenceService } from '../services/predictiveIntelligence';
-import { SCurveService } from '../services/SCurveService';
+import { sCurveService } from '../services/SCurveService';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 
@@ -84,8 +84,6 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   });
 
   // GET /project/:projectId/evm/s-curve — S-Curve data
-  const sCurveService = new SCurveService();
-
   fastify.get('/project/:projectId/evm/s-curve', {
     preHandler: [requireScope('read')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {

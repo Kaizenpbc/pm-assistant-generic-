@@ -99,3 +99,5 @@ export class ProjectMemberService {
     return true;
   }
 }
+
+export const projectMemberService = new ProjectMemberService();

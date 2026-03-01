@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { ProjectMemberService } from '../services/ProjectMemberService';
+import { projectMemberService } from '../services/ProjectMemberService';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 
@@ -18,8 +18,6 @@ const updateRoleSchema = z.object({
 export async function projectMemberRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
-  const memberService = new ProjectMemberService();
-
   // GET /api/v1/projects/:projectId/members
   fastify.get('/:projectId/members', {
     preHandler: [requireScope('read')],
@@ -27,7 +25,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const members = memberService.findByProjectId(projectId);
+      const members = projectMemberService.findByProjectId(projectId);
       return { members };
     } catch (error) {
       console.error('Get members error:', error);
@@ -43,7 +41,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
     try {
       const { projectId } = request.params as { projectId: string };
       const data = addMemberSchema.parse(request.body);
-      const member = memberService.addMember(projectId, data);
+      const member = projectMemberService.addMember(projectId, data);
       return reply.status(201).send({ member });
     } catch (error) {
       console.error('Add member error:', error);
@@ -59,7 +57,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
     try {
       const { memberId } = request.params as { memberId: string };
       const data = updateRoleSchema.parse(request.body);
-      const member = memberService.updateRole(memberId, data.role);
+      const member = projectMemberService.updateRole(memberId, data.role);
       if (!member) return reply.status(404).send({ error: 'Member not found' });
       return { member };
     } catch (error) {
@@ -75,7 +73,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { memberId } = request.params as { memberId: string };
-      const removed = memberService.removeMember(memberId);
+      const removed = projectMemberService.removeMember(memberId);
       if (!removed) return reply.status(400).send({ error: 'Cannot remove member (may be last owner)' });
       return { message: 'Member removed' };
     } catch (error) {

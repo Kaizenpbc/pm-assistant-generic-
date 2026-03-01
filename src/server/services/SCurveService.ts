@@ -1,5 +1,5 @@
-import { ScheduleService, Task, Schedule } from './ScheduleService';
-import { ProjectService } from './ProjectService';
+import { scheduleService, Task, Schedule } from './ScheduleService';
+import { projectService } from './ProjectService';
 
 export interface SCurveDataPoint {
   date: string;
@@ -9,10 +9,7 @@ export interface SCurveDataPoint {
 }
 
 export class SCurveService {
-  private scheduleService = new ScheduleService();
-
   async computeSCurveData(projectId: string): Promise<SCurveDataPoint[]> {
-    const projectService = new ProjectService();
     const project = await projectService.findById(projectId);
     if (!project) return [];
 
@@ -20,13 +17,13 @@ export class SCurveService {
     const budgetSpent = project.budgetSpent || 0;
     if (budgetAllocated <= 0) return [];
 
-    const schedules = await this.scheduleService.findByProjectId(projectId);
+    const schedules = await scheduleService.findByProjectId(projectId);
     if (schedules.length === 0) return [];
 
     // Gather all tasks across schedules
     const allTasks: Task[] = [];
     for (const sch of schedules) {
-      const tasks = await this.scheduleService.findTasksByScheduleId(sch.id);
+      const tasks = await scheduleService.findTasksByScheduleId(sch.id);
       allTasks.push(...tasks);
     }
     if (allTasks.length === 0) return [];
@@ -114,3 +111,5 @@ export class SCurveService {
     return dataPoints;
   }
 }
+
+export const sCurveService = new SCurveService();

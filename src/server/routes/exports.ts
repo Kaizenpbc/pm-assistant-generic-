@@ -1,14 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { ScheduleService } from '../services/ScheduleService';
-import { ProjectService } from '../services/ProjectService';
-import { CriticalPathService } from '../services/CriticalPathService';
+import { scheduleService } from '../services/ScheduleService';
+import { projectService } from '../services/ProjectService';
+import { criticalPathService } from '../services/CriticalPathService';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 
 export async function exportRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
-
-  const scheduleService = new ScheduleService();
 
   // GET /exports/projects/:id/export?format=csv|json
   fastify.get('/projects/:id/export', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
@@ -20,9 +18,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
 
       if (format === 'json') {
         // JSON export — full project report data for client-side PDF rendering
-        const projectService = new ProjectService();
         const project = await projectService.findById(id);
-        const cpmService = new CriticalPathService();
 
         const schedulesWithTasks = [];
         let allTaskCount = 0;
@@ -31,7 +27,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
           const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
           let criticalPath = null;
           try {
-            criticalPath = await cpmService.calculateCriticalPath(schedule.id);
+            criticalPath = await criticalPathService.calculateCriticalPath(schedule.id);
           } catch { /* ignore */ }
           for (const t of tasks) {
             allTaskCount++;

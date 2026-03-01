@@ -1,13 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { MonteCarloService } from '../services/MonteCarloService';
+import { monteCarloService } from '../services/MonteCarloService';
 import { MonteCarloConfigSchema } from '../schemas/monteCarloSchemas';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 
 export async function monteCarloRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
-
-  const service = new MonteCarloService();
 
   // POST /:scheduleId/simulate — Run Monte Carlo simulation for a schedule
   fastify.post('/:scheduleId/simulate', { preHandler: [requireScope('write')] }, async (
@@ -21,7 +19,7 @@ export async function monteCarloRoutes(fastify: FastifyInstance) {
       const rawBody = (request.body as Record<string, unknown>) || {};
       const config = MonteCarloConfigSchema.parse(rawBody);
 
-      const result = await service.runSimulation(scheduleId, config);
+      const result = await monteCarloService.runSimulation(scheduleId, config);
       return reply.send({ result });
     } catch (err: any) {
       if (err.name === 'ZodError') {

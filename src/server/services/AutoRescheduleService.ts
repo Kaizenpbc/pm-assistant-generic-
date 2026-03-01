@@ -483,3 +483,5 @@ Please propose date changes to reschedule affected tasks with minimal disruption
     }
   }
 }
+
+export const autoRescheduleService = new AutoRescheduleService();

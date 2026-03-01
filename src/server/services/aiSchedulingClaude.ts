@@ -127,8 +127,7 @@ export async function optimizeScheduleClaude(
   userId?: string,
 ): Promise<{ optimizedSchedule: AIScheduleOptimization; aiPowered: boolean }> {
   // Try to get schedule data from in-memory service
-  const { ScheduleService } = await import('./ScheduleService');
-  const scheduleService = new ScheduleService();
+  const { scheduleService } = await import('./ScheduleService');
   let scheduleData = '';
 
   try {

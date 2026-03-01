@@ -1,47 +1,14 @@
 import { z } from 'zod';
 import { agentRegistry } from './AgentRegistryService';
-import { AutoRescheduleService } from './AutoRescheduleService';
-import { EVMForecastService } from './EVMForecastService';
-import { MonteCarloService } from './MonteCarloService';
-import { MeetingIntelligenceService } from './MeetingIntelligenceService';
-import { LessonsLearnedService } from './LessonsLearnedService';
-import { RagService } from './RagService';
+import { autoRescheduleService } from './AutoRescheduleService';
+import { evmForecastService } from './EVMForecastService';
+import { monteCarloService } from './MonteCarloService';
+import { meetingIntelligenceService } from './MeetingIntelligenceService';
+import { lessonsLearnedService } from './LessonsLearnedService';
+import { ragService } from './RagService';
 
 // Register RAG agent capability (side-effect import)
 import './ragAgentCapability';
-
-// Lazily instantiate services to avoid circular dependency issues
-let rescheduleService: AutoRescheduleService;
-let evmForecastService: EVMForecastService;
-let monteCarloService: MonteCarloService;
-let meetingIntelligenceService: MeetingIntelligenceService;
-let lessonsLearnedService: LessonsLearnedService;
-let ragService: RagService;
-
-function getRescheduleService() {
-  if (!rescheduleService) rescheduleService = new AutoRescheduleService();
-  return rescheduleService;
-}
-function getEvmForecastService() {
-  if (!evmForecastService) evmForecastService = new EVMForecastService();
-  return evmForecastService;
-}
-function getMonteCarloService() {
-  if (!monteCarloService) monteCarloService = new MonteCarloService();
-  return monteCarloService;
-}
-function getMeetingIntelligenceService() {
-  if (!meetingIntelligenceService) meetingIntelligenceService = new MeetingIntelligenceService();
-  return meetingIntelligenceService;
-}
-function getLessonsLearnedService() {
-  if (!lessonsLearnedService) lessonsLearnedService = new LessonsLearnedService();
-  return lessonsLearnedService;
-}
-function getRagService() {
-  if (!ragService) ragService = new RagService();
-  return ragService;
-}
 
 // --- Auto-Reschedule Agent ---
 agentRegistry.register({
@@ -60,8 +27,7 @@ agentRegistry.register({
   permissions: ['agent:schedule'],
   timeoutMs: 120000,
   handler: async (input: { scheduleId: string; thresholdDays?: number }) => {
-    const svc = getRescheduleService();
-    const delays = await svc.detectDelays(input.scheduleId);
+    const delays = await autoRescheduleService.detectDelays(input.scheduleId);
     const thresholdDays = input.thresholdDays ?? 3;
     const significant = delays.filter(
       (d: any) => d.delayDays >= thresholdDays || d.isOnCriticalPath,
@@ -69,7 +35,7 @@ agentRegistry.register({
     if (significant.length === 0) {
       return { delays: significant };
     }
-    const proposal = await svc.generateProposal(input.scheduleId, undefined, 'agent');
+    const proposal = await autoRescheduleService.generateProposal(input.scheduleId, undefined, 'agent');
     return { delays: significant, proposal };
   },
 });
@@ -89,8 +55,7 @@ agentRegistry.register({
   permissions: ['agent:budget'],
   timeoutMs: 90000,
   handler: async (input: { projectId: string }) => {
-    const svc = getEvmForecastService();
-    const forecast = await svc.generateForecast(input.projectId);
+    const forecast = await evmForecastService.generateForecast(input.projectId);
     return { forecast };
   },
 });
@@ -115,8 +80,7 @@ agentRegistry.register({
   permissions: ['agent:risk'],
   timeoutMs: 120000,
   handler: async (input: { scheduleId: string; config?: any }) => {
-    const svc = getMonteCarloService();
-    const result = await svc.runSimulation(input.scheduleId, input.config);
+    const result = await monteCarloService.runSimulation(input.scheduleId, input.config);
     return { result };
   },
 });
@@ -137,17 +101,14 @@ agentRegistry.register({
   permissions: ['agent:meeting'],
   timeoutMs: 60000,
   handler: async (input: { projectId: string }) => {
-    const svc = getMeetingIntelligenceService();
-    const analyses = await svc.getProjectHistory(input.projectId);
+    const analyses = await meetingIntelligenceService.getProjectHistory(input.projectId);
 
     // Enrich with related lessons via RAG if available
     let relatedLessons: any[] | undefined;
-    const rag = getRagService();
-    if (rag.isAvailable() && analyses.length > 0) {
+    if (ragService.isAvailable() && analyses.length > 0) {
       try {
         const latestSummary = analyses[0].summary;
-        const llService = getLessonsLearnedService();
-        relatedLessons = await llService.findSimilarLessons(latestSummary, 3);
+        relatedLessons = await lessonsLearnedService.findSimilarLessons(latestSummary, 3);
       } catch {
         // RAG enrichment is optional
       }

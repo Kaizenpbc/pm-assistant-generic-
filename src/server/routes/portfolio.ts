@@ -1,14 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { ProjectService } from '../services/ProjectService';
-import { ScheduleService } from '../services/ScheduleService';
+import { projectService } from '../services/ProjectService';
+import { scheduleService } from '../services/ScheduleService';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 
 export async function portfolioRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
-
-  const projectService = new ProjectService();
-  const scheduleService = new ScheduleService();
 
   fastify.get('/', {
     preHandler: [requireScope('read')],

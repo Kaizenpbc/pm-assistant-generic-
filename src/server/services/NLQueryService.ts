@@ -1,10 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { claudeService } from '../services/claudeService';
-import { ProjectService } from '../services/ProjectService';
-import { ScheduleService } from '../services/ScheduleService';
-import { ResourceService } from '../services/ResourceService';
-import { CriticalPathService } from '../services/CriticalPathService';
-import { SCurveService } from '../services/SCurveService';
+import { projectService } from '../services/ProjectService';
+import { scheduleService } from '../services/ScheduleService';
+import { resourceService } from '../services/ResourceService';
+import { criticalPathService } from '../services/CriticalPathService';
+import { sCurveService } from '../services/SCurveService';
 import { config } from '../config';
 import {
   NLQueryAIResponseSchema,
@@ -163,12 +163,6 @@ async function executeToolFn(
   toolName: string,
   toolInput: Record<string, any>,
 ): Promise<string> {
-  const projectService = new ProjectService();
-  const scheduleService = new ScheduleService();
-  const resourceService = new ResourceService();
-  const criticalPathService = new CriticalPathService();
-  const sCurveService = new SCurveService();
-
   switch (toolName) {
     // ----- list_projects -----
     case 'list_projects': {

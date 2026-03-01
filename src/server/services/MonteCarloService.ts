@@ -1,6 +1,6 @@
-import { ScheduleService, Task } from './ScheduleService';
-import { ProjectService } from './ProjectService';
-import { CriticalPathService, CriticalPathResult } from './CriticalPathService';
+import { scheduleService, Task } from './ScheduleService';
+import { projectService } from './ProjectService';
+import { criticalPathService, CriticalPathResult } from './CriticalPathService';
 import {
   MonteCarloConfig,
   MonteCarloResult,
@@ -32,10 +32,6 @@ interface ForwardPassResult {
 // Monte Carlo Simulation Service — pure computation, no AI
 // ---------------------------------------------------------------------------
 export class MonteCarloService {
-  private scheduleService = new ScheduleService();
-  private projectService = new ProjectService();
-  private criticalPathService = new CriticalPathService();
-
   // -----------------------------------------------------------------------
   // Public API
   // -----------------------------------------------------------------------
@@ -49,18 +45,18 @@ export class MonteCarloService {
     const uncertaintyModel = config?.uncertaintyModel ?? 'pert';
 
     // 1. Fetch schedule, tasks, and critical-path info
-    const schedule = await this.scheduleService.findById(scheduleId);
+    const schedule = await scheduleService.findById(scheduleId);
     if (!schedule) {
       throw new Error(`Schedule not found: ${scheduleId}`);
     }
 
-    const tasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
+    const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
     if (tasks.length === 0) {
       throw new Error(`No tasks found for schedule: ${scheduleId}`);
     }
 
     const cpResult: CriticalPathResult =
-      await this.criticalPathService.calculateCriticalPath(scheduleId);
+      await criticalPathService.calculateCriticalPath(scheduleId);
 
     // 2. Build task distributions
     const distributions = this.buildDistributions(tasks);
@@ -176,7 +172,7 @@ export class MonteCarloService {
     const deterministicDuration = cpResult.projectDuration || p50;
     let budget = 0;
     try {
-      const project = await this.projectService.findById(schedule.projectId);
+      const project = await projectService.findById(schedule.projectId);
       if (project?.budgetAllocated) {
         budget = project.budgetAllocated;
       }
@@ -616,3 +612,5 @@ export class MonteCarloService {
     return sorted[lower] + fraction * (sorted[upper] - sorted[lower]);
   }
 }
+
+export const monteCarloService = new MonteCarloService();

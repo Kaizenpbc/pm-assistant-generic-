@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { ResourceOptimizerService } from '../services/ResourceOptimizerService';
+import { resourceOptimizerService } from '../services/ResourceOptimizerService';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 
@@ -16,8 +16,6 @@ const skillMatchBodySchema = z.object({
 export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
-  const optimizerService = new ResourceOptimizerService();
-
   // GET /:projectId/forecast
   fastify.get('/:projectId/forecast', {
     preHandler: [requireScope('read')],
@@ -32,7 +30,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
       const user = (request as any).user;
       const userId = user.userId;
 
-      const forecast = await optimizerService.predictBottlenecks(
+      const forecast = await resourceOptimizerService.predictBottlenecks(
         projectId,
         query.weeksAhead,
         userId,
@@ -65,7 +63,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
     try {
       const body = skillMatchBodySchema.parse(request.body);
 
-      const matches = await optimizerService.findBestResourceForTask(
+      const matches = await resourceOptimizerService.findBestResourceForTask(
         body.taskId,
         body.scheduleId,
       );

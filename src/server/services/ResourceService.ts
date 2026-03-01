@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
-import { ScheduleService } from './ScheduleService';
+import { scheduleService } from './ScheduleService';
 import { auditLedgerService } from './AuditLedgerService';
 
 export interface Resource {
@@ -81,8 +81,19 @@ export class ResourceService {
   // --- Resource CRUD ---
 
   async findAllResources(): Promise<Resource[]> {
-    const rows = await databaseService.query('SELECT * FROM resources ORDER BY name');
+    const rows = await databaseService.query('SELECT * FROM resources ORDER BY name LIMIT 1000');
     return rows.map(rowToResource);
+  }
+
+  async findAllResourcesPaginated(
+    limit = 50,
+    offset = 0,
+  ): Promise<{ resources: Resource[]; total: number }> {
+    const [[{ cnt }], rows] = await Promise.all([
+      databaseService.query<{ cnt: number }>('SELECT COUNT(*) AS cnt FROM resources'),
+      databaseService.query('SELECT * FROM resources ORDER BY name LIMIT ? OFFSET ?', [limit, offset]),
+    ]);
+    return { resources: rows.map(rowToResource), total: Number(cnt) };
   }
 
   async findResourceById(id: string): Promise<Resource | null> {
@@ -208,7 +219,6 @@ export class ResourceService {
   // --- Workload computation ---
 
   async computeWorkload(projectId: string): Promise<ResourceWorkload[]> {
-    const scheduleService = new ScheduleService();
     const schedules = await scheduleService.findByProjectId(projectId);
     const scheduleIds = schedules.map((s) => s.id);
 
@@ -303,3 +313,5 @@ export class ResourceService {
     return workloads;
   }
 }
+
+export const resourceService = new ResourceService();

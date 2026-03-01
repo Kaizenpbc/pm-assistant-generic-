@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import { UserService } from '../services/UserService';
+import { userService } from '../services/UserService';
 import { emailService } from '../services/EmailService';
 import { stripeService } from '../services/StripeService';
 
@@ -30,8 +30,6 @@ const resetPasswordSchema = z.object({
 });
 
 export async function authRoutes(fastify: FastifyInstance) {
-  const userService = new UserService();
-
   fastify.post('/login', {
     schema: { description: 'User login', tags: ['auth'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {

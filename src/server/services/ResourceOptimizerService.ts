@@ -1,5 +1,5 @@
-import { ResourceService, ResourceWorkload, WeeklyUtilization } from './ResourceService';
-import { ScheduleService, Task } from './ScheduleService';
+import { resourceService, ResourceWorkload, WeeklyUtilization } from './ResourceService';
+import { scheduleService, Task } from './ScheduleService';
 import { claudeService } from './claudeService';
 import { config } from '../config';
 import {
@@ -15,13 +15,6 @@ import {
 import { z } from 'zod';
 
 export class ResourceOptimizerService {
-  private resourceService: ResourceService;
-  private scheduleService: ScheduleService;
-
-  constructor() {
-    this.resourceService = new ResourceService();
-    this.scheduleService = new ScheduleService();
-  }
 
   // ---------------------------------------------------------------------------
   // predictBottlenecks
@@ -33,8 +26,8 @@ export class ResourceOptimizerService {
     userId?: string,
   ): Promise<ResourceForecastResult> {
     // 1. Get workloads from ResourceService
-    const workloads = await this.resourceService.computeWorkload(projectId);
-    const allResources = await this.resourceService.findAllResources();
+    const workloads = await resourceService.computeWorkload(projectId);
+    const allResources = await resourceService.findAllResources();
 
     // 2. Detect upcoming bottlenecks: weeks where utilization > 100%
     const bottlenecks: BottleneckPrediction[] = [];
@@ -171,13 +164,13 @@ export class ResourceOptimizerService {
     scheduleId: string,
   ): Promise<SkillMatch[]> {
     // Get the task
-    const task = await this.scheduleService.findTaskById(taskId);
+    const task = await scheduleService.findTaskById(taskId);
     if (!task) {
       throw new Error(`Task not found: ${taskId}`);
     }
 
     // Get all active resources
-    const allResources = await this.resourceService.findAllResources();
+    const allResources = await resourceService.findAllResources();
     const activeResources = allResources.filter((r) => r.isActive);
 
     // Build keyword set from task name and description
@@ -185,7 +178,7 @@ export class ResourceOptimizerService {
     const taskKeywords = this.extractKeywords(taskText);
 
     // Get assignments for this schedule to compute available capacity
-    const assignments = await this.resourceService.findAssignmentsBySchedule(scheduleId);
+    const assignments = await resourceService.findAssignmentsBySchedule(scheduleId);
 
     const matches: SkillMatch[] = [];
 
@@ -274,14 +267,14 @@ export class ResourceOptimizerService {
     projectId: string,
     weekStart: string,
   ): Promise<Array<{ taskId: string; taskName: string; hoursPerWeek: number }>> {
-    const schedules = await this.scheduleService.findByProjectId(projectId);
+    const schedules = await scheduleService.findByProjectId(projectId);
     const contributing: Array<{ taskId: string; taskName: string; hoursPerWeek: number }> = [];
 
     const weekDate = new Date(weekStart).getTime();
     const weekEnd = weekDate + 7 * 24 * 60 * 60 * 1000;
 
     for (const schedule of schedules) {
-      const assignments = await this.resourceService.findAssignmentsBySchedule(schedule.id);
+      const assignments = await resourceService.findAssignmentsBySchedule(schedule.id);
       const resourceAssignments = assignments.filter((a) => a.resourceId === resourceId);
 
       for (const assignment of resourceAssignments) {
@@ -289,7 +282,7 @@ export class ResourceOptimizerService {
         const aEnd = new Date(assignment.endDate).getTime();
 
         if (aStart < weekEnd && aEnd >= weekDate) {
-          const task = await this.scheduleService.findTaskById(assignment.taskId);
+          const task = await scheduleService.findTaskById(assignment.taskId);
           contributing.push({
             taskId: assignment.taskId,
             taskName: task?.name || assignment.taskId,
@@ -417,3 +410,5 @@ Generate 3-5 actionable rebalancing suggestions to address these issues.`;
       .filter((w) => w.length >= 3 && !stopWords.has(w));
   }
 }
+
+export const resourceOptimizerService = new ResourceOptimizerService();

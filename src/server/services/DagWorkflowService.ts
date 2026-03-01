@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
-import { Task, ScheduleService } from './ScheduleService';
+import { Task, ScheduleService, scheduleService } from './ScheduleService';
 import { auditLedgerService } from './AuditLedgerService';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -459,7 +459,6 @@ class DagWorkflowService {
 
           if (matched) {
             // Build a synthetic task-like context for the workflow engine
-            const scheduleService = new ScheduleService();
             await this.executeWorkflow(fullDef, triggerNode, null, scheduleService);
           }
         }
@@ -893,9 +892,8 @@ class DagWorkflowService {
           const schedule = task ? await scheduleService.findById(task.scheduleId) : null;
           const projectId = schedule?.projectId ?? config.projectId;
           if (projectId) {
-            const { ProjectService } = await import('./ProjectService');
-            const projectService = new ProjectService();
-            const project = await projectService.findById(projectId);
+            const { projectService: projSvc } = await import('./ProjectService');
+            const project = await projSvc.findById(projectId);
             const userId = project?.projectManagerId || project?.createdBy;
             if (userId) {
               await notificationService.create({

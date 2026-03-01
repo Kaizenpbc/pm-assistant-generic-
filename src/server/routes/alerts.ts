@@ -1,7 +1,7 @@
 // C:\Users\gerog\Documents\pm-assistant-generic\src\server\routes\alerts.ts
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { ProactiveAlertService } from '../services/proactiveAlertService';
+import { proactiveAlertService } from '../services/proactiveAlertService';
 import { AIActionExecutor } from '../services/aiActionExecutor';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
@@ -9,7 +9,6 @@ import { requireScope } from '../middleware/requireScope';
 export async function alertRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
-  const alertService = new ProactiveAlertService();
   const actionExecutor = new AIActionExecutor();
 
   // GET / — Get all proactive alerts
@@ -20,7 +19,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
       tags: ['alerts'],
     },
     handler: async (_request: FastifyRequest, _reply: FastifyReply) => {
-      const alerts = await alertService.generateAlerts();
+      const alerts = await proactiveAlertService.generateAlerts();
       return { alerts, count: alerts.length };
     },
   });
@@ -33,7 +32,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
       tags: ['alerts'],
     },
     handler: async (_request: FastifyRequest, _reply: FastifyReply) => {
-      const summary = await alertService.getAlertsSummary();
+      const summary = await proactiveAlertService.getAlertsSummary();
       return summary;
     },
   });
@@ -47,7 +46,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, _reply: FastifyReply) => {
       const { projectId } = request.params as any;
-      const alerts = await alertService.getAlertsByProject(projectId);
+      const alerts = await proactiveAlertService.getAlertsByProject(projectId);
       return { alerts, count: alerts.length };
     },
   });

@@ -238,7 +238,7 @@ class PolicyEngineService {
   async getAllPolicies(): Promise<Policy[]> {
     try {
       const rows = await databaseService.query<PolicyRow>(
-        'SELECT * FROM policies ORDER BY created_at',
+        'SELECT * FROM policies ORDER BY created_at LIMIT 1000',
       );
       return rows.map(rowToPolicy);
     } catch {

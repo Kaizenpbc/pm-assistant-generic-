@@ -1,4 +1,4 @@
-import { ScheduleService, Task } from './ScheduleService';
+import { scheduleService, Task } from './ScheduleService';
 
 export interface CPMTaskResult {
   taskId: string;
@@ -20,10 +20,8 @@ export interface CriticalPathResult {
 }
 
 export class CriticalPathService {
-  private scheduleService = new ScheduleService();
-
   async calculateCriticalPath(scheduleId: string): Promise<CriticalPathResult> {
-    const tasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
+    const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
     if (tasks.length === 0) {
       return { criticalPathTaskIds: [], tasks: [], projectDuration: 0 };
     }
@@ -175,3 +173,5 @@ export class CriticalPathService {
     };
   }
 }
+
+export const criticalPathService = new CriticalPathService();

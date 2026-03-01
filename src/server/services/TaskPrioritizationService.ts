@@ -1,6 +1,6 @@
-import { ScheduleService, Task } from './ScheduleService';
-import { CriticalPathService, CPMTaskResult } from './CriticalPathService';
-import { AutoRescheduleService } from './AutoRescheduleService';
+import { scheduleService, Task } from './ScheduleService';
+import { criticalPathService, CPMTaskResult } from './CriticalPathService';
+import { autoRescheduleService } from './AutoRescheduleService';
 import { claudeService } from './claudeService';
 import { config } from '../config';
 import {
@@ -23,19 +23,15 @@ function scoreToPriority(score: number): Priority {
 }
 
 export class TaskPrioritizationService {
-  private scheduleService = new ScheduleService();
-  private criticalPathService = new CriticalPathService();
-  private autoRescheduleService = new AutoRescheduleService();
-
   // ---------------------------------------------------------------------------
   // Prioritize Tasks
   // ---------------------------------------------------------------------------
 
   async prioritizeTasks(projectId: string, scheduleId: string): Promise<PrioritizationResult> {
     // Gather data from existing services
-    const tasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
-    const criticalPathResult = await this.criticalPathService.calculateCriticalPath(scheduleId);
-    const delayedTasks = await this.autoRescheduleService.detectDelays(scheduleId);
+    const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
+    const criticalPathResult = await criticalPathService.calculateCriticalPath(scheduleId);
+    const delayedTasks = await autoRescheduleService.detectDelays(scheduleId);
 
     // Build lookup maps
     const criticalIds = new Set(criticalPathResult.criticalPathTaskIds);
@@ -71,7 +67,7 @@ export class TaskPrioritizationService {
     // Count downstream tasks for each task (for downstream impact factor)
     const downstreamCounts = new Map<string, number>();
     for (const task of activeTasks) {
-      const downstream = await this.scheduleService.findAllDownstreamTasks(task.id);
+      const downstream = await scheduleService.findAllDownstreamTasks(task.id);
       downstreamCounts.set(task.id, downstream.length);
     }
 
@@ -234,7 +230,7 @@ export class TaskPrioritizationService {
   // ---------------------------------------------------------------------------
 
   async applyPriorityChange(taskId: string, priority: Priority): Promise<boolean> {
-    const updated = await this.scheduleService.updateTask(taskId, { priority });
+    const updated = await scheduleService.updateTask(taskId, { priority });
     return updated !== null;
   }
 
@@ -245,7 +241,7 @@ export class TaskPrioritizationService {
   async applyAllPriorityChanges(changes: Array<{ taskId: string; priority: Priority }>): Promise<number> {
     let applied = 0;
     for (const change of changes) {
-      const updated = await this.scheduleService.updateTask(change.taskId, {
+      const updated = await scheduleService.updateTask(change.taskId, {
         priority: change.priority,
       });
       if (updated) applied++;
@@ -356,3 +352,5 @@ Please refine the prioritization ranking with explanations.`;
     return `${task.name} requires ${priority} priority (score: ${score}/100) due to ${factorNames}.`;
   }
 }
+
+export const taskPrioritizationService = new TaskPrioritizationService();

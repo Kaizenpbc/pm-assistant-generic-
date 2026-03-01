@@ -1,7 +1,7 @@
 // C:\Users\gerog\Documents\pm-assistant-generic\src\server\services\proactiveAlertService.ts
 
-import { ProjectService, type Project } from './ProjectService';
-import { ScheduleService, type Task } from './ScheduleService';
+import { projectService, type Project } from './ProjectService';
+import { scheduleService, type Task } from './ScheduleService';
 
 export interface ProactiveAlert {
   id: string;
@@ -22,12 +22,9 @@ export interface ProactiveAlert {
 }
 
 export class ProactiveAlertService {
-  private projectService = new ProjectService();
-  private scheduleService = new ScheduleService();
-
   async generateAlerts(): Promise<ProactiveAlert[]> {
     const alerts: ProactiveAlert[] = [];
-    const projects = await this.projectService.findAll();
+    const projects = await projectService.findAll();
     const now = new Date();
 
     for (const project of projects) {
@@ -78,9 +75,9 @@ export class ProactiveAlertService {
       }
 
       // Check tasks
-      const schedules = await this.scheduleService.findByProjectId(project.id);
+      const schedules = await scheduleService.findByProjectId(project.id);
       for (const schedule of schedules) {
-        const tasks = await this.scheduleService.findTasksByScheduleId(schedule.id);
+        const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
 
         // Count tasks per assignee for overload check
         const assigneeTasks: Map<string, number> = new Map();
@@ -196,3 +193,5 @@ export class ProactiveAlertService {
     return summary;
   }
 }
+
+export const proactiveAlertService = new ProactiveAlertService();

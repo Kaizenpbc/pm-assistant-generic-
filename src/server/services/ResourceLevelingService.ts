@@ -1,5 +1,5 @@
-import { CriticalPathService, CriticalPathResult, CPMTaskResult } from './CriticalPathService';
-import { ScheduleService, Task } from './ScheduleService';
+import { criticalPathService, CriticalPathResult, CPMTaskResult } from './CriticalPathService';
+import { scheduleService, Task } from './ScheduleService';
 
 // --- Interfaces ---
 
@@ -66,15 +66,13 @@ function daysBetween(a: Date, b: Date): number {
 }
 
 export class ResourceLevelingService {
-  private scheduleService = new ScheduleService();
-  private criticalPathService = new CriticalPathService();
 
   /**
    * Calculate daily resource demand per resource for a schedule.
    * Each task contributes 1 unit (8 hours) per day to its assigned resource.
    */
   async getResourceHistogram(scheduleId: string): Promise<ResourceHistogram> {
-    const tasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
+    const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
 
     // Build demand map: resourceName -> date -> hours
     const demandMap = new Map<string, Map<string, number>>();
@@ -136,8 +134,8 @@ export class ResourceLevelingService {
    * using available float/slack to reduce peak demand.
    */
   async levelResources(scheduleId: string): Promise<LevelingResult> {
-    const tasks = await this.scheduleService.findTasksByScheduleId(scheduleId);
-    const cpResult = await this.criticalPathService.calculateCriticalPath(scheduleId);
+    const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
+    const cpResult = await criticalPathService.calculateCriticalPath(scheduleId);
     const histogram = await this.getResourceHistogram(scheduleId);
 
     const originalDemand = histogram.resources.map(r => ({
@@ -348,7 +346,7 @@ export class ResourceLevelingService {
 
     for (const adj of adjustments) {
       try {
-        const task = await this.scheduleService.findTaskById(adj.taskId);
+        const task = await scheduleService.findTaskById(adj.taskId);
         if (!task) {
           errors.push(`Task ${adj.taskId} not found`);
           continue;
@@ -358,7 +356,7 @@ export class ResourceLevelingService {
           continue;
         }
 
-        await this.scheduleService.updateTask(adj.taskId, {
+        await scheduleService.updateTask(adj.taskId, {
           startDate: adj.newStart,
           endDate: adj.newEnd,
         });

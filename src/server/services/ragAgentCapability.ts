@@ -1,13 +1,6 @@
 import { z } from 'zod';
 import { agentRegistry } from './AgentRegistryService';
-import { RagService } from './RagService';
-
-let ragService: RagService;
-
-function getRagService() {
-  if (!ragService) ragService = new RagService();
-  return ragService;
-}
+import { ragService } from './RagService';
 
 // --- RAG Context Agent ---
 agentRegistry.register({
@@ -27,12 +20,11 @@ agentRegistry.register({
   permissions: ['agent:knowledge'],
   timeoutMs: 30000,
   handler: async (input: { query: string; documentType?: 'lesson' | 'meeting'; topK?: number }) => {
-    const svc = getRagService();
-    const results = await svc.search(input.query, {
+    const results = await ragService.search(input.query, {
       documentType: input.documentType,
       topK: input.topK,
     });
-    const contextString = await svc.buildContextString(input.query, input.topK);
+    const contextString = await ragService.buildContextString(input.query, input.topK);
     return { results, contextString };
   },
 });
