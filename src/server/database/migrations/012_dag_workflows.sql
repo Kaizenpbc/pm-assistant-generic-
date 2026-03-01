@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS workflow_definitions (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_project (project_id, is_enabled)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Nodes in the DAG
 CREATE TABLE IF NOT EXISTS workflow_nodes (
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS workflow_nodes (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_workflow (workflow_id),
   FOREIGN KEY (workflow_id) REFERENCES workflow_definitions(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Directed edges between nodes
 CREATE TABLE IF NOT EXISTS workflow_edges (
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS workflow_edges (
   FOREIGN KEY (workflow_id) REFERENCES workflow_definitions(id) ON DELETE CASCADE,
   FOREIGN KEY (source_node_id) REFERENCES workflow_nodes(id) ON DELETE CASCADE,
   FOREIGN KEY (target_node_id) REFERENCES workflow_nodes(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Execution instances
 CREATE TABLE IF NOT EXISTS workflow_executions (
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS workflow_executions (
   INDEX idx_entity (entity_type, entity_id),
   INDEX idx_status (status),
   FOREIGN KEY (workflow_id) REFERENCES workflow_definitions(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Per-node execution state
 CREATE TABLE IF NOT EXISTS workflow_node_executions (
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS workflow_node_executions (
   INDEX idx_node (node_id),
   FOREIGN KEY (execution_id) REFERENCES workflow_executions(id) ON DELETE CASCADE,
   FOREIGN KEY (node_id) REFERENCES workflow_nodes(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Seed data: convert the 3 hardcoded rules into DAG workflows
 
