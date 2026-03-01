@@ -1,9 +1,7 @@
 import * as cron from 'node-cron';
 import { config } from '../config';
-import { AutoRescheduleService } from './AutoRescheduleService';
-import { EVMForecastService } from './EVMForecastService';
-import { MeetingIntelligenceService } from './MeetingIntelligenceService';
-import { MonteCarloService } from './MonteCarloService';
+import { agentRegistry } from './AgentRegistryService';
+import './agentCapabilities';
 import { notificationService } from './NotificationService';
 import { ProjectService, type Project } from './ProjectService';
 import { ScheduleService } from './ScheduleService';
@@ -12,10 +10,6 @@ import { webhookService } from './WebhookService';
 
 export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
-  private rescheduleService = new AutoRescheduleService();
-  private evmForecastService = new EVMForecastService();
-  private monteCarloService = new MonteCarloService();
-  private meetingIntelligenceService = new MeetingIntelligenceService();
   private projectService = new ProjectService();
   private scheduleService = new ScheduleService();
   private activityLog = new AgentActivityLogService();
@@ -90,13 +84,14 @@ export class AgentSchedulerService {
         stats.schedulesScanned++;
 
         try {
-          const delays = await this.rescheduleService.detectDelays(schedule.id);
+          const ctx = { actorId: 'system' as const, actorType: 'system' as const, source: 'system' as const, projectId: project.id };
+          const result = await agentRegistry.invoke('auto-reschedule-v1', { scheduleId: schedule.id, thresholdDays }, ctx);
 
-          // Filter by threshold — only care about significant delays
-          const significant = delays.filter(
-            (d) => d.delayDays >= thresholdDays || d.isOnCriticalPath,
-          );
+          if (!result.success) {
+            throw new Error(result.error || 'Auto-reschedule agent failed');
+          }
 
+          const { delays: significant, proposal } = result.output;
           stats.delaysDetected += significant.length;
 
           if (significant.length === 0) {
@@ -104,8 +99,8 @@ export class AgentSchedulerService {
               projectId: project.id,
               agentName: 'auto_reschedule',
               result: 'skipped',
-              summary: `No significant delays in "${schedule.name}" (threshold: ${thresholdDays}d, found ${delays.length} minor)`,
-              details: { scheduleId: schedule.id, scheduleName: schedule.name, totalDelays: delays.length, thresholdDays },
+              summary: `No significant delays in "${schedule.name}" (threshold: ${thresholdDays}d)`,
+              details: { scheduleId: schedule.id, scheduleName: schedule.name, thresholdDays },
             });
             continue;
           }
@@ -114,12 +109,6 @@ export class AgentSchedulerService {
             `[Agent] ${project.name} / ${schedule.name}: ${significant.length} significant delay(s)`,
           );
 
-          // Generate proposal
-          const proposal = await this.rescheduleService.generateProposal(
-            schedule.id,
-            undefined,
-            'agent',
-          );
           stats.proposalsGenerated++;
 
           // Notify project owner
@@ -128,9 +117,9 @@ export class AgentSchedulerService {
           await notificationService.create({
             userId: notifyUserId,
             type: 'reschedule_proposal',
-            severity: significant.some((d) => d.severity === 'critical')
+            severity: significant.some((d: any) => d.severity === 'critical')
               ? 'critical'
-              : significant.some((d) => d.severity === 'high')
+              : significant.some((d: any) => d.severity === 'high')
                 ? 'high'
                 : 'medium',
             title: `Auto-Reschedule: ${significant.length} delay(s) in "${schedule.name}"`,
@@ -227,7 +216,10 @@ export class AgentSchedulerService {
       return 0;
     }
 
-    const forecast = await this.evmForecastService.generateForecast(project.id);
+    const ctx = { actorId: 'system' as const, actorType: 'system' as const, source: 'system' as const, projectId: project.id };
+    const result = await agentRegistry.invoke('budget-forecast-v1', { projectId: project.id }, ctx);
+    if (!result.success) throw new Error(result.error || 'Budget agent failed');
+    const forecast = result.output.forecast;
     const { CPI, VAC } = forecast.currentMetrics;
     const overrunProbability = forecast.aiPredictions?.overrunProbability;
 
@@ -300,7 +292,13 @@ export class AgentSchedulerService {
     const pKey = `p${confidenceLevel}` as 'p50' | 'p80' | 'p90';
 
     for (const schedule of schedules) {
-      const result = await this.monteCarloService.runSimulation(schedule.id);
+      const ctx = { actorId: 'system' as const, actorType: 'system' as const, source: 'system' as const, projectId: project.id };
+      const invocationResult = await agentRegistry.invoke('monte-carlo-v1', { scheduleId: schedule.id }, ctx);
+      if (!invocationResult.success) {
+        console.error(`[Agent:MonteCarlo] Invocation failed for schedule ${schedule.id}: ${invocationResult.error}`);
+        continue;
+      }
+      const result = invocationResult.output.result;
 
       // Check if the confidence-level completion date exceeds the schedule end date
       const pDateStr = result.completionDate[pKey];
@@ -314,8 +312,8 @@ export class AgentSchedulerService {
 
         // Flag highly critical tasks
         const criticalTasks = result.criticalityIndex
-          .filter((t) => t.criticalityPercent > 80)
-          .map((t) => t.taskName);
+          .filter((t: any) => t.criticalityPercent > 80)
+          .map((t: any) => t.taskName);
 
         const notifyUserId = project.projectManagerId || project.createdBy;
 
@@ -363,7 +361,10 @@ export class AgentSchedulerService {
   // ---------------------------------------------------------------------------
 
   private async runMeetingFollowUpAgent(project: Project): Promise<number> {
-    const analyses = this.meetingIntelligenceService.getProjectHistory(project.id);
+    const ctx = { actorId: 'system' as const, actorType: 'system' as const, source: 'system' as const, projectId: project.id };
+    const invocationResult = await agentRegistry.invoke('meeting-followup-v1', { projectId: project.id }, ctx);
+    if (!invocationResult.success) throw new Error(invocationResult.error || 'Meeting agent failed');
+    const analyses = invocationResult.output.analyses;
     if (analyses.length === 0) {
       await this.activityLog.log({
         projectId: project.id,
@@ -382,7 +383,7 @@ export class AgentSchedulerService {
 
       // Check for unapplied task updates
       const unappliedUpdates = analysis.taskUpdates.filter(
-        (_, idx) => !analysis.appliedItems.includes(idx),
+        (_: any, idx: number) => !analysis.appliedItems.includes(idx),
       );
       if (unappliedUpdates.length > 0) {
         problems.push(`${unappliedUpdates.length} unapplied task update(s)`);
@@ -390,7 +391,7 @@ export class AgentSchedulerService {
 
       // Check for overdue action items
       const now = new Date();
-      const overdueItems = analysis.actionItems.filter((item) => {
+      const overdueItems = analysis.actionItems.filter((item: any) => {
         if (!item.dueDate) return false;
         return new Date(item.dueDate) < now;
       });

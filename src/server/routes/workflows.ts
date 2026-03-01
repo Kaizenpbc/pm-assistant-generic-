@@ -8,7 +8,7 @@ import { requireScope } from '../middleware/requireScope';
 // ── Zod schemas ────────────────────────────────────────────────────────────
 
 const nodeSchema = z.object({
-  nodeType: z.enum(['trigger', 'condition', 'action', 'approval', 'delay']),
+  nodeType: z.enum(['trigger', 'condition', 'action', 'approval', 'delay', 'agent']),
   name: z.string().min(1),
   config: z.record(z.string(), z.any()),
   positionX: z.number().int().optional(),

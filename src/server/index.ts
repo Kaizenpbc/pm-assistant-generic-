@@ -4,6 +4,7 @@ import { config } from './config';
 import { registerPlugins } from './plugins';
 import { registerRoutes } from './routes';
 import { databaseService } from './database/connection';
+import './services/agentCapabilities';
 import { agentScheduler } from './services/AgentSchedulerService';
 
 const fastify = Fastify({

@@ -5,7 +5,7 @@ import { auditLedgerService } from './AuditLedgerService';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export type NodeType = 'trigger' | 'condition' | 'action' | 'approval' | 'delay';
+export type NodeType = 'trigger' | 'condition' | 'action' | 'approval' | 'delay' | 'agent';
 
 export interface WorkflowDefinition {
   id: string;
@@ -630,6 +630,22 @@ class DagWorkflowService {
           await databaseService.query(
             `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
             [JSON.stringify(output), nodeExecId],
+          );
+          break;
+        }
+
+        case 'agent': {
+          const { agentRegistry } = await import('./AgentRegistryService');
+          const capabilityId = node.config.capabilityId as string;
+          const agentInput = node.config.input ?? {};
+          const result = await agentRegistry.invoke(capabilityId, agentInput, {
+            actorId: 'system', actorType: 'system', source: 'system',
+            projectId: node.config.projectId as string | undefined,
+          });
+          if (!result.success) throw new Error(result.error || 'Agent invocation failed');
+          await databaseService.query(
+            `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
+            [JSON.stringify({ agentOutput: result.output, durationMs: result.durationMs }), nodeExecId],
           );
           break;
         }

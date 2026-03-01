@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
 
-export type AgentName = 'auto_reschedule' | 'budget' | 'monte_carlo' | 'meeting';
+export type AgentName = string;
 export type AgentResult = 'alert_created' | 'skipped' | 'error';
 
 export interface LogEntryInput {
