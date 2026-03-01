@@ -1,208 +1,194 @@
-# PM Application - Deployment Guide
+# PM Assistant - Deployment Guide
 
-## 🚀 Deployment Flexibility
+## Overview
 
-The PM Application is designed to work seamlessly in various deployment scenarios:
+PM Assistant is deployed on TMD Hosting (cPanel) with LiteSpeed serving static files and Node.js (via CloudLinux Passenger) running the Fastify API server.
 
-### ✅ Supported Deployment Configurations
+- **Domain:** https://pm.kpbc.ca
+- **Server IP:** 69.72.136.201
+- **SSH access:** `ssh kaizenmo@69.72.136.201`
+- **App root on server:** `/home/kaizenmo/pm.ca`
 
-1. **Domain Root Deployment**
-   ```
-   https://example.com/
-   https://pm-app.com/
-   ```
+## Tech Stack
 
-2. **Subdirectory Deployment**
-   ```
-   https://example.com/pm-assistant/
-   https://company.com/apps/pm/
-   ```
+- **Backend:** Fastify + TypeScript (Node.js 22)
+- **Frontend:** React 18 + Vite + Tailwind CSS
+- **Database:** MariaDB
+- **Web Server:** LiteSpeed (static files) + Passenger (Node.js)
+- **AI:** Anthropic Claude SDK (optional, controlled by `AI_ENABLED` env var)
 
-3. **Subdomain Deployment**
-   ```
-   https://pm.example.com/
-   https://app.company.com/
-   ```
+## Server Layout
 
-## 🔧 Dynamic Path Resolution
-
-### How It Works
-
-The application automatically detects its deployment path and adjusts all asset references accordingly:
-
-- **Service Worker**: `/sw.js` → `/pm-assistant/sw.js`
-- **Manifest**: `/manifest.json` → `/pm-assistant/manifest.json`
-- **Icons**: `/icon-192x192.png` → `/pm-assistant/icon-192x192.png`
-- **Notifications**: Dynamic icon paths in browser notifications
-
-### Implementation Details
-
-#### 1. Path Service (`src/services/pathService.ts`)
-```typescript
-// Automatically detects deployment path
-const basePath = pathService.getCurrentBasePath();
-
-// Resolves paths dynamically
-const swPath = pathService.getServiceWorkerPath();
-const iconPath = pathService.getIconPath('192x192');
+```
+/home/kaizenmo/pm.ca/
+  ├── dist/server/              # Compiled server (Fastify)
+  │   └── index.js              # Startup file
+  ├── src/client/dist/          # Compiled client (Vite output)
+  ├── index.html                # Served by LiteSpeed (copied from client dist)
+  ├── assets/                   # Served by LiteSpeed (copied from client dist)
+  ├── node_modules/             # Production dependencies
+  ├── package.json
+  └── .env                      # Environment variables
 ```
 
-#### 2. Service Worker (`public/sw.js`)
-```javascript
-// Uses registration scope to determine base path
-const BASE_PATH = getBasePath();
-const STATIC_FILES = [
-  BASE_PATH + 'dashboard',
-  BASE_PATH + 'manifest.json',
-  // ... other files
-];
+LiteSpeed serves static files (index.html, assets/) directly from `/home/kaizenmo/pm.ca/`. API requests are proxied to the Fastify server via Passenger.
+
+## Node.js Environment
+
+Node.js v22 is managed via the CloudLinux Node.js selector in cPanel.
+
+- **Startup file:** `dist/server/index.js`
+- **Virtual environment activation:**
+  ```bash
+  source /home/kaizenmo/nodevenv/pm.ca/22/bin/activate
+  ```
+
+## Environment Variables
+
+The `.env` file on the server contains:
+
+```
+NODE_ENV=production
+PORT=3001
+HOST=0.0.0.0
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=kaizenmo_pmuser
+DB_PASSWORD=<PASSWORD>
+DB_NAME=kaizenmo_pmassist
+JWT_SECRET=<SECRET>
+JWT_REFRESH_SECRET=<SECRET>
+COOKIE_SECRET=<SECRET>
+CORS_ORIGIN=http://pm.kpbc.ca
+LOG_LEVEL=info
+AI_ENABLED=false
 ```
 
-#### 3. HTML Assets (`index.html`)
-```html
-<!-- Uses relative paths that work in any deployment -->
-<link rel="manifest" href="./manifest.json" />
-<link rel="icon" href="./icon-192x192.png" />
-```
+**Note:** Replace `<PASSWORD>` and `<SECRET>` placeholders with actual values. Never commit real secrets to version control.
 
-## 📁 Deployment Steps
+## Deployment Steps
 
-### 1. Build the Application
+### 1. Build Locally
+
 ```bash
-cd src/client
 npm run build
 ```
 
-### 2. Deploy to Your Server
+This runs both the server build (TypeScript via `tsc`) and the client build (Vite).
 
-#### Option A: Domain Root
+### 2. Upload Server Files
+
 ```bash
-# Copy dist folder contents to web root
-cp -r dist/* /var/www/html/
+scp -r dist/server/* kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/dist/server/
 ```
 
-#### Option B: Subdirectory
+### 3. Upload Client Files
+
 ```bash
-# Copy dist folder contents to subdirectory
-cp -r dist/* /var/www/html/pm-assistant/
+scp -r src/client/dist/* kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/src/client/dist/
 ```
 
-#### Option C: Subdomain
+### 4. Copy Client Files to Document Root
+
+LiteSpeed serves static files from the app root, so the client build output must be copied there:
+
 ```bash
-# Copy dist folder contents to subdomain root
-cp -r dist/* /var/www/html/pm-subdomain/
+ssh kaizenmo@69.72.136.201 "cp -r /home/kaizenmo/pm.ca/src/client/dist/* /home/kaizenmo/pm.ca/"
 ```
 
-### 3. Configure Web Server
+### 5. Restart the Application
 
-#### Nginx Configuration
-```nginx
-# For subdirectory deployment
-location /pm-assistant/ {
-    try_files $uri $uri/ /pm-assistant/index.html;
-    
-    # PWA headers
-    add_header Cache-Control "public, max-age=31536000" for static assets;
-    add_header Service-Worker-Allowed "/pm-assistant/";
-}
-```
-
-#### Apache Configuration
-```apache
-# For subdirectory deployment
-<Directory "/var/www/html/pm-assistant">
-    RewriteEngine On
-    RewriteBase /pm-assistant/
-    RewriteRule ^index\.html$ - [L]
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule . /pm-assistant/index.html [L]
-</Directory>
-```
-
-## 🔍 Debugging Deployment Issues
-
-### Check Deployment Information
-The application logs deployment information to the console:
-
-```javascript
-// Console output example:
-🚀 PM Application Deployment Info: {
-  isDev: false,
-  isProd: true,
-  basePath: "/pm-assistant/",
-  deploymentInfo: {
-    basePath: "/pm-assistant/",
-    isSubdirectory: true,
-    currentUrl: "https://example.com/pm-assistant/",
-    pathname: "/pm-assistant/"
-  }
-}
-```
-
-### Common Issues and Solutions
-
-#### 1. Service Worker Not Registering
-- **Issue**: 404 errors for `/sw.js`
-- **Solution**: Ensure `sw.js` is accessible at the correct path
-- **Check**: Browser Network tab for failed requests
-
-#### 2. Manifest Not Loading
-- **Issue**: PWA features not working
-- **Solution**: Verify `manifest.json` is accessible
-- **Check**: Application tab in DevTools
-
-#### 3. Icons Not Displaying
-- **Issue**: Broken icon references in notifications
-- **Solution**: Ensure all icon files are in the correct directory
-- **Check**: Icon paths in browser notifications
-
-## 🧪 Testing Different Deployment Scenarios
-
-### Local Testing
 ```bash
-# Test subdirectory deployment locally
-cd src/client
-npm run build
-cd dist
-python -m http.server 8080
-# Access at http://localhost:8080/pm-assistant/
+ssh kaizenmo@69.72.136.201 "cloudlinux-selector restart --json --interpreter nodejs --domain pm.kpbc.ca --app-root pm.ca"
 ```
 
-### Production Testing
-1. Deploy to test environment
-2. Check browser console for deployment info
-3. Verify PWA features work correctly
-4. Test offline functionality
-5. Check notification icons
+### Quick Deploy (All Steps)
 
-## 📋 Deployment Checklist
+```bash
+npm run build && \
+scp -r dist/server/* kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/dist/server/ && \
+scp -r src/client/dist/* kaizenmo@69.72.136.201:/home/kaizenmo/pm.ca/src/client/dist/ && \
+ssh kaizenmo@69.72.136.201 "cp -r /home/kaizenmo/pm.ca/src/client/dist/* /home/kaizenmo/pm.ca/ && cloudlinux-selector restart --json --interpreter nodejs --domain pm.kpbc.ca --app-root pm.ca"
+```
 
-- [ ] Build application successfully
-- [ ] Copy files to correct server location
-- [ ] Configure web server routing
-- [ ] Test service worker registration
-- [ ] Verify manifest.json accessibility
-- [ ] Check icon paths in notifications
-- [ ] Test PWA installation
-- [ ] Verify offline functionality
-- [ ] Check deployment info in console
-- [ ] Test all routes work correctly
+## Database
 
-## 🔗 Related Files
+- **Engine:** MariaDB (via cPanel)
+- **Database name:** `kaizenmo_pmassist`
+- **User:** `kaizenmo_pmuser`
+- **Host:** `localhost`
 
-- `src/services/pathService.ts` - Dynamic path resolution
-- `src/utils/buildUtils.ts` - Build-time path utilities
-- `src/services/pwaService.ts` - PWA service with dynamic paths
-- `public/sw.js` - Service worker with dynamic caching
-- `public/manifest.json` - PWA manifest with relative paths
-- `index.html` - HTML with relative asset paths
+### Running Migrations
 
-## 💡 Best Practices
+Migrations are run via SSH by piping SQL files to the MariaDB client:
 
-1. **Always use relative paths** for static assets
-2. **Test deployment** in the target environment
-3. **Monitor console logs** for deployment info
-4. **Verify PWA features** work in production
-5. **Use HTTPS** for PWA functionality
-6. **Set proper cache headers** for static assets
+```bash
+ssh kaizenmo@69.72.136.201 "/usr/bin/mariadb -u kaizenmo_pmuser -p'<PASSWORD>' kaizenmo_pmassist < /path/to/migration.sql"
+```
+
+Or interactively:
+
+```bash
+ssh kaizenmo@69.72.136.201
+/usr/bin/mariadb -u kaizenmo_pmuser -p'<PASSWORD>' kaizenmo_pmassist
+```
+
+### Table Requirements
+
+All tables must use:
+
+```sql
+ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+```
+
+### Running a Local SQL File
+
+To pipe a local migration file to the remote database:
+
+```bash
+cat migrations/001_example.sql | ssh kaizenmo@69.72.136.201 "/usr/bin/mariadb -u kaizenmo_pmuser -p'<PASSWORD>' kaizenmo_pmassist"
+```
+
+## Troubleshooting
+
+### Check Application Status
+
+```bash
+ssh kaizenmo@69.72.136.201 "cloudlinux-selector status --json --interpreter nodejs --domain pm.kpbc.ca --app-root pm.ca"
+```
+
+### View Logs
+
+Check the Passenger/Node.js error log via cPanel, or inspect stderr output in the application logs directory.
+
+### Common Issues
+
+1. **502 / Application not starting** -- Verify that `dist/server/index.js` exists and the Node.js app is started in cPanel. Check that all npm dependencies are installed on the server.
+
+2. **Static files not updating** -- Make sure step 4 (copy to document root) was run. LiteSpeed serves from `/home/kaizenmo/pm.ca/`, not from `src/client/dist/`.
+
+3. **Database connection errors** -- Verify `.env` credentials match the cPanel MySQL user/database. The database host must be `localhost`.
+
+4. **CORS errors** -- Check that `CORS_ORIGIN` in `.env` matches the domain being accessed.
+
+## Installing Dependencies on Server
+
+If `package.json` changes (new dependencies), install them on the server:
+
+```bash
+ssh kaizenmo@69.72.136.201
+cd /home/kaizenmo/pm.ca
+source /home/kaizenmo/nodevenv/pm.ca/22/bin/activate
+npm install --production
+```
+
+## Deployment Checklist
+
+- [ ] `npm run build` completes without errors
+- [ ] Server files uploaded to `dist/server/`
+- [ ] Client files uploaded to `src/client/dist/`
+- [ ] Client files copied to document root (`/home/kaizenmo/pm.ca/`)
+- [ ] Application restarted via `cloudlinux-selector`
+- [ ] Site loads at https://pm.kpbc.ca
+- [ ] API endpoints respond (e.g., `/api/health`)
+- [ ] Database queries work (login, data loading)
