@@ -19,14 +19,13 @@ Build an AI-native project management platform that combines the scheduling powe
 - Auto-calculate forward/backward pass (ES, EF, LS, LF)
 - Total float and free float per task
 - Highlight critical path on Gantt chart (red bars)
-- Near-critical path identification (float < N days)
-- Recalculate on any schedule change
+- Recalculate on demand via API and UI toggle
 - **Benchmark:** Primavera P6, MS Project
 
 ### 1.2 Baseline Management
-- Save schedule baseline snapshots (planned start, planned end, planned cost)
+- Save schedule baseline snapshots (planned start, planned end, progress)
 - Compare baseline vs actual on Gantt (dual bars)
-- Schedule variance (SV) and cost variance (CV) per task
+- Start, end, and duration variance analysis per task
 - Multiple baseline support (Baseline 1, 2, 3...)
 - Baseline comparison report
 - **Benchmark:** Primavera P6, MS Project
@@ -49,8 +48,6 @@ Build an AI-native project management platform that combines the scheduling powe
 - Columns by status (Pending, In Progress, Completed, Cancelled)
 - Drag-and-drop cards between columns
 - Card shows: task name, assignee, priority, due date, progress
-- Swimlanes by assignee or priority (optional)
-- Filter and search within Kanban
 - **Benchmark:** Monday.com, Jira, Asana
 
 ### 1.5 Resource Pool & Workload View
@@ -64,16 +61,13 @@ Build an AI-native project management platform that combines the scheduling powe
 
 ### 1.6 Comments & Activity Feed
 - Comment thread on each task
-- @mention team members in comments
 - Activity feed: auto-log all changes (status, assignee, dates, etc.)
 - Timestamp and user attribution
 - **Benchmark:** All top tools
 
 ### 1.7 Export Capabilities
-- Export Gantt chart to PDF
-- Export project data to Excel/CSV
-- Export reports to PDF
-- Print-friendly layouts
+- Export project summary report to PDF (browser print)
+- Export project data to CSV
 - **Benchmark:** All top tools
 
 ---
@@ -82,8 +76,7 @@ Build an AI-native project management platform that combines the scheduling powe
 
 ### 2.1 Auto-Scheduling Engine
 - Move one task -> cascade all dependent tasks automatically
-- Respect dependency types (FS, SS, FF, SF) with lag/lead
-- Resource constraint-aware scheduling
+- Respect Finish-to-Start (FS) dependencies
 - **Benchmark:** MS Project, Primavera P6
 
 ### 2.2 Workflow Automation Builder (DAG Engine)
@@ -103,34 +96,28 @@ Build an AI-native project management platform that combines the scheduling powe
 - **Benchmark:** Monday.com, Wrike, Smartsheet (exceeds with DAG support + approval gates + agent nodes)
 
 ### 2.3 Custom Dashboards
-- Drag-and-drop widget builder
-- Widget types: charts, KPIs, tables, Gantt, calendar
-- Personal and shared dashboards
-- Real-time data refresh
+- Role-based dashboards (PM project list, Executive analytics)
+- Executive view: portfolio charts, KPI cards, status summaries
+- Auto-refresh via WebSocket cache invalidation
 - **Benchmark:** Monday.com, Smartsheet
 
 ### 2.4 Real-Time Collaboration
-- Multi-user presence indicators
 - Real-time task updates (WebSocket)
-- Conflict resolution for simultaneous edits
 - **Benchmark:** Monday.com, Smartsheet
 
 ### 2.5 Calendar & Table Views
 - Calendar view with task bars across dates
 - Table view with inline editing (spreadsheet-like)
-- Column customization and sorting
+- Column sorting
 - **Benchmark:** Smartsheet, Monday.com
 
 ### 2.6 Portfolio-Level Gantt
 - Program view: multiple projects on one timeline
-- Cross-project dependency linking
-- Portfolio milestone tracking
 - **Benchmark:** Primavera P6, Smartsheet
 
 ### 2.7 Advanced Security
-- SSO (SAML 2.0 / OAuth)
-- Granular role-based permissions (project-level, field-level)
-- Audit trail UI with search and filter
+- Role-based access control (admin, executive, manager, member) with project member roles
+- Append-only chained audit ledger with API search, filter, and pagination
 - Data encryption at rest and in transit
 - **Benchmark:** Enterprise tools
 
@@ -142,10 +129,9 @@ Build an AI-native project management platform that combines the scheduling powe
 - Detect delays automatically
 - AI proposes new schedule minimizing total project impact
 - One-click accept or modify AI suggestion
-- Learns from accepted/rejected proposals
 
 ### 3.2 Predictive Resource Optimizer
-- AI predicts resource bottlenecks 2-4 weeks ahead
+- AI predicts resource bottlenecks up to 8 weeks ahead (configurable)
 - Suggests team rebalancing before burnout occurs
 - Skill-based matching for task assignment
 - Capacity forecasting
@@ -157,16 +143,15 @@ Build an AI-native project management platform that combines the scheduling powe
 - Deep integration with all project data
 
 ### 3.4 AI Meeting Minutes -> Auto-Update Project
-- Upload meeting recording or transcript
+- Paste meeting transcript for analysis
 - AI extracts action items, decisions, risks
 - Auto-creates/updates tasks in the schedule
-- Flags new risks and adjusts timeline
+- Identifies and categorizes risks from transcript
 
 ### 3.5 AI Lessons Learned Engine
 - Learns from every completed project
 - Pattern recognition across project types
 - Auto-suggests risk mitigations from past projects
-- Improves estimation accuracy over time
 - Knowledge base that grows smarter
 
 ### 3.6 Monte Carlo Simulation
