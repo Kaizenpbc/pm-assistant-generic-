@@ -65,7 +65,7 @@ function maskConfig(config: Record<string, any>): Record<string, any> {
 
 function parseConfig(raw: string | Record<string, any>): Record<string, any> {
   if (typeof raw === 'string') {
-    try { return JSON.parse(raw); } catch { return {}; }
+    try { return JSON.parse(raw); } catch (e) { console.warn('IntegrationService: malformed config JSON, returning {}', e); return {}; }
   }
   return raw || {};
 }
