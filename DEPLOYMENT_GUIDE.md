@@ -59,12 +59,52 @@ DB_NAME=kaizenmo_pmassist
 JWT_SECRET=<SECRET>
 JWT_REFRESH_SECRET=<SECRET>
 COOKIE_SECRET=<SECRET>
-CORS_ORIGIN=http://pm.kpbc.ca
+CORS_ORIGIN=https://pm.kpbc.ca
 LOG_LEVEL=info
 AI_ENABLED=false
 ```
 
+**Security requirements:**
+- `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `COOKIE_SECRET` must each be at least **32 characters**.
+- All three secrets **must be different from each other** (validated at startup).
+
 **Note:** Replace `<PASSWORD>` and `<SECRET>` placeholders with actual values. Never commit real secrets to version control.
+
+### Optional Environment Variables
+
+These variables have sensible defaults and are only needed if you want to enable or customize the corresponding features:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `ANTHROPIC_API_KEY` | _(empty)_ | Required if `AI_ENABLED=true` |
+| `AI_MODEL` | `claude-sonnet-4-5-20250929` | Claude model to use |
+| `AI_TEMPERATURE` | `0.3` | AI response temperature (0-1) |
+| `AI_MAX_TOKENS` | `4096` | Max tokens per AI response |
+| `AGENT_ENABLED` | `false` | Enable autonomous agent scheduler |
+| `AGENT_CRON_SCHEDULE` | `0 2 * * *` | Cron schedule for agent runs |
+| `AGENT_DELAY_THRESHOLD_DAYS` | `3` | Days before a task is considered delayed |
+| `AGENT_BUDGET_CPI_THRESHOLD` | `0.9` | CPI below this triggers budget alerts |
+| `AGENT_BUDGET_OVERRUN_THRESHOLD` | `50` | Budget overrun % threshold |
+| `AGENT_MC_CONFIDENCE_LEVEL` | `80` | Monte Carlo confidence level |
+| `AGENT_OVERDUE_SCAN_MINUTES` | `15` | Overdue task scan interval |
+| `RESEND_API_KEY` | _(empty)_ | Resend email service API key |
+| `RESEND_FROM_EMAIL` | `noreply@kpbc.ca` | From address for emails |
+| `APP_URL` | `http://localhost:5173` | Public application URL |
+| `STRIPE_SECRET_KEY` | _(empty)_ | Stripe billing secret key |
+| `STRIPE_PUBLISHABLE_KEY` | _(empty)_ | Stripe publishable key |
+| `STRIPE_WEBHOOK_SECRET` | _(empty)_ | Stripe webhook signing secret |
+| `STRIPE_PRO_PRICE_ID` | _(empty)_ | Stripe price ID for Pro plan |
+| `OPENAI_API_KEY` | _(empty)_ | Required if `EMBEDDING_ENABLED=true` |
+| `EMBEDDING_ENABLED` | `false` | Enable embedding/RAG features |
+| `EMBEDDING_MODEL` | `text-embedding-3-small` | OpenAI embedding model |
+| `EMBEDDING_DIMENSIONS` | `1536` | Embedding vector dimensions |
+| `RAG_TOP_K` | `5` | Number of RAG results to return |
+| `RAG_SIMILARITY_THRESHOLD` | `0.3` | Minimum cosine similarity for RAG |
+| `WEATHER_API_PROVIDER` | `mock` | Weather provider (openweathermap, weatherapi, accuweather, mock) |
+| `WEATHER_API_KEY` | _(empty)_ | API key for weather provider |
+| `WEATHER_CACHE_MINUTES` | `30` | Weather data cache duration |
+| `UPLOAD_DIR` | `~/uploads/pm-assistant` | File upload storage directory |
+| `MAX_UPLOAD_SIZE_MB` | `10` | Maximum upload file size in MB |
 
 ## Deployment Steps
 
@@ -190,5 +230,5 @@ npm install --production
 - [ ] Client files copied to document root (`/home/kaizenmo/pm.ca/`)
 - [ ] Application restarted via `cloudlinux-selector`
 - [ ] Site loads at https://pm.kpbc.ca
-- [ ] API endpoints respond (e.g., `/api/health`)
+- [ ] API endpoints respond (e.g., `/health`)
 - [ ] Database queries work (login, data loading)

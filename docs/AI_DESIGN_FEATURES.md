@@ -437,27 +437,23 @@ Task and project lifecycle events automatically trigger DAG workflows:
 
 Model Context Protocol server for Claude Desktop and Claude Web integration:
 
-**15 tool categories:**
-| Category | File | Description |
-|----------|------|-------------|
-| Projects | `projects.ts` | CRUD operations on projects |
-| Tasks | `tasks.ts` | Task management |
-| Schedules | `schedules.ts` | Schedule operations |
-| Resources | `resources.ts` | Resource management |
-| Sprints | `sprints.ts` | Sprint planning and tracking |
-| Reports | `reports.ts` | Report generation |
-| Time Tracking | `time-tracking.ts` | Time entry management |
-| Auto-Reschedule | `auto-reschedule.ts` | Delay detection and proposals |
-| AI Insights | `ai-insights.ts` | AI analysis endpoints |
-| Approvals | `approvals.ts` | Approval workflows |
-| Custom Fields | `custom-fields.ts` | Custom field management |
-| Intake | `intake.ts` | Project intake forms |
-| Integrations | `integrations.ts` | External integrations |
-| Templates | `templates.ts` | Project templates |
-| Admin | `admin.ts` | Administrative operations |
+**11 tools** defined in `mcp-server/server.ts`:
+| Tool | Description |
+|------|-------------|
+| `list-projects` | List all projects |
+| `get-project` | Get project details by ID |
+| `get-schedules` | Get all schedules for a project |
+| `get-tasks` | Get all tasks in a schedule |
+| `get-project-health` | AI health score for a project |
+| `get-project-risks` | AI risk assessment for a project |
+| `get-project-budget` | AI budget forecast for a project |
+| `get-analytics` | Portfolio-level analytics summary |
+| `get-alerts` | Proactive alerts across all projects |
+| `search` | Search projects and tasks by keyword |
+| `get-portfolio` | Full portfolio overview |
 
-**Authentication:** OAuth 2.1 with per-user token management
-**Transport:** HTTP with reverse proxy support via `/mcp` route
+**Authentication:** API key via `Authorization: Bearer` header
+**Transport:** stdio (MCP SDK); HTTP reverse proxy support via `/mcp` route
 
 ---
 

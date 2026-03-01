@@ -53,10 +53,10 @@ All API testing is done with `curl` against the production server at `https://pm
 ### General conventions
 
 - Base URL: `https://pm.kpbc.ca/api/v1`
-- Authentication: HTTP-only cookie (`token`) set by the login endpoint
+- Authentication: HTTP-only cookies (`access_token` and `refresh_token`) set by the login endpoint
 - Use a cookie jar file (`-b cookies.txt -c cookies.txt`) to persist the session
 - All request/response bodies are JSON
-- Authenticated endpoints require the `token` cookie; unauthenticated requests return `401`
+- Authenticated endpoints require the `access_token` cookie; unauthenticated requests return `401`
 
 ### Useful curl flags
 
@@ -76,7 +76,7 @@ All API testing is done with `curl` against the production server at `https://pm
 
 ## 3. Login Flow
 
-Authentication uses cookie-based JWT. Login sets an HTTP-only `token` cookie.
+Authentication uses cookie-based JWT. Login sets HTTP-only `access_token` and `refresh_token` cookies.
 
 ### Step 1: Log in and capture cookies
 
@@ -100,15 +100,9 @@ Expected response:
 }
 ```
 
-The `cookies.txt` file now contains the `token` cookie.
+The `cookies.txt` file now contains the `access_token` and `refresh_token` cookies.
 
-### Step 2: Verify session
-
-```bash
-curl -s -b cookies.txt https://pm.kpbc.ca/api/v1/auth/me | jq .
-```
-
-### Step 3: Use authenticated requests
+### Step 2: Use authenticated requests
 
 All subsequent curl commands should include `-b cookies.txt`:
 
@@ -435,8 +429,8 @@ The file `src/server/services/aiContextBuilder.ts` has 3 pre-existing type error
 
 ### Authentication
 
-- [ ] POST `/api/v1/auth/login` returns 200 and sets `token` cookie
-- [ ] GET `/api/v1/auth/me` returns current user with valid cookie
+- [ ] POST `/api/v1/auth/login` returns 200 and sets `access_token` / `refresh_token` cookies
+- [ ] Authenticated GET `/api/v1/projects` returns data with valid cookie
 - [ ] Unauthenticated requests to protected endpoints return 401
 
 ### Workflow Engine

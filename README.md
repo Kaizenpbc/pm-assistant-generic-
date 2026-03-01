@@ -31,7 +31,7 @@ A full-featured, production-grade project management SaaS application combining 
 | **Frontend** | React 18 + Vite + Tailwind CSS + Zustand |
 | **Database** | MySQL / MariaDB |
 | **AI** | Anthropic Claude SDK (optional, via `AI_ENABLED` env var) |
-| **Auth** | JWT (access + refresh tokens) with HttpOnly cookies, OAuth 2.1 |
+| **Auth** | JWT (access + refresh tokens) with HttpOnly cookies |
 | **Real-time** | WebSocket + Server-Sent Events (SSE) |
 | **Billing** | Stripe |
 | **Validation** | Zod |
@@ -182,8 +182,8 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Pre-configured task structures and workflows
 
 ### External Integrations
-- Jira, GitHub, and Slack integrations
-- Bi-directional sync support
+- Jira, GitHub, Slack, and Trello integration adapters
+- Bi-directional sync support (partial — adapter framework implemented)
 
 ### Webhooks
 - Configurable outbound webhooks for project events
@@ -206,10 +206,6 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Subscription management with tiered pricing
 - Usage-based billing support
 - Stripe Checkout and customer portal integration
-
-### OAuth 2.1
-- OAuth 2.1 authorization server for MCP and third-party access
-- PKCE flow support
 
 ### Progressive Web App (PWA)
 - Offline capability via service worker
@@ -258,7 +254,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 pm-assistant-generic/
 ├── src/
 │   ├── server/                  # Fastify backend
-│   │   ├── routes/              # 40+ route modules
+│   │   ├── routes/              # 50+ route modules
 │   │   ├── services/            # Business logic & AI services
 │   │   ├── middleware/          # Auth, rate limiting, policies
 │   │   ├── database/            # Migrations, seeds, connection pool
@@ -288,18 +284,15 @@ pm-assistant-generic/
 
 ## MCP Server
 
-The MCP (Model Context Protocol) server exposes 15 tool categories that allow Claude Desktop and Claude Web to interact with PM Assistant directly:
+The MCP (Model Context Protocol) server exposes 11 tools that allow Claude Desktop and Claude Web to interact with PM Assistant directly:
 
-- Project & task CRUD
-- Schedule & baseline management
-- Sprint operations
-- Resource allocation
-- Time entry logging
-- Workflow triggering
-- Report generation
-- Portfolio analytics
-- Search and natural language queries
-- And more
+- `list-projects` / `get-project` — Project listing and details
+- `get-schedules` / `get-tasks` — Schedule and task data
+- `get-project-health` / `get-project-risks` / `get-project-budget` — AI-powered assessments
+- `get-analytics` — Portfolio-level analytics summary
+- `get-alerts` — Proactive alerts across all projects
+- `search` — Search projects and tasks by keyword
+- `get-portfolio` — Full portfolio overview
 
 See `mcp-server/` for setup instructions and tool definitions.
 
@@ -370,22 +363,60 @@ openssl rand -base64 32
 
 Interactive Swagger documentation is available at `/documentation` when the server is running.
 
-All API endpoints are versioned under `/api/v1/`. Key endpoint groups:
+All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route modules):
 
-- `/api/v1/auth` -- Authentication (login, register, refresh, OAuth)
-- `/api/v1/projects` -- Project CRUD and members
-- `/api/v1/schedules` -- Schedule and task management
-- `/api/v1/sprints` -- Sprint lifecycle
-- `/api/v1/resources` -- Resource pool and workload (paginated: `?limit=&offset=`)
-- `/api/v1/time-entries` -- Time tracking
-- `/api/v1/workflows` -- DAG workflow engine
-- `/api/v1/reports` -- Report builder
-- `/api/v1/portfolio` -- Portfolio analytics
-- `/api/v1/integrations` -- External integrations
-- `/api/v1/webhooks` -- Webhook management
-- `/api/v1/audit-trail` -- Immutable audit ledger
-- `/api/v1/notifications` -- Notification center
-- `/api/v1/stripe` -- Billing and subscriptions
+| Group | Prefix | Purpose |
+|-------|--------|---------|
+| Auth | `/api/v1/auth` | Login, register, refresh, logout, password reset |
+| Projects | `/api/v1/projects` | Project CRUD and membership |
+| Users | `/api/v1/users` | User management |
+| Schedules | `/api/v1/schedules` | Schedule and task management |
+| Sprints | `/api/v1/sprints` | Sprint lifecycle |
+| Resources | `/api/v1/resources` | Resource pool (paginated: `?limit=&offset=`) |
+| Time Entries | `/api/v1/time-entries` | Time tracking |
+| Custom Fields | `/api/v1/custom-fields` | Custom field definitions and values |
+| Attachments | `/api/v1/attachments` | File upload and management |
+| Notifications | `/api/v1/notifications` | In-app notification center |
+| Portal | `/api/v1/portal` | Stakeholder portal |
+| Intake | `/api/v1/intake` | Intake form builder and submissions |
+| Templates | `/api/v1/templates` | Project templates |
+| Integrations | `/api/v1/integrations` | Third-party integrations |
+| Webhooks | `/api/v1/webhooks` | Outbound webhook management |
+| Workflows | `/api/v1/workflows` | DAG workflow engine |
+| Approvals | `/api/v1/approvals` | Change request approval chains |
+| Report Builder | `/api/v1/report-builder` | Custom report templates |
+| AI Reports | `/api/v1/ai-reports` | AI-generated narrative reports |
+| Stripe | `/api/v1/stripe` | Billing and subscriptions |
+| API Keys | `/api/v1/api-keys` | API key management |
+| Audit | `/api/v1/audit` | Immutable audit ledger |
+| Policies | `/api/v1/policies` | Policy engine rules |
+| Search | `/api/v1/search` | Full-text search |
+| Bulk | `/api/v1/bulk` | Bulk operations |
+| Portfolio | `/api/v1/portfolio` | Portfolio overview |
+| Analytics | `/api/v1/analytics` | Portfolio analytics summary |
+| Alerts | `/api/v1/alerts` | Proactive alert feed |
+| Predictions | `/api/v1/predictions` | AI health, risk, budget predictions |
+| Intelligence | `/api/v1/intelligence` | Cross-project intelligence |
+| EVM Forecast | `/api/v1/evm-forecast` | Earned value forecasting |
+| Monte Carlo | `/api/v1/monte-carlo` | Monte Carlo simulation |
+| Network Diagram | `/api/v1/network-diagram` | Precedence diagram layout |
+| Burndown | `/api/v1/burndown` | Sprint burndown data |
+| Resource Leveling | `/api/v1/resource-leveling` | Histogram and leveling |
+| Resource Optimizer | `/api/v1/resource-optimizer` | AI resource optimization |
+| Auto-Reschedule | `/api/v1/auto-reschedule` | AI reschedule proposals |
+| NL Query | `/api/v1/nl-query` | Natural language queries |
+| AI Scheduling | `/api/v1/ai-scheduling` | AI task breakdown |
+| AI Chat | `/api/v1/ai-chat` | Conversational AI |
+| Task Prioritization | `/api/v1/task-prioritization` | AI task ranking |
+| Meeting Intelligence | `/api/v1/meeting-intelligence` | Transcript analysis |
+| Lessons Learned | `/api/v1/lessons-learned` | Retrospective knowledge base |
+| Learning | `/api/v1/learning` | AI learning feedback |
+| Exports | `/api/v1/exports` | Data export |
+| Agent | `/api/v1/agent` | Agent scheduler |
+| Agent Log | `/api/v1/agent-log` | Agent activity log |
+| RAG | `/api/v1/rag` | Semantic search |
+| WebSocket | `/api/v1/ws` | Real-time updates |
+| MCP | `/mcp` | MCP HTTP transport proxy |
 
 ---
 

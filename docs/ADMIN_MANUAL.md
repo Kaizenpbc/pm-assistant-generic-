@@ -6,11 +6,12 @@ This manual is for **system administrators** who manage users, projects, and pla
 
 ## 1. Roles and Access
 
-| Role       | Access                                                              |
-|------------|---------------------------------------------------------------------|
-| **admin**  | Full access: all users, projects, system settings, billing, audit.  |
-| **manager**| Create/manage projects, assign members, run reports, approve tasks. |
-| **member** | View and work on assigned projects, log time, update tasks.         |
+| Role          | Access                                                              |
+|---------------|---------------------------------------------------------------------|
+| **admin**     | Full access: all users, projects, system settings, billing, audit.  |
+| **executive** | Read-only portfolio view, analytics dashboards, KPI summaries.      |
+| **manager**   | Create/manage projects, assign members, run reports, approve tasks. |
+| **member**    | View and work on assigned projects, log time, update tasks.         |
 
 Admins can manage all aspects of the platform. Managers operate within projects they own or are assigned to. Members participate in their assigned work.
 
@@ -117,21 +118,25 @@ Key variables in `.env` (never commit secrets):
 
 ---
 
-## 7. OAuth 2.1
+## 7. Authentication
 
-### Client Registration
-- Register OAuth clients under **Settings > OAuth Clients**.
-- Provide client name, redirect URIs, and allowed scopes.
-- Each client receives a `client_id` and `client_secret`.
+### JWT Dual-Token Strategy
+- **Access token:** HTTP-only cookie (`access_token`), 15-minute expiry.
+- **Refresh token:** HTTP-only cookie (`refresh_token`), 7-day expiry.
+- Both cookies use `secure: true` in production, `sameSite: 'lax'`.
 
-### PKCE Flow
-- All public clients must use PKCE (Proof Key for Code Exchange).
-- The authorization endpoint enforces `code_challenge` and `code_challenge_method=S256`.
+### Login Flow
+1. User submits credentials to `POST /api/v1/auth/login`.
+2. Server validates password (bcrypt) and issues both tokens as HTTP-only cookies.
+3. Access token is sent with every request automatically via cookies.
+4. When the access token expires, the client calls `POST /api/v1/auth/refresh` to get a new pair.
 
-### Token Management
-- Access tokens expire after 1 hour (configurable via `OAUTH_TOKEN_TTL`).
-- Refresh tokens expire after 30 days.
-- Revoke tokens via the `/api/oauth/revoke` endpoint or admin panel.
+### Logout
+- `POST /api/v1/auth/logout` clears both cookies.
+
+### Security Requirements
+- `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `COOKIE_SECRET` must each be at least 32 characters.
+- All three secrets must be different from each other (validated at startup).
 
 ---
 
@@ -310,12 +315,12 @@ The following custom indexes exist beyond the default primary/foreign key indexe
 ## 19. Backup and Maintenance
 
 ### Database Backups
-- Run `npm run db:backup` to create a timestamped MySQL dump.
-- Backups are stored in `./backups/` by default (configure via `BACKUP_DIR`).
+- Use your hosting provider's backup tools (e.g., cPanel MySQL backup) or `mysqldump` via SSH.
 - Schedule daily backups via cron or your hosting provider's scheduler.
+- TMD Hosting provides automated daily backups with point-in-time recovery via cPanel.
 
 ### Restoring
-- Restore with `npm run db:restore <backup-file>`.
+- Restore via cPanel backup restore or `mysql` CLI import via SSH.
 - Test restores periodically in a staging environment.
 
 ### Secret Rotation

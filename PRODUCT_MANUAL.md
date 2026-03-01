@@ -12,7 +12,7 @@ PM Assistant is an enterprise-grade project management platform built with TypeS
 
 Full CRUD lifecycle for projects with the following attributes:
 
-- **Status tracking**: planning, active, on_hold, completed
+- **Status tracking**: planning, active, on_hold, completed, cancelled
 - **Priority levels**: low, medium, high, urgent
 - **Budget management**: allocated budget, spent budget, budget variance
 - **Date management**: start date, end date, auto-calculated duration
@@ -26,7 +26,7 @@ Each project contains one or more schedules. A schedule groups tasks into a logi
 
 Tasks are the atomic unit of work. Each task supports:
 
-- Status: pending, in_progress, completed, blocked
+- Status: pending, in_progress, completed, cancelled
 - Priority: low, medium, high, urgent
 - Dependency linking (finish-to-start)
 - Estimated duration (days) and work effort
@@ -125,12 +125,12 @@ Proactive alerts fire when CPI or SPI drop below configurable thresholds, enabli
 
 The `ResourceService` maintains a central resource registry. Each resource has:
 
-- Name, email, role, department
-- Hourly rate and availability (hours per day)
+- Name, email, role
+- Capacity (hours per week, default 40)
 - Skill tags
 - Active/inactive status
 
-The `GET /api/resources` endpoint supports pagination via `?limit=` and `?offset=` query parameters (default limit 50, max 200). The response includes a `total` count for client-side pagination controls.
+The `GET /api/v1/resources` endpoint supports pagination via `?limit=` and `?offset=` query parameters (default limit 50, max 200). The response includes a `total` count for client-side pagination controls.
 
 ### Workload Heatmap
 
@@ -571,10 +571,6 @@ The `WebhookService` allows registering outbound webhook endpoints that fire on 
 - **Password reset**: token-based email flow via `EmailService`
 - **Session management**: refresh token rotation
 
-### OAuth 2.1
-
-The MCP HTTP transport supports OAuth 2.1 for per-user access from Claude Desktop and Claude Web, with PKCE flow.
-
 ### API Keys
 
 The `ApiKeyService` issues scoped API keys for programmatic access:
@@ -679,57 +675,60 @@ The `StripeService` manages subscription billing:
 
 ### API Structure
 
-All API routes are prefixed with `/api` and organized by domain:
+All API routes are prefixed with `/api/v1/` and organized by domain:
 
 ```
-/api/auth              Authentication (login, register, reset password)
-/api/projects          Project CRUD
-/api/schedules         Schedule and task management
-/api/resources         Resource pool management (paginated)
-/api/sprints           Sprint lifecycle
-/api/time-entries      Time logging
-/api/custom-fields     Custom field definitions and values
-/api/file-attachments  File upload and management
-/api/notifications     In-app notifications
-/api/portal            Stakeholder portal (public + admin)
-/api/intake-forms      Form builder and submissions
-/api/templates         Project templates
-/api/integrations      Third-party integration management
-/api/webhooks          Outbound webhook configuration
-/api/workflows         DAG workflow definitions and execution
-/api/approval-workflows  Change request approval chains
-/api/report-builder    Custom report templates and generation
-/api/ai-reports        AI-generated narrative reports
-/api/stripe            Billing and subscription management
-/api/api-keys          API key management
-/api/audit-trail       Audit ledger queries
-/api/policies          Policy engine rules
-/api/search            Full-text search
-/api/bulk              Bulk operations
-/api/portfolio         Portfolio overview
-/api/analytics         Portfolio analytics summary
-/api/alerts            Proactive alert feed
-/api/predictions       AI health, risk, and budget predictions
-/api/intelligence      Cross-project intelligence and anomaly detection
-/api/evm-forecast      Earned value forecasting
-/api/monte-carlo       Monte Carlo simulation
-/api/network-diagram   Precedence diagram layout
-/api/burndown          Sprint burndown data
-/api/resource-leveling Resource histogram and leveling
-/api/resource-optimizer AI resource optimization
-/api/auto-reschedule   Auto-reschedule proposals
-/api/nl-query          Natural language queries
-/api/ai-scheduling     AI task breakdown and scheduling
-/api/ai-chat           Conversational AI interface
-/api/task-prioritization  AI task ranking
-/api/meeting-intelligence Meeting transcript analysis
-/api/lessons-learned   Retrospective knowledge base
-/api/learning          AI learning feedback
-/api/exports           Data export
-/api/agent             Agent scheduler
-/api/users             User management
-/api/project-members   Project membership
-/mcp                   MCP HTTP transport proxy
+/api/v1/auth              Authentication (login, register, reset password)
+/api/v1/projects          Project CRUD
+/api/v1/schedules         Schedule and task management
+/api/v1/resources         Resource pool management (paginated)
+/api/v1/sprints           Sprint lifecycle
+/api/v1/time-entries      Time logging
+/api/v1/custom-fields     Custom field definitions and values
+/api/v1/attachments       File upload and management
+/api/v1/notifications     In-app notifications
+/api/v1/portal            Stakeholder portal (public + admin)
+/api/v1/intake            Form builder and submissions
+/api/v1/templates         Project templates
+/api/v1/integrations      Third-party integration management
+/api/v1/webhooks          Outbound webhook configuration
+/api/v1/workflows         DAG workflow definitions and execution
+/api/v1/approvals         Change request approval chains
+/api/v1/report-builder    Custom report templates and generation
+/api/v1/ai-reports        AI-generated narrative reports
+/api/v1/stripe            Billing and subscription management
+/api/v1/api-keys          API key management
+/api/v1/audit             Audit ledger queries
+/api/v1/policies          Policy engine rules
+/api/v1/search            Full-text search
+/api/v1/bulk              Bulk operations
+/api/v1/portfolio         Portfolio overview
+/api/v1/analytics         Portfolio analytics summary
+/api/v1/alerts            Proactive alert feed
+/api/v1/predictions       AI health, risk, and budget predictions
+/api/v1/intelligence      Cross-project intelligence and anomaly detection
+/api/v1/evm-forecast      Earned value forecasting
+/api/v1/monte-carlo       Monte Carlo simulation
+/api/v1/network-diagram   Precedence diagram layout
+/api/v1/burndown          Sprint burndown data
+/api/v1/resource-leveling Resource histogram and leveling
+/api/v1/resource-optimizer AI resource optimization
+/api/v1/auto-reschedule   Auto-reschedule proposals
+/api/v1/nl-query          Natural language queries
+/api/v1/ai-scheduling     AI task breakdown and scheduling
+/api/v1/ai-chat           Conversational AI interface
+/api/v1/task-prioritization  AI task ranking
+/api/v1/meeting-intelligence Meeting transcript analysis
+/api/v1/lessons-learned   Retrospective knowledge base
+/api/v1/learning          AI learning feedback
+/api/v1/exports           Data export
+/api/v1/agent             Agent scheduler
+/api/v1/agent-log         Agent activity log
+/api/v1/users             User management
+/api/v1/project-members   Project membership
+/api/v1/rag               Semantic search (RAG)
+/api/v1/ws                WebSocket connections
+/mcp                      MCP HTTP transport proxy
 ```
 
 ### Environment Variables

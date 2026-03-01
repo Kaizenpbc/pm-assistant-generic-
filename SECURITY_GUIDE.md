@@ -345,8 +345,8 @@ curl -X POST -H "Authorization: Bearer kpm_read_only_key" \
 | `src/server/services/PolicyEngineService.ts` | Pre-action policy evaluation |
 | `src/server/services/WebhookService.ts` | Webhook registration and signed delivery |
 | `src/server/services/PortalService.ts` | Portal token management |
-| `mcp-server/src/oauth/provider.ts` | OAuth 2.1 authorization server |
-| `mcp-server/src/oauth/clientsStore.ts` | OAuth client registration |
+| `src/server/middleware/auth.ts` | JWT authentication middleware |
+| `src/server/routes/users.ts` | User management routes |
 | `src/client/index.html` | Client-side security meta tags |
 | `src/client/src/services/securityService.ts` | Client-side security utilities |
 

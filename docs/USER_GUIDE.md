@@ -358,7 +358,7 @@ Shows planned capacity vs. actual demand for each resource, helping identify whe
 
 ### Resource Forecast
 
-AI-powered forecasting of future resource needs based on project pipeline and historical data.
+AI-powered forecasting of future resource bottlenecks based on current task assignments and capacity (configurable up to 8 weeks ahead).
 
 ### Rebalance Suggestions
 
