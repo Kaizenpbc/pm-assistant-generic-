@@ -69,7 +69,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Application:** http://localhost:5173
 - **API:** http://localhost:3001
 - **Swagger Docs:** http://localhost:3001/documentation
-- **Health Check:** http://localhost:3001/health
+- **Health Check:** http://localhost:3001/health — returns database connectivity, memory usage, and overall system status (200 OK / 503 DEGRADED)
 
 **Default login:** `admin` / `admin123`
 

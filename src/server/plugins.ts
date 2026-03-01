@@ -13,6 +13,7 @@ import { config } from './config';
 import { requestLogger } from './utils/logger';
 import { toCamelCaseKeys } from './utils/caseConverter';
 import { auditService } from './services/auditService';
+import { databaseService } from './database/connection';
 import { securityMiddleware, securityValidationMiddleware } from './middleware/securityMiddleware';
 import { rateLimiter } from './middleware/rateLimiter';
 import { apiKeyService } from './services/ApiKeyService';
@@ -228,13 +229,40 @@ export async function registerPlugins(fastify: FastifyInstance) {
   }
 
   fastify.get('/health', async (_request, reply) => {
-    reply.send({
-      status: 'OK',
+    // Database check
+    let dbStatus = 'OK';
+    let dbResponseTimeMs = 0;
+    try {
+      const start = Date.now();
+      const connected = await databaseService.testConnection();
+      dbResponseTimeMs = Date.now() - start;
+      if (!connected) dbStatus = 'FAIL';
+    } catch {
+      dbStatus = 'FAIL';
+    }
+
+    // Memory check
+    const mem = process.memoryUsage();
+    const rssInMb = Math.round((mem.rss / 1024 / 1024) * 10) / 10;
+    const heapUsedInMb = Math.round((mem.heapUsed / 1024 / 1024) * 10) / 10;
+    const heapTotalInMb = Math.round((mem.heapTotal / 1024 / 1024) * 10) / 10;
+    const memStatus = heapTotalInMb > 0 && (heapUsedInMb / heapTotalInMb) > 0.9 ? 'WARN' : 'OK';
+
+    // Overall status
+    const overallStatus = dbStatus === 'OK' ? 'OK' : 'DEGRADED';
+    const httpStatus = overallStatus === 'OK' ? 200 : 503;
+
+    reply.status(httpStatus).send({
+      status: overallStatus,
       service: 'Kovarti PM Assistant Generic',
       version: '1.0.0',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      environment: config.NODE_ENV
+      environment: config.NODE_ENV,
+      checks: {
+        database: { status: dbStatus, responseTimeMs: dbResponseTimeMs },
+        memory: { status: memStatus, rssInMb, heapUsedInMb, heapTotalInMb }
+      }
     });
   });
 }

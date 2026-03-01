@@ -313,7 +313,8 @@ Key variables in `.env` (never commit secrets):
 - After rotation, all active sessions are invalidated; users must re-authenticate.
 
 ### Health Monitoring
-- **`GET /api/health`** -- returns server status, database connectivity, and uptime.
+- **`GET /health`** -- returns overall status (`OK` or `DEGRADED`), database connectivity with response time, memory usage (RSS, heap used, heap total), uptime, and environment. Returns HTTP 200 when healthy, 503 when degraded.
+- Memory status shows `WARN` if heap usage exceeds 90% of heap total.
 - Monitor API latency, error rates, and database connection pool usage.
 - Set up alerts for repeated failures or degraded performance.
 

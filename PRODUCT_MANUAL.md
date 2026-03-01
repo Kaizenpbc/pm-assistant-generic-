@@ -778,7 +778,7 @@ npm run dev
 | Application | http://localhost:3000 |
 | API | http://localhost:3001 |
 | API Documentation | http://localhost:3001/documentation |
-| Health Check | http://localhost:3001/health |
+| Health Check | http://localhost:3001/health (returns DB status, memory usage, overall health — 200 OK or 503 DEGRADED) |
 
 ### Production Build
 
