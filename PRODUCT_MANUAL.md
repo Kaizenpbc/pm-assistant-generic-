@@ -130,6 +130,8 @@ The `ResourceService` maintains a central resource registry. Each resource has:
 - Skill tags
 - Active/inactive status
 
+The `GET /api/resources` endpoint supports pagination via `?limit=` and `?offset=` query parameters (default limit 50, max 200). The response includes a `total` count for client-side pagination controls.
+
 ### Workload Heatmap
 
 The resource workload endpoint aggregates task assignments across projects to produce a per-resource, per-day demand profile. Over-allocated days are flagged.
@@ -664,6 +666,7 @@ The `StripeService` manages subscription billing:
 - **AI**: Anthropic Claude SDK (gated by `AI_ENABLED` env var)
 - **Real-time**: WebSocket service for live notifications
 - **Email**: Configurable email service for password reset and notifications
+- **Service layer**: Stateless services use module-level singletons to avoid redundant instantiation and preserve in-memory caches (e.g., EmbeddingService). Internal queries include safety `LIMIT 1000` on unbounded SELECTs; public list endpoints use proper pagination.
 
 ### Frontend
 
@@ -682,7 +685,7 @@ All API routes are prefixed with `/api` and organized by domain:
 /api/auth              Authentication (login, register, reset password)
 /api/projects          Project CRUD
 /api/schedules         Schedule and task management
-/api/resources         Resource pool management
+/api/resources         Resource pool management (paginated)
 /api/sprints           Sprint lifecycle
 /api/time-entries      Time logging
 /api/custom-fields     Custom field definitions and values

@@ -391,6 +391,13 @@ SHOW TABLES LIKE 'wf_%';
 DESCRIBE wf_definitions;
 ```
 
+### Verify the tasks end_date index
+
+```sql
+SHOW INDEX FROM tasks WHERE Key_name = 'idx_tasks_end_date';
+SELECT * FROM _migrations WHERE name LIKE '015%';
+```
+
 ---
 
 ## 7. Known Pre-existing Type Errors (Client)

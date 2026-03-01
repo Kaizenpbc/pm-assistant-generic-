@@ -59,6 +59,7 @@ Build an AI-native project management platform that combines the scheduling powe
 - Workload heatmap: visual capacity per person per week
 - Over-allocation detection and warnings
 - Resource utilization percentage
+- Paginated list endpoint (`?limit=&offset=`, max 200, default 50)
 - **Benchmark:** MS Project, Wrike, Asana
 
 ### 1.6 Comments & Activity Feed

@@ -151,6 +151,16 @@ Key variables in `.env` (never commit secrets):
 
 ---
 
+## 8b. Database Indexes
+
+The following custom indexes exist beyond the default primary/foreign key indexes:
+
+| Index | Table | Column(s) | Purpose |
+|-------|-------|-----------|---------|
+| `idx_tasks_end_date` | `tasks` | `end_date` | Speeds up the overdue task scan (`AgentSchedulerService`) which runs every 2 minutes |
+
+---
+
 ## 9. Policy Engine
 
 ### Configuring Rules

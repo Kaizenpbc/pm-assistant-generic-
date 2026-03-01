@@ -376,7 +376,7 @@ All API endpoints are versioned under `/api/v1/`. Key endpoint groups:
 - `/api/v1/projects` -- Project CRUD and members
 - `/api/v1/schedules` -- Schedule and task management
 - `/api/v1/sprints` -- Sprint lifecycle
-- `/api/v1/resources` -- Resource pool and workload
+- `/api/v1/resources` -- Resource pool and workload (paginated: `?limit=&offset=`)
 - `/api/v1/time-entries` -- Time tracking
 - `/api/v1/workflows` -- DAG workflow engine
 - `/api/v1/reports` -- Report builder
