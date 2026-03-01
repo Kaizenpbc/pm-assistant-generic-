@@ -144,38 +144,46 @@ export class RagService {
   }
 
   private async enrichResults(similar: SimilarityResult[]): Promise<RagResult[]> {
-    const results: RagResult[] = [];
+    if (similar.length === 0) return [];
 
-    for (const item of similar) {
-      let document: LessonLearned | MeetingAnalysis | null = null;
+    // Collect IDs by document type
+    const lessonIds = similar.filter(s => s.documentType === 'lesson').map(s => s.documentId);
+    const meetingIds = similar.filter(s => s.documentType === 'meeting').map(s => s.documentId);
 
-      if (item.documentType === 'lesson') {
-        const rows = await databaseService.query<any>(
-          'SELECT * FROM lessons_learned WHERE id = ?',
-          [item.documentId],
-        );
-        if (rows.length > 0) {
-          document = this.rowToLesson(rows[0]);
-        }
-      } else {
-        const rows = await databaseService.query<any>(
-          'SELECT * FROM meeting_analyses WHERE id = ?',
-          [item.documentId],
-        );
-        if (rows.length > 0) {
-          document = this.rowToMeetingAnalysis(rows[0]);
-        }
+    // Batch fetch — at most 2 queries instead of N
+    const lessonMap = new Map<string, LessonLearned>();
+    const meetingMap = new Map<string, MeetingAnalysis>();
+
+    if (lessonIds.length > 0) {
+      const placeholders = lessonIds.map(() => '?').join(', ');
+      const rows = await databaseService.query<any>(
+        `SELECT * FROM lessons_learned WHERE id IN (${placeholders})`,
+        lessonIds,
+      );
+      for (const row of rows) {
+        lessonMap.set(row.id, this.rowToLesson(row));
       }
-
-      results.push({
-        documentType: item.documentType,
-        documentId: item.documentId,
-        score: item.score,
-        document,
-      });
     }
 
-    return results;
+    if (meetingIds.length > 0) {
+      const placeholders = meetingIds.map(() => '?').join(', ');
+      const rows = await databaseService.query<any>(
+        `SELECT * FROM meeting_analyses WHERE id IN (${placeholders})`,
+        meetingIds,
+      );
+      for (const row of rows) {
+        meetingMap.set(row.id, this.rowToMeetingAnalysis(row));
+      }
+    }
+
+    return similar.map(item => ({
+      documentType: item.documentType,
+      documentId: item.documentId,
+      score: item.score,
+      document: item.documentType === 'lesson'
+        ? lessonMap.get(item.documentId) ?? null
+        : meetingMap.get(item.documentId) ?? null,
+    }));
   }
 
   private rowToLesson(row: any): LessonLearned {

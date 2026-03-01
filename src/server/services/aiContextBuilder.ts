@@ -78,26 +78,32 @@ export class AIContextBuilder {
     }
 
     const schedules = await this.scheduleService.findByProjectId(projectId);
-    const schedulesWithTasks = await Promise.all(
-      schedules.map(async (schedule: any) => {
-        const tasks = await this.scheduleService.findTasksByScheduleId(schedule.id);
-        return {
-          id: schedule.id,
-          name: schedule.name,
-          startDate: schedule.startDate?.toISOString?.() || String(schedule.startDate),
-          endDate: schedule.endDate?.toISOString?.() || String(schedule.endDate),
-          tasks: tasks.map((t: any) => ({
-            id: t.id,
-            name: t.name,
-            status: t.status,
-            priority: t.priority,
-            estimatedDays: t.estimatedDays,
-            progressPercentage: t.progressPercentage,
-            dueDate: t.dueDate?.toISOString?.() || t.dueDate,
-          })),
-        };
-      }),
-    );
+    const scheduleIds = schedules.map(s => s.id);
+    const allTasks = await this.scheduleService.findTasksByScheduleIds(scheduleIds);
+
+    // Group tasks by scheduleId
+    const tasksBySchedule = new Map<string, typeof allTasks>();
+    for (const t of allTasks) {
+      let arr = tasksBySchedule.get(t.scheduleId);
+      if (!arr) { arr = []; tasksBySchedule.set(t.scheduleId, arr); }
+      arr.push(t);
+    }
+
+    const schedulesWithTasks = schedules.map((schedule: any) => ({
+      id: schedule.id,
+      name: schedule.name,
+      startDate: schedule.startDate?.toISOString?.() || String(schedule.startDate),
+      endDate: schedule.endDate?.toISOString?.() || String(schedule.endDate),
+      tasks: (tasksBySchedule.get(schedule.id) ?? []).map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        status: t.status,
+        priority: t.priority,
+        estimatedDays: t.estimatedDays,
+        progressPercentage: t.progressPercentage,
+        dueDate: t.dueDate?.toISOString?.() || t.dueDate,
+      })),
+    }));
 
     return {
       project: {

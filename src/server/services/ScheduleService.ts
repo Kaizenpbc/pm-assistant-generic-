@@ -266,6 +266,30 @@ export class ScheduleService {
   }
 
   // -------------------------------------------------------------------------
+  // Batch lookups (avoid N+1 patterns)
+  // -------------------------------------------------------------------------
+
+  async findByProjectIds(projectIds: string[]): Promise<Schedule[]> {
+    if (projectIds.length === 0) return [];
+    const placeholders = projectIds.map(() => '?').join(', ');
+    const rows = await databaseService.query(
+      `SELECT * FROM schedules WHERE project_id IN (${placeholders}) ORDER BY created_at DESC`,
+      projectIds,
+    );
+    return rows.map(rowToSchedule);
+  }
+
+  async findTasksByScheduleIds(scheduleIds: string[]): Promise<Task[]> {
+    if (scheduleIds.length === 0) return [];
+    const placeholders = scheduleIds.map(() => '?').join(', ');
+    const rows = await databaseService.query(
+      `SELECT * FROM tasks WHERE schedule_id IN (${placeholders}) ORDER BY created_at`,
+      scheduleIds,
+    );
+    return rows.map(rowToTask);
+  }
+
+  // -------------------------------------------------------------------------
   // Tasks
   // -------------------------------------------------------------------------
 
