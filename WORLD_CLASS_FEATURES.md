@@ -322,17 +322,17 @@ Build an AI-native project management platform that combines the scheduling powe
 | Monte Carlo Simulation | Done | P3 |
 | AI EVM Forecasting | Done | P3 |
 | Agent Activity Log | Done | P3 |
-| Notification System | Not Started | P4 |
-| File Attachments & Documents | Not Started | P4 |
-| Time Tracking & Timesheets | Not Started | P4 |
-| Project Templates | Not Started | P4 |
-| Custom Fields | Not Started | P4 |
-| Network Diagram View | Not Started | P4 |
-| Burndown/Burnup Charts | Not Started | P4 |
-| External Integrations | Not Started | P5 |
-| Client/Stakeholder Portal | Not Started | P5 |
-| Approval Workflows & Change Requests | Not Started | P5 |
-| Resource Leveling | Not Started | P5 |
-| Sprint Planning / Agile Mode | Not Started | P5 |
-| Custom Report Builder | Not Started | P5 |
-| Project Intake Forms | Not Started | P5 |
+| Notification System | Done | P4 |
+| File Attachments & Documents | Done | P4 |
+| Time Tracking & Timesheets | Done | P4 |
+| Project Templates | Done | P4 |
+| Custom Fields | Done | P4 |
+| Network Diagram View | Done | P4 |
+| Burndown/Burnup Charts | Done | P4 |
+| External Integrations | Partial | P5 |
+| Client/Stakeholder Portal | Done | P5 |
+| Approval Workflows & Change Requests | Backend Only | P5 |
+| Resource Leveling | Done | P5 |
+| Sprint Planning / Agile Mode | Done | P5 |
+| Custom Report Builder | Done | P5 |
+| Project Intake Forms | Done | P5 |
