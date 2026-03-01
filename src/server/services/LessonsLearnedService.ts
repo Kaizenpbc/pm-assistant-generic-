@@ -128,7 +128,9 @@ export class LessonsLearnedService {
     );
 
     // Fire-and-forget RAG indexing
-    this.ragService.indexLesson(lesson).catch(() => {});
+    this.ragService.indexLesson(lesson).catch((err) => {
+      console.error(`[RAG] Failed to index lesson ${lesson.id}:`, (err as Error).message);
+    });
   }
 
   // -----------------------------------------------------------------------

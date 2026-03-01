@@ -70,7 +70,9 @@ export class MeetingIntelligenceService {
     );
 
     // Fire-and-forget RAG indexing
-    this.ragService.indexMeeting(analysis).catch(() => {});
+    this.ragService.indexMeeting(analysis).catch((err) => {
+      console.error(`[RAG] Failed to index meeting ${analysis.id}:`, (err as Error).message);
+    });
   }
 
   // -------------------------------------------------------------------------
