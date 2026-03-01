@@ -1,406 +1,355 @@
-# PM Application - Security Implementation Guide
+# PM Assistant -- Security Implementation Guide
 
-## 🔒 **Comprehensive Security Implementation**
-
-This document outlines the comprehensive security measures implemented in the PM Application to protect against common web vulnerabilities.
+A comprehensive reference for the security architecture of the PM Assistant application.
 
 ---
 
-## **🛡️ Security Headers Implementation**
+## Table of Contents
 
-### **1. Content Security Policy (CSP)**
-
-#### **Client-Side CSP (HTML Meta Tags)**
-```html
-<meta http-equiv="Content-Security-Policy" content="
-  default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline';
-  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-  font-src 'self' https://fonts.gstatic.com;
-  img-src 'self' data: blob: https:;
-  connect-src 'self' http://localhost:3001 ws://localhost:3000 wss://localhost:3000;
-  media-src 'self';
-  object-src 'none';
-  frame-src 'none';
-  base-uri 'self';
-  form-action 'self';
-  upgrade-insecure-requests;
-" />
-```
-
-#### **Server-Side CSP (Helmet)**
-```typescript
-contentSecurityPolicy: {
-  directives: {
-    defaultSrc: ["'self'"],
-    styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-    scriptSrc: ["'self'", ...(isDevelopment ? ["'unsafe-eval'", "'unsafe-inline'"] : [])],
-    imgSrc: ["'self'", "data:", "blob:", "https:"],
-    connectSrc: ["'self'", ...(isDevelopment ? ["http://localhost:3000"] : [])],
-    fontSrc: ["'self'", "https://fonts.gstatic.com"],
-    objectSrc: ["'none'"],
-    frameSrc: ["'none'"],
-    baseUri: ["'self'"],
-    formAction: ["'self'"],
-    upgradeInsecureRequests: isProduction ? [] : null,
-  },
-  reportOnly: isDevelopment
-}
-```
-
-### **2. Additional Security Headers**
-
-#### **X-Content-Type-Options**
-```html
-<meta http-equiv="X-Content-Type-Options" content="nosniff" />
-```
-- Prevents MIME type sniffing attacks
-
-#### **X-Frame-Options**
-```html
-<meta http-equiv="X-Frame-Options" content="DENY" />
-```
-- Prevents clickjacking attacks
-
-#### **X-XSS-Protection**
-```html
-<meta http-equiv="X-XSS-Protection" content="1; mode=block" />
-```
-- Enables browser XSS filtering
-
-#### **Referrer-Policy**
-```html
-<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
-```
-- Controls referrer information leakage
-
-#### **Permissions-Policy**
-```html
-<meta http-equiv="Permissions-Policy" content="
-  camera=(), 
-  microphone=(), 
-  geolocation=(), 
-  interest-cohort=(), 
-  payment=(), 
-  usb=()
-" />
-```
-- Restricts browser features and APIs
+1. [Authentication](#1-authentication)
+2. [OAuth 2.1 (MCP / Claude Web)](#2-oauth-21-mcp--claude-web)
+3. [API Keys](#3-api-keys)
+4. [Scope-Based Authorization](#4-scope-based-authorization)
+5. [Password Security](#5-password-security)
+6. [Security Headers](#6-security-headers)
+7. [CORS](#7-cors)
+8. [Content Security Policy (CSP)](#8-content-security-policy-csp)
+9. [Cookie Security](#9-cookie-security)
+10. [Input Validation](#10-input-validation)
+11. [Rate Limiting](#11-rate-limiting)
+12. [Audit Ledger](#12-audit-ledger)
+13. [Policy Engine](#13-policy-engine)
+14. [Webhook Security](#14-webhook-security)
+15. [Stakeholder Portal Access](#15-stakeholder-portal-access)
+16. [Development vs Production](#16-development-vs-production)
+17. [Deployment Checklist](#17-deployment-checklist)
+18. [Testing](#18-testing)
+19. [Related Files](#19-related-files)
 
 ---
 
-## **🔐 Server-Side Security Measures**
+## 1. Authentication
 
-### **1. Helmet.js Configuration**
-```typescript
-await fastify.register(helmet, {
-  contentSecurityPolicy: { /* CSP directives */ },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  },
-  noSniff: true,
-  xssFilter: true,
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  crossOriginEmbedderPolicy: false,
-  crossOriginOpenerPolicy: { policy: 'same-origin' },
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  dnsPrefetchControl: { allow: false },
-  frameguard: { action: 'deny' },
-  hidePoweredBy: true,
-  ieNoOpen: true,
-  originAgentCluster: true,
-  permittedCrossDomainPolicies: false
-});
+The application uses a dual-token JWT strategy:
+
+- **Access token** -- short-lived JWT delivered as an `HttpOnly` cookie (`access_token`).
+- **Refresh token** -- longer-lived JWT stored as an `HttpOnly` cookie, used to rotate access tokens without requiring the user to re-authenticate.
+
+Both tokens are configured with `secure: true` in production and `sameSite: 'lax'` to prevent CSRF while allowing standard navigation flows.
+
+Authentication is enforced by the `authMiddleware` pre-handler hook, which verifies the JWT from the cookie and attaches the decoded user to `request.user`.
+
+---
+
+## 2. OAuth 2.1 (MCP / Claude Web)
+
+An OAuth 2.1 authorization code flow is implemented in the MCP server (`mcp-server/src/oauth/`) to allow Claude Web and other MCP clients to authenticate on behalf of users:
+
+- **Authorization endpoint** -- renders a consent/authorize page.
+- **Token endpoint** -- exchanges authorization codes for access tokens.
+- **Client registration** -- managed via `clientsStore.ts`; clients are validated per-request.
+
+This enables per-user scoped access when the PM Assistant is used as a remote MCP tool.
+
+---
+
+## 3. API Keys
+
+API keys provide programmatic access for integrations, CI/CD pipelines, and external agents.
+
+| Property | Details |
+|---|---|
+| **Format** | `kpm_<40 hex chars>` |
+| **Storage** | SHA-256 hash stored in the database; raw key shown only at creation |
+| **Scopes** | `read`, `write`, `admin` (hierarchical) |
+| **Rate limit** | Per-key configurable; default 100 requests/minute |
+| **Expiration** | Optional `expires_at` date |
+| **Usage logging** | Every request is logged with method, URL, status code, response time, and IP |
+
+Keys are resolved globally in the `onRequest` hook (`plugins.ts`). If a valid `Bearer kpm_*` token is found, the request is tagged with `apiKeyId`, `apiKeyScopes`, and `apiKeyRateLimit` for downstream middleware.
+
+---
+
+## 4. Scope-Based Authorization
+
+The `requireScope` middleware (`src/server/middleware/requireScope.ts`) gates individual routes:
+
+```
+admin  >  write  >  read
 ```
 
-### **2. CORS Configuration**
+- **JWT session users** bypass scope checks -- their access is governed by role.
+- **API key users** must hold a scope equal to or higher than the route requirement.
+
+Usage in a route:
+
 ```typescript
-await fastify.register(cors, {
-  origin: (origin, callback) => {
-    // Allow localhost in development
-    if (origin?.startsWith('http://localhost:')) {
-      return callback(null, true);
-    }
-    
-    // Allow configured origin
-    if (origin === config.CORS_ORIGIN) {
-      return callback(null, true);
-    }
-    
-    callback(new Error('Not allowed by CORS'), false);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
-});
+fastify.get('/projects', { preHandler: [authMiddleware, requireScope('read')] }, handler);
+fastify.post('/projects', { preHandler: [authMiddleware, requireScope('write')] }, handler);
 ```
 
-### **3. Cookie Security**
+---
+
+## 5. Password Security
+
+- Passwords are hashed with **bcrypt** before storage (`UserService.ts`).
+- Password reset uses a time-limited, single-use email token.
+- Raw passwords are never logged or returned in API responses.
+
+---
+
+## 6. Security Headers
+
+The server registers **Helmet** (`@fastify/helmet`) which sets the following headers:
+
+| Header | Value |
+|---|---|
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` (via `frameguard`) |
+| `X-DNS-Prefetch-Control` | `off` |
+| `X-Powered-By` | Removed (`hidePoweredBy`) |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` (production only) |
+| `Cross-Origin-Opener-Policy` | `same-origin` |
+| `Cross-Origin-Resource-Policy` | `cross-origin` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | Camera, microphone, geolocation, payment, USB disabled |
+
+Client-side `<meta>` tags in `index.html` mirror several of these headers as a defense-in-depth measure.
+
+---
+
+## 7. CORS
+
+CORS is configured in `plugins.ts` with environment-aware origin validation:
+
+```
+Allowed origins:
+  - localhost:*        (any port, development convenience)
+  - CORS_ORIGIN env    (production domain)
+  - claude.ai / *.anthropic.com / *.claude.ai  (MCP access)
+  - All origins        (development mode fallback)
+```
+
+Credentials are enabled. Allowed methods: `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`. The `Mcp-Session-Id` header is both allowed and exposed for MCP transport.
+
+---
+
+## 8. Content Security Policy (CSP)
+
+CSP is enforced via Helmet with environment-specific behavior:
+
+| Mode | Behavior |
+|---|---|
+| **Development** | `report-only` -- violations logged but not blocked |
+| **Production** | Enforced -- violations blocked |
+
+Key directives:
+
+```
+default-src   'self'
+script-src    'self' (+ 'unsafe-eval' 'unsafe-inline' in dev; 'unsafe-inline' in prod)
+style-src     'self' 'unsafe-inline' https://fonts.googleapis.com
+img-src       'self' data: blob: https:
+connect-src   'self' (+ localhost in dev; wss: in prod)
+font-src      'self' https://fonts.gstatic.com
+object-src    'none'
+frame-src     'self' https://checkout.stripe.com https://js.stripe.com
+```
+
+---
+
+## 9. Cookie Security
+
+Cookies are registered via `@fastify/cookie`:
+
 ```typescript
-await fastify.register(cookie, {
+{
   secret: config.COOKIE_SECRET,
   parseOptions: {
     httpOnly: true,
     secure: config.NODE_ENV === 'production',
     sameSite: 'lax',
   }
-});
+}
 ```
+
+- `httpOnly` prevents JavaScript access (XSS mitigation).
+- `secure` ensures cookies are only sent over HTTPS in production.
+- `sameSite: 'lax'` mitigates CSRF while allowing top-level navigations.
 
 ---
 
-## **🛡️ Client-Side Security Measures**
+## 10. Input Validation
 
-### **1. Security Service**
-```typescript
-class SecurityService {
-  // Generate dynamic CSP based on environment
-  generateCSP(): string
-  
-  // Validate security headers
-  validateSecurityHeaders(): SecurityValidationResult
-  
-  // Sanitize user input
-  sanitizeInput(input: string): string
-  
-  // Validate URLs to prevent open redirects
-  validateUrl(url: string): boolean
-}
-```
+All API endpoints use **Zod v4** schemas for runtime request validation:
 
-### **2. Input Sanitization**
-```typescript
-// Sanitize user input to prevent XSS
-const sanitizedInput = securityService.sanitizeInput(userInput);
+- Route parameters, query strings, and request bodies are validated before handlers execute.
+- Invalid input returns a structured 400 error with field-level details.
+- Schemas are co-located with their route files for maintainability.
 
-// Validate URLs to prevent open redirects
-const isValidUrl = securityService.validateUrl(redirectUrl);
-```
-
-### **3. Security Validation**
-```typescript
-// Check security headers on page load
-const validation = securityService.validateSecurityHeaders();
-if (!validation.isValid) {
-  console.warn('Security Issues:', validation.issues);
-}
-```
+Validation is applied across the main server routes and all MCP tool handlers (`mcp-server/src/tools/`).
 
 ---
 
-## **🔍 Security Monitoring & Reporting**
+## 11. Rate Limiting
 
-### **1. CSP Violation Reporting**
-```typescript
-// Server-side CSP report handler
-if (request.url === '/api/security/csp-report' && request.method === 'POST') {
-  const body = request.body as any;
-  console.warn('CSP Violation Report:', {
-    timestamp: new Date().toISOString(),
-    userAgent: request.headers['user-agent'],
-    violation: body
-  });
-  
-  // Send to monitoring service in production
-  if (isProduction) {
-    // TODO: Send to Sentry, DataDog, etc.
-  }
-}
-```
+Rate limiting operates at two levels:
 
-### **2. Security Logging**
-```typescript
-// Log security information for debugging
-securityService.logSecurityInfo();
+1. **Per-API-key** -- Each API key has a configurable `rate_limit` (default 100 req/min). The in-memory `rateLimiter` middleware tracks usage per key and returns `429 Too Many Requests` with `Retry-After` when exceeded. Response headers include:
+   - `X-RateLimit-Limit`
+   - `X-RateLimit-Remaining`
+   - `X-RateLimit-Reset`
 
-// Output:
-// 🔒 Security Configuration
-// Environment: Development
-// Base URL: http://localhost:3000
-// CSP: default-src 'self'; script-src 'self' 'unsafe-eval'...
-// Security Valid: true
-```
+2. **Global / security middleware** -- The `securityMiddleware` hook runs on every request for additional request-level checks.
 
 ---
 
-## **🚨 Security Best Practices**
+## 12. Audit Ledger
 
-### **1. Development vs Production**
+The audit ledger (`AuditLedgerService.ts`) provides an immutable, append-only record of all significant actions:
 
-#### **Development Mode**
-- CSP in `report-only` mode
-- Relaxed script-src for hot reloading
-- Localhost CORS allowed
-- Detailed security logging
+- **SHA-256 hash chain** -- Each entry stores `prevHash` and its own `entryHash`, creating a tamper-evident chain.
+- **Database triggers** prevent `UPDATE` and `DELETE` on the audit table.
+- **Actor tracking** -- Every entry records `actorId`, `actorType` (`user`, `api_key`, `system`), and `source` (`web`, `mcp`, `api`, `system`).
+- **Queryable** -- Entries can be filtered by project, entity, actor, action, and date range.
 
-#### **Production Mode**
-- Strict CSP enforcement
-- No unsafe-inline or unsafe-eval
-- HTTPS enforcement
-- Minimal security logging
-
-### **2. Content Security Policy Best Practices**
-
-#### **✅ Good CSP Directives**
-```typescript
-defaultSrc: ["'self'"]           // Only same-origin by default
-scriptSrc: ["'self'"]            // Only same-origin scripts
-objectSrc: ["'none'"]            // No plugins/objects
-frameSrc: ["'none'"]             // No frames
-baseUri: ["'self'"]              // Only same-origin base
-formAction: ["'self'"]           // Only same-origin forms
-```
-
-#### **❌ Avoid These**
-```typescript
-scriptSrc: ["'unsafe-inline'"]   // Allows inline scripts
-scriptSrc: ["'unsafe-eval'"]     // Allows eval()
-defaultSrc: ["*"]                // Allows any source
-```
-
-### **3. Additional Security Measures**
-
-#### **Request Validation**
-```typescript
-// Validate request size
-const maxSize = 10 * 1024 * 1024; // 10MB
-if (contentLength > maxSize) {
-  reply.code(413).send({ error: 'Request too large' });
-}
-
-// Validate content type
-if (!contentType || !contentType.includes('application/json')) {
-  reply.code(400).send({ error: 'Invalid content type' });
-}
-```
-
-#### **Cache Control**
-```typescript
-// No cache for sensitive endpoints
-if (request.url.includes('/api/auth/')) {
-  reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
-}
-```
+This provides a forensic-grade trail suitable for compliance audits and incident investigation.
 
 ---
 
-## **🧪 Security Testing**
+## 13. Policy Engine
 
-### **1. CSP Testing**
+The policy engine (`PolicyEngineService.ts`) provides pre-action governance gates:
+
+- **Policies** define an `actionPattern`, a `conditionExpr` (field + operator + value), and an `enforcement` level.
+- **Enforcement levels**:
+  - `log_only` -- record the evaluation, allow the action.
+  - `require_approval` -- block until an approver authorizes.
+  - `block` -- deny the action outright.
+- **Evaluation context** includes actor, role, entity, project, and arbitrary data (e.g., budget impact, days to deadline).
+- Every evaluation is persisted for audit purposes.
+
+Example use case: block any task reassignment where `budget_impact > 10000` unless approved by a project admin.
+
+---
+
+## 14. Webhook Security
+
+Outbound webhooks (`WebhookService.ts`) are secured with HMAC signatures:
+
+- Each webhook registration generates a unique secret (32-byte random hex).
+- Deliveries are signed so the receiver can verify authenticity.
+- Failed deliveries increment a `failure_count`; the service tracks `last_status_code` for monitoring.
+
+---
+
+## 15. Stakeholder Portal Access
+
+The stakeholder portal (`PortalService.ts`, `src/server/routes/portal.ts`) provides limited external access:
+
+- Access is granted via a single-use or time-limited **portal token**.
+- Portal sessions are scoped to **read-only** access on specific project data.
+- No JWT session or API key is required -- the token itself is the credential.
+
+---
+
+## 16. Development vs Production
+
+| Aspect | Development | Production |
+|---|---|---|
+| CSP | Report-only | Enforced |
+| `script-src` | Includes `'unsafe-eval'` for HMR | No `'unsafe-eval'` |
+| HSTS | Disabled | Enabled (1 year, preload) |
+| Cookies | `secure: false` | `secure: true` |
+| CORS | All origins allowed as fallback | Strict origin validation |
+| Logging | Verbose security logging | Minimal |
+
+---
+
+## 17. Deployment Checklist
+
+Before deploying to production, verify the following:
+
+- [ ] `NODE_ENV` is set to `production`
+- [ ] `COOKIE_SECRET` is a strong random value (minimum 32 characters)
+- [ ] `JWT_SECRET` is a strong random value, different from `COOKIE_SECRET`
+- [ ] `CORS_ORIGIN` is set to the exact production domain
+- [ ] HTTPS is terminated by the reverse proxy (LiteSpeed / Nginx)
+- [ ] Database credentials are not committed to version control
+- [ ] `AI_ENABLED` is set intentionally (controls Claude SDK features)
+- [ ] API key rate limits are configured appropriately
+- [ ] Audit ledger database triggers are in place (prevent UPDATE/DELETE)
+- [ ] OAuth client secrets for MCP are stored securely
+- [ ] Webhook secrets are unique per registration
+- [ ] Password reset email configuration is verified
+
+---
+
+## 18. Testing
+
+### Security Headers
+
 ```bash
-# Test CSP violations
-curl -X POST http://localhost:3001/api/security/csp-report \
-  -H "Content-Type: application/json" \
-  -d '{"violation": "test"}'
+# Verify security headers on a production endpoint
+curl -I https://your-domain.com/api/health
+
+# Expected: X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security, CSP, etc.
 ```
 
-### **2. Security Headers Testing**
-```bash
-# Check security headers
-curl -I http://localhost:3001/api/health
+### CORS Rejection
 
-# Expected headers:
-# X-Content-Type-Options: nosniff
-# X-Frame-Options: DENY
-# X-XSS-Protection: 1; mode=block
-# Content-Security-Policy: default-src 'self'...
-```
-
-### **3. CORS Testing**
 ```bash
-# Test CORS from different origin
-curl -H "Origin: http://malicious-site.com" \
+# Expect CORS error from unauthorized origin
+curl -H "Origin: https://malicious-site.com" \
   -H "Access-Control-Request-Method: POST" \
-  -H "Access-Control-Request-Headers: Content-Type" \
-  -X OPTIONS http://localhost:3001/api/auth/login
+  -X OPTIONS https://your-domain.com/api/auth/login
 ```
 
----
+### Rate Limiting
 
-## **📋 Security Checklist**
-
-### **✅ Implemented Security Measures**
-- [x] Content Security Policy (CSP)
-- [x] X-Content-Type-Options
-- [x] X-Frame-Options
-- [x] X-XSS-Protection
-- [x] Referrer-Policy
-- [x] Permissions-Policy
-- [x] HSTS (production)
-- [x] CORS configuration
-- [x] Secure cookies
-- [x] Input sanitization
-- [x] URL validation
-- [x] Request size validation
-- [x] Content type validation
-- [x] Security logging
-- [x] CSP violation reporting
-
-### **🔄 Continuous Security Tasks**
-- [ ] Regular security audits
-- [ ] Dependency vulnerability scanning
-- [ ] Penetration testing
-- [ ] Security header monitoring
-- [ ] CSP violation analysis
-- [ ] Rate limiting implementation
-- [ ] Security incident response plan
-
----
-
-## **🚀 Deployment Security**
-
-### **1. Environment Variables**
 ```bash
-# Production security settings
-NODE_ENV=production
-COOKIE_SECRET=your-super-secret-key
-CORS_ORIGIN=https://your-domain.com
+# Send requests and observe X-RateLimit-* headers
+for i in $(seq 1 5); do
+  curl -s -o /dev/null -w "%{http_code} " \
+    -H "Authorization: Bearer kpm_your_key_here" \
+    https://your-domain.com/api/projects
+done
 ```
 
-### **2. HTTPS Configuration**
-```nginx
-# Nginx SSL configuration
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
-ssl_prefer_server_ciphers off;
-ssl_session_cache shared:SSL:10m;
-ssl_session_timeout 10m;
-```
+### API Key Scope Enforcement
 
-### **3. Security Monitoring**
-```typescript
-// Production security monitoring
-if (isProduction) {
-  // Send CSP violations to monitoring service
-  // Log security events
-  // Monitor for suspicious activity
-}
+```bash
+# A read-only key should receive 403 on write endpoints
+curl -X POST -H "Authorization: Bearer kpm_read_only_key" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"test"}' \
+  https://your-domain.com/api/projects
 ```
 
 ---
 
-## **🔗 Related Files**
+## 19. Related Files
 
-- `src/client/index.html` - Client-side security headers
-- `src/client/src/services/securityService.ts` - Client security utilities
-- `src/server/plugins.ts` - Server security configuration
-- `src/server/middleware/securityMiddleware.ts` - Security middleware
-- `SECURITY_GUIDE.md` - This security documentation
+| File | Purpose |
+|---|---|
+| `src/server/plugins.ts` | Helmet, CORS, cookie, rate limiting, API key resolution |
+| `src/server/middleware/requireScope.ts` | Scope-based authorization middleware |
+| `src/server/middleware/securityMiddleware.ts` | Request-level security checks |
+| `src/server/middleware/rateLimiter.ts` | In-memory rate limiter |
+| `src/server/routes/auth.ts` | Login, logout, refresh, password reset |
+| `src/server/routes/apiKeys.ts` | API key CRUD endpoints |
+| `src/server/routes/portal.ts` | Stakeholder portal routes |
+| `src/server/services/UserService.ts` | Password hashing (bcrypt) |
+| `src/server/services/ApiKeyService.ts` | API key creation, validation, usage logging |
+| `src/server/services/AuditLedgerService.ts` | Immutable audit ledger with hash chain |
+| `src/server/services/PolicyEngineService.ts` | Pre-action policy evaluation |
+| `src/server/services/WebhookService.ts` | Webhook registration and signed delivery |
+| `src/server/services/PortalService.ts` | Portal token management |
+| `mcp-server/src/oauth/provider.ts` | OAuth 2.1 authorization server |
+| `mcp-server/src/oauth/clientsStore.ts` | OAuth client registration |
+| `src/client/index.html` | Client-side security meta tags |
+| `src/client/src/services/securityService.ts` | Client-side security utilities |
 
 ---
 
-## **💡 Security Recommendations**
-
-1. **Regular Updates**: Keep dependencies updated
-2. **Security Audits**: Conduct regular security audits
-3. **Monitoring**: Implement security monitoring and alerting
-4. **Testing**: Regular penetration testing
-5. **Documentation**: Keep security documentation updated
-6. **Training**: Security awareness training for developers
-7. **Incident Response**: Have a security incident response plan
-
----
-
-**🔒 Security is an ongoing process, not a one-time implementation!**
+Security is an ongoing process. Keep dependencies updated, review audit logs regularly, and conduct periodic penetration testing.
