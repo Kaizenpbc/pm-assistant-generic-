@@ -282,7 +282,7 @@ export function ProjectDetailPage() {
                   value={project.status}
                   onChange={(e) => statusMutation.mutate(e.target.value)}
                   disabled={statusMutation.isPending}
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium cursor-pointer border-0 outline-none appearance-none ${status.color} ${statusMutation.isPending ? 'opacity-60' : ''}`}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium cursor-pointer border border-current border-opacity-30 outline-none pr-5 ${status.color} ${statusMutation.isPending ? 'opacity-60' : 'hover:opacity-80'}`}
                 >
                   <option value="planning">Planning</option>
                   <option value="active">Active</option>
