@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
@@ -281,12 +281,10 @@ function AiUsageTab() {
 // ---------------------------------------------------------------------------
 export function AdminPage() {
   const { user } = useAuthStore();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('users');
 
   if (user?.role !== 'admin') {
-    navigate('/dashboard', { replace: true });
-    return null;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
