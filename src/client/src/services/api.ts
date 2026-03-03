@@ -168,6 +168,11 @@ class ApiService {
     return response.data;
   }
 
+  async updateProjectStatus(id: string, status: string) {
+    const response = await this.api.patch(`/projects/${id}/status`, { status });
+    return response.data;
+  }
+
   async deleteProject(id: string) {
     const response = await this.api.delete(`/projects/${id}`);
     return response.data;

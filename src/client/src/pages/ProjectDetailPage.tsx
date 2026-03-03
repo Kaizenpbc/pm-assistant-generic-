@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
+import { useAuthStore } from '../stores/authStore';
 import { GanttChart, type GanttTask } from '../components/schedule/GanttChart';
 import { TaskFormModal, type TaskFormData } from '../components/schedule/TaskFormModal';
 import { KanbanBoard } from '../components/schedule/KanbanBoard';
@@ -191,6 +192,9 @@ export function ProjectDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
 
+  const { user } = useAuthStore();
+  const canEditStatus = user?.role === 'admin' || user?.role === 'manager';
+
   const {
     data: projectData,
     isLoading,
@@ -202,6 +206,12 @@ export function ProjectDetailPage() {
   });
 
   const project = projectData?.project;
+
+  const queryClient = useQueryClient();
+  const statusMutation = useMutation({
+    mutationFn: (newStatus: string) => apiService.updateProjectStatus(id!, newStatus),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['project', id] }),
+  });
 
   // Set AI panel context when project loads
   useEffect(() => {
@@ -267,11 +277,26 @@ export function ProjectDetailPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{project.name}</h1>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${status.color}`}
-              >
-                {status.label}
-              </span>
+              {canEditStatus ? (
+                <select
+                  value={project.status}
+                  onChange={(e) => statusMutation.mutate(e.target.value)}
+                  disabled={statusMutation.isPending}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium cursor-pointer border-0 outline-none appearance-none ${status.color} ${statusMutation.isPending ? 'opacity-60' : ''}`}
+                >
+                  <option value="planning">Planning</option>
+                  <option value="active">Active</option>
+                  <option value="on_hold">On Hold</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              ) : (
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${status.color}`}
+                >
+                  {status.label}
+                </span>
+              )}
             </div>
             {(project.description) && (
               <p className="mt-1 text-sm text-gray-500">{project.description}</p>

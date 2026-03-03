@@ -1,16 +1,15 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   FolderKanban,
   TrendingUp,
   DollarSign,
   CheckCircle,
-  ArrowRight,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
 import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
+import { ProjectTable } from '../components/dashboard/ProjectTable';
 
 interface Project {
   id: string;
@@ -26,7 +25,6 @@ interface Project {
 }
 
 export const ExecutiveDashboard: React.FC = () => {
-  const navigate = useNavigate();
 
   useEffect(() => {
     useUIStore.getState().setAIPanelContext({ type: 'dashboard' });
@@ -47,14 +45,6 @@ export const ExecutiveDashboard: React.FC = () => {
     return p.status === 'active' && progress >= 20;
   }).length;
   const onTrackPct = activeProjects > 0 ? Math.round((onTrackCount / activeProjects) * 100) : 0;
-
-  const statusStyles: Record<string, { label: string; color: string }> = {
-    active: { label: 'Active', color: 'bg-green-100 text-green-700' },
-    planning: { label: 'Planning', color: 'bg-purple-100 text-purple-700' },
-    on_hold: { label: 'On Hold', color: 'bg-yellow-100 text-yellow-700' },
-    completed: { label: 'Completed', color: 'bg-blue-100 text-blue-700' },
-    cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-600' },
-  };
 
   if (isLoading) {
     return (
@@ -105,62 +95,13 @@ export const ExecutiveDashboard: React.FC = () => {
         />
       </div>
 
-      {/* Project List */}
+      {/* Project Table */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">All Projects</h2>
           <span className="text-xs text-gray-400">{totalProjects} projects</span>
         </div>
-
-        {projects.length === 0 ? (
-          <div className="card text-center py-12">
-            <FolderKanban className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            <p className="text-sm text-gray-500">No projects yet.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {projects.map((project) => {
-              const status = statusStyles[project.status] || statusStyles.planning;
-              const budgetPct =
-                project.budgetAllocated && project.budgetAllocated > 0
-                  ? Math.round(((project.budgetSpent || 0) / project.budgetAllocated) * 100)
-                  : 0;
-
-              return (
-                <button
-                  key={project.id}
-                  onClick={() => navigate(`/project/${project.id}`)}
-                  className="w-full text-left card hover:shadow-md transition-shadow duration-200 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
-                          {project.name}
-                        </h3>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
-                          {status.label}
-                        </span>
-                      </div>
-                      {project.description && (
-                        <p className="mt-1 text-sm text-gray-500 truncate">{project.description}</p>
-                      )}
-                      <div className="mt-2 flex items-center gap-4 text-sm text-gray-400">
-                        {project.budgetAllocated && (
-                          <span>Budget: ${(project.budgetAllocated / 1000).toFixed(0)}K ({budgetPct}% spent)</span>
-                        )}
-                        {project.progressPercentage !== undefined && (
-                          <span>Progress: {project.progressPercentage}%</span>
-                        )}
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition-colors flex-shrink-0 ml-4" />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <ProjectTable projects={projects} />
       </div>
     </div>
   );

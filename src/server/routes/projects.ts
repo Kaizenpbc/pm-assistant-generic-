@@ -23,6 +23,10 @@ const createProjectSchema = z.object({
 
 const updateProjectSchema = createProjectSchema.partial();
 
+const statusUpdateSchema = z.object({
+  status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']),
+});
+
 export async function projectRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
@@ -100,6 +104,29 @@ export async function projectRoutes(fastify: FastifyInstance) {
     } catch (error) {
       console.error('Update project error:', error);
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update project' });
+    }
+  });
+
+  fastify.patch('/:id/status', {
+    preHandler: [requireScope('write')],
+    schema: { description: 'Update project status', tags: ['projects'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = (request as any).user;
+      if (user.role !== 'admin' && user.role !== 'manager') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only admins and project managers can change project status' });
+      }
+      const { id } = request.params as { id: string };
+      const { status } = statusUpdateSchema.parse(request.body);
+      const project = await projectService.update(id, { status }, user.userId);
+      if (!project) {
+        return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
+      }
+      webhookService.dispatch('project.updated', { project }, user.userId);
+      return { project };
+    } catch (error) {
+      console.error('Update project status error:', error);
+      return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update project status' });
     }
   });
 
