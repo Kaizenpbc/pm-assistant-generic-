@@ -50,6 +50,8 @@ import { bulkRoutes } from './routes/bulk';
 import { mcpProxyRoutes } from './routes/mcpProxy';
 import { policyRoutes } from './routes/policies';
 import { ragRoutes } from './routes/rag';
+import { waitlistRoutes } from './routes/waitlist';
+import { adminRoutes } from './routes/admin';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
@@ -103,4 +105,6 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(mcpProxyRoutes, { prefix: '/mcp' });
   await fastify.register(policyRoutes, { prefix: '/api/v1/policies' });
   await fastify.register(ragRoutes, { prefix: '/api/v1/rag' });
+  await fastify.register(waitlistRoutes, { prefix: '/api/v1/waitlist' });
+  await fastify.register(adminRoutes, { prefix: '/api/v1/admin' });
 }

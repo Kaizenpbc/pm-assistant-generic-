@@ -56,6 +56,9 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // Fire-and-forget: update last login timestamp
+      userService.update(user.id, { lastLoginAt: new Date() }).catch(() => {});
+
       const accessToken = jwt.sign(
         { userId: user.id, username: user.username, role: user.role },
         config.JWT_SECRET,

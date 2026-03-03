@@ -18,6 +18,7 @@ export interface User {
   subscriptionTier: 'free' | 'pro' | 'business';
   subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
   trialEndsAt: Date | null;
+  lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,6 +53,7 @@ function rowToUser(row: any): User {
     subscriptionTier: row.subscription_tier || 'free',
     subscriptionStatus: row.subscription_status || 'none',
     trialEndsAt: row.trial_ends_at,
+    lastLoginAt: row.last_login_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -136,6 +138,7 @@ export class UserService {
       subscriptionTier: 'subscription_tier',
       subscriptionStatus: 'subscription_status',
       trialEndsAt: 'trial_ends_at',
+      lastLoginAt: 'last_login_at',
     };
 
     for (const [key, column] of Object.entries(columnMap)) {

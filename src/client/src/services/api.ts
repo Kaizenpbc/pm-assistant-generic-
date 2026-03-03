@@ -1651,6 +1651,35 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     const response = await this.api[method](path, data as any);
     return response.data;
   }
+
+  // -------------------------------------------------------------------------
+  // Admin endpoints
+  // -------------------------------------------------------------------------
+
+  async getAdminUsers() {
+    const response = await this.api.get('/admin/users');
+    return response.data;
+  }
+
+  async getAdminStats() {
+    const response = await this.api.get('/admin/stats');
+    return response.data;
+  }
+
+  async getAdminAiUsage() {
+    const response = await this.api.get('/admin/ai-usage');
+    return response.data;
+  }
+
+  async setAdminUserStatus(userId: string, active: boolean) {
+    const response = await this.api.patch(`/admin/users/${userId}/status`, { active });
+    return response.data;
+  }
+
+  async adminResetUserPassword(userId: string) {
+    const response = await this.api.post(`/admin/users/${userId}/reset-password`, {});
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

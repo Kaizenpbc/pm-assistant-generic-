@@ -9,6 +9,9 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { LandingPage } from './pages/LandingPage';
+import { PrelaunchLandingPage } from './pages/PrelaunchLandingPage';
+
+const isPrelaunch = window.location.hostname === 'kovarti.com' || window.location.hostname === 'www.kovarti.com';
 import { PricingPage } from './pages/PricingPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -33,6 +36,8 @@ import { ReportBuilderPage } from './pages/ReportBuilderPage';
 import { IntakeFormsPage } from './pages/IntakeFormsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { WaitlistAdminPage } from './pages/WaitlistAdminPage';
+import { AdminPage } from './pages/AdminPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -63,7 +68,7 @@ function App() {
       <ErrorBoundary>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+        <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : (isPrelaunch ? <PrelaunchLandingPage /> : <LandingPage />)} />
         <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -73,6 +78,7 @@ function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/guide" element={<UserGuidePublicPage />} />
+        <Route path="/waitlist-admin" element={<WaitlistAdminPage />} />
         <Route path="/portal/:token" element={<PortalViewPage />} />
 
         {/* Protected routes */}
@@ -95,6 +101,7 @@ function App() {
         <Route path="/intake" element={<PrivateRoute><IntakeFormsPage /></PrivateRoute>} />
         <Route path="/help" element={<PrivateRoute><UserGuidePage /></PrivateRoute>} />
         <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+        <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

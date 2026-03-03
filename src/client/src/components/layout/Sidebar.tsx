@@ -22,6 +22,7 @@ import {
   FileBarChart,
   ClipboardList,
   BarChart3,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -130,6 +131,12 @@ const navItems: NavItem[] = [
     icon: Settings,
     path: '/settings',
     roles: ['admin', 'manager'],
+  },
+  {
+    label: 'Admin',
+    icon: ShieldCheck,
+    path: '/admin',
+    roles: ['admin'],
   },
 ];
 
