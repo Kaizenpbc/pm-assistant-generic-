@@ -172,9 +172,69 @@ export const AI_TOOLS: Anthropic.Tool[] = [
       required: ['taskId'],
     },
   },
+  {
+    name: 'get_projects_due_today',
+    description: 'Get all projects whose end date is today. Use when asked "what is due today?", "what projects end today?", or similar.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'get_overdue_projects',
+    description: 'Get all projects that are past their end date and not yet completed or cancelled. Use for questions like "what projects are overdue?" or "what is behind schedule?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'get_projects_by_status',
+    description: 'Get all projects filtered by a specific status. Use when asked to list active, planning, on-hold, completed, or cancelled projects.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['planning', 'active', 'on_hold', 'completed', 'cancelled'],
+          description: 'The project status to filter by',
+        },
+      },
+      required: ['status'],
+    },
+  },
+  {
+    name: 'get_overdue_tasks',
+    description: 'Get all tasks across all projects that are past their due date and not yet completed. Use for questions like "what tasks are overdue?" or "what is past due?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'get_high_risk_projects',
+    description: 'Get projects that are at high risk: overdue, on hold, or near/over budget. Use for questions like "what projects are at risk?", "summarize high-risk projects", or "what needs attention?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'get_portfolio_summary',
+    description: 'Get a high-level summary of the entire project portfolio: counts by status, budget totals, overdue counts. Use for broad questions like "how is the portfolio doing?" or "give me an overview."',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
 ];
 
 // Tool categories for permission checking
 export const DESTRUCTIVE_TOOLS = ['delete_task'];
 export const MUTATING_TOOLS = ['create_task', 'update_task', 'delete_task', 'create_project', 'update_project', 'reschedule_task', 'cascade_reschedule', 'set_dependency'];
-export const READ_ONLY_TOOLS = ['list_projects', 'get_project_details', 'list_tasks', 'get_dependency_chain'];
+export const READ_ONLY_TOOLS = ['list_projects', 'get_project_details', 'list_tasks', 'get_dependency_chain', 'get_projects_due_today', 'get_overdue_projects', 'get_projects_by_status', 'get_overdue_tasks', 'get_high_risk_projects', 'get_portfolio_summary'];

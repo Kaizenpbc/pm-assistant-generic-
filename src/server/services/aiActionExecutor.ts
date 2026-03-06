@@ -1,6 +1,6 @@
 // C:\Users\gerog\Documents\pm-assistant-generic\src\server\services\aiActionExecutor.ts
 
-import { projectService, type CreateProjectData } from './ProjectService';
+import { projectService, type CreateProjectData, type Project } from './ProjectService';
 import { scheduleService, type CreateTaskData } from './ScheduleService';
 import { userService } from './UserService';
 import { auditLedgerService } from './AuditLedgerService';
@@ -65,6 +65,12 @@ export class AIActionExecutor {
         case 'cascade_reschedule': result = await this.cascadeReschedule(input, context); break;
         case 'set_dependency': result = await this.setDependency(input, context); break;
         case 'get_dependency_chain': result = await this.getDependencyChain(input, context); break;
+        case 'get_projects_due_today': result = await this.getProjectsDueToday(); break;
+        case 'get_overdue_projects': result = await this.getOverdueProjects(); break;
+        case 'get_projects_by_status': result = await this.getProjectsByStatus(input); break;
+        case 'get_overdue_tasks': result = await this.getOverdueTasks(); break;
+        case 'get_high_risk_projects': result = await this.getHighRiskProjects(); break;
+        case 'get_portfolio_summary': result = await this.getPortfolioSummary(); break;
         default:
           return { success: false, toolName, summary: `Unknown tool: ${toolName}`, error: `Tool '${toolName}' is not recognized` };
       }
@@ -497,6 +503,178 @@ export class AIActionExecutor {
         task: { id: task.id, name: task.name, startDate: task.startDate, endDate: task.endDate },
         upstream,
         downstream: downstreamList,
+      },
+    };
+  }
+
+  private async getProjectsDueToday(): Promise<ActionResult> {
+    const today = new Date().toISOString().slice(0, 10);
+    const projects = await projectService.findAll();
+    const due = projects.filter(
+      (p) =>
+        p.endDate &&
+        String(p.endDate).slice(0, 10) === today &&
+        p.status !== 'completed' &&
+        p.status !== 'cancelled',
+    );
+    return {
+      success: true,
+      toolName: 'get_projects_due_today',
+      summary: `${due.length} project(s) due today (${today})`,
+      data: due.map((p) => ({ id: p.id, name: p.name, status: p.status, priority: p.priority, endDate: p.endDate })),
+    };
+  }
+
+  private async getOverdueProjects(): Promise<ActionResult> {
+    const today = new Date().toISOString().slice(0, 10);
+    const projects = await projectService.findAll();
+    const overdue = projects.filter(
+      (p) =>
+        p.endDate &&
+        String(p.endDate).slice(0, 10) < today &&
+        p.status !== 'completed' &&
+        p.status !== 'cancelled',
+    );
+    return {
+      success: true,
+      toolName: 'get_overdue_projects',
+      summary: `${overdue.length} overdue project(s)`,
+      data: overdue.map((p) => ({
+        id: p.id,
+        name: p.name,
+        status: p.status,
+        priority: p.priority,
+        endDate: p.endDate,
+        daysOverdue: Math.floor((Date.now() - new Date(p.endDate!).getTime()) / (1000 * 60 * 60 * 24)),
+      })),
+    };
+  }
+
+  private async getProjectsByStatus(input: Record<string, any>): Promise<ActionResult> {
+    const { status } = input;
+    const valid = ['planning', 'active', 'on_hold', 'completed', 'cancelled'];
+    if (!valid.includes(status)) {
+      return { success: false, toolName: 'get_projects_by_status', summary: `Invalid status: ${status}`, error: `Status must be one of: ${valid.join(', ')}` };
+    }
+    const projects = await projectService.findAll();
+    const filtered = projects.filter((p) => p.status === status);
+    return {
+      success: true,
+      toolName: 'get_projects_by_status',
+      summary: `${filtered.length} project(s) with status "${status}"`,
+      data: filtered.map((p) => ({ id: p.id, name: p.name, priority: p.priority, endDate: p.endDate, budgetAllocated: p.budgetAllocated })),
+    };
+  }
+
+  private async getOverdueTasks(): Promise<ActionResult> {
+    const today = new Date().toISOString().slice(0, 10);
+    const projects = await projectService.findAll();
+    const overdueTasks: Array<Record<string, unknown>> = [];
+
+    for (const project of projects) {
+      const schedules = await scheduleService.findByProjectId(project.id);
+      for (const schedule of schedules) {
+        const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
+        for (const task of tasks) {
+          if (
+            task.dueDate &&
+            String(task.dueDate).slice(0, 10) < today &&
+            task.status !== 'completed' &&
+            task.status !== 'cancelled'
+          ) {
+            overdueTasks.push({
+              id: task.id,
+              name: task.name,
+              status: task.status,
+              dueDate: task.dueDate,
+              projectName: project.name,
+              projectId: project.id,
+              scheduleName: schedule.name,
+              assignedTo: task.assignedTo,
+              daysOverdue: Math.floor((Date.now() - new Date(String(task.dueDate)).getTime()) / (1000 * 60 * 60 * 24)),
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      success: true,
+      toolName: 'get_overdue_tasks',
+      summary: `${overdueTasks.length} overdue task(s) across all projects`,
+      data: overdueTasks,
+    };
+  }
+
+  private async getHighRiskProjects(): Promise<ActionResult> {
+    const today = new Date().toISOString().slice(0, 10);
+    const projects = await projectService.findAll();
+
+    const highRisk = projects
+      .filter((p) => p.status !== 'completed' && p.status !== 'cancelled')
+      .map((p) => {
+        const reasons: string[] = [];
+        if (p.endDate && String(p.endDate).slice(0, 10) < today) reasons.push('overdue');
+        if (p.status === 'on_hold') reasons.push('on hold');
+        if (p.budgetAllocated && p.budgetSpent > p.budgetAllocated * 0.9) reasons.push('near/over budget');
+        return { project: p, reasons };
+      })
+      .filter(({ reasons }) => reasons.length > 0);
+
+    return {
+      success: true,
+      toolName: 'get_high_risk_projects',
+      summary: `${highRisk.length} high-risk project(s)`,
+      data: highRisk.map(({ project: p, reasons }) => ({
+        id: p.id,
+        name: p.name,
+        status: p.status,
+        priority: p.priority,
+        endDate: p.endDate,
+        riskReasons: reasons,
+        budgetUtilization: p.budgetAllocated
+          ? `${Math.round((p.budgetSpent / p.budgetAllocated) * 100)}%`
+          : 'N/A',
+      })),
+    };
+  }
+
+  private async getPortfolioSummary(): Promise<ActionResult> {
+    const today = new Date().toISOString().slice(0, 10);
+    const projects = await projectService.findAll();
+
+    const byStatus: Record<string, number> = {};
+    let totalBudget = 0;
+    let totalSpent = 0;
+    let overdueCount = 0;
+    let highRiskCount = 0;
+
+    for (const p of projects) {
+      byStatus[p.status] = (byStatus[p.status] ?? 0) + 1;
+      if (p.budgetAllocated) totalBudget += p.budgetAllocated;
+      totalSpent += p.budgetSpent;
+      if (p.endDate && String(p.endDate).slice(0, 10) < today && p.status !== 'completed' && p.status !== 'cancelled') {
+        overdueCount++;
+      }
+      const isRisky =
+        (p.endDate && String(p.endDate).slice(0, 10) < today && p.status !== 'completed' && p.status !== 'cancelled') ||
+        p.status === 'on_hold' ||
+        (p.budgetAllocated && p.budgetSpent > p.budgetAllocated * 0.9);
+      if (isRisky) highRiskCount++;
+    }
+
+    return {
+      success: true,
+      toolName: 'get_portfolio_summary',
+      summary: `Portfolio: ${projects.length} projects, ${overdueCount} overdue, ${highRiskCount} high-risk`,
+      data: {
+        totalProjects: projects.length,
+        byStatus,
+        overdueProjects: overdueCount,
+        highRiskProjects: highRiskCount,
+        totalBudgetAllocated: totalBudget,
+        totalBudgetSpent: totalSpent,
+        budgetUtilization: totalBudget > 0 ? `${Math.round((totalSpent / totalBudget) * 100)}%` : 'N/A',
       },
     };
   }
