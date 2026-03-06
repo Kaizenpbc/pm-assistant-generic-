@@ -112,11 +112,6 @@ const navItems: NavItem[] = [
     path: '/intake',
   },
   {
-    label: 'Akil Chat',
-    icon: Sparkles,
-    path: '/chat',
-  },
-  {
     label: 'Ask AI',
     icon: Search,
     path: '/query',

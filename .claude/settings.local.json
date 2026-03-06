@@ -133,7 +133,20 @@
       "Bash(echo === Step 1: Protected Resource Metadata ===:*)",
       "Bash(\"/c/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\":*)",
       "Bash(net start:*)",
-      "Bash(sc query:*)"
+      "Bash(sc query:*)",
+      "Bash(echo === CREATE: trigger -> condition \\(priority=high\\) -> action \\(log\\) ===:*)",
+      "Bash(echo === CREATE: trigger -> approval -> action ===:*)",
+      "Bash(do echo:*)",
+      "Bash(git rm:*)",
+      "Bash(wc:*)",
+      "Bash(npm ls:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(do scp:*)",
+      "Bash(rsync:*)",
+      "Bash(done)",
+      "Bash(gh issue:*)",
+      "Bash(xargs:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

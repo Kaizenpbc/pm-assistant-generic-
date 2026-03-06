@@ -52,7 +52,6 @@ import { policyRoutes } from './routes/policies';
 import { ragRoutes } from './routes/rag';
 import { waitlistRoutes } from './routes/waitlist';
 import { adminRoutes } from './routes/admin';
-import { akilRoutes } from './routes/akil';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
@@ -108,5 +107,4 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(ragRoutes, { prefix: '/api/v1/rag' });
   await fastify.register(waitlistRoutes, { prefix: '/api/v1/waitlist' });
   await fastify.register(adminRoutes, { prefix: '/api/v1/admin' });
-  await fastify.register(akilRoutes, { prefix: '/api/v1/akil' });
 }
