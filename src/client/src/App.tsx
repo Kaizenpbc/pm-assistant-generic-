@@ -38,6 +38,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { WaitlistAdminPage } from './pages/WaitlistAdminPage';
 import { AdminPage } from './pages/AdminPage';
+import { ChatPage } from './pages/ChatPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -102,6 +103,7 @@ function App() {
         <Route path="/help" element={<PrivateRoute><UserGuidePage /></PrivateRoute>} />
         <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
+        <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

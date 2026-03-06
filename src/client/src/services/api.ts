@@ -260,6 +260,21 @@ class ApiService {
     return response.data;
   }
 
+  async sendAkilMessage(data: { message: string; conversationId?: string }) {
+    const response = await this.api.post('/akil/message', data);
+    return response.data as { response: string; toolsUsed: string[]; provider: string };
+  }
+
+  async clearAkilConversation() {
+    const response = await this.api.delete('/akil/conversation');
+    return response.data;
+  }
+
+  async getAkilStatus() {
+    const response = await this.api.get('/akil/status');
+    return response.data as { available: boolean; provider: string; model: string | null };
+  }
+
   async executeAlertAction(data: { toolName: string; params: Record<string, any> }) {
     const response = await this.api.post('/alerts/execute-action', data);
     return response.data;
