@@ -8,10 +8,13 @@ import {
   ChevronDown,
   CheckCircle,
   XCircle,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 import { useAIChatStore, dashboardQuickActions, projectQuickActions, type QuickAction, type ActionResult } from '../../stores/aiChatStore';
 import { AIChatContext } from './AIChatContext';
 import { QuickActions } from './QuickActions';
+import { useVoice } from '../../hooks/useVoice';
 import type { AIPanelContext } from '../../stores/uiStore';
 
 interface AIChatPanelProps {
@@ -21,11 +24,30 @@ interface AIChatPanelProps {
 export function AIChatPanel({ context }: AIChatPanelProps) {
   const { messages, isLoading, error, addMessage, clearChat, sendMessage } = useAIChatStore();
   const [input, setInput] = useState('');
+  const [ttsEnabled, setTtsEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const lastSpokenMessageIdRef = useRef<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const { isSupported: voiceSupported, isListening, startListening, stopListening, speak } = useVoice();
 
   const quickActions = context.type === 'project' ? projectQuickActions : dashboardQuickActions;
+
+  // Speak assistant replies when TTS is enabled and a new assistant message is finalized
+  useEffect(() => {
+    if (!ttsEnabled || messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (last.id === 'welcome') return; // never speak the welcome message
+    if (
+      last.role === 'assistant' &&
+      !last.isStreaming &&
+      last.content &&
+      last.id !== lastSpokenMessageIdRef.current
+    ) {
+      speak(last.content);
+      lastSpokenMessageIdRef.current = last.id;
+    }
+  }, [messages, ttsEnabled, speak]);
 
   useEffect(() => {
     scrollToBottom();
@@ -68,6 +90,19 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
       e.preventDefault();
       handleSend();
     }
+  }
+
+  function handleMicClick() {
+    if (isListening) {
+      stopListening();
+      return;
+    }
+    startListening((transcript) => {
+      const trimmed = transcript.trim();
+      if (!trimmed || isLoading) return;
+      addMessage({ role: 'user', content: trimmed });
+      sendMessage(trimmed, context);
+    });
   }
 
   return (
@@ -201,6 +236,25 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
             >
               <Trash2 className="h-4 w-4" />
             </button>
+            {voiceSupported && (
+              <button
+                type="button"
+                onClick={handleMicClick}
+                disabled={isLoading}
+                className={`rounded-md p-1.5 ${
+                  isListening
+                    ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                    : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                }`}
+                title={isListening ? 'Stop listening' : 'Speak your message'}
+              >
+                {isListening ? (
+                  <MicOff className="h-4 w-4" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
+              </button>
+            )}
           </div>
           <textarea
             value={input}
@@ -228,9 +282,20 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
             )}
           </button>
         </div>
-        <p className="mt-1.5 text-center text-[10px] text-gray-400">
-          AI can make mistakes. Verify important information.
-        </p>
+        <div className="mt-1.5 flex items-center justify-center gap-3">
+          <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-gray-500">
+            <input
+              type="checkbox"
+              checked={ttsEnabled}
+              onChange={(e) => setTtsEnabled(e.target.checked)}
+              className="h-3 w-3 rounded border-gray-300"
+            />
+            Speak replies
+          </label>
+          <span className="text-[10px] text-gray-400">
+            AI can make mistakes. Verify important information.
+          </span>
+        </div>
       </div>
     </div>
   );

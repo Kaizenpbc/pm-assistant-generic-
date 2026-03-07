@@ -423,7 +423,7 @@ The `crossProjectIntelligenceService` analyzes patterns across the entire portfo
 
 ### AI Chat
 
-The `aiChatService` provides a conversational interface where users can ask open-ended questions about their projects and receive AI-generated responses grounded in actual project data.
+The `aiChatService` provides a conversational interface where users can ask open-ended questions about their projects and receive AI-generated responses grounded in actual project data. The chat panel supports **voice input** (browser Speech Recognition): users can click the mic, speak their message, and the transcript is sent as a normal chat message. Optional **text-to-speech** (“Speak replies”) reads the assistant’s replies aloud when enabled.
 
 ### AI Reports
 

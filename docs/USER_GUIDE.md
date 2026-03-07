@@ -625,6 +625,12 @@ A persistent chat panel accessible from any page:
 - The AI is aware of the page you are on and can provide contextual answers.
 - Includes **Quick Actions** for common operations.
 
+**Voice input and spoken replies**
+
+- **Speak your message:** If your browser supports it, a **microphone** button appears next to the chat input. Click it, speak your question (e.g. “What projects are in trouble?” or “What’s my portfolio spend to date?”), and your words are sent as a normal chat message. Click the mic again to stop listening.
+- **Speak replies:** Check **Speak replies** below the input to have the AI’s answers read aloud when each reply is complete. Uncheck to turn this off. The welcome message is never spoken.
+- Voice uses the same AI chat as typing: you can say anything you could type and get the same smart, contextual answer.
+
 ### AI Task Breakdown
 
 1. Open a project schedule.
