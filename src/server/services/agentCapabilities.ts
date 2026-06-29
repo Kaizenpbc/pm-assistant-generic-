@@ -12,6 +12,7 @@ import { budgetIntelligenceAgent } from './agents/BudgetIntelligenceAgent';
 import { resourceOptimizationAgent } from './agents/ResourceOptimizationAgent';
 import { crossProjectIntelligenceAgent } from './agents/CrossProjectIntelligenceAgent';
 import { riskEscalationAgent } from './agents/RiskEscalationAgent';
+import { stakeholderCommunicationAgent } from './agents/StakeholderCommunicationAgent';
 
 // Register RAG agent capability (side-effect import)
 import './ragAgentCapability';
@@ -328,6 +329,38 @@ agentRegistry.register({
       analysis: result.analysis,
       proposal: result.proposal,
       indicators: result.indicators,
+      skipped: result.skipped,
+      skipReason: result.skipReason,
+    };
+  },
+});
+
+// --- Stakeholder Communication Agent (Agentic — report generation + proposals) ---
+agentRegistry.register({
+  id: 'stakeholder-communication-v1',
+  capability: 'stakeholder.report',
+  version: '1.0.0',
+  description: 'Generates stakeholder status reports with executive summaries, key highlights, risks, and recommended actions',
+  inputSchema: z.object({
+    projectId: z.string(),
+    userId: z.string(),
+    scanId: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    analysis: z.any().nullable(),
+    proposal: z.any().nullable(),
+    snapshot: z.any().nullable(),
+    skipped: z.boolean(),
+    skipReason: z.string().optional(),
+  }),
+  permissions: ['agent:stakeholder'],
+  timeoutMs: 180000,
+  handler: async (input) => {
+    const result = await stakeholderCommunicationAgent.run(input);
+    return {
+      analysis: result.analysis,
+      proposal: result.proposal,
+      snapshot: result.snapshot,
       skipped: result.skipped,
       skipReason: result.skipReason,
     };

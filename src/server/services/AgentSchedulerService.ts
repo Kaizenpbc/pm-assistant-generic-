@@ -14,6 +14,7 @@ import { budgetIntelligenceAgent } from './agents/BudgetIntelligenceAgent';
 import { resourceOptimizationAgent } from './agents/ResourceOptimizationAgent';
 import { crossProjectIntelligenceAgent } from './agents/CrossProjectIntelligenceAgent';
 import { riskEscalationAgent, ProjectAgentResults } from './agents/RiskEscalationAgent';
+import { stakeholderCommunicationAgent } from './agents/StakeholderCommunicationAgent';
 
 export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
@@ -79,6 +80,7 @@ export class AgentSchedulerService {
     resourceProposalsCreated: number;
     portfolioProposalsCreated: number;
     riskEscalationsCreated: number;
+    stakeholderReportsCreated: number;
   }> {
     console.log('[Agent] Starting scan...');
 
@@ -89,7 +91,7 @@ export class AgentSchedulerService {
       return {
         projectsScanned: 0, schedulesScanned: 0, delaysDetected: 0,
         proposalsGenerated: 0, notificationsSent: 0, budgetAlertsCreated: 0,
-        mcAlertsCreated: 0, meetingAlertsCreated: 0, scopeCreepAlertsCreated: 0, budgetProposalsCreated: 0, resourceProposalsCreated: 0, portfolioProposalsCreated: 0, riskEscalationsCreated: 0,
+        mcAlertsCreated: 0, meetingAlertsCreated: 0, scopeCreepAlertsCreated: 0, budgetProposalsCreated: 0, resourceProposalsCreated: 0, portfolioProposalsCreated: 0, riskEscalationsCreated: 0, stakeholderReportsCreated: 0,
       };
     }
 
@@ -107,6 +109,7 @@ export class AgentSchedulerService {
       resourceProposalsCreated: 0,
       portfolioProposalsCreated: 0,
       riskEscalationsCreated: 0,
+      stakeholderReportsCreated: 0,
     };
 
     // Track per-project agent flags for the risk escalation agent
@@ -314,6 +317,20 @@ export class AgentSchedulerService {
         await this.activityLog.log({
           projectId: project.id,
           agentName: 'resource_optimization',
+          result: 'error',
+          summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        }).catch(() => {});
+      }
+
+      // --- Agent 10: Stakeholder Communication ---
+      try {
+        const stakeholderReports = await this.runStakeholderCommunicationAgent(project);
+        stats.stakeholderReportsCreated += stakeholderReports;
+      } catch (error) {
+        console.error(`[Agent:StakeholderCommunication] Error for project ${project.id} (${project.name}):`, error);
+        await this.activityLog.log({
+          projectId: project.id,
+          agentName: 'stakeholder_communication',
           result: 'error',
           summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
         }).catch(() => {});
@@ -853,6 +870,42 @@ export class AgentSchedulerService {
       result: 'alert_created',
       summary: `Compound risks escalated — ${result.indicators?.compoundRiskProjects.length} project(s) with multiple agent flags`,
       details: result.indicators ? { totalProjects: result.indicators.totalProjects, compoundRiskProjects: result.indicators.compoundRiskProjects.length, maxFlags: result.indicators.maxFlagsOnSingleProject, flagDistribution: result.indicators.flagDistribution, proposalId: result.proposal?.id } : undefined,
+    });
+
+    return 1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent 10 — Stakeholder Communication
+  // ---------------------------------------------------------------------------
+
+  private async runStakeholderCommunicationAgent(project: Project): Promise<number> {
+    const notifyUserId = project.projectManagerId || project.createdBy;
+
+    const result = await stakeholderCommunicationAgent.run({
+      projectId: project.id,
+      userId: notifyUserId,
+    });
+
+    if (result.skipped) {
+      await this.activityLog.log({
+        projectId: project.id,
+        agentName: 'stakeholder_communication',
+        result: 'skipped',
+        summary: result.skipReason || 'No stakeholder report generated',
+        details: result.snapshot ? { totalTasks: result.snapshot.totalTasks, completionRate: result.snapshot.completionRate } : undefined,
+      });
+      return 0;
+    }
+
+    console.log(`[Agent:StakeholderCommunication] Report created for "${project.name}" — status: ${result.analysis?.overallStatus}`);
+
+    await this.activityLog.log({
+      projectId: project.id,
+      agentName: 'stakeholder_communication',
+      result: 'alert_created',
+      summary: `Stakeholder report created — ${result.analysis?.overallStatus}, ${result.analysis?.keyHighlights.length} highlight(s), ${result.analysis?.risksAndConcerns.length} risk(s)`,
+      details: result.snapshot ? { totalTasks: result.snapshot.totalTasks, completionRate: result.snapshot.completionRate, overdueTasks: result.snapshot.overdueTasks, proposalId: result.proposal?.id } : undefined,
     });
 
     return 1;

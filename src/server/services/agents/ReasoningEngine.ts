@@ -389,6 +389,56 @@ const RiskEscalationResponseSchema = z.object({
 type RiskEscalationResponse = z.infer<typeof RiskEscalationResponseSchema>;
 
 // ---------------------------------------------------------------------------
+// Stakeholder Report Types
+// ---------------------------------------------------------------------------
+
+export interface StakeholderReportInput {
+  projectId: string;
+  snapshot: {
+    projectName: string;
+    status: string;
+    completionRate: number;
+    budgetUtilization: number;
+    CPI: number | null;
+    SPI: number | null;
+    daysRemaining: number;
+    totalTasks: number;
+    completedTasks: number;
+    inProgressTasks: number;
+    overdueTasks: number;
+    upcomingMilestones: Array<{ name: string; endDate: string; daysUntil: number }>;
+    recentlyCompleted: Array<{ name: string; completedDate: string }>;
+    riskIndicators: string[];
+  };
+  scanId?: string;
+}
+
+export interface StakeholderReportResult {
+  overallStatus: 'on_track' | 'at_risk' | 'off_track' | 'critical';
+  executiveSummary: string;
+  keyHighlights: string[];
+  risksAndConcerns: string[];
+  upcomingMilestones: string[];
+  recommendedActions: string[];
+  reasoning: string;
+  modelCertainty: number;
+  confidence: ConfidenceResult;
+}
+
+const StakeholderReportResponseSchema = z.object({
+  overallStatus: z.enum(['on_track', 'at_risk', 'off_track', 'critical']),
+  executiveSummary: z.string(),
+  keyHighlights: z.array(z.string()),
+  risksAndConcerns: z.array(z.string()),
+  upcomingMilestones: z.array(z.string()),
+  recommendedActions: z.array(z.string()),
+  reasoning: z.string(),
+  modelCertainty: z.number().min(0).max(100),
+});
+
+type StakeholderReportResponse = z.infer<typeof StakeholderReportResponseSchema>;
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -1383,6 +1433,167 @@ Analyze the compound risk data above. Consider:
 5. Are the compound risks symptomatic of organizational issues (e.g., chronic under-staffing)?
 
 Respond with valid JSON matching the risk escalation schema.`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Stakeholder Report
+  // -------------------------------------------------------------------------
+
+  async generateStakeholderReport(input: StakeholderReportInput): Promise<StakeholderReportResult | null> {
+    const snapshot = input.snapshot;
+
+    // 1. Compute data quality from snapshot metrics
+    const dataQuality = confidenceCalculator.computeDataQuality({
+      totalTasks: snapshot.totalTasks,
+      tasksWithDates: snapshot.totalTasks, // assume all tasks have dates if they have end dates for milestones
+      tasksWithAssignments: Math.round(snapshot.totalTasks * 0.7), // approximate
+      tasksUpdatedRecently: snapshot.completedTasks + snapshot.inProgressTasks,
+      hasBudgetData: snapshot.budgetUtilization > 0,
+      hasResourceData: snapshot.inProgressTasks > 0,
+    });
+
+    // 2. Get historical accuracy
+    const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy(
+      'stakeholder-communication-v1',
+      input.projectId,
+    );
+
+    // 3. Check Claude availability
+    if (!claudeService.isAvailable()) {
+      console.warn('[ReasoningEngine] Claude API unavailable — skipping stakeholder report');
+      return null;
+    }
+
+    // 4. Build prompt and call Claude
+    const prompt = this.buildStakeholderPrompt(snapshot);
+    let result: CompletionResult;
+    try {
+      result = await claudeService.complete({
+        systemPrompt: this.getStakeholderSystemPrompt(),
+        userMessage: prompt,
+        responseFormat: 'json',
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+    } catch (err) {
+      console.error('[ReasoningEngine] Claude call failed for stakeholder report:', err);
+      return null;
+    }
+
+    // 5. Track cost
+    await agentCostTracker.record({
+      agentId: 'stakeholder-communication-v1',
+      projectId: input.projectId,
+      scanId: input.scanId,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.inputTokens + result.usage.outputTokens,
+      estimatedCostUsd: agentCostTracker.estimateCost(
+        result.model,
+        result.usage.inputTokens,
+        result.usage.outputTokens,
+      ),
+      model: result.model,
+      latencyMs: result.latencyMs,
+    });
+
+    // 6. Parse and validate
+    let parsed: StakeholderReportResponse;
+    try {
+      const raw = JSON.parse(result.content);
+      parsed = StakeholderReportResponseSchema.parse(raw);
+    } catch (err) {
+      console.error('[ReasoningEngine] Failed to parse stakeholder report response:', err);
+      return null;
+    }
+
+    // 7. Compute confidence
+    const confidence = confidenceCalculator.compute({
+      dataQuality,
+      historicalAccuracy,
+      modelCertainty: parsed.modelCertainty,
+    });
+
+    // 8. Map response
+    return {
+      overallStatus: parsed.overallStatus,
+      executiveSummary: parsed.executiveSummary,
+      keyHighlights: parsed.keyHighlights,
+      risksAndConcerns: parsed.risksAndConcerns,
+      upcomingMilestones: parsed.upcomingMilestones,
+      recommendedActions: parsed.recommendedActions,
+      reasoning: parsed.reasoning,
+      modelCertainty: parsed.modelCertainty,
+      confidence,
+    };
+  }
+
+  private getStakeholderSystemPrompt(): string {
+    return `You are an expert project management communication specialist. Your role is to generate clear, concise stakeholder status reports from project data.
+
+You must respond with valid JSON matching the requested schema. Be professional, factual, and actionable.
+
+Your response must include:
+1. overallStatus: on_track, at_risk, off_track, or critical
+2. executiveSummary: A 2-3 sentence executive summary suitable for senior stakeholders
+3. keyHighlights: 2-5 key accomplishments or positive developments
+4. risksAndConcerns: 0-5 risks or concerns requiring attention
+5. upcomingMilestones: Summary of upcoming deadlines and milestones
+6. recommendedActions: 1-4 recommended next steps for the project manager
+7. reasoning: Your analysis chain-of-thought (internal, not shown to stakeholders)
+8. modelCertainty: Your confidence in the assessment (0-100)
+
+Guidelines:
+- Use clear, non-technical language suitable for executive stakeholders
+- Focus on outcomes and impact, not technical details
+- Be honest about risks but frame them constructively with recommended mitigations
+- Highlight progress and wins to maintain stakeholder confidence
+- Keep the executive summary under 100 words`;
+  }
+
+  private buildStakeholderPrompt(
+    snapshot: StakeholderReportInput['snapshot'],
+  ): string {
+    const milestonesSection = snapshot.upcomingMilestones.length > 0
+      ? `\n## Upcoming Milestones (Next 14 Days)\n\n${snapshot.upcomingMilestones.map(m =>
+          `- **${m.name}**: due in ${m.daysUntil} day(s) (${m.endDate})`
+        ).join('\n')}`
+      : '\n## Upcoming Milestones\n\nNo milestones due in the next 14 days.';
+
+    const recentSection = snapshot.recentlyCompleted.length > 0
+      ? `\n## Recently Completed (Last 7 Days)\n\n${snapshot.recentlyCompleted.map(t =>
+          `- **${t.name}** (completed ${t.completedDate})`
+        ).join('\n')}`
+      : '';
+
+    const riskSection = snapshot.riskIndicators.length > 0
+      ? `\n## Risk Indicators\n\n${snapshot.riskIndicators.map(r => `- ${r}`).join('\n')}`
+      : '\n## Risk Indicators\n\nNo significant risk indicators detected.';
+
+    return `## Project Status Snapshot
+
+**Project**: ${snapshot.projectName} (${snapshot.status})
+**Completion**: ${snapshot.completionRate}% (${snapshot.completedTasks}/${snapshot.totalTasks} tasks)
+**In Progress**: ${snapshot.inProgressTasks} task(s)
+**Overdue**: ${snapshot.overdueTasks} task(s)
+**Days Remaining**: ${snapshot.daysRemaining}
+
+## Budget & Performance
+
+- **Budget Utilization**: ${snapshot.budgetUtilization}%
+${snapshot.CPI !== null ? `- **Cost Performance Index (CPI)**: ${snapshot.CPI} ${snapshot.CPI < 1 ? '(over budget)' : '(under/on budget)'}` : '- **CPI**: N/A (no budget data)'}
+${snapshot.SPI !== null ? `- **Schedule Performance Index (SPI)**: ${snapshot.SPI} ${snapshot.SPI < 1 ? '(behind schedule)' : '(on/ahead of schedule)'}` : '- **SPI**: N/A'}
+${milestonesSection}${recentSection}${riskSection}
+
+## Instructions
+
+Generate a stakeholder status report based on the data above. Consider:
+1. What is the overall project health? Is it on track, at risk, or off track?
+2. What are the key highlights stakeholders should know about?
+3. What risks need attention and how should they be mitigated?
+4. What are the recommended next steps?
+
+Respond with valid JSON matching the stakeholder report schema.`;
   }
 
   // -------------------------------------------------------------------------
