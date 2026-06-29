@@ -39,7 +39,7 @@ export async function autonomyRoutes(fastify: FastifyInstance) {
       minConfidenceThreshold?: number;
       maxRiskLevel?: RiskLevel;
     };
-    const userId = (request as any).userId;
+    const userId = (request as any).user?.userId;
 
     if (body.action === 'promote') {
       const config = await autonomyService.promote(agentId, body.projectId ?? null, userId, {
