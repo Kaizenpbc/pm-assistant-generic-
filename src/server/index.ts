@@ -4,6 +4,7 @@ import { config } from './config';
 import { registerPlugins } from './plugins';
 import { registerRoutes } from './routes';
 import { databaseService } from './database/connection';
+import { runMigrations } from './database/migrationRunner';
 import './services/agentCapabilities';
 import { agentScheduler } from './services/AgentSchedulerService';
 
@@ -23,6 +24,7 @@ async function start() {
       console.log('Database connection failed - running in offline mode');
     } else {
       console.log('Database connection successful');
+      await runMigrations();
     }
 
     console.log('Registering plugins...');
