@@ -9,7 +9,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
   // POST /forms — create form
   fastify.post('/forms', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const body = request.body as any;
       const form = await intakeFormService.createForm(body, user.userId);
       return { form };
@@ -70,7 +70,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
   // POST /forms/:id/submit — submit form
   fastify.post('/forms/:id/submit', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { id } = request.params as { id: string };
       const { values } = request.body as { values: any };
       const submission = await intakeFormService.submitForm(id, values, user.userId);
@@ -108,7 +108,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
   // POST /submissions/:id/review — review submission
   fastify.post('/submissions/:id/review', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { id } = request.params as { id: string };
       const { status, notes } = request.body as { status: string; notes?: string };
       const result = await intakeFormService.reviewSubmission(id, status, notes || '', user.userId);
@@ -122,7 +122,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
   // POST /submissions/:id/convert — convert to project
   fastify.post('/submissions/:id/convert', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { id } = request.params as { id: string };
       const project = await intakeFormService.convertToProject(id, user.userId);
       return { project };

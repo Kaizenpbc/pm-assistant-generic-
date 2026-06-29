@@ -17,14 +17,14 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
         });
       }
 
-      (request as any).user = {
+      request.user = {
         userId: keyInfo.userId,
         username: 'api-key',
         role: keyInfo.scopes.includes('admin') ? 'admin' : 'member',
       };
-      (request as any).apiKeyId = keyInfo.keyId;
-      (request as any).apiKeyScopes = keyInfo.scopes;
-      (request as any).apiKeyRateLimit = keyInfo.rateLimit;
+      request.apiKeyId = keyInfo.keyId;
+      request.apiKeyScopes = keyInfo.scopes;
+      request.apiKeyRateLimit = keyInfo.rateLimit;
       return;
     } catch (error) {
       return reply.status(401).send({
@@ -47,7 +47,7 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
 
     const decoded = jwt.verify(token, config.JWT_SECRET) as any;
 
-    (request as any).user = {
+    request.user = {
       userId: decoded.userId,
       username: decoded.username,
       role: decoded.role,

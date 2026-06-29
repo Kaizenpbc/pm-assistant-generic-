@@ -62,7 +62,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const data = createScheduleSchema.parse(request.body);
       const schedule = await scheduleService.create({
         ...data,
@@ -129,7 +129,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { scheduleId } = request.params as { scheduleId: string };
       const data = createTaskSchema.omit({ scheduleId: true }).parse(request.body);
       const task = await scheduleService.createTask({
@@ -186,7 +186,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
 
       // WebSocket broadcast
       WebSocketService.broadcast({ type: 'task_updated', payload: { task, cascadedChanges } });
-      const user = (request as any).user;
+      const user = request.user!;
       webhookService.dispatch('task.updated', { task, cascadedChanges }, user?.userId);
 
       return { task, cascadedChanges };
@@ -205,7 +205,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       const deleted = await scheduleService.deleteTask(taskId);
       if (!deleted) return reply.status(404).send({ error: 'Not found', message: 'Task not found' });
       WebSocketService.broadcast({ type: 'task_deleted', payload: { taskId } });
-      const user = (request as any).user;
+      const user = request.user!;
       webhookService.dispatch('task.deleted', { taskId }, user?.userId);
       return { message: 'Task deleted successfully' };
     } catch (error) {
@@ -285,7 +285,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a baseline snapshot', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { scheduleId } = request.params as { scheduleId: string };
       const { name } = (request.body as { name?: string }) || {};
       const baseline = await baselineService.create(
@@ -323,13 +323,13 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
     schema: { description: 'Add a comment to a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { taskId } = request.params as { taskId: string };
       const { text } = (request.body as { text: string });
       if (!text || !text.trim()) {
         return reply.status(400).send({ error: 'Comment text is required' });
       }
-      const comment = await scheduleService.addComment(taskId, text.trim(), user.userId, user.fullName || 'Project Manager');
+      const comment = await scheduleService.addComment(taskId, text.trim(), user.userId, user.username || 'Project Manager');
       return reply.status(201).send({ comment });
     } catch (error) {
       console.error('Add comment error:', error);

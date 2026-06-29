@@ -18,7 +18,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('read')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const report = await anomalyService.detectPortfolioAnomalies(userId);
       return reply.send({ data: report, aiPowered: report.aiPowered });
     } catch (err) {
@@ -32,7 +32,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const report = await anomalyService.detectProjectAnomalies(projectId, userId);
       return reply.send({ data: report, aiPowered: report.aiPowered });
     } catch (err) {
@@ -46,7 +46,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('read')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const { insight, aiPowered } = await crossProjectService.analyzePortfolio(userId);
       return reply.send({ data: insight, aiPowered });
     } catch (err) {
@@ -60,7 +60,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const { similar, aiPowered } = await crossProjectService.findSimilarProjects(projectId, userId);
       return reply.send({ data: similar, aiPowered });
     } catch (err) {
@@ -75,7 +75,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AIScenarioRequestSchema.parse(request.body);
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const { result, aiPowered } = await scenarioService.modelScenario(parsed, userId);
       return reply.send({ data: result, aiPowered });
     } catch (err) {

@@ -10,7 +10,7 @@ const statusSchema = z.object({
 });
 
 function requireAdmin(request: FastifyRequest, reply: FastifyReply) {
-  const user = (request as any).user;
+  const user = request.user!;
   if (!user || user.role !== 'admin') {
     reply.status(403).send({ error: 'Forbidden', message: 'Admin access required' });
     return false;
@@ -45,7 +45,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
   // PATCH /api/v1/admin/users/:id/status
   fastify.patch('/users/:id/status', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!requireAdmin(request, reply)) return;
-    const requestingUser = (request as any).user;
+    const requestingUser = request.user!;
     const { id } = request.params as { id: string };
 
     if (id === requestingUser.userId) {

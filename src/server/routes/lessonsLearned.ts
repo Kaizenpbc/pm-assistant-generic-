@@ -25,7 +25,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const lessons = await lessonsLearnedService.extractLessons(projectId, userId);
       return reply.send({ lessons });
     } catch (err) {
@@ -54,7 +54,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const patterns = await lessonsLearnedService.detectPatterns(userId);
       return reply.send({ patterns });
     } catch (err) {
@@ -72,7 +72,7 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
       if (!riskDescription || !projectType) {
         return reply.status(400).send({ error: 'riskDescription and projectType are required' });
       }
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const suggestions = await lessonsLearnedService.suggestMitigations(riskDescription, projectType, userId);
       return reply.send({ suggestions });
     } catch (err) {

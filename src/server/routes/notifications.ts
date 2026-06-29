@@ -12,7 +12,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('read')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { limit = '50', offset = '0' } = request.query as { limit?: string; offset?: string };
       const notifications = await notificationService.getByUserId(
         user.userId,
@@ -32,7 +32,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('read')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const count = await notificationService.getUnreadCount(user.userId);
       return { count };
     } catch (error) {
@@ -62,7 +62,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       await notificationService.markAllRead(user.userId);
       return { message: 'All notifications marked as read' };
     } catch (error) {

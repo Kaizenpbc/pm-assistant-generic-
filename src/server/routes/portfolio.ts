@@ -12,7 +12,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get portfolio overview with all projects and tasks', tags: ['portfolio'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const userId = user.userId;
       const projects = await projectService.findByUserId(userId);
 

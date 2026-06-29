@@ -8,7 +8,7 @@ export async function analyticsSummaryRoutes(fastify: FastifyInstance) {
   // GET /summary — Full portfolio analytics summary (auth required)
   fastify.get('/summary', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const summary = await analyticsSummaryService.getSummary(user.userId);
@@ -22,7 +22,7 @@ export async function analyticsSummaryRoutes(fastify: FastifyInstance) {
   // GET /summary/project/:id — Single project analytics summary (auth required)
   fastify.get('/summary/project/:id', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const { id } = request.params as { id: string };

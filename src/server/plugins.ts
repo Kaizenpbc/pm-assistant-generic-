@@ -42,12 +42,12 @@ export async function registerPlugins(fastify: FastifyInstance) {
       try {
         const keyInfo = await apiKeyService.validateKey(authHeader.slice(7));
         if (keyInfo) {
-          (request as any).apiKeyId = keyInfo.keyId;
-          (request as any).apiKeyScopes = keyInfo.scopes;
-          (request as any).apiKeyRateLimit = keyInfo.rateLimit;
+          request.apiKeyId = keyInfo.keyId;
+          request.apiKeyScopes = keyInfo.scopes;
+          request.apiKeyRateLimit = keyInfo.rateLimit;
           // Also set user if not already set (for routes without authMiddleware)
-          if (!(request as any).user) {
-            (request as any).user = {
+          if (!request.user) {
+            request.user = {
               userId: keyInfo.userId,
               username: 'api-key',
               role: keyInfo.scopes.includes('admin') ? 'admin' : 'member',
@@ -62,9 +62,9 @@ export async function registerPlugins(fastify: FastifyInstance) {
 
   // Rate limiting for API key requests — runs after API key resolution hook above
   fastify.addHook('onRequest', async (request, reply) => {
-    const apiKeyId = (request as any).apiKeyId;
+    const apiKeyId = request.apiKeyId;
     if (apiKeyId && request.url.startsWith('/api/')) {
-      const limit = (request as any).apiKeyRateLimit || 100;
+      const limit = request.apiKeyRateLimit || 100;
       const result = rateLimiter.check(apiKeyId, limit);
       reply.header('X-RateLimit-Limit', String(limit));
       reply.header('X-RateLimit-Remaining', String(result.remaining));
@@ -80,7 +80,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
 
   // Log API key usage on response
   fastify.addHook('onResponse', async (request, reply) => {
-    const apiKeyId = (request as any).apiKeyId;
+    const apiKeyId = request.apiKeyId;
     if (apiKeyId) {
       const responseTime = Math.round(reply.elapsedTime || 0);
       const ip = request.ip || '';

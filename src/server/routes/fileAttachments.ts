@@ -9,7 +9,7 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
   // POST /:entityType/:entityId — multipart upload
   fastify.post('/:entityType/:entityId', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { entityType, entityId } = request.params as { entityType: string; entityId: string };
       const file = await request.file();
       if (!file) return reply.status(400).send({ error: 'No file uploaded' });
@@ -63,7 +63,7 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
   // POST /:id/version — upload new version
   fastify.post('/:id/version', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { id } = request.params as { id: string };
       const file = await request.file();
       if (!file) return reply.status(400).send({ error: 'No file uploaded' });

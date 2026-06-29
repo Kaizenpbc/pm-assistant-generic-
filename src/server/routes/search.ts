@@ -8,7 +8,7 @@ export async function searchRoutes(fastify: FastifyInstance) {
 
   fastify.get('/', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { q } = request.query as { q: string };
       if (!q || q.length < 2) return { results: [] };
       const term = `%${q}%`;

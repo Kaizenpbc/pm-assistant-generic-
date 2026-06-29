@@ -91,7 +91,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a workflow definition', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const data = createDefinitionSchema.parse(request.body);
       const definition = await dagWorkflowService.createDefinition({
         ...data,

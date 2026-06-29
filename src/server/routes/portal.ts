@@ -61,7 +61,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
     preHandler: [authMiddleware, requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { projectId } = request.params as { projectId: string };
       const { permissions, label, expiresAt } = request.body as {
         permissions: any; label?: string; expiresAt?: string;

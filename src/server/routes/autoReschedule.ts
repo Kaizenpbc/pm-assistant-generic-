@@ -42,7 +42,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
-      const user = (request as any).user;
+      const user = request.user!;
       const userId = user.userId;
       const proposal = await autoRescheduleService.generateProposal(scheduleId, userId);
       webhookService.dispatch('proposal.created', { proposal }, userId);
@@ -88,7 +88,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
           message: 'Proposal does not exist or is not in pending status',
         });
       }
-      const user = (request as any).user;
+      const user = request.user!;
       webhookService.dispatch('proposal.accepted', { proposalId: id }, user.userId);
       return { message: 'Proposal accepted and changes applied successfully' };
     } catch (error) {

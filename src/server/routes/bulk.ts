@@ -51,7 +51,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
   // -----------------------------------------------------------------------
   fastify.post('/tasks', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const body = request.body as { scheduleId: string; tasks: BulkTaskInput[] };
@@ -116,7 +116,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
   // -----------------------------------------------------------------------
   fastify.put('/tasks', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const body = request.body as { updates: BulkUpdateInput[] };
@@ -188,7 +188,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
   // -----------------------------------------------------------------------
   fastify.put('/tasks/status', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const body = request.body as { scheduleId: string; taskIds: string[]; status: string };

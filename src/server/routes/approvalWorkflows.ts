@@ -9,7 +9,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
   // POST /workflows/:projectId — create workflow
   fastify.post('/workflows/:projectId', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { projectId } = request.params as { projectId: string };
       const body = request.body as any;
       const workflow = await approvalWorkflowService.createWorkflow(projectId, { ...body, createdBy: user.userId });
@@ -60,7 +60,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
   // POST /change-requests/:projectId — create change request
   fastify.post('/change-requests/:projectId', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { projectId } = request.params as { projectId: string };
       const body = request.body as any;
       const changeRequest = await approvalWorkflowService.createChangeRequest(projectId, { ...body, requestedBy: user.userId });
@@ -112,7 +112,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
   // POST /change-requests/:id/action — act on step
   fastify.post('/change-requests/:id/action', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { id } = request.params as { id: string };
       const { action, comment } = request.body as { action: string; comment?: string };
       const result = await approvalWorkflowService.actOnStep(id, user.userId, action, comment);

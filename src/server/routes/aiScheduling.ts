@@ -23,7 +23,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { projectDescription, projectType, projectId } = request.body as any;
-        const user = (request as any).user;
+        const user = request.user!;
 
         const { analysis, aiPowered } = await claudeBreakdown.analyzeProject(
           projectDescription,
@@ -51,7 +51,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { tasks, projectContext } = request.body as any;
-        const user = (request as any).user;
+        const user = request.user!;
 
         const { dependencies, aiPowered } = await suggestDependenciesClaude(
           tasks,
@@ -78,7 +78,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { scheduleId, optimizationGoals, constraints } = request.body as any;
-        const user = (request as any).user;
+        const user = request.user!;
 
         const { optimizedSchedule, aiPowered } = await optimizeScheduleClaude(
           scheduleId,
@@ -106,7 +106,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { projectId } = request.params as any;
-        const user = (request as any).user;
+        const user = request.user!;
 
         const { insights, aiPowered } = await generateProjectInsightsClaude(
           projectId,

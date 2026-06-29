@@ -22,7 +22,7 @@ export async function customFieldRoutes(fastify: FastifyInstance) {
   // POST /project/:projectId — create field
   fastify.post('/project/:projectId', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { projectId } = request.params as { projectId: string };
       const body = request.body as {
         entityType: string; fieldName: string; fieldLabel: string;

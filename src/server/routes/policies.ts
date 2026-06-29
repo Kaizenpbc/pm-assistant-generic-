@@ -72,7 +72,7 @@ export async function policyRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createPolicySchema.parse(request.body);
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const policy = await policyEngineService.createPolicy({
         ...data,
         createdBy: userId,

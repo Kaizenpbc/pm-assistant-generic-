@@ -9,7 +9,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
   // POST / — create integration
   fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { provider, config, projectId } = request.body as {
         provider: string; config: any; projectId?: string;
       };
@@ -24,7 +24,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
   // GET / — list integrations for user
   fastify.get('/', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const integrations = await integrationService.getByUser(user.userId);
       return { integrations };
     } catch (error) {

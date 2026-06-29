@@ -9,7 +9,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
   // POST / — log entry
   fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const body = request.body as {
         taskId: string; scheduleId: string; projectId: string;
         date: string; hours: number; description?: string; billable?: boolean;
@@ -50,7 +50,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
   // GET /timesheet — weekly timesheet for current user
   fastify.get('/timesheet', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const { weekStart } = request.query as { weekStart: string };
       if (!weekStart) return reply.status(400).send({ error: 'weekStart is required' });
 

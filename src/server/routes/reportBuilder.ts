@@ -9,7 +9,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   // POST /templates — create template
   fastify.post('/templates', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const body = request.body as any;
       const template = await reportBuilderService.createTemplate(user.userId, body);
       return { template };
@@ -22,7 +22,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   // GET /templates — list templates
   fastify.get('/templates', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const templates = await reportBuilderService.getTemplates(user.userId);
       return { templates };
     } catch (error) {

@@ -10,7 +10,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
   // POST / — Create a new API key
   fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const body = request.body as {
@@ -42,7 +42,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
   // GET / — List all API keys for the current user
   fastify.get('/', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const apiKeys = await apiKeyService.listKeys(user.userId);
@@ -56,7 +56,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
   // DELETE /:id — Revoke an API key
   fastify.delete('/:id', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const { id } = request.params as { id: string };
@@ -71,7 +71,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
   // GET /:id/usage — Get usage stats for an API key
   fastify.get('/:id/usage', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const { id } = request.params as { id: string };

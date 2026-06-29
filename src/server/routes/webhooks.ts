@@ -8,7 +8,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
   // POST / — Register webhook
   fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const { url, events } = request.body as { url: string; events: string[] };
@@ -27,7 +27,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
   // GET / — List webhooks
   fastify.get('/', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const webhooks = await webhookService.list(user.userId);
@@ -41,7 +41,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
   // PUT /:id — Update webhook
   fastify.put('/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const { id } = request.params as { id: string };
@@ -60,7 +60,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
   // DELETE /:id — Delete webhook
   fastify.delete('/:id', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const { id } = request.params as { id: string };
@@ -77,7 +77,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
   // POST /:id/test — Send test ping
   fastify.post('/:id/test', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const { id } = request.params as { id: string };

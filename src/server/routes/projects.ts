@@ -35,7 +35,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get all projects', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const projects = await projectService.findByUserId(userId);
       return { projects };
     } catch (error) {
@@ -50,7 +50,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const project = await projectService.findById(id, userId);
       if (!project) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
@@ -68,7 +68,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createProjectSchema.parse(request.body);
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const project = await projectService.create({
         ...data,
         startDate: data.startDate || undefined,
@@ -90,7 +90,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string };
       const data = updateProjectSchema.parse(request.body);
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const project = await projectService.update(id, {
         ...data,
         startDate: data.startDate || undefined,
@@ -112,7 +112,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
     schema: { description: 'Update project status', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       if (user.role !== 'admin' && user.role !== 'manager') {
         return reply.status(403).send({ error: 'Forbidden', message: 'Only admins and project managers can change project status' });
       }
@@ -136,7 +136,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const deleted = await projectService.delete(id, userId);
       if (!deleted) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });

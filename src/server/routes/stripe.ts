@@ -17,12 +17,12 @@ export async function stripeRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Missing stripe-signature header' });
       }
 
-      const rawBody = (request as any).rawBody;
+      const rawBody = request.rawBody;
       if (!rawBody) {
         return reply.status(400).send({ error: 'Missing raw body' });
       }
 
-      await stripeService.handleWebhookEvent(rawBody, signature);
+      await stripeService.handleWebhookEvent(rawBody as Buffer, signature);
       return { received: true };
     } catch (error) {
       console.error('Stripe webhook error:', error);
@@ -36,7 +36,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create Stripe checkout session', tags: ['stripe'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const user = await userService.findById(userId);
       if (!user) {
         return reply.status(404).send({ error: 'User not found' });
@@ -68,7 +68,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create Stripe billing portal session', tags: ['stripe'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const user = await userService.findById(userId);
       if (!user) {
         return reply.status(404).send({ error: 'User not found' });
@@ -91,7 +91,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get subscription status', tags: ['stripe'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).user.userId;
+      const userId = request.user!.userId;
       const status = await stripeService.getSubscriptionStatus(userId);
       return status;
     } catch (error) {

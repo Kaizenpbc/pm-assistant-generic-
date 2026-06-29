@@ -12,7 +12,7 @@ type Scope = 'read' | 'write' | 'admin';
  */
 export function requireScope(scope: Scope) {
   return async function scopeCheck(request: FastifyRequest, reply: FastifyReply) {
-    const scopes: string[] | undefined = (request as any).apiKeyScopes;
+    const scopes: string[] | undefined = request.apiKeyScopes;
 
     // JWT session user — no scope restrictions
     if (!scopes) return;

@@ -9,7 +9,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
   // POST / — create sprint
   fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
+      const user = request.user!;
       const body = request.body as { projectId: string; scheduleId: string; name: string; goal?: string; startDate: string; endDate: string; velocityCommitment?: number };
       const sprint = await sprintService.create(body.projectId, body.scheduleId, body, user.userId);
       return { sprint };
