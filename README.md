@@ -158,6 +158,18 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Cross-Project Intelligence** -- Insights across the portfolio
 - **What-If Scenario Modeling** -- Simulate schedule and resource changes
 
+### Agentic System (requires `AGENT_ENABLED=true`)
+- **Agentic Proposals** -- Agents autonomously detect issues, reason about root causes via Claude, and propose concrete recovery actions for human approval
+- **Schedule Recovery Agent** -- Detects schedule delays, reasons about root cause, proposes task date/resource changes
+- **Scope Creep Detection Agent** -- Monitors task growth, estimate increases, and change requests against baselines; alerts when scope creep is detected
+- **Confidence Scoring** -- Weighted confidence (data quality + historical accuracy + model certainty) controls what agents can propose
+- **Proposal Lifecycle** -- pending -> approved/rejected -> executed/rolled_back with full audit trail
+- **Emergency Kill Switch** -- Global, per-agent, and per-project agent shutdown via API with audit logging
+- **Rate Limiting** -- Per-agent and all-agent rate limits prevent alert fatigue (3/agent/24h, 10/all/24h)
+- **Circuit Breakers** -- Per-agent circuit breakers open after 3 consecutive failures, auto-retry after cooldown
+- **Degradation Handling** -- Graceful scope reduction when Claude API or database is unhealthy
+- **Feedback Loop** -- Users rate proposal outcomes; feedback improves future confidence scores
+
 ### Reporting & Analytics
 - Custom report builder with saved templates
 - Portfolio-level analytics and executive dashboards
@@ -254,8 +266,9 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 pm-assistant-generic/
 ├── src/
 │   ├── server/                  # Fastify backend
-│   │   ├── routes/              # 50+ route modules
+│   │   ├── routes/              # 50+ route modules (8 domain subdirectories)
 │   │   ├── services/            # Business logic & AI services
+│   │   │   └── agents/          # Agentic pipeline (reasoning, proposals, execution)
 │   │   ├── middleware/          # Auth, rate limiting, policies
 │   │   ├── database/            # Migrations, seeds, connection pool
 │   │   └── config.ts            # Environment-based configuration
@@ -412,7 +425,8 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Lessons Learned | `/api/v1/lessons-learned` | Retrospective knowledge base |
 | Learning | `/api/v1/learning` | AI learning feedback |
 | Exports | `/api/v1/exports` | Data export |
-| Agent | `/api/v1/agent` | Agent scheduler |
+| Agent | `/api/v1/agent` | Agent scheduler, health, and kill switch |
+| Agent Proposals | `/api/v1/agent/proposals` | Proposal lifecycle (list, approve, reject, execute, feedback) |
 | Agent Log | `/api/v1/agent-log` | Agent activity log |
 | RAG | `/api/v1/rag` | Semantic search |
 | WebSocket | `/api/v1/ws` | Real-time updates |

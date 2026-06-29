@@ -206,6 +206,89 @@ The following custom indexes exist beyond the default primary/foreign key indexe
 
 ---
 
+## 10b. Agent System Administration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `AGENT_ENABLED` | Enable/disable agent scheduler | `false` |
+| `AGENT_CRON_SCHEDULE` | Cron expression for daily scan | `0 2 * * *` (2 AM) |
+| `AGENT_OVERDUE_SCAN_MINUTES` | Overdue task scan interval | `15` |
+| `AGENT_DELAY_THRESHOLD_DAYS` | Minimum delay days to flag | `3` |
+| `AGENT_BUDGET_CPI_THRESHOLD` | CPI below which budget alert fires | `0.9` |
+| `AGENT_BUDGET_OVERRUN_THRESHOLD` | AI overrun probability threshold | `60` |
+| `AGENT_MC_CONFIDENCE_LEVEL` | Monte Carlo confidence level to check | `80` |
+
+### Kill Switch (Emergency Stop)
+
+The kill switch provides runtime control over agent execution without restarting the server. State is in-memory and resets to "enabled" on restart (safe default).
+
+**API Endpoints:**
+
+```bash
+# View current state
+GET /api/v1/agent/kill-switch
+
+# Disable all agents globally (admin scope required)
+POST /api/v1/agent/kill-switch  {"action": "disable"}
+
+# Re-enable all agents
+POST /api/v1/agent/kill-switch  {"action": "enable"}
+
+# Disable a specific agent
+PUT /api/v1/agent/kill-switch/agent/:agentId  {"disabled": true}
+
+# Disable agents for a specific project
+PUT /api/v1/agent/kill-switch/project/:projectId  {"disabled": true}
+```
+
+All kill switch changes are recorded in the audit ledger with the admin's user ID.
+
+### Monitoring Agent Health
+
+**`GET /api/v1/agent/health`** returns:
+- `status` — `healthy` or `degraded`
+- `claudeApiStatus` — `available` or `unavailable`
+- `databaseStatus` — `{ healthy, latencyMs }`
+- `circuitBreakers` — per-agent breaker state and failure count
+- `killSwitch` — global enabled state, disabled agents list, disabled projects list
+- `recommendedScanScope` — `full`, `reduced`, `critical_only`, or `none`
+- `costs.today` — tokens used, estimated USD, invocation count
+- `pendingProposals` — count of proposals awaiting review
+
+**`GET /api/v1/agent/costs`** returns cost breakdown by agent with optional `?since=` and `?until=` date filters.
+
+### Circuit Breakers
+
+Each agent has an independent circuit breaker:
+- **Closed** (normal): agent runs normally
+- **Open** (after 3 consecutive failures): agent is blocked, retries after 1 hour
+- **Half-open** (retry attempt): one execution allowed; success closes breaker, failure re-opens with 24h cooldown
+
+Circuit breakers reset automatically — no manual intervention needed unless the root cause persists.
+
+### Rate Limiting
+
+Proposal creation is rate-limited to prevent alert fatigue:
+- 3 proposals per agent per project per 24 hours
+- 10 proposals across all agents per project per 24 hours
+- 10 proposals per agent per project per 7 days
+- 30 proposals across all agents per project per 7 days
+
+### Registered Agents
+
+| Agent ID | What It Does |
+|----------|-------------|
+| `auto-reschedule-v1` | Detects schedule delays, generates reschedule proposals |
+| `budget-forecast-v1` | Generates EVM budget forecasts |
+| `monte-carlo-v1` | Runs Monte Carlo simulations for schedule risk |
+| `meeting-followup-v1` | Identifies overdue meeting action items |
+| `schedule-recovery-v1` | Claude-powered root cause analysis and recovery proposals |
+| `scope-creep-detection-v1` | Detects scope creep via task growth, estimate increases, change requests |
+
+---
+
 ## 11. Integrations
 
 ### Jira
@@ -329,6 +412,7 @@ The following custom indexes exist beyond the default primary/foreign key indexe
 
 ### Health Monitoring
 - **`GET /health`** -- returns overall status (`OK` or `DEGRADED`), database connectivity with response time, memory usage (RSS, heap used, heap total), uptime, and environment. Returns HTTP 200 when healthy, 503 when degraded.
+- **`GET /api/v1/agent/health`** -- returns agent system health: Claude API status, database latency, circuit breaker states, kill switch state, recommended scan scope, daily cost tracking, and pending proposal count.
 - Memory status shows `WARN` if heap usage exceeds 90% of heap total.
 - Monitor API latency, error rates, and database connection pool usage.
 - Set up alerts for repeated failures or degraded performance.
@@ -342,6 +426,9 @@ The following custom indexes exist beyond the default primary/foreign key indexe
 | Users cannot log in          | Check credentials, token expiry, cookie domain, HTTPS config. |
 | API returns 503              | Verify Fastify is running; check Passenger logs.              |
 | AI features not working      | Confirm `AI_ENABLED=true` and valid `ANTHROPIC_API_KEY`.      |
+| Agents not running           | Check `AGENT_ENABLED=true`; check kill switch state via `GET /api/v1/agent/kill-switch`. |
+| Kill switch left on          | Re-enable via `POST /api/v1/agent/kill-switch {"action":"enable"}`. |
+| Agent circuit breaker open   | Check error rate at `GET /api/v1/agent/health`; breaker auto-retries after 1h/24h. |
 | Stripe webhooks failing      | Verify `STRIPE_WEBHOOK_SECRET`; check Stripe event logs.      |
 | Integrations not syncing     | Check API tokens/credentials; review sync logs.               |
 | Audit integrity check fails  | Investigate potential data tampering; restore from backup.     |

@@ -394,7 +394,107 @@ SELECT * FROM _migrations WHERE name LIKE '015%';
 
 ---
 
-## 7. Known Pre-existing Type Errors (Client)
+## 7. Testing the Agentic Pipeline
+
+### Running Agent Unit Tests
+
+```bash
+npx vitest run src/server/__tests__/services/agents/
+```
+
+This runs 9 test files with 72+ tests covering:
+
+| Test File | What It Tests |
+|-----------|--------------|
+| `ConflictResolver.test.ts` | Staleness detection, entity conflict checks, stale proposal sweep |
+| `ProposalRateLimiter.test.ts` | 4-tier rate limiting (agent/all-agents x 24h/7d) |
+| `DegradationHandler.test.ts` | Circuit breaker states, DB health check, scan scope recommendation |
+| `KillSwitchService.test.ts` | Global/agent/project kill switches, audit logging |
+| `AgentFeedbackService.test.ts` | Feedback submission, health snapshots, aggregate stats |
+| `ScopeCreepAgent.test.ts` | Guard chain (budget/kill switch/rate limit/breaker), indicator detection |
+| `ActionProposalService.test.ts` | Proposal creation via transaction, lifecycle |
+| `ActionExecutor.test.ts` | Sequential execution, rollback on failure |
+| `ConfidenceCalculator.test.ts` | Score computation, data quality scoring, weight verification |
+
+### Testing Agent Health Endpoint
+
+```bash
+# Get agent system health (requires auth token)
+curl -s http://pm.kpbc.ca/api/v1/agent/health \
+  -H "Cookie: access_token=$TOKEN" | jq .
+```
+
+Expected fields: `status`, `claudeApiStatus`, `databaseStatus`, `circuitBreakers`, `killSwitch`, `recommendedScanScope`, `costs`, `pendingProposals`.
+
+### Testing Kill Switch API
+
+```bash
+# Get current kill switch state
+curl -s http://pm.kpbc.ca/api/v1/agent/kill-switch \
+  -H "Cookie: access_token=$TOKEN" | jq .
+
+# Disable all agents globally (admin only)
+curl -X POST http://pm.kpbc.ca/api/v1/agent/kill-switch \
+  -H "Cookie: access_token=$TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "disable"}' | jq .
+
+# Re-enable all agents
+curl -X POST http://pm.kpbc.ca/api/v1/agent/kill-switch \
+  -H "Cookie: access_token=$TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "enable"}' | jq .
+
+# Disable a specific agent
+curl -X PUT http://pm.kpbc.ca/api/v1/agent/kill-switch/agent/scope-creep-detection-v1 \
+  -H "Cookie: access_token=$TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"disabled": true}' | jq .
+```
+
+### Testing Agent Proposals
+
+```bash
+# List proposals
+curl -s "http://pm.kpbc.ca/api/v1/agent/proposals?status=pending" \
+  -H "Cookie: access_token=$TOKEN" | jq .
+
+# Approve a proposal
+curl -X POST http://pm.kpbc.ca/api/v1/agent/proposals/{id}/approve \
+  -H "Cookie: access_token=$TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"comment": "Looks good"}' | jq .
+
+# Submit feedback on executed proposal
+curl -X POST http://pm.kpbc.ca/api/v1/agent/proposals/{id}/feedback \
+  -H "Cookie: access_token=$TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"outcome": "effective", "comment": "Fixed the delay"}' | jq .
+```
+
+### Database Verification (Agent Tables)
+
+```sql
+-- Check agent tables exist
+SHOW TABLES LIKE 'agent_%';
+
+-- Check pending proposals
+SELECT id, agent_id, status, confidence_score, risk_level, created_at
+FROM agent_proposals WHERE status = 'pending' ORDER BY created_at DESC LIMIT 10;
+
+-- Check agent cost usage
+SELECT agent_id, SUM(total_tokens) AS tokens, SUM(estimated_cost_usd) AS cost
+FROM agent_cost_ledger WHERE DATE(created_at) = CURDATE() GROUP BY agent_id;
+
+-- Check feedback stats
+SELECT p.agent_id, f.outcome, COUNT(*) AS cnt
+FROM agent_feedback f JOIN agent_proposals p ON p.id = f.proposal_id
+GROUP BY p.agent_id, f.outcome;
+```
+
+---
+
+## 8. Known Pre-existing Type Errors (Client)
 
 The client TypeScript compilation (`tsc` in `src/client`) reports several known errors that do not block the Vite build. These are expected and do not need to be fixed for testing.
 
@@ -444,8 +544,17 @@ The file `src/server/services/aiContextBuilder.ts` has 3 pre-existing type error
 - [ ] POST `/api/v1/workflows/executions/:id/resume` resumes waiting execution
 - [ ] DELETE `/api/v1/workflows/:id` removes test data
 
+### Agentic Pipeline
+
+- [ ] `npx vitest run src/server/__tests__/services/agents/` passes all tests
+- [ ] GET `/api/v1/agent/health` returns status with `databaseStatus`, `circuitBreakers`, `killSwitch`
+- [ ] GET `/api/v1/agent/kill-switch` returns current state
+- [ ] POST `/api/v1/agent/kill-switch` with `{"action":"disable"}` blocks agent scans
+- [ ] POST `/api/v1/agent/kill-switch` with `{"action":"enable"}` re-enables agents
+
 ### Database
 
 - [ ] SSH connection to server works
 - [ ] `wf_definitions`, `wf_nodes`, `wf_edges`, `wf_executions`, `wf_execution_nodes` tables exist
+- [ ] `agent_proposals`, `agent_proposal_actions`, `agent_feedback`, `agent_cost_ledger`, `agent_confidence_log` tables exist
 - [ ] Execution records match API responses

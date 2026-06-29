@@ -4,6 +4,7 @@
 **LLM Provider:** Claude API (Anthropic SDK)
 **Architecture:** Fastify + TypeScript backend, React frontend, MySQL database
 **AI Kill Switch:** `AI_ENABLED` environment variable disables all AI features globally
+**Agent Kill Switch:** `KillSwitchService` provides runtime API-controlled agent shutdown (global, per-agent, per-project) with audit trail — distinct from the env-var kill switch
 
 ---
 
@@ -19,6 +20,17 @@ Key architectural components:
 - **AI Usage Logger** (`aiUsageLogger.ts`) -- Tracks every AI request: tokens, cost, latency, success/failure
 - **Prompt Templates** -- Versioned `PromptTemplate` class with variable interpolation; all prompts are version-controlled, not hardcoded strings
 - **Agent Scheduler** (`AgentSchedulerService.ts`) -- Cron-based background AI analysis across all active projects
+- **Agentic Pipeline** (`services/agents/`) -- Autonomous reasoning, proposal creation, and controlled execution:
+  - **ReasoningEngine** -- Assembles context, calls Claude with structured prompts, parses recovery/scope analysis plans
+  - **ActionProposalService** -- Creates and manages proposals with lifecycle tracking (pending -> approved -> executed)
+  - **ActionExecutor** -- Executes approved proposals step-by-step with rollback on failure
+  - **ConfidenceCalculator** -- Weighted confidence scoring (data quality 40%, historical accuracy 30%, model certainty 30%)
+  - **AgentCostTracker** -- Token usage tracking, budget enforcement, cost aggregation
+  - **ConflictResolver** -- Detects stale proposals, prevents dual-agent conflicts, human-edit-wins rule
+  - **ProposalRateLimiter** -- Per-agent/project rate limits (3/agent/24h, 10/all/24h, 10/agent/7d, 30/all/7d)
+  - **DegradationHandler** -- Circuit breakers per agent, DB health monitoring, scan scope recommendation
+  - **KillSwitchService** -- Global/per-agent/per-project emergency shutdown with audit logging
+  - **AgentFeedbackService** -- Records proposal outcomes, feeds into historical accuracy scoring
 - **MCP Server** (`mcp-server/`) -- Model Context Protocol server exposing 15+ tool categories to Claude Desktop and Claude Web
 
 ---
@@ -415,14 +427,20 @@ Tracks all AI API usage for cost monitoring:
 Cron-based background AI analysis:
 
 - **Daily scan** on configurable schedule (`AGENT_CRON_SCHEDULE`, default: 2 AM)
-  - Scans all active projects for: delays (AutoRescheduleService), EVM forecasts, Monte Carlo simulations
+  - Kill switch guard at top of scan — aborts if globally disabled
+  - Scans all active projects through 5 agents:
+    1. **Auto-Reschedule** — delay detection and proposal generation
+    2. **Budget Burn-Rate** — CPI/SPI threshold monitoring
+    3. **Monte Carlo Confidence** — schedule risk assessment
+    4. **Meeting Follow-Up** — overdue action items and unapplied updates
+    5. **Scope Creep Detection** — task growth, estimate increases, change requests vs baselines
   - Generates notifications and webhook events for detected issues
   - Logs all agent activity via `AgentActivityLogService`
 - **Overdue-task scanner** runs every N minutes (`AGENT_OVERDUE_SCAN_MINUTES`, default: 15)
   - Detects tasks where `end_date < NOW()` and status is not completed/cancelled
   - Fires `date_passed` workflow triggers via `dagWorkflowService.evaluateTaskChange()`
   - Deduplicates to avoid re-triggering for the same task
-- Controlled by `AGENT_ENABLED` environment variable
+- Controlled by `AGENT_ENABLED` environment variable and `KillSwitchService` runtime API
 
 ### Event-Driven Workflow Integration
 
@@ -457,6 +475,65 @@ Model Context Protocol server for Claude Desktop and Claude Web integration:
 
 ---
 
+## Agentic Pipeline (`src/server/services/agents/`)
+
+PM Assistant's agentic system evolves from reactive alerts to autonomous reasoning with human oversight. Agents follow the cycle: **perceive -> reason -> plan -> propose -> approve -> execute -> feedback**.
+
+### Registered Agents
+
+| Agent ID | Capability | Description | Risk Level | Default Policy |
+|----------|-----------|-------------|------------|----------------|
+| `schedule-recovery-v1` | `schedule.recover` | Detects schedule delays, reasons about root cause via Claude, proposes task date/resource changes | High | require_approval |
+| `scope-creep-detection-v1` | `scope.detect` | Monitors task growth, estimate increases, and change requests against baselines | Medium | require_approval |
+
+### Schedule Recovery Agent (`ScheduleRecoveryAgent.ts`)
+
+- **Trigger:** Delay detected by auto-reschedule scan (>= 2 days or on critical path)
+- **Reasoning:** Claude analyzes root cause, impact on downstream tasks, recovery options
+- **Output:** Ranked recovery options with concrete `update_task_dates`, `reassign_resource`, `send_notification` actions
+- **Guards:** Cost budget -> rate limit -> circuit breaker -> confidence threshold
+
+### Scope Creep Detection Agent (`ScopeCreepAgent.ts`)
+
+- **Trigger:** Cron scan detects significant indicators (task count delta >= 3, estimate increase >= 5 days, or change requests >= 2)
+- **Perception:** Compares current task count/estimates against earliest baseline snapshot; counts open change requests
+- **Reasoning:** Claude analyzes whether growth is justified or represents scope creep, identifies root causes
+- **Output:** `create_change_request` and `send_notification` actions
+- **Guards:** Cost budget -> kill switch -> rate limit -> circuit breaker -> confidence threshold
+
+### Proposal Lifecycle
+
+```
+Agent detects issue
+  -> ReasoningEngine calls Claude with structured prompt
+  -> ConfidenceCalculator scores result (data quality + historical accuracy + model certainty)
+  -> If confidence >= 40%: ActionProposalService creates proposal (status: pending)
+  -> User reviews proposal (approve / reject)
+  -> If approved: ActionExecutor runs actions in order with rollback on failure
+  -> User submits feedback (effective / ineffective / made worse)
+  -> Feedback feeds into historical accuracy for future confidence scores
+```
+
+### Governance Controls
+
+- **KillSwitchService:** In-memory global/agent/project kill switches. All changes audit-logged. Resets to enabled on restart (safe default). API: `POST /api/v1/agent/kill-switch`, `PUT /api/v1/agent/kill-switch/agent/:agentId`, `PUT /api/v1/agent/kill-switch/project/:projectId`
+- **ProposalRateLimiter:** 4-tier rate limiting prevents alert fatigue. Queries `agent_proposals` table (no new tables needed).
+- **DegradationHandler:** Circuit breakers open after 3 consecutive failures, retry after 1h then 24h. DB latency check via `SELECT 1`. Recommended scan scope: full/reduced/critical_only/none based on infrastructure health.
+- **ConflictResolver:** Expires pending proposals when humans edit targeted entities. Prevents two agents from targeting the same entity in one scan. Batch staleness sweep.
+
+### Agent Health Endpoint
+
+`GET /api/v1/agent/health` returns combined status:
+- Claude API availability
+- Database health and latency
+- Circuit breaker states per agent
+- Kill switch state (global + disabled agents/projects)
+- Recommended scan scope
+- Daily cost tracking
+- Pending proposal count
+
+---
+
 ## Non-Functional Requirements
 
 - **Graceful degradation:** All AI features check `claudeService.isAvailable()` before calling the API. When unavailable, fallback logic provides non-AI responses or the feature is skipped.
@@ -465,4 +542,4 @@ Model Context Protocol server for Claude Desktop and Claude Web integration:
 - **Audit trail:** Every AI interaction is logged (who asked, what context, what was returned). Mutating actions go through the policy engine and audit ledger.
 - **Schema validation:** All AI outputs are validated against Zod schemas before being returned to clients, preventing malformed or hallucinated data from reaching the UI.
 - **Prompt versioning:** All prompts use the `PromptTemplate` class with semantic version numbers.
-- **Feature flags:** AI is globally controlled by `AI_ENABLED`; the agent scheduler by `AGENT_ENABLED`. Individual features degrade independently.
+- **Feature flags:** AI is globally controlled by `AI_ENABLED`; the agent scheduler by `AGENT_ENABLED`; runtime agent control via `KillSwitchService` API (global/per-agent/per-project). Individual features degrade independently.
