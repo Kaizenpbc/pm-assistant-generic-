@@ -472,6 +472,23 @@ curl -X POST http://pm.kpbc.ca/api/v1/agent/proposals/{id}/feedback \
   -d '{"outcome": "effective", "comment": "Fixed the delay"}' | jq .
 ```
 
+### Testing the Agent Proposals UI
+
+1. Log in as a manager or admin.
+2. Click **Agent** in the sidebar -- the Agent Proposals page should load.
+3. Verify the health banner shows agent system status (healthy/degraded).
+4. Use the status tabs to filter proposals by status.
+5. Click a proposal row to open the detail modal.
+6. In the modal, verify:
+   - Summary, reasoning, and confidence breakdown are displayed.
+   - Proposed actions are listed with type, target, and values.
+   - Pending proposals show Approve/Reject buttons with an optional comment field.
+   - Approved proposals show an Execute button (admin only).
+   - Executed proposals show Rollback (admin) and Feedback form.
+7. Test approve/reject on a pending proposal -- the table should update after the action.
+8. Verify non-admin users cannot see Execute/Rollback buttons.
+9. Verify member-role users do not see the Agent nav item in the sidebar.
+
 ### Database Verification (Agent Tables)
 
 ```sql

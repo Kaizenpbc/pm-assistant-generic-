@@ -169,6 +169,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Circuit Breakers** -- Per-agent circuit breakers open after 3 consecutive failures, auto-retry after cooldown
 - **Degradation Handling** -- Graceful scope reduction when Claude API or database is unhealthy
 - **Feedback Loop** -- Users rate proposal outcomes; feedback improves future confidence scores
+- **Agent Proposals UI** -- Dedicated page (`/agent`) for managers/admins to review, approve/reject, execute, rollback, and rate agent proposals with full reasoning and action detail
 
 ### Reporting & Analytics
 - Custom report builder with saved templates

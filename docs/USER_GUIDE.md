@@ -26,7 +26,8 @@ A comprehensive guide for using PM Assistant, an AI-powered enterprise project m
 18. [Portfolio](#18-portfolio)
 19. [Intelligence and Scenarios](#19-intelligence-and-scenarios)
 20. [Lessons Learned](#20-lessons-learned)
-21. [Settings and Account](#21-settings-and-account)
+21. [Agent Proposals](#21-agent-proposals)
+22. [Settings and Account](#22-settings-and-account)
 
 ---
 
@@ -821,7 +822,72 @@ The AI analyzes your lessons learned database and identifies recurring patterns:
 
 ---
 
-## 21. Settings and Account
+## 21. Agent Proposals
+
+AI agents continuously monitor your projects for schedule delays, scope creep, and other issues. When an agent detects something actionable, it creates a **proposal** -- a recommended set of changes for human review.
+
+Access the Agent Proposals page from the **Agent** link in the sidebar (visible to managers and admins).
+
+### Viewing Proposals
+
+The proposals page shows:
+
+- **Health banner** -- Current agent system status, scan scope, daily cost, and pending proposal count.
+- **Status tabs** -- Filter by All, Pending, Approved, Executed, Rejected, or Expired.
+- **Proposals table** -- Each row shows the agent name, title, status badge, risk level, confidence score, and age.
+
+Click any proposal row to open the detail modal.
+
+### Proposal Detail
+
+The detail modal displays:
+
+- **Summary** -- A brief description of what the agent found and recommends.
+- **Reasoning** -- The agent's full chain-of-thought explaining why it made this recommendation.
+- **Confidence breakdown** -- Scores for data quality, historical accuracy, and model certainty.
+- **Proposed actions** -- The specific changes the agent wants to make (e.g., move task dates, create change requests, send notifications). Each action shows its type, target entity, and proposed values.
+
+### Reviewing Proposals
+
+For **pending** proposals:
+
+1. Read the reasoning and proposed actions carefully.
+2. Optionally add a comment.
+3. Click **Approve** to advance the proposal, or **Reject** to dismiss it.
+
+### Executing Proposals
+
+After approval, an admin can click **Execute Proposal** to apply all proposed actions to the project. Each action is executed in order with rollback support if any step fails.
+
+### Rollback
+
+If an executed proposal caused unintended effects, admins can click **Rollback** to reverse all changes to their original state.
+
+### Providing Feedback
+
+After a proposal has been executed, you can submit feedback on whether it was effective. Choose from:
+
+- **Effective** -- The changes solved the problem.
+- **Partially effective** -- Helped but didn't fully resolve the issue.
+- **Ineffective** -- No meaningful impact.
+- **Made worse** -- The changes had a negative effect.
+
+Feedback improves future agent confidence scoring and proposal quality.
+
+### Risk Levels
+
+Each proposal has a risk level that determines its approval requirements:
+
+| Risk Level | Meaning | Examples |
+|------------|---------|----------|
+| **Low** | Read-only analysis, notifications | Pattern detection, risk aggregation |
+| **Medium** | Modifying task dates, updating progress | Moving a due date, adjusting estimates |
+| **High** | Resource changes, dependency modifications | Reassigning team members, adding dependencies |
+| **Critical** | Budget or scope changes | Reallocating budget, removing milestones |
+
+---
+
+## 22. Settings and Account
 
 ### Account and Billing
 
