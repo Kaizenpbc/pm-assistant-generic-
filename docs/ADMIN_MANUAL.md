@@ -286,6 +286,7 @@ Proposal creation is rate-limited to prevent alert fatigue:
 | `meeting-followup-v1` | Identifies overdue meeting action items |
 | `schedule-recovery-v1` | Claude-powered root cause analysis and recovery proposals |
 | `scope-creep-detection-v1` | Detects scope creep via task growth, estimate increases, change requests |
+| `budget-intelligence-v1` | Analyzes EVM metrics, reasons about cost deviations, proposes budget recovery actions |
 
 ---
 

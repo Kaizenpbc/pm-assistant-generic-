@@ -162,6 +162,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Agentic Proposals** -- Agents autonomously detect issues, reason about root causes via Claude, and propose concrete recovery actions for human approval
 - **Schedule Recovery Agent** -- Detects schedule delays, reasons about root cause, proposes task date/resource changes
 - **Scope Creep Detection Agent** -- Monitors task growth, estimate increases, and change requests against baselines; alerts when scope creep is detected
+- **Budget Intelligence Agent** -- Analyzes EVM metrics (CPI, SPI, VAC, EAC), identifies root causes of cost deviations via Claude reasoning, proposes corrective actions
 - **Confidence Scoring** -- Weighted confidence (data quality + historical accuracy + model certainty) controls what agents can propose
 - **Proposal Lifecycle** -- pending -> approved/rejected -> executed/rolled_back with full audit trail
 - **Emergency Kill Switch** -- Global, per-agent, and per-project agent shutdown via API with audit logging

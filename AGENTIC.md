@@ -811,6 +811,7 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | **AgentFeedbackService** | `src/server/services/agents/AgentFeedbackService.ts` | Production-ready |
 | **ScheduleRecoveryAgent** | `src/server/services/agents/ScheduleRecoveryAgent.ts` | Production-ready |
 | **ScopeCreepAgent** | `src/server/services/agents/ScopeCreepAgent.ts` | Production-ready |
+| **BudgetIntelligenceAgent** | `src/server/services/agents/BudgetIntelligenceAgent.ts` | Production-ready |
 | Agent trigger route | `src/server/routes/agent/agent.ts` | Production-ready |
 | Policy routes | `src/server/routes/agent/policies.ts` | Production-ready |
 | Agent activity log route | `src/server/routes/agent/agentActivityLog.ts` | Production-ready |
