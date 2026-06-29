@@ -144,6 +144,64 @@ const ScopeAnalysisResponseSchema = z.object({
 type ScopeAnalysisResponse = z.infer<typeof ScopeAnalysisResponseSchema>;
 
 // ---------------------------------------------------------------------------
+// Budget Analysis Types
+// ---------------------------------------------------------------------------
+
+export interface BudgetAnalysisInput {
+  projectId: string;
+  indicators: {
+    BAC: number;
+    EV: number;
+    AC: number;
+    PV: number;
+    CPI: number;
+    SPI: number;
+    EAC: number;
+    VAC: number;
+    TCPI: number;
+    overrunProbability?: number;
+    topCostTasks: Array<{ taskId: string; taskName: string; actualCost: number; budgetedCost: number; variance: number }>;
+  };
+  scanId?: string;
+}
+
+export interface BudgetAnalysisResult {
+  hasBudgetIssue: boolean;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  reasoning: string;
+  rootCauses: string[];
+  recommendations: string[];
+  modelCertainty: number;
+  confidence: ConfidenceResult;
+  suggestedActions: Array<{
+    actionType: ActionType;
+    targetEntityType: string;
+    targetEntityId: string;
+    oldValue: Record<string, unknown>;
+    newValue: Record<string, unknown>;
+    reasoning: string;
+  }>;
+}
+
+const BudgetAnalysisResponseSchema = z.object({
+  hasBudgetIssue: z.boolean(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  reasoning: z.string(),
+  rootCauses: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  modelCertainty: z.number().min(0).max(100),
+  suggestedActions: z.array(z.object({
+    actionType: z.enum(['create_change_request', 'send_notification', 'update_budget']),
+    targetEntityType: z.string(),
+    targetEntityId: z.string(),
+    description: z.string(),
+    reasoning: z.string(),
+  })),
+});
+
+type BudgetAnalysisResponse = z.infer<typeof BudgetAnalysisResponseSchema>;
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -422,6 +480,192 @@ Analyze the scope indicators above. Consider:
 4. What is the impact on schedule and budget if this trend continues?
 
 Respond with valid JSON matching the scope analysis schema.`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Budget Analysis
+  // -------------------------------------------------------------------------
+
+  async generateBudgetAnalysis(input: BudgetAnalysisInput): Promise<BudgetAnalysisResult | null> {
+    // 1. Get project context
+    const project = await projectService.findById(input.projectId);
+    if (!project) return null;
+
+    const schedules = await scheduleService.findByProjectId(input.projectId);
+    let allTasks: Task[] = [];
+    for (const s of schedules) {
+      const tasks = await scheduleService.findTasksByScheduleId(s.id);
+      allTasks = allTasks.concat(tasks);
+    }
+
+    // 2. Compute data quality
+    const now = Date.now();
+    const dataQuality = confidenceCalculator.computeDataQuality({
+      totalTasks: allTasks.length,
+      tasksWithDates: allTasks.filter(t => t.startDate || t.endDate).length,
+      tasksWithAssignments: allTasks.filter(t => t.assignedTo).length,
+      tasksUpdatedRecently: allTasks.filter(t => {
+        const updated = new Date(t.updatedAt ?? t.createdAt).getTime();
+        return (now - updated) < FOURTEEN_DAYS_MS;
+      }).length,
+      hasBudgetData: !!project.budgetAllocated,
+      hasResourceData: false,
+    });
+
+    // 3. Get historical accuracy
+    const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy(
+      'budget-intelligence-v1',
+      input.projectId,
+    );
+
+    // 4. Check Claude availability
+    if (!claudeService.isAvailable()) {
+      console.warn('[ReasoningEngine] Claude API unavailable — skipping budget analysis');
+      return null;
+    }
+
+    // 5. Build prompt and call Claude
+    const prompt = this.buildBudgetPrompt(project, input.indicators, allTasks);
+    let result: CompletionResult;
+    try {
+      result = await claudeService.complete({
+        systemPrompt: this.getBudgetSystemPrompt(),
+        userMessage: prompt,
+        responseFormat: 'json',
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+    } catch (err) {
+      console.error('[ReasoningEngine] Claude call failed for budget analysis:', err);
+      return null;
+    }
+
+    // 6. Track cost
+    await agentCostTracker.record({
+      agentId: 'budget-intelligence-v1',
+      projectId: input.projectId,
+      scanId: input.scanId,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.inputTokens + result.usage.outputTokens,
+      estimatedCostUsd: agentCostTracker.estimateCost(
+        result.model,
+        result.usage.inputTokens,
+        result.usage.outputTokens,
+      ),
+      model: result.model,
+      latencyMs: result.latencyMs,
+    });
+
+    // 7. Parse and validate
+    let parsed: BudgetAnalysisResponse;
+    try {
+      const raw = JSON.parse(result.content);
+      parsed = BudgetAnalysisResponseSchema.parse(raw);
+    } catch (err) {
+      console.error('[ReasoningEngine] Failed to parse budget analysis response:', err);
+      return null;
+    }
+
+    // 8. Compute confidence
+    const confidence = confidenceCalculator.compute({
+      dataQuality,
+      historicalAccuracy,
+      modelCertainty: parsed.modelCertainty,
+    });
+
+    // 9. Map response
+    return {
+      hasBudgetIssue: parsed.hasBudgetIssue,
+      severity: parsed.severity,
+      reasoning: parsed.reasoning,
+      rootCauses: parsed.rootCauses,
+      recommendations: parsed.recommendations,
+      modelCertainty: parsed.modelCertainty,
+      confidence,
+      suggestedActions: parsed.suggestedActions.map(a => ({
+        actionType: a.actionType as ActionType,
+        targetEntityType: a.targetEntityType,
+        targetEntityId: a.targetEntityId,
+        oldValue: {},
+        newValue: { description: a.description },
+        reasoning: a.reasoning,
+      })),
+    };
+  }
+
+  private getBudgetSystemPrompt(): string {
+    return `You are an expert project cost engineer and Earned Value Management (EVM) analyst. Your role is to analyze project budget health and recommend corrective actions.
+
+You must respond with valid JSON matching the requested schema. Be specific and evidence-based.
+
+Your response must include:
+1. hasBudgetIssue: Whether there is a significant budget concern (true/false)
+2. severity: low, medium, high, or critical
+3. reasoning: Your full chain-of-thought analysis
+4. rootCauses: List of identified root causes for budget deviation
+5. recommendations: Actionable recovery recommendations
+6. modelCertainty: Your confidence (0-100)
+7. suggestedActions: Concrete actions (create_change_request, send_notification, or update_budget)
+
+For actions, use these types:
+- create_change_request: Recommend creating a formal change request for budget reallocation or scope reduction
+- send_notification: Escalate to stakeholders or management
+- update_budget: Recommend budget line item adjustments`;
+  }
+
+  private buildBudgetPrompt(
+    project: Project,
+    indicators: BudgetAnalysisInput['indicators'],
+    tasks: Task[],
+  ): string {
+    const tasksByStatus = {
+      completed: tasks.filter(t => t.status === 'completed').length,
+      inProgress: tasks.filter(t => t.status === 'in_progress').length,
+      notStarted: tasks.filter(t => t.status === 'pending').length,
+      total: tasks.length,
+    };
+
+    const topCostSection = indicators.topCostTasks.length > 0
+      ? `\n## Top Cost-Variance Tasks\n\n${indicators.topCostTasks.map(t =>
+          `- **${t.taskName}** (${t.taskId.slice(0, 8)}): Actual $${t.actualCost.toFixed(0)} vs Budget $${t.budgetedCost.toFixed(0)} (variance: $${t.variance.toFixed(0)})`
+        ).join('\n')}`
+      : '';
+
+    return `## Project Context
+
+**Project**: ${project.name} (${project.status})
+**Budget (BAC)**: $${indicators.BAC.toFixed(0)}
+
+## Current EVM Metrics
+
+- **Earned Value (EV)**: $${indicators.EV.toFixed(0)}
+- **Actual Cost (AC)**: $${indicators.AC.toFixed(0)}
+- **Planned Value (PV)**: $${indicators.PV.toFixed(0)}
+- **Cost Performance Index (CPI)**: ${indicators.CPI.toFixed(4)} ${indicators.CPI < 1 ? '(over budget)' : '(under budget)'}
+- **Schedule Performance Index (SPI)**: ${indicators.SPI.toFixed(4)} ${indicators.SPI < 1 ? '(behind schedule)' : '(ahead of schedule)'}
+- **Estimate at Completion (EAC)**: $${indicators.EAC.toFixed(0)}
+- **Variance at Completion (VAC)**: $${indicators.VAC.toFixed(0)} ${indicators.VAC < 0 ? '(projected overrun)' : '(projected savings)'}
+- **To-Complete Performance Index (TCPI)**: ${indicators.TCPI.toFixed(4)}
+${indicators.overrunProbability !== undefined ? `- **AI Overrun Probability**: ${indicators.overrunProbability}%` : ''}
+
+## Task Status Summary
+
+- Completed: ${tasksByStatus.completed}/${tasksByStatus.total}
+- In Progress: ${tasksByStatus.inProgress}/${tasksByStatus.total}
+- Not Started: ${tasksByStatus.notStarted}/${tasksByStatus.total}
+${topCostSection}
+
+## Instructions
+
+Analyze the EVM metrics and project context above. Consider:
+1. What is causing the cost deviation? Is it systemic or isolated to specific tasks?
+2. Is the CPI trend likely to continue, improve, or worsen?
+3. What corrective actions would most effectively bring the project back on budget?
+4. Should scope be reduced, or can cost recovery be achieved through other means?
+5. What is the realistic EAC given current performance?
+
+Respond with valid JSON matching the budget analysis schema.`;
   }
 
   // -------------------------------------------------------------------------
