@@ -9,6 +9,7 @@ import { AgentActivityLogService } from './AgentActivityLogService';
 import { webhookService } from './WebhookService';
 import { dagWorkflowService } from './DagWorkflowService';
 import { databaseService } from '../database/connection';
+import { killSwitchService } from './agents/KillSwitchService';
 
 export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
@@ -69,8 +70,20 @@ export class AgentSchedulerService {
     budgetAlertsCreated: number;
     mcAlertsCreated: number;
     meetingAlertsCreated: number;
+    scopeCreepAlertsCreated: number;
   }> {
     console.log('[Agent] Starting scan...');
+
+    // Kill switch guard — abort entire scan if globally disabled
+    const ksStatus = killSwitchService.getStatus();
+    if (!ksStatus.globalEnabled) {
+      console.log('[Agent] Scan aborted — global kill switch is active');
+      return {
+        projectsScanned: 0, schedulesScanned: 0, delaysDetected: 0,
+        proposalsGenerated: 0, notificationsSent: 0, budgetAlertsCreated: 0,
+        mcAlertsCreated: 0, meetingAlertsCreated: 0, scopeCreepAlertsCreated: 0,
+      };
+    }
 
     const stats = {
       projectsScanned: 0,
@@ -81,6 +94,7 @@ export class AgentSchedulerService {
       budgetAlertsCreated: 0,
       mcAlertsCreated: 0,
       meetingAlertsCreated: 0,
+      scopeCreepAlertsCreated: 0,
     };
 
     const thresholdDays = config.AGENT_DELAY_THRESHOLD_DAYS;
@@ -209,6 +223,20 @@ export class AgentSchedulerService {
         await this.activityLog.log({
           projectId: project.id,
           agentName: 'meeting',
+          result: 'error',
+          summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        }).catch(() => {});
+      }
+
+      // --- Agent 5: Scope Creep Detection ---
+      try {
+        const scopeAlerts = await this.runScopeCreepAgent(project);
+        stats.scopeCreepAlertsCreated += scopeAlerts;
+      } catch (error) {
+        console.error(`[Agent:ScopeCreep] Error for project ${project.id} (${project.name}):`, error);
+        await this.activityLog.log({
+          projectId: project.id,
+          agentName: 'scope_creep',
           result: 'error',
           summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
         }).catch(() => {});
@@ -489,6 +517,49 @@ export class AgentSchedulerService {
     }
 
     return alertCount;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent 5 — Scope Creep Detection
+  // ---------------------------------------------------------------------------
+
+  private async runScopeCreepAgent(project: Project): Promise<number> {
+    const notifyUserId = project.projectManagerId || project.createdBy;
+    const ctx = { actorId: 'system' as const, actorType: 'system' as const, source: 'system' as const, projectId: project.id };
+
+    const invocationResult = await agentRegistry.invoke('scope-creep-detection-v1', {
+      projectId: project.id,
+      userId: notifyUserId,
+    }, ctx);
+
+    if (!invocationResult.success) {
+      throw new Error(invocationResult.error || 'Scope creep agent failed');
+    }
+
+    const { skipped, skipReason, indicators, proposal } = invocationResult.output;
+
+    if (skipped) {
+      await this.activityLog.log({
+        projectId: project.id,
+        agentName: 'scope_creep',
+        result: 'skipped',
+        summary: skipReason || 'No scope creep detected',
+        details: indicators ? { ...indicators } : undefined,
+      });
+      return 0;
+    }
+
+    console.log(`[Agent:ScopeCreep] Alert created for "${project.name}"`);
+
+    await this.activityLog.log({
+      projectId: project.id,
+      agentName: 'scope_creep',
+      result: 'alert_created',
+      summary: `Scope creep detected — proposal created`,
+      details: indicators ? { ...indicators, proposalId: proposal?.id } : undefined,
+    });
+
+    return 1;
   }
 }
 

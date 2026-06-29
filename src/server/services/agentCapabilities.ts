@@ -6,6 +6,8 @@ import { monteCarloService } from './MonteCarloService';
 import { meetingIntelligenceService } from './MeetingIntelligenceService';
 import { lessonsLearnedService } from './LessonsLearnedService';
 import { ragService } from './RagService';
+import { scheduleRecoveryAgent } from './agents/ScheduleRecoveryAgent';
+import { scopeCreepAgent } from './agents/ScopeCreepAgent';
 
 // Register RAG agent capability (side-effect import)
 import './ragAgentCapability';
@@ -115,5 +117,77 @@ agentRegistry.register({
     }
 
     return { analyses, relatedLessons };
+  },
+});
+
+// --- Schedule Recovery Agent (Agentic — reasoning + proposals) ---
+agentRegistry.register({
+  id: 'schedule-recovery-v1',
+  capability: 'schedule.recover',
+  version: '1.0.0',
+  description: 'Reasons about schedule delays, identifies root causes, and proposes concrete recovery plans with actionable steps',
+  inputSchema: z.object({
+    projectId: z.string(),
+    scheduleId: z.string(),
+    delays: z.array(z.object({
+      taskId: z.string(),
+      taskName: z.string(),
+      delayDays: z.number(),
+      isOnCriticalPath: z.boolean(),
+      currentProgress: z.number(),
+      expectedEndDate: z.string(),
+      estimatedEndDate: z.string(),
+    })),
+    userId: z.string(),
+    scanId: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    recoveryPlan: z.any().nullable(),
+    proposal: z.any().nullable(),
+    skipped: z.boolean(),
+    skipReason: z.string().optional(),
+  }),
+  permissions: ['agent:schedule'],
+  timeoutMs: 180000,
+  handler: async (input) => {
+    const result = await scheduleRecoveryAgent.run(input);
+    return {
+      recoveryPlan: result.recoveryPlan,
+      proposal: result.proposal,
+      skipped: result.skipped,
+      skipReason: result.skipReason,
+    };
+  },
+});
+
+// --- Scope Creep Detection Agent (Agentic — reasoning + proposals) ---
+agentRegistry.register({
+  id: 'scope-creep-detection-v1',
+  capability: 'scope.detect',
+  version: '1.0.0',
+  description: 'Detects scope creep by analyzing task growth, estimate increases, and change requests against baselines',
+  inputSchema: z.object({
+    projectId: z.string(),
+    userId: z.string(),
+    scanId: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    analysis: z.any().nullable(),
+    proposal: z.any().nullable(),
+    indicators: z.any().nullable(),
+    skipped: z.boolean(),
+    skipReason: z.string().optional(),
+  }),
+  permissions: ['agent:scope'],
+  timeoutMs: 180000,
+  handler: async (input) => {
+    const result = await scopeCreepAgent.run(input);
+    return {
+      analysis: result.analysis,
+      proposal: result.proposal,
+      indicators: result.indicators,
+      skipped: result.skipped,
+      skipReason: result.skipReason,
+    };
   },
 });
