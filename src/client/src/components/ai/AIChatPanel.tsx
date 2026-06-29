@@ -11,7 +11,7 @@ import {
   Mic,
   MicOff,
 } from 'lucide-react';
-import { useAIChatStore, dashboardQuickActions, projectQuickActions, type QuickAction, type ActionResult } from '../../stores/aiChatStore';
+import { useAIChatStore, dashboardQuickActions, projectQuickActions, type QuickAction } from '../../stores/aiChatStore';
 import { AIChatContext } from './AIChatContext';
 import { QuickActions } from './QuickActions';
 import { useVoice } from '../../hooks/useVoice';

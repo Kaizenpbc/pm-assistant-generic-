@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Zap, Loader2 } from 'lucide-react';
 import { apiService } from '../../services/api';
 

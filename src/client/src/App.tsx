@@ -1,43 +1,55 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import AppLayout from './components/layout/AppLayout';
+
+// Eagerly loaded (part of initial bundle — needed immediately)
 import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { VerifyEmailPage } from './pages/VerifyEmailPage';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { LandingPage } from './pages/LandingPage';
 import { PrelaunchLandingPage } from './pages/PrelaunchLandingPage';
 
 const isPrelaunch = window.location.hostname === 'kovarti.com' || window.location.hostname === 'www.kovarti.com';
-import { PricingPage } from './pages/PricingPage';
-import { TermsPage } from './pages/TermsPage';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { DashboardRouter } from './pages/DashboardRouter';
-import { PMDashboard } from './pages/PMDashboard';
-import { ProjectDetailPage } from './pages/ProjectDetailPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { ScenarioModelingPage } from './pages/ScenarioModelingPage';
-import { PortfolioPage } from './pages/PortfolioPage';
-import { WorkflowPage } from './pages/WorkflowPage';
-import { MonteCarloPage } from './pages/MonteCarloPage';
-import { MeetingMinutesPage } from './pages/MeetingMinutesPage';
-import { LessonsLearnedPage } from './pages/LessonsLearnedPage';
-import { QueryPage } from './pages/QueryPage';
-import { AccountBillingPage } from './pages/AccountBillingPage';
-import { UserGuidePublicPage } from './pages/UserGuidePublicPage';
-import { UserGuidePage } from './pages/UserGuidePage';
-import { TimesheetPage } from './pages/TimesheetPage';
-import PortalViewPage from './pages/PortalViewPage';
-import { IntegrationsPage } from './pages/IntegrationsPage';
-import { ReportBuilderPage } from './pages/ReportBuilderPage';
-import { IntakeFormsPage } from './pages/IntakeFormsPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { WaitlistAdminPage } from './pages/WaitlistAdminPage';
-import { AdminPage } from './pages/AdminPage';
+
+// Lazy-loaded pages (split into separate chunks)
+const RegisterPage = lazy(() => import('./pages/RegisterPage').then(m => ({ default: m.RegisterPage })));
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage').then(m => ({ default: m.VerifyEmailPage })));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })));
+const PricingPage = lazy(() => import('./pages/PricingPage').then(m => ({ default: m.PricingPage })));
+const TermsPage = lazy(() => import('./pages/TermsPage').then(m => ({ default: m.TermsPage })));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
+const UserGuidePublicPage = lazy(() => import('./pages/UserGuidePublicPage').then(m => ({ default: m.UserGuidePublicPage })));
+const WaitlistAdminPage = lazy(() => import('./pages/WaitlistAdminPage').then(m => ({ default: m.WaitlistAdminPage })));
+const PortalViewPage = lazy(() => import('./pages/PortalViewPage'));
+const DashboardRouter = lazy(() => import('./pages/DashboardRouter').then(m => ({ default: m.DashboardRouter })));
+const PMDashboard = lazy(() => import('./pages/PMDashboard').then(m => ({ default: m.PMDashboard })));
+const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage').then(m => ({ default: m.ProjectDetailPage })));
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const ScenarioModelingPage = lazy(() => import('./pages/ScenarioModelingPage').then(m => ({ default: m.ScenarioModelingPage })));
+const PortfolioPage = lazy(() => import('./pages/PortfolioPage').then(m => ({ default: m.PortfolioPage })));
+const WorkflowPage = lazy(() => import('./pages/WorkflowPage').then(m => ({ default: m.WorkflowPage })));
+const MonteCarloPage = lazy(() => import('./pages/MonteCarloPage').then(m => ({ default: m.MonteCarloPage })));
+const MeetingMinutesPage = lazy(() => import('./pages/MeetingMinutesPage').then(m => ({ default: m.MeetingMinutesPage })));
+const LessonsLearnedPage = lazy(() => import('./pages/LessonsLearnedPage').then(m => ({ default: m.LessonsLearnedPage })));
+const QueryPage = lazy(() => import('./pages/QueryPage').then(m => ({ default: m.QueryPage })));
+const AccountBillingPage = lazy(() => import('./pages/AccountBillingPage').then(m => ({ default: m.AccountBillingPage })));
+const UserGuidePage = lazy(() => import('./pages/UserGuidePage').then(m => ({ default: m.UserGuidePage })));
+const TimesheetPage = lazy(() => import('./pages/TimesheetPage').then(m => ({ default: m.TimesheetPage })));
+const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage').then(m => ({ default: m.IntegrationsPage })));
+const ReportBuilderPage = lazy(() => import('./pages/ReportBuilderPage').then(m => ({ default: m.ReportBuilderPage })));
+const IntakeFormsPage = lazy(() => import('./pages/IntakeFormsPage').then(m => ({ default: m.IntakeFormsPage })));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -66,6 +78,7 @@ function App() {
   return (
     <Router>
       <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public routes */}
         <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : (isPrelaunch ? <PrelaunchLandingPage /> : <LandingPage />)} />
@@ -106,6 +119,7 @@ function App() {
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
       </ErrorBoundary>
     </Router>
   );

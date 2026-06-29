@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,
@@ -217,7 +217,7 @@ export const ReportsPage: React.FC = () => {
               <select
                 id="report-type"
                 value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
+                onChange={(e) => setSelectedType(e.target.value as typeof selectedType)}
                 className="input w-full appearance-none pr-8"
               >
                 {REPORT_TYPES.map((rt) => (

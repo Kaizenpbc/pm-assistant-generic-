@@ -1,4 +1,3 @@
-import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, Shield, DollarSign, TrendingUp } from 'lucide-react';
 import { apiService } from '../../services/api';

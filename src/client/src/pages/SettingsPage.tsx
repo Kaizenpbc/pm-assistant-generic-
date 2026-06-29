@@ -15,9 +15,6 @@ import {
   Plus,
   Copy,
   Check,
-  Eye,
-  EyeOff,
-  X,
   Send,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';

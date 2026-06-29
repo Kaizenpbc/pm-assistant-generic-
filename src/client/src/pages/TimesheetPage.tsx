@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, BarChart3 } from 'lucide-react';
 import { apiService } from '../services/api';
