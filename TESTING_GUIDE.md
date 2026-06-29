@@ -402,7 +402,7 @@ SELECT * FROM _migrations WHERE name LIKE '015%';
 npx vitest run src/server/__tests__/services/agents/
 ```
 
-This runs 10 test files with 82+ tests covering:
+This runs 11 test files with 92+ tests covering:
 
 | Test File | What It Tests |
 |-----------|--------------|
@@ -413,6 +413,7 @@ This runs 10 test files with 82+ tests covering:
 | `AgentFeedbackService.test.ts` | Feedback submission, health snapshots, aggregate stats |
 | `ScopeCreepAgent.test.ts` | Guard chain (budget/kill switch/rate limit/breaker), indicator detection |
 | `BudgetIntelligenceAgent.test.ts` | Guard chain, EVM indicator thresholds, proposal creation, error handling |
+| `ResourceOptimizationAgent.test.ts` | Guard chain, workload indicator detection, proposal creation, error handling |
 | `ActionProposalService.test.ts` | Proposal creation via transaction, lifecycle |
 | `ActionExecutor.test.ts` | Sequential execution, rollback on failure |
 | `ConfidenceCalculator.test.ts` | Score computation, data quality scoring, weight verification |

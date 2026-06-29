@@ -416,14 +416,15 @@ Each agent follows the pattern: perceive -> reason -> plan -> propose. Registere
 ### Resource Optimization Agent
 `src/server/services/agents/ResourceOptimizationAgent.ts`
 
-- **Trigger**: resource overallocation detected, or bottleneck identified
-- **Perception**: resource workloads across projects, skills matrix, capacity, task requirements
-- **Reasoning**: Claude identifies optimal reassignment considering skills, availability, project priorities
-- **Output**: resource rebalancing plan across projects
+- **Trigger**: resource overallocation (>100% utilization), under-utilization (<40%), or bottleneck roles detected
+- **Perception**: resource workloads via `resourceService.computeWorkload()` — utilization %, peak utilization, role-based grouping
+- **Reasoning**: Claude analyzes workload imbalances, identifies root causes (uneven distribution, skill gaps, staffing shortfalls), proposes rebalancing
+- **Output**: resource rebalancing proposal with `reassign_resource`, `create_change_request`, `send_notification` actions
 - **Registration**: `resource-optimization-v1`, capability `resource.optimize`
-- **Input schema**: `{ resources[], projects[], assignments[], constraints }`
-- **Output schema**: `{ reassignments[], reasoning, impactAnalysis, confidence }`
-- **Risk level**: high (cross-project resource changes)
+- **Input schema**: `{ projectId, userId, scanId? }`
+- **Output schema**: `{ analysis, proposal, indicators, skipped, skipReason? }`
+- **Guard chain**: cost budget → kill switch → rate limiter → circuit breaker → detect indicators → reason → propose
+- **Risk level**: high (resource reassignment actions)
 - **Default policy**: require_approval
 
 ### Cross-Project Intelligence Agent
@@ -781,8 +782,8 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | Component | File | Status |
 |-----------|------|--------|
 | Agent Registry | `src/server/services/AgentRegistryService.ts` | Production-ready |
-| Agent Scheduler (5 agents) | `src/server/services/AgentSchedulerService.ts` | Production-ready |
-| Agent Capabilities (7 registered) | `src/server/services/agentCapabilities.ts` | Production-ready |
+| Agent Scheduler (7 agents) | `src/server/services/AgentSchedulerService.ts` | Production-ready |
+| Agent Capabilities (8 registered) | `src/server/services/agentCapabilities.ts` | Production-ready |
 | Policy Engine | `src/server/services/PolicyEngineService.ts` | Production-ready |
 | Audit Ledger (hash-chained) | `src/server/services/AuditLedgerService.ts` | Production-ready |
 | Agent Activity Log | `src/server/services/AgentActivityLogService.ts` | Production-ready |
@@ -812,6 +813,7 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | **ScheduleRecoveryAgent** | `src/server/services/agents/ScheduleRecoveryAgent.ts` | Production-ready |
 | **ScopeCreepAgent** | `src/server/services/agents/ScopeCreepAgent.ts` | Production-ready |
 | **BudgetIntelligenceAgent** | `src/server/services/agents/BudgetIntelligenceAgent.ts` | Production-ready |
+| **ResourceOptimizationAgent** | `src/server/services/agents/ResourceOptimizationAgent.ts` | Production-ready |
 | Agent trigger route | `src/server/routes/agent/agent.ts` | Production-ready |
 | Policy routes | `src/server/routes/agent/policies.ts` | Production-ready |
 | Agent activity log route | `src/server/routes/agent/agentActivityLog.ts` | Production-ready |

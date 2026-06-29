@@ -287,6 +287,7 @@ Proposal creation is rate-limited to prevent alert fatigue:
 | `schedule-recovery-v1` | Claude-powered root cause analysis and recovery proposals |
 | `scope-creep-detection-v1` | Detects scope creep via task growth, estimate increases, change requests |
 | `budget-intelligence-v1` | Analyzes EVM metrics, reasons about cost deviations, proposes budget recovery actions |
+| `resource-optimization-v1` | Detects over-allocated/under-utilized resources and bottleneck roles, proposes rebalancing actions |
 
 ---
 
