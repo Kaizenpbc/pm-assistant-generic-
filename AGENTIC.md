@@ -792,6 +792,11 @@ Update the following documents when agent features are implemented. Documentatio
 13. Cross-Project Intelligence Agent (fourth agent)             -- portfolio level
 14. Risk Escalation Agent (fifth agent)                         -- compound risks
 15. Stakeholder Communication Agent (sixth agent)               -- status reports
+16. Project Hygiene Agent (seventh agent)                        -- data quality
+17. Dependency Risk Agent (eighth agent)                         -- blocked chains
+18. Lessons Learned Agent (ninth agent)                          -- auto-extract
+19. Predictive Alerting Agent (tenth agent)                      -- early warnings
+20. Autonomous Execution (Tier 3)                                -- auto-execute
 ```
 
 Each step is a commit-and-push cycle. Each agent follows the same pattern: register capability, wire into scheduler, test, document.
@@ -803,8 +808,8 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | Component | File | Status |
 |-----------|------|--------|
 | Agent Registry | `src/server/services/AgentRegistryService.ts` | Production-ready |
-| Agent Scheduler (10 agents) | `src/server/services/AgentSchedulerService.ts` | Production-ready |
-| Agent Capabilities (11 registered) | `src/server/services/agentCapabilities.ts` | Production-ready |
+| Agent Scheduler (14 agents) | `src/server/services/AgentSchedulerService.ts` | Production-ready |
+| Agent Capabilities (15 registered) | `src/server/services/agentCapabilities.ts` | Production-ready |
 | Policy Engine | `src/server/services/PolicyEngineService.ts` | Production-ready |
 | Audit Ledger (hash-chained) | `src/server/services/AuditLedgerService.ts` | Production-ready |
 | Agent Activity Log | `src/server/services/AgentActivityLogService.ts` | Production-ready |
@@ -838,6 +843,11 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | **CrossProjectIntelligenceAgent** | `src/server/services/agents/CrossProjectIntelligenceAgent.ts` | Production-ready |
 | **RiskEscalationAgent** | `src/server/services/agents/RiskEscalationAgent.ts` | Production-ready |
 | **StakeholderCommunicationAgent** | `src/server/services/agents/StakeholderCommunicationAgent.ts` | Production-ready |
+| **ProjectHygieneAgent** | `src/server/services/agents/ProjectHygieneAgent.ts` | Production-ready |
+| **DependencyRiskAgent** | `src/server/services/agents/DependencyRiskAgent.ts` | Production-ready |
+| **LessonsLearnedAgent** | `src/server/services/agents/LessonsLearnedAgent.ts` | Production-ready |
+| **PredictiveAlertingAgent** | `src/server/services/agents/PredictiveAlertingAgent.ts` | Production-ready |
+| **AutonomyService** | `src/server/services/agents/AutonomyService.ts` | Production-ready |
 | Agent trigger route | `src/server/routes/agent/agent.ts` | Production-ready |
 | Policy routes | `src/server/routes/agent/policies.ts` | Production-ready |
 | Agent activity log route | `src/server/routes/agent/agentActivityLog.ts` | Production-ready |
@@ -845,3 +855,4 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | **Proposal routes** | `src/server/routes/agent/proposals.ts` | Production-ready |
 | **Kill switch routes** | `src/server/routes/agent/killSwitch.ts` | Production-ready |
 | **Agent health routes** | `src/server/routes/agent/agentHealth.ts` | Production-ready |
+| **Autonomy routes** | `src/server/routes/agent/autonomy.ts` | Production-ready |

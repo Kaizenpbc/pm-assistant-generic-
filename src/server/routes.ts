@@ -61,6 +61,7 @@ import { policyRoutes } from './routes/agent/policies';
 import { proposalRoutes } from './routes/agent/proposals';
 import { agentHealthRoutes } from './routes/agent/agentHealth';
 import { killSwitchRoutes } from './routes/agent/killSwitch';
+import { autonomyRoutes } from './routes/agent/autonomy';
 
 // Integrations
 import { integrationRoutes } from './routes/integrations/integrations';
@@ -136,6 +137,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(proposalRoutes, { prefix: '/api/v1/agent/proposals' });
   await fastify.register(agentHealthRoutes, { prefix: '/api/v1/agent' });
   await fastify.register(killSwitchRoutes, { prefix: '/api/v1/agent' });
+  await fastify.register(autonomyRoutes, { prefix: '/api/v1/agent/autonomy' });
 
   // Integrations
   await fastify.register(integrationRoutes, { prefix: '/api/v1/integrations' });

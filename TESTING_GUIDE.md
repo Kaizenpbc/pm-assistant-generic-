@@ -568,11 +568,15 @@ The file `src/server/services/aiContextBuilder.ts` has 3 pre-existing type error
 
 ### Agentic Pipeline
 
-- [ ] `npx vitest run src/server/__tests__/services/agents/` passes all tests
+- [ ] `npx vitest run src/server/__tests__/services/agents/` passes all tests (14 agent test files)
 - [ ] GET `/api/v1/agent/health` returns status with `databaseStatus`, `circuitBreakers`, `killSwitch`
 - [ ] GET `/api/v1/agent/kill-switch` returns current state
 - [ ] POST `/api/v1/agent/kill-switch` with `{"action":"disable"}` blocks agent scans
 - [ ] POST `/api/v1/agent/kill-switch` with `{"action":"enable"}` re-enables agents
+- [ ] GET `/api/v1/agent/autonomy` returns autonomy configurations
+- [ ] GET `/api/v1/agent/autonomy/:agentId/eligibility` returns promotion eligibility stats
+- [ ] PUT `/api/v1/agent/autonomy/:agentId` with `{"action":"promote"}` promotes agent to Tier 3 (admin only)
+- [ ] PUT `/api/v1/agent/autonomy/:agentId` with `{"action":"demote"}` demotes agent to Tier 2 (admin only)
 
 ### Database
 

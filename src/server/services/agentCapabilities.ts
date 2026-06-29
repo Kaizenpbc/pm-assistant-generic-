@@ -13,6 +13,10 @@ import { resourceOptimizationAgent } from './agents/ResourceOptimizationAgent';
 import { crossProjectIntelligenceAgent } from './agents/CrossProjectIntelligenceAgent';
 import { riskEscalationAgent } from './agents/RiskEscalationAgent';
 import { stakeholderCommunicationAgent } from './agents/StakeholderCommunicationAgent';
+import { projectHygieneAgent } from './agents/ProjectHygieneAgent';
+import { dependencyRiskAgent } from './agents/DependencyRiskAgent';
+import { lessonsLearnedAgent } from './agents/LessonsLearnedAgent';
+import { predictiveAlertingAgent } from './agents/PredictiveAlertingAgent';
 
 // Register RAG agent capability (side-effect import)
 import './ragAgentCapability';
@@ -361,6 +365,134 @@ agentRegistry.register({
       analysis: result.analysis,
       proposal: result.proposal,
       snapshot: result.snapshot,
+      skipped: result.skipped,
+      skipReason: result.skipReason,
+    };
+  },
+});
+
+// --- Project Hygiene Agent (Agentic — data quality + stale work detection) ---
+agentRegistry.register({
+  id: 'project-hygiene-v1',
+  capability: 'project.hygiene',
+  version: '1.0.0',
+  description: 'Detects stale tasks, abandoned sprints, missing data, and zero-progress work items for project data quality improvement',
+  inputSchema: z.object({
+    projectId: z.string(),
+    userId: z.string(),
+    scanId: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    analysis: z.any().nullable(),
+    proposal: z.any().nullable(),
+    indicators: z.any().nullable(),
+    skipped: z.boolean(),
+    skipReason: z.string().optional(),
+  }),
+  permissions: ['agent:hygiene'],
+  timeoutMs: 180000,
+  handler: async (input) => {
+    const result = await projectHygieneAgent.run(input);
+    return {
+      analysis: result.analysis,
+      proposal: result.proposal,
+      indicators: result.indicators,
+      skipped: result.skipped,
+      skipReason: result.skipReason,
+    };
+  },
+});
+
+// --- Dependency Risk Agent (Agentic — dependency graph analysis) ---
+agentRegistry.register({
+  id: 'dependency-risk-v1',
+  capability: 'dependency.analyze',
+  version: '1.0.0',
+  description: 'Analyzes task dependency graphs to detect blocked chains, bottleneck tasks, and long dependency chains',
+  inputSchema: z.object({
+    projectId: z.string(),
+    userId: z.string(),
+    scanId: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    analysis: z.any().nullable(),
+    proposal: z.any().nullable(),
+    indicators: z.any().nullable(),
+    skipped: z.boolean(),
+    skipReason: z.string().optional(),
+  }),
+  permissions: ['agent:dependency'],
+  timeoutMs: 180000,
+  handler: async (input) => {
+    const result = await dependencyRiskAgent.run(input);
+    return {
+      analysis: result.analysis,
+      proposal: result.proposal,
+      indicators: result.indicators,
+      skipped: result.skipped,
+      skipReason: result.skipReason,
+    };
+  },
+});
+
+// --- Lessons Learned Agent (Agentic — auto-extract lessons from project data) ---
+agentRegistry.register({
+  id: 'lessons-learned-v1',
+  capability: 'lessons.extract',
+  version: '1.0.0',
+  description: 'Auto-generates lessons learned when projects near completion or are completed, storing insights for future project improvement',
+  inputSchema: z.object({
+    projectId: z.string(),
+    userId: z.string(),
+    scanId: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    analysis: z.any().nullable(),
+    proposal: z.any().nullable(),
+    lessonsExtracted: z.number(),
+    skipped: z.boolean(),
+    skipReason: z.string().optional(),
+  }),
+  permissions: ['agent:lessons'],
+  timeoutMs: 180000,
+  handler: async (input) => {
+    const result = await lessonsLearnedAgent.run(input);
+    return {
+      analysis: result.analysis,
+      proposal: result.proposal,
+      lessonsExtracted: result.lessonsExtracted,
+      skipped: result.skipped,
+      skipReason: result.skipReason,
+    };
+  },
+});
+
+// --- Predictive Alerting Agent (Agentic — pattern-based early warnings) ---
+agentRegistry.register({
+  id: 'predictive-alerting-v1',
+  capability: 'prediction.alert',
+  version: '1.0.0',
+  description: 'Detects patterns that predict project problems using velocity trends, progress trajectory, and risk accumulation',
+  inputSchema: z.object({
+    projectId: z.string(),
+    userId: z.string(),
+    scanId: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    analysis: z.any().nullable(),
+    proposal: z.any().nullable(),
+    indicators: z.any().nullable(),
+    skipped: z.boolean(),
+    skipReason: z.string().optional(),
+  }),
+  permissions: ['agent:prediction'],
+  timeoutMs: 180000,
+  handler: async (input) => {
+    const result = await predictiveAlertingAgent.run(input);
+    return {
+      analysis: result.analysis,
+      proposal: result.proposal,
+      indicators: result.indicators,
       skipped: result.skipped,
       skipReason: result.skipReason,
     };

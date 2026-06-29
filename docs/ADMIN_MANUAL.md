@@ -268,6 +268,37 @@ Each agent has an independent circuit breaker:
 
 Circuit breakers reset automatically — no manual intervention needed unless the root cause persists.
 
+### Autonomous Execution (Tier 3)
+
+Agents can be promoted to Tier 3 (autonomous execution) after meeting eligibility criteria:
+- 30+ days of operation history
+- 20+ proposals generated
+- 80%+ acceptance rate
+- 70%+ effectiveness rate (executed / accepted)
+- Zero rollbacks
+
+**API Endpoints:**
+
+```bash
+# List active autonomy configurations
+GET /api/v1/agent/autonomy
+
+# Check if an agent is eligible for promotion
+GET /api/v1/agent/autonomy/:agentId/eligibility?projectId=optional
+
+# Promote agent to Tier 3 (admin scope required)
+PUT /api/v1/agent/autonomy/:agentId
+Body: {"action": "promote", "projectId": "optional", "minConfidenceThreshold": 80, "maxRiskLevel": "low"}
+
+# Demote agent back to Tier 2
+PUT /api/v1/agent/autonomy/:agentId
+Body: {"action": "demote", "projectId": "optional"}
+```
+
+When an agent is at Tier 3, proposals with confidence >= threshold and risk <= max risk level are automatically approved and executed. All auto-executions are logged in the console and proposal history.
+
+**Database:** Requires migration `003_agent_autonomy.sql` to create `agent_autonomy_config` table.
+
 ### Rate Limiting
 
 Proposal creation is rate-limited to prevent alert fatigue:

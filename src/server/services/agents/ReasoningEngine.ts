@@ -439,6 +439,213 @@ const StakeholderReportResponseSchema = z.object({
 type StakeholderReportResponse = z.infer<typeof StakeholderReportResponseSchema>;
 
 // ---------------------------------------------------------------------------
+// Hygiene Analysis Types
+// ---------------------------------------------------------------------------
+
+export interface HygieneAnalysisInput {
+  projectId: string;
+  indicators: {
+    staleTasks: Array<{ taskId: string; taskName: string; daysSinceUpdate: number; status: string }>;
+    missingDateTasks: Array<{ taskId: string; taskName: string }>;
+    unassignedTasks: Array<{ taskId: string; taskName: string }>;
+    missingEstimateTasks: Array<{ taskId: string; taskName: string }>;
+    abandonedSprints: Array<{ sprintId: string; sprintName: string; endDate: string }>;
+    zeroProgressTasks: Array<{ taskId: string; taskName: string; daysSinceUpdate: number }>;
+  };
+  scanId?: string;
+}
+
+export interface HygieneAnalysisResult {
+  hasHygieneIssues: boolean;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  reasoning: string;
+  issues: string[];
+  recommendations: string[];
+  modelCertainty: number;
+  confidence: ConfidenceResult;
+  suggestedActions: Array<{
+    actionType: ActionType;
+    targetEntityType: string;
+    targetEntityId: string;
+    oldValue: Record<string, unknown>;
+    newValue: Record<string, unknown>;
+    reasoning: string;
+  }>;
+}
+
+const HygieneAnalysisResponseSchema = z.object({
+  hasHygieneIssues: z.boolean(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  reasoning: z.string(),
+  issues: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  modelCertainty: z.number().min(0).max(100),
+  suggestedActions: z.array(z.object({
+    actionType: z.enum(['send_notification']),
+    targetEntityType: z.string(),
+    targetEntityId: z.string(),
+    description: z.string(),
+    reasoning: z.string(),
+  })),
+});
+
+type HygieneAnalysisResponse = z.infer<typeof HygieneAnalysisResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Dependency Analysis Types
+// ---------------------------------------------------------------------------
+
+export interface DependencyAnalysisInput {
+  projectId: string;
+  indicators: {
+    blockedChains: Array<{ chainTaskIds: string[]; chainTaskNames: string[]; blockedByTaskId: string; blockedByTaskName: string; reason: string }>;
+    bottleneckTasks: Array<{ taskId: string; taskName: string; dependentCount: number }>;
+    longChains: Array<{ depth: number; taskIds: string[]; taskNames: string[] }>;
+    totalTasks: number;
+    totalDependencies: number;
+  };
+  scanId?: string;
+}
+
+export interface DependencyAnalysisResult {
+  hasDependencyRisk: boolean;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  reasoning: string;
+  risks: string[];
+  recommendations: string[];
+  modelCertainty: number;
+  confidence: ConfidenceResult;
+  suggestedActions: Array<{
+    actionType: ActionType;
+    targetEntityType: string;
+    targetEntityId: string;
+    oldValue: Record<string, unknown>;
+    newValue: Record<string, unknown>;
+    reasoning: string;
+  }>;
+}
+
+const DependencyAnalysisResponseSchema = z.object({
+  hasDependencyRisk: z.boolean(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  reasoning: z.string(),
+  risks: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  modelCertainty: z.number().min(0).max(100),
+  suggestedActions: z.array(z.object({
+    actionType: z.enum(['send_notification', 'update_dependency']),
+    targetEntityType: z.string(),
+    targetEntityId: z.string(),
+    description: z.string(),
+    reasoning: z.string(),
+  })),
+});
+
+type DependencyAnalysisResponse = z.infer<typeof DependencyAnalysisResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Lessons Extraction Types
+// ---------------------------------------------------------------------------
+
+export interface LessonsExtractionInput {
+  projectId: string;
+  projectData: {
+    projectName: string;
+    status: string;
+    completionRate: number;
+    totalTasks: number;
+    completedTasks: number;
+    overdueTasks: number;
+    budgetVariance: number | null;
+    durationDays: number;
+    existingLessonsCount: number;
+  };
+  scanId?: string;
+}
+
+export interface LessonsExtractionResult {
+  hasLessons: boolean;
+  reasoning: string;
+  lessons: Array<{
+    category: string;
+    title: string;
+    description: string;
+    impact: 'low' | 'medium' | 'high';
+    recommendation: string;
+  }>;
+  modelCertainty: number;
+  confidence: ConfidenceResult;
+}
+
+const LessonsExtractionResponseSchema = z.object({
+  hasLessons: z.boolean(),
+  reasoning: z.string(),
+  lessons: z.array(z.object({
+    category: z.string(),
+    title: z.string(),
+    description: z.string(),
+    impact: z.enum(['low', 'medium', 'high']),
+    recommendation: z.string(),
+  })),
+  modelCertainty: z.number().min(0).max(100),
+});
+
+type LessonsExtractionResponse = z.infer<typeof LessonsExtractionResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Predictive Alert Types
+// ---------------------------------------------------------------------------
+
+export interface PredictiveAlertInput {
+  projectId: string;
+  indicators: {
+    velocityTrend: { current: number; historical: number; declinePercent: number } | null;
+    progressTrajectory: { completionRate: number; timeElapsedPercent: number; behindPercent: number };
+    riskAccumulation: number;
+    similarProjectComparison: { avgCompletionRate: number; avgBudgetVariance: number; sampleSize: number } | null;
+  };
+  scanId?: string;
+}
+
+export interface PredictiveAlertResult {
+  hasWarning: boolean;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  reasoning: string;
+  warnings: string[];
+  predictions: string[];
+  recommendations: string[];
+  modelCertainty: number;
+  confidence: ConfidenceResult;
+  suggestedActions: Array<{
+    actionType: ActionType;
+    targetEntityType: string;
+    targetEntityId: string;
+    oldValue: Record<string, unknown>;
+    newValue: Record<string, unknown>;
+    reasoning: string;
+  }>;
+}
+
+const PredictiveAlertResponseSchema = z.object({
+  hasWarning: z.boolean(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  reasoning: z.string(),
+  warnings: z.array(z.string()),
+  predictions: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  modelCertainty: z.number().min(0).max(100),
+  suggestedActions: z.array(z.object({
+    actionType: z.enum(['send_notification', 'create_change_request']),
+    targetEntityType: z.string(),
+    targetEntityId: z.string(),
+    description: z.string(),
+    reasoning: z.string(),
+  })),
+});
+
+type PredictiveAlertResponse = z.infer<typeof PredictiveAlertResponseSchema>;
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -1594,6 +1801,585 @@ Generate a stakeholder status report based on the data above. Consider:
 4. What are the recommended next steps?
 
 Respond with valid JSON matching the stakeholder report schema.`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Hygiene Analysis
+  // -------------------------------------------------------------------------
+
+  async generateHygieneAnalysis(input: HygieneAnalysisInput): Promise<HygieneAnalysisResult | null> {
+    const project = await projectService.findById(input.projectId);
+    if (!project) return null;
+
+    const ind = input.indicators;
+    const totalIssues = ind.staleTasks.length + ind.missingDateTasks.length + ind.unassignedTasks.length +
+      ind.missingEstimateTasks.length + ind.abandonedSprints.length + ind.zeroProgressTasks.length;
+
+    const dataQuality = confidenceCalculator.computeDataQuality({
+      totalTasks: totalIssues > 0 ? totalIssues * 3 : 10,
+      tasksWithDates: Math.max(1, totalIssues * 2),
+      tasksWithAssignments: Math.max(1, totalIssues),
+      tasksUpdatedRecently: Math.max(1, totalIssues),
+      hasBudgetData: false,
+      hasResourceData: false,
+    });
+
+    const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy(
+      'project-hygiene-v1', input.projectId,
+    );
+
+    if (!claudeService.isAvailable()) {
+      console.warn('[ReasoningEngine] Claude API unavailable — skipping hygiene analysis');
+      return null;
+    }
+
+    const prompt = this.buildHygienePrompt(project, ind);
+    let result: CompletionResult;
+    try {
+      result = await claudeService.complete({
+        systemPrompt: this.getHygieneSystemPrompt(),
+        userMessage: prompt,
+        responseFormat: 'json',
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+    } catch (err) {
+      console.error('[ReasoningEngine] Claude call failed for hygiene analysis:', err);
+      return null;
+    }
+
+    await agentCostTracker.record({
+      agentId: 'project-hygiene-v1',
+      projectId: input.projectId,
+      scanId: input.scanId,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.inputTokens + result.usage.outputTokens,
+      estimatedCostUsd: agentCostTracker.estimateCost(result.model, result.usage.inputTokens, result.usage.outputTokens),
+      model: result.model,
+      latencyMs: result.latencyMs,
+    });
+
+    let parsed: HygieneAnalysisResponse;
+    try {
+      const raw = JSON.parse(result.content);
+      parsed = HygieneAnalysisResponseSchema.parse(raw);
+    } catch (err) {
+      console.error('[ReasoningEngine] Failed to parse hygiene analysis response:', err);
+      return null;
+    }
+
+    const confidence = confidenceCalculator.compute({
+      dataQuality, historicalAccuracy, modelCertainty: parsed.modelCertainty,
+    });
+
+    return {
+      hasHygieneIssues: parsed.hasHygieneIssues,
+      severity: parsed.severity,
+      reasoning: parsed.reasoning,
+      issues: parsed.issues,
+      recommendations: parsed.recommendations,
+      modelCertainty: parsed.modelCertainty,
+      confidence,
+      suggestedActions: parsed.suggestedActions.map(a => ({
+        actionType: a.actionType as ActionType,
+        targetEntityType: a.targetEntityType,
+        targetEntityId: a.targetEntityId,
+        oldValue: {},
+        newValue: { description: a.description },
+        reasoning: a.reasoning,
+      })),
+    };
+  }
+
+  private getHygieneSystemPrompt(): string {
+    return `You are an expert project management hygiene analyst. Your role is to identify data quality issues, stale work items, and organizational debt in project management systems.
+
+You must respond with valid JSON matching the requested schema. Be specific and evidence-based.
+
+Your response must include:
+1. hasHygieneIssues: Whether there are actionable hygiene issues (true/false)
+2. severity: low, medium, high, or critical
+3. reasoning: Your full chain-of-thought analysis
+4. issues: List of identified hygiene issues
+5. recommendations: Actionable recommendations to improve project data quality
+6. modelCertainty: Your confidence (0-100)
+7. suggestedActions: Concrete actions (send_notification only — hygiene is advisory)
+
+For actions, use:
+- send_notification: Notify project manager about hygiene issues requiring attention`;
+  }
+
+  private buildHygienePrompt(
+    project: Project,
+    indicators: HygieneAnalysisInput['indicators'],
+  ): string {
+    const staleSection = indicators.staleTasks.length > 0
+      ? `\n## Stale Tasks (not updated in 14+ days)\n\n${indicators.staleTasks.slice(0, 10).map(t =>
+          `- **${t.taskName}** (${t.status}): ${t.daysSinceUpdate} days since last update`
+        ).join('\n')}`
+      : '';
+
+    const missingDatesSection = indicators.missingDateTasks.length > 0
+      ? `\n## Tasks Missing Dates\n\n${indicators.missingDateTasks.slice(0, 10).map(t =>
+          `- **${t.taskName}**`
+        ).join('\n')}`
+      : '';
+
+    const unassignedSection = indicators.unassignedTasks.length > 0
+      ? `\n## Unassigned Tasks\n\n${indicators.unassignedTasks.slice(0, 10).map(t =>
+          `- **${t.taskName}**`
+        ).join('\n')}`
+      : '';
+
+    const missingEstSection = indicators.missingEstimateTasks.length > 0
+      ? `\n## Tasks Missing Estimates\n\n${indicators.missingEstimateTasks.slice(0, 10).map(t =>
+          `- **${t.taskName}**`
+        ).join('\n')}`
+      : '';
+
+    const sprintSection = indicators.abandonedSprints.length > 0
+      ? `\n## Abandoned Sprints (past end date, not completed)\n\n${indicators.abandonedSprints.map(s =>
+          `- **${s.sprintName}**: ended ${s.endDate}`
+        ).join('\n')}`
+      : '';
+
+    const zeroProgressSection = indicators.zeroProgressTasks.length > 0
+      ? `\n## Zero-Progress Tasks (in_progress but 0% for 7+ days)\n\n${indicators.zeroProgressTasks.slice(0, 10).map(t =>
+          `- **${t.taskName}**: ${t.daysSinceUpdate} days since update`
+        ).join('\n')}`
+      : '';
+
+    return `## Project Context
+
+**Project**: ${project.name} (${project.status})
+
+## Hygiene Summary
+
+- **Stale tasks**: ${indicators.staleTasks.length}
+- **Missing date tasks**: ${indicators.missingDateTasks.length}
+- **Unassigned tasks**: ${indicators.unassignedTasks.length}
+- **Missing estimate tasks**: ${indicators.missingEstimateTasks.length}
+- **Abandoned sprints**: ${indicators.abandonedSprints.length}
+- **Zero-progress tasks**: ${indicators.zeroProgressTasks.length}
+${staleSection}${missingDatesSection}${unassignedSection}${missingEstSection}${sprintSection}${zeroProgressSection}
+
+## Instructions
+
+Analyze the hygiene data above. Consider:
+1. Which issues are most impactful to project tracking accuracy?
+2. Are stale tasks genuinely abandoned or just not being updated?
+3. Do missing dates/estimates make schedule forecasting unreliable?
+4. Should abandoned sprints be closed or reworked?
+5. Are zero-progress tasks blocked or forgotten?
+
+Respond with valid JSON matching the hygiene analysis schema.`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Dependency Analysis
+  // -------------------------------------------------------------------------
+
+  async generateDependencyAnalysis(input: DependencyAnalysisInput): Promise<DependencyAnalysisResult | null> {
+    const project = await projectService.findById(input.projectId);
+    if (!project) return null;
+
+    const ind = input.indicators;
+    const dataQuality = confidenceCalculator.computeDataQuality({
+      totalTasks: ind.totalTasks,
+      tasksWithDates: Math.round(ind.totalTasks * 0.8),
+      tasksWithAssignments: Math.round(ind.totalTasks * 0.6),
+      tasksUpdatedRecently: Math.round(ind.totalTasks * 0.5),
+      hasBudgetData: false,
+      hasResourceData: false,
+    });
+
+    const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy(
+      'dependency-risk-v1', input.projectId,
+    );
+
+    if (!claudeService.isAvailable()) {
+      console.warn('[ReasoningEngine] Claude API unavailable — skipping dependency analysis');
+      return null;
+    }
+
+    const prompt = this.buildDependencyPrompt(project, ind);
+    let result: CompletionResult;
+    try {
+      result = await claudeService.complete({
+        systemPrompt: this.getDependencySystemPrompt(),
+        userMessage: prompt,
+        responseFormat: 'json',
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+    } catch (err) {
+      console.error('[ReasoningEngine] Claude call failed for dependency analysis:', err);
+      return null;
+    }
+
+    await agentCostTracker.record({
+      agentId: 'dependency-risk-v1',
+      projectId: input.projectId,
+      scanId: input.scanId,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.inputTokens + result.usage.outputTokens,
+      estimatedCostUsd: agentCostTracker.estimateCost(result.model, result.usage.inputTokens, result.usage.outputTokens),
+      model: result.model,
+      latencyMs: result.latencyMs,
+    });
+
+    let parsed: DependencyAnalysisResponse;
+    try {
+      const raw = JSON.parse(result.content);
+      parsed = DependencyAnalysisResponseSchema.parse(raw);
+    } catch (err) {
+      console.error('[ReasoningEngine] Failed to parse dependency analysis response:', err);
+      return null;
+    }
+
+    const confidence = confidenceCalculator.compute({
+      dataQuality, historicalAccuracy, modelCertainty: parsed.modelCertainty,
+    });
+
+    return {
+      hasDependencyRisk: parsed.hasDependencyRisk,
+      severity: parsed.severity,
+      reasoning: parsed.reasoning,
+      risks: parsed.risks,
+      recommendations: parsed.recommendations,
+      modelCertainty: parsed.modelCertainty,
+      confidence,
+      suggestedActions: parsed.suggestedActions.map(a => ({
+        actionType: a.actionType as ActionType,
+        targetEntityType: a.targetEntityType,
+        targetEntityId: a.targetEntityId,
+        oldValue: {},
+        newValue: { description: a.description },
+        reasoning: a.reasoning,
+      })),
+    };
+  }
+
+  private getDependencySystemPrompt(): string {
+    return `You are an expert project schedule analyst specializing in dependency management and critical chain analysis. Your role is to identify dependency risks that could cascade into schedule failures.
+
+You must respond with valid JSON matching the requested schema. Be specific and evidence-based.
+
+Your response must include:
+1. hasDependencyRisk: Whether there are significant dependency risks (true/false)
+2. severity: low, medium, high, or critical
+3. reasoning: Your full chain-of-thought analysis
+4. risks: List of identified dependency risks
+5. recommendations: Actionable recommendations to mitigate dependency risks
+6. modelCertainty: Your confidence (0-100)
+7. suggestedActions: Concrete actions (send_notification or update_dependency)
+
+For actions, use:
+- send_notification: Notify about dependency risks
+- update_dependency: Recommend breaking or restructuring a dependency`;
+  }
+
+  private buildDependencyPrompt(
+    project: Project,
+    indicators: DependencyAnalysisInput['indicators'],
+  ): string {
+    const blockedSection = indicators.blockedChains.length > 0
+      ? `\n## Blocked Chains\n\n${indicators.blockedChains.slice(0, 10).map(c =>
+          `- **Blocked by "${c.blockedByTaskName}"**: ${c.chainTaskNames.join(' -> ')} (${c.reason})`
+        ).join('\n')}`
+      : '';
+
+    const bottleneckSection = indicators.bottleneckTasks.length > 0
+      ? `\n## Bottleneck Tasks (3+ dependents)\n\n${indicators.bottleneckTasks.slice(0, 10).map(t =>
+          `- **${t.taskName}**: ${t.dependentCount} task(s) depend on this`
+        ).join('\n')}`
+      : '';
+
+    const longChainSection = indicators.longChains.length > 0
+      ? `\n## Long Dependency Chains (depth > 5)\n\n${indicators.longChains.slice(0, 5).map(c =>
+          `- Depth ${c.depth}: ${c.taskNames.join(' -> ')}`
+        ).join('\n')}`
+      : '';
+
+    return `## Project Context
+
+**Project**: ${project.name} (${project.status})
+**Total Tasks**: ${indicators.totalTasks}
+**Total Dependencies**: ${indicators.totalDependencies}
+${blockedSection}${bottleneckSection}${longChainSection}
+
+## Instructions
+
+Analyze the dependency data above. Consider:
+1. Can blocked chains be unblocked by reprioritizing the blocking task?
+2. Are bottleneck tasks adequately resourced and monitored?
+3. Should long chains be broken by parallelizing work?
+4. What is the cascading impact if a bottleneck task slips?
+5. Are there circular dependency risks?
+
+Respond with valid JSON matching the dependency analysis schema.`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Lessons Extraction
+  // -------------------------------------------------------------------------
+
+  async generateLessonsExtraction(input: LessonsExtractionInput): Promise<LessonsExtractionResult | null> {
+    const pd = input.projectData;
+
+    const dataQuality = confidenceCalculator.computeDataQuality({
+      totalTasks: pd.totalTasks,
+      tasksWithDates: pd.totalTasks,
+      tasksWithAssignments: Math.round(pd.totalTasks * 0.7),
+      tasksUpdatedRecently: pd.completedTasks,
+      hasBudgetData: pd.budgetVariance !== null,
+      hasResourceData: true,
+    });
+
+    const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy(
+      'lessons-learned-v1', input.projectId,
+    );
+
+    if (!claudeService.isAvailable()) {
+      console.warn('[ReasoningEngine] Claude API unavailable — skipping lessons extraction');
+      return null;
+    }
+
+    const prompt = this.buildLessonsPrompt(pd);
+    let result: CompletionResult;
+    try {
+      result = await claudeService.complete({
+        systemPrompt: this.getLessonsSystemPrompt(),
+        userMessage: prompt,
+        responseFormat: 'json',
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+    } catch (err) {
+      console.error('[ReasoningEngine] Claude call failed for lessons extraction:', err);
+      return null;
+    }
+
+    await agentCostTracker.record({
+      agentId: 'lessons-learned-v1',
+      projectId: input.projectId,
+      scanId: input.scanId,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.inputTokens + result.usage.outputTokens,
+      estimatedCostUsd: agentCostTracker.estimateCost(result.model, result.usage.inputTokens, result.usage.outputTokens),
+      model: result.model,
+      latencyMs: result.latencyMs,
+    });
+
+    let parsed: LessonsExtractionResponse;
+    try {
+      const raw = JSON.parse(result.content);
+      parsed = LessonsExtractionResponseSchema.parse(raw);
+    } catch (err) {
+      console.error('[ReasoningEngine] Failed to parse lessons extraction response:', err);
+      return null;
+    }
+
+    const confidence = confidenceCalculator.compute({
+      dataQuality, historicalAccuracy, modelCertainty: parsed.modelCertainty,
+    });
+
+    return {
+      hasLessons: parsed.hasLessons,
+      reasoning: parsed.reasoning,
+      lessons: parsed.lessons,
+      modelCertainty: parsed.modelCertainty,
+      confidence,
+    };
+  }
+
+  private getLessonsSystemPrompt(): string {
+    return `You are an expert project management retrospective facilitator. Your role is to extract actionable lessons learned from project data to improve future project execution.
+
+You must respond with valid JSON matching the requested schema. Be specific, actionable, and forward-looking.
+
+Your response must include:
+1. hasLessons: Whether there are valuable lessons to extract (true/false)
+2. reasoning: Your analysis chain-of-thought
+3. lessons: Array of structured lessons, each with category, title, description, impact (low/medium/high), and recommendation
+4. modelCertainty: Your confidence (0-100)
+
+Lesson categories should be: scheduling, budgeting, resource_management, risk_management, scope_management, communication, quality, process`;
+  }
+
+  private buildLessonsPrompt(pd: LessonsExtractionInput['projectData']): string {
+    return `## Project Data
+
+**Project**: ${pd.projectName} (${pd.status})
+**Completion Rate**: ${pd.completionRate}%
+**Total Tasks**: ${pd.totalTasks} (${pd.completedTasks} completed, ${pd.overdueTasks} overdue)
+**Duration**: ${pd.durationDays} days
+**Budget Variance**: ${pd.budgetVariance !== null ? `$${pd.budgetVariance.toFixed(0)}` : 'N/A'}
+**Existing Lessons**: ${pd.existingLessonsCount}
+
+## Instructions
+
+Based on the project data above, extract lessons learned. Consider:
+1. Was the project delivered on time? If not, what scheduling lessons can be drawn?
+2. Was the budget met? What cost management lessons apply?
+3. Were there many overdue tasks? What does this say about estimation accuracy?
+4. What went well that should be replicated in future projects?
+5. What process improvements would have helped?
+6. Avoid duplicating existing lessons — focus on new insights.
+
+Respond with valid JSON matching the lessons extraction schema.`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Predictive Alert
+  // -------------------------------------------------------------------------
+
+  async generatePredictiveAlert(input: PredictiveAlertInput): Promise<PredictiveAlertResult | null> {
+    const project = await projectService.findById(input.projectId);
+    if (!project) return null;
+
+    const ind = input.indicators;
+    const dataQuality = confidenceCalculator.computeDataQuality({
+      totalTasks: 20,
+      tasksWithDates: 18,
+      tasksWithAssignments: 15,
+      tasksUpdatedRecently: 10,
+      hasBudgetData: !!project.budgetAllocated,
+      hasResourceData: true,
+    });
+
+    const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy(
+      'predictive-alerting-v1', input.projectId,
+    );
+
+    if (!claudeService.isAvailable()) {
+      console.warn('[ReasoningEngine] Claude API unavailable — skipping predictive alert');
+      return null;
+    }
+
+    const prompt = this.buildPredictivePrompt(project, ind);
+    let result: CompletionResult;
+    try {
+      result = await claudeService.complete({
+        systemPrompt: this.getPredictiveSystemPrompt(),
+        userMessage: prompt,
+        responseFormat: 'json',
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+    } catch (err) {
+      console.error('[ReasoningEngine] Claude call failed for predictive alert:', err);
+      return null;
+    }
+
+    await agentCostTracker.record({
+      agentId: 'predictive-alerting-v1',
+      projectId: input.projectId,
+      scanId: input.scanId,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.inputTokens + result.usage.outputTokens,
+      estimatedCostUsd: agentCostTracker.estimateCost(result.model, result.usage.inputTokens, result.usage.outputTokens),
+      model: result.model,
+      latencyMs: result.latencyMs,
+    });
+
+    let parsed: PredictiveAlertResponse;
+    try {
+      const raw = JSON.parse(result.content);
+      parsed = PredictiveAlertResponseSchema.parse(raw);
+    } catch (err) {
+      console.error('[ReasoningEngine] Failed to parse predictive alert response:', err);
+      return null;
+    }
+
+    const confidence = confidenceCalculator.compute({
+      dataQuality, historicalAccuracy, modelCertainty: parsed.modelCertainty,
+    });
+
+    return {
+      hasWarning: parsed.hasWarning,
+      severity: parsed.severity,
+      reasoning: parsed.reasoning,
+      warnings: parsed.warnings,
+      predictions: parsed.predictions,
+      recommendations: parsed.recommendations,
+      modelCertainty: parsed.modelCertainty,
+      confidence,
+      suggestedActions: parsed.suggestedActions.map(a => ({
+        actionType: a.actionType as ActionType,
+        targetEntityType: a.targetEntityType,
+        targetEntityId: a.targetEntityId,
+        oldValue: {},
+        newValue: { description: a.description },
+        reasoning: a.reasoning,
+      })),
+    };
+  }
+
+  private getPredictiveSystemPrompt(): string {
+    return `You are an expert project forecasting analyst specializing in early warning systems. Your role is to detect patterns that predict project problems before they become critical.
+
+You must respond with valid JSON matching the requested schema. Be specific and evidence-based.
+
+Your response must include:
+1. hasWarning: Whether there are genuine early warnings (true/false)
+2. severity: low, medium, high, or critical
+3. reasoning: Your full chain-of-thought analysis
+4. warnings: Early warning indicators detected
+5. predictions: What is likely to happen if current trends continue
+6. recommendations: Proactive actions to prevent predicted problems
+7. modelCertainty: Your confidence (0-100)
+8. suggestedActions: Concrete actions (send_notification or create_change_request)
+
+Key principles:
+- Focus on leading indicators, not lagging ones
+- Velocity decline is a strong predictor of future delays
+- Progress-vs-time imbalance indicates schedule risk
+- Multiple agent flags on a project indicate systemic issues`;
+  }
+
+  private buildPredictivePrompt(
+    project: Project,
+    indicators: PredictiveAlertInput['indicators'],
+  ): string {
+    const velocitySection = indicators.velocityTrend
+      ? `\n## Velocity Trend\n\n- **Current velocity**: ${indicators.velocityTrend.current.toFixed(1)} points/sprint\n- **Historical average**: ${indicators.velocityTrend.historical.toFixed(1)} points/sprint\n- **Decline**: ${indicators.velocityTrend.declinePercent.toFixed(1)}%`
+      : '\n## Velocity Trend\n\nInsufficient sprint data to compute velocity trend.';
+
+    const similarSection = indicators.similarProjectComparison
+      ? `\n## Similar Project Comparison\n\n- **Sample size**: ${indicators.similarProjectComparison.sampleSize} project(s)\n- **Average completion rate**: ${indicators.similarProjectComparison.avgCompletionRate.toFixed(1)}%\n- **Average budget variance**: $${indicators.similarProjectComparison.avgBudgetVariance.toFixed(0)}`
+      : '';
+
+    return `## Project Context
+
+**Project**: ${project.name} (${project.status})
+
+## Progress Trajectory
+
+- **Completion rate**: ${indicators.progressTrajectory.completionRate.toFixed(1)}%
+- **Time elapsed**: ${indicators.progressTrajectory.timeElapsedPercent.toFixed(1)}%
+- **Behind schedule by**: ${indicators.progressTrajectory.behindPercent.toFixed(1)}%
+${velocitySection}
+
+## Risk Accumulation
+
+- **Agent flags in last 30 days**: ${indicators.riskAccumulation}
+${similarSection}
+
+## Instructions
+
+Analyze the predictive indicators above. Consider:
+1. Is the velocity trend declining? If so, what does this predict?
+2. Is progress keeping pace with elapsed time?
+3. Are multiple agent flags converging on this project?
+4. How does this project compare to similar completed projects?
+5. What is the probability of project success if current trends continue?
+
+Respond with valid JSON matching the predictive alert schema.`;
   }
 
   // -------------------------------------------------------------------------

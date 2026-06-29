@@ -15,6 +15,10 @@ import { resourceOptimizationAgent } from './agents/ResourceOptimizationAgent';
 import { crossProjectIntelligenceAgent } from './agents/CrossProjectIntelligenceAgent';
 import { riskEscalationAgent, ProjectAgentResults } from './agents/RiskEscalationAgent';
 import { stakeholderCommunicationAgent } from './agents/StakeholderCommunicationAgent';
+import { projectHygieneAgent } from './agents/ProjectHygieneAgent';
+import { dependencyRiskAgent } from './agents/DependencyRiskAgent';
+import { lessonsLearnedAgent } from './agents/LessonsLearnedAgent';
+import { predictiveAlertingAgent } from './agents/PredictiveAlertingAgent';
 
 export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
@@ -81,6 +85,10 @@ export class AgentSchedulerService {
     portfolioProposalsCreated: number;
     riskEscalationsCreated: number;
     stakeholderReportsCreated: number;
+    hygieneAlertsCreated: number;
+    dependencyRiskAlertsCreated: number;
+    lessonsExtracted: number;
+    predictiveAlertsCreated: number;
   }> {
     console.log('[Agent] Starting scan...');
 
@@ -92,6 +100,7 @@ export class AgentSchedulerService {
         projectsScanned: 0, schedulesScanned: 0, delaysDetected: 0,
         proposalsGenerated: 0, notificationsSent: 0, budgetAlertsCreated: 0,
         mcAlertsCreated: 0, meetingAlertsCreated: 0, scopeCreepAlertsCreated: 0, budgetProposalsCreated: 0, resourceProposalsCreated: 0, portfolioProposalsCreated: 0, riskEscalationsCreated: 0, stakeholderReportsCreated: 0,
+        hygieneAlertsCreated: 0, dependencyRiskAlertsCreated: 0, lessonsExtracted: 0, predictiveAlertsCreated: 0,
       };
     }
 
@@ -110,6 +119,10 @@ export class AgentSchedulerService {
       portfolioProposalsCreated: 0,
       riskEscalationsCreated: 0,
       stakeholderReportsCreated: 0,
+      hygieneAlertsCreated: 0,
+      dependencyRiskAlertsCreated: 0,
+      lessonsExtracted: 0,
+      predictiveAlertsCreated: 0,
     };
 
     // Track per-project agent flags for the risk escalation agent
@@ -331,6 +344,62 @@ export class AgentSchedulerService {
         await this.activityLog.log({
           projectId: project.id,
           agentName: 'stakeholder_communication',
+          result: 'error',
+          summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        }).catch(() => {});
+      }
+
+      // --- Agent 11: Project Hygiene ---
+      try {
+        const hygieneAlerts = await this.runProjectHygieneAgent(project);
+        stats.hygieneAlertsCreated += hygieneAlerts;
+      } catch (error) {
+        console.error(`[Agent:ProjectHygiene] Error for project ${project.id} (${project.name}):`, error);
+        await this.activityLog.log({
+          projectId: project.id,
+          agentName: 'project_hygiene',
+          result: 'error',
+          summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        }).catch(() => {});
+      }
+
+      // --- Agent 12: Dependency Risk ---
+      try {
+        const dependencyAlerts = await this.runDependencyRiskAgent(project);
+        stats.dependencyRiskAlertsCreated += dependencyAlerts;
+      } catch (error) {
+        console.error(`[Agent:DependencyRisk] Error for project ${project.id} (${project.name}):`, error);
+        await this.activityLog.log({
+          projectId: project.id,
+          agentName: 'dependency_risk',
+          result: 'error',
+          summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        }).catch(() => {});
+      }
+
+      // --- Agent 13: Lessons Learned ---
+      try {
+        const lessons = await this.runLessonsLearnedAgent(project);
+        stats.lessonsExtracted += lessons;
+      } catch (error) {
+        console.error(`[Agent:LessonsLearned] Error for project ${project.id} (${project.name}):`, error);
+        await this.activityLog.log({
+          projectId: project.id,
+          agentName: 'lessons_learned',
+          result: 'error',
+          summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        }).catch(() => {});
+      }
+
+      // --- Agent 14: Predictive Alerting ---
+      try {
+        const predictiveAlerts = await this.runPredictiveAlertingAgent(project);
+        stats.predictiveAlertsCreated += predictiveAlerts;
+      } catch (error) {
+        console.error(`[Agent:PredictiveAlerting] Error for project ${project.id} (${project.name}):`, error);
+        await this.activityLog.log({
+          projectId: project.id,
+          agentName: 'predictive_alerting',
           result: 'error',
           summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
         }).catch(() => {});
@@ -906,6 +975,148 @@ export class AgentSchedulerService {
       result: 'alert_created',
       summary: `Stakeholder report created — ${result.analysis?.overallStatus}, ${result.analysis?.keyHighlights.length} highlight(s), ${result.analysis?.risksAndConcerns.length} risk(s)`,
       details: result.snapshot ? { totalTasks: result.snapshot.totalTasks, completionRate: result.snapshot.completionRate, overdueTasks: result.snapshot.overdueTasks, proposalId: result.proposal?.id } : undefined,
+    });
+
+    return 1;
+  }
+  // ---------------------------------------------------------------------------
+  // Agent 11 — Project Hygiene
+  // ---------------------------------------------------------------------------
+
+  private async runProjectHygieneAgent(project: Project): Promise<number> {
+    const notifyUserId = project.projectManagerId || project.createdBy;
+
+    const result = await projectHygieneAgent.run({
+      projectId: project.id,
+      userId: notifyUserId,
+    });
+
+    if (result.skipped) {
+      await this.activityLog.log({
+        projectId: project.id,
+        agentName: 'project_hygiene',
+        result: 'skipped',
+        summary: result.skipReason || 'No significant hygiene issues',
+        details: result.indicators ? { staleTasks: result.indicators.staleTasks.length, missingDates: result.indicators.missingDateTasks.length, abandonedSprints: result.indicators.abandonedSprints.length, zeroProgress: result.indicators.zeroProgressTasks.length } : undefined,
+      });
+      return 0;
+    }
+
+    console.log(`[Agent:ProjectHygiene] Proposal created for "${project.name}"`);
+
+    await this.activityLog.log({
+      projectId: project.id,
+      agentName: 'project_hygiene',
+      result: 'alert_created',
+      summary: `Hygiene issues detected — ${result.indicators?.staleTasks.length} stale, ${result.indicators?.missingDateTasks.length} missing dates, ${result.indicators?.abandonedSprints.length} abandoned sprints`,
+      details: result.indicators ? { staleTasks: result.indicators.staleTasks.length, missingDates: result.indicators.missingDateTasks.length, unassigned: result.indicators.unassignedTasks.length, missingEstimates: result.indicators.missingEstimateTasks.length, abandonedSprints: result.indicators.abandonedSprints.length, zeroProgress: result.indicators.zeroProgressTasks.length, proposalId: result.proposal?.id } : undefined,
+    });
+
+    return 1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent 12 — Dependency Risk
+  // ---------------------------------------------------------------------------
+
+  private async runDependencyRiskAgent(project: Project): Promise<number> {
+    const notifyUserId = project.projectManagerId || project.createdBy;
+
+    const result = await dependencyRiskAgent.run({
+      projectId: project.id,
+      userId: notifyUserId,
+    });
+
+    if (result.skipped) {
+      await this.activityLog.log({
+        projectId: project.id,
+        agentName: 'dependency_risk',
+        result: 'skipped',
+        summary: result.skipReason || 'No significant dependency risks',
+        details: result.indicators ? { blockedChains: result.indicators.blockedChains.length, bottlenecks: result.indicators.bottleneckTasks.length, longChains: result.indicators.longChains.length } : undefined,
+      });
+      return 0;
+    }
+
+    console.log(`[Agent:DependencyRisk] Proposal created for "${project.name}"`);
+
+    await this.activityLog.log({
+      projectId: project.id,
+      agentName: 'dependency_risk',
+      result: 'alert_created',
+      summary: `Dependency risks detected — ${result.indicators?.blockedChains.length} blocked chain(s), ${result.indicators?.bottleneckTasks.length} bottleneck(s), ${result.indicators?.longChains.length} long chain(s)`,
+      details: result.indicators ? { blockedChains: result.indicators.blockedChains.length, bottlenecks: result.indicators.bottleneckTasks.length, longChains: result.indicators.longChains.length, totalDeps: result.indicators.totalDependencies, proposalId: result.proposal?.id } : undefined,
+    });
+
+    return 1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent 13 — Lessons Learned
+  // ---------------------------------------------------------------------------
+
+  private async runLessonsLearnedAgent(project: Project): Promise<number> {
+    const notifyUserId = project.projectManagerId || project.createdBy;
+
+    const result = await lessonsLearnedAgent.run({
+      projectId: project.id,
+      userId: notifyUserId,
+    });
+
+    if (result.skipped) {
+      await this.activityLog.log({
+        projectId: project.id,
+        agentName: 'lessons_learned',
+        result: 'skipped',
+        summary: result.skipReason || 'No lessons extracted',
+      });
+      return 0;
+    }
+
+    console.log(`[Agent:LessonsLearned] ${result.lessonsExtracted} lesson(s) extracted for "${project.name}"`);
+
+    await this.activityLog.log({
+      projectId: project.id,
+      agentName: 'lessons_learned',
+      result: 'alert_created',
+      summary: `${result.lessonsExtracted} lesson(s) extracted and stored`,
+      details: { lessonsExtracted: result.lessonsExtracted, proposalId: result.proposal?.id },
+    });
+
+    return result.lessonsExtracted;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent 14 — Predictive Alerting
+  // ---------------------------------------------------------------------------
+
+  private async runPredictiveAlertingAgent(project: Project): Promise<number> {
+    const notifyUserId = project.projectManagerId || project.createdBy;
+
+    const result = await predictiveAlertingAgent.run({
+      projectId: project.id,
+      userId: notifyUserId,
+    });
+
+    if (result.skipped) {
+      await this.activityLog.log({
+        projectId: project.id,
+        agentName: 'predictive_alerting',
+        result: 'skipped',
+        summary: result.skipReason || 'No predictive warnings',
+        details: result.indicators ? { velocityDecline: result.indicators.velocityTrend?.declinePercent ?? 0, behindSchedule: result.indicators.progressTrajectory.behindPercent, riskAccumulation: result.indicators.riskAccumulation } : undefined,
+      });
+      return 0;
+    }
+
+    console.log(`[Agent:PredictiveAlerting] Warning created for "${project.name}" — severity: ${result.analysis?.severity}`);
+
+    await this.activityLog.log({
+      projectId: project.id,
+      agentName: 'predictive_alerting',
+      result: 'alert_created',
+      summary: `Predictive warning — velocity decline ${result.indicators?.velocityTrend?.declinePercent ?? 0}%, behind schedule ${result.indicators?.progressTrajectory.behindPercent}%, ${result.indicators?.riskAccumulation} risk flags`,
+      details: result.indicators ? { velocityDecline: result.indicators.velocityTrend?.declinePercent ?? 0, behindSchedule: result.indicators.progressTrajectory.behindPercent, riskAccumulation: result.indicators.riskAccumulation, proposalId: result.proposal?.id } : undefined,
     });
 
     return 1;

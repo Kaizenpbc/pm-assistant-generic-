@@ -167,6 +167,11 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Cross-Project Intelligence Agent** -- Portfolio-level analysis: identifies systemic risks, common patterns, resource contention, and cascading delays across all active projects
 - **Risk Escalation Agent** -- Runs last in each scan; detects compound risks where 2+ agents flag the same project (e.g., schedule delay + budget overrun + resource bottleneck), escalates to management
 - **Stakeholder Communication Agent** -- Auto-generates stakeholder status reports with executive summaries, key highlights, risks/concerns, upcoming milestones, and recommended actions
+- **Project Hygiene Agent** -- Detects stale tasks (14+ days), missing dates/estimates, unassigned tasks, abandoned sprints, and zero-progress in-progress tasks
+- **Dependency Risk Agent** -- Analyzes task dependency graphs to detect blocked chains, bottleneck tasks (3+ dependents), and long dependency chains (depth > 5)
+- **Lessons Learned Agent** -- Auto-extracts lessons when projects reach 90%+ completion or are completed; stores lessons for RAG retrieval and future project improvement
+- **Predictive Alerting Agent** -- Pattern-based early warnings using velocity trends, progress-vs-time trajectory, risk accumulation, and similar project comparison
+- **Autonomous Execution (Tier 3)** -- Agents with proven track records (30+ days, 20+ proposals, 80%+ acceptance, zero rollbacks) can be promoted to auto-execute low-risk, high-confidence proposals
 - **Confidence Scoring** -- Weighted confidence (data quality + historical accuracy + model certainty) controls what agents can propose
 - **Proposal Lifecycle** -- pending -> approved/rejected -> executed/rolled_back with full audit trail
 - **Emergency Kill Switch** -- Global, per-agent, and per-project agent shutdown via API with audit logging
