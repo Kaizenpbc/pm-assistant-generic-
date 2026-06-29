@@ -11,6 +11,7 @@ import { dagWorkflowService } from './DagWorkflowService';
 import { databaseService } from '../database/connection';
 import { killSwitchService } from './agents/KillSwitchService';
 import { budgetIntelligenceAgent } from './agents/BudgetIntelligenceAgent';
+import { resourceOptimizationAgent } from './agents/ResourceOptimizationAgent';
 
 export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
@@ -73,6 +74,7 @@ export class AgentSchedulerService {
     meetingAlertsCreated: number;
     scopeCreepAlertsCreated: number;
     budgetProposalsCreated: number;
+    resourceProposalsCreated: number;
   }> {
     console.log('[Agent] Starting scan...');
 
@@ -83,7 +85,7 @@ export class AgentSchedulerService {
       return {
         projectsScanned: 0, schedulesScanned: 0, delaysDetected: 0,
         proposalsGenerated: 0, notificationsSent: 0, budgetAlertsCreated: 0,
-        mcAlertsCreated: 0, meetingAlertsCreated: 0, scopeCreepAlertsCreated: 0, budgetProposalsCreated: 0,
+        mcAlertsCreated: 0, meetingAlertsCreated: 0, scopeCreepAlertsCreated: 0, budgetProposalsCreated: 0, resourceProposalsCreated: 0,
       };
     }
 
@@ -98,6 +100,7 @@ export class AgentSchedulerService {
       meetingAlertsCreated: 0,
       scopeCreepAlertsCreated: 0,
       budgetProposalsCreated: 0,
+      resourceProposalsCreated: 0,
     };
 
     const thresholdDays = config.AGENT_DELAY_THRESHOLD_DAYS;
@@ -254,6 +257,20 @@ export class AgentSchedulerService {
         await this.activityLog.log({
           projectId: project.id,
           agentName: 'budget_intelligence',
+          result: 'error',
+          summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        }).catch(() => {});
+      }
+
+      // --- Agent 7: Resource Optimization ---
+      try {
+        const resourceProposals = await this.runResourceOptimizationAgent(project);
+        stats.resourceProposalsCreated += resourceProposals;
+      } catch (error) {
+        console.error(`[Agent:ResourceOptimization] Error for project ${project.id} (${project.name}):`, error);
+        await this.activityLog.log({
+          projectId: project.id,
+          agentName: 'resource_optimization',
           result: 'error',
           summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
         }).catch(() => {});
@@ -620,6 +637,42 @@ export class AgentSchedulerService {
       result: 'alert_created',
       summary: `Budget issue detected — proposal created (CPI: ${result.indicators?.CPI?.toFixed(2)}, VAC: $${result.indicators?.VAC?.toFixed(0)})`,
       details: result.indicators ? { CPI: result.indicators.CPI, SPI: result.indicators.SPI, VAC: result.indicators.VAC, proposalId: result.proposal?.id } : undefined,
+    });
+
+    return 1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent 7 — Resource Optimization
+  // ---------------------------------------------------------------------------
+
+  private async runResourceOptimizationAgent(project: Project): Promise<number> {
+    const notifyUserId = project.projectManagerId || project.createdBy;
+
+    const result = await resourceOptimizationAgent.run({
+      projectId: project.id,
+      userId: notifyUserId,
+    });
+
+    if (result.skipped) {
+      await this.activityLog.log({
+        projectId: project.id,
+        agentName: 'resource_optimization',
+        result: 'skipped',
+        summary: result.skipReason || 'No significant resource imbalances',
+        details: result.indicators ? { totalResources: result.indicators.totalResources, overAllocated: result.indicators.overAllocatedResources.length, underUtilized: result.indicators.underUtilizedResources.length } : undefined,
+      });
+      return 0;
+    }
+
+    console.log(`[Agent:ResourceOptimization] Proposal created for "${project.name}"`);
+
+    await this.activityLog.log({
+      projectId: project.id,
+      agentName: 'resource_optimization',
+      result: 'alert_created',
+      summary: `Resource imbalance detected — proposal created (${result.indicators?.overAllocatedResources.length} over-allocated, ${result.indicators?.underUtilizedResources.length} under-utilized)`,
+      details: result.indicators ? { totalResources: result.indicators.totalResources, overAllocated: result.indicators.overAllocatedResources.length, underUtilized: result.indicators.underUtilizedResources.length, bottleneckRoles: result.indicators.bottleneckRoles, proposalId: result.proposal?.id } : undefined,
     });
 
     return 1;

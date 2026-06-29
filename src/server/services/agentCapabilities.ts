@@ -9,6 +9,7 @@ import { ragService } from './RagService';
 import { scheduleRecoveryAgent } from './agents/ScheduleRecoveryAgent';
 import { scopeCreepAgent } from './agents/ScopeCreepAgent';
 import { budgetIntelligenceAgent } from './agents/BudgetIntelligenceAgent';
+import { resourceOptimizationAgent } from './agents/ResourceOptimizationAgent';
 
 // Register RAG agent capability (side-effect import)
 import './ragAgentCapability';
@@ -215,6 +216,38 @@ agentRegistry.register({
   timeoutMs: 180000,
   handler: async (input) => {
     const result = await budgetIntelligenceAgent.run(input);
+    return {
+      analysis: result.analysis,
+      proposal: result.proposal,
+      indicators: result.indicators,
+      skipped: result.skipped,
+      skipReason: result.skipReason,
+    };
+  },
+});
+
+// --- Resource Optimization Agent (Agentic — reasoning + proposals) ---
+agentRegistry.register({
+  id: 'resource-optimization-v1',
+  capability: 'resource.optimize',
+  version: '1.0.0',
+  description: 'Analyzes resource allocation imbalances, identifies over-allocated and under-utilized resources, and proposes rebalancing actions',
+  inputSchema: z.object({
+    projectId: z.string(),
+    userId: z.string(),
+    scanId: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    analysis: z.any().nullable(),
+    proposal: z.any().nullable(),
+    indicators: z.any().nullable(),
+    skipped: z.boolean(),
+    skipReason: z.string().optional(),
+  }),
+  permissions: ['agent:resource'],
+  timeoutMs: 180000,
+  handler: async (input) => {
+    const result = await resourceOptimizationAgent.run(input);
     return {
       analysis: result.analysis,
       proposal: result.proposal,

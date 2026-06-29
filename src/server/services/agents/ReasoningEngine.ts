@@ -202,6 +202,57 @@ const BudgetAnalysisResponseSchema = z.object({
 type BudgetAnalysisResponse = z.infer<typeof BudgetAnalysisResponseSchema>;
 
 // ---------------------------------------------------------------------------
+// Resource Analysis Types
+// ---------------------------------------------------------------------------
+
+export interface ResourceAnalysisInput {
+  projectId: string;
+  indicators: {
+    totalResources: number;
+    overAllocatedResources: Array<{ resourceId: string; resourceName: string; role: string; averageUtilization: number; peakUtilization: number }>;
+    underUtilizedResources: Array<{ resourceId: string; resourceName: string; role: string; averageUtilization: number }>;
+    bottleneckRoles: string[];
+  };
+  scanId?: string;
+}
+
+export interface ResourceAnalysisResult {
+  hasResourceIssue: boolean;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  reasoning: string;
+  rootCauses: string[];
+  recommendations: string[];
+  modelCertainty: number;
+  confidence: ConfidenceResult;
+  suggestedActions: Array<{
+    actionType: ActionType;
+    targetEntityType: string;
+    targetEntityId: string;
+    oldValue: Record<string, unknown>;
+    newValue: Record<string, unknown>;
+    reasoning: string;
+  }>;
+}
+
+const ResourceAnalysisResponseSchema = z.object({
+  hasResourceIssue: z.boolean(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  reasoning: z.string(),
+  rootCauses: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  modelCertainty: z.number().min(0).max(100),
+  suggestedActions: z.array(z.object({
+    actionType: z.enum(['reassign_resource', 'send_notification', 'create_change_request']),
+    targetEntityType: z.string(),
+    targetEntityId: z.string(),
+    description: z.string(),
+    reasoning: z.string(),
+  })),
+});
+
+type ResourceAnalysisResponse = z.infer<typeof ResourceAnalysisResponseSchema>;
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -666,6 +717,196 @@ Analyze the EVM metrics and project context above. Consider:
 5. What is the realistic EAC given current performance?
 
 Respond with valid JSON matching the budget analysis schema.`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Resource Analysis
+  // -------------------------------------------------------------------------
+
+  async generateResourceAnalysis(input: ResourceAnalysisInput): Promise<ResourceAnalysisResult | null> {
+    // 1. Get project context
+    const project = await projectService.findById(input.projectId);
+    if (!project) return null;
+
+    const schedules = await scheduleService.findByProjectId(input.projectId);
+    let allTasks: Task[] = [];
+    for (const s of schedules) {
+      const tasks = await scheduleService.findTasksByScheduleId(s.id);
+      allTasks = allTasks.concat(tasks);
+    }
+
+    // 2. Compute data quality
+    const now = Date.now();
+    const dataQuality = confidenceCalculator.computeDataQuality({
+      totalTasks: allTasks.length,
+      tasksWithDates: allTasks.filter(t => t.startDate || t.endDate).length,
+      tasksWithAssignments: allTasks.filter(t => t.assignedTo).length,
+      tasksUpdatedRecently: allTasks.filter(t => {
+        const updated = new Date(t.updatedAt ?? t.createdAt).getTime();
+        return (now - updated) < FOURTEEN_DAYS_MS;
+      }).length,
+      hasBudgetData: !!project.budgetAllocated,
+      hasResourceData: input.indicators.totalResources > 0,
+    });
+
+    // 3. Get historical accuracy
+    const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy(
+      'resource-optimization-v1',
+      input.projectId,
+    );
+
+    // 4. Check Claude availability
+    if (!claudeService.isAvailable()) {
+      console.warn('[ReasoningEngine] Claude API unavailable — skipping resource analysis');
+      return null;
+    }
+
+    // 5. Build prompt and call Claude
+    const prompt = this.buildResourcePrompt(project, input.indicators, allTasks);
+    let result: CompletionResult;
+    try {
+      result = await claudeService.complete({
+        systemPrompt: this.getResourceSystemPrompt(),
+        userMessage: prompt,
+        responseFormat: 'json',
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+    } catch (err) {
+      console.error('[ReasoningEngine] Claude call failed for resource analysis:', err);
+      return null;
+    }
+
+    // 6. Track cost
+    await agentCostTracker.record({
+      agentId: 'resource-optimization-v1',
+      projectId: input.projectId,
+      scanId: input.scanId,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.inputTokens + result.usage.outputTokens,
+      estimatedCostUsd: agentCostTracker.estimateCost(
+        result.model,
+        result.usage.inputTokens,
+        result.usage.outputTokens,
+      ),
+      model: result.model,
+      latencyMs: result.latencyMs,
+    });
+
+    // 7. Parse and validate
+    let parsed: ResourceAnalysisResponse;
+    try {
+      const raw = JSON.parse(result.content);
+      parsed = ResourceAnalysisResponseSchema.parse(raw);
+    } catch (err) {
+      console.error('[ReasoningEngine] Failed to parse resource analysis response:', err);
+      return null;
+    }
+
+    // 8. Compute confidence
+    const confidence = confidenceCalculator.compute({
+      dataQuality,
+      historicalAccuracy,
+      modelCertainty: parsed.modelCertainty,
+    });
+
+    // 9. Map response
+    return {
+      hasResourceIssue: parsed.hasResourceIssue,
+      severity: parsed.severity,
+      reasoning: parsed.reasoning,
+      rootCauses: parsed.rootCauses,
+      recommendations: parsed.recommendations,
+      modelCertainty: parsed.modelCertainty,
+      confidence,
+      suggestedActions: parsed.suggestedActions.map(a => ({
+        actionType: a.actionType as ActionType,
+        targetEntityType: a.targetEntityType,
+        targetEntityId: a.targetEntityId,
+        oldValue: {},
+        newValue: { description: a.description },
+        reasoning: a.reasoning,
+      })),
+    };
+  }
+
+  private getResourceSystemPrompt(): string {
+    return `You are an expert project resource manager and capacity planning specialist. Your role is to analyze resource allocation imbalances and recommend corrective actions.
+
+You must respond with valid JSON matching the requested schema. Be specific and evidence-based.
+
+Your response must include:
+1. hasResourceIssue: Whether there is a significant resource imbalance (true/false)
+2. severity: low, medium, high, or critical
+3. reasoning: Your full chain-of-thought analysis
+4. rootCauses: List of identified root causes for resource imbalance
+5. recommendations: Actionable recommendations for rebalancing
+6. modelCertainty: Your confidence (0-100)
+7. suggestedActions: Concrete actions (reassign_resource, send_notification, or create_change_request)
+
+For actions, use these types:
+- reassign_resource: Recommend reassigning a resource from one task to another
+- send_notification: Escalate to stakeholders or management
+- create_change_request: Recommend a formal change request for staffing or scope changes`;
+  }
+
+  private buildResourcePrompt(
+    project: Project,
+    indicators: ResourceAnalysisInput['indicators'],
+    tasks: Task[],
+  ): string {
+    const tasksByStatus = {
+      completed: tasks.filter(t => t.status === 'completed').length,
+      inProgress: tasks.filter(t => t.status === 'in_progress').length,
+      notStarted: tasks.filter(t => t.status === 'pending').length,
+      total: tasks.length,
+    };
+
+    const overAllocatedSection = indicators.overAllocatedResources.length > 0
+      ? `\n## Over-Allocated Resources\n\n${indicators.overAllocatedResources.map(r =>
+          `- **${r.resourceName}** (${r.role}): avg ${r.averageUtilization}%, peak ${r.peakUtilization}%`
+        ).join('\n')}`
+      : '';
+
+    const underUtilizedSection = indicators.underUtilizedResources.length > 0
+      ? `\n## Under-Utilized Resources\n\n${indicators.underUtilizedResources.map(r =>
+          `- **${r.resourceName}** (${r.role}): avg ${r.averageUtilization}%`
+        ).join('\n')}`
+      : '';
+
+    const bottleneckSection = indicators.bottleneckRoles.length > 0
+      ? `\n## Bottleneck Roles\n\nAll members in these roles are >80% utilized: ${indicators.bottleneckRoles.join(', ')}`
+      : '';
+
+    return `## Project Context
+
+**Project**: ${project.name} (${project.status})
+**Total Resources**: ${indicators.totalResources}
+
+## Resource Summary
+
+- **Over-allocated**: ${indicators.overAllocatedResources.length} resource(s) above 100% utilization
+- **Under-utilized**: ${indicators.underUtilizedResources.length} resource(s) below 40% utilization
+- **Bottleneck roles**: ${indicators.bottleneckRoles.length > 0 ? indicators.bottleneckRoles.join(', ') : 'none'}
+${overAllocatedSection}${underUtilizedSection}${bottleneckSection}
+
+## Task Status Summary
+
+- Completed: ${tasksByStatus.completed}/${tasksByStatus.total}
+- In Progress: ${tasksByStatus.inProgress}/${tasksByStatus.total}
+- Not Started: ${tasksByStatus.notStarted}/${tasksByStatus.total}
+
+## Instructions
+
+Analyze the resource allocation above. Consider:
+1. Can under-utilized resources take on work from over-allocated resources (matching roles/skills)?
+2. Are bottleneck roles blocking project progress?
+3. Should additional resources be requested or scope be reduced?
+4. What is the risk of burnout for over-allocated resources?
+5. What is the optimal rebalancing strategy with minimal disruption?
+
+Respond with valid JSON matching the resource analysis schema.`;
   }
 
   // -------------------------------------------------------------------------
