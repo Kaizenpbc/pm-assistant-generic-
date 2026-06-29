@@ -290,6 +290,7 @@ Proposal creation is rate-limited to prevent alert fatigue:
 | `resource-optimization-v1` | Detects over-allocated/under-utilized resources and bottleneck roles, proposes rebalancing actions |
 | `cross-project-intelligence-v1` | Portfolio-level analysis: systemic risks, common patterns, resource contention across projects |
 | `risk-escalation-v1` | Detects compound risks where multiple agents flag the same project; escalates to management |
+| `stakeholder-communication-v1` | Auto-generates stakeholder status reports with executive summaries, highlights, risks, and recommended actions |
 
 ---
 

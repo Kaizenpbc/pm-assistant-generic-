@@ -100,6 +100,7 @@ The rulebook that governs all agent behavior. Must be defined before any agent c
   - Resource Optimization Agent: read resources/assignments/capacity, write resource assignments
   - Cross-Project Intelligence Agent: read-only across portfolio
   - Risk Escalation Agent: read-only, write notifications only
+  - Stakeholder Communication Agent: read tasks/schedules/budgets/EVM, write status reports as proposals
 
 ### Cost Budget
 - Define max Claude API calls per scan cycle
@@ -457,6 +458,21 @@ Each agent follows the pattern: perceive -> reason -> plan -> propose. Registere
 - **Risk level**: low-to-high (creates notifications and change requests for compound risks)
 - **Default policy**: log_only
 
+### Stakeholder Communication Agent
+`src/server/services/agents/StakeholderCommunicationAgent.ts`
+
+- **Trigger**: runs per-project during each scan cycle (after resource optimization agent)
+- **Perception**: gathers comprehensive project status snapshot — completion rate, EVM metrics (CPI/SPI), upcoming milestones (14 days), recently completed tasks (7 days), risk indicators (overdue, budget, schedule)
+- **Reasoning**: Claude generates stakeholder-ready status report with executive summary, key highlights, risks/concerns, upcoming milestones, and recommended actions
+- **Output**: status report proposal with `send_notification` action containing the full report
+- **Registration**: `stakeholder-communication-v1`, capability `stakeholder.report`
+- **Input schema**: `{ projectId, userId, scanId? }`
+- **Output schema**: `{ analysis, proposal, snapshot, skipped, skipReason? }`
+- **Guard chain**: cost budget → kill switch → rate limiter → circuit breaker → gather snapshot → reason → propose
+- **Skips when**: no tasks in project, reasoning engine unavailable, snapshot gathering fails
+- **Risk level**: low (informational report, no data mutations)
+- **Default policy**: require_approval
+
 ---
 
 ## V. Policy Engine Configuration
@@ -775,6 +791,7 @@ Update the following documents when agent features are implemented. Documentatio
 12. Resource Optimization Agent (third agent)                   -- cross-project
 13. Cross-Project Intelligence Agent (fourth agent)             -- portfolio level
 14. Risk Escalation Agent (fifth agent)                         -- compound risks
+15. Stakeholder Communication Agent (sixth agent)               -- status reports
 ```
 
 Each step is a commit-and-push cycle. Each agent follows the same pattern: register capability, wire into scheduler, test, document.
@@ -786,8 +803,8 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | Component | File | Status |
 |-----------|------|--------|
 | Agent Registry | `src/server/services/AgentRegistryService.ts` | Production-ready |
-| Agent Scheduler (9 agents) | `src/server/services/AgentSchedulerService.ts` | Production-ready |
-| Agent Capabilities (10 registered) | `src/server/services/agentCapabilities.ts` | Production-ready |
+| Agent Scheduler (10 agents) | `src/server/services/AgentSchedulerService.ts` | Production-ready |
+| Agent Capabilities (11 registered) | `src/server/services/agentCapabilities.ts` | Production-ready |
 | Policy Engine | `src/server/services/PolicyEngineService.ts` | Production-ready |
 | Audit Ledger (hash-chained) | `src/server/services/AuditLedgerService.ts` | Production-ready |
 | Agent Activity Log | `src/server/services/AgentActivityLogService.ts` | Production-ready |
@@ -820,6 +837,7 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | **ResourceOptimizationAgent** | `src/server/services/agents/ResourceOptimizationAgent.ts` | Production-ready |
 | **CrossProjectIntelligenceAgent** | `src/server/services/agents/CrossProjectIntelligenceAgent.ts` | Production-ready |
 | **RiskEscalationAgent** | `src/server/services/agents/RiskEscalationAgent.ts` | Production-ready |
+| **StakeholderCommunicationAgent** | `src/server/services/agents/StakeholderCommunicationAgent.ts` | Production-ready |
 | Agent trigger route | `src/server/routes/agent/agent.ts` | Production-ready |
 | Policy routes | `src/server/routes/agent/policies.ts` | Production-ready |
 | Agent activity log route | `src/server/routes/agent/agentActivityLog.ts` | Production-ready |
