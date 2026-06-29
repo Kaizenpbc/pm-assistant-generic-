@@ -23,6 +23,7 @@ import {
   ClipboardList,
   BarChart3,
   ShieldCheck,
+  Bot,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -125,6 +126,12 @@ const navItems: NavItem[] = [
     label: 'Account',
     icon: CreditCard,
     path: '/account',
+  },
+  {
+    label: 'Agent',
+    icon: Bot,
+    path: '/agent',
+    roles: ['admin', 'manager'],
   },
   {
     label: 'Settings',

@@ -42,6 +42,7 @@ const IntakeFormsPage = lazy(() => import('./pages/IntakeFormsPage').then(m => (
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const AgentProposalsPage = lazy(() => import('./pages/AgentProposalsPage').then(m => ({ default: m.AgentProposalsPage })));
 
 function PageLoader() {
   return (
@@ -114,6 +115,7 @@ function App() {
         <Route path="/intake" element={<PrivateRoute><IntakeFormsPage /></PrivateRoute>} />
         <Route path="/help" element={<PrivateRoute><UserGuidePage /></PrivateRoute>} />
         <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+        <Route path="/agent" element={<PrivateRoute><AgentProposalsPage /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
 
         {/* Catch-all */}

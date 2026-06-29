@@ -1023,6 +1023,56 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async getAgentProposals(params?: { projectId?: string; status?: string; agentId?: string; limit?: number; offset?: number }) {
+    const response = await this.api.get('/agent/proposals', { params });
+    return response.data;
+  }
+
+  async getAgentProposal(id: string) {
+    const response = await this.api.get(`/agent/proposals/${id}`);
+    return response.data;
+  }
+
+  async approveAgentProposal(id: string, comment?: string) {
+    const response = await this.api.post(`/agent/proposals/${id}/approve`, { comment });
+    return response.data;
+  }
+
+  async rejectAgentProposal(id: string, reason?: string) {
+    const response = await this.api.post(`/agent/proposals/${id}/reject`, { reason });
+    return response.data;
+  }
+
+  async executeAgentProposal(id: string) {
+    const response = await this.api.post(`/agent/proposals/${id}/execute`);
+    return response.data;
+  }
+
+  async rollbackAgentProposal(id: string) {
+    const response = await this.api.post(`/agent/proposals/${id}/rollback`);
+    return response.data;
+  }
+
+  async getAgentProposalActions(id: string) {
+    const response = await this.api.get(`/agent/proposals/${id}/actions`);
+    return response.data;
+  }
+
+  async submitAgentProposalFeedback(id: string, outcome: string, comment?: string) {
+    const response = await this.api.post(`/agent/proposals/${id}/feedback`, { outcome, comment });
+    return response.data;
+  }
+
+  async getAgentHealth() {
+    const response = await this.api.get('/agent/health');
+    return response.data;
+  }
+
+  async getAgentKillSwitch() {
+    const response = await this.api.get('/agent/kill-switch');
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Agent Activity Log
   // -------------------------------------------------------------------------
