@@ -9,6 +9,19 @@ import { confidenceCalculator, ConfidenceResult, DataQualityInput } from './Conf
 import type { ActionType } from './ActionProposalService';
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Strip markdown code fences (```json ... ```) that Claude sometimes wraps around JSON responses */
+function stripJsonFences(text: string): string {
+  const trimmed = text.trim();
+  if (trimmed.startsWith('```')) {
+    return trimmed.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+  }
+  return trimmed;
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -712,7 +725,7 @@ export class ReasoningEngine {
     // 7. Parse and validate response
     let parsed: RecoveryResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = RecoveryResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse Claude response:', err);
@@ -835,7 +848,7 @@ export class ReasoningEngine {
     // 7. Parse and validate
     let parsed: ScopeAnalysisResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = ScopeAnalysisResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse scope analysis response:', err);
@@ -1004,7 +1017,7 @@ Respond with valid JSON matching the scope analysis schema.`;
     // 7. Parse and validate
     let parsed: BudgetAnalysisResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = BudgetAnalysisResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse budget analysis response:', err);
@@ -1190,7 +1203,7 @@ Respond with valid JSON matching the budget analysis schema.`;
     // 7. Parse and validate
     let parsed: ResourceAnalysisResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = ResourceAnalysisResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse resource analysis response:', err);
@@ -1370,7 +1383,7 @@ Respond with valid JSON matching the resource analysis schema.`;
     // 6. Parse and validate
     let parsed: PortfolioAnalysisResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = PortfolioAnalysisResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse portfolio analysis response:', err);
@@ -1534,7 +1547,7 @@ Respond with valid JSON matching the portfolio analysis schema.`;
     // 6. Parse and validate
     let parsed: RiskEscalationResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = RiskEscalationResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse risk escalation response:', err);
@@ -1707,7 +1720,7 @@ Respond with valid JSON matching the risk escalation schema.`;
     // 6. Parse and validate
     let parsed: StakeholderReportResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = StakeholderReportResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse stakeholder report response:', err);
@@ -1862,7 +1875,7 @@ Respond with valid JSON matching the stakeholder report schema.`;
 
     let parsed: HygieneAnalysisResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = HygieneAnalysisResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse hygiene analysis response:', err);
@@ -2032,7 +2045,7 @@ Respond with valid JSON matching the hygiene analysis schema.`;
 
     let parsed: DependencyAnalysisResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = DependencyAnalysisResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse dependency analysis response:', err);
@@ -2176,7 +2189,7 @@ Respond with valid JSON matching the dependency analysis schema.`;
 
     let parsed: LessonsExtractionResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = LessonsExtractionResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse lessons extraction response:', err);
@@ -2289,7 +2302,7 @@ Respond with valid JSON matching the lessons extraction schema.`;
 
     let parsed: PredictiveAlertResponse;
     try {
-      const raw = JSON.parse(result.content);
+      const raw = JSON.parse(stripJsonFences(result.content));
       parsed = PredictiveAlertResponseSchema.parse(raw);
     } catch (err) {
       console.error('[ReasoningEngine] Failed to parse predictive alert response:', err);
