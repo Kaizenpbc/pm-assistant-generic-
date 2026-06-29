@@ -430,13 +430,15 @@ Each agent follows the pattern: perceive -> reason -> plan -> propose. Registere
 ### Cross-Project Intelligence Agent
 `src/server/services/agents/CrossProjectIntelligenceAgent.ts`
 
-- **Trigger**: scheduled (weekly), or on project milestone completion
-- **Perception**: all projects in portfolio, lessons learned, historical patterns, risk registry
-- **Reasoning**: Claude identifies recurring patterns, systemic risks, optimization opportunities
-- **Output**: strategic recommendations, early warnings, knowledge insights
+- **Trigger**: runs once per scan cycle after all per-project agents complete
+- **Perception**: health snapshots across all active/planning projects — health scores, EVM metrics (CPI/SPI), overdue tasks, resource allocation, budget utilization
+- **Reasoning**: Claude identifies cross-project patterns (common root causes, resource contention, cascading delays, portfolio risk distribution)
+- **Output**: strategic insights, warnings, and recommendations with `send_notification` and `create_change_request` actions
 - **Registration**: `cross-project-intelligence-v1`, capability `portfolio.analyze`
-- **Input schema**: `{ projects[], lessonsLearned[], riskPatterns[] }`
-- **Output schema**: `{ insights[], warnings[], recommendations[], confidence }`
+- **Input schema**: `{ userId, scanId? }`
+- **Output schema**: `{ analysis, proposal, indicators, skipped, skipReason? }`
+- **Guard chain**: cost budget → kill switch → rate limiter → circuit breaker → gather indicators → reason → propose
+- **Significance thresholds**: requires ≥2 active projects; triggers when ≥2 at-risk, ≥2 budget deficit, ≥1 resource bottleneck, or ≥1 common risk
 - **Risk level**: low (read-only analysis, notification only)
 - **Default policy**: log_only
 
@@ -782,8 +784,8 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | Component | File | Status |
 |-----------|------|--------|
 | Agent Registry | `src/server/services/AgentRegistryService.ts` | Production-ready |
-| Agent Scheduler (7 agents) | `src/server/services/AgentSchedulerService.ts` | Production-ready |
-| Agent Capabilities (8 registered) | `src/server/services/agentCapabilities.ts` | Production-ready |
+| Agent Scheduler (8 agents) | `src/server/services/AgentSchedulerService.ts` | Production-ready |
+| Agent Capabilities (9 registered) | `src/server/services/agentCapabilities.ts` | Production-ready |
 | Policy Engine | `src/server/services/PolicyEngineService.ts` | Production-ready |
 | Audit Ledger (hash-chained) | `src/server/services/AuditLedgerService.ts` | Production-ready |
 | Agent Activity Log | `src/server/services/AgentActivityLogService.ts` | Production-ready |
@@ -814,6 +816,7 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | **ScopeCreepAgent** | `src/server/services/agents/ScopeCreepAgent.ts` | Production-ready |
 | **BudgetIntelligenceAgent** | `src/server/services/agents/BudgetIntelligenceAgent.ts` | Production-ready |
 | **ResourceOptimizationAgent** | `src/server/services/agents/ResourceOptimizationAgent.ts` | Production-ready |
+| **CrossProjectIntelligenceAgent** | `src/server/services/agents/CrossProjectIntelligenceAgent.ts` | Production-ready |
 | Agent trigger route | `src/server/routes/agent/agent.ts` | Production-ready |
 | Policy routes | `src/server/routes/agent/policies.ts` | Production-ready |
 | Agent activity log route | `src/server/routes/agent/agentActivityLog.ts` | Production-ready |

@@ -288,6 +288,7 @@ Proposal creation is rate-limited to prevent alert fatigue:
 | `scope-creep-detection-v1` | Detects scope creep via task growth, estimate increases, change requests |
 | `budget-intelligence-v1` | Analyzes EVM metrics, reasons about cost deviations, proposes budget recovery actions |
 | `resource-optimization-v1` | Detects over-allocated/under-utilized resources and bottleneck roles, proposes rebalancing actions |
+| `cross-project-intelligence-v1` | Portfolio-level analysis: systemic risks, common patterns, resource contention across projects |
 
 ---
 
