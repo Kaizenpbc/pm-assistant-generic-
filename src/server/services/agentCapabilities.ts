@@ -10,6 +10,7 @@ import { scheduleRecoveryAgent } from './agents/ScheduleRecoveryAgent';
 import { scopeCreepAgent } from './agents/ScopeCreepAgent';
 import { budgetIntelligenceAgent } from './agents/BudgetIntelligenceAgent';
 import { resourceOptimizationAgent } from './agents/ResourceOptimizationAgent';
+import { crossProjectIntelligenceAgent } from './agents/CrossProjectIntelligenceAgent';
 
 // Register RAG agent capability (side-effect import)
 import './ragAgentCapability';
@@ -248,6 +249,37 @@ agentRegistry.register({
   timeoutMs: 180000,
   handler: async (input) => {
     const result = await resourceOptimizationAgent.run(input);
+    return {
+      analysis: result.analysis,
+      proposal: result.proposal,
+      indicators: result.indicators,
+      skipped: result.skipped,
+      skipReason: result.skipReason,
+    };
+  },
+});
+
+// --- Cross-Project Intelligence Agent (Agentic — portfolio-level reasoning + proposals) ---
+agentRegistry.register({
+  id: 'cross-project-intelligence-v1',
+  capability: 'portfolio.analyze',
+  version: '1.0.0',
+  description: 'Analyzes cross-project patterns, identifies systemic risks and resource conflicts, proposes portfolio-level strategic actions',
+  inputSchema: z.object({
+    userId: z.string(),
+    scanId: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    analysis: z.any().nullable(),
+    proposal: z.any().nullable(),
+    indicators: z.any().nullable(),
+    skipped: z.boolean(),
+    skipReason: z.string().optional(),
+  }),
+  permissions: ['agent:portfolio'],
+  timeoutMs: 300000,
+  handler: async (input) => {
+    const result = await crossProjectIntelligenceAgent.run(input);
     return {
       analysis: result.analysis,
       proposal: result.proposal,

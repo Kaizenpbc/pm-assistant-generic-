@@ -12,6 +12,7 @@ import { databaseService } from '../database/connection';
 import { killSwitchService } from './agents/KillSwitchService';
 import { budgetIntelligenceAgent } from './agents/BudgetIntelligenceAgent';
 import { resourceOptimizationAgent } from './agents/ResourceOptimizationAgent';
+import { crossProjectIntelligenceAgent } from './agents/CrossProjectIntelligenceAgent';
 
 export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
@@ -75,6 +76,7 @@ export class AgentSchedulerService {
     scopeCreepAlertsCreated: number;
     budgetProposalsCreated: number;
     resourceProposalsCreated: number;
+    portfolioProposalsCreated: number;
   }> {
     console.log('[Agent] Starting scan...');
 
@@ -85,7 +87,7 @@ export class AgentSchedulerService {
       return {
         projectsScanned: 0, schedulesScanned: 0, delaysDetected: 0,
         proposalsGenerated: 0, notificationsSent: 0, budgetAlertsCreated: 0,
-        mcAlertsCreated: 0, meetingAlertsCreated: 0, scopeCreepAlertsCreated: 0, budgetProposalsCreated: 0, resourceProposalsCreated: 0,
+        mcAlertsCreated: 0, meetingAlertsCreated: 0, scopeCreepAlertsCreated: 0, budgetProposalsCreated: 0, resourceProposalsCreated: 0, portfolioProposalsCreated: 0,
       };
     }
 
@@ -101,6 +103,7 @@ export class AgentSchedulerService {
       scopeCreepAlertsCreated: 0,
       budgetProposalsCreated: 0,
       resourceProposalsCreated: 0,
+      portfolioProposalsCreated: 0,
     };
 
     const thresholdDays = config.AGENT_DELAY_THRESHOLD_DAYS;
@@ -275,6 +278,20 @@ export class AgentSchedulerService {
           summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
         }).catch(() => {});
       }
+    }
+
+    // --- Agent 8: Cross-Project Intelligence (portfolio-level, runs once after all projects) ---
+    try {
+      const portfolioProposals = await this.runCrossProjectIntelligenceAgent(projects);
+      stats.portfolioProposalsCreated += portfolioProposals;
+    } catch (error) {
+      console.error('[Agent:CrossProjectIntelligence] Error:', error);
+      await this.activityLog.log({
+        projectId: 'portfolio',
+        agentName: 'cross_project_intelligence',
+        result: 'error',
+        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+      }).catch(() => {});
     }
 
     console.log('[Agent] Scan complete:', stats);
@@ -673,6 +690,52 @@ export class AgentSchedulerService {
       result: 'alert_created',
       summary: `Resource imbalance detected — proposal created (${result.indicators?.overAllocatedResources.length} over-allocated, ${result.indicators?.underUtilizedResources.length} under-utilized)`,
       details: result.indicators ? { totalResources: result.indicators.totalResources, overAllocated: result.indicators.overAllocatedResources.length, underUtilized: result.indicators.underUtilizedResources.length, bottleneckRoles: result.indicators.bottleneckRoles, proposalId: result.proposal?.id } : undefined,
+    });
+
+    return 1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent 8 — Cross-Project Intelligence (portfolio-level)
+  // ---------------------------------------------------------------------------
+
+  private async runCrossProjectIntelligenceAgent(projects: Project[]): Promise<number> {
+    if (projects.length < 2) {
+      await this.activityLog.log({
+        projectId: 'portfolio',
+        agentName: 'cross_project_intelligence',
+        result: 'skipped',
+        summary: `Only ${projects.length} active project(s) — cross-project analysis requires at least 2`,
+      });
+      return 0;
+    }
+
+    // Use the first project's manager or creator as the notification target
+    const notifyUserId = projects[0].projectManagerId || projects[0].createdBy;
+
+    const result = await crossProjectIntelligenceAgent.run({
+      userId: notifyUserId,
+    });
+
+    if (result.skipped) {
+      await this.activityLog.log({
+        projectId: 'portfolio',
+        agentName: 'cross_project_intelligence',
+        result: 'skipped',
+        summary: result.skipReason || 'No significant cross-project patterns',
+        details: result.indicators ? { totalProjects: result.indicators.totalProjects, activeProjects: result.indicators.activeProjects, atRisk: result.indicators.atRiskProjects.length, budgetDeficit: result.indicators.budgetDeficitProjects.length } : undefined,
+      });
+      return 0;
+    }
+
+    console.log(`[Agent:CrossProjectIntelligence] Portfolio proposal created (${result.indicators?.atRiskProjects.length} at-risk, ${result.indicators?.budgetDeficitProjects.length} budget deficit)`);
+
+    await this.activityLog.log({
+      projectId: 'portfolio',
+      agentName: 'cross_project_intelligence',
+      result: 'alert_created',
+      summary: `Portfolio intelligence — ${result.indicators?.atRiskProjects.length} at-risk, ${result.indicators?.budgetDeficitProjects.length} budget deficit, proposal created`,
+      details: result.indicators ? { totalProjects: result.indicators.totalProjects, activeProjects: result.indicators.activeProjects, atRisk: result.indicators.atRiskProjects.length, budgetDeficit: result.indicators.budgetDeficitProjects.length, commonRisks: result.indicators.commonRisks, proposalId: result.proposal?.id } : undefined,
     });
 
     return 1;

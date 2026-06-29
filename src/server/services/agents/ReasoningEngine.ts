@@ -253,6 +253,78 @@ const ResourceAnalysisResponseSchema = z.object({
 type ResourceAnalysisResponse = z.infer<typeof ResourceAnalysisResponseSchema>;
 
 // ---------------------------------------------------------------------------
+// Portfolio Analysis Types
+// ---------------------------------------------------------------------------
+
+export interface PortfolioAnalysisInput {
+  userId: string;
+  indicators: {
+    totalProjects: number;
+    activeProjects: number;
+    projectSnapshots: Array<{
+      projectId: string;
+      projectName: string;
+      status: string;
+      priority: string;
+      healthScore: number;
+      riskLevel: string;
+      completionRate: number;
+      budgetUtilization: number;
+      CPI: number | null;
+      SPI: number | null;
+      daysRemaining: number;
+      taskCount: number;
+      overdueTasks: number;
+      resourceCount: number;
+      overAllocatedResources: number;
+    }>;
+    atRiskProjects: Array<{ projectId: string; projectName: string; healthScore: number; riskLevel: string }>;
+    budgetDeficitProjects: Array<{ projectId: string; projectName: string; CPI: number | null }>;
+    resourceBottlenecks: Array<{ projectId: string; projectName: string; overAllocatedCount: number }>;
+    commonRisks: string[];
+  };
+  scanId?: string;
+}
+
+export interface PortfolioAnalysisResult {
+  hasPortfolioIssue: boolean;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  reasoning: string;
+  insights: string[];
+  warnings: string[];
+  recommendations: string[];
+  modelCertainty: number;
+  confidence: ConfidenceResult;
+  suggestedActions: Array<{
+    actionType: ActionType;
+    targetEntityType: string;
+    targetEntityId: string;
+    oldValue: Record<string, unknown>;
+    newValue: Record<string, unknown>;
+    reasoning: string;
+  }>;
+}
+
+const PortfolioAnalysisResponseSchema = z.object({
+  hasPortfolioIssue: z.boolean(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  reasoning: z.string(),
+  insights: z.array(z.string()),
+  warnings: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  modelCertainty: z.number().min(0).max(100),
+  suggestedActions: z.array(z.object({
+    actionType: z.enum(['send_notification', 'create_change_request']),
+    targetEntityType: z.string(),
+    targetEntityId: z.string(),
+    description: z.string(),
+    reasoning: z.string(),
+  })),
+});
+
+type PortfolioAnalysisResponse = z.infer<typeof PortfolioAnalysisResponseSchema>;
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -907,6 +979,172 @@ Analyze the resource allocation above. Consider:
 5. What is the optimal rebalancing strategy with minimal disruption?
 
 Respond with valid JSON matching the resource analysis schema.`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Portfolio Analysis
+  // -------------------------------------------------------------------------
+
+  async generatePortfolioAnalysis(input: PortfolioAnalysisInput): Promise<PortfolioAnalysisResult | null> {
+    // 1. Compute data quality from portfolio breadth
+    const snapshots = input.indicators.projectSnapshots;
+    const projectsWithBudget = snapshots.filter(s => s.budgetUtilization > 0).length;
+    const projectsWithTasks = snapshots.filter(s => s.taskCount > 0).length;
+    const projectsWithResources = snapshots.filter(s => s.resourceCount > 0).length;
+
+    const dataQuality = confidenceCalculator.computeDataQuality({
+      totalTasks: snapshots.reduce((sum, s) => sum + s.taskCount, 0),
+      tasksWithDates: snapshots.reduce((sum, s) => sum + s.taskCount, 0), // assume all tasks have dates
+      tasksWithAssignments: snapshots.reduce((sum, s) => sum + Math.min(s.taskCount, s.resourceCount * 3), 0),
+      tasksUpdatedRecently: snapshots.reduce((sum, s) => sum + Math.max(0, s.taskCount - s.overdueTasks), 0),
+      hasBudgetData: projectsWithBudget > 0,
+      hasResourceData: projectsWithResources > 0,
+    });
+
+    // 2. Get historical accuracy
+    const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy(
+      'cross-project-intelligence-v1',
+      'portfolio',
+    );
+
+    // 3. Check Claude availability
+    if (!claudeService.isAvailable()) {
+      console.warn('[ReasoningEngine] Claude API unavailable — skipping portfolio analysis');
+      return null;
+    }
+
+    // 4. Build prompt and call Claude
+    const prompt = this.buildPortfolioPrompt(input.indicators);
+    let result: CompletionResult;
+    try {
+      result = await claudeService.complete({
+        systemPrompt: this.getPortfolioSystemPrompt(),
+        userMessage: prompt,
+        responseFormat: 'json',
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+    } catch (err) {
+      console.error('[ReasoningEngine] Claude call failed for portfolio analysis:', err);
+      return null;
+    }
+
+    // 5. Track cost
+    await agentCostTracker.record({
+      agentId: 'cross-project-intelligence-v1',
+      projectId: 'portfolio',
+      scanId: input.scanId,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.inputTokens + result.usage.outputTokens,
+      estimatedCostUsd: agentCostTracker.estimateCost(
+        result.model,
+        result.usage.inputTokens,
+        result.usage.outputTokens,
+      ),
+      model: result.model,
+      latencyMs: result.latencyMs,
+    });
+
+    // 6. Parse and validate
+    let parsed: PortfolioAnalysisResponse;
+    try {
+      const raw = JSON.parse(result.content);
+      parsed = PortfolioAnalysisResponseSchema.parse(raw);
+    } catch (err) {
+      console.error('[ReasoningEngine] Failed to parse portfolio analysis response:', err);
+      return null;
+    }
+
+    // 7. Compute confidence
+    const confidence = confidenceCalculator.compute({
+      dataQuality,
+      historicalAccuracy,
+      modelCertainty: parsed.modelCertainty,
+    });
+
+    // 8. Map response
+    return {
+      hasPortfolioIssue: parsed.hasPortfolioIssue,
+      severity: parsed.severity,
+      reasoning: parsed.reasoning,
+      insights: parsed.insights,
+      warnings: parsed.warnings,
+      recommendations: parsed.recommendations,
+      modelCertainty: parsed.modelCertainty,
+      confidence,
+      suggestedActions: parsed.suggestedActions.map(a => ({
+        actionType: a.actionType as ActionType,
+        targetEntityType: a.targetEntityType,
+        targetEntityId: a.targetEntityId,
+        oldValue: {},
+        newValue: { description: a.description },
+        reasoning: a.reasoning,
+      })),
+    };
+  }
+
+  private getPortfolioSystemPrompt(): string {
+    return `You are an expert portfolio management strategist. Your role is to analyze cross-project patterns, identify systemic risks, and recommend strategic actions across a portfolio of projects.
+
+You must respond with valid JSON matching the requested schema. Be specific and evidence-based. Focus on patterns that span multiple projects — not individual project issues (those are handled by other agents).
+
+Your response must include:
+1. hasPortfolioIssue: Whether there are significant portfolio-level concerns (true/false)
+2. severity: low, medium, high, or critical
+3. reasoning: Your full chain-of-thought analysis of cross-project patterns
+4. insights: Strategic observations about the portfolio (e.g., common patterns, systemic issues)
+5. warnings: Early warnings that require attention (e.g., resource contention across projects, cascading delays)
+6. recommendations: Actionable portfolio-level recommendations
+7. modelCertainty: Your confidence (0-100)
+8. suggestedActions: Concrete actions (send_notification or create_change_request)
+
+For actions, use these types:
+- send_notification: Escalate a cross-project concern to portfolio management
+- create_change_request: Recommend a formal portfolio-level change (e.g., resource reallocation, project reprioritization)`;
+  }
+
+  private buildPortfolioPrompt(
+    indicators: PortfolioAnalysisInput['indicators'],
+  ): string {
+    const projectSummaries = indicators.projectSnapshots.map(s =>
+      `- **${s.projectName}** (${s.status}, ${s.priority}): health ${s.healthScore}%, completion ${s.completionRate}%, budget ${s.budgetUtilization}%${s.CPI !== null ? `, CPI ${s.CPI.toFixed(2)}` : ''}${s.SPI !== null ? `, SPI ${s.SPI.toFixed(2)}` : ''}, ${s.overdueTasks} overdue tasks, ${s.daysRemaining}d remaining${s.overAllocatedResources > 0 ? `, ${s.overAllocatedResources} over-allocated resources` : ''}`
+    ).join('\n');
+
+    const atRiskSection = indicators.atRiskProjects.length > 0
+      ? `\n## At-Risk Projects\n\n${indicators.atRiskProjects.map(p => `- **${p.projectName}**: health ${p.healthScore}%, risk ${p.riskLevel}`).join('\n')}`
+      : '';
+
+    const budgetSection = indicators.budgetDeficitProjects.length > 0
+      ? `\n## Budget Deficit Projects\n\n${indicators.budgetDeficitProjects.map(p => `- **${p.projectName}**: CPI ${p.CPI?.toFixed(2) ?? 'N/A'}`).join('\n')}`
+      : '';
+
+    const bottleneckSection = indicators.resourceBottlenecks.length > 0
+      ? `\n## Resource Bottlenecks\n\n${indicators.resourceBottlenecks.map(b => `- **${b.projectName}**: ${b.overAllocatedCount} over-allocated resource(s)`).join('\n')}`
+      : '';
+
+    return `## Portfolio Overview
+
+**Total Projects**: ${indicators.totalProjects}
+**Active/Planning Projects**: ${indicators.activeProjects}
+**Common Risks**: ${indicators.commonRisks.length > 0 ? indicators.commonRisks.join('; ') : 'none identified'}
+
+## Project Health Summary
+
+${projectSummaries}
+${atRiskSection}${budgetSection}${bottleneckSection}
+
+## Instructions
+
+Analyze the portfolio data above. Focus on cross-project patterns:
+1. Are multiple projects failing for similar reasons (common root causes)?
+2. Are shared resources creating bottlenecks across projects?
+3. Is the portfolio balanced in terms of risk distribution?
+4. Are there cascading risks where one project's delay could impact others?
+5. Should any projects be reprioritized, paused, or given additional resources?
+6. Are there opportunities to transfer lessons from successful projects to struggling ones?
+
+Respond with valid JSON matching the portfolio analysis schema.`;
   }
 
   // -------------------------------------------------------------------------
