@@ -87,7 +87,7 @@ function valueRowToDTO(row: CustomFieldValueRow): CustomFieldValue {
   };
 }
 
-class CustomFieldService {
+export class CustomFieldService {
   async createField(data: {
     projectId: string;
     entityType: string;

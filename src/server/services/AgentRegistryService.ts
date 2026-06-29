@@ -29,7 +29,7 @@ export interface InvocationContext {
   projectId?: string;
 }
 
-class AgentRegistry {
+export class AgentRegistry {
   private capabilities = new Map<string, AgentCapability>();
 
   register(cap: AgentCapability): void {

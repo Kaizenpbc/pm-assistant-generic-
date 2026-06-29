@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 import { config } from '../config';
 
-class EmailService {
+export class EmailService {
   private resend: Resend | null = null;
 
   private getClient(): Resend {

@@ -4,7 +4,7 @@ import { UserService } from './UserService';
 import { databaseService } from '../database/connection';
 import { v4 as uuidv4 } from 'uuid';
 
-class StripeService {
+export class StripeService {
   private stripe: Stripe | null = null;
   private userService = new UserService();
 

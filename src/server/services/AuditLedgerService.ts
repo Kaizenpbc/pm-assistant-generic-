@@ -77,7 +77,7 @@ function rowToEntry(row: any): AuditEntry {
 
 const GENESIS_HASH = '0'.repeat(64);
 
-class AuditLedgerService {
+export class AuditLedgerService {
   /**
    * Append a new entry to the immutable audit ledger.
    * Computes hash chain from the most recent entry.

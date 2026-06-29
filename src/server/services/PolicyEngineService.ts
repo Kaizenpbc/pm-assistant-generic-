@@ -122,7 +122,7 @@ function evaluateCondition(expr: ConditionExpr, data: Record<string, any>): bool
   }
 }
 
-class PolicyEngineService {
+export class PolicyEngineService {
   /**
    * Evaluate all matching policies for an action.
    * Returns the strictest enforcement result.

@@ -24,7 +24,7 @@ interface UsageLogRow {
   avg_response: number;
 }
 
-class ApiKeyService {
+export class ApiKeyService {
   /**
    * Create a new API key. The raw key is returned once only.
    */

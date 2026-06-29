@@ -4,6 +4,7 @@ import { projectService } from '../../services/ProjectService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { webhookService } from '../../services/WebhookService';
+import { toProjectDTO } from '../../dto/responses';
 
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -37,7 +38,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
     try {
       const userId = request.user!.userId;
       const projects = await projectService.findByUserId(userId);
-      return { projects };
+      return { projects: projects.map(toProjectDTO) };
     } catch (error) {
       console.error('Get projects error:', error);
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch projects' });
@@ -55,7 +56,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       if (!project) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
       }
-      return { project };
+      return { project: toProjectDTO(project) };
     } catch (error) {
       console.error('Get project error:', error);
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch project' });
@@ -76,7 +77,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
         userId,
       });
       webhookService.dispatch('project.created', { project }, userId);
-      return reply.status(201).send({ project });
+      return reply.status(201).send({ project: toProjectDTO(project) });
     } catch (error) {
       console.error('Create project error:', error);
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create project' });
@@ -100,7 +101,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
       }
       webhookService.dispatch('project.updated', { project }, userId);
-      return { project };
+      return { project: toProjectDTO(project) };
     } catch (error) {
       console.error('Update project error:', error);
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update project' });

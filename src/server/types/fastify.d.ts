@@ -1,4 +1,5 @@
 import 'fastify';
+import { ServiceContainer } from '../container';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -11,5 +12,9 @@ declare module 'fastify' {
     apiKeyScopes?: string[];
     apiKeyRateLimit?: number | null;
     rawBody?: Buffer;
+  }
+
+  interface FastifyInstance {
+    services: ServiceContainer;
   }
 }

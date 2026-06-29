@@ -83,7 +83,7 @@ function taskRowToDTO(row: SprintTaskRow): SprintTask {
   };
 }
 
-class SprintService {
+export class SprintService {
   async create(
     projectId: string,
     scheduleId: string,

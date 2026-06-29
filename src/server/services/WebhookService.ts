@@ -53,7 +53,7 @@ function rowToDTO(row: WebhookRow, maskSecret = true): Webhook {
   };
 }
 
-class WebhookService {
+export class WebhookService {
   async register(userId: string, url: string, events: string[], secret?: string): Promise<Webhook> {
     const id = uuidv4();
     const webhookSecret = secret || crypto.randomBytes(32).toString('hex');

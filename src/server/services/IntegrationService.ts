@@ -97,7 +97,7 @@ function syncLogRowToDTO(row: SyncLogRow): IntegrationSyncLog {
   };
 }
 
-class IntegrationService {
+export class IntegrationService {
   async create(
     userId: string,
     provider: string,

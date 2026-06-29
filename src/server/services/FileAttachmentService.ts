@@ -51,7 +51,7 @@ function rowToDTO(row: FileAttachmentRow): FileAttachment {
   };
 }
 
-class FileAttachmentService {
+export class FileAttachmentService {
   private getUploadDir(entityType: string, entityId: string): string {
     return path.join(config.UPLOAD_DIR, entityType, entityId);
   }

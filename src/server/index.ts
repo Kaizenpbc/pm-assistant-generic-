@@ -7,6 +7,7 @@ import { databaseService } from './database/connection';
 import { runMigrations } from './database/migrationRunner';
 import './services/agentCapabilities';
 import { agentScheduler } from './services/AgentSchedulerService';
+import { serviceContainer } from './container';
 
 const fastify = Fastify({
   logger: {
@@ -26,6 +27,9 @@ async function start() {
       console.log('Database connection successful');
       await runMigrations();
     }
+
+    // Register service container for DI
+    fastify.decorate('services', serviceContainer);
 
     console.log('Registering plugins...');
     await registerPlugins(fastify);

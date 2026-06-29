@@ -135,7 +135,7 @@ function approvalActionRowToDTO(row: ApprovalActionRow): ApprovalAction {
   };
 }
 
-class ApprovalWorkflowService {
+export class ApprovalWorkflowService {
   async createWorkflow(projectId: string, data: {
     name: string;
     description?: string;

@@ -46,7 +46,7 @@ function rowToDTO(row: TimeEntryRow): TimeEntry {
   };
 }
 
-class TimeEntryService {
+export class TimeEntryService {
 
   async create(data: {
     taskId: string;
