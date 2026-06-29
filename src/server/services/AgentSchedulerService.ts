@@ -13,6 +13,7 @@ import { killSwitchService } from './agents/KillSwitchService';
 import { budgetIntelligenceAgent } from './agents/BudgetIntelligenceAgent';
 import { resourceOptimizationAgent } from './agents/ResourceOptimizationAgent';
 import { crossProjectIntelligenceAgent } from './agents/CrossProjectIntelligenceAgent';
+import { riskEscalationAgent, ProjectAgentResults } from './agents/RiskEscalationAgent';
 
 export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
@@ -77,6 +78,7 @@ export class AgentSchedulerService {
     budgetProposalsCreated: number;
     resourceProposalsCreated: number;
     portfolioProposalsCreated: number;
+    riskEscalationsCreated: number;
   }> {
     console.log('[Agent] Starting scan...');
 
@@ -87,7 +89,7 @@ export class AgentSchedulerService {
       return {
         projectsScanned: 0, schedulesScanned: 0, delaysDetected: 0,
         proposalsGenerated: 0, notificationsSent: 0, budgetAlertsCreated: 0,
-        mcAlertsCreated: 0, meetingAlertsCreated: 0, scopeCreepAlertsCreated: 0, budgetProposalsCreated: 0, resourceProposalsCreated: 0, portfolioProposalsCreated: 0,
+        mcAlertsCreated: 0, meetingAlertsCreated: 0, scopeCreepAlertsCreated: 0, budgetProposalsCreated: 0, resourceProposalsCreated: 0, portfolioProposalsCreated: 0, riskEscalationsCreated: 0,
       };
     }
 
@@ -104,7 +106,11 @@ export class AgentSchedulerService {
       budgetProposalsCreated: 0,
       resourceProposalsCreated: 0,
       portfolioProposalsCreated: 0,
+      riskEscalationsCreated: 0,
     };
+
+    // Track per-project agent flags for the risk escalation agent
+    const projectAgentFlags = new Map<string, { name: string; flags: ProjectAgentResults['agentFlags']; details: Record<string, string> }>();
 
     const thresholdDays = config.AGENT_DELAY_THRESHOLD_DAYS;
 
@@ -118,6 +124,13 @@ export class AgentSchedulerService {
 
     for (const project of projects) {
       stats.projectsScanned++;
+
+      // Initialize per-project agent flags for risk escalation
+      projectAgentFlags.set(project.id, {
+        name: project.name,
+        flags: { scheduleDelay: false, budgetOverrun: false, scopeCreep: false, resourceBottleneck: false, meetingOverdue: false },
+        details: {},
+      });
 
       const schedules = await scheduleService.findByProjectId(project.id);
 
@@ -152,6 +165,13 @@ export class AgentSchedulerService {
           );
 
           stats.proposalsGenerated++;
+
+          // Track flag for risk escalation
+          const pFlags = projectAgentFlags.get(project.id);
+          if (pFlags) {
+            pFlags.flags.scheduleDelay = true;
+            pFlags.details.scheduleDelay = `${significant.length} delay(s) in "${schedule.name}"`;
+          }
 
           // Notify project owner
           const notifyUserId = project.projectManagerId || project.createdBy;
@@ -199,6 +219,10 @@ export class AgentSchedulerService {
       try {
         const budgetAlerts = await this.runBudgetBurnRateAgent(project);
         stats.budgetAlertsCreated += budgetAlerts;
+        if (budgetAlerts > 0) {
+          const pFlags = projectAgentFlags.get(project.id);
+          if (pFlags) { pFlags.flags.budgetOverrun = true; pFlags.details.budgetBurnRate = 'Budget alert triggered'; }
+        }
       } catch (error) {
         console.error(`[Agent:Budget] Error for project ${project.id} (${project.name}):`, error);
         await this.activityLog.log({
@@ -227,6 +251,10 @@ export class AgentSchedulerService {
       try {
         const meetingAlerts = await this.runMeetingFollowUpAgent(project);
         stats.meetingAlertsCreated += meetingAlerts;
+        if (meetingAlerts > 0) {
+          const pFlags = projectAgentFlags.get(project.id);
+          if (pFlags) { pFlags.flags.meetingOverdue = true; pFlags.details.meetingOverdue = `${meetingAlerts} meeting alert(s)`; }
+        }
       } catch (error) {
         console.error(`[Agent:Meeting] Error for project ${project.id} (${project.name}):`, error);
         await this.activityLog.log({
@@ -241,6 +269,10 @@ export class AgentSchedulerService {
       try {
         const scopeAlerts = await this.runScopeCreepAgent(project);
         stats.scopeCreepAlertsCreated += scopeAlerts;
+        if (scopeAlerts > 0) {
+          const pFlags = projectAgentFlags.get(project.id);
+          if (pFlags) { pFlags.flags.scopeCreep = true; pFlags.details.scopeCreep = 'Scope creep detected'; }
+        }
       } catch (error) {
         console.error(`[Agent:ScopeCreep] Error for project ${project.id} (${project.name}):`, error);
         await this.activityLog.log({
@@ -255,6 +287,10 @@ export class AgentSchedulerService {
       try {
         const budgetProposals = await this.runBudgetIntelligenceAgent(project);
         stats.budgetProposalsCreated += budgetProposals;
+        if (budgetProposals > 0) {
+          const pFlags = projectAgentFlags.get(project.id);
+          if (pFlags) { pFlags.flags.budgetOverrun = true; pFlags.details.budgetIntelligence = 'Budget intelligence proposal created'; }
+        }
       } catch (error) {
         console.error(`[Agent:BudgetIntelligence] Error for project ${project.id} (${project.name}):`, error);
         await this.activityLog.log({
@@ -269,6 +305,10 @@ export class AgentSchedulerService {
       try {
         const resourceProposals = await this.runResourceOptimizationAgent(project);
         stats.resourceProposalsCreated += resourceProposals;
+        if (resourceProposals > 0) {
+          const pFlags = projectAgentFlags.get(project.id);
+          if (pFlags) { pFlags.flags.resourceBottleneck = true; pFlags.details.resourceOptimization = 'Resource optimization proposal created'; }
+        }
       } catch (error) {
         console.error(`[Agent:ResourceOptimization] Error for project ${project.id} (${project.name}):`, error);
         await this.activityLog.log({
@@ -289,6 +329,20 @@ export class AgentSchedulerService {
       await this.activityLog.log({
         projectId: 'portfolio',
         agentName: 'cross_project_intelligence',
+        result: 'error',
+        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+      }).catch(() => {});
+    }
+
+    // --- Agent 9: Risk Escalation (runs last — detects compound risks from all agent outputs) ---
+    try {
+      const riskEscalations = await this.runRiskEscalationAgent(projects, projectAgentFlags);
+      stats.riskEscalationsCreated += riskEscalations;
+    } catch (error) {
+      console.error('[Agent:RiskEscalation] Error:', error);
+      await this.activityLog.log({
+        projectId: 'portfolio',
+        agentName: 'risk_escalation',
         result: 'error',
         summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
       }).catch(() => {});
@@ -736,6 +790,69 @@ export class AgentSchedulerService {
       result: 'alert_created',
       summary: `Portfolio intelligence — ${result.indicators?.atRiskProjects.length} at-risk, ${result.indicators?.budgetDeficitProjects.length} budget deficit, proposal created`,
       details: result.indicators ? { totalProjects: result.indicators.totalProjects, activeProjects: result.indicators.activeProjects, atRisk: result.indicators.atRiskProjects.length, budgetDeficit: result.indicators.budgetDeficitProjects.length, commonRisks: result.indicators.commonRisks, proposalId: result.proposal?.id } : undefined,
+    });
+
+    return 1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent 9 — Risk Escalation (runs last)
+  // ---------------------------------------------------------------------------
+
+  private async runRiskEscalationAgent(
+    projects: Project[],
+    projectAgentFlags: Map<string, { name: string; flags: ProjectAgentResults['agentFlags']; details: Record<string, string> }>,
+  ): Promise<number> {
+    // Build project results from accumulated flags
+    const projectResults: ProjectAgentResults[] = [];
+    for (const [projectId, data] of projectAgentFlags) {
+      const hasAnyFlag = Object.values(data.flags).some(Boolean);
+      if (hasAnyFlag) {
+        projectResults.push({
+          projectId,
+          projectName: data.name,
+          agentFlags: data.flags,
+          details: data.details,
+        });
+      }
+    }
+
+    if (projectResults.length === 0) {
+      await this.activityLog.log({
+        projectId: 'portfolio',
+        agentName: 'risk_escalation',
+        result: 'skipped',
+        summary: 'No projects flagged by any agent in this scan cycle',
+      });
+      return 0;
+    }
+
+    const notifyUserId = projects[0].projectManagerId || projects[0].createdBy;
+
+    const result = await riskEscalationAgent.run({
+      userId: notifyUserId,
+      projectResults,
+    });
+
+    if (result.skipped) {
+      await this.activityLog.log({
+        projectId: 'portfolio',
+        agentName: 'risk_escalation',
+        result: 'skipped',
+        summary: result.skipReason || 'No compound risks detected',
+        details: result.indicators ? { totalProjects: result.indicators.totalProjects, compoundRiskProjects: result.indicators.compoundRiskProjects.length, maxFlags: result.indicators.maxFlagsOnSingleProject } : undefined,
+      });
+      return 0;
+    }
+
+    console.log(`[Agent:RiskEscalation] Escalation proposal created (${result.indicators?.compoundRiskProjects.length} compound risk project(s))`);
+
+    await this.activityLog.log({
+      projectId: 'portfolio',
+      agentName: 'risk_escalation',
+      result: 'alert_created',
+      summary: `Compound risks escalated — ${result.indicators?.compoundRiskProjects.length} project(s) with multiple agent flags`,
+      details: result.indicators ? { totalProjects: result.indicators.totalProjects, compoundRiskProjects: result.indicators.compoundRiskProjects.length, maxFlags: result.indicators.maxFlagsOnSingleProject, flagDistribution: result.indicators.flagDistribution, proposalId: result.proposal?.id } : undefined,
     });
 
     return 1;

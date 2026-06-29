@@ -11,6 +11,7 @@ import { scopeCreepAgent } from './agents/ScopeCreepAgent';
 import { budgetIntelligenceAgent } from './agents/BudgetIntelligenceAgent';
 import { resourceOptimizationAgent } from './agents/ResourceOptimizationAgent';
 import { crossProjectIntelligenceAgent } from './agents/CrossProjectIntelligenceAgent';
+import { riskEscalationAgent } from './agents/RiskEscalationAgent';
 
 // Register RAG agent capability (side-effect import)
 import './ragAgentCapability';
@@ -280,6 +281,49 @@ agentRegistry.register({
   timeoutMs: 300000,
   handler: async (input) => {
     const result = await crossProjectIntelligenceAgent.run(input);
+    return {
+      analysis: result.analysis,
+      proposal: result.proposal,
+      indicators: result.indicators,
+      skipped: result.skipped,
+      skipReason: result.skipReason,
+    };
+  },
+});
+
+// --- Risk Escalation Agent (Agentic — compound risk detection + escalation) ---
+agentRegistry.register({
+  id: 'risk-escalation-v1',
+  capability: 'risk.escalate',
+  version: '1.0.0',
+  description: 'Detects compound risks where multiple agents flag the same project, identifies cascading effects, and escalates to management',
+  inputSchema: z.object({
+    userId: z.string(),
+    projectResults: z.array(z.object({
+      projectId: z.string(),
+      projectName: z.string(),
+      agentFlags: z.object({
+        scheduleDelay: z.boolean(),
+        budgetOverrun: z.boolean(),
+        scopeCreep: z.boolean(),
+        resourceBottleneck: z.boolean(),
+        meetingOverdue: z.boolean(),
+      }),
+      details: z.record(z.string(), z.string()),
+    })),
+    scanId: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    analysis: z.any().nullable(),
+    proposal: z.any().nullable(),
+    indicators: z.any().nullable(),
+    skipped: z.boolean(),
+    skipReason: z.string().optional(),
+  }),
+  permissions: ['agent:risk'],
+  timeoutMs: 180000,
+  handler: async (input) => {
+    const result = await riskEscalationAgent.run(input);
     return {
       analysis: result.analysis,
       proposal: result.proposal,

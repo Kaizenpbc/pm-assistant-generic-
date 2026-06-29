@@ -325,6 +325,70 @@ const PortfolioAnalysisResponseSchema = z.object({
 type PortfolioAnalysisResponse = z.infer<typeof PortfolioAnalysisResponseSchema>;
 
 // ---------------------------------------------------------------------------
+// Risk Escalation Types
+// ---------------------------------------------------------------------------
+
+export interface RiskEscalationInput {
+  userId: string;
+  indicators: {
+    totalProjects: number;
+    compoundRiskProjects: Array<{
+      projectId: string;
+      projectName: string;
+      agentFlags: {
+        scheduleDelay: boolean;
+        budgetOverrun: boolean;
+        scopeCreep: boolean;
+        resourceBottleneck: boolean;
+        meetingOverdue: boolean;
+      };
+      details: Record<string, string>;
+    }>;
+    maxFlagsOnSingleProject: number;
+    flagDistribution: Record<string, number>;
+  };
+  scanId?: string;
+}
+
+export interface RiskEscalationResult {
+  hasCompoundRisk: boolean;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  reasoning: string;
+  escalations: string[];
+  compoundRisks: string[];
+  recommendations: string[];
+  modelCertainty: number;
+  confidence: ConfidenceResult;
+  suggestedActions: Array<{
+    actionType: ActionType;
+    targetEntityType: string;
+    targetEntityId: string;
+    oldValue: Record<string, unknown>;
+    newValue: Record<string, unknown>;
+    reasoning: string;
+  }>;
+}
+
+const RiskEscalationResponseSchema = z.object({
+  hasCompoundRisk: z.boolean(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  reasoning: z.string(),
+  escalations: z.array(z.string()),
+  compoundRisks: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  modelCertainty: z.number().min(0).max(100),
+  suggestedActions: z.array(z.object({
+    actionType: z.enum(['send_notification', 'create_change_request']),
+    targetEntityType: z.string(),
+    targetEntityId: z.string(),
+    description: z.string(),
+    reasoning: z.string(),
+  })),
+});
+
+type RiskEscalationResponse = z.infer<typeof RiskEscalationResponseSchema>;
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -1145,6 +1209,180 @@ Analyze the portfolio data above. Focus on cross-project patterns:
 6. Are there opportunities to transfer lessons from successful projects to struggling ones?
 
 Respond with valid JSON matching the portfolio analysis schema.`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Risk Escalation
+  // -------------------------------------------------------------------------
+
+  async generateRiskEscalation(input: RiskEscalationInput): Promise<RiskEscalationResult | null> {
+    // 1. Compute data quality — based on number of projects with compound risks
+    const compoundProjects = input.indicators.compoundRiskProjects;
+    const totalFlags = Object.values(input.indicators.flagDistribution).reduce((s, v) => s + v, 0);
+
+    const dataQuality = confidenceCalculator.computeDataQuality({
+      totalTasks: totalFlags * 10, // approximate — more flags = more data points
+      tasksWithDates: totalFlags * 8,
+      tasksWithAssignments: totalFlags * 6,
+      tasksUpdatedRecently: totalFlags * 5,
+      hasBudgetData: input.indicators.flagDistribution.budgetOverrun > 0,
+      hasResourceData: input.indicators.flagDistribution.resourceBottleneck > 0,
+    });
+
+    // 2. Get historical accuracy
+    const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy(
+      'risk-escalation-v1',
+      'portfolio',
+    );
+
+    // 3. Check Claude availability
+    if (!claudeService.isAvailable()) {
+      console.warn('[ReasoningEngine] Claude API unavailable — skipping risk escalation');
+      return null;
+    }
+
+    // 4. Build prompt and call Claude
+    const prompt = this.buildRiskEscalationPrompt(input.indicators);
+    let result: CompletionResult;
+    try {
+      result = await claudeService.complete({
+        systemPrompt: this.getRiskEscalationSystemPrompt(),
+        userMessage: prompt,
+        responseFormat: 'json',
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+    } catch (err) {
+      console.error('[ReasoningEngine] Claude call failed for risk escalation:', err);
+      return null;
+    }
+
+    // 5. Track cost
+    await agentCostTracker.record({
+      agentId: 'risk-escalation-v1',
+      projectId: 'portfolio',
+      scanId: input.scanId,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.inputTokens + result.usage.outputTokens,
+      estimatedCostUsd: agentCostTracker.estimateCost(
+        result.model,
+        result.usage.inputTokens,
+        result.usage.outputTokens,
+      ),
+      model: result.model,
+      latencyMs: result.latencyMs,
+    });
+
+    // 6. Parse and validate
+    let parsed: RiskEscalationResponse;
+    try {
+      const raw = JSON.parse(result.content);
+      parsed = RiskEscalationResponseSchema.parse(raw);
+    } catch (err) {
+      console.error('[ReasoningEngine] Failed to parse risk escalation response:', err);
+      return null;
+    }
+
+    // 7. Compute confidence
+    const confidence = confidenceCalculator.compute({
+      dataQuality,
+      historicalAccuracy,
+      modelCertainty: parsed.modelCertainty,
+    });
+
+    // 8. Map response
+    return {
+      hasCompoundRisk: parsed.hasCompoundRisk,
+      severity: parsed.severity,
+      reasoning: parsed.reasoning,
+      escalations: parsed.escalations,
+      compoundRisks: parsed.compoundRisks,
+      recommendations: parsed.recommendations,
+      modelCertainty: parsed.modelCertainty,
+      confidence,
+      suggestedActions: parsed.suggestedActions.map(a => ({
+        actionType: a.actionType as ActionType,
+        targetEntityType: a.targetEntityType,
+        targetEntityId: a.targetEntityId,
+        oldValue: {},
+        newValue: { description: a.description },
+        reasoning: a.reasoning,
+      })),
+    };
+  }
+
+  private getRiskEscalationSystemPrompt(): string {
+    return `You are an expert risk management analyst specializing in compound risk detection across project portfolios. Your role is to identify situations where multiple risk factors converge on the same project, creating risks greater than the sum of their parts.
+
+You must respond with valid JSON matching the requested schema. Be specific and evidence-based.
+
+Your response must include:
+1. hasCompoundRisk: Whether there are genuine compound risks requiring escalation (true/false)
+2. severity: low, medium, high, or critical
+3. reasoning: Your full chain-of-thought analysis of the compound risk interactions
+4. escalations: Specific escalation messages for management attention
+5. compoundRisks: Description of each compound risk (e.g., "Project X: schedule delay + budget overrun = potential project failure")
+6. recommendations: Actionable recommendations to address compound risks
+7. modelCertainty: Your confidence (0-100)
+8. suggestedActions: Concrete actions (send_notification or create_change_request)
+
+Key principles:
+- A project flagged by 2 agents is concerning; 3+ is critical
+- Schedule delay + budget overrun often indicates systemic issues, not just isolated problems
+- Resource bottlenecks + schedule delays suggest the delay will worsen without intervention
+- Scope creep + budget overrun is a leading indicator of project failure
+- Focus on interactions between risk factors, not just listing them`;
+  }
+
+  private buildRiskEscalationPrompt(
+    indicators: RiskEscalationInput['indicators'],
+  ): string {
+    const projectDetails = indicators.compoundRiskProjects.map(p => {
+      const flags: string[] = [];
+      if (p.agentFlags.scheduleDelay) flags.push('Schedule Delay');
+      if (p.agentFlags.budgetOverrun) flags.push('Budget Overrun');
+      if (p.agentFlags.scopeCreep) flags.push('Scope Creep');
+      if (p.agentFlags.resourceBottleneck) flags.push('Resource Bottleneck');
+      if (p.agentFlags.meetingOverdue) flags.push('Meeting Items Overdue');
+
+      const detailLines = Object.entries(p.details)
+        .map(([k, v]) => `  - ${k}: ${v}`)
+        .join('\n');
+
+      return `### ${p.projectName} (${p.projectId.slice(0, 8)})
+**Flags (${flags.length}):** ${flags.join(' + ')}
+${detailLines ? `**Details:**\n${detailLines}` : ''}`;
+    }).join('\n\n');
+
+    return `## Scan Summary
+
+**Total Projects Scanned**: ${indicators.totalProjects}
+**Projects with Compound Risks**: ${indicators.compoundRiskProjects.length}
+**Maximum Flags on Single Project**: ${indicators.maxFlagsOnSingleProject}
+
+## Flag Distribution Across Portfolio
+
+- Schedule Delays: ${indicators.flagDistribution.scheduleDelay} project(s)
+- Budget Overruns: ${indicators.flagDistribution.budgetOverrun} project(s)
+- Scope Creep: ${indicators.flagDistribution.scopeCreep} project(s)
+- Resource Bottlenecks: ${indicators.flagDistribution.resourceBottleneck} project(s)
+- Meeting Items Overdue: ${indicators.flagDistribution.meetingOverdue} project(s)
+
+## Compound Risk Projects
+
+${projectDetails}
+
+## Instructions
+
+Analyze the compound risk data above. Consider:
+1. Which risk factor combinations are most dangerous for each project?
+2. Are there cascading effects where one project's issues could impact others?
+3. Which projects need immediate executive attention?
+4. What intervention would have the highest leverage across multiple risk factors?
+5. Are the compound risks symptomatic of organizational issues (e.g., chronic under-staffing)?
+
+Respond with valid JSON matching the risk escalation schema.`;
   }
 
   // -------------------------------------------------------------------------
