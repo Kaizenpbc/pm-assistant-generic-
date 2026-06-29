@@ -40,6 +40,9 @@ coverage/
 cookies.txt
 nul
 *.png
+!src/client/public/pwa-192x192.png
+!src/client/public/pwa-512x512.png
+!src/client/public/apple-touch-icon.png
 *mc_test.json
 .claude/
 
