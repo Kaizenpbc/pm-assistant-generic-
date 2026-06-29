@@ -1,0 +1,105 @@
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
+import { resourceService } from '../../services/ResourceService';
+import { authMiddleware } from '../../middleware/auth';
+import { requireScope } from '../../middleware/requireScope';
+
+const createResourceSchema = z.object({
+  name: z.string().min(1),
+  role: z.string().min(1),
+  email: z.string().email(),
+  capacityHoursPerWeek: z.number().positive().default(40),
+  skills: z.array(z.string()).default([]),
+  isActive: z.boolean().default(true),
+});
+
+const createAssignmentSchema = z.object({
+  resourceId: z.string().min(1),
+  taskId: z.string().min(1),
+  scheduleId: z.string().min(1),
+  hoursPerWeek: z.number().positive(),
+  startDate: z.string().date(),
+  endDate: z.string().date(),
+});
+
+export async function resourceRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authMiddleware);
+
+  // GET /resources - List resources (paginated)
+  fastify.get('/', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, _reply: FastifyReply) => {
+    const { limit, offset } = request.query as { limit?: string; offset?: string };
+    const result = await resourceService.findAllResourcesPaginated(
+      Math.min(Number(limit) || 50, 200),
+      Number(offset) || 0,
+    );
+    return result;
+  });
+
+  // POST /resources - Create a resource
+  fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const data = createResourceSchema.parse(request.body);
+      const resource = await resourceService.createResource(data);
+      return reply.status(201).send({ resource });
+    } catch (error) {
+      console.error('Create resource error:', error);
+      return reply.status(400).send({ error: 'Invalid resource data' });
+    }
+  });
+
+  // PUT /resources/:id - Update a resource
+  fastify.put('/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const data = createResourceSchema.partial().parse(request.body);
+      const resource = await resourceService.updateResource(id, data);
+      if (!resource) return reply.status(404).send({ error: 'Resource not found' });
+      return { resource };
+    } catch (error) {
+      console.error('Update resource error:', error);
+      return reply.status(400).send({ error: 'Invalid resource data' });
+    }
+  });
+
+  // DELETE /resources/:id
+  fastify.delete('/:id', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const { id } = request.params as { id: string };
+    const deleted = await resourceService.deleteResource(id);
+    if (!deleted) return reply.status(404).send({ error: 'Resource not found' });
+    return { message: 'Resource deleted' };
+  });
+
+  // GET /resources/assignments/:scheduleId
+  fastify.get('/assignments/:scheduleId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, _reply: FastifyReply) => {
+    const { scheduleId } = request.params as { scheduleId: string };
+    const assignments = await resourceService.findAssignmentsBySchedule(scheduleId);
+    return { assignments };
+  });
+
+  // POST /resources/assignments
+  fastify.post('/assignments', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const data = createAssignmentSchema.parse(request.body);
+      const assignment = await resourceService.createAssignment(data);
+      return reply.status(201).send({ assignment });
+    } catch (error) {
+      console.error('Create assignment error:', error);
+      return reply.status(400).send({ error: 'Invalid assignment data' });
+    }
+  });
+
+  // DELETE /resources/assignments/:id
+  fastify.delete('/assignments/:id', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const { id } = request.params as { id: string };
+    const deleted = await resourceService.deleteAssignment(id);
+    if (!deleted) return reply.status(404).send({ error: 'Assignment not found' });
+    return { message: 'Assignment deleted' };
+  });
+
+  // GET /resources/workload/:projectId
+  fastify.get('/workload/:projectId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, _reply: FastifyReply) => {
+    const { projectId } = request.params as { projectId: string };
+    const workload = await resourceService.computeWorkload(projectId);
+    return { workload };
+  });
+}

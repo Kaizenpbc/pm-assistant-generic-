@@ -1,110 +1,145 @@
 import { FastifyInstance } from 'fastify';
-import { authRoutes } from './routes/auth';
-import { projectRoutes } from './routes/projects';
-import { userRoutes } from './routes/users';
-import { scheduleRoutes } from './routes/schedules';
-import { aiChatRoutes } from './routes/aiChat';
-import { aiSchedulingRoutes } from './routes/aiScheduling';
-import { alertRoutes } from './routes/alerts';
-import { predictionRoutes } from './routes/predictions';
-import { aiReportRoutes } from './routes/aiReports';
-import { learningRoutes } from './routes/learning';
-import { intelligenceRoutes } from './routes/intelligence';
-import { resourceRoutes } from './routes/resources';
-import { exportRoutes } from './routes/exports';
-import { portfolioRoutes } from './routes/portfolio';
-import { workflowRoutes } from './routes/workflows';
-import { projectMemberRoutes } from './routes/projectMembers';
-import { auditTrailRoutes } from './routes/auditTrail';
-import { websocketRoutes } from './routes/websocket';
-import { monteCarloRoutes } from './routes/monteCarlo';
-import { evmForecastRoutes } from './routes/evmForecast';
-import { autoRescheduleRoutes } from './routes/autoReschedule';
-import { resourceOptimizerRoutes } from './routes/resourceOptimizer';
-import { meetingIntelligenceRoutes } from './routes/meetingIntelligence';
-import { lessonsLearnedRoutes } from './routes/lessonsLearned';
-import { nlQueryRoutes } from './routes/nlQuery';
-import { templateRoutes } from './routes/templates';
-import { taskPrioritizationRoutes } from './routes/taskPrioritization';
-import { stripeRoutes } from './routes/stripe';
-import { notificationRoutes } from './routes/notifications';
-import { agentRoutes } from './routes/agent';
-import { agentActivityLogRoutes } from './routes/agentActivityLog';
-import { fileAttachmentRoutes } from './routes/fileAttachments';
-import { timeEntryRoutes } from './routes/timeEntries';
-import { customFieldRoutes } from './routes/customFields';
-import { networkDiagramRoutes } from './routes/networkDiagram';
-import { burndownRoutes } from './routes/burndown';
-import { approvalWorkflowRoutes } from './routes/approvalWorkflows';
-import { portalRoutes } from './routes/portal';
-import { resourceLevelingRoutes } from './routes/resourceLeveling';
-import { integrationRoutes } from './routes/integrations';
-import { sprintRoutes } from './routes/sprints';
-import { reportBuilderRoutes } from './routes/reportBuilder';
-import { intakeFormRoutes } from './routes/intakeForms';
-import { searchRoutes } from './routes/search';
-import { apiKeyRoutes } from './routes/apiKeys';
-import { webhookRoutes } from './routes/webhooks';
-import { analyticsSummaryRoutes } from './routes/analyticsSummary';
-import { bulkRoutes } from './routes/bulk';
-import { mcpProxyRoutes } from './routes/mcpProxy';
-import { policyRoutes } from './routes/policies';
-import { ragRoutes } from './routes/rag';
-import { waitlistRoutes } from './routes/waitlist';
-import { adminRoutes } from './routes/admin';
+
+// Core
+import { authRoutes } from './routes/core/auth';
+import { projectRoutes } from './routes/core/projects';
+import { userRoutes } from './routes/core/users';
+import { projectMemberRoutes } from './routes/core/projectMembers';
+import { notificationRoutes } from './routes/core/notifications';
+import { searchRoutes } from './routes/core/search';
+import { websocketRoutes } from './routes/core/websocket';
+import { exportRoutes } from './routes/core/exports';
+import { bulkRoutes } from './routes/core/bulk';
+
+// Scheduling
+import { scheduleRoutes } from './routes/scheduling/schedules';
+import { burndownRoutes } from './routes/scheduling/burndown';
+import { networkDiagramRoutes } from './routes/scheduling/networkDiagram';
+import { monteCarloRoutes } from './routes/scheduling/monteCarlo';
+import { evmForecastRoutes } from './routes/scheduling/evmForecast';
+import { autoRescheduleRoutes } from './routes/scheduling/autoReschedule';
+import { resourceLevelingRoutes } from './routes/scheduling/resourceLeveling';
+import { taskPrioritizationRoutes } from './routes/scheduling/taskPrioritization';
+
+// AI
+import { aiChatRoutes } from './routes/ai/aiChat';
+import { aiReportRoutes } from './routes/ai/aiReports';
+import { aiSchedulingRoutes } from './routes/ai/aiScheduling';
+import { nlQueryRoutes } from './routes/ai/nlQuery';
+import { predictionRoutes } from './routes/ai/predictions';
+import { learningRoutes } from './routes/ai/learning';
+import { intelligenceRoutes } from './routes/ai/intelligence';
+import { ragRoutes } from './routes/ai/rag';
+
+// Resources
+import { resourceRoutes } from './routes/resources/resources';
+import { resourceOptimizerRoutes } from './routes/resources/resourceOptimizer';
+import { timeEntryRoutes } from './routes/resources/timeEntries';
+import { customFieldRoutes } from './routes/resources/customFields';
+
+// Collaboration
+import { approvalWorkflowRoutes } from './routes/collaboration/approvalWorkflows';
+import { workflowRoutes } from './routes/collaboration/workflows';
+import { portalRoutes } from './routes/collaboration/portal';
+import { sprintRoutes } from './routes/collaboration/sprints';
+import { templateRoutes } from './routes/collaboration/templates';
+import { fileAttachmentRoutes } from './routes/collaboration/fileAttachments';
+import { meetingIntelligenceRoutes } from './routes/collaboration/meetingIntelligence';
+import { lessonsLearnedRoutes } from './routes/collaboration/lessonsLearned';
+import { intakeFormRoutes } from './routes/collaboration/intakeForms';
+
+// Reporting
+import { reportBuilderRoutes } from './routes/reporting/reportBuilder';
+import { analyticsSummaryRoutes } from './routes/reporting/analyticsSummary';
+import { portfolioRoutes } from './routes/reporting/portfolio';
+
+// Agent
+import { agentRoutes } from './routes/agent/agent';
+import { agentActivityLogRoutes } from './routes/agent/agentActivityLog';
+import { alertRoutes } from './routes/agent/alerts';
+import { policyRoutes } from './routes/agent/policies';
+
+// Integrations
+import { integrationRoutes } from './routes/integrations/integrations';
+import { webhookRoutes } from './routes/integrations/webhooks';
+import { apiKeyRoutes } from './routes/integrations/apiKeys';
+import { stripeRoutes } from './routes/integrations/stripe';
+import { mcpProxyRoutes } from './routes/integrations/mcpProxy';
+
+// Admin
+import { adminRoutes } from './routes/admin/admin';
+import { waitlistRoutes } from './routes/admin/waitlist';
+import { auditTrailRoutes } from './routes/admin/auditTrail';
 
 export async function registerRoutes(fastify: FastifyInstance) {
+  // Core
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
   await fastify.register(projectRoutes, { prefix: '/api/v1/projects' });
   await fastify.register(userRoutes, { prefix: '/api/v1/users' });
-  await fastify.register(scheduleRoutes, { prefix: '/api/v1/schedules' });
-  await fastify.register(aiChatRoutes, { prefix: '/api/v1/ai-chat' });
-  await fastify.register(aiSchedulingRoutes, { prefix: '/api/v1/ai-scheduling' });
-  await fastify.register(alertRoutes, { prefix: '/api/v1/alerts' });
-  await fastify.register(predictionRoutes, { prefix: '/api/v1/predictions' });
-  await fastify.register(aiReportRoutes, { prefix: '/api/v1/ai-reports' });
-  await fastify.register(learningRoutes, { prefix: '/api/v1/learning' });
-  await fastify.register(intelligenceRoutes, { prefix: '/api/v1/intelligence' });
-  await fastify.register(resourceRoutes, { prefix: '/api/v1/resources' });
-  await fastify.register(exportRoutes, { prefix: '/api/v1/exports' });
-  await fastify.register(portfolioRoutes, { prefix: '/api/v1/portfolio' });
-  await fastify.register(workflowRoutes, { prefix: '/api/v1/workflows' });
   await fastify.register(projectMemberRoutes, { prefix: '/api/v1/projects' });
-  await fastify.register(auditTrailRoutes, { prefix: '/api/v1/audit' });
+  await fastify.register(notificationRoutes, { prefix: '/api/v1/notifications' });
+  await fastify.register(searchRoutes, { prefix: '/api/v1/search' });
   await fastify.register(websocketRoutes, { prefix: '/api/v1/ws' });
+  await fastify.register(exportRoutes, { prefix: '/api/v1/exports' });
+  await fastify.register(bulkRoutes, { prefix: '/api/v1/bulk' });
+
+  // Scheduling
+  await fastify.register(scheduleRoutes, { prefix: '/api/v1/schedules' });
+  await fastify.register(burndownRoutes, { prefix: '/api/v1/burndown' });
+  await fastify.register(networkDiagramRoutes, { prefix: '/api/v1/network-diagram' });
   await fastify.register(monteCarloRoutes, { prefix: '/api/v1/monte-carlo' });
   await fastify.register(evmForecastRoutes, { prefix: '/api/v1/evm-forecast' });
   await fastify.register(autoRescheduleRoutes, { prefix: '/api/v1/auto-reschedule' });
-  await fastify.register(resourceOptimizerRoutes, { prefix: '/api/v1/resource-optimizer' });
-  await fastify.register(meetingIntelligenceRoutes, { prefix: '/api/v1/meeting-intelligence' });
-  await fastify.register(lessonsLearnedRoutes, { prefix: '/api/v1/lessons-learned' });
-  await fastify.register(nlQueryRoutes, { prefix: '/api/v1/nl-query' });
-  await fastify.register(templateRoutes, { prefix: '/api/v1/templates' });
+  await fastify.register(resourceLevelingRoutes, { prefix: '/api/v1/resource-leveling' });
   await fastify.register(taskPrioritizationRoutes, { prefix: '/api/v1/task-prioritization' });
-  await fastify.register(stripeRoutes, { prefix: '/api/v1/stripe' });
-  await fastify.register(notificationRoutes, { prefix: '/api/v1/notifications' });
-  await fastify.register(agentRoutes, { prefix: '/api/v1/agent' });
-  await fastify.register(agentActivityLogRoutes, { prefix: '/api/v1/agent-log' });
-  await fastify.register(fileAttachmentRoutes, { prefix: '/api/v1/attachments' });
+
+  // AI
+  await fastify.register(aiChatRoutes, { prefix: '/api/v1/ai-chat' });
+  await fastify.register(aiReportRoutes, { prefix: '/api/v1/ai-reports' });
+  await fastify.register(aiSchedulingRoutes, { prefix: '/api/v1/ai-scheduling' });
+  await fastify.register(nlQueryRoutes, { prefix: '/api/v1/nl-query' });
+  await fastify.register(predictionRoutes, { prefix: '/api/v1/predictions' });
+  await fastify.register(learningRoutes, { prefix: '/api/v1/learning' });
+  await fastify.register(intelligenceRoutes, { prefix: '/api/v1/intelligence' });
+  await fastify.register(ragRoutes, { prefix: '/api/v1/rag' });
+
+  // Resources
+  await fastify.register(resourceRoutes, { prefix: '/api/v1/resources' });
+  await fastify.register(resourceOptimizerRoutes, { prefix: '/api/v1/resource-optimizer' });
   await fastify.register(timeEntryRoutes, { prefix: '/api/v1/time-entries' });
   await fastify.register(customFieldRoutes, { prefix: '/api/v1/custom-fields' });
-  await fastify.register(networkDiagramRoutes, { prefix: '/api/v1/network-diagram' });
-  await fastify.register(burndownRoutes, { prefix: '/api/v1/burndown' });
+
+  // Collaboration
   await fastify.register(approvalWorkflowRoutes, { prefix: '/api/v1/approvals' });
+  await fastify.register(workflowRoutes, { prefix: '/api/v1/workflows' });
   await fastify.register(portalRoutes, { prefix: '/api/v1/portal' });
-  await fastify.register(resourceLevelingRoutes, { prefix: '/api/v1/resource-leveling' });
-  await fastify.register(integrationRoutes, { prefix: '/api/v1/integrations' });
   await fastify.register(sprintRoutes, { prefix: '/api/v1/sprints' });
-  await fastify.register(reportBuilderRoutes, { prefix: '/api/v1/report-builder' });
+  await fastify.register(templateRoutes, { prefix: '/api/v1/templates' });
+  await fastify.register(fileAttachmentRoutes, { prefix: '/api/v1/attachments' });
+  await fastify.register(meetingIntelligenceRoutes, { prefix: '/api/v1/meeting-intelligence' });
+  await fastify.register(lessonsLearnedRoutes, { prefix: '/api/v1/lessons-learned' });
   await fastify.register(intakeFormRoutes, { prefix: '/api/v1/intake' });
-  await fastify.register(searchRoutes, { prefix: '/api/v1/search' });
-  await fastify.register(apiKeyRoutes, { prefix: '/api/v1/api-keys' });
-  await fastify.register(webhookRoutes, { prefix: '/api/v1/webhooks' });
+
+  // Reporting
+  await fastify.register(reportBuilderRoutes, { prefix: '/api/v1/report-builder' });
   await fastify.register(analyticsSummaryRoutes, { prefix: '/api/v1/analytics' });
-  await fastify.register(bulkRoutes, { prefix: '/api/v1/bulk' });
-  await fastify.register(mcpProxyRoutes, { prefix: '/mcp' });
+  await fastify.register(portfolioRoutes, { prefix: '/api/v1/portfolio' });
+
+  // Agent
+  await fastify.register(agentRoutes, { prefix: '/api/v1/agent' });
+  await fastify.register(agentActivityLogRoutes, { prefix: '/api/v1/agent-log' });
+  await fastify.register(alertRoutes, { prefix: '/api/v1/alerts' });
   await fastify.register(policyRoutes, { prefix: '/api/v1/policies' });
-  await fastify.register(ragRoutes, { prefix: '/api/v1/rag' });
-  await fastify.register(waitlistRoutes, { prefix: '/api/v1/waitlist' });
+
+  // Integrations
+  await fastify.register(integrationRoutes, { prefix: '/api/v1/integrations' });
+  await fastify.register(webhookRoutes, { prefix: '/api/v1/webhooks' });
+  await fastify.register(apiKeyRoutes, { prefix: '/api/v1/api-keys' });
+  await fastify.register(stripeRoutes, { prefix: '/api/v1/stripe' });
+  await fastify.register(mcpProxyRoutes, { prefix: '/mcp' });
+
+  // Admin
   await fastify.register(adminRoutes, { prefix: '/api/v1/admin' });
+  await fastify.register(waitlistRoutes, { prefix: '/api/v1/waitlist' });
+  await fastify.register(auditTrailRoutes, { prefix: '/api/v1/audit' });
 }
