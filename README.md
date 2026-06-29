@@ -165,6 +165,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Budget Intelligence Agent** -- Analyzes EVM metrics (CPI, SPI, VAC, EAC), identifies root causes of cost deviations via Claude reasoning, proposes corrective actions
 - **Resource Optimization Agent** -- Detects over-allocated (>100%) and under-utilized (<40%) resources, identifies bottleneck roles, proposes rebalancing actions via Claude reasoning
 - **Cross-Project Intelligence Agent** -- Portfolio-level analysis: identifies systemic risks, common patterns, resource contention, and cascading delays across all active projects
+- **Risk Escalation Agent** -- Runs last in each scan; detects compound risks where 2+ agents flag the same project (e.g., schedule delay + budget overrun + resource bottleneck), escalates to management
 - **Confidence Scoring** -- Weighted confidence (data quality + historical accuracy + model certainty) controls what agents can propose
 - **Proposal Lifecycle** -- pending -> approved/rejected -> executed/rolled_back with full audit trail
 - **Emergency Kill Switch** -- Global, per-agent, and per-project agent shutdown via API with audit logging

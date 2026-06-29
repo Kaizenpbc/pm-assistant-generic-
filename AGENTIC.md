@@ -445,14 +445,16 @@ Each agent follows the pattern: perceive -> reason -> plan -> propose. Registere
 ### Risk Escalation Agent
 `src/server/services/agents/RiskEscalationAgent.ts`
 
-- **Trigger**: runs after all other agents complete in a scan cycle
-- **Perception**: outputs from all other agents, notification history, alert patterns
-- **Reasoning**: Claude identifies compound risks that no single agent catches (e.g., schedule delay + budget overrun + resource bottleneck on same project)
-- **Output**: escalation alerts with severity, compound risk assessment
+- **Trigger**: runs last in each scan cycle after all per-project and portfolio agents complete
+- **Perception**: per-project agent flags accumulated during the scan (schedule delay, budget overrun, scope creep, resource bottleneck, meeting overdue)
+- **Reasoning**: Claude identifies compound risks where multiple risk factors converge on the same project, assesses cascading effects, and determines escalation urgency
+- **Output**: escalation proposals with `send_notification` and `create_change_request` actions
 - **Registration**: `risk-escalation-v1`, capability `risk.escalate`
-- **Input schema**: `{ agentOutputs[], activeAlerts[], projectHealth[] }`
-- **Output schema**: `{ escalations[], compoundRisks[], reasoning, confidence }`
-- **Risk level**: low (creates notifications only)
+- **Input schema**: `{ userId, projectResults[{ projectId, projectName, agentFlags, details }], scanId? }`
+- **Output schema**: `{ analysis, proposal, indicators, skipped, skipReason? }`
+- **Guard chain**: cost budget → kill switch → rate limiter → circuit breaker → gather indicators → reason → propose
+- **Compound threshold**: project must be flagged by ≥2 agents to be considered a compound risk
+- **Risk level**: low-to-high (creates notifications and change requests for compound risks)
 - **Default policy**: log_only
 
 ---
@@ -784,8 +786,8 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | Component | File | Status |
 |-----------|------|--------|
 | Agent Registry | `src/server/services/AgentRegistryService.ts` | Production-ready |
-| Agent Scheduler (8 agents) | `src/server/services/AgentSchedulerService.ts` | Production-ready |
-| Agent Capabilities (9 registered) | `src/server/services/agentCapabilities.ts` | Production-ready |
+| Agent Scheduler (9 agents) | `src/server/services/AgentSchedulerService.ts` | Production-ready |
+| Agent Capabilities (10 registered) | `src/server/services/agentCapabilities.ts` | Production-ready |
 | Policy Engine | `src/server/services/PolicyEngineService.ts` | Production-ready |
 | Audit Ledger (hash-chained) | `src/server/services/AuditLedgerService.ts` | Production-ready |
 | Agent Activity Log | `src/server/services/AgentActivityLogService.ts` | Production-ready |
@@ -817,6 +819,7 @@ Each step is a commit-and-push cycle. Each agent follows the same pattern: regis
 | **BudgetIntelligenceAgent** | `src/server/services/agents/BudgetIntelligenceAgent.ts` | Production-ready |
 | **ResourceOptimizationAgent** | `src/server/services/agents/ResourceOptimizationAgent.ts` | Production-ready |
 | **CrossProjectIntelligenceAgent** | `src/server/services/agents/CrossProjectIntelligenceAgent.ts` | Production-ready |
+| **RiskEscalationAgent** | `src/server/services/agents/RiskEscalationAgent.ts` | Production-ready |
 | Agent trigger route | `src/server/routes/agent/agent.ts` | Production-ready |
 | Policy routes | `src/server/routes/agent/policies.ts` | Production-ready |
 | Agent activity log route | `src/server/routes/agent/agentActivityLog.ts` | Production-ready |

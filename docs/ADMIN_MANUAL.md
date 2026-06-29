@@ -289,6 +289,7 @@ Proposal creation is rate-limited to prevent alert fatigue:
 | `budget-intelligence-v1` | Analyzes EVM metrics, reasons about cost deviations, proposes budget recovery actions |
 | `resource-optimization-v1` | Detects over-allocated/under-utilized resources and bottleneck roles, proposes rebalancing actions |
 | `cross-project-intelligence-v1` | Portfolio-level analysis: systemic risks, common patterns, resource contention across projects |
+| `risk-escalation-v1` | Detects compound risks where multiple agents flag the same project; escalates to management |
 
 ---
 
