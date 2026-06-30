@@ -61,7 +61,7 @@ export async function importRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'csv field is required and must be a string' });
       }
 
-      const userId = (request as any).userId as string;
+      const userId = (request as any).user?.userId as string;
 
       let records: Record<string, string>[];
       try {
