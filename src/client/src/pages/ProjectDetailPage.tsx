@@ -291,11 +291,23 @@ export function ProjectDetailPage() {
                   <option value="cancelled">Cancelled</option>
                 </select>
               ) : (
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${status.color}`}
-                >
-                  {status.label}
-                </span>
+                <>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${status.color}`}
+                  >
+                    {status.label}
+                  </span>
+                  {project.status === 'planning' && (
+                    <button
+                      onClick={() => statusMutation.mutate('active')}
+                      disabled={statusMutation.isPending}
+                      className="inline-flex items-center gap-1 rounded-md bg-primary-600 px-3 py-1 text-xs font-medium text-white hover:bg-primary-700 transition-colors disabled:opacity-50"
+                    >
+                      <Play className="h-3 w-3" />
+                      Start Project
+                    </button>
+                  )}
+                </>
               )}
             </div>
             {(project.description) && (

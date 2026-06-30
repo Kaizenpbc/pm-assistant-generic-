@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronUp, ChevronDown, ChevronsUpDown, FolderKanban } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronUp, ChevronDown, ChevronsUpDown, FolderKanban, Play } from 'lucide-react';
 import { MetaPill } from '../ui/MetaPill';
+import { apiService } from '../../services/api';
 
 export interface ProjectRow {
   id: string;
@@ -98,8 +100,17 @@ interface Props {
 
 export function ProjectTable({ projects }: Props) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const startMutation = useMutation({
+    mutationFn: (projectId: string) => apiService.updateProjectStatus(projectId, 'active'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-predictions'] });
+    },
+  });
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -203,6 +214,7 @@ export function ProjectTable({ projects }: Props) {
             <Th label="Spent" sortable="budgetPct" col="hidden md:table-cell" />
             <Th label="End Date" sortable="endDate" col="hidden sm:table-cell" />
             <Th label="Days Left" sortable="daysRemaining" />
+            <th className="px-3 py-2.5 w-10" />
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
@@ -290,6 +302,24 @@ export function ProjectTable({ projects }: Props) {
                     </span>
                   ) : (
                     <span className="text-xs text-gray-300">—</span>
+                  )}
+                </td>
+
+                {/* Start button */}
+                <td className="px-3 py-3 whitespace-nowrap">
+                  {project.status === 'planning' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startMutation.mutate(project.id);
+                      }}
+                      disabled={startMutation.isPending}
+                      className="inline-flex items-center gap-1 rounded-md bg-primary-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-primary-700 transition-colors disabled:opacity-50"
+                      title="Start Project"
+                    >
+                      <Play className="h-3 w-3" />
+                      Start
+                    </button>
                   )}
                 </td>
               </tr>

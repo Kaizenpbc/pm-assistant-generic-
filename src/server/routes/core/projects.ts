@@ -114,10 +114,14 @@ export async function projectRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
-      if (user.role !== 'admin' && user.role !== 'manager') {
-        return reply.status(403).send({ error: 'Forbidden', message: 'Only admins and project managers can change project status' });
-      }
       const { id } = request.params as { id: string };
+      // Allow admins, managers, and the project creator
+      if (user.role !== 'admin' && user.role !== 'manager') {
+        const existing = await projectService.findById(id);
+        if (!existing || existing.createdBy !== user.userId) {
+          return reply.status(403).send({ error: 'Forbidden', message: 'Only admins, project managers, or the project creator can change project status' });
+        }
+      }
       const { status } = statusUpdateSchema.parse(request.body);
       const project = await projectService.update(id, { status }, user.userId);
       if (!project) {
