@@ -486,6 +486,15 @@ PM Assistant's agentic system evolves from reactive alerts to autonomous reasoni
 |----------|-----------|-------------|------------|----------------|
 | `schedule-recovery-v1` | `schedule.recover` | Detects schedule delays, reasons about root cause via Claude, proposes task date/resource changes | High | require_approval |
 | `scope-creep-detection-v1` | `scope.detect` | Monitors task growth, estimate increases, and change requests against baselines | Medium | require_approval |
+| `budget-intelligence-v1` | `budget.analyze` | Analyzes EVM metrics, reasons about cost deviations, proposes budget recovery | Medium | require_approval |
+| `resource-optimization-v1` | `resource.optimize` | Detects over/under-utilized resources and bottleneck roles, proposes rebalancing | Medium | require_approval |
+| `cross-project-intelligence-v1` | `portfolio.analyze` | Portfolio-level analysis: systemic risks, common patterns, resource contention | Low | require_approval |
+| `risk-escalation-v1` | `risk.escalate` | Detects compound risks where 2+ agents flag the same project; escalates | High | require_approval |
+| `stakeholder-communication-v1` | `stakeholder.report` | Auto-generates stakeholder status reports with executive summaries | Low | require_approval |
+| `project-hygiene-v1` | `project.hygiene` | Detects stale tasks, missing data, abandoned sprints, zero-progress tasks | Low | require_approval |
+| `dependency-risk-v1` | `dependency.analyze` | Builds dependency graph, detects blocked chains, bottleneck tasks, long chains | Dynamic | require_approval |
+| `lessons-learned-v1` | `lessons.extract` | Extracts structured lessons when projects near completion or complete | Low | require_approval |
+| `predictive-alerting-v1` | `prediction.alert` | Velocity trends, progress trajectory, risk accumulation, early warnings | Dynamic | require_approval |
 
 ### Schedule Recovery Agent (`ScheduleRecoveryAgent.ts`)
 
@@ -501,6 +510,92 @@ PM Assistant's agentic system evolves from reactive alerts to autonomous reasoni
 - **Reasoning:** Claude analyzes whether growth is justified or represents scope creep, identifies root causes
 - **Output:** `create_change_request` and `send_notification` actions
 - **Guards:** Cost budget -> kill switch -> rate limit -> circuit breaker -> confidence threshold
+
+### Budget Intelligence Agent (`BudgetIntelligenceAgent.ts`)
+
+- **Trigger:** Cron scan detects EVM indicators outside thresholds (CPI < 0.9, SPI < 0.9, or budget variance > 10%)
+- **Perception:** Gathers EVM metrics (CPI, SPI, EAC, VAC), budget utilization, cost trend
+- **Reasoning:** Claude analyzes cost deviations, identifies root causes, proposes budget recovery actions
+- **Output:** `send_notification` actions with budget analysis and recommendations
+- **Guards:** Cost budget -> kill switch -> rate limit -> circuit breaker
+
+### Resource Optimization Agent (`ResourceOptimizationAgent.ts`)
+
+- **Trigger:** Cron scan detects workload imbalances (over-allocation > 120%, under-utilization < 40%, or bottleneck roles)
+- **Perception:** Gathers resource assignments, workload distribution, role coverage
+- **Reasoning:** Claude analyzes utilization patterns and proposes rebalancing strategies
+- **Output:** Resource rebalancing proposals with `send_notification` actions
+- **Guards:** Cost budget -> kill switch -> rate limit -> circuit breaker
+
+### Cross-Project Intelligence Agent (`CrossProjectIntelligenceAgent.ts`)
+
+- **Trigger:** Portfolio-level scan (runs once per cycle, not per-project)
+- **Perception:** Gathers all active projects, detects systemic patterns (common delays, shared resource contention, repeated risk types)
+- **Reasoning:** Claude identifies cross-cutting themes and portfolio-level optimizations
+- **Output:** Portfolio intelligence report with `send_notification` actions
+- **Guards:** Cost budget -> kill switch -> rate limit -> circuit breaker
+
+### Risk Escalation Agent (`RiskEscalationAgent.ts`)
+
+- **Trigger:** Cron scan detects 2+ agent proposals flagging the same project in the last 7 days
+- **Perception:** Aggregates recent agent flags, computes flag distribution by agent type, assesses compound risk severity
+- **Reasoning:** Claude evaluates whether multiple flags indicate systemic project distress requiring management intervention
+- **Output:** Escalation proposal with `send_notification` to management
+- **Guards:** Cost budget -> kill switch -> rate limit -> circuit breaker
+
+### Stakeholder Communication Agent (`StakeholderCommunicationAgent.ts`)
+
+- **Trigger:** Per-project scan cycle
+- **Perception:** Gathers project snapshot (completion rate, EVM metrics, upcoming milestones, recently completed tasks, risk indicators)
+- **Reasoning:** Claude generates stakeholder-ready status report with executive summary, highlights, risks, milestones, and recommendations
+- **Output:** Status report proposal with `send_notification` action
+- **Risk level:** Low (informational, no data mutations)
+
+### Project Hygiene Agent (`ProjectHygieneAgent.ts`)
+
+- **Trigger:** Per-project scan cycle
+- **Perception:** Detects stale tasks (14+ days unchanged), missing dates/assignments/estimates, abandoned sprints (past end date), zero-progress in-progress tasks (7+ days)
+- **Significance:** >= 3 stale tasks OR >= 5 missing-date tasks OR >= 1 abandoned sprint OR >= 3 zero-progress tasks
+- **Reasoning:** Claude analyzes hygiene indicators and recommends cleanup actions
+- **Output:** Notification listing hygiene issues and recommendations
+- **Risk level:** Low
+
+### Dependency Risk Agent (`DependencyRiskAgent.ts`)
+
+- **Trigger:** Per-project scan cycle
+- **Perception:** Builds full dependency graph, detects blocked chains (tasks depending on overdue/stalled blockers, traverses up to 5 levels), bottleneck tasks (>= 3 dependents), long chains (depth > 5)
+- **Significance:** >= 1 blocked chain OR >= 1 bottleneck task OR >= 1 long chain
+- **Reasoning:** Claude analyzes dependency risks and proposes mitigation strategies
+- **Output:** Dependency risk analysis with recommended actions
+- **Risk level:** Dynamic (critical/high/medium based on severity)
+
+### Lessons Learned Agent (`LessonsLearnedAgent.ts`)
+
+- **Trigger:** Per-project, only when completion >= 90% OR status = `completed`
+- **Perception:** Gathers completion rate, overdue task count, budget variance, project duration
+- **Reasoning:** Claude extracts structured lessons by category (schedule, budget, resource, risk, technical, communication, stakeholder, quality) with impact assessment
+- **Output:** Stores lessons in `lessons_learned` table; notification summarizing extracted lessons
+- **Skips when:** Project already has >= 10 stored lessons (deduplication)
+- **Risk level:** Low
+
+### Predictive Alerting Agent (`PredictiveAlertingAgent.ts`)
+
+- **Trigger:** Per-project scan cycle
+- **Perception:** Analyzes velocity trend (recent 3-sprint avg vs historical), progress trajectory (completion % vs time elapsed %), risk accumulation (agent proposals in last 30 days), similar project comparison
+- **Significance:** Velocity decline > 20% OR behind schedule > 15% OR >= 3 agent flags in 30 days
+- **Reasoning:** Claude generates early warning with probability assessment
+- **Output:** Predictive alert with recommended preventive actions
+- **Risk level:** Dynamic (critical/high/medium based on severity)
+
+### Autonomous Execution (Tier 3)
+
+Agents with proven track records can be promoted from Tier 2 (propose-only) to Tier 3 (auto-execute):
+
+- **Promotion criteria:** >= 30 days, >= 20 proposals, >= 80% acceptance, >= 70% effectiveness, zero rollbacks
+- **Auto-execute gates:** Tier 3 AND confidence >= threshold (default 80) AND risk <= max level (default `low`)
+- **Service:** `AutonomyService` (`src/server/services/agents/AutonomyService.ts`)
+- **API:** `GET/PUT /api/v1/agent/autonomy/:agentId` (admin only)
+- **Table:** `agent_autonomy_config`
 
 ### Proposal Lifecycle
 
