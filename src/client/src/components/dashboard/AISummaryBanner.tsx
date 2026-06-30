@@ -1,32 +1,32 @@
 import { useQuery } from '@tanstack/react-query';
-import { Activity, Shield, DollarSign, TrendingUp } from 'lucide-react';
+import { Shield, DollarSign, TrendingUp } from 'lucide-react';
 import { apiService } from '../../services/api';
 
 function SkeletonBanner() {
   return (
-    <div className="rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-5 animate-pulse">
+    <div className="rounded-lg bg-white border border-gray-200 p-5 animate-pulse">
       <div className="flex items-center gap-3 mb-4">
-        <div className="h-5 w-5 rounded bg-indigo-200" />
-        <div className="h-4 w-40 rounded bg-indigo-200" />
+        <div className="h-5 w-5 rounded bg-gray-200" />
+        <div className="h-4 w-40 rounded bg-gray-200" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-full bg-indigo-200" />
+          <div className="h-14 w-14 rounded-full bg-gray-200" />
           <div className="space-y-2">
-            <div className="h-3 w-20 rounded bg-indigo-200" />
-            <div className="h-3 w-16 rounded bg-indigo-100" />
+            <div className="h-3 w-20 rounded bg-gray-200" />
+            <div className="h-3 w-16 rounded bg-gray-100" />
           </div>
         </div>
         <div className="space-y-2">
-          <div className="h-3 w-24 rounded bg-indigo-200" />
+          <div className="h-3 w-24 rounded bg-gray-200" />
           <div className="flex gap-2">
-            <div className="h-5 w-12 rounded-full bg-indigo-200" />
-            <div className="h-5 w-12 rounded-full bg-indigo-200" />
+            <div className="h-5 w-12 rounded-full bg-gray-200" />
+            <div className="h-5 w-12 rounded-full bg-gray-200" />
           </div>
         </div>
         <div className="space-y-2">
-          <div className="h-3 w-24 rounded bg-indigo-200" />
-          <div className="h-4 w-32 rounded bg-indigo-200" />
+          <div className="h-3 w-24 rounded bg-gray-200" />
+          <div className="h-4 w-32 rounded bg-gray-200" />
         </div>
       </div>
     </div>
@@ -40,9 +40,15 @@ function getHealthColor(score: number): string {
 }
 
 function getHealthBgColor(score: number): string {
-  if (score >= 75) return 'bg-green-100 border-green-300';
-  if (score >= 50) return 'bg-yellow-100 border-yellow-300';
-  return 'bg-red-100 border-red-300';
+  if (score >= 75) return 'bg-green-50 border-green-300';
+  if (score >= 50) return 'bg-yellow-50 border-yellow-300';
+  return 'bg-red-50 border-red-300';
+}
+
+function getStatusDot(score: number): string {
+  if (score >= 75) return 'bg-green-500';
+  if (score >= 50) return 'bg-yellow-500';
+  return 'bg-red-500';
 }
 
 export function AISummaryBanner() {
@@ -75,14 +81,11 @@ export function AISummaryBanner() {
     : 50;
 
   return (
-    <div className="rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-5">
+    <div className="rounded-lg bg-white border border-gray-200 p-5">
       {/* Title row */}
       <div className="flex items-center gap-2 mb-4">
-        <Activity className="h-4 w-4 text-indigo-500" />
-        <h2 className="text-sm font-semibold text-indigo-700">AI Portfolio Intelligence</h2>
-        {data.aiPowered && (
-          <span className="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full font-medium">AI</span>
-        )}
+        <span className={`h-2 w-2 rounded-full ${getStatusDot(portfolioHealthScore)}`} />
+        <h2 className="text-sm font-semibold text-gray-900">Portfolio Intelligence</h2>
       </div>
 
       {/* Main content: 3 columns */}
@@ -120,25 +123,25 @@ export function AISummaryBanner() {
           </div>
           <div className="flex flex-wrap gap-2">
             {risks.critical > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
                 {risks.critical} Critical
               </span>
             )}
             {risks.high > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                 {risks.high} High
               </span>
             )}
             {risks.medium > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" />
                 {risks.medium} Medium
               </span>
             )}
             {risks.low > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
                 {risks.low} Low
               </span>
@@ -172,10 +175,10 @@ export function AISummaryBanner() {
 
       {/* Summary + Highlights */}
       {(summary || highlights.length > 0) && (
-        <div className="mt-4 border-t border-indigo-100 pt-3">
+        <div className="mt-4 border-t border-gray-100 pt-3">
           <div className="flex items-center gap-1.5 mb-1.5">
-            <TrendingUp className="h-3.5 w-3.5 text-indigo-400" />
-            <p className="text-xs font-medium text-indigo-600">Key Insights</p>
+            <TrendingUp className="h-3.5 w-3.5 text-gray-400" />
+            <p className="text-xs font-medium text-gray-600">Key Insights</p>
           </div>
           {summary && (
             <p className="text-xs text-gray-600 mb-1">{summary}</p>
@@ -184,7 +187,7 @@ export function AISummaryBanner() {
             <ul className="space-y-1">
               {highlights.slice(0, 3).map((h, idx) => (
                 <li key={idx} className="text-xs text-gray-600 flex items-start gap-1.5">
-                  <span className="mt-1.5 h-1 w-1 rounded-full bg-indigo-300 flex-shrink-0" />
+                  <span className="mt-1.5 h-1 w-1 rounded-full bg-gray-400 flex-shrink-0" />
                   {typeof h === 'string' ? h : h.text}
                 </li>
               ))}

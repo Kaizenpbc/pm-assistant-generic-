@@ -7,7 +7,6 @@ import {
   Play,
   RotateCcw,
   ChevronRight,
-  Activity,
   X,
   MessageSquare,
   ThumbsUp,
@@ -17,6 +16,12 @@ import {
   ShieldOff,
   TrendingUp,
   AlertTriangle,
+  ArrowRight,
+  Clock,
+  Zap,
+  Database,
+  History,
+  Cpu,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
@@ -96,45 +101,46 @@ const STATUS_TABS = [
   { key: 'expired', label: 'Expired' },
 ] as const;
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  approved: 'bg-blue-100 text-blue-800',
-  rejected: 'bg-red-100 text-red-800',
-  expired: 'bg-gray-100 text-gray-600',
-  executing: 'bg-indigo-100 text-indigo-800',
-  executed: 'bg-green-100 text-green-800',
-  rolled_back: 'bg-orange-100 text-orange-800',
-  failed: 'bg-red-100 text-red-800',
+const STATUS_STYLES: Record<string, string> = {
+  pending: 'bg-amber-50 text-amber-700 border border-amber-200',
+  approved: 'bg-blue-50 text-blue-700 border border-blue-200',
+  rejected: 'bg-red-50 text-red-700 border border-red-200',
+  expired: 'bg-gray-100 text-gray-500 border border-gray-200',
+  executing: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+  executed: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  rolled_back: 'bg-orange-50 text-orange-700 border border-orange-200',
+  failed: 'bg-red-50 text-red-700 border border-red-200',
 };
 
-const RISK_COLORS: Record<string, string> = {
-  low: 'bg-green-100 text-green-700',
-  medium: 'bg-yellow-100 text-yellow-700',
-  high: 'bg-orange-100 text-orange-700',
-  critical: 'bg-red-100 text-red-700',
+const RISK_STYLES: Record<string, { bg: string; text: string; bar: string; border: string }> = {
+  low: { bg: 'bg-emerald-600', text: 'text-emerald-700', bar: 'bg-emerald-500', border: 'border-emerald-300' },
+  medium: { bg: 'bg-amber-500', text: 'text-amber-700', bar: 'bg-amber-500', border: 'border-amber-300' },
+  high: { bg: 'bg-orange-600', text: 'text-orange-700', bar: 'bg-orange-500', border: 'border-orange-300' },
+  critical: { bg: 'bg-red-600', text: 'text-red-700', bar: 'bg-red-500', border: 'border-red-300' },
 };
 
 const KNOWN_AGENTS = [
-  'schedule-recovery-v1',
-  'scope-creep-detection-v1',
-  'budget-burn-rate-v1',
-  'monte-carlo-risk-v1',
-  'resource-optimization-v1',
-  'budget-intelligence-v1',
-  'meeting-intelligence-v1',
-  'cross-project-intelligence-v1',
-  'risk-escalation-v1',
-  'stakeholder-communication-v1',
-  'project-hygiene-v1',
-  'dependency-risk-v1',
-  'lessons-learned-v1',
-  'predictive-alerting-v1',
+  'schedule-recovery-v1', 'scope-creep-detection-v1', 'budget-burn-rate-v1',
+  'monte-carlo-risk-v1', 'resource-optimization-v1', 'budget-intelligence-v1',
+  'meeting-intelligence-v1', 'cross-project-intelligence-v1', 'risk-escalation-v1',
+  'stakeholder-communication-v1', 'project-hygiene-v1', 'dependency-risk-v1',
+  'lessons-learned-v1', 'predictive-alerting-v1',
 ];
 
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+
 function confidenceColor(score: number): string {
-  if (score >= 75) return 'text-green-600';
-  if (score >= 50) return 'text-yellow-600';
+  if (score >= 80) return 'text-emerald-600';
+  if (score >= 60) return 'text-amber-600';
   return 'text-red-600';
+}
+
+function confidenceBarColor(score: number): string {
+  if (score >= 80) return 'bg-emerald-500';
+  if (score >= 60) return 'bg-amber-500';
+  return 'bg-red-500';
 }
 
 function timeAgo(dateStr: string): string {
@@ -151,8 +157,123 @@ function formatAgentName(agentId: string): string {
   return agentId.replace(/-v\d+$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+/** Format a single value for human display */
+function formatValue(val: unknown): string {
+  if (val === null || val === undefined) return '—';
+  if (typeof val === 'string') {
+    // ISO date
+    if (/^\d{4}-\d{2}-\d{2}/.test(val)) {
+      return new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    return val;
+  }
+  if (typeof val === 'number') return String(val);
+  if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+  return JSON.stringify(val);
+}
+
+/** Format action type for display */
+function formatActionType(type: string): string {
+  return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 // ---------------------------------------------------------------------------
-// Sub-components
+// Confidence Gauge
+// ---------------------------------------------------------------------------
+
+function ConfidenceGauge({ score, size = 'md' }: { score: number; size?: 'sm' | 'md' }) {
+  const isSm = size === 'sm';
+  const w = isSm ? 40 : 56;
+  const strokeWidth = isSm ? 4 : 5;
+  const r = (w - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference - (score / 100) * circumference;
+
+  return (
+    <div className={`relative inline-flex items-center justify-center ${isSm ? 'w-10 h-10' : 'w-14 h-14'}`}>
+      <svg width={w} height={w} className="-rotate-90">
+        <circle cx={w / 2} cy={w / 2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} />
+        <circle
+          cx={w / 2} cy={w / 2} r={r} fill="none"
+          stroke={score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444'}
+          strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset}
+          strokeLinecap="round" className="transition-all duration-500"
+        />
+      </svg>
+      <span className={`absolute font-bold ${isSm ? 'text-xs' : 'text-sm'} ${confidenceColor(score)}`}>
+        {score.toFixed(0)}
+      </span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Risk Badge (distinct from status — heavier, bolder)
+// ---------------------------------------------------------------------------
+
+function RiskBadge({ level, size = 'md' }: { level: string; size?: 'sm' | 'md' }) {
+  const style = RISK_STYLES[level] || RISK_STYLES.medium;
+  if (size === 'sm') {
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold uppercase tracking-wider ${style.text} bg-white border-2 ${style.border} rounded`}>
+        <span className={`w-1.5 h-1.5 rounded-sm ${style.bg}`} />
+        {level}
+      </span>
+    );
+  }
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-bold uppercase tracking-wider ${style.text} bg-white border-2 ${style.border} rounded`}>
+      <span className={`w-2 h-2 rounded-sm ${style.bg}`} />
+      {level} risk
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Status Pill (lightweight, lifecycle indicator)
+// ---------------------------------------------------------------------------
+
+function StatusPill({ status }: { status: string }) {
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status] || 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+      {status.replace(/_/g, ' ')}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Diff Renderer (before → after)
+// ---------------------------------------------------------------------------
+
+function DiffView({ oldVal, newVal }: { oldVal: Record<string, unknown> | null; newVal: Record<string, unknown> }) {
+  const allKeys = new Set([...Object.keys(oldVal || {}), ...Object.keys(newVal)]);
+
+  return (
+    <div className="space-y-1">
+      {[...allKeys].map(key => {
+        const ov = oldVal?.[key];
+        const nv = newVal[key];
+        const changed = JSON.stringify(ov) !== JSON.stringify(nv);
+        if (!changed && ov === undefined) return null; // new-only key with no old
+        return (
+          <div key={key} className="flex items-center gap-2 text-xs">
+            <span className="text-gray-500 font-medium min-w-[80px]">{key.replace(/_/g, ' ')}:</span>
+            {ov !== undefined && (
+              <span className="text-red-600 line-through">{formatValue(ov)}</span>
+            )}
+            {ov !== undefined && nv !== undefined && (
+              <ArrowRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
+            )}
+            <span className="text-emerald-700 font-medium">{formatValue(nv)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Health Banner (serious, governed look)
 // ---------------------------------------------------------------------------
 
 function HealthBanner() {
@@ -165,35 +286,94 @@ function HealthBanner() {
   if (!data) return null;
 
   const isHealthy = data.status === 'healthy';
+  const costToday = data.costs?.today;
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm ${isHealthy ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
-      <Activity className={`w-4 h-4 ${isHealthy ? 'text-green-600' : 'text-yellow-600'}`} />
-      <span className={isHealthy ? 'text-green-700' : 'text-yellow-700'}>
-        Agent system: <span className="font-medium">{data.status}</span>
+    <div className={`flex items-center gap-4 px-4 py-2.5 rounded-lg text-sm border ${
+      isHealthy ? 'bg-white border-gray-200' : 'bg-amber-50 border-amber-200'
+    }`}>
+      <div className="flex items-center gap-2">
+        <span className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
+        <span className="font-medium text-gray-700">{data.status}</span>
+      </div>
+      <span className="text-gray-300">|</span>
+      <span className="text-gray-500 text-xs">
+        Claude: <span className={data.claudeApiStatus === 'available' ? 'text-emerald-600' : 'text-red-600'}>{data.claudeApiStatus}</span>
       </span>
       {data.recommendedScanScope && data.recommendedScanScope !== 'full' && (
-        <span className="text-yellow-600 text-xs">Scan scope: {data.recommendedScanScope}</span>
+        <>
+          <span className="text-gray-300">|</span>
+          <span className="text-amber-600 text-xs">Scope: {data.recommendedScanScope}</span>
+        </>
       )}
-      {typeof data.pendingProposals === 'number' && (
-        <span className="ml-auto text-xs text-gray-500">{data.pendingProposals} pending</span>
-      )}
-      {data.costs?.today && (
-        <span className="text-xs text-gray-500">
-          Today: {data.costs.today.invocations} calls / ${data.costs.today.estimatedCostUsd?.toFixed(4) ?? data.costs.today.estimatedUsd?.toFixed(4) ?? '0'}
-        </span>
-      )}
+      <div className="ml-auto flex items-center gap-4 text-xs text-gray-500">
+        {typeof data.pendingProposals === 'number' && data.pendingProposals > 0 && (
+          <span className="font-medium text-amber-700">{data.pendingProposals} pending review</span>
+        )}
+        {costToday && (
+          <span>{costToday.invocations} calls / ${(costToday.estimatedCostUsd ?? costToday.estimatedUsd ?? 0).toFixed(4)}</span>
+        )}
+      </div>
     </div>
   );
 }
 
-function ProposalDetailModal({
-  proposalId,
-  onClose,
-}: {
-  proposalId: string;
-  onClose: () => void;
-}) {
+// ---------------------------------------------------------------------------
+// Triage Section — "Needs Your Decision"
+// ---------------------------------------------------------------------------
+
+function TriageSection({ proposals, onSelect }: { proposals: Proposal[]; onSelect: (id: string) => void }) {
+  const pending = proposals.filter(p => p.status === 'pending');
+  if (pending.length === 0) return null;
+
+  // Sort: high risk first, then by confidence desc
+  const riskOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+  const sorted = [...pending].sort((a, b) => {
+    const rd = (riskOrder[a.risk_level] ?? 9) - (riskOrder[b.risk_level] ?? 9);
+    if (rd !== 0) return rd;
+    return b.confidence_score - a.confidence_score;
+  });
+
+  return (
+    <div className="border-2 border-amber-200 rounded-xl bg-amber-50/50 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Zap className="w-4 h-4 text-amber-600" />
+        <h3 className="text-sm font-bold text-amber-800">Needs Your Decision</h3>
+        <span className="ml-auto text-xs text-amber-600 font-medium">{sorted.length} pending</span>
+      </div>
+      <div className="space-y-2">
+        {sorted.slice(0, 5).map(p => (
+          <button
+            key={p.id}
+            onClick={() => onSelect(p.id)}
+            className="w-full flex items-center gap-3 bg-white border border-amber-200 rounded-lg px-4 py-3 hover:border-amber-400 hover:shadow-sm transition-all text-left"
+          >
+            <ConfidenceGauge score={p.confidence_score} size="sm" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-gray-900 truncate">{p.title}</div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                {formatAgentName(p.agent_id)} &middot; {timeAgo(p.created_at)}
+              </div>
+            </div>
+            <RiskBadge level={p.risk_level} size="sm" />
+            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </button>
+        ))}
+        {sorted.length > 5 && (
+          <p className="text-xs text-amber-600 text-center pt-1">
+            + {sorted.length - 5} more pending proposals
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Proposal Detail Modal (redesigned)
+// ---------------------------------------------------------------------------
+
+function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onClose: () => void }) {
   const queryClient = useQueryClient();
   const user = useAuthStore(s => s.user);
   const [comment, setComment] = useState('');
@@ -220,22 +400,18 @@ function ProposalDetailModal({
     mutationFn: () => apiService.approveAgentProposal(proposalId, comment || undefined),
     onSuccess: () => { invalidate(); setComment(''); },
   });
-
   const rejectMutation = useMutation({
     mutationFn: () => apiService.rejectAgentProposal(proposalId, comment || undefined),
     onSuccess: () => { invalidate(); setComment(''); },
   });
-
   const executeMutation = useMutation({
     mutationFn: () => apiService.executeAgentProposal(proposalId),
     onSuccess: invalidate,
   });
-
   const rollbackMutation = useMutation({
     mutationFn: () => apiService.rollbackAgentProposal(proposalId),
     onSuccess: invalidate,
   });
-
   const feedbackMutation = useMutation({
     mutationFn: () => apiService.submitAgentProposalFeedback(proposalId, feedbackOutcome, feedbackComment || undefined),
     onSuccess: () => { invalidate(); setFeedbackOutcome(''); setFeedbackComment(''); },
@@ -248,41 +424,40 @@ function ProposalDetailModal({
   const canExecute = proposal?.status === 'approved' && isAdmin;
   const canRollback = proposal?.status === 'executed' && isAdmin;
   const canFeedback = proposal?.status === 'executed';
-
   const anyMutating = approveMutation.isPending || rejectMutation.isPending || executeMutation.isPending || rollbackMutation.isPending || feedbackMutation.isPending;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4" onClick={onClose}>
-      <div className="fixed inset-0 bg-black/40" />
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 px-4" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/50" />
       <div
-        className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+        className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl flex items-start justify-between z-10">
-          <div className="min-w-0 pr-4">
-            {isLoading ? (
-              <div className="h-6 w-48 bg-gray-200 rounded animate-pulse" />
-            ) : (
-              <>
-                <h2 className="text-lg font-semibold text-gray-900 truncate">{proposal?.title}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[proposal?.status || ''] || 'bg-gray-100 text-gray-600'}`}>
-                    {proposal?.status?.replace(/_/g, ' ')}
-                  </span>
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${RISK_COLORS[proposal?.risk_level || ''] || ''}`}>
-                    {proposal?.risk_level} risk
-                  </span>
-                  <span className={`text-sm font-medium ${confidenceColor(proposal?.confidence_score ?? 0)}`}>
-                    {proposal?.confidence_score?.toFixed(0)}% confidence
-                  </span>
+        {/* Header — Risk + Confidence dominate */}
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl z-10">
+          {isLoading ? (
+            <div className="h-6 w-48 bg-gray-200 rounded animate-pulse" />
+          ) : proposal ? (
+            <>
+              <div className="flex items-start justify-between gap-4">
+                <h2 className="text-lg font-bold text-gray-900 leading-snug">{proposal.title}</h2>
+                <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded flex-shrink-0">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              {/* Decision bar: Risk + Confidence + Status — three distinct visual treatments */}
+              <div className="flex items-center gap-3 mt-3">
+                <RiskBadge level={proposal.risk_level} />
+                <div className="flex items-center gap-2">
+                  <ConfidenceGauge score={proposal.confidence_score} size="sm" />
+                  <span className="text-xs text-gray-500">confidence</span>
                 </div>
-              </>
-            )}
-          </div>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded">
-            <X className="w-5 h-5" />
-          </button>
+                <div className="ml-auto">
+                  <StatusPill status={proposal.status} />
+                </div>
+              </div>
+            </>
+          ) : null}
         </div>
 
         {isLoading ? (
@@ -290,90 +465,99 @@ function ProposalDetailModal({
             <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
           </div>
         ) : proposal ? (
-          <div className="px-6 py-4 space-y-5">
-            {/* Meta */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="text-gray-500">Agent:</span>{' '}
-                <span className="font-medium text-gray-900">{formatAgentName(proposal.agent_id)}</span>
-                <span className="text-gray-400 text-xs ml-1">v{proposal.agent_version}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Created:</span>{' '}
-                <span className="text-gray-900">{new Date(proposal.created_at).toLocaleString()}</span>
-              </div>
+          <div className="px-6 py-5 space-y-6">
+            {/* Meta row */}
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <Bot className="w-3.5 h-3.5 text-indigo-500" />
+                <span className="font-medium text-gray-700">{formatAgentName(proposal.agent_id)}</span>
+                <span className="text-gray-400">v{proposal.agent_version}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                {new Date(proposal.created_at).toLocaleString()}
+              </span>
               {proposal.expires_at && (
-                <div>
-                  <span className="text-gray-500">Expires:</span>{' '}
-                  <span className="text-gray-900">{new Date(proposal.expires_at).toLocaleString()}</span>
-                </div>
-              )}
-              {proposal.executed_at && (
-                <div>
-                  <span className="text-gray-500">Executed:</span>{' '}
-                  <span className="text-gray-900">{new Date(proposal.executed_at).toLocaleString()}</span>
-                </div>
+                <span className="text-amber-600">
+                  Expires {new Date(proposal.expires_at).toLocaleDateString()}
+                </span>
               )}
             </div>
 
-            {/* Summary */}
+            {/* Summary — first-class, prominent */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Summary</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{proposal.summary}</p>
+              <p className="text-sm text-gray-800 leading-relaxed">{proposal.summary}</p>
             </div>
 
-            {/* Reasoning */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Reasoning</h3>
-              <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap">{proposal.reasoning}</p>
-            </div>
-
-            {/* Confidence Factors */}
+            {/* Confidence Breakdown — visual bars */}
             {proposal.confidence_factors && Object.keys(proposal.confidence_factors).length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-1">Confidence Breakdown</h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {Object.entries(proposal.confidence_factors).map(([key, val]) => (
-                    <div key={key} className="bg-gray-50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-gray-500">{key.replace(/_/g, ' ')}</div>
-                      <div className={`text-sm font-semibold ${confidenceColor(Number(val) || 0)}`}>
-                        {typeof val === 'number' ? val.toFixed(0) : String(val)}%
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Confidence Breakdown</h3>
+                <div className="space-y-2.5">
+                  {Object.entries(proposal.confidence_factors).map(([key, val]) => {
+                    const score = Number(val) || 0;
+                    const label = key === 'dataQuality' ? 'Data Quality' : key === 'historicalAccuracy' ? 'Historical Accuracy' : key === 'modelCertainty' ? 'Model Certainty' : key.replace(/_/g, ' ');
+                    const Icon = key === 'dataQuality' ? Database : key === 'historicalAccuracy' ? History : Cpu;
+                    return (
+                      <div key={key} className="flex items-center gap-3">
+                        <Icon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <span className="text-xs text-gray-600 w-28 flex-shrink-0">{label}</span>
+                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${confidenceBarColor(score)}`}
+                            style={{ width: `${Math.min(score, 100)}%` }}
+                          />
+                        </div>
+                        <span className={`text-xs font-bold w-8 text-right ${confidenceColor(score)}`}>{score.toFixed(0)}%</span>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Actions */}
+            {/* Agent Reasoning — structured, not a log dump */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Agent Reasoning</h3>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                {proposal.reasoning.split(/\n{2,}/).map((paragraph, i) => (
+                  <p key={i} className={`text-sm text-gray-700 leading-relaxed ${i > 0 ? 'mt-3' : ''}`}>
+                    {paragraph.trim()}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            {/* Proposed Actions — with before→after diffs */}
             {actions.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Proposed Actions ({actions.length})</h3>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  Proposed Actions ({actions.length})
+                </h3>
                 <div className="space-y-2">
                   {actions.map(action => (
-                    <div key={action.id} className="border border-gray-200 rounded-lg p-3 text-sm">
-                      <div className="flex items-center justify-between mb-1">
+                    <div key={action.id} className="border border-gray-200 rounded-lg p-3 bg-white">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">
-                            #{action.execution_order}. {action.action_type.replace(/_/g, ' ')}
+                          <span className="flex items-center justify-center w-5 h-5 rounded bg-indigo-100 text-indigo-600 text-xs font-bold">
+                            {action.execution_order}
                           </span>
-                          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[action.status] || 'bg-gray-100 text-gray-600'}`}>
-                            {action.status}
+                          <span className="text-sm font-medium text-gray-900">
+                            {formatActionType(action.action_type)}
                           </span>
                         </div>
+                        <StatusPill status={action.status} />
                       </div>
-                      <div className="text-xs text-gray-500">
-                        Target: {action.target_entity_type} ({action.target_entity_id.slice(0, 8)}...)
+                      <div className="text-xs text-gray-500 mb-2">
+                        {action.target_entity_type} &middot; {action.target_entity_id.slice(0, 8)}...
                       </div>
                       {action.reasoning && (
-                        <p className="text-xs text-gray-600 mt-1">{action.reasoning}</p>
+                        <p className="text-xs text-gray-600 mb-2 italic">{action.reasoning}</p>
                       )}
-                      {action.new_value && (
-                        <div className="mt-1 text-xs">
-                          <span className="text-gray-500">Change: </span>
-                          <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-700">
-                            {JSON.stringify(action.new_value)}
-                          </code>
+                      {/* Before→After diff */}
+                      {(action.old_value || action.new_value) && (
+                        <div className="bg-gray-50 rounded p-2.5">
+                          <DiffView oldVal={action.old_value} newVal={action.new_value} />
                         </div>
                       )}
                     </div>
@@ -382,29 +566,29 @@ function ProposalDetailModal({
               </div>
             )}
 
-            {/* Error messages from mutations */}
+            {/* Error messages */}
             {(approveMutation.error || rejectMutation.error || executeMutation.error || rollbackMutation.error || feedbackMutation.error) && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
                 {String((approveMutation.error || rejectMutation.error || executeMutation.error || rollbackMutation.error || feedbackMutation.error) as Error)}
               </div>
             )}
 
-            {/* Review Actions (pending) */}
+            {/* Review Actions (pending) — prominent */}
             {canReview && (
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Review</h3>
+              <div className="border-2 border-amber-200 rounded-lg p-4 bg-amber-50/50">
+                <h3 className="text-sm font-bold text-gray-800 mb-3">Your Decision</h3>
                 <textarea
                   value={comment}
                   onChange={e => setComment(e.target.value)}
                   placeholder="Optional comment..."
                   rows={2}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-3"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-3 bg-white"
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => approveMutation.mutate()}
                     disabled={anyMutating}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold disabled:opacity-50"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     Approve
@@ -412,7 +596,7 @@ function ProposalDetailModal({
                   <button
                     onClick={() => rejectMutation.mutate()}
                     disabled={anyMutating}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-5 py-2 bg-white text-red-600 border-2 border-red-300 rounded-lg hover:bg-red-50 transition-colors text-sm font-semibold disabled:opacity-50"
                   >
                     <XCircle className="w-4 h-4" />
                     Reject
@@ -421,30 +605,30 @@ function ProposalDetailModal({
               </div>
             )}
 
-            {/* Execute Action (approved, admin only) */}
+            {/* Execute (approved, admin) */}
             {canExecute && (
               <div className="border-t border-gray-200 pt-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => executeMutation.mutate()}
                     disabled={anyMutating}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-semibold disabled:opacity-50"
                   >
                     <Play className="w-4 h-4" />
-                    Execute Proposal
+                    Execute
                   </button>
-                  <span className="text-xs text-gray-500">This will apply all proposed actions</span>
+                  <span className="text-xs text-gray-500">Apply all proposed actions to the project</span>
                 </div>
               </div>
             )}
 
-            {/* Rollback Action (executed, admin only) */}
+            {/* Rollback (executed, admin) */}
             {canRollback && (
               <div className="border-t border-gray-200 pt-4">
                 <button
                   onClick={() => rollbackMutation.mutate()}
                   disabled={anyMutating}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-orange-600 border-2 border-orange-300 rounded-lg hover:bg-orange-50 transition-colors text-sm font-semibold disabled:opacity-50"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Rollback
@@ -455,7 +639,7 @@ function ProposalDetailModal({
             {/* Feedback (executed) */}
             {canFeedback && (
               <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Outcome Feedback</h3>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Outcome Feedback</h3>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {['effective', 'partially_effective', 'ineffective', 'made_worse'].map(o => (
                     <button
@@ -488,7 +672,7 @@ function ProposalDetailModal({
                       className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50"
                     >
                       <MessageSquare className="w-4 h-4" />
-                      Submit Feedback
+                      Submit
                     </button>
                   </>
                 )}
@@ -504,7 +688,7 @@ function ProposalDetailModal({
 }
 
 // ---------------------------------------------------------------------------
-// Autonomy Tab
+// Autonomy Tab (kept — already strong)
 // ---------------------------------------------------------------------------
 
 function AgentEligibilityCard({ agentId, config, isAdmin }: {
@@ -545,17 +729,12 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
-      {/* Card Header */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          {isTier3 ? (
-            <ShieldCheck className="w-5 h-5 text-green-600" />
-          ) : (
-            <Shield className="w-5 h-5 text-gray-400" />
-          )}
+          {isTier3 ? <ShieldCheck className="w-5 h-5 text-emerald-600" /> : <Shield className="w-5 h-5 text-gray-400" />}
           <div className="text-left">
             <div className="font-medium text-gray-900 text-sm">{formatAgentName(agentId)}</div>
             <div className="text-xs text-gray-500">{agentId}</div>
@@ -563,28 +742,26 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
         </div>
         <div className="flex items-center gap-3">
           {isTier3 ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-              <ShieldCheck className="w-3 h-3" /> Tier 3 — Autonomous
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <ShieldCheck className="w-3 h-3" /> Tier 3
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-              Tier 2 — Propose Only
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200">
+              Tier 2
             </span>
           )}
           <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`} />
         </div>
       </button>
 
-      {/* Expanded Details */}
       {expanded && (
         <div className="border-t border-gray-200 px-4 py-4 bg-gray-50/50">
-          {/* Active Config */}
           {isTier3 && config && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="text-sm">
-                  <span className="font-medium text-green-800">Active Tier 3 Configuration</span>
-                  <div className="text-green-700 text-xs mt-1">
+                  <span className="font-medium text-emerald-800">Active Tier 3</span>
+                  <div className="text-emerald-700 text-xs mt-1">
                     Min confidence: {config.minConfidenceThreshold}% | Max risk: {config.maxRiskLevel} | Since: {new Date(config.enabledAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -595,21 +772,19 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium disabled:opacity-50"
                   >
                     <ShieldOff className="w-3.5 h-3.5" />
-                    Demote to Tier 2
+                    Demote
                   </button>
                 )}
               </div>
             </div>
           )}
 
-          {/* Eligibility Stats */}
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
             </div>
           ) : eligibility ? (
             <div className="space-y-4">
-              {/* Stats Grid */}
               <div>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Proposal History</h4>
                 <div className="grid grid-cols-4 gap-2">
@@ -618,19 +793,19 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
                     <div className="text-xs text-gray-500">Total</div>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-lg p-2.5 text-center">
-                    <div className={`text-lg font-bold ${eligibility.acceptanceRate >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
+                    <div className={`text-lg font-bold ${eligibility.acceptanceRate >= 80 ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {eligibility.acceptanceRate}%
                     </div>
                     <div className="text-xs text-gray-500">Accepted</div>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-lg p-2.5 text-center">
-                    <div className={`text-lg font-bold ${eligibility.effectivenessRate >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>
+                    <div className={`text-lg font-bold ${eligibility.effectivenessRate >= 70 ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {eligibility.effectivenessRate}%
                     </div>
                     <div className="text-xs text-gray-500">Effective</div>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-lg p-2.5 text-center">
-                    <div className={`text-lg font-bold ${eligibility.rolledBackProposals === 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`text-lg font-bold ${eligibility.rolledBackProposals === 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {eligibility.rolledBackProposals}
                     </div>
                     <div className="text-xs text-gray-500">Rollbacks</div>
@@ -638,18 +813,17 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
                 </div>
               </div>
 
-              {/* Promotion Criteria */}
               <div>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Promotion Criteria</h4>
                 <div className="space-y-1.5">
                   {eligibility.reasons.map((reason, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
                       {eligibility.isEligible ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       ) : reason.includes('Need') ? (
-                        <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                        <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
                       ) : (
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       )}
                       <span className="text-gray-700">{reason}</span>
                     </div>
@@ -657,7 +831,6 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
                 </div>
               </div>
 
-              {/* Promote Controls (admin only, not already tier 3) */}
               {isAdmin && !isTier3 && (
                 <div className="border-t border-gray-200 pt-4">
                   <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">Promote to Tier 3</h4>
@@ -696,12 +869,12 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
                     </button>
                   </div>
                   {!eligibility.isEligible && (
-                    <p className="text-xs text-yellow-600 mt-2 flex items-center gap-1">
+                    <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3" />
-                      This agent has not met all eligibility criteria. Promoting is an admin override.
+                      Eligibility criteria not met. Promoting is an admin override.
                     </p>
                   )}
-                  {(promoteMutation.error) && (
+                  {promoteMutation.error && (
                     <p className="text-xs text-red-600 mt-2">{String(promoteMutation.error)}</p>
                   )}
                 </div>
@@ -728,7 +901,6 @@ function AutonomyTab() {
   const configs: AutonomyConfig[] = data?.configs || [];
   const configMap = new Map(configs.map(c => [c.agentId, c]));
 
-  // Sort: tier 3 agents first, then alphabetical
   const sortedAgents = [...KNOWN_AGENTS].sort((a, b) => {
     const aT3 = configMap.has(a) ? 0 : 1;
     const bT3 = configMap.has(b) ? 0 : 1;
@@ -738,48 +910,37 @@ function AutonomyTab() {
 
   return (
     <div className="space-y-4">
-      {/* Info Banner */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <Shield className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+          <Shield className="w-5 h-5 text-slate-600 mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="text-sm font-semibold text-indigo-900">Autonomous Execution (Tier 3)</h3>
-            <p className="text-xs text-indigo-700 mt-1">
-              Tier 2 agents propose actions for human review. Tier 3 agents can auto-execute low-risk, high-confidence proposals without approval.
-              Promotion requires 30+ days of history, 20+ proposals, 80%+ acceptance rate, 70%+ effectiveness, and zero rollbacks.
+            <h3 className="text-sm font-semibold text-slate-900">Autonomous Execution (Tier 3)</h3>
+            <p className="text-xs text-slate-600 mt-1">
+              Tier 2 agents propose actions for human review. Tier 3 agents auto-execute low-risk, high-confidence proposals.
+              Promotion requires 30+ days, 20+ proposals, 80%+ acceptance, 70%+ effectiveness, and zero rollbacks.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Summary */}
       <div className="flex items-center gap-4 text-sm">
         <span className="text-gray-600">
-          <span className="font-semibold text-gray-900">{configs.length}</span> agent{configs.length !== 1 ? 's' : ''} at Tier 3
+          <span className="font-bold text-gray-900">{configs.length}</span> at Tier 3
         </span>
-        <span className="text-gray-400">|</span>
+        <span className="text-gray-300">|</span>
         <span className="text-gray-600">
-          <span className="font-semibold text-gray-900">{KNOWN_AGENTS.length - configs.length}</span> at Tier 2
+          <span className="font-bold text-gray-900">{KNOWN_AGENTS.length - configs.length}</span> at Tier 2
         </span>
       </div>
 
-      {/* Loading */}
-      {isLoading && (
+      {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
         </div>
-      )}
-
-      {/* Agent Cards */}
-      {!isLoading && (
+      ) : (
         <div className="space-y-2">
           {sortedAgents.map(agentId => (
-            <AgentEligibilityCard
-              key={agentId}
-              agentId={agentId}
-              config={configMap.get(agentId)}
-              isAdmin={isAdmin}
-            />
+            <AgentEligibilityCard key={agentId} agentId={agentId} config={configMap.get(agentId)} isAdmin={isAdmin} />
           ))}
         </div>
       )}
@@ -815,17 +976,14 @@ export const AgentProposalsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Agent Proposals</h1>
-          <p className="text-sm text-gray-500 mt-1">Review, approve, and manage AI agent recommendations</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Agent Governance</h1>
+        <p className="text-sm text-gray-500 mt-1">Review proposals, manage autonomy, monitor agent operations</p>
       </div>
 
-      {/* Health Banner */}
       <HealthBanner />
 
-      {/* Page-level Tabs */}
+      {/* Page Tabs */}
       <div className="flex items-center gap-1 border-b border-gray-200">
         {PAGE_TABS.map(tab => {
           const Icon = tab.icon;
@@ -835,7 +993,7 @@ export const AgentProposalsPage: React.FC = () => {
               onClick={() => setPageTab(tab.key)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 pageTab === tab.key
-                  ? 'border-indigo-600 text-indigo-600'
+                  ? 'border-gray-900 text-gray-900'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -849,7 +1007,10 @@ export const AgentProposalsPage: React.FC = () => {
       {/* Proposals Tab */}
       {pageTab === 'proposals' && (
         <>
-          {/* Status Sub-Tabs */}
+          {/* Triage — pending items front and center */}
+          {!isLoading && !isError && <TriageSection proposals={proposals} onSelect={setSelectedId} />}
+
+          {/* Status Filters */}
           <div className="flex items-center gap-1">
             {STATUS_TABS.map(tab => (
               <button
@@ -857,7 +1018,7 @@ export const AgentProposalsPage: React.FC = () => {
                 onClick={() => setStatusFilter(tab.key)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                   statusFilter === tab.key
-                    ? 'bg-indigo-100 text-indigo-700'
+                    ? 'bg-gray-900 text-white'
                     : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                 }`}
               >
@@ -866,34 +1027,29 @@ export const AgentProposalsPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Loading */}
           {isLoading && (
             <div className="flex items-center justify-center py-20">
-              <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin" />
             </div>
           )}
 
-          {/* Error */}
           {isError && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
-              Failed to load proposals. Please try again.
+              Failed to load proposals.
             </div>
           )}
 
-          {/* Empty */}
           {!isLoading && !isError && proposals.length === 0 && (
             <div className="text-center py-20">
               <Bot className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-700 mb-1">No proposals found</h3>
+              <h3 className="text-lg font-medium text-gray-700 mb-1">No proposals</h3>
               <p className="text-sm text-gray-500">
-                {statusFilter === 'all'
-                  ? 'Agents have not generated any proposals yet.'
-                  : `No ${statusFilter} proposals.`}
+                {statusFilter === 'all' ? 'Agents have not generated any proposals yet.' : `No ${statusFilter} proposals.`}
               </p>
             </div>
           )}
 
-          {/* Table */}
+          {/* Proposals Table */}
           {!isLoading && !isError && proposals.length > 0 && (
             <div className="overflow-x-auto border border-gray-200 rounded-lg">
               <table className="w-full text-sm">
@@ -913,11 +1069,11 @@ export const AgentProposalsPage: React.FC = () => {
                     <tr
                       key={p.id}
                       onClick={() => setSelectedId(p.id)}
-                      className="hover:bg-indigo-50/50 cursor-pointer transition-colors"
+                      className="hover:bg-gray-50 cursor-pointer transition-colors"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <Bot className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                          <Bot className="w-4 h-4 text-gray-400 flex-shrink-0" />
                           <span className="font-medium text-gray-900 truncate max-w-[140px]">
                             {formatAgentName(p.agent_id)}
                           </span>
@@ -927,21 +1083,22 @@ export const AgentProposalsPage: React.FC = () => {
                         <span className="text-gray-900 truncate block max-w-[280px]">{p.title}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[p.status] || 'bg-gray-100 text-gray-600'}`}>
-                          {p.status.replace(/_/g, ' ')}
-                        </span>
+                        <StatusPill status={p.status} />
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${RISK_COLORS[p.risk_level] || ''}`}>
-                          {p.risk_level}
-                        </span>
+                        <RiskBadge level={p.risk_level} size="sm" />
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`font-medium ${confidenceColor(p.confidence_score)}`}>
-                          {p.confidence_score?.toFixed(0)}%
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${confidenceBarColor(p.confidence_score)}`} style={{ width: `${p.confidence_score}%` }} />
+                          </div>
+                          <span className={`text-xs font-bold ${confidenceColor(p.confidence_score)}`}>
+                            {p.confidence_score?.toFixed(0)}%
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
                         {timeAgo(p.created_at)}
                       </td>
                       <td className="px-4 py-3">
