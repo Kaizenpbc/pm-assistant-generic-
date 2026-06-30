@@ -258,7 +258,7 @@ export class SprintService {
     const rows = await databaseService.query<any>(
       `SELECT t.*, st.story_points
        FROM sprint_tasks st
-       JOIN schedule_tasks t ON t.id = st.task_id
+       JOIN tasks t ON t.id = st.task_id
        WHERE st.sprint_id = ?
        ORDER BY t.name`,
       [id],
@@ -298,7 +298,7 @@ export class SprintService {
     const completedRows = await databaseService.query<{ story_points: number; updated_at: string }>(
       `SELECT st.story_points, t.updated_at
        FROM sprint_tasks st
-       JOIN schedule_tasks t ON t.id = st.task_id
+       JOIN tasks t ON t.id = st.task_id
        WHERE st.sprint_id = ? AND t.status = 'completed'
        ORDER BY t.updated_at`,
       [id],
@@ -360,7 +360,7 @@ export class SprintService {
       const pointsRows = await databaseService.query<{ total: number }>(
         `SELECT COALESCE(SUM(st.story_points), 0) as total
          FROM sprint_tasks st
-         JOIN schedule_tasks t ON t.id = st.task_id
+         JOIN tasks t ON t.id = st.task_id
          WHERE st.sprint_id = ? AND t.status = 'completed'`,
         [row.id],
       );

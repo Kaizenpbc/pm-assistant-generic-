@@ -174,7 +174,7 @@ class ReportBuilderService {
   private getTableName(dataSource: ReportSectionConfig['dataSource']): string {
     switch (dataSource) {
       case 'projects': return 'projects';
-      case 'tasks': return 'schedule_tasks';
+      case 'tasks': return 'tasks';
       case 'time_entries': return 'time_entries';
       case 'budgets': return 'projects';
       default: return 'projects';

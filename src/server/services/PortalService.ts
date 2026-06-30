@@ -169,7 +169,7 @@ class PortalService {
     // Get task stats
     const statRows = await databaseService.query<{ status: string; count: number }>(
       `SELECT st.status, COUNT(*) as count
-       FROM schedule_tasks st
+       FROM tasks st
        JOIN schedules s ON s.id = st.schedule_id
        WHERE s.project_id = ?
        GROUP BY st.status`,
@@ -187,7 +187,7 @@ class PortalService {
     // Get timeline
     const timelineRows = await databaseService.query<{ min_start: string | null; max_end: string | null }>(
       `SELECT MIN(st.start_date) as min_start, MAX(st.end_date) as max_end
-       FROM schedule_tasks st
+       FROM tasks st
        JOIN schedules s ON s.id = st.schedule_id
        WHERE s.project_id = ?`,
       [projectId],

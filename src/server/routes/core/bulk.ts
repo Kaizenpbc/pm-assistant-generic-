@@ -77,7 +77,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
 
             const id = uuidv4();
             await connection.execute(
-              `INSERT INTO schedule_tasks
+              `INSERT INTO tasks
                  (id, schedule_id, name, start_date, end_date, duration, progress,
                   status, priority, assigned_to, dependencies, notes, wbs, created_at, updated_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
@@ -166,7 +166,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
             params.push(u.id, u.scheduleId);
 
             await connection.execute(
-              `UPDATE schedule_tasks SET ${sets.join(', ')} WHERE id = ? AND schedule_id = ?`,
+              `UPDATE tasks SET ${sets.join(', ')} WHERE id = ? AND schedule_id = ?`,
               params,
             );
             succeeded.push({ id: u.id });
@@ -204,7 +204,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
       // databaseService.query returns the raw ResultSetHeader for non-SELECT
       // statements (the mysql2 driver returns it as `rows` from execute).
       const result = await databaseService.query<any>(
-        `UPDATE schedule_tasks
+        `UPDATE tasks
          SET status = ?, updated_at = NOW()
          WHERE id IN (${placeholders}) AND schedule_id = ?`,
         [body.status, ...body.taskIds, body.scheduleId],

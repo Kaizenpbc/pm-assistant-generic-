@@ -183,7 +183,7 @@ class AnalyticsSummaryService {
       // Tasks by status
       const taskStatusRows = await databaseService.query<TaskStatusRow>(
         `SELECT st.status, COUNT(*) AS cnt
-         FROM schedule_tasks st
+         FROM tasks st
          JOIN schedules s ON s.id = st.schedule_id
          WHERE s.project_id IN (${placeholders})
          GROUP BY st.status`,
@@ -197,7 +197,7 @@ class AnalyticsSummaryService {
       // Overdue tasks
       const overdueRows = await databaseService.query<OverdueRow>(
         `SELECT COUNT(*) AS overdue_count
-         FROM schedule_tasks st
+         FROM tasks st
          JOIN schedules s ON s.id = st.schedule_id
          WHERE s.project_id IN (${placeholders})
            AND st.status NOT IN ('completed','done','cancelled')
@@ -209,7 +209,7 @@ class AnalyticsSummaryService {
       // Completed in last 30 days
       const completedRows = await databaseService.query<CompletedRecentRow>(
         `SELECT COUNT(*) AS completed_count
-         FROM schedule_tasks st
+         FROM tasks st
          JOIN schedules s ON s.id = st.schedule_id
          WHERE s.project_id IN (${placeholders})
            AND st.status IN ('completed','done')
@@ -225,7 +225,7 @@ class AnalyticsSummaryService {
                   '%Y-%m-%d'
                 ) AS week_label,
                 COUNT(*) AS cnt
-         FROM schedule_tasks st
+         FROM tasks st
          JOIN schedules s ON s.id = st.schedule_id
          WHERE s.project_id IN (${placeholders})
            AND st.status IN ('completed','done')

@@ -20,7 +20,7 @@ export async function searchRoutes(fastify: FastifyInstance) {
       // query tasks
       const tasks = await databaseService.query<any>(
         `SELECT t.id, t.name, t.description, t.status, s.project_id, p.name as project_name
-         FROM schedule_tasks t
+         FROM tasks t
          JOIN schedules s ON t.schedule_id = s.id
          JOIN projects p ON s.project_id = p.id
          WHERE (t.name LIKE ? OR t.description LIKE ?) AND p.created_by = ?
