@@ -49,7 +49,7 @@ export const QueryInput: React.FC<QueryInputProps> = ({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={isLoading}
-        className="w-full pl-12 pr-28 py-4 text-base border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm disabled:opacity-60 disabled:cursor-not-allowed bg-white"
+        className="w-full pl-12 pr-28 py-4 text-base border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm disabled:opacity-60 disabled:cursor-not-allowed bg-white"
       />
 
       {/* Submit button */}

@@ -218,7 +218,7 @@ export function MonteCarloPage() {
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <Dices className="w-6 h-6 text-indigo-500" />
+          <Dices className="w-6 h-6 text-primary-500" />
           Monte Carlo Simulation
         </h1>
         <p className="mt-1 text-sm text-gray-500">
@@ -241,7 +241,7 @@ export function MonteCarloPage() {
             </label>
             <div className="relative">
               <select
-                className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
+                className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
                 value={selectedProjectId}
                 onChange={handleProjectChange}
                 disabled={projectsLoading}
@@ -264,7 +264,7 @@ export function MonteCarloPage() {
             </label>
             <div className="relative">
               <select
-                className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors disabled:bg-gray-50 disabled:text-gray-400"
+                className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors disabled:bg-gray-50 disabled:text-gray-400"
                 value={selectedScheduleId}
                 onChange={handleScheduleChange}
                 disabled={!selectedProjectId || schedulesLoading}
@@ -293,7 +293,7 @@ export function MonteCarloPage() {
             </label>
             <input
               type="number"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
               value={iterations}
               onChange={(e) =>
                 setIterations(Math.max(100, Math.min(100000, Number(e.target.value) || 10000)))
@@ -311,7 +311,7 @@ export function MonteCarloPage() {
             </label>
             <div className="relative">
               <select
-                className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
+                className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
                 value={uncertaintyModel}
                 onChange={(e) => setUncertaintyModel(e.target.value)}
               >
@@ -328,7 +328,7 @@ export function MonteCarloPage() {
           <button
             onClick={handleRun}
             disabled={!selectedScheduleId || simulation.isPending}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {simulation.isPending ? (
               <>
@@ -367,7 +367,7 @@ export function MonteCarloPage() {
           {/* Summary Cards - Duration */}
           <div>
             <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-indigo-500" />
+              <Clock className="w-4 h-4 text-primary-500" />
               Duration Forecast
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -405,7 +405,7 @@ export function MonteCarloPage() {
           {/* Histogram */}
           <div className="rounded-xl border border-gray-200 bg-white p-5">
             <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-indigo-500" />
+              <BarChart3 className="w-4 h-4 text-primary-500" />
               Duration Distribution
             </h2>
             <MonteCarloHistogram
@@ -523,7 +523,7 @@ export function MonteCarloPage() {
       {simulation.isPending && (
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
+            <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4" />
             <p className="text-sm font-medium text-gray-700">Running Monte Carlo Simulation</p>
             <p className="text-xs text-gray-500 mt-1">
               Processing {iterations.toLocaleString()} iterations with {uncertaintyModel} distribution...

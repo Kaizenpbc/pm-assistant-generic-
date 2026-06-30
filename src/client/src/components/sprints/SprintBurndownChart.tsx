@@ -140,31 +140,31 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
-        <TrendingDown className="w-4 h-4 text-indigo-500" />
+        <TrendingDown className="w-4 h-4 text-primary-500" />
         <h3 className="text-sm font-semibold text-gray-800">Sprint Burndown</h3>
       </div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-4 gap-3 px-4 pt-4">
         <div className="text-center">
-          <div className="text-[10px] uppercase tracking-wide text-gray-400 font-medium">Total</div>
+          <div className="text-xs uppercase tracking-wide text-gray-400 font-medium">Total</div>
           <div className="text-lg font-bold text-gray-800">{burndown.totalPoints}</div>
-          <div className="text-[10px] text-gray-400">points</div>
+          <div className="text-xs text-gray-400">points</div>
         </div>
         <div className="text-center">
-          <div className="text-[10px] uppercase tracking-wide text-gray-400 font-medium">Completed</div>
+          <div className="text-xs uppercase tracking-wide text-gray-400 font-medium">Completed</div>
           <div className="text-lg font-bold text-green-600">{burndown.pointsCompleted}</div>
-          <div className="text-[10px] text-gray-400">points</div>
+          <div className="text-xs text-gray-400">points</div>
         </div>
         <div className="text-center">
-          <div className="text-[10px] uppercase tracking-wide text-gray-400 font-medium">Remaining</div>
-          <div className="text-lg font-bold text-indigo-600">{burndown.pointsRemaining}</div>
-          <div className="text-[10px] text-gray-400">points</div>
+          <div className="text-xs uppercase tracking-wide text-gray-400 font-medium">Remaining</div>
+          <div className="text-lg font-bold text-primary-600">{burndown.pointsRemaining}</div>
+          <div className="text-xs text-gray-400">points</div>
         </div>
         <div className="text-center">
-          <div className="text-[10px] uppercase tracking-wide text-gray-400 font-medium">Days Left</div>
+          <div className="text-xs uppercase tracking-wide text-gray-400 font-medium">Days Left</div>
           <div className="text-lg font-bold text-amber-600">{Math.max(0, burndown.daysRemaining)}</div>
-          <div className="text-[10px] text-gray-400">days</div>
+          <div className="text-xs text-gray-400">days</div>
         </div>
       </div>
 
@@ -274,7 +274,7 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
             <span className="text-gray-600">Ideal</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-0.5 bg-indigo-500 rounded" />
+            <div className="w-5 h-0.5 bg-primary-500 rounded" />
             <span className="text-gray-600">Actual</span>
           </div>
           <div className="flex items-center gap-1.5">

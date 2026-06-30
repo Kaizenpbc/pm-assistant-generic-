@@ -38,9 +38,9 @@ export function QuickActions({ actions, onAction }: QuickActionsProps) {
             <button
               key={action.id}
               onClick={() => onAction(action)}
-              className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-left text-xs font-medium text-gray-700 transition-all hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+              className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-left text-xs font-medium text-gray-700 transition-all hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
             >
-              <Icon className="h-3.5 w-3.5 flex-shrink-0 text-indigo-500" />
+              <Icon className="h-3.5 w-3.5 flex-shrink-0 text-primary-500" />
               {action.label}
             </button>
           );

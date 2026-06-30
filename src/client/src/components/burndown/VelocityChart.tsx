@@ -108,7 +108,7 @@ export function VelocityChart({ weeks, averageVelocity, height = 250 }: Velocity
       {/* Legend */}
       <div className="flex items-center gap-5 justify-center mt-2 text-xs">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-indigo-400" />
+          <div className="w-3 h-3 rounded bg-primary-400" />
           <span className="text-gray-600">Tasks Completed</span>
         </div>
         <div className="flex items-center gap-1.5">

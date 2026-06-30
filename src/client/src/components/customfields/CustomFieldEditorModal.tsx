@@ -133,7 +133,7 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
                   className="input flex-1 text-sm"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOption(); } }}
                 />
-                <button type="button" onClick={addOption} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded">
+                <button type="button" onClick={addOption} className="p-1.5 text-primary-600 hover:bg-primary-50 rounded">
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
@@ -145,7 +145,7 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
               type="checkbox"
               checked={form.isRequired}
               onChange={(e) => setForm(p => ({ ...p, isRequired: e.target.checked }))}
-              className="rounded border-gray-300 text-indigo-600"
+              className="rounded border-gray-300 text-primary-600"
             />
             Required field
           </label>

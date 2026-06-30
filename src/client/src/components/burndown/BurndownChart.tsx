@@ -137,7 +137,7 @@ export function BurndownChart({ dataPoints, totalScope, height = 300 }: Burndown
           <span className="text-gray-600">Ideal</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-5 h-0.5 bg-indigo-500" />
+          <div className="w-5 h-0.5 bg-primary-500" />
           <span className="text-gray-600">Remaining</span>
         </div>
         <div className="flex items-center gap-1.5">

@@ -92,7 +92,7 @@ function impactBadge(impact: string) {
   };
   return (
     <span
-      className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-semibold capitalize ${colors[impact] || 'bg-gray-100 text-gray-600'}`}
+      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${colors[impact] || 'bg-gray-100 text-gray-600'}`}
     >
       {impact}
     </span>
@@ -134,7 +134,7 @@ const AddLessonModal: React.FC<{
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <Plus className="w-5 h-5 text-indigo-500" />
+            <Plus className="w-5 h-5 text-primary-500" />
             Add Lesson Learned
           </h2>
           <button
@@ -207,7 +207,7 @@ const AddLessonModal: React.FC<{
                   onClick={() => update('impact', opt.value)}
                   className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
                     form.impact === opt.value
-                      ? `${opt.color} border-transparent ring-2 ring-indigo-300`
+                      ? `${opt.color} border-transparent ring-2 ring-primary-300`
                       : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                   }`}
                 >
@@ -376,7 +376,7 @@ export const LessonsLearnedPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-indigo-500" />
+            <BookOpen className="w-6 h-6 text-primary-500" />
             Lessons Learned
           </h1>
           <p className="mt-1 text-sm text-gray-500">
@@ -410,8 +410,8 @@ export const LessonsLearnedPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Total lessons */}
         <div className="card flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
-            <BookOpen className="w-6 h-6 text-indigo-600" />
+          <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center">
+            <BookOpen className="w-6 h-6 text-primary-600" />
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900">{allLessons.length}</p>
@@ -437,7 +437,7 @@ export const LessonsLearnedPage: React.FC = () => {
                     </div>
                     <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-500 rounded-full"
+                        className="h-full bg-primary-500 rounded-full"
                         style={{
                           width: `${allLessons.length > 0 ? (count / allLessons.length) * 100 : 0}%`,
                         }}
@@ -589,7 +589,7 @@ export const LessonsLearnedPage: React.FC = () => {
 
         {lessonsLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
           </div>
         ) : filteredLessons.length === 0 ? (
           <div className="card text-center py-12">
@@ -610,7 +610,7 @@ export const LessonsLearnedPage: React.FC = () => {
                   <h3 className="text-sm font-semibold text-gray-900">{lesson.title}</h3>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {impactBadge(lesson.impact)}
-                    <span className="inline-block rounded-full bg-indigo-50 text-indigo-600 px-2 py-0.5 text-[10px] font-medium">
+                    <span className="inline-block rounded-full bg-primary-50 text-primary-600 px-2 py-0.5 text-xs font-medium">
                       {lesson.category}
                     </span>
                   </div>
@@ -625,7 +625,7 @@ export const LessonsLearnedPage: React.FC = () => {
                   </div>
                 )}
                 {lesson.projectName && (
-                  <p className="text-[10px] text-gray-400 mt-1">
+                  <p className="text-xs text-gray-400 mt-1">
                     Project: {lesson.projectName}
                   </p>
                 )}

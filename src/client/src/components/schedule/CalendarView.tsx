@@ -102,7 +102,7 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
         </div>
         <button
           onClick={goToday}
-          className="px-2.5 py-1 text-[10px] font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+          className="px-2.5 py-1 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-md transition-colors"
         >
           Today
         </button>
@@ -111,7 +111,7 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
       {/* Day headers */}
       <div className="grid grid-cols-7 border-b border-gray-200">
         {DAYS.map(day => (
-          <div key={day} className="px-2 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wide text-center">
+          <div key={day} className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">
             {day}
           </div>
         ))}
@@ -133,9 +133,9 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
             >
               {/* Day number */}
               <div className="flex justify-end mb-0.5">
-                <span className={`text-[11px] font-medium w-6 h-6 flex items-center justify-center rounded-full ${
+                <span className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full ${
                   isToday
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : isCurrentMonth
                     ? 'text-gray-700'
                     : 'text-gray-300'
@@ -153,7 +153,7 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
                     <button
                       key={task.id}
                       onClick={() => onTaskClick(task)}
-                      className={`w-full text-left rounded px-1.5 py-0.5 text-[9px] font-medium text-white truncate ${color} hover:opacity-80 transition-opacity`}
+                      className={`w-full text-left rounded px-1.5 py-0.5 text-xs font-medium text-white truncate ${color} hover:opacity-80 transition-opacity`}
                       title={task.name}
                     >
                       {task.name}
@@ -168,7 +168,7 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
                   );
                 })}
                 {dayTasks.length > 3 && (
-                  <span className="text-[9px] text-gray-400 pl-1">+{dayTasks.length - 3} more</span>
+                  <span className="text-xs text-gray-400 pl-1">+{dayTasks.length - 3} more</span>
                 )}
               </div>
             </div>

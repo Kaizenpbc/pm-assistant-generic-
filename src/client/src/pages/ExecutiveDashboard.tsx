@@ -49,7 +49,7 @@ export const ExecutiveDashboard: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -73,7 +73,7 @@ export const ExecutiveDashboard: React.FC = () => {
           label="Total Projects"
           value={String(totalProjects)}
           icon={FolderKanban}
-          color="bg-indigo-50 text-indigo-600"
+          color="bg-primary-50 text-primary-600"
         />
         <StatsCard
           label="Active"

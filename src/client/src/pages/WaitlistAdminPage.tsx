@@ -43,7 +43,7 @@ export const WaitlistAdminPage: React.FC = () => {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
         <div className="w-full max-w-sm bg-white/5 border border-white/10 rounded-2xl p-8">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
@@ -57,13 +57,13 @@ export const WaitlistAdminPage: React.FC = () => {
               onChange={e => setKey(e.target.value)}
               placeholder="Admin password"
               required
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
             />
             {error && <p className="text-rose-400 text-xs">{error}</p>}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all text-sm disabled:opacity-60"
+              className="w-full py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all text-sm disabled:opacity-60"
             >
               {loading ? 'Checking...' : 'Sign In'}
             </button>
@@ -81,7 +81,7 @@ export const WaitlistAdminPage: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold">Waitlist</h1>
             <p className="text-slate-400 text-sm mt-1">
-              <span className="text-indigo-400 font-semibold text-lg">{count}</span> signups
+              <span className="text-primary-400 font-semibold text-lg">{count}</span> signups
             </p>
           </div>
           <button

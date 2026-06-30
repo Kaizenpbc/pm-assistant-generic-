@@ -135,7 +135,7 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
-        <Kanban className="w-4 h-4 text-indigo-500" />
+        <Kanban className="w-4 h-4 text-primary-500" />
         <h3 className="text-sm font-semibold text-gray-800">Sprint Board</h3>
         <span className="text-xs text-gray-400">({tasks.length} tasks)</span>
       </div>
@@ -149,7 +149,7 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
             <div
               key={col.id}
               className={`flex-1 min-w-[240px] rounded-lg border ${col.border} ${col.bg} transition-all ${
-                isOver ? 'ring-2 ring-indigo-400 ring-opacity-50' : ''
+                isOver ? 'ring-2 ring-primary-400 ring-opacity-50' : ''
               }`}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDragLeave={handleDragLeave}
@@ -160,7 +160,7 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
                 <span className={`text-xs font-semibold uppercase tracking-wide ${col.headerText}`}>
                   {col.label}
                 </span>
-                <span className="text-[10px] font-bold text-gray-500 bg-white rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="text-xs font-bold text-gray-500 bg-white rounded-full w-5 h-5 flex items-center justify-center">
                   {columnTasks.length}
                 </span>
               </div>
@@ -192,12 +192,12 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
                       {/* Badges row */}
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span
-                          className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text} capitalize`}
+                          className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text} capitalize`}
                         >
                           {task.priority || 'medium'}
                         </span>
                         {points > 0 && (
-                          <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full">
+                          <span className="text-xs font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full">
                             {points} pts
                           </span>
                         )}
@@ -206,10 +206,10 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
                       {/* Assignee */}
                       {task.assignedTo && (
                         <div className="mt-2 flex items-center gap-1.5">
-                          <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[8px] font-bold">
+                          <div className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[8px] font-bold">
                             {getInitials(task.assignedTo)}
                           </div>
-                          <span className="text-[10px] text-gray-500 truncate">{task.assignedTo}</span>
+                          <span className="text-xs text-gray-500 truncate">{task.assignedTo}</span>
                         </div>
                       )}
                     </div>

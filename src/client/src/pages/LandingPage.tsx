@@ -70,7 +70,7 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
       </svg>
     ),
-    accent: 'from-cyan-400 to-indigo-500',
+    accent: 'from-cyan-400 to-primary-500',
     iconBg: 'bg-cyan-100 text-cyan-600',
     cardBg: 'bg-cyan-50 border-cyan-200',
   },
@@ -133,7 +133,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md shadow-indigo-200">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md shadow-primary-200">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
@@ -145,7 +145,7 @@ export const LandingPage: React.FC = () => {
               <Link to="/login" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Sign In</Link>
               <Link
                 to="/register"
-                className="text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all shadow-md shadow-indigo-200"
+                className="text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all shadow-md shadow-primary-200"
               >
                 Get Started
               </Link>
@@ -158,21 +158,21 @@ export const LandingPage: React.FC = () => {
       <section className="relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 rounded-full blur-3xl opacity-60" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-br from-primary-100 via-purple-50 to-pink-100 rounded-full blur-3xl opacity-60" />
           <div className="absolute top-40 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-sky-100 to-cyan-50 rounded-full blur-3xl opacity-40" />
           <div className="absolute top-60 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-amber-100 to-orange-50 rounded-full blur-3xl opacity-40" />
         </div>
 
         <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 mb-8">
-              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-              <span className="text-sm font-medium text-indigo-700">AI-Powered Project Intelligence</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-50 border border-primary-100 mb-8">
+              <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
+              <span className="text-sm font-medium text-primary-700">AI-Powered Project Intelligence</span>
             </div>
             <h1 className="text-5xl sm:text-6xl font-bold tracking-tight">
               <span className="text-slate-900">Manage Projects</span>
               <br />
-              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
                 Smarter with AI
               </span>
             </h1>
@@ -183,7 +183,7 @@ export const LandingPage: React.FC = () => {
             <div className="mt-10 flex justify-center gap-4">
               <Link
                 to="/register"
-                className="px-8 py-3.5 text-base font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5"
+                className="px-8 py-3.5 text-base font-semibold text-white bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-xl transition-all shadow-lg shadow-primary-200 hover:shadow-xl hover:shadow-primary-300 hover:-translate-y-0.5"
               >
                 Start Free Trial
               </Link>
@@ -241,7 +241,7 @@ export const LandingPage: React.FC = () => {
                 key={tier.name}
                 className={`rounded-2xl p-8 transition-all duration-300 ${
                   tier.highlighted
-                    ? 'bg-gradient-to-br from-indigo-600 to-purple-700 text-white ring-4 ring-indigo-400/30 ring-offset-2 shadow-2xl shadow-indigo-300 scale-105'
+                    ? 'bg-gradient-to-br from-primary-600 to-purple-700 text-white ring-4 ring-primary-400/30 ring-offset-2 shadow-2xl shadow-primary-300 scale-105'
                     : 'bg-white border border-slate-200 shadow-sm hover:shadow-md'
                 } ${tier.disabled ? 'opacity-75' : ''}`}
               >
@@ -257,18 +257,18 @@ export const LandingPage: React.FC = () => {
                   <span className={`text-4xl font-bold ${tier.highlighted ? 'text-white' : 'text-slate-900'}`}>
                     {tier.price}
                   </span>
-                  <span className={`ml-1 text-sm ${tier.highlighted ? 'text-indigo-200' : 'text-slate-500'}`}>
+                  <span className={`ml-1 text-sm ${tier.highlighted ? 'text-primary-200' : 'text-slate-500'}`}>
                     {tier.period}
                   </span>
                 </div>
-                <p className={`mt-2 text-sm ${tier.highlighted ? 'text-indigo-200' : 'text-slate-500'}`}>
+                <p className={`mt-2 text-sm ${tier.highlighted ? 'text-primary-200' : 'text-slate-500'}`}>
                   {tier.description}
                 </p>
                 <ul className="mt-6 space-y-3">
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex items-center text-sm">
                       <svg
-                        className={`w-4 h-4 mr-2.5 flex-shrink-0 ${tier.highlighted ? 'text-indigo-300' : 'text-emerald-500'}`}
+                        className={`w-4 h-4 mr-2.5 flex-shrink-0 ${tier.highlighted ? 'text-primary-300' : 'text-emerald-500'}`}
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -278,14 +278,14 @@ export const LandingPage: React.FC = () => {
                           clipRule="evenodd"
                         />
                       </svg>
-                      <span className={tier.highlighted ? 'text-indigo-100' : 'text-slate-600'}>{feature}</span>
+                      <span className={tier.highlighted ? 'text-primary-100' : 'text-slate-600'}>{feature}</span>
                     </li>
                   ))}
                 </ul>
                 <div className="mt-8">
                   {tier.disabled ? (
                     <span className={`block w-full text-center py-2.5 px-4 text-sm font-medium rounded-lg ${
-                      tier.highlighted ? 'bg-white/10 text-indigo-200' : 'bg-slate-100 text-slate-400'
+                      tier.highlighted ? 'bg-white/10 text-primary-200' : 'bg-slate-100 text-slate-400'
                     } cursor-not-allowed`}>
                       {tier.cta}
                     </span>
@@ -294,8 +294,8 @@ export const LandingPage: React.FC = () => {
                       to={tier.ctaLink}
                       className={`block w-full text-center py-2.5 px-4 text-sm font-semibold rounded-lg transition-all ${
                         tier.highlighted
-                          ? 'bg-white text-indigo-600 hover:bg-indigo-50 shadow-md'
-                          : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md shadow-indigo-100'
+                          ? 'bg-white text-primary-600 hover:bg-primary-50 shadow-md'
+                          : 'bg-gradient-to-r from-primary-600 to-purple-600 text-white hover:from-primary-700 hover:to-purple-700 shadow-md shadow-primary-100'
                       }`}
                     >
                       {tier.cta}
@@ -313,7 +313,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
-              <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
+              <div className="w-6 h-6 bg-gradient-to-br from-primary-500 to-purple-600 rounded flex items-center justify-center">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>

@@ -62,7 +62,7 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <Save className="w-4 h-4 text-indigo-600" />
+            <Save className="w-4 h-4 text-primary-600" />
             <h2 className="text-base font-semibold text-gray-900">Save as Template</h2>
           </div>
           <button
@@ -87,7 +87,7 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
               required
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             />
           </div>
 
@@ -97,7 +97,7 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none"
               placeholder="Describe what this template is for..."
             />
           </div>
@@ -113,7 +113,7 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
                 placeholder="Add tag and press Enter"
               />
               <button
@@ -129,13 +129,13 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
                 {tags.map(tag => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded"
+                    className="inline-flex items-center gap-1 text-xs bg-primary-50 text-primary-600 px-2 py-0.5 rounded"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="hover:text-indigo-800"
+                      className="hover:text-primary-800"
                     >
                       &times;
                     </button>
@@ -160,7 +160,7 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
           <button
             type="submit"
             disabled={!templateName || saveMutation.isPending}
-            className="w-full py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+            className="w-full py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
           >
             {saveMutation.isPending ? 'Saving...' : 'Save Template'}
           </button>

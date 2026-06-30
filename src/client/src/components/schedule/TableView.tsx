@@ -102,8 +102,8 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3 h-3 text-gray-400" />;
     return sortDir === 'asc'
-      ? <ArrowUp className="w-3 h-3 text-indigo-600" />
-      : <ArrowDown className="w-3 h-3 text-indigo-600" />;
+      ? <ArrowUp className="w-3 h-3 text-primary-600" />
+      : <ArrowDown className="w-3 h-3 text-primary-600" />;
   };
 
   const getTaskFieldValue = (task: GanttTask, field: EditableField): string => {
@@ -323,18 +323,18 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
     <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
       {/* Bulk action toolbar */}
       {someSelected && (
-        <div className="sticky top-0 z-10 bg-indigo-50 border border-indigo-200 rounded-lg p-3 m-2 flex items-center gap-3 flex-wrap">
+        <div className="sticky top-0 z-10 bg-primary-50 border border-primary-200 rounded-lg p-3 m-2 flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1.5">
-            <CheckSquare className="w-4 h-4 text-indigo-600" />
-            <span className="text-xs font-semibold text-indigo-700">{selectedIds.size} selected</span>
+            <CheckSquare className="w-4 h-4 text-primary-600" />
+            <span className="text-xs font-semibold text-primary-700">{selectedIds.size} selected</span>
           </div>
 
-          <div className="h-4 w-px bg-indigo-200" />
+          <div className="h-4 w-px bg-primary-200" />
 
           {/* Change Status */}
           <div className="flex items-center gap-1">
             <select
-              className="text-xs px-2 py-1 rounded border border-indigo-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={bulkStatus}
               onChange={e => setBulkStatus(e.target.value)}
               disabled={bulkLoading}
@@ -346,7 +346,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
             </select>
             {bulkStatus && (
               <button
-                className="text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200 disabled:opacity-50"
+                className="text-xs px-2 py-1 rounded bg-primary-100 text-primary-700 hover:bg-primary-200 disabled:opacity-50"
                 onClick={() => applyBulkUpdate('status', bulkStatus)}
                 disabled={bulkLoading}
               >
@@ -358,7 +358,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
           {/* Change Priority */}
           <div className="flex items-center gap-1">
             <select
-              className="text-xs px-2 py-1 rounded border border-indigo-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={bulkPriority}
               onChange={e => setBulkPriority(e.target.value)}
               disabled={bulkLoading}
@@ -370,7 +370,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
             </select>
             {bulkPriority && (
               <button
-                className="text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200 disabled:opacity-50"
+                className="text-xs px-2 py-1 rounded bg-primary-100 text-primary-700 hover:bg-primary-200 disabled:opacity-50"
                 onClick={() => applyBulkUpdate('priority', bulkPriority)}
                 disabled={bulkLoading}
               >
@@ -384,7 +384,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
             <input
               type="text"
               placeholder="Assign to..."
-              className="text-xs px-2 py-1 rounded border border-indigo-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-400 w-28"
+              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400 w-28"
               value={bulkAssignee}
               onChange={e => setBulkAssignee(e.target.value)}
               disabled={bulkLoading}
@@ -392,7 +392,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
             />
             {bulkAssignee && (
               <button
-                className="text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200 disabled:opacity-50"
+                className="text-xs px-2 py-1 rounded bg-primary-100 text-primary-700 hover:bg-primary-200 disabled:opacity-50"
                 onClick={() => applyBulkUpdate('assignedTo', bulkAssignee)}
                 disabled={bulkLoading}
               >
@@ -401,7 +401,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
             )}
           </div>
 
-          <div className="h-4 w-px bg-indigo-200" />
+          <div className="h-4 w-px bg-primary-200" />
 
           {/* Delete Selected */}
           <button
@@ -441,13 +441,13 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleSelectAll}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5 cursor-pointer"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
                 />
               </th>
               {columns.map(col => (
                 <th
                   key={col.key}
-                  className={`px-3 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100 select-none ${col.width}`}
+                  className={`px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100 select-none ${col.width}`}
                   onClick={() => toggleSort(col.key)}
                 >
                   <div className="flex items-center gap-1">
@@ -470,7 +470,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
               return (
                 <tr
                   key={task.id}
-                  className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors group ${isSelected ? 'bg-indigo-50/40' : ''}`}
+                  className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors group ${isSelected ? 'bg-primary-50/40' : ''}`}
                 >
                   {/* Checkbox */}
                   <td className="px-2 py-2">
@@ -478,7 +478,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleSelect(task.id)}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5 cursor-pointer"
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
                     />
                   </td>
 
@@ -532,7 +532,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
                         ))}
                       </select>
                     ) : (
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
                         {task.status.replace('_', ' ')}
                       </span>
                     )}
@@ -563,7 +563,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
                         ))}
                       </select>
                     ) : (
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${priorityStyle}`}>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${priorityStyle}`}>
                         {task.priority || 'medium'}
                       </span>
                     )}
@@ -646,11 +646,11 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate }: Tabl
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 flex-1 rounded-full bg-gray-200 min-w-[40px]">
                           <div
-                            className="h-full rounded-full bg-indigo-500 transition-all"
+                            className="h-full rounded-full bg-primary-500 transition-all"
                             style={{ width: `${Math.min(progress, 100)}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-gray-500 w-7 text-right">{progress}%</span>
+                        <span className="text-xs text-gray-500 w-7 text-right">{progress}%</span>
                       </div>
                     )}
                     {renderSaveIndicator(task.id, 'progressPercentage')}

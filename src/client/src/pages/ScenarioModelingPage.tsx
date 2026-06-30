@@ -164,7 +164,7 @@ function formatAnomalyType(type: string): string {
 
 const Spinner: React.FC = () => (
   <div className="flex items-center justify-center py-12">
-    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+    <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
   </div>
 );
 
@@ -201,7 +201,7 @@ const PortfolioIntelligence: React.FC = () => {
   return (
     <div className="card">
       <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <Brain className="w-4 h-4 text-indigo-500" />
+        <Brain className="w-4 h-4 text-primary-500" />
         Portfolio Intelligence
       </h2>
 
@@ -253,7 +253,7 @@ const PortfolioIntelligence: React.FC = () => {
                     </td>
                     <td className="py-2.5 px-3 text-center">
                       <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase ${riskLevelColor(entry.riskLevel)}`}
+                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${riskLevelColor(entry.riskLevel)}`}
                       >
                         {entry.riskLevel}
                       </span>
@@ -270,7 +270,7 @@ const PortfolioIntelligence: React.FC = () => {
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-indigo-500 rounded-full transition-all"
+                            className="h-full bg-primary-500 rounded-full transition-all"
                             style={{ width: `${Math.min(entry.progress, 100)}%` }}
                           />
                         </div>
@@ -345,14 +345,14 @@ const PortfolioIntelligence: React.FC = () => {
 
           {/* Recommendations */}
           {reallocation.recommendations && reallocation.recommendations.length > 0 && (
-            <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-3">
-              <p className="text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-1">
+            <div className="rounded-lg bg-primary-50 border border-primary-200 p-3">
+              <p className="text-xs font-semibold text-primary-700 mb-2 flex items-center gap-1">
                 <Zap className="w-3.5 h-3.5" />
                 Recommendations
               </p>
               <ul className="space-y-1.5">
                 {reallocation.recommendations.map((rec, idx) => (
-                  <li key={idx} className="text-xs text-indigo-800 leading-relaxed">
+                  <li key={idx} className="text-xs text-primary-800 leading-relaxed">
                     {rec}
                   </li>
                 ))}
@@ -436,12 +436,12 @@ const AnomalyDetection: React.FC = () => {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h4 className="text-sm font-semibold text-gray-900">{anomaly.title}</h4>
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${typeStyle.bg} ${typeStyle.text}`}
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${typeStyle.bg} ${typeStyle.text}`}
                       >
                         {formatAnomalyType(anomaly.type)}
                       </span>
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${riskLevelColor(anomaly.severity)}`}
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${riskLevelColor(anomaly.severity)}`}
                       >
                         {anomaly.severity}
                       </span>
@@ -511,13 +511,13 @@ const AIAccuracy: React.FC = () => {
           <div className="flex-1 grid grid-cols-2 gap-3">
             <div className="rounded-lg bg-gray-50 p-3 text-center">
               <p className="text-lg font-semibold text-gray-900">{overall.totalRecords}</p>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wide">Records</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Records</p>
             </div>
             <div className="rounded-lg bg-gray-50 p-3 text-center">
               <p className="text-lg font-semibold text-gray-900">
                 {overall.averageVariance?.toFixed(1)}%
               </p>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wide">Avg Variance</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Avg Variance</p>
             </div>
           </div>
         </div>
@@ -602,7 +602,7 @@ const AIAccuracy: React.FC = () => {
                 key={idx}
                 className="text-sm text-gray-600 leading-relaxed flex items-start gap-2"
               >
-                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0" />
                 {item}
               </li>
             ))}
@@ -623,7 +623,7 @@ export function ScenarioModelingPage() {
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <Brain className="w-6 h-6 text-indigo-500" />
+          <Brain className="w-6 h-6 text-primary-500" />
           Intelligence & Scenarios
         </h1>
         <p className="mt-1 text-sm text-gray-500">

@@ -106,7 +106,7 @@ const STATUS_STYLES: Record<string, string> = {
   approved: 'bg-blue-50 text-blue-700 border border-blue-200',
   rejected: 'bg-red-50 text-red-700 border border-red-200',
   expired: 'bg-gray-100 text-gray-500 border border-gray-200',
-  executing: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+  executing: 'bg-primary-50 text-primary-700 border border-primary-200',
   executed: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
   rolled_back: 'bg-orange-50 text-orange-700 border border-orange-200',
   failed: 'bg-red-50 text-red-700 border border-red-200',
@@ -462,14 +462,14 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
 
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
           </div>
         ) : proposal ? (
           <div className="px-6 py-5 space-y-6">
             {/* Meta row */}
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <span className="flex items-center gap-1">
-                <Bot className="w-3.5 h-3.5 text-indigo-500" />
+                <Bot className="w-3.5 h-3.5 text-primary-500" />
                 <span className="font-medium text-gray-700">{formatAgentName(proposal.agent_id)}</span>
                 <span className="text-gray-400">v{proposal.agent_version}</span>
               </span>
@@ -539,7 +539,7 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                     <div key={action.id} className="border border-gray-200 rounded-lg p-3 bg-white">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="flex items-center justify-center w-5 h-5 rounded bg-indigo-100 text-indigo-600 text-xs font-bold">
+                          <span className="flex items-center justify-center w-5 h-5 rounded bg-primary-100 text-primary-600 text-xs font-bold">
                             {action.execution_order}
                           </span>
                           <span className="text-sm font-medium text-gray-900">
@@ -582,7 +582,7 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                   onChange={e => setComment(e.target.value)}
                   placeholder="Optional comment..."
                   rows={2}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-3 bg-white"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-3 bg-white"
                 />
                 <div className="flex items-center gap-3">
                   <button
@@ -612,7 +612,7 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                   <button
                     onClick={() => executeMutation.mutate()}
                     disabled={anyMutating}
-                    className="flex items-center gap-1.5 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-semibold disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-5 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-semibold disabled:opacity-50"
                   >
                     <Play className="w-4 h-4" />
                     Execute
@@ -647,7 +647,7 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                       onClick={() => setFeedbackOutcome(o)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                         feedbackOutcome === o
-                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
                           : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                       }`}
                     >
@@ -664,12 +664,12 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                       onChange={e => setFeedbackComment(e.target.value)}
                       placeholder="Optional comment..."
                       rows={2}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-2"
                     />
                     <button
                       onClick={() => feedbackMutation.mutate()}
                       disabled={anyMutating}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50"
                     >
                       <MessageSquare className="w-4 h-4" />
                       Submit
@@ -781,7 +781,7 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
 
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
             </div>
           ) : eligibility ? (
             <div className="space-y-4">
@@ -840,7 +840,7 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
                       <select
                         value={threshold}
                         onChange={e => setThreshold(Number(e.target.value))}
-                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500"
+                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500"
                       >
                         {[70, 75, 80, 85, 90, 95].map(v => (
                           <option key={v} value={v}>{v}%</option>
@@ -852,7 +852,7 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
                       <select
                         value={maxRisk}
                         onChange={e => setMaxRisk(e.target.value)}
-                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500"
+                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
@@ -862,7 +862,7 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
                     <button
                       onClick={() => promoteMutation.mutate()}
                       disabled={promoteMutation.isPending}
-                      className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-4 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50"
                     >
                       <TrendingUp className="w-4 h-4" />
                       Promote
@@ -935,7 +935,7 @@ function AutonomyTab() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
       ) : (
         <div className="space-y-2">

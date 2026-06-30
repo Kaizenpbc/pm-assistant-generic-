@@ -6,32 +6,80 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    fontSize: {
+      'display': ['1.875rem', { lineHeight: '2.25rem', fontWeight: '700' }],   // 30px
+      'heading': ['1.375rem', { lineHeight: '1.75rem', fontWeight: '600' }],   // 22px
+      'subhead': ['1.0625rem', { lineHeight: '1.5rem', fontWeight: '600' }],   // 17px
+      'body':    ['0.875rem',  { lineHeight: '1.375rem' }],                    // 14px
+      'caption': ['0.75rem',   { lineHeight: '1rem' }],                        // 12px
+      // Keep standard Tailwind sizes for compatibility
+      'xs':   ['0.75rem',  { lineHeight: '1rem' }],       // 12px (was 12px — floor)
+      'sm':   ['0.875rem', { lineHeight: '1.25rem' }],    // 14px
+      'base': ['0.875rem', { lineHeight: '1.375rem' }],   // 14px (body default)
+      'lg':   ['1.0625rem', { lineHeight: '1.5rem' }],    // 17px
+      'xl':   ['1.25rem', { lineHeight: '1.75rem' }],     // 20px
+      '2xl':  ['1.5rem', { lineHeight: '2rem' }],         // 24px
+      '3xl':  ['1.875rem', { lineHeight: '2.25rem' }],    // 30px
+    },
     extend: {
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
       colors: {
+        // Brand primary — teal
+        primary: {
+          50:  '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+          800: '#115e59',
+          900: '#134e4a',
+          950: '#042f2e',
+        },
+        // Warm neutral ramp — stone
+        neutral: {
+          50:  '#fafaf9',
+          100: '#f5f5f4',
+          200: '#e7e5e4',
+          300: '#d6d3d1',
+          400: '#a8a29e',
+          500: '#78716c',
+          600: '#57534e',
+          700: '#44403c',
+          800: '#292524',
+          900: '#1c1917',
+          950: '#0c0a09',
+        },
+        // Semantic tokens (retuned)
         ai: {
-          primary: '#6366f1',
-          'primary-hover': '#4f46e5',
-          surface: '#eef2ff',
-          border: '#c7d2fe',
-          muted: '#a5b4fc',
-          text: '#3730a3',
+          primary: '#0d9488',
+          'primary-hover': '#0f766e',
+          surface: '#f0fdfa',
+          border: '#99f6e4',
+          muted: '#5eead4',
+          text: '#115e59',
         },
         confidence: {
-          high: '#22c55e',
-          medium: '#f59e0b',
-          low: '#ef4444',
+          high: '#059669',
+          medium: '#d97706',
+          low: '#dc2626',
         },
         risk: {
           critical: '#dc2626',
-          high: '#f97316',
-          medium: '#eab308',
-          low: '#22c55e',
+          high: '#ea580c',
+          medium: '#d97706',
+          low: '#059669',
         },
         sidebar: {
-          bg: '#1e1b4b',
-          hover: '#312e81',
-          active: '#4338ca',
-          text: '#c7d2fe',
+          bg: '#1c1917',
+          hover: '#292524',
+          active: '#0d9488',
+          text: '#d6d3d1',
           'text-active': '#ffffff',
         },
       },

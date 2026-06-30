@@ -221,7 +221,7 @@ export function WorkflowPage() {
         </div>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           New Workflow
@@ -232,13 +232,13 @@ export function WorkflowPage() {
       <div className="flex gap-1 border-b border-gray-200">
         <button
           onClick={() => setTab('definitions')}
-          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'definitions' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'definitions' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Definitions ({definitions.length})
         </button>
         <button
           onClick={() => setTab('executions')}
-          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'executions' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'executions' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Executions ({executions.length})
         </button>
@@ -253,13 +253,13 @@ export function WorkflowPage() {
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
               <input type="text" value={name} onChange={e => setName(e.target.value)}
-                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 placeholder="e.g., Auto-complete on 100%" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
               <input type="text" value={description} onChange={e => setDescription(e.target.value)}
-                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 placeholder="Optional description" />
             </div>
           </div>
@@ -271,7 +271,7 @@ export function WorkflowPage() {
               <div className="flex gap-1">
                 {(['condition', 'action', 'approval', 'delay'] as NodeType[]).map(t => (
                   <button key={t} onClick={() => addNode(t)}
-                    className="px-2 py-1 text-[10px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors">
+                    className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors">
                     + {nodeTypeLabel[t]}
                   </button>
                 ))}
@@ -289,11 +289,11 @@ export function WorkflowPage() {
                   <div className={`p-3 rounded-lg border ${nodeTypeColors[node.nodeType] || 'border-gray-200 bg-gray-50'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/60 font-medium uppercase tracking-wide text-gray-600">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-white/60 font-medium uppercase tracking-wide text-gray-600">
                           {nodeTypeLabel[node.nodeType]}
                         </span>
                         <input type="text" value={node.name} onChange={e => updateNode(idx, { name: e.target.value })}
-                          className="text-xs font-medium text-gray-800 bg-transparent border-0 border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none px-1 py-0.5" />
+                          className="text-xs font-medium text-gray-800 bg-transparent border-0 border-b border-transparent hover:border-gray-300 focus:border-primary-500 focus:outline-none px-1 py-0.5" />
                       </div>
                       {idx > 0 && (
                         <button onClick={() => removeNode(idx)} className="p-0.5 text-gray-300 hover:text-red-500 transition-colors">
@@ -319,7 +319,7 @@ export function WorkflowPage() {
             </button>
             <button onClick={handleSave}
               disabled={!name.trim() || nodes.length === 0 || createMut.isPending || updateMut.isPending}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50">
+              className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50">
               {editingId ? 'Update Workflow' : 'Create Workflow'}
             </button>
           </div>
@@ -335,7 +335,7 @@ export function WorkflowPage() {
 
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
             </div>
           ) : definitions.length === 0 ? (
             <div className="text-center py-8 text-sm text-gray-400">No workflows defined yet.</div>
@@ -360,19 +360,19 @@ export function WorkflowPage() {
                           <span className={`text-sm font-medium ${def.isEnabled ? 'text-gray-900' : 'text-gray-400'}`}>
                             {def.name}
                           </span>
-                          <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">v{def.version}</span>
+                          <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">v{def.version}</span>
                           {!def.isEnabled && (
-                            <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Disabled</span>
+                            <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Disabled</span>
                           )}
                         </div>
                         {def.description && (
-                          <p className="text-[10px] text-gray-400 mt-0.5">{def.description}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{def.description}</p>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <button onClick={() => openEdit(def)}
-                        className="px-2 py-1 text-[10px] text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
+                        className="px-2 py-1 text-xs text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors">
                         Edit
                       </button>
                       <button onClick={() => deleteMut.mutate(def.id)}
@@ -413,7 +413,7 @@ export function WorkflowPage() {
                       <span className="font-medium text-gray-700">{exec.workflowId}</span>
                       <span className="text-gray-400"> — {exec.entityType}:{exec.entityId}</span>
                     </div>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] capitalize ${
+                    <span className={`px-1.5 py-0.5 rounded text-xs capitalize ${
                       exec.status === 'completed' ? 'bg-green-100 text-green-700' :
                       exec.status === 'failed' ? 'bg-red-100 text-red-700' :
                       exec.status === 'waiting' ? 'bg-amber-100 text-amber-700' :
@@ -435,7 +435,7 @@ export function WorkflowPage() {
               <div className="flex items-center gap-2 mb-3">
                 <Eye className="w-4 h-4 text-gray-400" />
                 <h4 className="text-sm font-semibold text-gray-700">Execution Detail</h4>
-                <span className="text-[10px] text-gray-400 font-mono">{viewExecId}</span>
+                <span className="text-xs text-gray-400 font-mono">{viewExecId}</span>
               </div>
               <ExecutionDetail
                 execution={execDetail.execution}

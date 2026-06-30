@@ -195,19 +195,19 @@ export function CriticalityIndex({ data }: CriticalityIndexProps) {
       <div className="flex items-center gap-5 justify-center mt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#ef4444' }} />
-          <span className="text-[10px] text-gray-500">&gt;80% (Critical)</span>
+          <span className="text-xs text-gray-500">&gt;80% (Critical)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#f97316' }} />
-          <span className="text-[10px] text-gray-500">&gt;50%</span>
+          <span className="text-xs text-gray-500">&gt;50%</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#eab308' }} />
-          <span className="text-[10px] text-gray-500">&gt;30%</span>
+          <span className="text-xs text-gray-500">&gt;30%</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#22c55e' }} />
-          <span className="text-[10px] text-gray-500">&le;30%</span>
+          <span className="text-xs text-gray-500">&le;30%</span>
         </div>
       </div>
     </div>

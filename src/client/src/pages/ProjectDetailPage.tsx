@@ -158,7 +158,7 @@ function formatDollar(value: number | undefined | null): string {
 
 function AIPoweredBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
+    <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600">
       <Sparkles className="h-3 w-3" />
       AI Powered
     </span>
@@ -168,7 +168,7 @@ function AIPoweredBadge() {
 function SectionSpinner() {
   return (
     <div className="flex items-center justify-center py-12">
-      <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+      <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
     </div>
   );
 }
@@ -227,7 +227,7 @@ export function ProjectDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -238,7 +238,7 @@ export function ProjectDetailPage() {
         <p className="text-sm text-gray-500">Project not found</p>
         <button
           onClick={() => navigate('/dashboard')}
-          className="mt-2 text-sm text-indigo-600 hover:underline"
+          className="mt-2 text-sm text-primary-600 hover:underline"
         >
           Back to Dashboard
         </button>
@@ -305,7 +305,7 @@ export function ProjectDetailPage() {
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
             <button
               onClick={() => setShowSaveTemplate(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors"
             >
               <Save className="w-3.5 h-3.5" />
               Save as Template
@@ -376,7 +376,7 @@ export function ProjectDetailPage() {
           color={
             daysRemaining !== null && daysRemaining < 14
               ? 'bg-orange-50 text-orange-600'
-              : 'bg-indigo-50 text-indigo-600'
+              : 'bg-primary-50 text-primary-600'
           }
         />
         <ContextCard
@@ -396,7 +396,7 @@ export function ProjectDetailPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`border-b-2 pb-3 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === tab.id
-                  ? 'border-indigo-600 text-indigo-600'
+                  ? 'border-primary-600 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -566,7 +566,7 @@ function ScheduleTab({ projectId }: { projectId: string }) {
   if (schedulesLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -599,7 +599,7 @@ function ScheduleTab({ projectId }: { projectId: string }) {
               onClick={() => setViewMode(mode)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 viewMode === mode
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-primary-600 text-white'
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -738,7 +738,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
       </div>
     );
@@ -764,7 +764,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           <button
             onClick={() => createBaselineMutation.mutate()}
             disabled={createBaselineMutation.isPending}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-md transition-colors"
           >
             <Save className="w-3 h-3" />
             Save Baseline
@@ -789,8 +789,8 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
                   onClick={() => setShowComparison(!showComparison)}
                   className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     showComparison
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100'
+                      ? 'bg-primary-600 text-white'
+                      : 'text-primary-600 bg-primary-50 hover:bg-primary-100'
                   }`}
                 >
                   <BarChart3 className="w-3 h-3" />
@@ -859,7 +859,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-indigo-500" />
+              <BarChart3 className="h-5 w-5 text-primary-500" />
               <h3 className="text-base font-semibold text-gray-900">
                 Baseline Variance Report — {comparison.baselineName}
               </h3>
@@ -1059,7 +1059,7 @@ function EVMSCurveSection({ projectId }: { projectId: string }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5">
       <div className="mb-4 flex items-center gap-2">
-        <BarChart3 className="h-5 w-5 text-indigo-500" />
+        <BarChart3 className="h-5 w-5 text-primary-500" />
         <h3 className="text-base font-semibold text-gray-900">Earned Value Management — S-Curve</h3>
       </div>
 
@@ -1574,7 +1574,7 @@ function ScenariosTab({ projectId }: { projectId: string }) {
       {/* Scenario Form */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <div className="flex items-center gap-2 mb-4">
-          <SlidersHorizontal className="h-5 w-5 text-indigo-500" />
+          <SlidersHorizontal className="h-5 w-5 text-primary-500" />
           <h3 className="text-base font-semibold text-gray-900">Model a Scenario</h3>
         </div>
 
@@ -1589,7 +1589,7 @@ function ScenariosTab({ projectId }: { projectId: string }) {
               value={scenario}
               onChange={(e) => setScenario(e.target.value)}
               placeholder="e.g., What if we add 5 more workers and extend the deadline by 2 weeks?"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
@@ -1638,7 +1638,7 @@ function ScenariosTab({ projectId }: { projectId: string }) {
             <button
               onClick={handleRunScenario}
               disabled={!scenario.trim() || mutation.isPending}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {mutation.isPending ? (
                 <>
@@ -1671,11 +1671,11 @@ function ScenariosTab({ projectId }: { projectId: string }) {
               <div className="flex items-center gap-2">
                 <div className="h-2 w-24 rounded-full bg-gray-200">
                   <div
-                    className="h-full rounded-full bg-indigo-500 transition-all"
+                    className="h-full rounded-full bg-primary-500 transition-all"
                     style={{ width: `${Math.round(result.confidence * 100)}%` }}
                   />
                 </div>
-                <span className="text-sm font-bold text-indigo-600">
+                <span className="text-sm font-bold text-primary-600">
                   {Math.round(result.confidence * 100)}%
                 </span>
               </div>
@@ -1801,7 +1801,7 @@ function SliderInput({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-indigo-600"
+        className="w-full accent-primary-600"
       />
       <div className="flex justify-between text-xs text-gray-400">
         <span>
@@ -1918,13 +1918,13 @@ function TeamTab() {
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-indigo-500" />
+            <Users className="h-5 w-5 text-primary-500" />
             <h3 className="text-base font-semibold text-gray-900">Team Members</h3>
             <span className="text-xs text-gray-400">({members.length})</span>
           </div>
           <button
             onClick={() => setShowAddMember(!showAddMember)}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-md transition-colors"
           >
             <Plus className="w-3 h-3" />
             Add Member
@@ -1940,19 +1940,19 @@ function TeamTab() {
                 placeholder="Name"
                 value={newMember.userName}
                 onChange={e => setNewMember({ ...newMember, userName: e.target.value })}
-                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <input
                 type="email"
                 placeholder="Email"
                 value={newMember.email}
                 onChange={e => setNewMember({ ...newMember, email: e.target.value })}
-                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <select
                 value={newMember.role}
                 onChange={e => setNewMember({ ...newMember, role: e.target.value })}
-                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="viewer">Viewer</option>
                 <option value="editor">Editor</option>
@@ -1962,7 +1962,7 @@ function TeamTab() {
               <button
                 onClick={handleAddMember}
                 disabled={addMemberMutation.isPending}
-                className="text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md px-3 py-1.5 transition-colors disabled:opacity-50"
+                className="text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md px-3 py-1.5 transition-colors disabled:opacity-50"
               >
                 {addMemberMutation.isPending ? 'Adding...' : 'Add'}
               </button>
@@ -1977,8 +1977,8 @@ function TeamTab() {
             {members.map((member: any) => (
               <div key={member.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <span className="text-xs font-semibold text-indigo-600">
+                  <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span className="text-xs font-semibold text-primary-600">
                       {member.userName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
                     </span>
                   </div>
@@ -2337,7 +2337,7 @@ function ChangeRequestsTab({ projectId }: { projectId: string }) {
         <h3 className="text-lg font-semibold text-gray-900">Change Requests</h3>
         <button
           onClick={() => setView('workflow')}
-          className="text-sm text-indigo-600 hover:text-indigo-800"
+          className="text-sm text-primary-600 hover:text-primary-800"
         >
           Manage Workflows
         </button>
@@ -2395,7 +2395,7 @@ function SprintsTab({ projectId }: { projectId: string }) {
                 <button
                   key={v}
                   onClick={() => setSprintView(v)}
-                  className={`px-3 py-1 text-xs rounded-md capitalize ${sprintView === v ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                  className={`px-3 py-1 text-xs rounded-md capitalize ${sprintView === v ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:bg-gray-100'}`}
                 >
                   {v}
                 </button>

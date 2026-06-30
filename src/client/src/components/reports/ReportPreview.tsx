@@ -57,7 +57,7 @@ const KPI_COLORS = [
   { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
   { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
   { bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700' },
-  { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700' },
+  { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-700' },
 ];
 
 const CHART_COLORS = [
@@ -75,7 +75,7 @@ function KpiCards({ kpis }: { kpis: KpiItem[] }) {
             key={i}
             className={`${colorSet.bg} ${colorSet.border} border rounded-xl p-4 text-center`}
           >
-            <p className="text-[10px] uppercase text-gray-500 tracking-wider font-medium mb-1">
+            <p className="text-xs uppercase text-gray-500 tracking-wider font-medium mb-1">
               {kpi.label}
             </p>
             <p className={`text-2xl font-bold ${colorSet.text}`}>
@@ -97,7 +97,7 @@ function DataTable({ table }: { table: TableData }) {
             {table.headers.map((header, i) => (
               <th
                 key={i}
-                className="text-left px-4 py-2 bg-gray-50 text-[10px] uppercase font-semibold text-gray-500 tracking-wider border-b-2 border-gray-200"
+                className="text-left px-4 py-2 bg-gray-50 text-xs uppercase font-semibold text-gray-500 tracking-wider border-b-2 border-gray-200"
               >
                 {header}
               </th>
@@ -416,8 +416,8 @@ export function ReportPreview({ templateId, onClose }: ReportPreviewProps) {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-            <FileBarChart className="w-5 h-5 text-indigo-600" />
+          <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+            <FileBarChart className="w-5 h-5 text-primary-600" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">
@@ -442,7 +442,7 @@ export function ReportPreview({ templateId, onClose }: ReportPreviewProps) {
             </button>
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
             >
               <Printer className="w-3.5 h-3.5" />
               Export PDF
@@ -462,7 +462,7 @@ export function ReportPreview({ templateId, onClose }: ReportPreviewProps) {
       {/* Loading */}
       {generateMutation.isPending && (
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
+          <div className="w-8 h-8 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4" />
           <p className="text-sm text-gray-500">Generating report...</p>
           <p className="text-xs text-gray-400 mt-1">This may take a moment while data is aggregated.</p>
         </div>
@@ -499,7 +499,7 @@ export function ReportPreview({ templateId, onClose }: ReportPreviewProps) {
 
       {/* Print footer */}
       <div className="hidden print:block mt-8 pt-4 border-t border-gray-200 text-center">
-        <p className="text-[10px] text-gray-400">Kovarti PM Assistant - Custom Report</p>
+        <p className="text-xs text-gray-400">Kovarti PM Assistant - Custom Report</p>
       </div>
 
       {/* Print-friendly styles */}

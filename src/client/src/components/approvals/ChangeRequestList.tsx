@@ -48,12 +48,12 @@ export function ChangeRequestList({ projectId, onSelect, onNew }: ChangeRequestL
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <GitPullRequest className="w-5 h-5 text-indigo-600" />
+          <GitPullRequest className="w-5 h-5 text-primary-600" />
           <h3 className="text-lg font-semibold text-gray-900">Change Requests</h3>
         </div>
         <button
           onClick={onNew}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
           New Change Request
@@ -66,7 +66,7 @@ export function ChangeRequestList({ projectId, onSelect, onNew }: ChangeRequestL
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>
@@ -79,7 +79,7 @@ export function ChangeRequestList({ projectId, onSelect, onNew }: ChangeRequestL
       {/* Table */}
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
       ) : isError ? (
         <div className="text-center py-12 text-red-500 text-sm">Failed to load change requests.</div>
@@ -106,7 +106,7 @@ export function ChangeRequestList({ projectId, onSelect, onNew }: ChangeRequestL
                 <tr
                   key={cr.id}
                   onClick={() => onSelect(cr.id)}
-                  className="hover:bg-indigo-50/50 cursor-pointer transition-colors"
+                  className="hover:bg-primary-50/50 cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-3 font-medium text-gray-900">{cr.title}</td>
                   <td className="px-4 py-3">

@@ -27,10 +27,10 @@ function MetricCard({
 }) {
   return (
     <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center" title={tooltip}>
-      <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+      <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
         {label}
         {badge && (
-          <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[9px] font-semibold text-indigo-600">
+          <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-primary-50 px-1.5 py-0.5 text-xs font-semibold text-primary-600">
             <Sparkles className="h-2.5 w-2.5" />
             {badge}
           </span>
@@ -61,7 +61,7 @@ function EffortBadge({ effort }: { effort: string }) {
         ? 'bg-yellow-100 text-yellow-700'
         : 'bg-red-100 text-red-700';
   return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${cls}`}>
+    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${cls}`}>
       {effort}
     </span>
   );
@@ -75,7 +75,7 @@ function PriorityBadge({ priority }: { priority: number }) {
         ? 'bg-yellow-100 text-yellow-700'
         : 'bg-gray-100 text-gray-600';
   return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${cls}`}>
+    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>
       P{priority}
     </span>
   );
@@ -132,7 +132,7 @@ export function EVMForecastDashboard({ data }: { data: any }) {
         <MetricCard
           label="AI Predicted EAC"
           value={aiEAC != null ? formatDollar(aiEAC) : '-'}
-          color="text-indigo-600"
+          color="text-primary-600"
           tooltip="AI / ML predicted Estimate at Completion"
           badge="AI"
         />
@@ -154,7 +154,7 @@ export function EVMForecastDashboard({ data }: { data: any }) {
                 <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${sev.text}`} />
                 <div>
                   <span className={`text-xs font-semibold ${sev.text}`}>{w.title ?? w.metric ?? 'Warning'}</span>
-                  {w.message && <p className={`text-[11px] mt-0.5 ${sev.text} opacity-80`}>{w.message}</p>}
+                  {w.message && <p className={`text-xs mt-0.5 ${sev.text} opacity-80`}>{w.message}</p>}
                 </div>
               </div>
             );
@@ -168,7 +168,7 @@ export function EVMForecastDashboard({ data }: { data: any }) {
       {aiPredictions?.correctiveActions && aiPredictions.correctiveActions.length > 0 && (
         <div>
           <div className="flex items-center gap-1.5 mb-2">
-            <Sparkles className="h-4 w-4 text-indigo-500" />
+            <Sparkles className="h-4 w-4 text-primary-500" />
             <h3 className="text-xs font-semibold text-gray-700">AI-Recommended Corrective Actions</h3>
           </div>
 
@@ -176,10 +176,10 @@ export function EVMForecastDashboard({ data }: { data: any }) {
             <table className="min-w-full text-xs">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-500 uppercase text-[10px]">Action</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-500 uppercase text-[10px]">Effort</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-500 uppercase text-[10px]">Priority</th>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-500 uppercase text-[10px]">Est. Impact</th>
+                  <th className="text-left px-3 py-2 font-semibold text-gray-500 uppercase text-xs">Action</th>
+                  <th className="text-center px-3 py-2 font-semibold text-gray-500 uppercase text-xs">Effort</th>
+                  <th className="text-center px-3 py-2 font-semibold text-gray-500 uppercase text-xs">Priority</th>
+                  <th className="text-left px-3 py-2 font-semibold text-gray-500 uppercase text-xs">Est. Impact</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">

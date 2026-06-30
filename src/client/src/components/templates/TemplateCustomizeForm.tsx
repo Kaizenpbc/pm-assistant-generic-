@@ -189,9 +189,9 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
       </div>
 
       {templateName && (
-        <div className="bg-indigo-50 rounded-lg p-3 mb-4">
-          <p className="text-xs font-medium text-indigo-700">Template: {templateName}</p>
-          <p className="text-[10px] text-indigo-500 mt-0.5">
+        <div className="bg-primary-50 rounded-lg p-3 mb-4">
+          <p className="text-xs font-medium text-primary-700">Template: {templateName}</p>
+          <p className="text-xs text-primary-500 mt-0.5">
             {phaseCount} phases, {taskCount} tasks, ~{estimatedDurationDays} days
           </p>
         </div>
@@ -205,7 +205,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
             required
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             placeholder="My Project"
           />
         </div>
@@ -220,7 +220,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             required
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
           />
         </div>
 
@@ -235,7 +235,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
             onChange={(e) => setBudget(e.target.value)}
             min="0"
             step="1000"
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             placeholder="Optional"
           />
         </div>
@@ -245,7 +245,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
           >
             <option value="low">Low</option>
             <option value="medium">Medium</option>
@@ -263,7 +263,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
             type="text"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             placeholder="e.g. New York, NY"
           />
         </div>
@@ -303,7 +303,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleTask(t.refId)}
-                          className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 flex-shrink-0"
                         />
                       )}
                       <span
@@ -314,11 +314,11 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
                         {t.name}
                       </span>
                       {isMandatory && (
-                        <span className="text-[9px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">
+                        <span className="text-xs font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">
                           Required
                         </span>
                       )}
-                      <span className="text-[10px] text-gray-400 flex-shrink-0">
+                      <span className="text-xs text-gray-400 flex-shrink-0">
                         {t.estimatedDays}d
                       </span>
                     </label>
@@ -329,7 +329,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
 
             {/* Cascade warning toast */}
             {cascadeWarning && (
-              <div className="px-3 py-2 bg-amber-50 border-t border-amber-200 text-[10px] text-amber-700">
+              <div className="px-3 py-2 bg-amber-50 border-t border-amber-200 text-xs text-amber-700">
                 {cascadeWarning}
               </div>
             )}
@@ -339,7 +339,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
         <button
           type="submit"
           disabled={!projectName || !startDate || isSubmitting}
-          className="w-full py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+          className="w-full py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
         >
           {isSubmitting ? 'Creating Project...' : 'Create Project'}
         </button>

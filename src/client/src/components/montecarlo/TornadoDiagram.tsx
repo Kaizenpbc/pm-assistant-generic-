@@ -197,11 +197,11 @@ export function TornadoDiagram({ data }: TornadoDiagramProps) {
       <div className="flex items-center gap-5 justify-center mt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-blue-500" />
-          <span className="text-[10px] text-gray-500">Positive correlation (delays project)</span>
+          <span className="text-xs text-gray-500">Positive correlation (delays project)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-red-500" />
-          <span className="text-[10px] text-gray-500">Negative correlation</span>
+          <span className="text-xs text-gray-500">Negative correlation</span>
         </div>
       </div>
     </div>

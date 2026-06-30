@@ -68,13 +68,13 @@ export function SprintList({ projectId, onSelect, onCreate }: SprintListProps) {
       {/* Header */}
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Kanban className="w-4 h-4 text-indigo-500" />
+          <Kanban className="w-4 h-4 text-primary-500" />
           <h3 className="text-sm font-semibold text-gray-800">Sprints</h3>
           <span className="text-xs text-gray-400">({sprints.length})</span>
         </div>
         <button
           onClick={onCreate}
-          className="flex items-center gap-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-md transition-colors"
+          className="flex items-center gap-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-md transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           New Sprint
@@ -107,7 +107,7 @@ export function SprintList({ projectId, onSelect, onCreate }: SprintListProps) {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-medium text-gray-900 truncate">{sprint.name}</span>
                       <span
-                        className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}
+                        className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                         {cfg.label}
@@ -116,7 +116,7 @@ export function SprintList({ projectId, onSelect, onCreate }: SprintListProps) {
                     {sprint.goal && (
                       <p className="text-xs text-gray-500 truncate mb-1">{sprint.goal}</p>
                     )}
-                    <div className="flex items-center gap-3 text-[11px] text-gray-400">
+                    <div className="flex items-center gap-3 text-xs text-gray-400">
                       <span>{formatDate(sprint.start_date)} - {formatDate(sprint.end_date)}</span>
                     </div>
                   </div>

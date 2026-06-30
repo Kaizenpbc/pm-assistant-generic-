@@ -512,7 +512,7 @@ export const AnalyticsPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-gray-500">Loading analytics...</p>
         </div>
       </div>
@@ -524,8 +524,8 @@ export const AnalyticsPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-indigo-600" />
+          <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+            <BarChart3 className="w-5 h-5 text-primary-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>

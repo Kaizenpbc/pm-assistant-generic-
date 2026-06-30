@@ -85,7 +85,7 @@ export function PortfolioPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -101,8 +101,8 @@ export function PortfolioPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100">
-          <Layers className="h-5 w-5 text-indigo-600" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100">
+          <Layers className="h-5 w-5 text-primary-600" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">Portfolio Overview</h1>

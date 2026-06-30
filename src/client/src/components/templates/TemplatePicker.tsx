@@ -194,11 +194,11 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
             <div className="flex items-center gap-2 mt-1.5">
               {stepIndicators.map((s, i) => (
                 <React.Fragment key={s.label}>
-                  {i > 0 && <div className={`w-6 h-px ${s.completed || s.active ? 'bg-indigo-300' : 'bg-gray-200'}`} />}
+                  {i > 0 && <div className={`w-6 h-px ${s.completed || s.active ? 'bg-primary-300' : 'bg-gray-200'}`} />}
                   <span
-                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                       s.active
-                        ? 'bg-indigo-100 text-indigo-700'
+                        ? 'bg-primary-100 text-primary-700'
                         : s.completed
                           ? 'bg-green-100 text-green-700'
                           : 'text-gray-400'

@@ -108,7 +108,7 @@ export const SyncLogPanel: React.FC<SyncLogPanelProps> = ({
             <button
               onClick={() => syncMutation.mutate()}
               disabled={syncMutation.isPending}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 disabled:opacity-50 transition-colors"
             >
               <RefreshCw
                 className={`h-4 w-4 ${

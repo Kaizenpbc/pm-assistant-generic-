@@ -197,7 +197,7 @@ export function PieChart({ data }: PieChartProps) {
           {segments.map((seg, i) => (
             <div
               key={i}
-              className="flex items-center gap-1.5 text-[11px] text-gray-600 cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer"
               onMouseEnter={() => setHoveredIdx(i)}
               onMouseLeave={() => setHoveredIdx(null)}
             >

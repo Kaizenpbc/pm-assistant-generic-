@@ -136,7 +136,7 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center gap-2 mb-3">
-          <Link className="w-4 h-4 text-indigo-600" />
+          <Link className="w-4 h-4 text-primary-600" />
           <h3 className="text-sm font-semibold text-gray-900">Client Portal Links</h3>
         </div>
         <div className="animate-pulse space-y-2">
@@ -151,7 +151,7 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center gap-2 mb-3">
-          <Link className="w-4 h-4 text-indigo-600" />
+          <Link className="w-4 h-4 text-primary-600" />
           <h3 className="text-sm font-semibold text-gray-900">Client Portal Links</h3>
         </div>
         <p className="text-sm text-red-600">Failed to load portal links.</p>
@@ -164,12 +164,12 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Link className="w-4 h-4 text-indigo-600" />
+          <Link className="w-4 h-4 text-primary-600" />
           <h3 className="text-sm font-semibold text-gray-900">Client Portal Links</h3>
         </div>
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+          className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 font-medium"
         >
           <Plus className="w-3.5 h-3.5" />
           {showCreateForm ? 'Cancel' : 'Create Link'}
@@ -188,7 +188,7 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
               value={form.label}
               onChange={(e) => setForm({ ...form, label: e.target.value })}
               placeholder="e.g. Client Review Link"
-              className="w-full text-sm border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full text-sm border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
@@ -211,7 +211,7 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
                     type="checkbox"
                     checked={form[key]}
                     onChange={(e) => setForm({ ...form, [key]: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                   />
                   {label}
                 </label>
@@ -227,14 +227,14 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
               type="date"
               value={form.expiresAt}
               onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
-              className="w-full text-sm border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full text-sm border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
           <button
             onClick={handleCreate}
             disabled={!form.label.trim() || createMutation.isPending}
-            className="w-full text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md py-1.5 transition-colors"
+            className="w-full text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md py-1.5 transition-colors"
           >
             {createMutation.isPending ? 'Creating...' : 'Create Portal Link'}
           </button>
@@ -266,12 +266,12 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-gray-900">{link.label}</span>
-                  <code className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 font-mono">
+                  <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 font-mono">
                     {truncateToken(link.token)}
                   </code>
                 </div>
                 <span
-                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
                     link.is_active
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-100 text-gray-500'
@@ -282,7 +282,7 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
               </div>
 
               {/* Permissions + expiry */}
-              <div className="flex items-center gap-3 text-[10px] text-gray-500 mb-2">
+              <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
                 <span>{permissionSummary(link.permissions)}</span>
                 {link.expires_at && (
                   <span>
@@ -295,7 +295,7 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => copyLink(link.token, link.id)}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-gray-600 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                   title="Copy link"
                 >
                   {copiedId === link.id ? (

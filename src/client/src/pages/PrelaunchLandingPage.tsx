@@ -80,7 +80,7 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
       </svg>
     ),
-    color: 'from-cyan-400 to-indigo-500',
+    color: 'from-cyan-400 to-primary-500',
   },
 ];
 
@@ -92,7 +92,7 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
           {String(value).padStart(2, '0')}
         </span>
       </div>
-      <span className="mt-2 text-xs font-medium text-indigo-300 uppercase tracking-widest">{label}</span>
+      <span className="mt-2 text-xs font-medium text-primary-300 uppercase tracking-widest">{label}</span>
     </div>
   );
 }
@@ -132,14 +132,14 @@ export const PrelaunchLandingPage: React.FC = () => {
     <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden">
       {/* Ambient background */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[700px] bg-indigo-600/20 rounded-full blur-[120px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[700px] bg-primary-600/20 rounded-full blur-[120px]" />
         <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px]" />
         <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-cyan-600/10 rounded-full blur-[100px]" />
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-violet-600/10 rounded-full blur-[100px]" />
       </div>
 
       {/* Announcement bar */}
-      <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 py-2.5 px-4 text-center text-sm font-medium text-white">
+      <div className="bg-gradient-to-r from-primary-600 via-violet-600 to-purple-600 py-2.5 px-4 text-center text-sm font-medium text-white">
         <span className="mr-2">🎉</span>
         Join the waitlist now and get <span className="font-bold underline underline-offset-2">25% off</span> when we launch — limited spots available.
         <span className="ml-2">🚀</span>
@@ -149,7 +149,7 @@ export const PrelaunchLandingPage: React.FC = () => {
       <nav className="border-b border-white/5 backdrop-blur-md bg-slate-950/60 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-900">
+            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-900">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
@@ -165,10 +165,10 @@ export const PrelaunchLandingPage: React.FC = () => {
           {/* Coming Soon */}
           <div className="mb-8">
             <div className="inline-flex flex-col sm:flex-row items-center gap-3">
-              <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-indigo-500/15 border border-indigo-500/40">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse" />
-                <span className="text-lg font-bold text-indigo-300 tracking-wide uppercase">Coming Soon</span>
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse" />
+              <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-500/15 border border-primary-500/40">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary-400 animate-pulse" />
+                <span className="text-lg font-bold text-primary-300 tracking-wide uppercase">Coming Soon</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-primary-400 animate-pulse" />
               </div>
               <span className="text-base font-semibold text-slate-400 tracking-widest uppercase">Summer 2026</span>
             </div>
@@ -177,7 +177,7 @@ export const PrelaunchLandingPage: React.FC = () => {
           <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight leading-none">
             <span className="text-white">Project Management</span>
             <br />
-            <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
               Finally Gets AI.
             </span>
           </h1>
@@ -212,7 +212,7 @@ export const PrelaunchLandingPage: React.FC = () => {
             { label: 'Accuracy on delay forecasts', value: '94%' },
           ].map(stat => (
             <div key={stat.label}>
-              <div className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{stat.value}</div>
+              <div className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-primary-400 to-purple-400 bg-clip-text text-transparent">{stat.value}</div>
               <div className="text-xs text-slate-500 mt-1 uppercase tracking-wide">{stat.label}</div>
             </div>
           ))}
@@ -277,12 +277,12 @@ export const PrelaunchLandingPage: React.FC = () => {
                   onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   required
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm transition-all"
                 />
                 <button
                   type="submit"
                   disabled={status === 'loading'}
-                  className="px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-900 text-sm whitespace-nowrap"
+                  className="px-6 py-3.5 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-500 hover:to-purple-500 disabled:opacity-60 text-white font-semibold rounded-xl transition-all shadow-lg shadow-primary-900 text-sm whitespace-nowrap"
                 >
                   {status === 'loading' ? 'Joining...' : 'Reserve My Spot'}
                 </button>
@@ -298,7 +298,7 @@ export const PrelaunchLandingPage: React.FC = () => {
       <footer className="border-t border-white/5 py-10 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
+            <div className="w-6 h-6 bg-gradient-to-br from-primary-500 to-purple-600 rounded flex items-center justify-center">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>

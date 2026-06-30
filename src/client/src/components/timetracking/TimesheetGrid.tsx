@@ -69,7 +69,7 @@ export function TimesheetGrid() {
 
       {isLoading ? (
         <div className="flex justify-center py-8">
-          <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -121,7 +121,7 @@ export function TimesheetGrid() {
                           )}
                         </td>
                       ))}
-                      <td className="text-center py-2 px-2 font-semibold text-indigo-600">{rowTotal}h</td>
+                      <td className="text-center py-2 px-2 font-semibold text-primary-600">{rowTotal}h</td>
                     </tr>
                   );
                 })
@@ -138,7 +138,7 @@ export function TimesheetGrid() {
                     </td>
                   );
                 })}
-                <td className="text-center py-2 px-2 font-bold text-indigo-600">{totalHours}h</td>
+                <td className="text-center py-2 px-2 font-bold text-primary-600">{totalHours}h</td>
               </tr>
             </tfoot>
           </table>

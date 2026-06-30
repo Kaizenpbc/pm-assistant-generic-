@@ -63,7 +63,7 @@ export function ExecutionDetail({ execution, nodes, onResume }: ExecutionDetailP
           {statusIcon[execution.status] || statusIcon.pending}
           <span className="text-sm font-medium capitalize">{execution.status}</span>
         </div>
-        <div className="text-[10px] text-gray-500">
+        <div className="text-xs text-gray-500">
           Started: {new Date(execution.startedAt).toLocaleString()}
           {execution.completedAt && <> | Completed: {new Date(execution.completedAt).toLocaleString()}</>}
         </div>
@@ -98,11 +98,11 @@ export function ExecutionDetail({ execution, nodes, onResume }: ExecutionDetailP
                     {node?.name || ne.nodeId}
                   </span>
                   {node && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 capitalize">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 capitalize">
                       {node.nodeType}
                     </span>
                   )}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${
+                  <span className={`text-xs px-1.5 py-0.5 rounded capitalize ${
                     ne.status === 'completed' ? 'bg-green-100 text-green-700' :
                     ne.status === 'failed' ? 'bg-red-100 text-red-700' :
                     ne.status === 'waiting' ? 'bg-amber-100 text-amber-700' :
@@ -114,25 +114,25 @@ export function ExecutionDetail({ execution, nodes, onResume }: ExecutionDetailP
                 </div>
 
                 {ne.startedAt && (
-                  <div className="text-[10px] text-gray-400 mt-0.5">
+                  <div className="text-xs text-gray-400 mt-0.5">
                     {new Date(ne.startedAt).toLocaleString()}
                   </div>
                 )}
 
                 {ne.outputData && Object.keys(ne.outputData).length > 0 && (
-                  <div className="text-[10px] text-gray-500 mt-1 bg-gray-50 p-1.5 rounded">
+                  <div className="text-xs text-gray-500 mt-1 bg-gray-50 p-1.5 rounded">
                     {JSON.stringify(ne.outputData)}
                   </div>
                 )}
 
                 {ne.errorMessage && (
-                  <div className="text-[10px] text-red-600 mt-1">{ne.errorMessage}</div>
+                  <div className="text-xs text-red-600 mt-1">{ne.errorMessage}</div>
                 )}
 
                 {ne.status === 'waiting' && onResume && (
                   <button
                     onClick={() => onResume(ne.nodeId)}
-                    className="mt-1 px-2 py-1 text-[10px] font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded transition-colors"
+                    className="mt-1 px-2 py-1 text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded transition-colors"
                   >
                     Resume
                   </button>

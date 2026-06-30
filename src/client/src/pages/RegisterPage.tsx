@@ -41,7 +41,7 @@ export const RegisterPage: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 py-12 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 py-12 px-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center">
           <div className="mx-auto w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
             <svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,7 +52,7 @@ export const RegisterPage: React.FC = () => {
           <p className="text-gray-600 mb-6">
             We've sent a verification link to <strong>{email}</strong>. Please click the link to verify your account.
           </p>
-          <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-medium text-sm">
+          <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium text-sm">
             Back to Sign In
           </Link>
         </div>
@@ -61,12 +61,12 @@ export const RegisterPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 py-12 px-4">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <div className="text-center mb-8">
-            <div className="mx-auto w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-4">
-              <svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mx-auto w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4">
+              <svg className="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
             </div>
@@ -113,15 +113,15 @@ export const RegisterPage: React.FC = () => {
 
             <div className="flex items-start">
               <input id="terms" type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)}
-                className="h-4 w-4 text-indigo-600 border-gray-300 rounded mt-0.5" />
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded mt-0.5" />
               <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
-                I agree to the <Link to="/terms" className="text-indigo-600 hover:text-indigo-700" target="_blank">Terms of Service</Link> and{' '}
-                <Link to="/privacy" className="text-indigo-600 hover:text-indigo-700" target="_blank">Privacy Policy</Link>
+                I agree to the <Link to="/terms" className="text-primary-600 hover:text-primary-700" target="_blank">Terms of Service</Link> and{' '}
+                <Link to="/privacy" className="text-primary-600 hover:text-primary-700" target="_blank">Privacy Policy</Link>
               </label>
             </div>
 
             <button type="submit" disabled={isLoading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
               {isLoading ? (
                 <div className="flex items-center">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
@@ -135,7 +135,7 @@ export const RegisterPage: React.FC = () => {
             <div className="text-center">
               <p className="text-sm text-gray-500">
                 Already have an account?{' '}
-                <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-medium">Sign in</Link>
+                <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">Sign in</Link>
               </p>
             </div>
           </form>

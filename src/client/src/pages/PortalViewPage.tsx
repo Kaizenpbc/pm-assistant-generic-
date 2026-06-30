@@ -115,7 +115,7 @@ export default function PortalViewPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-3" />
+          <Loader2 className="w-8 h-8 text-primary-600 animate-spin mx-auto mb-3" />
           <p className="text-sm text-gray-500">Loading portal...</p>
         </div>
       </div>
@@ -151,13 +151,13 @@ export default function PortalViewPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+      <header className="bg-gradient-to-r from-primary-600 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto px-6 py-8">
-          <p className="text-indigo-200 text-xs font-medium uppercase tracking-wider mb-1">
+          <p className="text-primary-200 text-xs font-medium uppercase tracking-wider mb-1">
             Client Portal
           </p>
           <h1 className="text-2xl font-bold">{project.name}</h1>
-          <p className="text-indigo-100 text-sm mt-1">
+          <p className="text-primary-100 text-sm mt-1">
             Kovarti PM Assistant
           </p>
         </div>
@@ -188,7 +188,7 @@ export default function PortalViewPage() {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div
-              className="bg-indigo-600 h-3 rounded-full transition-all duration-500"
+              className="bg-primary-600 h-3 rounded-full transition-all duration-500"
               style={{ width: `${Math.min(project.progressPercentage, 100)}%` }}
             />
           </div>
@@ -197,10 +197,10 @@ export default function PortalViewPage() {
         {/* Task Statistics */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard
-            icon={<BarChart3 className="w-5 h-5 text-indigo-600" />}
+            icon={<BarChart3 className="w-5 h-5 text-primary-600" />}
             label="Total Tasks"
             value={taskStats.total}
-            bg="bg-indigo-50"
+            bg="bg-primary-50"
           />
           <StatCard
             icon={<Clock className="w-5 h-5 text-yellow-600" />}
@@ -225,7 +225,7 @@ export default function PortalViewPage() {
         {/* Timeline Info */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-indigo-600" />
+            <Calendar className="w-5 h-5 text-primary-600" />
             Timeline
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -270,7 +270,7 @@ export default function PortalViewPage() {
         {permissions.canViewBudget && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-indigo-600" />
+              <DollarSign className="w-5 h-5 text-primary-600" />
               Budget Summary
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
@@ -332,7 +332,7 @@ export default function PortalViewPage() {
         {permissions.canViewGantt && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <GanttChartSquare className="w-5 h-5 text-indigo-600" />
+              <GanttChartSquare className="w-5 h-5 text-primary-600" />
               Gantt Chart
             </h2>
             <div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
@@ -350,7 +350,7 @@ export default function PortalViewPage() {
         {permissions.canViewReports && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-indigo-600" />
+              <FileText className="w-5 h-5 text-primary-600" />
               Reports
             </h2>
             <div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
@@ -368,7 +368,7 @@ export default function PortalViewPage() {
         {permissions.canComment && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-indigo-600" />
+              <MessageSquare className="w-5 h-5 text-primary-600" />
               Comments
             </h2>
 
@@ -409,7 +409,7 @@ export default function PortalViewPage() {
                   value={authorName}
                   onChange={(e) => setAuthorName(e.target.value)}
                   placeholder="Enter your name"
-                  className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   required
                 />
               </div>
@@ -422,7 +422,7 @@ export default function PortalViewPage() {
                   onChange={(e) => setCommentContent(e.target.value)}
                   placeholder="Write your comment..."
                   rows={3}
-                  className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                  className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
                   required
                 />
               </div>
@@ -433,7 +433,7 @@ export default function PortalViewPage() {
                   !authorName.trim() ||
                   !commentContent.trim()
                 }
-                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="w-4 h-4" />
                 {commentMutation.isPending ? 'Sending...' : 'Submit Comment'}

@@ -183,7 +183,7 @@ export const ReportsPage: React.FC = () => {
   if (historyLoading || projectsLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -203,7 +203,7 @@ export const ReportsPage: React.FC = () => {
       {/* ----------------------------------------------------------------- */}
       <div className="card">
         <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <FileBarChart className="w-4 h-4 text-indigo-500" />
+          <FileBarChart className="w-4 h-4 text-primary-500" />
           Generate Report
         </h2>
 
@@ -337,7 +337,7 @@ export const ReportsPage: React.FC = () => {
                       {report.title}
                     </h3>
                     <div className="flex items-center gap-3 mt-1.5">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${badgeColor}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badgeColor}`}>
                         {typeLabel}
                       </span>
                       <span className="flex items-center gap-1 text-xs text-gray-400">

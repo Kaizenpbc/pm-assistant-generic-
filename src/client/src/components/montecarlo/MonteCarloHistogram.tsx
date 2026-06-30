@@ -352,7 +352,7 @@ export function MonteCarloHistogram({ histogram, p50, p80, p90 }: MonteCarloHist
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="absolute z-20 bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] shadow-lg pointer-events-none"
+          className="absolute z-20 bg-gray-900 text-white rounded-lg px-3 py-2 text-xs shadow-lg pointer-events-none"
           style={{
             left: `${(tooltip.x / svgWidth) * 100}%`,
             top: '28px',
@@ -363,7 +363,7 @@ export function MonteCarloHistogram({ histogram, p50, p80, p90 }: MonteCarloHist
             {Math.round(tooltip.bin.min)} - {Math.round(tooltip.bin.max)} days
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-sm bg-indigo-400 inline-block" />
+            <span className="w-2 h-2 rounded-sm bg-primary-400 inline-block" />
             <span>Count: {tooltip.bin.count}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -376,30 +376,30 @@ export function MonteCarloHistogram({ histogram, p50, p80, p90 }: MonteCarloHist
       {/* Legend */}
       <div className="flex items-center gap-5 justify-center mt-2">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-indigo-400 opacity-75" />
-          <span className="text-[10px] text-gray-500">Frequency</span>
+          <div className="w-3 h-3 rounded-sm bg-primary-400 opacity-75" />
+          <span className="text-xs text-gray-500">Frequency</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-orange-500 rounded" />
-          <span className="text-[10px] text-gray-500">Cumulative %</span>
+          <span className="text-xs text-gray-500">Cumulative %</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="14" height="4">
             <line x1="0" y1="2" x2="14" y2="2" stroke="#3b82f6" strokeWidth="2" strokeDasharray="3,2" />
           </svg>
-          <span className="text-[10px] text-gray-500">P50</span>
+          <span className="text-xs text-gray-500">P50</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="14" height="4">
             <line x1="0" y1="2" x2="14" y2="2" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3,2" />
           </svg>
-          <span className="text-[10px] text-gray-500">P80</span>
+          <span className="text-xs text-gray-500">P80</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="14" height="4">
             <line x1="0" y1="2" x2="14" y2="2" stroke="#ef4444" strokeWidth="2" strokeDasharray="3,2" />
           </svg>
-          <span className="text-[10px] text-gray-500">P90</span>
+          <span className="text-xs text-gray-500">P90</span>
         </div>
       </div>
     </div>

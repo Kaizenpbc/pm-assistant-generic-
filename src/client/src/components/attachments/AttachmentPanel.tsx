@@ -93,10 +93,10 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer
-          ${dragOver ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'}`}
+          ${dragOver ? 'border-primary-400 bg-primary-50' : 'border-gray-200 hover:border-gray-300'}`}
         onClick={() => document.getElementById(`file-input-${entityId}`)?.click()}
       >
-        <UploadCloud className={`w-6 h-6 mx-auto mb-1 ${dragOver ? 'text-indigo-500' : 'text-gray-400'}`} />
+        <UploadCloud className={`w-6 h-6 mx-auto mb-1 ${dragOver ? 'text-primary-500' : 'text-gray-400'}`} />
         <p className="text-xs text-gray-500">
           {uploadMutation.isPending ? 'Uploading...' : 'Drop files here or click to upload'}
         </p>
@@ -112,7 +112,7 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
       {/* File list */}
       {isLoading ? (
         <div className="flex justify-center py-3">
-          <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
       ) : attachments.length === 0 ? (
         <p className="text-xs text-gray-400 text-center py-2">No attachments yet</p>
@@ -129,7 +129,7 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
               </button>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{att.originalName}</p>
-                <p className="text-[10px] text-gray-400">
+                <p className="text-xs text-gray-400">
                   {formatSize(att.fileSize)} &middot; v{att.version} &middot; {new Date(att.createdAt).toLocaleDateString()}
                 </p>
               </div>
@@ -137,7 +137,7 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
                 <button onClick={() => setVersionHistoryId(att.id)} className="p-1 text-gray-400 hover:text-gray-600" title="Version history">
                   <Clock className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => handleDownload(att)} className="p-1 text-gray-400 hover:text-indigo-600" title="Download">
+                <button onClick={() => handleDownload(att)} className="p-1 text-gray-400 hover:text-primary-600" title="Download">
                   <Download className="w-3.5 h-3.5" />
                 </button>
                 <button

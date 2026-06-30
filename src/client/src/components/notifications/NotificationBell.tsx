@@ -257,7 +257,7 @@ export function NotificationBell() {
             className="
               absolute -top-0.5 -right-0.5 flex items-center justify-center
               min-w-[18px] h-[18px] px-1
-              text-[10px] font-bold text-white
+              text-xs font-bold text-white
               bg-red-500 rounded-full
               ring-2 ring-white
               animate-fade-in
@@ -292,7 +292,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllRead()}
-                className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-150"
+                className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 font-medium transition-colors duration-150"
               >
                 <Check className="w-3 h-3" />
                 Mark all read
@@ -367,11 +367,11 @@ export function NotificationBell() {
                         {notification.message}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-gray-400">
+                        <span className="text-xs text-gray-400">
                           {timeAgo(notification.createdAt)}
                         </span>
                         {notification.projectName && (
-                          <span className="text-[10px] text-indigo-500 truncate">
+                          <span className="text-xs text-primary-500 truncate">
                             {notification.projectName}
                           </span>
                         )}
@@ -390,7 +390,7 @@ export function NotificationBell() {
                 setOpen(false);
                 // Navigate to alerts page if one exists; for now just close
               }}
-              className="w-full text-center text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-150"
+              className="w-full text-center text-xs text-primary-600 hover:text-primary-800 font-medium transition-colors duration-150"
             >
               View all alerts
             </button>

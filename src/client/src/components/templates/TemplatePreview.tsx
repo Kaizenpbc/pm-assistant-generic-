@@ -77,10 +77,10 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, onBa
               <span className={`text-xs flex-1 ${isPhase ? 'text-gray-800' : 'text-gray-600'}`}>
                 {task.name}
               </span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${pColor}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${pColor}`}>
                 {task.priority}
               </span>
-              <span className="text-[10px] text-gray-400 w-12 text-right flex-shrink-0">
+              <span className="text-xs text-gray-400 w-12 text-right flex-shrink-0">
                 {task.estimatedDays}d
               </span>
             </div>
@@ -90,7 +90,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, onBa
 
       <button
         onClick={onSelect}
-        className="w-full py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+        className="w-full py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
       >
         Use This Template
       </button>

@@ -147,7 +147,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
 
         {loadingWF ? (
           <div className="flex justify-center py-12">
-            <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -160,7 +160,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Standard Change Approval"
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -172,7 +172,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe when this workflow should be used..."
                 rows={2}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               />
             </div>
 
@@ -182,7 +182,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
               <select
                 value={entityType}
                 onChange={(e) => setEntityType(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 {ENTITY_TYPES.map((et) => (
                   <option key={et} value={et}>
@@ -199,7 +199,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                 <button
                   type="button"
                   onClick={handleAddStep}
-                  className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                  className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add Step
@@ -228,14 +228,14 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                         value={step.role}
                         onChange={(e) => handleStepChange(index, 'role', e.target.value)}
                         placeholder="Role (e.g., Project Manager)"
-                        className="flex-1 border border-gray-300 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        className="flex-1 border border-gray-300 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
 
                       {/* Action */}
                       <select
                         value={step.action}
                         onChange={(e) => handleStepChange(index, 'action', e.target.value)}
-                        className="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-28 flex-shrink-0"
+                        className="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 w-28 flex-shrink-0"
                       >
                         {STEP_ACTIONS.map((a) => (
                           <option key={a} value={a}>
@@ -250,7 +250,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                           type="button"
                           onClick={() => handleMoveStep(index, 'up')}
                           disabled={index === 0}
-                          className="p-0.5 text-gray-400 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          className="p-0.5 text-gray-400 hover:text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           title="Move up"
                         >
                           <ArrowUp className="w-3.5 h-3.5" />
@@ -259,7 +259,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                           type="button"
                           onClick={() => handleMoveStep(index, 'down')}
                           disabled={index === steps.length - 1}
-                          className="p-0.5 text-gray-400 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          className="p-0.5 text-gray-400 hover:text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           title="Move down"
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
@@ -300,7 +300,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
               <button
                 type="submit"
                 disabled={saveMutation.isPending || !name.trim() || steps.filter((s) => s.role.trim()).length === 0}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
                 {saveMutation.isPending ? 'Saving...' : 'Save Workflow'}

@@ -142,12 +142,12 @@ export function CapacityChart({ data }: CapacityChartProps) {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
-          className="h-4 w-4 text-indigo-500"
+          className="h-4 w-4 text-primary-500"
         >
           <path d="M15.5 2A1.5 1.5 0 0014 3.5v13a1.5 1.5 0 001.5 1.5h1a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0016.5 2h-1zM9.5 6A1.5 1.5 0 008 7.5v9A1.5 1.5 0 009.5 18h1a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0010.5 6h-1zM3.5 10A1.5 1.5 0 002 11.5v5A1.5 1.5 0 003.5 18h1A1.5 1.5 0 006 16.5v-5A1.5 1.5 0 004.5 10h-1z" />
         </svg>
         <h3 className="text-sm font-semibold text-gray-800">Capacity vs Allocation</h3>
-        <span className="text-[10px] text-gray-400">{data.length} weeks</span>
+        <span className="text-xs text-gray-400">{data.length} weeks</span>
       </div>
 
       <div className="relative">
@@ -292,7 +292,7 @@ export function CapacityChart({ data }: CapacityChartProps) {
         {/* Tooltip */}
         {hoveredIdx !== null && bars[hoveredIdx] && (
           <div
-            className="absolute z-20 bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] shadow-lg pointer-events-none"
+            className="absolute z-20 bg-gray-900 text-white rounded-lg px-3 py-2 text-xs shadow-lg pointer-events-none"
             style={{
               left: `${(bars[hoveredIdx].labelX / svgW) * 100}%`,
               top: '8px',
@@ -303,7 +303,7 @@ export function CapacityChart({ data }: CapacityChartProps) {
               Week of {formatWeek(data[hoveredIdx].week)}
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-sm bg-indigo-400 inline-block" />
+              <span className="w-2 h-2 rounded-sm bg-primary-400 inline-block" />
               <span>Capacity: {data[hoveredIdx].totalCapacity}h</span>
             </div>
             <div className="flex items-center gap-2">
@@ -330,17 +330,17 @@ export function CapacityChart({ data }: CapacityChartProps) {
       <div className="flex items-center gap-5 justify-center mt-3">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-green-500" />
-          <span className="text-[10px] text-gray-500">Allocated (within capacity)</span>
+          <span className="text-xs text-gray-500">Allocated (within capacity)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-red-500" />
-          <span className="text-[10px] text-gray-500">Deficit (over capacity)</span>
+          <span className="text-xs text-gray-500">Deficit (over capacity)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="16" height="4">
             <line x1="0" y1="2" x2="16" y2="2" stroke="#6366f1" strokeWidth="2" strokeDasharray="3,2" />
           </svg>
-          <span className="text-[10px] text-gray-500">Capacity limit</span>
+          <span className="text-xs text-gray-500">Capacity limit</span>
         </div>
       </div>
     </div>

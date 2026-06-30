@@ -87,8 +87,8 @@ function formatDollar(value: number): string {
 function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   if (!active) return <ChevronsUpDown className="h-3.5 w-3.5 text-gray-300" />;
   return dir === 'asc'
-    ? <ChevronUp className="h-3.5 w-3.5 text-indigo-500" />
-    : <ChevronDown className="h-3.5 w-3.5 text-indigo-500" />;
+    ? <ChevronUp className="h-3.5 w-3.5 text-primary-500" />
+    : <ChevronDown className="h-3.5 w-3.5 text-primary-500" />;
 }
 
 interface Props {
@@ -217,11 +217,11 @@ export function ProjectTable({ projects }: Props) {
               <tr
                 key={project.id}
                 onClick={() => navigate(`/project/${project.id}`)}
-                className="cursor-pointer hover:bg-indigo-50 transition-colors"
+                className="cursor-pointer hover:bg-primary-50 transition-colors"
               >
                 {/* Name */}
                 <td className="px-3 py-3 max-w-[220px]">
-                  <span className="text-sm font-medium text-gray-900 hover:text-indigo-600 truncate block">
+                  <span className="text-sm font-medium text-gray-900 hover:text-primary-600 truncate block">
                     {project.name}
                   </span>
                 </td>
@@ -254,7 +254,7 @@ export function ProjectTable({ projects }: Props) {
                   <div className="flex items-center gap-2 min-w-[80px]">
                     <div className="flex-1 h-1.5 rounded-full bg-gray-100">
                       <div
-                        className="h-full rounded-full bg-indigo-500"
+                        className="h-full rounded-full bg-primary-500"
                         style={{ width: `${Math.min(progress, 100)}%` }}
                       />
                     </div>

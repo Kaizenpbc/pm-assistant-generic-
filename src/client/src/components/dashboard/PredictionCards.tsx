@@ -34,7 +34,7 @@ export function PredictionCards({ projects }: { projects: ProjectHealth[] }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
-        <Shield className="h-4 w-4 text-indigo-500" />
+        <Shield className="h-4 w-4 text-primary-500" />
         <h3 className="text-sm font-semibold text-gray-900">Project Health Scores</h3>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -61,7 +61,7 @@ export function PredictionCards({ projects }: { projects: ProjectHealth[] }) {
                   {project.projectName}
                 </p>
                 <span
-                  className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${badgeStyle}`}
+                  className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium capitalize ${badgeStyle}`}
                 >
                   {project.riskLevel === 'critical' || project.riskLevel === 'high' ? (
                     <AlertTriangle className="h-2.5 w-2.5" />

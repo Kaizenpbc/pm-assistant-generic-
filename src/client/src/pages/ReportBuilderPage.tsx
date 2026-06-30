@@ -103,8 +103,8 @@ export const ReportBuilderPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-            <FileBarChart className="w-5 h-5 text-indigo-600" />
+          <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+            <FileBarChart className="w-5 h-5 text-primary-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Report Builder</h1>
@@ -113,7 +113,7 @@ export const ReportBuilderPage: React.FC = () => {
         </div>
         <button
           onClick={handleNewReport}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
         >
           <Plus className="w-4 h-4" />
           New Report
@@ -123,7 +123,7 @@ export const ReportBuilderPage: React.FC = () => {
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
       )}
 
@@ -142,7 +142,7 @@ export const ReportBuilderPage: React.FC = () => {
           <p className="text-sm text-gray-500 mb-4">Create your first custom report template to get started.</p>
           <button
             onClick={handleNewReport}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
             New Report
@@ -160,11 +160,11 @@ export const ReportBuilderPage: React.FC = () => {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-indigo-500" />
+                  <Activity className="w-4 h-4 text-primary-500" />
                   <h3 className="font-semibold text-gray-900 text-sm">{template.name}</h3>
                 </div>
                 {template.isShared && (
-                  <span className="text-[10px] font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wider">
                     Shared
                   </span>
                 )}
@@ -174,7 +174,7 @@ export const ReportBuilderPage: React.FC = () => {
                 <p className="text-xs text-gray-500 mb-3 line-clamp-2">{template.description}</p>
               )}
 
-              <p className="text-[10px] text-gray-400 mb-4">
+              <p className="text-xs text-gray-400 mb-4">
                 Created {new Date(template.createdAt).toLocaleDateString()}
                 {template.sections && ` \u00b7 ${template.sections.length} section${template.sections.length !== 1 ? 's' : ''}`}
               </p>
@@ -188,7 +188,7 @@ export const ReportBuilderPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => handleGenerate(template.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   Generate

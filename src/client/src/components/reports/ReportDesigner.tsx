@@ -238,7 +238,7 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
   if (templateLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -253,8 +253,8 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-          <FileBarChart className="w-5 h-5 text-indigo-600" />
+        <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+          <FileBarChart className="w-5 h-5 text-primary-600" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">
@@ -274,7 +274,7 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               placeholder="e.g. Weekly Status Report"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             />
           </div>
           <div>
@@ -284,7 +284,7 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Brief description of what this report covers..."
               rows={2}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none"
             />
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -292,7 +292,7 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
               type="checkbox"
               checked={form.isShared}
               onChange={(e) => setForm((prev) => ({ ...prev, isShared: e.target.checked }))}
-              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
             />
             <span className="text-sm text-gray-700">Share this template with team members</span>
           </label>
@@ -308,7 +308,7 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
           <div className="relative">
             <button
               onClick={() => setShowAddMenu(!showAddMenu)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Section
@@ -352,8 +352,8 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
               {/* Section Header */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-medium text-gray-400">#{index + 1}</span>
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${TYPE_BADGE_COLORS[section.type]}`}>
+                  <span className="text-xs font-medium text-gray-400">#{index + 1}</span>
+                  <span className={`text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${TYPE_BADGE_COLORS[section.type]}`}>
                     {SECTION_TYPE_OPTIONS.find((o) => o.value === section.type)?.label}
                   </span>
                 </div>
@@ -383,24 +383,24 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
 
               {/* Section Title */}
               <div className="mb-3">
-                <label className="block text-[10px] uppercase font-medium text-gray-500 mb-1 tracking-wider">Section Title</label>
+                <label className="block text-xs uppercase font-medium text-gray-500 mb-1 tracking-wider">Section Title</label>
                 <input
                   type="text"
                   value={section.title}
                   onChange={(e) => updateSection(section.id, { title: e.target.value })}
                   placeholder="e.g. Task Completion by Status"
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
                 />
               </div>
 
               {/* Section Type + Data Source */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                 <div>
-                  <label className="block text-[10px] uppercase font-medium text-gray-500 mb-1 tracking-wider">Type</label>
+                  <label className="block text-xs uppercase font-medium text-gray-500 mb-1 tracking-wider">Type</label>
                   <select
                     value={section.type}
                     onChange={(e) => updateSection(section.id, { type: e.target.value as SectionType })}
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
                   >
                     {SECTION_TYPE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -408,11 +408,11 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-medium text-gray-500 mb-1 tracking-wider">Data Source</label>
+                  <label className="block text-xs uppercase font-medium text-gray-500 mb-1 tracking-wider">Data Source</label>
                   <select
                     value={section.dataSource}
                     onChange={(e) => updateSection(section.id, { dataSource: e.target.value as DataSource })}
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
                   >
                     {DATA_SOURCE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -420,11 +420,11 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-medium text-gray-500 mb-1 tracking-wider">Group By</label>
+                  <label className="block text-xs uppercase font-medium text-gray-500 mb-1 tracking-wider">Group By</label>
                   <select
                     value={section.groupBy}
                     onChange={(e) => updateSection(section.id, { groupBy: e.target.value })}
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
                   >
                     <option value="">None</option>
                     {GROUP_BY_OPTIONS[section.dataSource].map((opt) => (
@@ -436,32 +436,32 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
 
               {/* Filters */}
               <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-[10px] uppercase font-medium text-gray-500 mb-2 tracking-wider">Filters</p>
+                <p className="text-xs uppercase font-medium text-gray-500 mb-2 tracking-wider">Filters</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Start Date</label>
+                    <label className="block text-xs text-gray-500 mb-0.5">Start Date</label>
                     <input
                       type="date"
                       value={section.filters.dateStart}
                       onChange={(e) => updateSectionFilter(section.id, 'dateStart', e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">End Date</label>
+                    <label className="block text-xs text-gray-500 mb-0.5">End Date</label>
                     <input
                       type="date"
                       value={section.filters.dateEnd}
                       onChange={(e) => updateSectionFilter(section.id, 'dateEnd', e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Project</label>
+                    <label className="block text-xs text-gray-500 mb-0.5">Project</label>
                     <select
                       value={section.filters.projectId}
                       onChange={(e) => updateSectionFilter(section.id, 'projectId', e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
                     >
                       <option value="">All Projects</option>
                       {projects.map((p: any) => (
@@ -470,11 +470,11 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Status</label>
+                    <label className="block text-xs text-gray-500 mb-0.5">Status</label>
                     <select
                       value={section.filters.status}
                       onChange={(e) => updateSectionFilter(section.id, 'status', e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
                     >
                       <option value="">All Statuses</option>
                       {STATUS_OPTIONS.filter(Boolean).map((s) => (
@@ -500,7 +500,7 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
         <button
           onClick={handleSave}
           disabled={!form.name.trim() || saveMutation.isPending}
-          className="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-5 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {saveMutation.isPending ? 'Saving...' : templateId ? 'Update Template' : 'Save Template'}
         </button>

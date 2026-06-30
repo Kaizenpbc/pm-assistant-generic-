@@ -137,7 +137,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMobileMenuToggle }) => {
                 ) : (
                   <Link
                     to={crumb.path}
-                    className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 transition-colors duration-150 truncate"
+                    className="text-gray-500 dark:text-gray-400 hover:text-primary-600 transition-colors duration-150 truncate"
                   >
                     {crumb.label}
                   </Link>
@@ -170,7 +170,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMobileMenuToggle }) => {
         >
           <Search className="w-4 h-4 flex-shrink-0" />
           <span className="flex-1 text-left">Search...</span>
-          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-white dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-500">
+          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-gray-400 bg-white dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-500">
             {navigator.platform?.includes('Mac') ? '\u2318K' : 'Ctrl+K'}
           </kbd>
         </button>
@@ -210,7 +210,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMobileMenuToggle }) => {
             aria-label="User menu"
           >
             {/* Avatar */}
-            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0">
               <span className="text-xs font-semibold text-white">{userInitials}</span>
             </div>
 

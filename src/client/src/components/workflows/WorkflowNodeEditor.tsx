@@ -31,7 +31,7 @@ export function WorkflowNodeEditor({ nodeType, config, onChange }: NodeEditorPro
           {config.triggerType === 'status_change' && (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[10px] text-gray-500 mb-0.5">From Status</label>
+                <label className="block text-xs text-gray-500 mb-0.5">From Status</label>
                 <select value={config.fromStatus || ''} onChange={e => set('fromStatus', e.target.value || undefined)} className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5">
                   <option value="">Any</option>
                   <option value="pending">Pending</option>
@@ -41,7 +41,7 @@ export function WorkflowNodeEditor({ nodeType, config, onChange }: NodeEditorPro
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] text-gray-500 mb-0.5">To Status</label>
+                <label className="block text-xs text-gray-500 mb-0.5">To Status</label>
                 <select value={config.toStatus || ''} onChange={e => set('toStatus', e.target.value || undefined)} className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5">
                   <option value="">Any</option>
                   <option value="pending">Pending</option>
@@ -55,11 +55,11 @@ export function WorkflowNodeEditor({ nodeType, config, onChange }: NodeEditorPro
           {config.triggerType === 'progress_threshold' && (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[10px] text-gray-500 mb-0.5">Threshold %</label>
+                <label className="block text-xs text-gray-500 mb-0.5">Threshold %</label>
                 <input type="number" min={0} max={100} value={config.progressThreshold ?? 0} onChange={e => set('progressThreshold', Number(e.target.value))} className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5" />
               </div>
               <div>
-                <label className="block text-[10px] text-gray-500 mb-0.5">Direction</label>
+                <label className="block text-xs text-gray-500 mb-0.5">Direction</label>
                 <select value={config.progressDirection || 'above'} onChange={e => set('progressDirection', e.target.value)} className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5">
                   <option value="above">At or above</option>
                   <option value="below">At or below</option>
@@ -115,7 +115,7 @@ export function WorkflowNodeEditor({ nodeType, config, onChange }: NodeEditorPro
           {config.actionType === 'update_field' && (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[10px] text-gray-500 mb-0.5">Field</label>
+                <label className="block text-xs text-gray-500 mb-0.5">Field</label>
                 <select value={config.field || ''} onChange={e => set('field', e.target.value)} className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5">
                   <option value="">Select field</option>
                   <option value="status">Status</option>
@@ -123,14 +123,14 @@ export function WorkflowNodeEditor({ nodeType, config, onChange }: NodeEditorPro
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] text-gray-500 mb-0.5">Value</label>
+                <label className="block text-xs text-gray-500 mb-0.5">Value</label>
                 <input type="text" value={config.value || ''} onChange={e => set('value', e.target.value)} className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5" placeholder="New value" />
               </div>
             </div>
           )}
           {(config.actionType === 'log_activity' || config.actionType === 'send_notification') && (
             <div>
-              <label className="block text-[10px] text-gray-500 mb-0.5">Message</label>
+              <label className="block text-xs text-gray-500 mb-0.5">Message</label>
               <input type="text" value={config.message || ''} onChange={e => set('message', e.target.value)} className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5" placeholder="Message text" />
             </div>
           )}

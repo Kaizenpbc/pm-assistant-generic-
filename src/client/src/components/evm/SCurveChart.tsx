@@ -172,7 +172,7 @@ export function SCurveChart({ data, height = 300 }: SCurveChartProps) {
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="absolute z-20 bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] shadow-lg pointer-events-none"
+          className="absolute z-20 bg-gray-900 text-white rounded-lg px-3 py-2 text-xs shadow-lg pointer-events-none"
           style={{
             left: `${(tooltip.x / svgWidth) * 100}%`,
             top: '10px',
@@ -201,15 +201,15 @@ export function SCurveChart({ data, height = 300 }: SCurveChartProps) {
           <svg width="20" height="4">
             <line x1="0" y1="2" x2="20" y2="2" stroke="#9ca3af" strokeWidth="2" strokeDasharray="4,2" />
           </svg>
-          <span className="text-[10px] text-gray-500">Planned Value (PV)</span>
+          <span className="text-xs text-gray-500">Planned Value (PV)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-blue-500 rounded" />
-          <span className="text-[10px] text-gray-500">Earned Value (EV)</span>
+          <span className="text-xs text-gray-500">Earned Value (EV)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-red-500 rounded" />
-          <span className="text-[10px] text-gray-500">Actual Cost (AC)</span>
+          <span className="text-xs text-gray-500">Actual Cost (AC)</span>
         </div>
       </div>
     </div>

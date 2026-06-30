@@ -70,16 +70,16 @@ function TaskCard({
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium text-gray-900 truncate">{task.name}</div>
         <div className="flex items-center gap-1.5 mt-1">
-          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text} capitalize`}>
+          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text} capitalize`}>
             {task.priority || 'medium'}
           </span>
-          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${sBadge.bg} ${sBadge.text}`}>
+          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${sBadge.bg} ${sBadge.text}`}>
             {(task.status || 'pending').replace('_', ' ')}
           </span>
         </div>
       </div>
       {getPoints(task) > 0 && (
-        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded flex-shrink-0">
+        <span className="text-xs font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded flex-shrink-0">
           {getPoints(task)} pts
         </span>
       )}
@@ -198,7 +198,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6 max-w-lg mx-auto">
         <div className="flex items-center gap-2 mb-4">
-          <Target className="w-5 h-5 text-indigo-500" />
+          <Target className="w-5 h-5 text-primary-500" />
           <h3 className="text-sm font-semibold text-gray-800">Create Sprint</h3>
         </div>
         <div className="space-y-3">
@@ -208,7 +208,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
               type="text"
               value={createForm.name}
               onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
-              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               placeholder="Sprint 1"
             />
           </div>
@@ -217,7 +217,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
             <textarea
               value={createForm.goal}
               onChange={(e) => setCreateForm((f) => ({ ...f, goal: e.target.value }))}
-              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none"
               rows={2}
               placeholder="What should this sprint achieve?"
             />
@@ -229,7 +229,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
                 type="date"
                 value={createForm.start_date}
                 onChange={(e) => setCreateForm((f) => ({ ...f, start_date: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               />
             </div>
             <div>
@@ -238,7 +238,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
                 type="date"
                 value={createForm.end_date}
                 onChange={(e) => setCreateForm((f) => ({ ...f, end_date: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               />
             </div>
           </div>
@@ -248,7 +248,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
               type="number"
               value={createForm.velocity_commitment}
               onChange={(e) => setCreateForm((f) => ({ ...f, velocity_commitment: e.target.value }))}
-              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               placeholder="e.g. 30"
               min={0}
             />
@@ -256,7 +256,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
           <button
             onClick={() => createSprintMutation.mutate()}
             disabled={!createForm.name || !createForm.start_date || !createForm.end_date || createSprintMutation.isPending}
-            className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium py-2 rounded-md transition-colors"
+            className="w-full mt-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium py-2 rounded-md transition-colors"
           >
             {createSprintMutation.isPending ? 'Creating...' : 'Create Sprint'}
           </button>
@@ -276,7 +276,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
           <div>
             <h3 className="text-sm font-semibold text-gray-800">{sprint.name}</h3>
             {sprint.goal && <p className="text-xs text-gray-500 mt-0.5">{sprint.goal}</p>}
-            <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
+            <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
               {sprint.start_date && (
                 <span>
                   {new Date(sprint.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -289,7 +289,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
               {sprint.velocity_commitment != null && (
                 <span>Commitment: {sprint.velocity_commitment} pts</span>
               )}
-              <span className="font-medium text-indigo-600">Sprint total: {totalPoints} pts</span>
+              <span className="font-medium text-primary-600">Sprint total: {totalPoints} pts</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -323,7 +323,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
         <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
           <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
             <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Backlog</h4>
-            <span className="text-[10px] font-bold text-gray-400 bg-white rounded-full w-5 h-5 flex items-center justify-center">
+            <span className="text-xs font-bold text-gray-400 bg-white rounded-full w-5 h-5 flex items-center justify-center">
               {backlogTasks.length}
             </span>
           </div>
@@ -338,7 +338,7 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
                   actionLabel="Add to Sprint"
                   actionIcon={Plus}
                   onAction={() => addTaskMutation.mutate(task.id)}
-                  actionColor="text-indigo-600 hover:bg-indigo-100"
+                  actionColor="text-primary-600 hover:bg-primary-100"
                 />
               ))
             )}
@@ -346,14 +346,14 @@ export function SprintPlanningPanel({ projectId, scheduleId, sprintId }: SprintP
         </div>
 
         {/* Sprint column */}
-        <div className="rounded-lg border border-indigo-200 bg-white overflow-hidden">
-          <div className="px-4 py-2.5 bg-indigo-50 border-b border-indigo-200 flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">Sprint</h4>
+        <div className="rounded-lg border border-primary-200 bg-white overflow-hidden">
+          <div className="px-4 py-2.5 bg-primary-50 border-b border-primary-200 flex items-center justify-between">
+            <h4 className="text-xs font-semibold text-primary-700 uppercase tracking-wide">Sprint</h4>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-indigo-500 bg-white rounded-full px-2 py-0.5">
+              <span className="text-xs font-bold text-primary-500 bg-white rounded-full px-2 py-0.5">
                 {totalPoints} pts
               </span>
-              <span className="text-[10px] font-bold text-gray-400 bg-white rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="text-xs font-bold text-gray-400 bg-white rounded-full w-5 h-5 flex items-center justify-center">
                 {sprintTasks.length}
               </span>
             </div>

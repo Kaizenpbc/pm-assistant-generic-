@@ -103,7 +103,7 @@ export function ActualVsEstimatedChart({ tasks, height = 300 }: ActualVsEstimate
       {/* Legend */}
       <div className="flex items-center gap-5 justify-center mt-2 text-xs">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-indigo-300" />
+          <div className="w-3 h-3 rounded bg-primary-300" />
           <span className="text-gray-600">Estimated</span>
         </div>
         <div className="flex items-center gap-1.5">

@@ -201,7 +201,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
             onKeyDown={handleKeyDown}
             className="w-full h-12 pl-3 pr-4 text-sm bg-transparent border-0 outline-none focus:ring-0 placeholder-gray-400 text-gray-900"
           />
-          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-gray-100 rounded border border-gray-200">
+          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-gray-400 bg-gray-100 rounded border border-gray-200">
             ESC
           </kbd>
         </div>
@@ -228,20 +228,20 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
                     data-selected={isSelected}
                     onClick={() => navigateTo(action.path)}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                      isSelected ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'
+                      isSelected ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-indigo-500' : 'text-gray-400'}`} />
+                    <Icon className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-primary-500' : 'text-gray-400'}`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{action.label}</p>
                       <p className="text-xs text-gray-400 truncate">{action.description}</p>
                     </div>
-                    <ArrowRight className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-indigo-400' : 'text-gray-300'}`} />
+                    <ArrowRight className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-primary-400' : 'text-gray-300'}`} />
                   </button>
                 );
               })}
               <div className="px-4 py-3 text-center text-xs text-gray-400">
-                Press <kbd className="px-1 py-0.5 bg-gray-100 rounded border border-gray-200 text-[10px] font-medium">
+                Press <kbd className="px-1 py-0.5 bg-gray-100 rounded border border-gray-200 text-xs font-medium">
                   {navigator.platform?.includes('Mac') ? '\u2318' : 'Ctrl+'}K
                 </kbd> to search
               </div>
@@ -265,10 +265,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
                         data-selected={isSelected}
                         onClick={() => selectResult(result)}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                          isSelected ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'
+                          isSelected ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'
                         }`}
                       >
-                        <FolderKanban className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-indigo-500' : 'text-gray-400'}`} />
+                        <FolderKanban className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-primary-500' : 'text-gray-400'}`} />
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{result.name}</p>
                           {result.description && (
@@ -276,7 +276,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
                           )}
                         </div>
                         {result.status && (
-                          <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full flex-shrink-0 ${getStatusColor(result.status)}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ${getStatusColor(result.status)}`}>
                             {formatStatus(result.status)}
                           </span>
                         )}
@@ -300,10 +300,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
                         data-selected={isSelected}
                         onClick={() => selectResult(result)}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                          isSelected ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'
+                          isSelected ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'
                         }`}
                       >
-                        <CheckSquare className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-indigo-500' : 'text-gray-400'}`} />
+                        <CheckSquare className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-primary-500' : 'text-gray-400'}`} />
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{result.name}</p>
                           {result.projectName && (
@@ -311,7 +311,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
                           )}
                         </div>
                         {result.status && (
-                          <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full flex-shrink-0 ${getStatusColor(result.status)}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ${getStatusColor(result.status)}`}>
                             {formatStatus(result.status)}
                           </span>
                         )}

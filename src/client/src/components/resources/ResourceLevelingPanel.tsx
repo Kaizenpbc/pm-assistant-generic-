@@ -125,8 +125,8 @@ export function ResourceLevelingPanel({
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-indigo-600" />
+            <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-primary-600" />
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-900">
@@ -147,7 +147,7 @@ export function ResourceLevelingPanel({
                 histogramLoading ||
                 !hasOverAllocations
               }
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {levelMutation.isPending ? (
                 <>
@@ -168,7 +168,7 @@ export function ResourceLevelingPanel({
       {/* Loading state */}
       {histogramLoading && (
         <div className="rounded-xl border border-gray-200 bg-white p-8 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-indigo-500 mr-2" />
+          <Loader2 className="w-5 h-5 animate-spin text-primary-500 mr-2" />
           <span className="text-sm text-gray-500">
             Loading resource histogram...
           </span>
@@ -242,7 +242,7 @@ export function ResourceLevelingPanel({
             <h3 className="text-sm font-semibold text-gray-800">
               Proposed Adjustments
             </h3>
-            <span className="text-[10px] text-gray-400">
+            <span className="text-xs text-gray-400">
               {levelingResult.adjustments.length} task
               {levelingResult.adjustments.length !== 1 ? 's' : ''} affected
             </span>
@@ -251,7 +251,7 @@ export function ResourceLevelingPanel({
           <div className="overflow-x-auto rounded-lg border border-gray-200">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-gray-50 text-gray-500 uppercase text-[10px]">
+                <tr className="bg-gray-50 text-gray-500 uppercase text-xs">
                   <th className="text-left px-3 py-2 font-semibold">
                     Task Name
                   </th>
@@ -289,10 +289,10 @@ export function ResourceLevelingPanel({
                     <td className="px-3 py-2 text-center">
                       <ArrowRight className="w-3.5 h-3.5 text-gray-400 inline-block" />
                     </td>
-                    <td className="px-3 py-2 text-indigo-600 font-medium whitespace-nowrap">
+                    <td className="px-3 py-2 text-primary-600 font-medium whitespace-nowrap">
                       {formatDate(adj.newStart)}
                     </td>
-                    <td className="px-3 py-2 text-indigo-600 font-medium whitespace-nowrap">
+                    <td className="px-3 py-2 text-primary-600 font-medium whitespace-nowrap">
                       {formatDate(adj.newEnd)}
                     </td>
                     <td

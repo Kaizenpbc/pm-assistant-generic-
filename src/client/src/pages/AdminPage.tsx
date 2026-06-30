@@ -221,7 +221,7 @@ function SystemTab() {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      <StatCard icon={Users} label="Total Users" value={s.total_users} color="bg-indigo-100 text-indigo-600" />
+      <StatCard icon={Users} label="Total Users" value={s.total_users} color="bg-primary-100 text-primary-600" />
       <StatCard icon={Activity} label="Active Users" value={s.active_users} color="bg-green-100 text-green-600" />
       <StatCard icon={FolderKanban} label="Total Projects" value={s.total_projects} color="bg-blue-100 text-blue-600" />
       <StatCard icon={Cpu} label="AI API Calls" value={Number(s.total_ai_calls).toLocaleString()} color="bg-purple-100 text-purple-600" />
@@ -316,7 +316,7 @@ export function AdminPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 active
-                  ? 'border-indigo-600 text-indigo-600'
+                  ? 'border-primary-600 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >

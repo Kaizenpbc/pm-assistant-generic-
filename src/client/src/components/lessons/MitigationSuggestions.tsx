@@ -56,7 +56,7 @@ export const MitigationSuggestions: React.FC<MitigationSuggestionsProps> = ({
           >
             {/* Suggestion text */}
             <div className="flex items-start gap-2 mb-3">
-              <Shield className="w-4 h-4 text-indigo-500 mt-0.5 flex-shrink-0" />
+              <Shield className="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-gray-900 font-medium leading-relaxed">
                 {item.suggestion}
               </p>

@@ -204,10 +204,10 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
       {/* Slide-in panel from right */}
       <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-white shadow-2xl flex flex-col animate-slide-in-right">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-white">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-indigo-600" />
+            <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-primary-600" />
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-900">AI Auto-Reschedule</h2>
@@ -230,7 +230,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
 
             {delaysLoading && (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-indigo-500 mr-2" />
+                <Loader2 className="w-5 h-5 animate-spin text-primary-500 mr-2" />
                 <span className="text-sm text-gray-500">Analyzing schedule for delays...</span>
               </div>
             )}
@@ -272,7 +272,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                         -{delay.delayDays}d
                       </span>
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${colors.bg} ${colors.text}`}
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${colors.bg} ${colors.text}`}
                       >
                         {delay.severity}
                       </span>
@@ -289,7 +289,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
               <button
                 onClick={() => generateMutation.mutate()}
                 disabled={generateMutation.isPending || delays.length === 0}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
                 {generateMutation.isPending ? (
                   <>
@@ -347,7 +347,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                 <div className="overflow-x-auto rounded-lg border border-gray-200">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="bg-gray-50 text-gray-500 uppercase text-[10px]">
+                      <tr className="bg-gray-50 text-gray-500 uppercase text-xs">
                         <th className="text-left px-3 py-2 font-semibold">Task Name</th>
                         <th className="text-left px-3 py-2 font-semibold">Current Start</th>
                         <th className="text-left px-3 py-2 font-semibold">Current End</th>
@@ -412,7 +412,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
               {/* Rationale */}
               <section>
                 <h3 className="text-sm font-semibold text-gray-800 mb-2">Rationale</h3>
-                <div className="rounded-lg bg-indigo-50 border border-indigo-100 p-4 text-sm text-gray-700 leading-relaxed">
+                <div className="rounded-lg bg-primary-50 border border-primary-100 p-4 text-sm text-gray-700 leading-relaxed">
                   {proposal.rationale}
                 </div>
               </section>
@@ -422,19 +422,19 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                 <h3 className="text-sm font-semibold text-gray-800 mb-3">Estimated Impact</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="rounded-lg border border-gray-200 p-3 text-center">
-                    <p className="text-[10px] uppercase text-gray-500 font-medium mb-1">Original End Date</p>
+                    <p className="text-xs uppercase text-gray-500 font-medium mb-1">Original End Date</p>
                     <p className="text-sm font-semibold text-gray-900">
                       {formatDate(proposal.estimatedImpact.originalEndDate)}
                     </p>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-3 text-center">
-                    <p className="text-[10px] uppercase text-gray-500 font-medium mb-1">Proposed End Date</p>
+                    <p className="text-xs uppercase text-gray-500 font-medium mb-1">Proposed End Date</p>
                     <p className="text-sm font-semibold text-gray-900">
                       {formatDate(proposal.estimatedImpact.proposedEndDate)}
                     </p>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-3 text-center">
-                    <p className="text-[10px] uppercase text-gray-500 font-medium mb-1">Days Change</p>
+                    <p className="text-xs uppercase text-gray-500 font-medium mb-1">Days Change</p>
                     <p
                       className={`text-sm font-semibold ${
                         proposal.estimatedImpact.daysChange > 0

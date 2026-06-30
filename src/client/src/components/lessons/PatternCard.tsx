@@ -45,14 +45,14 @@ export const PatternCard: React.FC<PatternCardProps> = ({ pattern }) => {
       {/* Header */}
       <div className="flex items-start justify-between mb-2">
         <h3 className="text-sm font-semibold text-gray-900 flex-1">{pattern.title}</h3>
-        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-700 px-2 py-0.5 text-[10px] font-semibold ml-2 flex-shrink-0">
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 text-primary-700 px-2 py-0.5 text-xs font-semibold ml-2 flex-shrink-0">
           <TrendingUp className="w-3 h-3" />
           {pattern.frequency}x
         </span>
       </div>
 
       {/* Category */}
-      <span className="inline-block rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide mb-2">
+      <span className="inline-block rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-xs font-medium uppercase tracking-wide mb-2">
         {pattern.category}
       </span>
 
@@ -65,7 +65,7 @@ export const PatternCard: React.FC<PatternCardProps> = ({ pattern }) => {
           {pattern.projectTypes.map((pt) => (
             <span
               key={pt}
-              className="inline-block rounded-full bg-blue-50 text-blue-600 px-2 py-0.5 text-[10px] font-medium"
+              className="inline-block rounded-full bg-blue-50 text-blue-600 px-2 py-0.5 text-xs font-medium"
             >
               {pt}
             </span>

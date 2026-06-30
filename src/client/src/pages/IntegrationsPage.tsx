@@ -147,7 +147,7 @@ export const IntegrationsPage: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <Plug className="h-7 w-7 text-indigo-600" />
+          <Plug className="h-7 w-7 text-primary-600" />
           <h1 className="text-2xl font-bold text-gray-900">
             External Integrations
           </h1>
@@ -226,7 +226,7 @@ export const IntegrationsPage: React.FC = () => {
                         <button
                           onClick={() => syncMutation.mutate(connected.id)}
                           disabled={syncMutation.isPending}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 disabled:opacity-50 transition-colors"
                         >
                           <RefreshCw
                             className={`h-4 w-4 ${

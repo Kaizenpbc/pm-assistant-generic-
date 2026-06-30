@@ -142,7 +142,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Total Resources */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-500 mb-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">
             Total Resources
           </p>
           <p className="text-2xl font-bold text-gray-900">{summary.totalResources}</p>
@@ -150,7 +150,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
 
         {/* Over-Allocated */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-500 mb-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">
             Over-Allocated
           </p>
           <p className={`text-2xl font-bold ${summary.overAllocatedCount > 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -160,7 +160,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
 
         {/* Average Utilization */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-500 mb-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">
             Avg Utilization
           </p>
           <p className={`text-2xl font-bold ${getUtilColor(summary.averageUtilization)}`}>
@@ -189,7 +189,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
               />
             </svg>
             <h3 className="text-sm font-semibold text-gray-800">Bottlenecks</h3>
-            <span className="text-[10px] text-gray-400">
+            <span className="text-xs text-gray-400">
               {bottlenecks.length} detected
             </span>
           </div>
@@ -214,7 +214,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
                       {bn.utilization}%
                     </span>
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${severityStyles[bn.severity] || severityStyles.medium}`}
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${severityStyles[bn.severity] || severityStyles.medium}`}
                     >
                       {bn.severity}
                     </span>
@@ -226,7 +226,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
                     {bn.contributingTasks.map((t) => (
                       <span
                         key={t.taskId}
-                        className="inline-flex items-center gap-1 rounded bg-white border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600"
+                        className="inline-flex items-center gap-1 rounded bg-white border border-gray-200 px-2 py-0.5 text-xs text-gray-600"
                       >
                         {t.taskName}
                         <span className="text-gray-400">({t.hoursRequired}h)</span>
@@ -267,12 +267,12 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
                 <span className={`h-2 w-2 rounded-full ${riskDotColor[br.riskLevel] || riskDotColor.medium}`} />
                 <div>
                   <span className="text-xs font-medium text-gray-900">{br.resourceName}</span>
-                  <span className="ml-2 text-[10px] text-gray-400">
+                  <span className="ml-2 text-xs text-gray-400">
                     {br.consecutiveOverloadWeeks} week{br.consecutiveOverloadWeeks !== 1 ? 's' : ''} overloaded
                   </span>
                 </div>
                 <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${severityStyles[br.riskLevel] || severityStyles.medium}`}
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${severityStyles[br.riskLevel] || severityStyles.medium}`}
                 >
                   {br.riskLevel}
                 </span>

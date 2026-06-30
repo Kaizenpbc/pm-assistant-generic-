@@ -38,9 +38,9 @@ export function AlertActionButton({ toolName, params, label, onComplete }: Alert
         disabled={loading}
         className="
           inline-flex items-center gap-1.5 px-2.5 py-1
-          text-xs font-medium text-indigo-700 bg-indigo-50
-          border border-indigo-200 rounded-md
-          hover:bg-indigo-100 hover:border-indigo-300
+          text-xs font-medium text-primary-700 bg-primary-50
+          border border-primary-200 rounded-md
+          hover:bg-primary-100 hover:border-primary-300
           disabled:opacity-50 disabled:cursor-not-allowed
           transition-colors duration-150
         "
@@ -53,7 +53,7 @@ export function AlertActionButton({ toolName, params, label, onComplete }: Alert
         {label}
       </button>
       {error && (
-        <span className="text-[10px] text-red-500 mt-1 max-w-[200px] truncate" title={error}>
+        <span className="text-xs text-red-500 mt-1 max-w-[200px] truncate" title={error}>
           {error}
         </span>
       )}

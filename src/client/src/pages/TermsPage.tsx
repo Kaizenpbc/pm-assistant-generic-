@@ -8,7 +8,7 @@ export const TermsPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center">
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
@@ -40,7 +40,7 @@ export const TermsPage: React.FC = () => {
           <p>You agree not to misuse the Service, including but not limited to: reverse engineering, unauthorized access attempts, distributing malware, or using the Service for illegal purposes.</p>
 
           <h2 className="text-lg font-semibold text-gray-900 mt-8">6. Data and Privacy</h2>
-          <p>Your use of the Service is also governed by our <Link to="/privacy" className="text-indigo-600 hover:text-indigo-700">Privacy Policy</Link>. You retain ownership of your data. We may use anonymized, aggregated data to improve the Service.</p>
+          <p>Your use of the Service is also governed by our <Link to="/privacy" className="text-primary-600 hover:text-primary-700">Privacy Policy</Link>. You retain ownership of your data. We may use anonymized, aggregated data to improve the Service.</p>
 
           <h2 className="text-lg font-semibold text-gray-900 mt-8">7. AI-Generated Content</h2>
           <p>The Service uses AI to generate suggestions, schedules, and analyses. AI outputs are provided as recommendations only and should not be relied upon as the sole basis for critical decisions. We do not guarantee the accuracy of AI-generated content.</p>

@@ -68,12 +68,12 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
-          className="h-4 w-4 text-indigo-500"
+          className="h-4 w-4 text-primary-500"
         >
           <path d="M10 1a6 6 0 00-3.815 10.631C7.237 12.5 8 13.443 8 14.456v.044a2 2 0 002 2h0a2 2 0 002-2v-.044c0-1.013.762-1.957 1.815-2.825A6 6 0 0010 1zM8.5 18a1.5 1.5 0 003 0h-3z" />
         </svg>
         <h3 className="text-sm font-semibold text-gray-800">AI Rebalance Suggestions</h3>
-        <span className="text-[10px] text-gray-400">{suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''}</span>
+        <span className="text-xs text-gray-400">{suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''}</span>
       </div>
 
       {suggestions.map((suggestion) => {
@@ -88,14 +88,14 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
             {/* Top row: type badge + confidence */}
             <div className="flex items-center justify-between mb-3">
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${badge.bg} ${badge.text}`}
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${badge.bg} ${badge.text}`}
               >
                 {badge.label}
               </span>
 
               {/* Confidence indicator */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-gray-400">Confidence</span>
+                <span className="text-xs text-gray-400">Confidence</span>
                 <div className="relative w-20 h-1.5 rounded-full bg-gray-200 overflow-hidden">
                   <div
                     className="absolute inset-y-0 left-0 rounded-full transition-all"
@@ -105,7 +105,7 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
                     }}
                   />
                 </div>
-                <span className="text-[10px] font-medium text-gray-600">
+                <span className="text-xs font-medium text-gray-600">
                   {suggestion.confidence}%
                 </span>
               </div>
@@ -139,7 +139,7 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
 
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-100 transition-colors"
+                className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-600 hover:bg-primary-100 transition-colors"
                 onClick={() => {
                   console.log('[RebalanceSuggestions] Apply clicked:', suggestion);
                 }}

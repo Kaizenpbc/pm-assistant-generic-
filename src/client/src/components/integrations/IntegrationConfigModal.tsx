@@ -304,7 +304,7 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
                 value={formValues[field.key] || ''}
                 onChange={(e) => handleChange(field.key, e.target.value)}
                 placeholder={field.placeholder}
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                   errors[field.key]
                     ? 'border-red-300 bg-red-50'
                     : 'border-gray-300'
@@ -373,7 +373,7 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
           <button
             onClick={handleSave}
             disabled={saveMutation.isPending}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
           >
             {saveMutation.isPending ? (
               <RefreshCw className="h-4 w-4 animate-spin" />

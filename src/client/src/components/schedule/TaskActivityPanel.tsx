@@ -111,14 +111,14 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
           onClick={() => setTab('comments')}
           className={`flex items-center gap-1.5 text-xs font-medium pb-1 border-b-2 transition-colors ${
             tab === 'comments'
-              ? 'border-indigo-500 text-indigo-600'
+              ? 'border-primary-500 text-primary-600'
               : 'border-transparent text-gray-400 hover:text-gray-600'
           }`}
         >
           <MessageSquare className="w-3.5 h-3.5" />
           Comments
           {comments.length > 0 && (
-            <span className="bg-gray-100 text-gray-600 text-[9px] font-bold rounded-full px-1.5 py-0.5">
+            <span className="bg-gray-100 text-gray-600 text-xs font-bold rounded-full px-1.5 py-0.5">
               {comments.length}
             </span>
           )}
@@ -127,7 +127,7 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
           onClick={() => setTab('activity')}
           className={`flex items-center gap-1.5 text-xs font-medium pb-1 border-b-2 transition-colors ${
             tab === 'activity'
-              ? 'border-indigo-500 text-indigo-600'
+              ? 'border-primary-500 text-primary-600'
               : 'border-transparent text-gray-400 hover:text-gray-600'
           }`}
         >
@@ -146,12 +146,12 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Write a comment..."
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             <button
               type="submit"
               disabled={!newComment.trim() || addCommentMutation.isPending}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="w-3 h-3" />
               Post
@@ -165,15 +165,15 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
             )}
             {comments.map((comment: any) => (
               <div key={comment.id} className="flex gap-2 group">
-                <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[8px] font-bold flex-shrink-0 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[8px] font-bold flex-shrink-0 mt-0.5">
                   {getInitials(comment.userName || 'U')}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold text-gray-700">
+                    <span className="text-xs font-semibold text-gray-700">
                       {comment.userName || 'User'}
                     </span>
-                    <span className="text-[9px] text-gray-400">
+                    <span className="text-xs text-gray-400">
                       {timeAgo(comment.createdAt)}
                     </span>
                     <button
@@ -200,7 +200,7 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
           )}
           {activities.map((entry: any) => (
             <div key={entry.id} className="flex gap-2 items-start">
-              <div className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
+              <div className="mt-1 w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-600">
                   <span className="font-medium text-gray-800">{entry.userName || 'System'}</span>
@@ -211,11 +211,11 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
                       {' from '}
                       <span className="line-through text-gray-400">{formatValue(entry.field, entry.oldValue)}</span>
                       {' to '}
-                      <span className="font-medium text-indigo-600">{formatValue(entry.field, entry.newValue)}</span>
+                      <span className="font-medium text-primary-600">{formatValue(entry.field, entry.newValue)}</span>
                     </>
                   )}
                 </p>
-                <span className="text-[9px] text-gray-400">{timeAgo(entry.createdAt)}</span>
+                <span className="text-xs text-gray-400">{timeAgo(entry.createdAt)}</span>
               </div>
             </div>
           ))}

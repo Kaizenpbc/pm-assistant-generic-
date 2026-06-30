@@ -82,7 +82,7 @@ export function ChangeRequestForm({ projectId, crId, onClose, onSaved }: ChangeR
         {/* Form */}
         {loadingCR ? (
           <div className="flex justify-center py-12">
-            <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -95,7 +95,7 @@ export function ChangeRequestForm({ projectId, crId, onClose, onSaved }: ChangeR
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Brief title for the change request"
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -107,7 +107,7 @@ export function ChangeRequestForm({ projectId, crId, onClose, onSaved }: ChangeR
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Detailed description of the proposed change..."
                 rows={4}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               />
             </div>
 
@@ -118,7 +118,7 @@ export function ChangeRequestForm({ projectId, crId, onClose, onSaved }: ChangeR
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
@@ -132,7 +132,7 @@ export function ChangeRequestForm({ projectId, crId, onClose, onSaved }: ChangeR
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {PRIORITIES.map((p) => (
                     <option key={p} value={p}>
@@ -151,7 +151,7 @@ export function ChangeRequestForm({ projectId, crId, onClose, onSaved }: ChangeR
                 onChange={(e) => setImpactSummary(e.target.value)}
                 placeholder="Describe the expected impact on scope, schedule, budget, or resources..."
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               />
             </div>
 
@@ -174,7 +174,7 @@ export function ChangeRequestForm({ projectId, crId, onClose, onSaved }: ChangeR
               <button
                 type="submit"
                 disabled={saveMutation.isPending || !title.trim()}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
                 {saveMutation.isPending ? 'Saving...' : 'Save'}

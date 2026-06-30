@@ -231,7 +231,7 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
       {/* Header row */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-indigo-500" />
+          <BarChart3 className="w-4 h-4 text-primary-500" />
           <h3 className="text-sm font-semibold text-gray-800">
             Resource Demand Histogram
           </h3>
@@ -244,7 +244,7 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
             setSelectedResource(e.target.value);
             setHoveredIdx(null);
           }}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
         >
           <option value="__all__">All Resources (combined)</option>
           {resourceNames.map((name) => (
@@ -374,7 +374,7 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
         {/* Tooltip */}
         {hoveredIdx !== null && bars[hoveredIdx] && (
           <div
-            className="absolute z-20 bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] shadow-lg pointer-events-none"
+            className="absolute z-20 bg-gray-900 text-white rounded-lg px-3 py-2 text-xs shadow-lg pointer-events-none"
             style={{
               left: `${(bars[hoveredIdx].labelX / svgW) * 100}%`,
               top: '8px',
@@ -398,12 +398,12 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
       {/* Legend */}
       <div className="flex items-center gap-5 justify-center mt-3">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-indigo-500" />
-          <span className="text-[10px] text-gray-500">Normal demand</span>
+          <div className="w-3 h-3 rounded-sm bg-primary-500" />
+          <span className="text-xs text-gray-500">Normal demand</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-red-500" />
-          <span className="text-[10px] text-gray-500">Over-allocated</span>
+          <span className="text-xs text-gray-500">Over-allocated</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="16" height="4">
@@ -417,7 +417,7 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
               strokeDasharray="3,2"
             />
           </svg>
-          <span className="text-[10px] text-gray-500">Capacity line</span>
+          <span className="text-xs text-gray-500">Capacity line</span>
         </div>
       </div>
     </div>

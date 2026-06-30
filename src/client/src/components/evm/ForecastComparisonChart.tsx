@@ -258,17 +258,17 @@ export function ForecastComparisonChart({ data, bac, height = 320 }: ForecastCom
       <div className="flex items-center gap-5 justify-center mt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-green-500" />
-          <span className="text-[10px] text-gray-500">Under Budget</span>
+          <span className="text-xs text-gray-500">Under Budget</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-orange-500" />
-          <span className="text-[10px] text-gray-500">Over Budget</span>
+          <span className="text-xs text-gray-500">Over Budget</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="20" height="4">
             <line x1="0" y1="2" x2="20" y2="2" stroke="#6366f1" strokeWidth="1.5" strokeDasharray="4,2" />
           </svg>
-          <span className="text-[10px] text-gray-500">BAC Reference</span>
+          <span className="text-xs text-gray-500">BAC Reference</span>
         </div>
       </div>
     </div>

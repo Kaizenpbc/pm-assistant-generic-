@@ -126,7 +126,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
             <div
               key={col.id}
               className={`flex-1 min-w-[240px] rounded-lg border ${col.border} ${col.bg} transition-all ${
-                isOver ? 'ring-2 ring-indigo-400 ring-opacity-50' : ''
+                isOver ? 'ring-2 ring-primary-400 ring-opacity-50' : ''
               }`}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDragLeave={handleDragLeave}
@@ -139,7 +139,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
                     {col.label}
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-gray-400 bg-white rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="text-xs font-bold text-gray-400 bg-white rounded-full w-5 h-5 flex items-center justify-center">
                   {columnTasks.length}
                 </span>
               </div>
@@ -166,18 +166,18 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
                       className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group"
                     >
                       {/* Title */}
-                      <div className="text-xs font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                      <div className="text-xs font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
                         {task.name}
                       </div>
 
                       {/* Priority + Due date */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text} capitalize`}>
+                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text} capitalize`}>
                           {task.priority || 'medium'}
                         </span>
 
                         {due && (
-                          <span className={`text-[10px] ${overdue ? 'text-red-600 font-semibold' : 'text-gray-400'}`}>
+                          <span className={`text-xs ${overdue ? 'text-red-600 font-semibold' : 'text-gray-400'}`}>
                             {overdue ? 'Overdue ' : ''}{formatDate(due)}
                           </span>
                         )}
@@ -186,7 +186,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
                       {/* Progress bar */}
                       {(task.progressPercentage ?? 0) > 0 && task.status !== 'completed' && (
                         <div className="mt-2">
-                          <div className="flex items-center justify-between text-[10px] text-gray-400 mb-0.5">
+                          <div className="flex items-center justify-between text-xs text-gray-400 mb-0.5">
                             <span>Progress</span>
                             <span>{task.progressPercentage}%</span>
                           </div>
@@ -202,10 +202,10 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
                       {/* Assignee */}
                       {task.assignedTo && (
                         <div className="mt-2 flex items-center gap-1.5">
-                          <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[8px] font-bold">
+                          <div className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[8px] font-bold">
                             {getInitials(task.assignedTo)}
                           </div>
-                          <span className="text-[10px] text-gray-500 truncate">{task.assignedTo}</span>
+                          <span className="text-xs text-gray-500 truncate">{task.assignedTo}</span>
                         </div>
                       )}
                     </div>

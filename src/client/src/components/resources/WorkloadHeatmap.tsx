@@ -93,15 +93,15 @@ export function WorkloadHeatmap({ workload, resources }: WorkloadHeatmapProps) {
                   <tr key={rw.resourceId} className="border-b border-gray-100 hover:bg-gray-50/50">
                     <td className="px-3 py-2 sticky left-0 bg-white">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[8px] font-bold">
+                        <div className="w-6 h-6 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[8px] font-bold">
                           {getInitials(rw.resourceName)}
                         </div>
                         <div>
                           <div className="font-medium text-gray-900">{rw.resourceName}</div>
-                          <div className="text-[10px] text-gray-400">{rw.role}</div>
+                          <div className="text-xs text-gray-400">{rw.role}</div>
                         </div>
                         {rw.isOverAllocated && (
-                          <span className="ml-1 text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
+                          <span className="ml-1 text-xs font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
                             Over
                           </span>
                         )}
@@ -133,7 +133,7 @@ export function WorkloadHeatmap({ workload, resources }: WorkloadHeatmapProps) {
         )}
 
         {/* Legend */}
-        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex items-center gap-4 text-[10px] text-gray-500">
+        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
           <span className="font-medium">Utilization:</span>
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded bg-green-50 border border-green-200" />
@@ -164,31 +164,31 @@ export function WorkloadHeatmap({ workload, resources }: WorkloadHeatmapProps) {
         <div className="divide-y divide-gray-100">
           {resources.map((res) => (
             <div key={res.id} className="px-4 py-3 flex items-center gap-3 hover:bg-gray-50/50 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
                 {getInitials(res.name)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-900">{res.name}</span>
                   {!res.isActive && (
-                    <span className="text-[9px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">Inactive</span>
+                    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">Inactive</span>
                   )}
                 </div>
                 <div className="text-xs text-gray-500">{res.role}</div>
               </div>
               <div className="text-right flex-shrink-0">
                 <div className="text-xs text-gray-500">{res.capacityHoursPerWeek}h/week</div>
-                <div className="text-[10px] text-gray-400">{res.email}</div>
+                <div className="text-xs text-gray-400">{res.email}</div>
               </div>
               {res.skills.length > 0 && (
                 <div className="flex gap-1 flex-wrap max-w-[200px]">
                   {res.skills.slice(0, 3).map((skill, i) => (
-                    <span key={i} className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                    <span key={i} className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
                       {skill}
                     </span>
                   ))}
                   {res.skills.length > 3 && (
-                    <span className="text-[9px] text-gray-400">+{res.skills.length - 3}</span>
+                    <span className="text-xs text-gray-400">+{res.skills.length - 3}</span>
                   )}
                 </div>
               )}

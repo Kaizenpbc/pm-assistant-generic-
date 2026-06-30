@@ -93,7 +93,7 @@ export const SettingsPage: React.FC = () => {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab.id
-                ? 'border-indigo-600 text-indigo-600'
+                ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -145,14 +145,14 @@ const ProfileTab: React.FC = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-          <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+          <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
         </div>
         <div className="flex items-center gap-3 pt-2">
-          <button onClick={handleSave} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors">
+          <button onClick={handleSave} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors">
             <Save className="w-4 h-4" />
             Save Changes
           </button>
@@ -193,8 +193,8 @@ const NotificationsTab: React.FC = () => {
       <button
         type="button"
         onClick={onChange}
-        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-          checked ? 'bg-indigo-600' : 'bg-gray-200'
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+          checked ? 'bg-primary-600' : 'bg-gray-200'
         }`}
       >
         <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -222,7 +222,7 @@ const NotificationsTab: React.FC = () => {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={handleSave} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors">
+        <button onClick={handleSave} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors">
           <Save className="w-4 h-4" />
           Save Preferences
         </button>
@@ -234,7 +234,7 @@ const NotificationsTab: React.FC = () => {
 
 const SettingsCheckbox: React.FC<{ checked: boolean; onChange: () => void; label: string }> = ({ checked, onChange, label }) => (
   <label className="flex items-center gap-3 py-3 cursor-pointer">
-    <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+    <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
     <span className="text-sm text-gray-900">{label}</span>
   </label>
 );
@@ -263,10 +263,10 @@ const DisplayTab: React.FC = () => {
       <div className="rounded-xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Theme</h2>
         <div className="flex gap-3">
-          <button onClick={() => setPrefs((p) => ({ ...p, theme: 'light' }))} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${prefs.theme === 'light' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+          <button onClick={() => setPrefs((p) => ({ ...p, theme: 'light' }))} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${prefs.theme === 'light' ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
             <Sun className="w-4 h-4" /> Light
           </button>
-          <button onClick={() => setPrefs((p) => ({ ...p, theme: 'dark' }))} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${prefs.theme === 'dark' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+          <button onClick={() => setPrefs((p) => ({ ...p, theme: 'dark' }))} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${prefs.theme === 'dark' ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
             <Moon className="w-4 h-4" /> Dark
           </button>
         </div>
@@ -276,7 +276,7 @@ const DisplayTab: React.FC = () => {
         <p className="text-sm text-gray-500 mb-3">Choose the default view when opening a project schedule.</p>
         <div className="flex flex-wrap gap-3">
           {viewOptions.map((opt) => (
-            <button key={opt.value} onClick={() => setPrefs((p) => ({ ...p, defaultView: opt.value }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${prefs.defaultView === opt.value ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+            <button key={opt.value} onClick={() => setPrefs((p) => ({ ...p, defaultView: opt.value }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${prefs.defaultView === opt.value ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
               {opt.label}
             </button>
           ))}
@@ -285,12 +285,12 @@ const DisplayTab: React.FC = () => {
       <div className="rounded-xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Sidebar</h2>
         <div className="flex gap-3">
-          <button onClick={() => setPrefs((p) => ({ ...p, sidebarExpanded: true }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${prefs.sidebarExpanded ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>Expanded</button>
-          <button onClick={() => setPrefs((p) => ({ ...p, sidebarExpanded: false }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${!prefs.sidebarExpanded ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>Collapsed</button>
+          <button onClick={() => setPrefs((p) => ({ ...p, sidebarExpanded: true }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${prefs.sidebarExpanded ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>Expanded</button>
+          <button onClick={() => setPrefs((p) => ({ ...p, sidebarExpanded: false }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${!prefs.sidebarExpanded ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>Collapsed</button>
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={handleSave} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors">
+        <button onClick={handleSave} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors">
           <Save className="w-4 h-4" /> Save Preferences
         </button>
         {saved && <span className="text-sm text-green-600">Saved successfully</span>}
@@ -357,7 +357,7 @@ const ApiKeysTab: React.FC = () => {
           </div>
           <button
             onClick={() => { setShowCreate(true); setCreatedKey(null); }}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors"
+            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors"
           >
             <Plus className="w-4 h-4" /> Create Key
           </button>
@@ -365,7 +365,7 @@ const ApiKeysTab: React.FC = () => {
 
         {/* Create Key Form */}
         {showCreate && (
-          <div className="mb-6 p-4 rounded-lg border border-indigo-200 bg-indigo-50">
+          <div className="mb-6 p-4 rounded-lg border border-primary-200 bg-primary-50">
             {createdKey ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-green-700">
@@ -379,7 +379,7 @@ const ApiKeysTab: React.FC = () => {
                     {copied ? 'Copied' : 'Copy'}
                   </button>
                 </div>
-                <button onClick={() => { setShowCreate(false); setCreatedKey(null); }} className="text-sm text-indigo-600 hover:text-indigo-700">Done</button>
+                <button onClick={() => { setShowCreate(false); setCreatedKey(null); }} className="text-sm text-primary-600 hover:text-primary-700">Done</button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -390,7 +390,7 @@ const ApiKeysTab: React.FC = () => {
                     value={newKeyName}
                     onChange={(e) => setNewKeyName(e.target.value)}
                     placeholder="e.g., My AI Agent"
-                    className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
@@ -401,7 +401,7 @@ const ApiKeysTab: React.FC = () => {
                         key={scope}
                         onClick={() => toggleScope(scope)}
                         className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
-                          newKeyScopes.includes(scope) ? 'border-indigo-600 bg-indigo-100 text-indigo-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                          newKeyScopes.includes(scope) ? 'border-primary-600 bg-primary-100 text-primary-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'
                         }`}
                       >
                         {scope}
@@ -410,7 +410,7 @@ const ApiKeysTab: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={handleCreate} disabled={!newKeyName.trim() || createMutation.isPending} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                  <button onClick={handleCreate} disabled={!newKeyName.trim() || createMutation.isPending} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:opacity-50">
                     {createMutation.isPending ? 'Creating...' : 'Create'}
                   </button>
                   <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
@@ -542,7 +542,7 @@ const WebhooksTab: React.FC = () => {
           </div>
           <button
             onClick={() => { setShowCreate(true); setCreatedSecret(null); }}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors"
+            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors"
           >
             <Plus className="w-4 h-4" /> Add Webhook
           </button>
@@ -550,7 +550,7 @@ const WebhooksTab: React.FC = () => {
 
         {/* Create Webhook Form */}
         {showCreate && (
-          <div className="mb-6 p-4 rounded-lg border border-indigo-200 bg-indigo-50">
+          <div className="mb-6 p-4 rounded-lg border border-primary-200 bg-primary-50">
             {createdSecret ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-green-700">
@@ -563,7 +563,7 @@ const WebhooksTab: React.FC = () => {
                     {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
-                <button onClick={() => { setShowCreate(false); setCreatedSecret(null); }} className="text-sm text-indigo-600 hover:text-indigo-700">Done</button>
+                <button onClick={() => { setShowCreate(false); setCreatedSecret(null); }} className="text-sm text-primary-600 hover:text-primary-700">Done</button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -574,7 +574,7 @@ const WebhooksTab: React.FC = () => {
                     value={newUrl}
                     onChange={(e) => setNewUrl(e.target.value)}
                     placeholder="https://your-server.com/webhook"
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
@@ -585,7 +585,7 @@ const WebhooksTab: React.FC = () => {
                         key={event}
                         onClick={() => toggleEvent(event)}
                         className={`px-2.5 py-1 rounded-md border text-xs font-medium transition-colors ${
-                          newEvents.includes(event) ? 'border-indigo-600 bg-indigo-100 text-indigo-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                          newEvents.includes(event) ? 'border-primary-600 bg-primary-100 text-primary-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'
                         }`}
                       >
                         {event}
@@ -594,7 +594,7 @@ const WebhooksTab: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={handleCreate} disabled={!newUrl.trim() || newEvents.length === 0 || createMutation.isPending} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                  <button onClick={handleCreate} disabled={!newUrl.trim() || newEvents.length === 0 || createMutation.isPending} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:opacity-50">
                     {createMutation.isPending ? 'Creating...' : 'Create'}
                   </button>
                   <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
@@ -618,7 +618,7 @@ const WebhooksTab: React.FC = () => {
                     <p className="text-sm font-medium text-gray-900 truncate">{wh.url}</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {(wh.events || []).map((e: string) => (
-                        <span key={e} className="inline-block px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-600">{e}</span>
+                        <span key={e} className="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">{e}</span>
                       ))}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">

@@ -227,7 +227,7 @@ export const QueryPage: React.FC = () => {
       {/* Header */}
       <div className="text-center">
         <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
-          <MessageSquare className="w-6 h-6 text-indigo-500" />
+          <MessageSquare className="w-6 h-6 text-primary-500" />
           Project Query
         </h1>
         <p className="mt-1 text-sm text-gray-500">
@@ -251,7 +251,7 @@ export const QueryPage: React.FC = () => {
             <button
               key={eq}
               onClick={() => handleExampleClick(eq)}
-              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors"
+              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-primary-50 hover:border-primary-200 hover:text-primary-700 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
               {eq}
@@ -274,7 +274,7 @@ export const QueryPage: React.FC = () => {
           {result.answer && (
             <div className="card">
               <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-indigo-500" />
+                <MessageSquare className="w-4 h-4 text-primary-500" />
                 Answer
               </h2>
               <div
@@ -300,7 +300,7 @@ export const QueryPage: React.FC = () => {
                   <button
                     key={idx}
                     onClick={() => handleFollowUpClick(fu)}
-                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors"
+                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-primary-50 hover:border-primary-200 hover:text-primary-700 transition-colors"
                   >
                     {fu}
                   </button>

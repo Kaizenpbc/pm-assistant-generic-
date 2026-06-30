@@ -126,7 +126,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
               <div
                 className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full ${
                   message.role === 'assistant'
-                    ? 'bg-indigo-50 text-indigo-600'
+                    ? 'bg-primary-50 text-primary-600'
                     : 'bg-gray-100 text-gray-600'
                 }`}
               >
@@ -140,7 +140,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
                 className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   message.role === 'assistant'
                     ? 'bg-gray-50 text-gray-800'
-                    : 'bg-indigo-600 text-white'
+                    : 'bg-primary-600 text-white'
                 }`}
               >
                 {message.content.split('\n').map((line, i) => (
@@ -156,7 +156,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
                   </React.Fragment>
                 ))}
                 {message.isStreaming && (
-                  <span className="ml-1 inline-block h-4 w-1.5 animate-pulse rounded-full bg-indigo-500" />
+                  <span className="ml-1 inline-block h-4 w-1.5 animate-pulse rounded-full bg-primary-500" />
                 )}
                 {/* Action Results */}
                 {message.actions && message.actions.length > 0 && (
@@ -186,7 +186,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
 
           {isLoading && !messages.some(m => m.isStreaming) && (
             <div className="flex gap-3">
-              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600">
                 <Bot className="h-4 w-4" />
               </div>
               <div className="flex items-center gap-1.5 rounded-xl bg-gray-50 px-4 py-3">
@@ -262,7 +262,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
             onKeyDown={handleKeyDown}
             placeholder="Ask about your projects..."
             rows={1}
-            className="flex-1 resize-none rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="flex-1 resize-none rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             style={{ maxHeight: '120px' }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
@@ -273,7 +273,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -283,7 +283,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
           </button>
         </div>
         <div className="mt-1.5 flex items-center justify-center gap-3">
-          <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-gray-500">
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-500">
             <input
               type="checkbox"
               checked={ttsEnabled}
@@ -292,7 +292,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
             />
             Speak replies
           </label>
-          <span className="text-[10px] text-gray-400">
+          <span className="text-xs text-gray-400">
             AI can make mistakes. Verify important information.
           </span>
         </div>

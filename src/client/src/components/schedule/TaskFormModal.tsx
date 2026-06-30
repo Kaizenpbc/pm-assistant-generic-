@@ -245,9 +245,9 @@ export function TaskFormModal({
                 step="5"
                 value={form.progressPercentage}
                 onChange={handleProgressChange}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
               />
-              <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
+              <div className="flex justify-between text-xs text-gray-400 mt-0.5">
                 <span>0%</span>
                 <span>50%</span>
                 <span>100%</span>

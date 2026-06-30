@@ -232,7 +232,7 @@ export function GanttChart({
       {scheduleName && (
         <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-4 rounded-full bg-indigo-500" />
+            <div className="w-1.5 h-4 rounded-full bg-primary-500" />
             <span className="text-sm font-semibold text-gray-800">
               {scheduleName}
             </span>
@@ -243,7 +243,7 @@ export function GanttChart({
           {onAddTask && (
             <button
               onClick={onAddTask}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -264,7 +264,7 @@ export function GanttChart({
         >
           {/* Table header */}
           <div
-            className="sticky top-0 z-10 flex items-center bg-gray-50 border-b border-gray-200 text-[10px] font-semibold text-gray-500 uppercase tracking-wider"
+            className="sticky top-0 z-10 flex items-center bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider"
             style={{ height: HEADER_H }}
           >
             <div className="w-12 px-2 text-center">WBS</div>
@@ -291,7 +291,7 @@ export function GanttChart({
                 onClick={() => onTaskClick?.(task)}
               >
                 {/* WBS */}
-                <div className="w-12 px-2 text-center text-[10px] text-gray-400 font-mono">
+                <div className="w-12 px-2 text-center text-xs text-gray-400 font-mono">
                   {wbs}
                 </div>
 
@@ -314,24 +314,24 @@ export function GanttChart({
                 </div>
 
                 {/* Start */}
-                <div className="w-20 px-1 text-center text-[10px] text-gray-500">
+                <div className="w-20 px-1 text-center text-xs text-gray-500">
                   {start ? formatShortDate(start) : '—'}
                 </div>
 
                 {/* End */}
-                <div className="w-20 px-1 text-center text-[10px] text-gray-500">
+                <div className="w-20 px-1 text-center text-xs text-gray-500">
                   {end ? formatShortDate(end) : '—'}
                 </div>
 
                 {/* % Complete */}
-                <div className="w-12 px-1 text-center text-[10px] font-medium text-gray-600">
+                <div className="w-12 px-1 text-center text-xs font-medium text-gray-600">
                   {pct}%
                 </div>
 
                 {/* Status */}
                 <div className="w-16 px-1 text-center">
                   <span
-                    className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+                    className="text-xs font-medium px-1.5 py-0.5 rounded-full"
                     style={{
                       backgroundColor: barColors[task.status]?.bg || '#f3f4f6',
                       color: barColors[task.status]?.text || '#374151',
@@ -351,7 +351,7 @@ export function GanttChart({
                 {onTaskClick && (
                   <div className="w-8 flex items-center justify-center">
                     <svg
-                      className="w-3.5 h-3.5 text-gray-300 group-hover:text-indigo-500 transition-colors"
+                      className="w-3.5 h-3.5 text-gray-300 group-hover:text-primary-500 transition-colors"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -393,7 +393,7 @@ export function GanttChart({
                     height: HEADER_H,
                   }}
                 >
-                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide px-2">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2">
                     {m.label}
                   </span>
                 </div>
@@ -526,7 +526,7 @@ export function GanttChart({
                       className="absolute inset-0 flex items-center px-1.5 z-10"
                     >
                       <span
-                        className="text-[9px] font-medium truncate"
+                        className="text-xs font-medium truncate"
                         style={{ color: colors.text }}
                       >
                         {task.name}
@@ -535,7 +535,7 @@ export function GanttChart({
                   )}
 
                   {/* Tooltip on hover */}
-                  <div className="invisible group-hover/bar:visible absolute z-30 left-0 -top-16 bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-lg pointer-events-none">
+                  <div className="invisible group-hover/bar:visible absolute z-30 left-0 -top-16 bg-gray-900 text-white rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg pointer-events-none">
                     <div className="font-semibold">
                       {isCritical && <span className="text-red-400">[Critical] </span>}
                       {task.name}
@@ -619,15 +619,15 @@ export function GanttChart({
               className="w-3 h-2.5 rounded-sm"
               style={{ backgroundColor: barColors[key]?.fill || '#9ca3af' }}
             />
-            <span className="text-[10px] text-gray-500">{label}</span>
+            <span className="text-xs text-gray-500">{label}</span>
           </div>
         ))}
         <div className="flex items-center gap-1.5 ml-2">
           <div className="w-3 h-0.5 bg-red-500" />
-          <span className="text-[10px] text-gray-500">Today</span>
+          <span className="text-xs text-gray-500">Today</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-gray-400">
+          <span className="text-xs text-gray-400">
             <svg width="16" height="8" className="inline-block">
               <line
                 x1="0"
@@ -640,18 +640,18 @@ export function GanttChart({
               />
             </svg>
           </span>
-          <span className="text-[10px] text-gray-500">Dependency</span>
+          <span className="text-xs text-gray-500">Dependency</span>
         </div>
         {criticalPathTaskIds && criticalPathTaskIds.length > 0 && (
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-2.5 rounded-sm border-2 border-red-600 bg-red-50" />
-            <span className="text-[10px] text-gray-500">Critical Path</span>
+            <span className="text-xs text-gray-500">Critical Path</span>
           </div>
         )}
         {baselineTasks && baselineTasks.length > 0 && (
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-2.5 rounded-sm bg-gray-300 border border-dashed border-gray-400 opacity-50" />
-            <span className="text-[10px] text-gray-500">Baseline</span>
+            <span className="text-xs text-gray-500">Baseline</span>
           </div>
         )}
       </div>

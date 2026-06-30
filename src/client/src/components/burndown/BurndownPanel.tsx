@@ -24,7 +24,7 @@ export function BurndownPanel({ scheduleId }: BurndownPanelProps) {
   if (burndownLoading || velocityLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -47,28 +47,28 @@ export function BurndownPanel({ scheduleId }: BurndownPanelProps) {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-[10px] uppercase text-gray-500 tracking-wider">Total Scope</p>
+          <p className="text-xs uppercase text-gray-500 tracking-wider">Total Scope</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{totalScope}</p>
-          <p className="text-[10px] text-gray-400">tasks</p>
+          <p className="text-xs text-gray-400">tasks</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-[10px] uppercase text-gray-500 tracking-wider">Completed</p>
+          <p className="text-xs uppercase text-gray-500 tracking-wider">Completed</p>
           <p className="text-2xl font-bold text-green-600 mt-1">{percentComplete}%</p>
-          <p className="text-[10px] text-gray-400">{completedCount} / {totalScope} tasks</p>
+          <p className="text-xs text-gray-400">{completedCount} / {totalScope} tasks</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-[10px] uppercase text-gray-500 tracking-wider">Velocity</p>
-          <p className="text-2xl font-bold text-indigo-600 mt-1">{avgVelocity}</p>
-          <p className="text-[10px] text-gray-400 flex items-center justify-center gap-1">
+          <p className="text-xs uppercase text-gray-500 tracking-wider">Velocity</p>
+          <p className="text-2xl font-bold text-primary-600 mt-1">{avgVelocity}</p>
+          <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
             tasks/week <TrendIcon className={`w-3 h-3 ${trendColor}`} />
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-[10px] uppercase text-gray-500 tracking-wider">Est. Completion</p>
+          <p className="text-xs uppercase text-gray-500 tracking-wider">Est. Completion</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">
             {weeksToComplete !== null ? `${weeksToComplete}w` : '-'}
           </p>
-          <p className="text-[10px] text-gray-400">weeks remaining</p>
+          <p className="text-xs text-gray-400">weeks remaining</p>
         </div>
       </div>
 
@@ -84,7 +84,7 @@ export function BurndownPanel({ scheduleId }: BurndownPanelProps) {
       {/* Velocity Chart */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-1.5">
-          <BarChart3 className="w-4 h-4 text-indigo-500" /> Velocity Trend
+          <BarChart3 className="w-4 h-4 text-primary-500" /> Velocity Trend
         </h3>
         <VelocityChart
           weeks={velocityData?.weeks || []}

@@ -28,7 +28,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSelect, 
         <div className="flex items-start justify-between mb-2">
           <h3 className="text-sm font-semibold text-gray-900 leading-tight">{template.name}</h3>
           {template.isBuiltIn && (
-            <span className="text-[10px] font-medium bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded flex-shrink-0 ml-2">
+            <span className="text-xs font-medium bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded flex-shrink-0 ml-2">
               Built-in
             </span>
           )}
@@ -49,7 +49,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSelect, 
         {template.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
             {template.tags.slice(0, 4).map(tag => (
-              <span key={tag} className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+              <span key={tag} className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
                 {tag}
               </span>
             ))}
@@ -67,7 +67,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSelect, 
         </button>
         <button
           onClick={() => onSelect(template.id)}
-          className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+          className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
         >
           Select
         </button>

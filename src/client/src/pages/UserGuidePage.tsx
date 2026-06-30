@@ -500,7 +500,7 @@ export const UserGuideContent: React.FC = () => {
             <li key={s.id}>
               <a
                 href={`#${s.id}`}
-                className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline"
+                className="text-sm text-primary-600 hover:text-primary-800 hover:underline"
               >
                 {i + 1}. {s.title}
               </a>
@@ -516,8 +516,8 @@ export const UserGuideContent: React.FC = () => {
           return (
             <section key={s.id} id={s.id} className="scroll-mt-24">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-5 h-5 text-indigo-600" />
+                <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-5 h-5 text-primary-600" />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900">
                   {s.title}

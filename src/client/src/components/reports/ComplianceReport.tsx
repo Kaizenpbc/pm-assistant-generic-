@@ -76,7 +76,7 @@ export function ComplianceReport({ projectId }: { projectId: string }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -87,7 +87,7 @@ export function ComplianceReport({ projectId }: { projectId: string }) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <Shield className="w-5 h-5 text-indigo-600" />
+        <Shield className="w-5 h-5 text-primary-600" />
         <h2 className="text-lg font-semibold text-gray-900">Compliance & Audit</h2>
       </div>
 
@@ -160,12 +160,12 @@ export function ComplianceReport({ projectId }: { projectId: string }) {
                 <div key={day} className="flex-1 flex flex-col items-center gap-1">
                   <div className="w-full flex flex-col justify-end" style={{ height: '100px' }}>
                     <div
-                      className="w-full bg-indigo-500 rounded-t"
+                      className="w-full bg-primary-500 rounded-t"
                       style={{ height: `${pct}%`, minHeight: total > 0 ? '2px' : '0' }}
                       title={`${day}: ${total} actions (${counts.user} user, ${counts.api_key} API, ${counts.system} system)`}
                     />
                   </div>
-                  <span className="text-[9px] text-gray-400 whitespace-nowrap">
+                  <span className="text-xs text-gray-400 whitespace-nowrap">
                     {day.slice(5)}
                   </span>
                 </div>

@@ -43,7 +43,7 @@ export function CustomFieldManager({ projectId, entityType }: CustomFieldManager
         </h4>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+          className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
         >
           <Plus className="w-3.5 h-3.5" /> Add Field
         </button>
@@ -51,7 +51,7 @@ export function CustomFieldManager({ projectId, entityType }: CustomFieldManager
 
       {isLoading ? (
         <div className="flex justify-center py-4">
-          <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
       ) : fields.length === 0 ? (
         <p className="text-xs text-gray-400 text-center py-4">No custom fields defined</p>
@@ -61,14 +61,14 @@ export function CustomFieldManager({ projectId, entityType }: CustomFieldManager
             <div key={field.id} className="flex items-center justify-between p-2 rounded-lg border border-gray-100 hover:bg-gray-50 group">
               <div>
                 <p className="text-sm font-medium text-gray-900">{field.fieldLabel}</p>
-                <p className="text-[10px] text-gray-400">
+                <p className="text-xs text-gray-400">
                   {fieldTypeLabel[field.fieldType] || field.fieldType}
                   {field.isRequired && ' · Required'}
                   {field.options?.length > 0 && ` · ${field.options.length} options`}
                 </p>
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => setEditField(field)} className="p-1 text-gray-400 hover:text-indigo-600">
+                <button onClick={() => setEditField(field)} className="p-1 text-gray-400 hover:text-primary-600">
                   <Edit3 className="w-3.5 h-3.5" />
                 </button>
                 <button

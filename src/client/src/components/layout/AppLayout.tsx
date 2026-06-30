@@ -160,12 +160,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               {/* AI Panel Header */}
               <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                  <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-primary-600" />
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI Assistant</h2>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-none mt-0.5">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-none mt-0.5">
                       Powered by Claude
                     </p>
                   </div>
@@ -193,9 +193,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           className="
             fixed bottom-6 right-6 z-40
             w-12 h-12 rounded-full
-            bg-indigo-600 text-white
-            shadow-lg shadow-indigo-500/30
-            hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-500/40
+            bg-primary-600 text-white
+            shadow-lg shadow-primary-500/30
+            hover:bg-primary-700 hover:shadow-xl hover:shadow-primary-500/40
             transition-all duration-200
             flex items-center justify-center
           "

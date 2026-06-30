@@ -212,7 +212,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
       {/* Logo / Branding */}
       <div className="flex items-center h-16 px-4 flex-shrink-0 border-b border-white/10">
         <div className="flex items-center min-w-0">
-          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div
@@ -224,7 +224,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
             <h1 className="text-lg font-bold text-white whitespace-nowrap tracking-tight">
               Kovarti PM Assistant
             </h1>
-            <p className="text-[10px] text-sidebar-text/60 whitespace-nowrap leading-none mt-0.5">
+            <p className="text-xs text-sidebar-text/60 whitespace-nowrap leading-none mt-0.5">
               AI-Powered Project Management
             </p>
           </div>
@@ -248,7 +248,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
                 ${collapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}
                 ${
                   active
-                    ? 'bg-sidebar-active text-sidebar-text-active shadow-lg shadow-indigo-500/20'
+                    ? 'bg-sidebar-active text-sidebar-text-active shadow-lg shadow-primary-500/20'
                     : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white'
                 }
               `}
@@ -290,7 +290,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
         >
           {/* Avatar */}
           <div
-            className="flex-shrink-0 w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center ring-2 ring-indigo-400/30"
+            className="flex-shrink-0 w-9 h-9 rounded-full bg-primary-600 flex items-center justify-center ring-2 ring-primary-400/30"
             title={user?.fullName || 'User'}
           >
             <span className="text-xs font-semibold text-white">{userInitials}</span>

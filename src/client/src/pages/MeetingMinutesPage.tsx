@@ -139,7 +139,7 @@ export const MeetingMinutesPage: React.FC = () => {
         {/* Header */}
         <div>
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <Mic className="w-6 h-6 text-indigo-500" />
+            <Mic className="w-6 h-6 text-primary-500" />
             Meeting Minutes
           </h1>
           <p className="mt-1 text-sm text-gray-500">
@@ -264,7 +264,7 @@ export const MeetingMinutesPage: React.FC = () => {
         {analysisResult && (
           <div>
             <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-indigo-500" />
+              <FileText className="w-4 h-4 text-primary-500" />
               Analysis Results
             </h2>
             <MeetingResultPanel
@@ -312,7 +312,7 @@ export const MeetingMinutesPage: React.FC = () => {
                     {entry.summary || 'Meeting analysis'}
                   </p>
                   {entry.createdAt && (
-                    <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {formatDate(entry.createdAt)}
                     </p>

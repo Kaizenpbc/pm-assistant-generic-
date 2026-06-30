@@ -38,7 +38,7 @@ export function TimeLogForm({ taskId, scheduleId, projectId }: TimeLogFormProps)
     return (
       <button
         onClick={() => setExpanded(true)}
-        className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+        className="flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-700 font-medium"
       >
         <Clock className="w-3.5 h-3.5" />
         Log Time
@@ -53,7 +53,7 @@ export function TimeLogForm({ taskId, scheduleId, projectId }: TimeLogFormProps)
       </h5>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Date</label>
+          <label className="block text-xs font-medium text-gray-500 mb-0.5">Date</label>
           <input
             type="date"
             value={form.date}
@@ -62,7 +62,7 @@ export function TimeLogForm({ taskId, scheduleId, projectId }: TimeLogFormProps)
           />
         </div>
         <div>
-          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Hours</label>
+          <label className="block text-xs font-medium text-gray-500 mb-0.5">Hours</label>
           <input
             type="number"
             step="0.25"
@@ -75,7 +75,7 @@ export function TimeLogForm({ taskId, scheduleId, projectId }: TimeLogFormProps)
         </div>
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Description</label>
+        <label className="block text-xs font-medium text-gray-500 mb-0.5">Description</label>
         <input
           type="text"
           value={form.description}
@@ -89,7 +89,7 @@ export function TimeLogForm({ taskId, scheduleId, projectId }: TimeLogFormProps)
           type="checkbox"
           checked={form.billable}
           onChange={(e) => setForm(p => ({ ...p, billable: e.target.checked }))}
-          className="rounded border-gray-300 text-indigo-600"
+          className="rounded border-gray-300 text-primary-600"
         />
         Billable
       </label>

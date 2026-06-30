@@ -84,7 +84,7 @@ function PriorityBadge({ priority }: { priority: string }) {
   const colors = priorityColors[priority] || priorityColors.low;
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${colors.bg} ${colors.text}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${colors.bg} ${colors.text}`}
     >
       {priority}
     </span>
@@ -93,7 +93,7 @@ function PriorityBadge({ priority }: { priority: string }) {
 
 function AIPoweredBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600">
+    <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600">
       <Sparkles className="h-3 w-3" />
       AI Powered
     </span>
@@ -159,7 +159,7 @@ export function TaskPrioritizationPanel({ projectId, scheduleId }: TaskPrioritiz
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ListOrdered className="h-5 w-5 text-indigo-500" />
+          <ListOrdered className="h-5 w-5 text-primary-500" />
           <h3 className="text-sm font-semibold text-gray-900">AI Task Prioritization</h3>
         </div>
         {aiPowered && <AIPoweredBadge />}
@@ -168,7 +168,7 @@ export function TaskPrioritizationPanel({ projectId, scheduleId }: TaskPrioritiz
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
       )}
 
@@ -193,28 +193,28 @@ export function TaskPrioritizationPanel({ projectId, scheduleId }: TaskPrioritiz
             <div className="rounded-lg border border-gray-200 p-3 text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <BarChart3 className="h-3.5 w-3.5 text-gray-400" />
-                <p className="text-[10px] uppercase text-gray-500 font-medium">Analyzed</p>
+                <p className="text-xs uppercase text-gray-500 font-medium">Analyzed</p>
               </div>
               <p className="text-lg font-bold text-gray-900">{summary.tasksAnalyzed}</p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3 text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <ArrowRight className="h-3.5 w-3.5 text-gray-400" />
-                <p className="text-[10px] uppercase text-gray-500 font-medium">Changes</p>
+                <p className="text-xs uppercase text-gray-500 font-medium">Changes</p>
               </div>
-              <p className="text-lg font-bold text-indigo-600">{summary.priorityChanges}</p>
+              <p className="text-lg font-bold text-primary-600">{summary.priorityChanges}</p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3 text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Target className="h-3.5 w-3.5 text-gray-400" />
-                <p className="text-[10px] uppercase text-gray-500 font-medium">Avg Score</p>
+                <p className="text-xs uppercase text-gray-500 font-medium">Avg Score</p>
               </div>
               <p className="text-lg font-bold text-gray-900">{summary.averageScore}</p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3 text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Clock className="h-3.5 w-3.5 text-gray-400" />
-                <p className="text-[10px] uppercase text-gray-500 font-medium">Critical Path</p>
+                <p className="text-xs uppercase text-gray-500 font-medium">Critical Path</p>
               </div>
               <p className="text-lg font-bold text-red-600">{summary.criticalPathTasks}</p>
             </div>
@@ -235,8 +235,8 @@ export function TaskPrioritizationPanel({ projectId, scheduleId }: TaskPrioritiz
                   {/* Main Row */}
                   <div className="flex items-center gap-3 px-4 py-3">
                     {/* Rank Badge */}
-                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center">
-                      <span className="text-xs font-bold text-indigo-700">#{task.rank}</span>
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center">
+                      <span className="text-xs font-bold text-primary-700">#{task.rank}</span>
                     </div>
 
                     {/* Task Name */}
@@ -286,7 +286,7 @@ export function TaskPrioritizationPanel({ projectId, scheduleId }: TaskPrioritiz
                         className={`flex-shrink-0 p-1.5 rounded-md transition-colors ${
                           isApplied
                             ? 'bg-green-100 text-green-600 cursor-default'
-                            : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
+                            : 'bg-primary-100 text-primary-600 hover:bg-primary-200'
                         }`}
                         title={isApplied ? 'Applied' : 'Apply this priority change'}
                       >
@@ -313,7 +313,7 @@ export function TaskPrioritizationPanel({ projectId, scheduleId }: TaskPrioritiz
                       {/* Factors */}
                       {task.factors.length > 0 && (
                         <div className="mb-3">
-                          <p className="text-[10px] uppercase font-semibold text-gray-500 mb-1.5">
+                          <p className="text-xs uppercase font-semibold text-gray-500 mb-1.5">
                             Priority Factors
                           </p>
                           <div className="space-y-1">
@@ -344,8 +344,8 @@ export function TaskPrioritizationPanel({ projectId, scheduleId }: TaskPrioritiz
                       )}
 
                       {/* Explanation */}
-                      <div className="rounded-md bg-indigo-50 border border-indigo-100 p-3">
-                        <p className="text-[10px] uppercase font-semibold text-indigo-500 mb-1">
+                      <div className="rounded-md bg-primary-50 border border-primary-100 p-3">
+                        <p className="text-xs uppercase font-semibold text-primary-500 mb-1">
                           {aiPowered ? 'AI Explanation' : 'Analysis'}
                         </p>
                         <p className="text-xs text-gray-700 leading-relaxed">
@@ -372,7 +372,7 @@ export function TaskPrioritizationPanel({ projectId, scheduleId }: TaskPrioritiz
                   )
                 }
                 disabled={applyAllMutation.isPending}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
                 {applyAllMutation.isPending ? (
                   <>
