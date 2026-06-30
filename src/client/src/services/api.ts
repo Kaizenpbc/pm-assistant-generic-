@@ -1073,6 +1073,28 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  // Autonomy (Tier 3)
+
+  async getAutonomyConfigs() {
+    const response = await this.api.get('/agent/autonomy');
+    return response.data;
+  }
+
+  async getAutonomyEligibility(agentId: string, projectId?: string) {
+    const response = await this.api.get(`/agent/autonomy/${agentId}/eligibility`, { params: projectId ? { projectId } : {} });
+    return response.data;
+  }
+
+  async promoteAgent(agentId: string, opts?: { projectId?: string; minConfidenceThreshold?: number; maxRiskLevel?: string }) {
+    const response = await this.api.put(`/agent/autonomy/${agentId}`, { action: 'promote', ...opts });
+    return response.data;
+  }
+
+  async demoteAgent(agentId: string, projectId?: string) {
+    const response = await this.api.put(`/agent/autonomy/${agentId}`, { action: 'demote', projectId });
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Agent Activity Log
   // -------------------------------------------------------------------------
