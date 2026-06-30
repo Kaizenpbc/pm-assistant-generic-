@@ -637,6 +637,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   const [selectedBaselineId, setSelectedBaselineId] = useState<string>('');
   const [showComparison, setShowComparison] = useState(false);
   const [showReschedulePanel, setShowReschedulePanel] = useState(false);
+  const [cpmNeeded, setCpmNeeded] = useState(false);
 
   const { data: tasksData, isLoading: tasksLoading } = useQuery({
     queryKey: ['tasks', schedule.id],
@@ -649,7 +650,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   const { data: cpmData } = useQuery({
     queryKey: ['criticalPath', schedule.id],
     queryFn: () => apiService.getCriticalPath(schedule.id),
-    enabled: showCriticalPath,
+    enabled: showCriticalPath || cpmNeeded,
   });
 
   // Baselines
@@ -857,6 +858,10 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           scheduleId={schedule.id}
           onTaskClick={(task) => setEditingTask(task)}
           onTaskUpdate={(taskId, data) => updateMutation.mutate({ taskId, data })}
+          cpmData={cpmData}
+          baselineData={comparison}
+          scheduleStartDate={schedule.startDate}
+          onCpmNeeded={setCpmNeeded}
         />
       )}
       {viewMode === 'calendar' && (
