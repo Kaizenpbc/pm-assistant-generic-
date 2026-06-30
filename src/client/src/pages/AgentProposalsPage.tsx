@@ -379,7 +379,7 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 px-4" onClick={onClose}>
       <div className="fixed inset-0 bg-black/50" />
       <div
-        className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto"
+        className="relative bg-white dark:bg-neutral-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header — Risk + Confidence dominate */}
@@ -414,7 +414,8 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
             <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
           </div>
         ) : proposal ? (
-          <div className="px-6 py-5 space-y-6">
+          <>
+          <div className="px-6 py-5 space-y-6 overflow-y-auto flex-1 min-h-0">
             {/* Meta row */}
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <span className="flex items-center gap-1">
@@ -458,15 +459,37 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
               </div>
             )}
 
-            {/* Agent Reasoning — structured, not a log dump */}
+            {/* Agent Reasoning — first-class, structured */}
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Agent Reasoning</h3>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                {proposal.reasoning.split(/\n{2,}/).map((paragraph, i) => (
-                  <p key={i} className={`text-sm text-gray-700 leading-relaxed ${i > 0 ? 'mt-3' : ''}`}>
-                    {paragraph.trim()}
-                  </p>
-                ))}
+              <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">Agent Reasoning</h3>
+              <div className="bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-lg p-5 max-w-prose">
+                {proposal.reasoning.split(/\n/).map((line, i) => {
+                  const trimmed = line.trim();
+                  if (!trimmed) return <div key={i} className="h-3" />;
+                  // Bullet lines
+                  if (/^[-*]\s/.test(trimmed)) {
+                    return (
+                      <div key={i} className="flex gap-2 text-body text-neutral-700 dark:text-neutral-300 leading-relaxed ml-1 mt-1">
+                        <span className="text-neutral-400 flex-shrink-0 mt-1.5 w-1 h-1 rounded-full bg-neutral-400" />
+                        <span>{trimmed.replace(/^[-*]\s+/, '')}</span>
+                      </div>
+                    );
+                  }
+                  // Heading-like lines (start with #)
+                  if (/^#{1,3}\s/.test(trimmed)) {
+                    return (
+                      <p key={i} className={`font-semibold text-neutral-900 dark:text-neutral-100 ${i > 0 ? 'mt-3' : ''}`}>
+                        {trimmed.replace(/^#{1,3}\s+/, '')}
+                      </p>
+                    );
+                  }
+                  // Regular paragraph
+                  return (
+                    <p key={i} className={`text-body text-neutral-700 dark:text-neutral-300 leading-relaxed ${i > 0 ? 'mt-2' : ''}`}>
+                      {trimmed}
+                    </p>
+                  );
+                })}
               </div>
             </div>
 
@@ -512,38 +535,6 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
             {(approveMutation.error || rejectMutation.error || executeMutation.error || rollbackMutation.error || feedbackMutation.error) && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
                 {String((approveMutation.error || rejectMutation.error || executeMutation.error || rollbackMutation.error || feedbackMutation.error) as Error)}
-              </div>
-            )}
-
-            {/* Review Actions (pending) — prominent */}
-            {canReview && (
-              <div className="border-2 border-amber-200 rounded-lg p-4 bg-amber-50/50">
-                <h3 className="text-sm font-bold text-gray-800 mb-3">Your Decision</h3>
-                <textarea
-                  value={comment}
-                  onChange={e => setComment(e.target.value)}
-                  placeholder="Optional comment..."
-                  rows={2}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-3 bg-white"
-                />
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => approveMutation.mutate()}
-                    disabled={anyMutating}
-                    className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold disabled:opacity-50"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => rejectMutation.mutate()}
-                    disabled={anyMutating}
-                    className="flex items-center gap-1.5 px-5 py-2 bg-white text-red-600 border-2 border-red-300 rounded-lg hover:bg-red-50 transition-colors text-sm font-semibold disabled:opacity-50"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    Reject
-                  </button>
-                </div>
               </div>
             )}
 
@@ -621,6 +612,37 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
               </div>
             )}
           </div>
+
+          {/* Sticky decision bar for pending proposals */}
+          {canReview && (
+            <div className="sticky bottom-0 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-700 px-6 py-4 rounded-b-xl">
+              <div className="flex items-center gap-3">
+                <input
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  placeholder="Optional comment..."
+                  className="flex-1 border border-neutral-300 dark:border-neutral-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 dark:text-neutral-100"
+                />
+                <button
+                  onClick={() => approveMutation.mutate()}
+                  disabled={anyMutating}
+                  className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold disabled:opacity-50 flex-shrink-0"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Approve
+                </button>
+                <button
+                  onClick={() => rejectMutation.mutate()}
+                  disabled={anyMutating}
+                  className="flex items-center gap-1.5 px-5 py-2 bg-white dark:bg-neutral-800 text-red-600 border-2 border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-sm font-semibold disabled:opacity-50 flex-shrink-0"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Reject
+                </button>
+              </div>
+            </div>
+          )}
+          </>
         ) : (
           <div className="text-center py-16 text-gray-500">Proposal not found.</div>
         )}
