@@ -8,7 +8,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Layers,
   Workflow,
   Dice5,
@@ -42,114 +41,57 @@ interface NavItem {
   roles?: Array<'admin' | 'executive' | 'manager' | 'member'>;
 }
 
-const navItems: NavItem[] = [
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
   {
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-    path: '/dashboard',
+    title: 'Plan',
+    items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+      { label: 'Projects', icon: FolderKanban, path: '/projects' },
+      { label: 'Workflows', icon: Workflow, path: '/workflows' },
+      { label: 'Intake', icon: ClipboardList, path: '/intake' },
+      { label: 'Change Requests', icon: GitPullRequest, path: '/change-requests' },
+    ],
   },
   {
-    label: 'Projects',
-    icon: FolderKanban,
-    path: '/projects',
+    title: 'Analyze',
+    items: [
+      { label: 'Portfolio', icon: Layers, path: '/portfolio' },
+      { label: 'Analytics', icon: BarChart3, path: '/analytics' },
+      { label: 'Reports', icon: FileText, path: '/reports' },
+      { label: 'Report Builder', icon: FileBarChart, path: '/report-builder' },
+      { label: 'Simulation', icon: Dice5, path: '/monte-carlo' },
+    ],
   },
   {
-    label: 'Reports',
-    icon: FileText,
-    path: '/reports',
+    title: 'Intelligence',
+    items: [
+      { label: 'Scenario Modeling', icon: Brain, path: '/scenarios' },
+      { label: 'Meetings', icon: MessageSquare, path: '/meetings' },
+      { label: 'Lessons', icon: BookOpen, path: '/lessons' },
+      { label: 'Ask AI', icon: Search, path: '/query' },
+      { label: 'Agent', icon: Bot, path: '/agent', roles: ['admin', 'manager'] },
+    ],
   },
   {
-    label: 'Portfolio',
-    icon: Layers,
-    path: '/portfolio',
+    title: 'Workspace',
+    items: [
+      { label: 'Timesheets', icon: Clock, path: '/timesheet' },
+      { label: 'Integrations', icon: Plug, path: '/integrations' },
+    ],
   },
   {
-    label: 'Analytics',
-    icon: BarChart3,
-    path: '/analytics',
-  },
-  {
-    label: 'Workflows',
-    icon: Workflow,
-    path: '/workflows',
-  },
-  {
-    label: 'Intelligence',
-    icon: Brain,
-    path: '/scenarios',
-  },
-  {
-    label: 'Simulation',
-    icon: Dice5,
-    path: '/monte-carlo',
-  },
-  {
-    label: 'Meetings',
-    icon: MessageSquare,
-    path: '/meetings',
-  },
-  {
-    label: 'Lessons',
-    icon: BookOpen,
-    path: '/lessons',
-  },
-  {
-    label: 'Timesheets',
-    icon: Clock,
-    path: '/timesheet',
-  },
-  {
-    label: 'Integrations',
-    icon: Plug,
-    path: '/integrations',
-  },
-  {
-    label: 'Report Builder',
-    icon: FileBarChart,
-    path: '/report-builder',
-  },
-  {
-    label: 'Intake',
-    icon: ClipboardList,
-    path: '/intake',
-  },
-  {
-    label: 'Change Requests',
-    icon: GitPullRequest,
-    path: '/change-requests',
-  },
-  {
-    label: 'Ask AI',
-    icon: Search,
-    path: '/query',
-  },
-  {
-    label: 'Help',
-    icon: HelpCircle,
-    path: '/help',
-  },
-  {
-    label: 'Account',
-    icon: CreditCard,
-    path: '/account',
-  },
-  {
-    label: 'Agent',
-    icon: Bot,
-    path: '/agent',
-    roles: ['admin', 'manager'],
-  },
-  {
-    label: 'Settings',
-    icon: Settings,
-    path: '/settings',
-    roles: ['admin', 'manager'],
-  },
-  {
-    label: 'Admin',
-    icon: ShieldCheck,
-    path: '/admin',
-    roles: ['admin'],
+    title: 'System',
+    items: [
+      { label: 'Account', icon: CreditCard, path: '/account' },
+      { label: 'Settings', icon: Settings, path: '/settings', roles: ['admin', 'manager'] },
+      { label: 'Admin', icon: ShieldCheck, path: '/admin', roles: ['admin'] },
+      { label: 'Help', icon: HelpCircle, path: '/help' },
+    ],
   },
 ];
 
@@ -172,11 +114,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
     return location.pathname.startsWith(path);
   };
 
-  const visibleItems = navItems.filter((item) => {
+  const isItemVisible = (item: NavItem): boolean => {
     if (!item.roles) return true;
     if (!user) return false;
     return item.roles.includes(user.role);
-  });
+  };
 
   const userInitials = user?.fullName
     ? user.fullName
@@ -212,8 +154,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
       {/* Logo / Branding */}
       <div className="flex items-center h-16 px-4 flex-shrink-0 border-b border-white/10">
         <div className="flex items-center min-w-0">
-          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
+            <span className="text-sm font-bold text-white tracking-tight">K</span>
           </div>
           <div
             className={`
@@ -222,60 +164,77 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
             `}
           >
             <h1 className="text-lg font-bold text-white whitespace-nowrap tracking-tight">
-              Kovarti PM Assistant
+              Kovarti PM
             </h1>
             <p className="text-xs text-sidebar-text/60 whitespace-nowrap leading-none mt-0.5">
-              AI-Powered Project Management
+              Project Management
             </p>
           </div>
         </div>
       </div>
 
-      {/* Navigation Items */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1" aria-label="Primary">
-        {visibleItems.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.path);
+      {/* Navigation — grouped with section labels */}
+      <nav className="flex-1 overflow-y-auto py-2 px-2" aria-label="Primary">
+        {navSections.map((section) => {
+          const visibleItems = section.items.filter(isItemVisible);
+          if (visibleItems.length === 0) return null;
 
           return (
-            <Link
-              key={item.path}
-              to={item.path}
-              title={collapsed ? item.label : undefined}
-              className={`
-                group flex items-center rounded-lg
-                transition-all duration-200 ease-in-out
-                ${collapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}
-                ${
-                  active
-                    ? 'bg-sidebar-active text-sidebar-text-active shadow-lg shadow-primary-500/20'
-                    : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white'
-                }
-              `}
-              aria-current={active ? 'page' : undefined}
-            >
-              <Icon
-                className={`
-                  flex-shrink-0 transition-colors duration-200
-                  ${collapsed ? 'w-6 h-6' : 'w-5 h-5'}
-                  ${active ? 'text-white' : 'text-sidebar-text group-hover:text-white'}
-                `}
-              />
-              <span
-                className={`
-                  ml-3 text-sm font-medium whitespace-nowrap
-                  transition-all duration-300
-                  ${collapsed ? 'sr-only' : 'block'}
-                `}
-              >
-                {item.label}
-              </span>
-
-              {/* Active indicator bar */}
-              {active && (
-                <span className="absolute left-0 w-1 h-8 bg-white rounded-r-full" />
+            <div key={section.title} className="mb-1">
+              {/* Section label (hidden when collapsed) */}
+              {!collapsed && (
+                <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-sidebar-text/40">
+                  {section.title}
+                </p>
               )}
-            </Link>
+              {collapsed && <div className="h-2" />}
+
+              {visibleItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.path);
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    title={collapsed ? item.label : undefined}
+                    className={`
+                      group flex items-center rounded-lg
+                      transition-all duration-200 ease-in-out
+                      ${collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2'}
+                      ${
+                        active
+                          ? 'bg-sidebar-active text-sidebar-text-active shadow-lg shadow-primary-500/20'
+                          : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white'
+                      }
+                    `}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    <Icon
+                      className={`
+                        flex-shrink-0 transition-colors duration-200
+                        ${collapsed ? 'w-5 h-5' : 'w-4.5 h-4.5 w-[18px] h-[18px]'}
+                        ${active ? 'text-white' : 'text-sidebar-text group-hover:text-white'}
+                      `}
+                    />
+                    <span
+                      className={`
+                        ml-3 text-sm font-medium whitespace-nowrap
+                        transition-all duration-300
+                        ${collapsed ? 'sr-only' : 'block'}
+                      `}
+                    >
+                      {item.label}
+                    </span>
+
+                    {/* Active indicator bar */}
+                    {active && (
+                      <span className="absolute left-0 w-1 h-6 bg-white rounded-r-full" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
