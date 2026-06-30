@@ -34,10 +34,21 @@ Tasks are the atomic unit of work. Each task supports:
 - Parent-child hierarchy (subtasks)
 - Risk and issue annotations
 - Progress percentage tracking
+- Recurring task support (daily, weekly, biweekly, monthly) with auto-generation
+
+### Recurring Tasks
+
+Tasks can be marked as recurring templates with an RRULE-style recurrence rule. Supported frequencies:
+
+- **Daily** — generates a new task instance every day
+- **Weekly / Biweekly** — with selectable days of the week (e.g., Mon/Wed/Fri)
+- **Monthly** — on a specific day of the month
+
+A daily cron job (02:00 UTC) scans for templates and generates instances within a 14-day horizon. Generated instances link back to their parent template via `recurrence_parent_id`. Template tasks appear in the Gantt chart with a repeat icon.
 
 ### Views
 
-- **Gantt chart** -- interactive timeline with dependency arrows and critical path highlighting
+- **Gantt chart** -- interactive timeline with dependency arrows and critical path highlighting. Supports drag-and-drop rescheduling: drag a bar to move a task, drag the right edge to resize. Date changes cascade through dependencies automatically.
 - **Kanban board** -- drag-and-drop cards grouped by status
 - **Calendar view** -- tasks plotted on a monthly/weekly calendar
 - **Table view** -- sortable, filterable spreadsheet-style listing with a customizable column picker. Choose from 21 columns across four groups (Standard, Scheduling/CPM, Baseline, Other). Column selections persist per schedule. Scheduling columns (Early Start, Late Finish, Total Float, etc.) automatically trigger CPM computation. Baseline columns show variance data when a baseline comparison is active.
@@ -155,6 +166,25 @@ The `ResourceOptimizerService` uses AI to analyze resource utilization patterns 
 - Reallocation of underutilized resources
 - Load balancing across team members
 - Skill-based assignment optimization
+
+### Resource Availability Calendar
+
+Each resource has an availability calendar accessible from the Team tab. Managers can define blocks of time when a resource is unavailable or has reduced hours:
+
+| Type | Effect |
+|------|--------|
+| **Vacation** | Resource fully unavailable for the date range |
+| **Holiday** | Resource fully unavailable (company-wide) |
+| **Unavailable** | Generic unavailability |
+| **Reduced Hours** | Resource available for fewer hours/day |
+
+The calendar displays a color-coded month grid (red=vacation, blue=holiday, gray=unavailable, amber=reduced). Workload heatmap calculations automatically account for availability blocks — when a resource has vacation during a week, their effective capacity is reduced proportionally.
+
+**API endpoints:**
+- `GET /api/v1/resources/:resourceId/availability?from=&to=`
+- `POST /api/v1/resources/:resourceId/availability`
+- `PUT /api/v1/resources/availability/:id`
+- `DELETE /api/v1/resources/availability/:id`
 
 ---
 
@@ -649,6 +679,32 @@ The `StripeService` manages subscription billing:
 - **Billing portal**: self-service subscription management via Stripe's portal
 - **Webhook handling**: processes Stripe events for subscription lifecycle (created, updated, cancelled, payment succeeded/failed)
 - **Tier support**: free, pro, business plans mapped to Stripe price IDs
+
+---
+
+## 23. Customizable Dashboard Widgets
+
+Both the PM Dashboard and Executive Dashboard support customizable widget layouts. Users can toggle individual widgets on/off via a gear icon dropdown. Selections persist in `localStorage`.
+
+**PM Dashboard widgets:**
+- Stats overview (project/task counts)
+- AI Summary Banner
+- Active Projects table
+- Recent Activity feed
+- Resource Utilization overview
+- Project Burndown progress bars
+
+**Executive Dashboard widgets:**
+- Portfolio stats
+- Budget overview
+- Resource summary
+- AI Summary Banner
+- Active Projects table
+- Recent Activity feed
+- Resource Utilization overview
+- Project Burndown progress bars
+
+Widgets render in a responsive CSS grid (1-3 columns depending on viewport). When all widgets are disabled, a "No widgets enabled" message is shown.
 
 ---
 

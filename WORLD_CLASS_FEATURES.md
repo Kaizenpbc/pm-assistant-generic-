@@ -326,3 +326,7 @@ An agentic AI project management platform that combines the scheduling power of 
 | Sprint Planning / Agile Mode | Done | P5 |
 | Custom Report Builder | Done | P5 |
 | Project Intake Forms | Done | P5 |
+| Gantt Drag-and-Drop Rescheduling | Done | Enhancement |
+| Recurring Tasks | Done | Enhancement |
+| Resource Availability Calendar | Done | Enhancement |
+| Customizable Dashboard Widgets | Done | Enhancement |

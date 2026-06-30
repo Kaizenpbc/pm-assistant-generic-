@@ -80,9 +80,11 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 ### Project & Schedule Management
 - Full CRUD for projects, tasks, and schedules
 - Multiple views: Gantt chart, Kanban board, Calendar, Table (with MS Project-style column picker)
+- Gantt drag-and-drop rescheduling (move and resize task bars)
 - Task hierarchy with summary task auto-calculation
 - Dependency management with predecessor/successor relationships
-- Drag-and-drop scheduling
+- Recurring tasks (daily, weekly, biweekly, monthly) with auto-generation
+- Customizable dashboard widgets with per-user persistence
 
 ### Critical Path Method (CPM)
 - Forward and backward pass computation
@@ -104,6 +106,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Workload heatmap visualization
 - Resource leveling algorithm
 - Resource optimization suggestions
+- Resource availability calendar (vacation, holiday, unavailable, reduced hours)
 
 ### DAG Workflow Engine
 - Declarative directed acyclic graph workflows

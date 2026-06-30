@@ -60,6 +60,8 @@ Both dashboards display:
 - **Project list** -- Each project card shows status, priority, progress bar, and budget. Click a card to open the project or click **View Schedule** to jump directly to the schedule.
 - **AI Summary Banner** -- An AI-generated daily digest of portfolio health (when AI is enabled).
 
+Click the **gear icon** next to the dashboard title to customize which widgets are visible. Toggle widgets on/off — your selections are saved automatically and persist across sessions. Available widgets include Recent Activity, Resource Utilization, and Project Burndown progress bars.
+
 ### Sidebar Navigation
 
 The left sidebar provides access to all areas of the application:
@@ -156,6 +158,7 @@ Each project page provides tabs or sections for:
    - **Assigned To** -- Team member responsible.
    - **Description** -- Detailed task notes.
    - **Story Points** -- Agile estimation value.
+   - **Recurrence** -- Set a recurring schedule (Daily, Weekly, Biweekly, or Monthly). For Weekly/Biweekly, select specific days. Recurring templates auto-generate task instances within a 14-day horizon.
 3. Click **Save** to add the task.
 
 ### Task Hierarchy
@@ -204,6 +207,8 @@ The default schedule view. Displays tasks as horizontal bars on a timeline:
 - **Progress fill** shows completion percentage within each bar.
 - **Dependency arrows** connect predecessor and successor tasks.
 - **WBS numbering** is displayed in the task list column.
+- **Drag-and-drop rescheduling**: Drag a bar to move the task to new dates. Drag the right edge to resize (change end date only). Changes automatically cascade through dependencies.
+- **Recurring task indicator**: Template tasks display a repeat icon on their bar.
 - Hover over a bar to see task details. Click to edit.
 
 ### Kanban Board
@@ -371,6 +376,19 @@ AI-powered forecasting of future resource bottlenecks based on current task assi
 ### Rebalance Suggestions
 
 The system analyzes workload across resources and suggests task reassignments to balance the team's load more evenly.
+
+### Resource Availability Calendar
+
+Each resource has an availability calendar in the Team tab. Use it to define when a resource is unavailable or has reduced hours:
+
+1. Select a resource from the dropdown in the Team tab.
+2. Click **Add Block** to define an availability entry.
+3. Set the date range, type (Vacation, Holiday, Unavailable, or Reduced Hours), and optional note.
+4. For Reduced Hours, specify the hours per day available.
+
+The calendar displays a color-coded month view: red for vacation, blue for holiday, gray for unavailable, amber for reduced hours. Navigate months with the arrow buttons. Existing blocks appear in a list below the calendar and can be deleted.
+
+Workload calculations automatically account for availability — if a resource has vacation during a week, their effective capacity is reduced proportionally.
 
 ---
 
