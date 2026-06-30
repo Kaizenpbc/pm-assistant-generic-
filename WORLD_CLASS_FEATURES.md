@@ -1,7 +1,7 @@
 # World-Class Features Roadmap
 
 ## Vision
-Build an AI-native project management platform that combines the scheduling power of Primavera P6, the usability of Monday.com/Smartsheet, and AI capabilities that no competitor offers.
+An agentic AI project management platform that combines the scheduling power of Primavera P6, the usability of Monday.com/Smartsheet, and autonomous AI agents that no competitor offers. 14 agents continuously detect, reason, and act — with human-in-the-loop governance and full audit trails.
 
 ## Benchmarked Against
 - Oracle Primavera P6 (enterprise scheduling, EVM, critical path)

@@ -1,6 +1,6 @@
-# Kovarti PM Assistant — Agentic Implementation Plan
+# Kovarti PM Assistant — Agentic System Architecture
 
-This document defines everything required to evolve PM Assistant from a copilot (reactive alerts) to a fully agentic system (autonomous reasoning, planning, and controlled action execution).
+This document defines the architecture, governance, and implementation of PM Assistant's agentic system — 14 autonomous AI agents that detect issues, reason via Claude, and propose (or auto-execute) corrective actions with human-in-the-loop governance.
 
 ---
 

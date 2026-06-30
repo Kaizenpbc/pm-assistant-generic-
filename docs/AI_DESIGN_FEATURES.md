@@ -1,16 +1,17 @@
 # AI Design Features - PM Assistant
 
-**Last updated:** February 28, 2026
+**Last updated:** June 30, 2026
 **LLM Provider:** Claude API (Anthropic SDK)
 **Architecture:** Fastify + TypeScript backend, React frontend, MySQL database
 **AI Kill Switch:** `AI_ENABLED` environment variable disables all AI features globally
 **Agent Kill Switch:** `KillSwitchService` provides runtime API-controlled agent shutdown (global, per-agent, per-project) with audit trail — distinct from the env-var kill switch
+**Agentic System:** 14 autonomous agents with 3-tier autonomy model (Notify → Propose → Auto-Execute)
 
 ---
 
 ## Overview
 
-PM Assistant embeds AI across the entire project management lifecycle. Every AI capability is powered by the Anthropic Claude SDK, with structured JSON output validated by Zod schemas. All features degrade gracefully when AI is unavailable -- the application remains fully functional without AI.
+PM Assistant is an agentic AI-native project management platform. 14 specialized agents continuously monitor projects, detect issues, reason about solutions via Claude, and propose (or autonomously execute) corrective actions — all governed by confidence scoring, risk classification, and human-in-the-loop controls. Every AI capability is powered by the Anthropic Claude SDK, with structured JSON output validated by Zod schemas. All features degrade gracefully when AI is unavailable -- the application remains fully functional without AI.
 
 Key architectural components:
 - **Claude Service** (`claudeService.ts`) -- Core SDK integration with streaming, JSON schema mode, tool use, rate limiting, retry logic, and token tracking
