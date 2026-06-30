@@ -223,7 +223,14 @@ Tasks plotted on a monthly calendar grid. Each day cell shows tasks that are act
 
 ### Table View
 
-A spreadsheet-like view of all tasks with sortable columns for name, status, priority, assignee, dates, progress, and story points.
+A spreadsheet-like view of all tasks with inline editing. Click the **Columns** button (gear icon) in the table header to open the column picker. Choose from 21 columns organized into four groups:
+
+- **Standard** -- Name, Status, Priority, Start Date, End Date, Progress, Assigned To (visible by default, inline-editable)
+- **Scheduling (CPM)** -- Duration, Early Start, Early Finish, Late Start, Late Finish, Total Float, Free Float, Critical (read-only; enabling any of these triggers CPM computation automatically)
+- **Baseline** -- Baseline Start, Baseline End, Start Variance, End Variance (read-only; populated when a baseline comparison is active)
+- **Other** -- Predecessor, WBS (read-only; WBS is auto-computed from the task hierarchy)
+
+Column selections are saved per schedule and persist across page reloads. All visible columns support sorting. Bulk select, status/priority/assignee changes, and inline cell editing continue to work on the standard columns.
 
 ### Network Diagram
 

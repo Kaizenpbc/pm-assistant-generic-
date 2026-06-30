@@ -40,7 +40,7 @@ Tasks are the atomic unit of work. Each task supports:
 - **Gantt chart** -- interactive timeline with dependency arrows and critical path highlighting
 - **Kanban board** -- drag-and-drop cards grouped by status
 - **Calendar view** -- tasks plotted on a monthly/weekly calendar
-- **Table view** -- sortable, filterable spreadsheet-style listing
+- **Table view** -- sortable, filterable spreadsheet-style listing with a customizable column picker. Choose from 21 columns across four groups (Standard, Scheduling/CPM, Baseline, Other). Column selections persist per schedule. Scheduling columns (Early Start, Late Finish, Total Float, etc.) automatically trigger CPM computation. Baseline columns show variance data when a baseline comparison is active.
 
 ### Bulk Operations
 

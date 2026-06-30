@@ -108,8 +108,13 @@ An agentic AI project management platform that combines the scheduling power of 
 ### 2.5 Calendar & Table Views
 - Calendar view with task bars across dates
 - Table view with inline editing (spreadsheet-like)
-- Column sorting
-- **Benchmark:** Smartsheet, Monday.com
+- MS Project-style column picker: 21 columns across 4 groups (Standard, Scheduling/CPM, Baseline, Other)
+- Column visibility persisted per schedule in localStorage
+- CPM columns (Early Start, Late Finish, Total Float, etc.) auto-trigger critical path computation
+- Baseline variance columns populate when comparison is active
+- WBS auto-computed from task hierarchy
+- Column sorting on all numeric and date fields
+- **Benchmark:** MS Project, Smartsheet, Monday.com
 
 ### 2.6 Portfolio-Level Gantt
 - Program view: multiple projects on one timeline
