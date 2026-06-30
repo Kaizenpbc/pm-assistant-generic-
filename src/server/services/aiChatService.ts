@@ -302,7 +302,7 @@ export class AIChatService {
     } else {
       // Always load portfolio context when no specific project is selected
       try {
-        const ctx = await this.contextBuilder.buildPortfolioContext();
+        const ctx = await this.contextBuilder.buildPortfolioContext({ userId: req.userId, role: req.userRole });
         projectContext = this.contextBuilder.portfolioToPromptString(ctx);
       } catch {
         projectContext = 'Portfolio context unavailable.';

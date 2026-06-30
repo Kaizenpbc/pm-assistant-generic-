@@ -126,8 +126,11 @@ export class AIContextBuilder {
     };
   }
 
-  async buildPortfolioContext(): Promise<PortfolioContext> {
-    const projects = await this.projectService.findAll();
+  async buildPortfolioContext(opts?: { userId?: string; role?: string }): Promise<PortfolioContext> {
+    const isAdmin = !opts?.userId || opts?.role === 'admin' || opts?.role === 'executive';
+    const projects = isAdmin
+      ? await this.projectService.findAll()
+      : await this.projectService.findByUserId(opts!.userId!);
 
     const byStatus: Record<string, number> = {};
     const byPriority: Record<string, number> = {};

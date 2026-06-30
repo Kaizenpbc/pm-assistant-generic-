@@ -15,7 +15,8 @@ export async function predictionRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
-      const { predictions, aiPowered } = await service.getDashboardPredictions(userId);
+      const userRole = request.user!.role;
+      const { predictions, aiPowered } = await service.getDashboardPredictions(userId, userRole);
       return reply.send({ data: predictions, aiPowered });
     } catch (err) {
       fastify.log.error({ err }, 'Dashboard predictions failed');

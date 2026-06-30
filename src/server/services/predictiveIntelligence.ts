@@ -609,8 +609,9 @@ export class PredictiveIntelligenceService {
 
   async getDashboardPredictions(
     userId?: string,
+    userRole?: string,
   ): Promise<{ predictions: AIDashboardPredictions; aiPowered: boolean }> {
-    const portfolio = await this.contextBuilder.buildPortfolioContext();
+    const portfolio = await this.contextBuilder.buildPortfolioContext({ userId, role: userRole });
 
     // Compute per-project health deterministically
     const projectHealthScores: Array<{
