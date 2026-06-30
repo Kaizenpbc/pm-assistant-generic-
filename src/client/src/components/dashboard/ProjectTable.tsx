@@ -195,12 +195,12 @@ export function ProjectTable({ projects }: Props) {
           <tr>
             <Th label="Name" sortable="name" />
             <Th label="Status" sortable="status" />
-            <Th label="Priority" sortable="priority" />
-            <Th label="Type" sortable="projectType" />
+            <Th label="Priority" sortable="priority" col="hidden sm:table-cell" />
+            <Th label="Type" sortable="projectType" col="hidden sm:table-cell" />
             <Th label="Progress" sortable="progressPercentage" />
-            <Th label="Budget" sortable="budgetAllocated" />
-            <Th label="Spent" sortable="budgetPct" />
-            <Th label="End Date" sortable="endDate" />
+            <Th label="Budget" sortable="budgetAllocated" col="hidden md:table-cell" />
+            <Th label="Spent" sortable="budgetPct" col="hidden md:table-cell" />
+            <Th label="End Date" sortable="endDate" col="hidden sm:table-cell" />
             <Th label="Days Left" sortable="daysRemaining" />
           </tr>
         </thead>
@@ -234,7 +234,7 @@ export function ProjectTable({ projects }: Props) {
                 </td>
 
                 {/* Priority */}
-                <td className="px-3 py-3 whitespace-nowrap">
+                <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap">
                   {project.priority ? (
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${priorityStyles[project.priority] ?? 'bg-gray-100 text-gray-600'}`}>
                       {project.priority}
@@ -245,7 +245,7 @@ export function ProjectTable({ projects }: Props) {
                 </td>
 
                 {/* Type */}
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                   {project.projectType ? (typeLabels[project.projectType] ?? project.projectType) : '—'}
                 </td>
 
@@ -263,12 +263,12 @@ export function ProjectTable({ projects }: Props) {
                 </td>
 
                 {/* Budget Allocated */}
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600">
+                <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap text-sm text-gray-600">
                   {budgetAllocated > 0 ? formatDollar(budgetAllocated) : <span className="text-gray-300">—</span>}
                 </td>
 
                 {/* Budget Spent % */}
-                <td className="px-3 py-3 whitespace-nowrap">
+                <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap">
                   {budgetPct !== null ? (
                     <span className={`text-sm font-medium ${budgetPct > 90 ? 'text-red-600' : 'text-gray-600'}`}>
                       {budgetPct}%
@@ -279,7 +279,7 @@ export function ProjectTable({ projects }: Props) {
                 </td>
 
                 {/* End Date */}
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                   {formatDate(project.endDate)}
                 </td>
 

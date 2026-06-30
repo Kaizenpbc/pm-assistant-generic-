@@ -35,6 +35,24 @@ async function start() {
     await registerPlugins(fastify);
     console.log('Plugins registered');
 
+    // General health check (no auth required)
+    fastify.get('/health', async () => ({
+      status: 'ok',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    }));
+
+    // Request duration logging for API routes
+    fastify.addHook('onResponse', (request, reply, done) => {
+      if (request.url.startsWith('/api/')) {
+        const duration = reply.elapsedTime;
+        if (duration > 2000) {
+          console.warn(`SLOW REQUEST: ${request.method} ${request.url} — ${Math.round(duration)}ms`);
+        }
+      }
+      done();
+    });
+
     console.log('Registering routes...');
     await registerRoutes(fastify);
     console.log('Routes registered');
@@ -58,6 +76,16 @@ async function start() {
     process.exit(1);
   }
 }
+
+// Crash-safety: log and exit on uncaught errors
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION — shutting down:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason);
+});
 
 process.on('SIGINT', async () => {
   console.log('Shutting down server...');

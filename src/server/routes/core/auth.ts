@@ -7,6 +7,7 @@ import { config } from '../../config';
 import { userService } from '../../services/UserService';
 import { emailService } from '../../services/EmailService';
 import { stripeService } from '../../services/StripeService';
+import { rateLimiter } from '../../middleware/rateLimiter';
 
 const loginSchema = z.object({
   username: z.string().min(3),
@@ -34,9 +35,13 @@ export async function authRoutes(fastify: FastifyInstance) {
     schema: { description: 'User login', tags: ['auth'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // TEMP DEBUG: log raw body
-      const rawBody = request.body as Record<string, unknown>;
-      reply.header('X-Debug-Received', JSON.stringify({ keys: Object.keys(rawBody || {}), hasUsername: !!rawBody?.username, hasPassword: !!rawBody?.password }));
+      // Rate limit: 10 attempts per minute per IP
+      const ip = request.ip || 'unknown';
+      const rl = rateLimiter.check(`auth:login:${ip}`, 10, 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many login attempts. Please try again later.' });
+      }
+
       const { username, password } = loginSchema.parse(request.body);
 
       const user = await userService.findByUsername(username);
@@ -109,6 +114,13 @@ export async function authRoutes(fastify: FastifyInstance) {
     schema: { description: 'User registration', tags: ['auth'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Rate limit: 5 registrations per minute per IP
+      const ip = request.ip || 'unknown';
+      const rl = rateLimiter.check(`auth:register:${ip}`, 5, 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many registration attempts. Please try again later.' });
+      }
+
       const { username, email, password, fullName } = registerSchema.parse(request.body);
 
       const existingUsername = await userService.findByUsername(username);

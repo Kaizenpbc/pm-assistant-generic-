@@ -229,7 +229,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMobileMenuToggle }) => {
           {dropdownOpen && (
             <div
               className="
-                absolute right-0 mt-2 w-64 rounded-xl
+                absolute right-0 mt-2 w-56 sm:w-64 max-w-[90vw] rounded-xl
                 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg
                 py-1 z-50 animate-fade-in
               "
