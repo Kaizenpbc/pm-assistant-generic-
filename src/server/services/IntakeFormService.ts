@@ -156,7 +156,7 @@ class IntakeFormService {
   }
 
   async getSubmissions(formId?: string, status?: string): Promise<IntakeSubmission[]> {
-    let sql = `SELECT s.*, f.name as form_name, u.name as submitter_name
+    let sql = `SELECT s.*, f.name as form_name, u.full_name as submitter_name
                FROM intake_submissions s
                JOIN intake_forms f ON s.form_id = f.id
                LEFT JOIN users u ON s.submitted_by = u.id`;
@@ -172,7 +172,7 @@ class IntakeFormService {
 
   async getSubmissionById(id: string): Promise<IntakeSubmission | null> {
     const rows = await databaseService.query<IntakeSubmissionRow>(
-      `SELECT s.*, f.name as form_name, u.name as submitter_name
+      `SELECT s.*, f.name as form_name, u.full_name as submitter_name
        FROM intake_submissions s
        JOIN intake_forms f ON s.form_id = f.id
        LEFT JOIN users u ON s.submitted_by = u.id
