@@ -1859,6 +1859,54 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     const response = await this.api.delete(`/report-schedules/${id}`);
     return response.data;
   }
+
+  // -------------------------------------------------------------------------
+  // Goals / OKR
+  // -------------------------------------------------------------------------
+
+  async listGoals(params?: { ownerId?: string; projectId?: string; goalType?: string; status?: string }) {
+    const response = await this.api.get('/goals', { params });
+    return response.data;
+  }
+
+  async getGoal(id: string) {
+    const response = await this.api.get(`/goals/${id}`);
+    return response.data;
+  }
+
+  async createGoal(data: Record<string, unknown>) {
+    const response = await this.api.post('/goals', data);
+    return response.data;
+  }
+
+  async updateGoal(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/goals/${id}`, data);
+    return response.data;
+  }
+
+  async deleteGoal(id: string) {
+    const response = await this.api.delete(`/goals/${id}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // CSV Import
+  // -------------------------------------------------------------------------
+
+  async importTasks(scheduleId: string, csv: string, columnMap?: Record<string, string>) {
+    const response = await this.api.post(`/schedules/${scheduleId}/import`, { csv, columnMap });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // User Preferences (timezone, locale)
+  // -------------------------------------------------------------------------
+
+  async updateUserPreferences(prefs: { timezone?: string; locale?: string }) {
+    const response = await this.api.put('/users/me/preferences', prefs);
+    return response.data;
+  }
+
 }
 
 export const apiService = new ApiService();

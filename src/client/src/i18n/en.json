@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "workflows": "Workflows",
+    "intake": "Intake",
+    "changeRequests": "Change Requests",
+    "portfolio": "Portfolio",
+    "analytics": "Analytics",
+    "reports": "Reports",
+    "reportBuilder": "Report Builder",
+    "simulation": "Simulation",
+    "scenarios": "Scenario Modeling",
+    "meetings": "Meetings",
+    "lessons": "Lessons",
+    "askAi": "Ask AI",
+    "agent": "Agent",
+    "timesheets": "Timesheets",
+    "integrations": "Integrations",
+    "goals": "Goals",
+    "account": "Account",
+    "settings": "Settings",
+    "admin": "Admin",
+    "help": "Help"
+  },
+  "section": {
+    "plan": "Plan",
+    "analyze": "Analyze",
+    "intelligence": "Intelligence",
+    "workspace": "Workspace",
+    "system": "System"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search...",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "export": "Export",
+    "import": "Import",
+    "filter": "Filter",
+    "actions": "Actions"
+  },
+  "status": {
+    "pending": "Pending",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "active": "Active",
+    "onHold": "On Hold",
+    "onTrack": "On Track",
+    "atRisk": "At Risk",
+    "behind": "Behind"
+  },
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "urgent": "Urgent"
+  },
+  "settings": {
+    "language": "Language",
+    "languageDescription": "Choose your preferred language for the interface.",
+    "timezone": "Time Zone",
+    "timezoneDescription": "All dates and times will be displayed in this time zone."
+  }
+}

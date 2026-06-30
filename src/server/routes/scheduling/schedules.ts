@@ -8,6 +8,8 @@ import { WebSocketService } from '../../services/WebSocketService';
 import { webhookService } from '../../services/WebhookService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { notificationService } from '../../services/NotificationService';
+import { userService } from '../../services/UserService';
 
 const createScheduleSchema = z.object({
   projectId: z.string(),
@@ -36,6 +38,9 @@ const createTaskSchema = z.object({
   parentTaskId: z.string().optional(),
   recurrenceRule: z.string().optional(),
   isRecurrenceTemplate: z.boolean().optional(),
+  isMilestone: z.boolean().optional(),
+  dependencyLagDays: z.number().int().optional(),
+  dependencyType: z.enum(['FS', 'SS', 'FF', 'SF']).optional(),
 });
 
 const updateTaskSchema = createTaskSchema.partial().omit({ scheduleId: true });
@@ -332,6 +337,34 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Comment text is required' });
       }
       const comment = await scheduleService.addComment(taskId, text.trim(), user.userId, user.username || 'Project Manager');
+
+      // Parse @mentions and create notifications (fire-and-forget)
+      const mentions = text.match(/@(\w+)/g);
+      if (mentions && mentions.length > 0) {
+        (async () => {
+          try {
+            const task = await scheduleService.findTaskById(taskId);
+            for (const mention of mentions) {
+              const username = mention.slice(1);
+              if (username === user.username) continue;
+              const mentionedUser = await userService.findByUsername(username);
+              if (mentionedUser) {
+                await notificationService.create({
+                  userId: mentionedUser.id,
+                  type: 'mention',
+                  title: `${user.username} mentioned you`,
+                  message: `${user.username} mentioned you in a comment on "${task?.name || 'a task'}"`,
+                  linkType: 'task',
+                  linkId: taskId,
+                });
+              }
+            }
+          } catch (err) {
+            console.error('Mention notification error:', err);
+          }
+        })();
+      }
+
       return reply.status(201).send({ comment });
     } catch (error) {
       console.error('Add comment error:', error);

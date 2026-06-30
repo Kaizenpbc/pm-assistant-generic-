@@ -23,6 +23,8 @@ export async function userRoutes(fastify: FastifyInstance) {
           fullName: dbUser?.fullName,
           emailNotificationsEnabled: dbUser?.emailNotificationsEnabled ?? true,
           digestFrequency: dbUser?.digestFrequency ?? 'none',
+          timezone: dbUser?.timezone ?? 'UTC',
+          locale: dbUser?.locale ?? 'en',
         },
       };
     } catch (error) {
@@ -58,6 +60,33 @@ export async function userRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       console.error('Update notification preferences error:', error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  fastify.put('/me/preferences', {
+    preHandler: [requireScope('write')],
+    schema: { description: 'Update user preferences (timezone, locale)', tags: ['users'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = request.user!.userId;
+      const body = request.body as any || {};
+      const updateData: Record<string, any> = {};
+
+      if (body.timezone !== undefined) {
+        updateData.timezone = String(body.timezone);
+      }
+      if (body.locale !== undefined) {
+        updateData.locale = String(body.locale);
+      }
+
+      const updated = await userService.update(userId, updateData);
+      return {
+        timezone: updated?.timezone ?? 'UTC',
+        locale: updated?.locale ?? 'en',
+      };
+    } catch (error) {
+      console.error('Update user preferences error:', error);
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

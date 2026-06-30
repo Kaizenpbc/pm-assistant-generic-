@@ -86,7 +86,7 @@ export class CriticalPathService {
       }
     }
 
-    // Forward pass: compute ES, EF
+    // Forward pass: compute ES, EF — respecting dependency types and lag
     const esMap = new Map<string, number>();
     const efMap = new Map<string, number>();
 
@@ -95,8 +95,23 @@ export class CriticalPathService {
       const dur = getDuration(t);
       let es = 0;
       for (const pred of predecessors.get(id) || []) {
-        es = Math.max(es, efMap.get(pred) || 0);
+        const predTask = taskMap.get(pred)!;
+        const predDur = getDuration(predTask);
+        const predES = esMap.get(pred) || 0;
+        const predEF = efMap.get(pred) || 0;
+        const lag = t.dependencyLagDays || 0;
+        const depType = t.dependencyType || 'FS';
+        let constraint = 0;
+        switch (depType) {
+          case 'FS': constraint = predEF + lag; break;       // Finish-to-Start
+          case 'SS': constraint = predES + lag; break;       // Start-to-Start
+          case 'FF': constraint = predEF + lag - dur; break; // Finish-to-Finish
+          case 'SF': constraint = predES + lag - dur; break; // Start-to-Finish
+          default:   constraint = predEF + lag; break;
+        }
+        es = Math.max(es, constraint);
       }
+      es = Math.max(0, es);
       esMap.set(id, es);
       efMap.set(id, es + dur);
     }
@@ -119,7 +134,21 @@ export class CriticalPathService {
 
       let lf = projectDuration;
       for (const succ of succs) {
-        lf = Math.min(lf, lsMap.get(succ) ?? projectDuration);
+        const succTask = taskMap.get(succ)!;
+        const succDur = getDuration(succTask);
+        const succLS = lsMap.get(succ) ?? projectDuration;
+        const succLF = lfMap.get(succ) ?? projectDuration;
+        const lag = succTask.dependencyLagDays || 0;
+        const depType = succTask.dependencyType || 'FS';
+        let constraint = projectDuration;
+        switch (depType) {
+          case 'FS': constraint = succLS - lag; break;
+          case 'SS': constraint = succLS - lag + dur; break;
+          case 'FF': constraint = succLF - lag; break;
+          case 'SF': constraint = succLF - lag + dur; break;
+          default:   constraint = succLS - lag; break;
+        }
+        lf = Math.min(lf, constraint);
       }
       lfMap.set(id, lf);
       lsMap.set(id, lf - dur);

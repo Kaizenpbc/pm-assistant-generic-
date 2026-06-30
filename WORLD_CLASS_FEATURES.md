@@ -339,3 +339,13 @@ An agentic AI project management platform that combines the scheduling power of 
 | Mobile-Optimized Views | Done | Enhancement |
 | Email Notifications & Digests | Done | Enhancement |
 | Scheduled Report Delivery | Done | Enhancement |
+| Dark Mode | Done | Enhancement |
+| Project Milestones (Gantt diamonds) | Done | Enhancement |
+| Dependency Types (FS/FF/SS/SF + lag) | Done | Enhancement |
+| Kanban WIP Limits | Done | Enhancement |
+| Comment @Mentions | Done | Enhancement |
+| Bulk CSV Task Import | Done | Enhancement |
+| Gantt PDF Export | Done | Enhancement |
+| Goals / OKR Tracking | Done | Enhancement |
+| Time Zone Support | Done | Enhancement |
+| Multi-Language / i18n (EN/FR/ES) | Done | Enhancement |

@@ -20,10 +20,13 @@ export interface TaskFormData {
   endDate: string;
   progressPercentage: number;
   dependency: string;
+  dependencyType: string;
+  dependencyLagDays: string;
   parentTaskId: string;
   estimatedDays: string;
   recurrenceRule: string;
   isRecurrenceTemplate: boolean;
+  isMilestone: boolean;
 }
 
 interface TaskFormModalProps {
@@ -84,6 +87,9 @@ export function TaskFormModal({
     estimatedDays: '',
     recurrenceRule: '',
     isRecurrenceTemplate: false,
+    dependencyType: 'FS',
+    dependencyLagDays: '',
+    isMilestone: false,
   });
 
   // Pre-fill form when editing
@@ -103,6 +109,9 @@ export function TaskFormModal({
         estimatedDays: task.estimatedDays?.toString() || '',
         recurrenceRule: (task as any).recurrenceRule || '',
         isRecurrenceTemplate: (task as any).isRecurrenceTemplate || false,
+        dependencyType: (task as any).dependencyType || 'FS',
+        dependencyLagDays: (task as any).dependencyLagDays?.toString() || '',
+        isMilestone: (task as any).isMilestone || false,
       });
     }
   }, [task]);
@@ -327,6 +336,48 @@ export function TaskFormModal({
               </select>
             </div>
           </div>
+
+          {/* Dependency Type + Lag (visible when a dependency is selected) */}
+          {form.dependency && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Dependency Type</label>
+                <select
+                  name="dependencyType"
+                  value={form.dependencyType}
+                  onChange={handleChange}
+                  className="input w-full"
+                >
+                  <option value="FS">Finish-to-Start (FS)</option>
+                  <option value="SS">Start-to-Start (SS)</option>
+                  <option value="FF">Finish-to-Finish (FF)</option>
+                  <option value="SF">Start-to-Finish (SF)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Lag (days)</label>
+                <input
+                  type="number"
+                  name="dependencyLagDays"
+                  value={form.dependencyLagDays}
+                  onChange={handleChange}
+                  placeholder="0"
+                  className="input w-full"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Milestone checkbox */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.isMilestone}
+              onChange={(e) => setForm((prev) => ({ ...prev, isMilestone: e.target.checked }))}
+              className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span className="text-xs font-medium text-gray-600">Mark as Milestone</span>
+          </label>
 
           {/* Recurrence */}
           <RecurrenceSection form={form} setForm={setForm} isRecurringInstance={!!(task as any)?.recurrenceParentId} />

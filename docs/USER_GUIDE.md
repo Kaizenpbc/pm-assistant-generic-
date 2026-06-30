@@ -28,6 +28,9 @@ A comprehensive guide for using PM Assistant, an AI-powered enterprise project m
 20. [Lessons Learned](#20-lessons-learned)
 21. [Agent Proposals](#21-agent-proposals)
 22. [Settings and Account](#22-settings-and-account)
+23. [Dark Mode, Language, and Time Zone](#23-dark-mode-language-and-time-zone)
+24. [Goals / OKR Tracking](#24-goals--okr-tracking)
+25. [Bulk CSV Import](#25-bulk-csv-import)
 
 ---
 
@@ -179,11 +182,14 @@ Set task dependencies to define execution order:
 
 - **Dependency** -- Select the predecessor task.
 - **Dependency Type** -- Finish-to-Start (FS), Start-to-Start (SS), Finish-to-Finish (FF), or Start-to-Finish (SF).
-- Dependencies are visualized as connector lines on the Gantt chart and used in critical path analysis.
+- **Lag** -- Optional number of days to add between the two tasks (e.g., a 2-day lag on FS means the successor starts 2 days after the predecessor finishes).
+- Dependencies are visualized as colour-coded connector arrows on the Gantt chart (colour varies by type) and used in critical path analysis.
 
 ### Task Activity Panel
 
 Click on any task to view its activity history, including status changes, reassignments, date modifications, and comments.
+
+**@Mentions in comments** -- When writing a comment, type `@` to open an autocomplete list of project members. Selecting a name inserts the mention. The mentioned user receives an in-app notification linking to that task.
 
 ### Delay Detection
 
@@ -213,6 +219,8 @@ The default schedule view. Displays tasks as horizontal bars on a timeline:
 - **WBS numbering** is displayed in the task list column.
 - **Drag-and-drop rescheduling**: Drag a bar to move the task to new dates. Drag the right edge to resize (change end date only). Changes automatically cascade through dependencies.
 - **Recurring task indicator**: Template tasks display a repeat icon on their bar.
+- **Milestones**: Tasks marked as milestones appear as diamonds instead of bars.
+- **PDF Export**: Click the **Print / Export PDF** button in the toolbar to open a print-optimised Gantt ready for saving as PDF.
 - Hover over a bar to see task details. Click to edit.
 
 ### Kanban Board
@@ -225,6 +233,8 @@ Drag-and-drop card view organized by status columns:
 - **Cancelled** -- Removed tasks.
 
 Drag a card between columns to update its status. Each card shows the task name, priority badge, assignee, and due date.
+
+**WIP Limits** -- Each column supports a configurable Work-In-Progress limit set from the Kanban toolbar. When a column reaches its limit, the column header turns amber to signal congestion. Limits are stored in localStorage per schedule.
 
 ### Calendar View
 
@@ -971,6 +981,8 @@ Navigate to **Settings** to configure:
 - **API keys** -- Generate and manage API keys for programmatic access.
 - **Custom fields** -- Define organization-wide custom fields that appear on tasks and projects.
 - **Notifications** -- Configure notification preferences and channels.
+- **Language** -- Select your preferred display language (English, French, or Spanish). The change applies instantly without a page reload.
+- **Time Zone** -- Set your IANA timezone (e.g., `America/Toronto`). All dates in the application are displayed in this timezone.
 
 ### User Roles
 
@@ -986,6 +998,59 @@ Navigate to **Settings** to configure:
 | Shortcut | Action |
 |----------|--------|
 | Ctrl+K / Cmd+K | Open Command Palette |
+
+---
+
+## 23. Dark Mode, Language, and Time Zone
+
+### Dark Mode
+
+Click the **dark mode toggle** (sun/moon icon) in the TopBar to switch between light and dark themes. The choice is saved and applied automatically on your next visit.
+
+### Language
+
+Open **Settings → Language** and choose from **English**, **French (Français)**, or **Spanish (Español)**. The interface updates immediately; no page reload is required.
+
+### Time Zone
+
+Open **Settings → Preferences** and enter your IANA timezone string (e.g., `America/New_York`, `Europe/Paris`). All task dates, due dates, and timestamps across the application will display in that timezone. Saved via `PUT /api/v1/users/me/preferences`.
+
+---
+
+## 24. Goals / OKR Tracking
+
+The **Goals** page (sidebar link) lets teams track strategic Objectives and Key Results alongside project execution.
+
+### Creating an Objective
+
+1. Click **New Objective**.
+2. Enter a title, description, owner, and time period (e.g., Q3 2026).
+3. Save. The objective appears in the goals list.
+
+### Adding Key Results
+
+1. Open an objective.
+2. Click **Add Key Result**.
+3. Enter a title, target value, current value, and unit (e.g., "Revenue", 1000000, 750000, "USD").
+4. Progress is calculated automatically as `current / target × 100%`.
+
+### Linking to Projects
+
+In the objective detail panel, use **Link Project** to associate one or more projects. This surfaces the objective on the project overview so teams can see how their work maps to strategic goals.
+
+---
+
+## 25. Bulk CSV Import
+
+You can import tasks into any schedule from a CSV file without entering them one by one.
+
+1. Open a schedule and click **Import CSV** in the toolbar.
+2. Either **drag-and-drop** a `.csv` file into the upload area or **paste CSV text** directly.
+3. The **Column Mapping** step lets you match each CSV column to a task field (name, start date, end date, estimated days, status, priority, assignee). Required: name.
+4. The **Preview** table shows the parsed rows with any validation warnings highlighted.
+5. Click **Import** to create all valid tasks. A summary shows how many rows were imported and any rows skipped due to errors.
+
+Accepted date formats: `YYYY-MM-DD` and `MM/DD/YYYY`. Unrecognised status or priority values default to `pending` and `medium` respectively.
 
 ---
 

@@ -20,6 +20,7 @@ import { evmForecastRoutes } from './routes/scheduling/evmForecast';
 import { autoRescheduleRoutes } from './routes/scheduling/autoReschedule';
 import { resourceLevelingRoutes } from './routes/scheduling/resourceLeveling';
 import { taskPrioritizationRoutes } from './routes/scheduling/taskPrioritization';
+import { importRoutes } from './routes/scheduling/import';
 
 // AI
 import { aiChatRoutes } from './routes/ai/aiChat';
@@ -48,6 +49,7 @@ import { fileAttachmentRoutes } from './routes/collaboration/fileAttachments';
 import { meetingIntelligenceRoutes } from './routes/collaboration/meetingIntelligence';
 import { lessonsLearnedRoutes } from './routes/collaboration/lessonsLearned';
 import { intakeFormRoutes } from './routes/collaboration/intakeForms';
+import { goalRoutes } from './routes/goals';
 
 // Reporting
 import { reportBuilderRoutes } from './routes/reporting/reportBuilder';
@@ -98,6 +100,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(autoRescheduleRoutes, { prefix: '/api/v1/auto-reschedule' });
   await fastify.register(resourceLevelingRoutes, { prefix: '/api/v1/resource-leveling' });
   await fastify.register(taskPrioritizationRoutes, { prefix: '/api/v1/task-prioritization' });
+  await fastify.register(importRoutes, { prefix: '/api/v1/schedules' });
 
   // AI
   await fastify.register(aiChatRoutes, { prefix: '/api/v1/ai-chat' });
@@ -126,6 +129,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(meetingIntelligenceRoutes, { prefix: '/api/v1/meeting-intelligence' });
   await fastify.register(lessonsLearnedRoutes, { prefix: '/api/v1/lessons-learned' });
   await fastify.register(intakeFormRoutes, { prefix: '/api/v1/intake' });
+  await fastify.register(goalRoutes, { prefix: '/api/v1/goals' });
 
   // Reporting
   await fastify.register(reportBuilderRoutes, { prefix: '/api/v1/report-builder' });

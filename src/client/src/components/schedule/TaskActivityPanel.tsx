@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../../services/api';
 import { MessageSquare, Activity, Send, Trash2 } from 'lucide-react';
@@ -64,6 +64,10 @@ function getInitials(name: string): string {
 export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps) {
   const [tab, setTab] = useState<'comments' | 'activity'>('comments');
   const [newComment, setNewComment] = useState('');
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: commentsData } = useQuery({
@@ -77,6 +81,64 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
     queryFn: () => apiService.getTaskActivity(scheduleId, taskId),
     enabled: tab === 'activity',
   });
+
+  const { data: resourcesData } = useQuery({
+    queryKey: ['resources'],
+    queryFn: () => apiService.getResources(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const allUsers: { name: string; username: string }[] = (resourcesData?.resources || []).map((r: any) => ({
+    name: r.name || r.fullName || r.username || 'User',
+    username: r.username || r.name?.toLowerCase().replace(/\s+/g, '.') || 'user',
+  }));
+  const filteredMentions = allUsers.filter(
+    (u) => u.name.toLowerCase().includes(mentionQuery.toLowerCase()) || u.username.toLowerCase().includes(mentionQuery.toLowerCase())
+  ).slice(0, 5);
+
+  const handleCommentChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setNewComment(val);
+    // Check if user is typing a @mention
+    const cursor = e.target.selectionStart || val.length;
+    const textBeforeCursor = val.slice(0, cursor);
+    const atMatch = textBeforeCursor.match(/@(\w*)$/);
+    if (atMatch) {
+      setMentionQuery(atMatch[1]);
+      setShowMentions(true);
+      setMentionIndex(0);
+    } else {
+      setShowMentions(false);
+    }
+  }, []);
+
+  const insertMention = useCallback((username: string) => {
+    const cursor = inputRef.current?.selectionStart || newComment.length;
+    const textBeforeCursor = newComment.slice(0, cursor);
+    const atIdx = textBeforeCursor.lastIndexOf('@');
+    if (atIdx >= 0) {
+      const before = newComment.slice(0, atIdx);
+      const after = newComment.slice(cursor);
+      setNewComment(`${before}@${username} ${after}`);
+    }
+    setShowMentions(false);
+    inputRef.current?.focus();
+  }, [newComment]);
+
+  const handleCommentKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!showMentions || filteredMentions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setMentionIndex((prev) => Math.min(prev + 1, filteredMentions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setMentionIndex((prev) => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      insertMention(filteredMentions[mentionIndex].username);
+    } else if (e.key === 'Escape') {
+      setShowMentions(false);
+    }
+  }, [showMentions, filteredMentions, mentionIndex, insertMention]);
 
   const addCommentMutation = useMutation({
     mutationFn: (text: string) => apiService.addTaskComment(scheduleId, taskId, text),
@@ -139,15 +201,39 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
       {/* Comments Tab */}
       {tab === 'comments' && (
         <div>
-          {/* Comment input */}
-          <form onSubmit={handleSubmitComment} className="flex gap-2 mb-3">
-            <input
-              type="text"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Write a comment..."
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            />
+          {/* Comment input with @mention support */}
+          <form onSubmit={handleSubmitComment} className="flex gap-2 mb-3 relative">
+            <div className="flex-1 relative">
+              <input
+                ref={inputRef}
+                type="text"
+                value={newComment}
+                onChange={handleCommentChange}
+                onKeyDown={handleCommentKeyDown}
+                placeholder="Write a comment... Use @ to mention"
+                className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              {showMentions && filteredMentions.length > 0 && (
+                <div className="absolute left-0 right-0 bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                  {filteredMentions.map((user, idx) => (
+                    <button
+                      key={user.username}
+                      type="button"
+                      onClick={() => insertMention(user.username)}
+                      className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-primary-50 dark:hover:bg-primary-900/30 ${
+                        idx === mentionIndex ? 'bg-primary-50 dark:bg-primary-900/30' : ''
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-800 text-primary-600 dark:text-primary-300 flex items-center justify-center text-[8px] font-bold flex-shrink-0">
+                        {getInitials(user.name)}
+                      </span>
+                      <span className="font-medium text-gray-700 dark:text-gray-200">{user.name}</span>
+                      <span className="text-gray-400">@{user.username}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               type="submit"
               disabled={!newComment.trim() || addCommentMutation.isPending}
@@ -184,7 +270,15 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
                       <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
-                  <p className="text-xs text-gray-600 mt-0.5">{comment.text}</p>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    {comment.text.split(/(@\w+)/g).map((part: string, i: number) =>
+                      part.startsWith('@') ? (
+                        <span key={i} className="font-semibold text-primary-600 dark:text-primary-400">{part}</span>
+                      ) : (
+                        <span key={i}>{part}</span>
+                      )
+                    )}
+                  </p>
                 </div>
               </div>
             ))}

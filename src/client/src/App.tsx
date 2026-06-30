@@ -44,6 +44,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ defa
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 const AgentProposalsPage = lazy(() => import('./pages/AgentProposalsPage').then(m => ({ default: m.AgentProposalsPage })));
 const ChangeRequestsPage = lazy(() => import('./pages/ChangeRequestsPage').then(m => ({ default: m.ChangeRequestsPage })));
+const GoalsPage = lazy(() => import('./pages/GoalsPage').then(m => ({ default: m.GoalsPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 function PageLoader() {
@@ -118,6 +119,7 @@ function App() {
         <Route path="/help" element={<PrivateRoute><UserGuidePage /></PrivateRoute>} />
         <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
         <Route path="/change-requests" element={<PrivateRoute><ChangeRequestsPage /></PrivateRoute>} />
+        <Route path="/goals" element={<PrivateRoute><GoalsPage /></PrivateRoute>} />
         <Route path="/agent" element={<PrivateRoute><AgentProposalsPage /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
 

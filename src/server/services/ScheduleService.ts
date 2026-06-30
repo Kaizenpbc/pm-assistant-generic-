@@ -40,6 +40,8 @@ export interface Task {
   recurrenceRule?: string;
   recurrenceParentId?: string;
   isRecurrenceTemplate?: boolean;
+  isMilestone?: boolean;
+  dependencyLagDays?: number;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -74,6 +76,8 @@ export interface CreateTaskData {
   issues?: string;
   comments?: string;
   parentTaskId?: string;
+  isMilestone?: boolean;
+  dependencyLagDays?: number;
   createdBy: string;
 }
 
@@ -164,6 +168,8 @@ function rowToTask(row: any): Task {
     recurrenceRule: row.recurrence_rule ?? undefined,
     recurrenceParentId: row.recurrence_parent_id ?? undefined,
     isRecurrenceTemplate: row.is_recurrence_template === 1 || row.is_recurrence_template === true,
+    isMilestone: row.is_milestone === 1 || row.is_milestone === true,
+    dependencyLagDays: row.dependency_lag_days != null ? Number(row.dependency_lag_days) : 0,
     createdBy: row.created_by,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -351,8 +357,8 @@ export class ScheduleService {
       `INSERT INTO tasks (id, schedule_id, name, description, status, priority, assigned_to,
         due_date, estimated_days, estimated_duration_hours, actual_duration_hours,
         start_date, end_date, progress_percentage, dependency, dependency_type,
-        risks, issues, comments, parent_task_id, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        risks, issues, comments, parent_task_id, is_milestone, dependency_lag_days, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.scheduleId,
@@ -374,6 +380,8 @@ export class ScheduleService {
         data.issues || null,
         data.comments || null,
         data.parentTaskId || null,
+        data.isMilestone ? 1 : 0,
+        data.dependencyLagDays ?? 0,
         data.createdBy,
       ],
     );
@@ -438,6 +446,8 @@ export class ScheduleService {
       recurrenceRule: 'recurrence_rule',
       recurrenceParentId: 'recurrence_parent_id',
       isRecurrenceTemplate: 'is_recurrence_template',
+      isMilestone: 'is_milestone',
+      dependencyLagDays: 'dependency_lag_days',
       createdBy: 'created_by',
     };
 

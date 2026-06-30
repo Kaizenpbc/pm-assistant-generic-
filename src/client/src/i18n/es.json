@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "dashboard": "Panel de control",
+    "projects": "Proyectos",
+    "workflows": "Flujos de trabajo",
+    "intake": "Solicitudes",
+    "changeRequests": "Solicitudes de cambio",
+    "portfolio": "Portafolio",
+    "analytics": "Analítica",
+    "reports": "Informes",
+    "reportBuilder": "Constructor de informes",
+    "simulation": "Simulación",
+    "scenarios": "Modelado de escenarios",
+    "meetings": "Reuniones",
+    "lessons": "Lecciones",
+    "askAi": "Preguntar a la IA",
+    "agent": "Agente",
+    "timesheets": "Hojas de tiempo",
+    "integrations": "Integraciones",
+    "goals": "Objetivos",
+    "account": "Cuenta",
+    "settings": "Configuración",
+    "admin": "Administración",
+    "help": "Ayuda"
+  },
+  "section": {
+    "plan": "Planificar",
+    "analyze": "Analizar",
+    "intelligence": "Inteligencia",
+    "workspace": "Espacio de trabajo",
+    "system": "Sistema"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar...",
+    "loading": "Cargando...",
+    "noData": "No hay datos disponibles",
+    "confirm": "Confirmar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "submit": "Enviar",
+    "export": "Exportar",
+    "import": "Importar",
+    "filter": "Filtrar",
+    "actions": "Acciones"
+  },
+  "status": {
+    "pending": "Pendiente",
+    "inProgress": "En progreso",
+    "completed": "Completado",
+    "cancelled": "Cancelado",
+    "active": "Activo",
+    "onHold": "En espera",
+    "onTrack": "En tiempo",
+    "atRisk": "En riesgo",
+    "behind": "Retrasado"
+  },
+  "priority": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta",
+    "urgent": "Urgente"
+  },
+  "settings": {
+    "language": "Idioma",
+    "languageDescription": "Elige tu idioma preferido para la interfaz.",
+    "timezone": "Zona horaria",
+    "timezoneDescription": "Todas las fechas y horas se mostrarán en esta zona horaria."
+  }
+}

@@ -22,6 +22,8 @@ export interface User {
   digestFrequency: 'none' | 'daily' | 'weekly';
   digestLastSentAt: Date | null;
   lastLoginAt: Date | null;
+  timezone: string;
+  locale: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -60,6 +62,8 @@ function rowToUser(row: any): User {
     digestFrequency: row.digest_frequency || 'none',
     digestLastSentAt: row.digest_last_sent_at ?? null,
     lastLoginAt: row.last_login_at ?? null,
+    timezone: row.timezone || 'UTC',
+    locale: row.locale || 'en',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -148,6 +152,8 @@ export class UserService {
       digestFrequency: 'digest_frequency',
       digestLastSentAt: 'digest_last_sent_at',
       lastLoginAt: 'last_login_at',
+      timezone: 'timezone',
+      locale: 'locale',
     };
 
     for (const [key, column] of Object.entries(columnMap)) {

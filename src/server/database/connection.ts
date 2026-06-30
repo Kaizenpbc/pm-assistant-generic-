@@ -33,7 +33,7 @@ class DatabaseService {
         queueLimit: 0,
       };
 
-      this.pool = mysql.createPool(dbConfig);
+      this.pool = mysql.createPool({ ...dbConfig, dateStrings: true });
       this.isConnected = true;
       console.log('Database connection pool initialized');
     } catch (error) {

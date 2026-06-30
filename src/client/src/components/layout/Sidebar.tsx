@@ -24,8 +24,10 @@ import {
   ShieldCheck,
   Bot,
   GitPullRequest,
+  Target,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -35,62 +37,63 @@ interface SidebarProps {
 }
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
   path: string;
   roles?: Array<'admin' | 'executive' | 'manager' | 'member'>;
 }
 
 interface NavSection {
-  title: string;
+  titleKey: string;
   items: NavItem[];
 }
 
 const navSections: NavSection[] = [
   {
-    title: 'Plan',
+    titleKey: 'section.plan',
     items: [
-      { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-      { label: 'Projects', icon: FolderKanban, path: '/projects' },
-      { label: 'Workflows', icon: Workflow, path: '/workflows' },
-      { label: 'Intake', icon: ClipboardList, path: '/intake' },
-      { label: 'Change Requests', icon: GitPullRequest, path: '/change-requests' },
+      { labelKey: 'nav.dashboard', icon: LayoutDashboard, path: '/dashboard' },
+      { labelKey: 'nav.projects', icon: FolderKanban, path: '/projects' },
+      { labelKey: 'nav.workflows', icon: Workflow, path: '/workflows' },
+      { labelKey: 'nav.intake', icon: ClipboardList, path: '/intake' },
+      { labelKey: 'nav.changeRequests', icon: GitPullRequest, path: '/change-requests' },
     ],
   },
   {
-    title: 'Analyze',
+    titleKey: 'section.analyze',
     items: [
-      { label: 'Portfolio', icon: Layers, path: '/portfolio' },
-      { label: 'Analytics', icon: BarChart3, path: '/analytics' },
-      { label: 'Reports', icon: FileText, path: '/reports' },
-      { label: 'Report Builder', icon: FileBarChart, path: '/report-builder' },
-      { label: 'Simulation', icon: Dice5, path: '/monte-carlo' },
+      { labelKey: 'nav.portfolio', icon: Layers, path: '/portfolio' },
+      { labelKey: 'nav.analytics', icon: BarChart3, path: '/analytics' },
+      { labelKey: 'nav.reports', icon: FileText, path: '/reports' },
+      { labelKey: 'nav.reportBuilder', icon: FileBarChart, path: '/report-builder' },
+      { labelKey: 'nav.simulation', icon: Dice5, path: '/monte-carlo' },
     ],
   },
   {
-    title: 'Intelligence',
+    titleKey: 'section.intelligence',
     items: [
-      { label: 'Scenario Modeling', icon: Brain, path: '/scenarios' },
-      { label: 'Meetings', icon: MessageSquare, path: '/meetings' },
-      { label: 'Lessons', icon: BookOpen, path: '/lessons' },
-      { label: 'Ask AI', icon: Search, path: '/query' },
-      { label: 'Agent', icon: Bot, path: '/agent', roles: ['admin', 'manager'] },
+      { labelKey: 'nav.scenarios', icon: Brain, path: '/scenarios' },
+      { labelKey: 'nav.meetings', icon: MessageSquare, path: '/meetings' },
+      { labelKey: 'nav.lessons', icon: BookOpen, path: '/lessons' },
+      { labelKey: 'nav.askAi', icon: Search, path: '/query' },
+      { labelKey: 'nav.agent', icon: Bot, path: '/agent', roles: ['admin', 'manager'] },
     ],
   },
   {
-    title: 'Workspace',
+    titleKey: 'section.workspace',
     items: [
-      { label: 'Timesheets', icon: Clock, path: '/timesheet' },
-      { label: 'Integrations', icon: Plug, path: '/integrations' },
+      { labelKey: 'nav.goals', icon: Target, path: '/goals' },
+      { labelKey: 'nav.timesheets', icon: Clock, path: '/timesheet' },
+      { labelKey: 'nav.integrations', icon: Plug, path: '/integrations' },
     ],
   },
   {
-    title: 'System',
+    titleKey: 'section.system',
     items: [
-      { label: 'Account', icon: CreditCard, path: '/account' },
-      { label: 'Settings', icon: Settings, path: '/settings', roles: ['admin', 'manager'] },
-      { label: 'Admin', icon: ShieldCheck, path: '/admin', roles: ['admin'] },
-      { label: 'Help', icon: HelpCircle, path: '/help' },
+      { labelKey: 'nav.account', icon: CreditCard, path: '/account' },
+      { labelKey: 'nav.settings', icon: Settings, path: '/settings', roles: ['admin', 'manager'] },
+      { labelKey: 'nav.admin', icon: ShieldCheck, path: '/admin', roles: ['admin'] },
+      { labelKey: 'nav.help', icon: HelpCircle, path: '/help' },
     ],
   },
 ];
@@ -98,6 +101,7 @@ const navSections: NavSection[] = [
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMobileClose }) => {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
+  const { t } = useTranslation();
 
   // Close mobile sidebar on route change
   React.useEffect(() => {
@@ -180,11 +184,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
           if (visibleItems.length === 0) return null;
 
           return (
-            <div key={section.title} className="mb-1">
+            <div key={t(section.titleKey)} className="mb-1">
               {/* Section label (hidden when collapsed) */}
               {!collapsed && (
                 <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-sidebar-text/40">
-                  {section.title}
+                  {t(section.titleKey)}
                 </p>
               )}
               {collapsed && <div className="h-2" />}
@@ -197,7 +201,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
                   <Link
                     key={item.path}
                     to={item.path}
-                    title={collapsed ? item.label : undefined}
+                    title={collapsed ? t(item.labelKey) : undefined}
                     className={`
                       group flex items-center rounded-lg
                       transition-all duration-200 ease-in-out
@@ -224,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
                         ${collapsed ? 'sr-only' : 'block'}
                       `}
                     >
-                      {item.label}
+                      {t(item.labelKey)}
                     </span>
 
                     {/* Active indicator bar */}

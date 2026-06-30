@@ -15,12 +15,14 @@ export interface GanttTask {
   progressPercentage?: number;
   dependency?: string;
   dependencyType?: string;
+  dependencyLagDays?: number;
   parentTaskId?: string;
   assignedTo?: string;
   estimatedDays?: number;
   recurrenceRule?: string;
   recurrenceParentId?: string;
   isRecurrenceTemplate?: boolean;
+  isMilestone?: boolean;
 }
 
 interface FlatRow {
@@ -320,10 +322,10 @@ export function GanttChart({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
       {/* Schedule title bar */}
       {scheduleName && (
-        <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-4 rounded-full bg-primary-500" />
             <span className="text-sm font-semibold text-gray-800">
@@ -333,31 +335,54 @@ export function GanttChart({
               {rows.length} tasks
             </span>
           </div>
-          {onAddTask && (
+          <div className="flex items-center gap-2">
+            {onAddTask && (
+              <button
+                onClick={onAddTask}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Task
+              </button>
+            )}
             <button
-              onClick={onAddTask}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+              onClick={() => {
+                const el = document.getElementById('gantt-print-container');
+                if (el) {
+                  el.style.maxHeight = 'none';
+                  el.style.overflow = 'visible';
+                }
+                window.print();
+                if (el) {
+                  el.style.maxHeight = '70vh';
+                  el.style.overflow = 'hidden';
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors print:hidden"
+              title="Export as PDF"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Add Task
+              PDF
             </button>
-          )}
+          </div>
         </div>
       )}
 
-      <div className="flex overflow-hidden" style={{ maxHeight: '70vh' }}>
+      <div id="gantt-print-container" className="flex overflow-hidden" style={{ maxHeight: '70vh' }}>
         {/* ============================================================= */}
         {/* LEFT: Task table                                               */}
         {/* ============================================================= */}
         <div
-          className="flex-shrink-0 border-r border-gray-200 overflow-y-auto"
+          className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto"
           style={{ minWidth: TABLE_MIN_W, maxWidth: TABLE_MIN_W }}
         >
           {/* Table header */}
           <div
-            className="sticky top-0 z-10 flex items-center bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+            className="sticky top-0 z-10 flex items-center bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
             style={{ height: HEADER_H }}
           >
             <div className="w-12 px-2 text-center">WBS</div>
@@ -393,13 +418,16 @@ export function GanttChart({
                   className="flex-1 px-2 flex items-center gap-1.5 min-w-0"
                   style={{ paddingLeft: `${8 + level * 20}px` }}
                 >
-                  {task.priority && (
+                  {task.isMilestone && (
+                    <span className="w-3 h-3 flex-shrink-0 rotate-45 bg-primary-500 inline-block" title="Milestone" />
+                  )}
+                  {task.priority && !task.isMilestone && (
                     <span
                       className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${priorityDot[task.priority] || 'bg-gray-300'}`}
                     />
                   )}
                   <span
-                    className={`text-xs truncate ${isParent ? 'font-semibold text-gray-900' : 'text-gray-700'}`}
+                    className={`text-xs truncate ${isParent ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'}`}
                     title={task.name}
                   >
                     {task.name}
@@ -577,6 +605,36 @@ export function GanttChart({
               const isDragging = drag?.taskId === task.id;
               const canDrag = !!onTaskDragEnd;
 
+              // Milestone: render as a diamond instead of a bar
+              if (task.isMilestone) {
+                const diamondSize = 14;
+                const cx = left;
+                const cy = HEADER_H + idx * ROW_H + ROW_H / 2;
+                return (
+                  <div
+                    key={task.id}
+                    className="absolute group/bar"
+                    style={{ left: cx - diamondSize / 2, top: cy - diamondSize / 2, width: diamondSize, height: diamondSize }}
+                  >
+                    <div
+                      className="w-full h-full rotate-45"
+                      style={{
+                        backgroundColor: colors.fill,
+                        border: isCritical ? '2px solid #dc2626' : `1px solid ${colors.fill}`,
+                      }}
+                    />
+                    {/* Milestone tooltip */}
+                    <div className="invisible group-hover/bar:visible absolute z-30 left-1/2 -translate-x-1/2 -top-14 bg-gray-900 text-white rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg pointer-events-none">
+                      <div className="font-semibold">
+                        {isCritical && <span className="text-red-400">[Critical] </span>}
+                        Milestone: {task.name}
+                      </div>
+                      <div className="text-gray-300 mt-0.5">{formatShortDate(start)}</div>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={task.id}
@@ -702,24 +760,45 @@ export function GanttChart({
                 if (depIdx === -1) return null;
 
                 const depTask = rows[depIdx].task;
+                const depStart = toDate(depTask.startDate);
                 const depEnd = toDate(depTask.endDate);
                 const taskStart = toDate(task.startDate);
-                if (!depEnd || !taskStart) return null;
+                const taskEnd = toDate(task.endDate);
+                if (!depStart || !depEnd || !taskStart || !taskEnd) return null;
 
-                const x1 = daysBetween(minDate, depEnd) * DAY_PX;
+                const depType = (task.dependencyType || 'FS').toUpperCase();
                 const y1 = HEADER_H + depIdx * ROW_H + ROW_H / 2;
-                const x2 = daysBetween(minDate, taskStart) * DAY_PX;
                 const y2 = HEADER_H + idx * ROW_H + ROW_H / 2;
 
-                // Elbow path: right, down, right
-                const midX = x1 + 10;
+                let x1: number, x2: number;
+                switch (depType) {
+                  case 'SS': // Start-to-Start
+                    x1 = daysBetween(minDate, depStart) * DAY_PX;
+                    x2 = daysBetween(minDate, taskStart) * DAY_PX;
+                    break;
+                  case 'FF': // Finish-to-Finish
+                    x1 = daysBetween(minDate, depEnd) * DAY_PX;
+                    x2 = daysBetween(minDate, taskEnd) * DAY_PX;
+                    break;
+                  case 'SF': // Start-to-Finish
+                    x1 = daysBetween(minDate, depStart) * DAY_PX;
+                    x2 = daysBetween(minDate, taskEnd) * DAY_PX;
+                    break;
+                  default: // FS: Finish-to-Start
+                    x1 = daysBetween(minDate, depEnd) * DAY_PX;
+                    x2 = daysBetween(minDate, taskStart) * DAY_PX;
+                    break;
+                }
+
+                const midX = x1 + (x1 <= x2 ? 10 : -10);
+                const arrowColor = depType === 'FS' ? '#9ca3af' : depType === 'SS' ? '#3b82f6' : depType === 'FF' ? '#8b5cf6' : '#f59e0b';
 
                 return (
                   <path
                     key={`dep-${task.id}`}
                     d={`M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`}
                     fill="none"
-                    stroke="#9ca3af"
+                    stroke={arrowColor}
                     strokeWidth="1.5"
                     markerEnd="url(#arrowhead)"
                     opacity={0.6}
@@ -732,7 +811,7 @@ export function GanttChart({
       </div>
 
       {/* Legend */}
-      <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex items-center gap-4 flex-wrap print-legend">
+      <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex items-center gap-4 flex-wrap print-legend">
         {Object.entries(statusLabels).map(([key, label]) => (
           <div key={key} className="flex items-center gap-1.5">
             <div
@@ -780,8 +859,12 @@ export function GanttChart({
       <style>{`
         @media print {
           .print-legend { display: flex !important; }
+          .print\\:hidden { display: none !important; }
           body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-          @page { size: landscape; margin: 0.5in; }
+          @page { size: landscape; margin: 0.3in; }
+          #gantt-print-container { max-height: none !important; overflow: visible !important; }
+          nav, aside, header, .fixed { display: none !important; }
+          main { padding: 0 !important; margin: 0 !important; }
         }
       `}</style>
     </div>

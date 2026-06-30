@@ -10,6 +10,89 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* Dark mode base styles — covers body, inputs, selects, textareas globally */
+  .dark body,
+  .dark {
+    color-scheme: dark;
+  }
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+  .dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  .dark textarea,
+  .dark select {
+    @apply bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400;
+  }
+  .dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+  .dark textarea:focus,
+  .dark select:focus {
+    @apply border-primary-500 ring-primary-500;
+  }
+  .dark table {
+    @apply text-gray-200;
+  }
+  .dark th {
+    @apply bg-gray-800 text-gray-300 border-gray-700;
+  }
+  .dark td {
+    @apply border-gray-700;
+  }
+  .dark tr:hover {
+    @apply bg-gray-800/50;
+  }
+  .dark label {
+    @apply text-gray-300;
+  }
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5 {
+    @apply text-gray-100;
+  }
+  .dark p {
+    @apply text-gray-300;
+  }
+  .dark hr {
+    @apply border-gray-700;
+  }
+  .dark code {
+    @apply bg-gray-800 text-gray-200;
+  }
+  /* Dark mode for common card/panel patterns used across pages */
+  .dark .rounded-xl[class*="bg-white"],
+  .dark .rounded-lg[class*="bg-white"],
+  .dark .rounded-md[class*="bg-white"] {
+    background-color: rgb(31 41 55) !important; /* gray-800 */
+    border-color: rgb(55 65 81) !important; /* gray-700 */
+  }
+  .dark .bg-gray-50 {
+    background-color: rgb(17 24 39) !important; /* gray-900 */
+  }
+  .dark .bg-gray-100 {
+    background-color: rgb(31 41 55) !important; /* gray-800 */
+  }
+  .dark .border-gray-200 {
+    border-color: rgb(55 65 81) !important; /* gray-700 */
+  }
+  .dark .border-gray-100 {
+    border-color: rgb(55 65 81) !important;
+  }
+  .dark .text-gray-900 {
+    color: rgb(243 244 246) !important; /* gray-100 */
+  }
+  .dark .text-gray-800 {
+    color: rgb(229 231 235) !important; /* gray-200 */
+  }
+  .dark .text-gray-700 {
+    color: rgb(209 213 219) !important; /* gray-300 */
+  }
+  .dark .text-gray-600 {
+    color: rgb(156 163 175) !important; /* gray-400 */
+  }
+  .dark .text-gray-500 {
+    color: rgb(156 163 175) !important;
+  }
+  .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgb(55 65 81) !important;
+  }
 }
 
 @layer components {

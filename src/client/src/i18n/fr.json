@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "projects": "Projets",
+    "workflows": "Flux de travail",
+    "intake": "Demandes",
+    "changeRequests": "Demandes de changement",
+    "portfolio": "Portefeuille",
+    "analytics": "Analytique",
+    "reports": "Rapports",
+    "reportBuilder": "Constructeur de rapports",
+    "simulation": "Simulation",
+    "scenarios": "Modélisation de scénarios",
+    "meetings": "Réunions",
+    "lessons": "Leçons",
+    "askAi": "Demander à l'IA",
+    "agent": "Agent",
+    "timesheets": "Feuilles de temps",
+    "integrations": "Intégrations",
+    "goals": "Objectifs",
+    "account": "Compte",
+    "settings": "Paramètres",
+    "admin": "Administration",
+    "help": "Aide"
+  },
+  "section": {
+    "plan": "Planifier",
+    "analyze": "Analyser",
+    "intelligence": "Intelligence",
+    "workspace": "Espace de travail",
+    "system": "Système"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "search": "Rechercher...",
+    "loading": "Chargement...",
+    "noData": "Aucune donnée disponible",
+    "confirm": "Confirmer",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "submit": "Soumettre",
+    "export": "Exporter",
+    "import": "Importer",
+    "filter": "Filtrer",
+    "actions": "Actions"
+  },
+  "status": {
+    "pending": "En attente",
+    "inProgress": "En cours",
+    "completed": "Terminé",
+    "cancelled": "Annulé",
+    "active": "Actif",
+    "onHold": "En pause",
+    "onTrack": "Dans les temps",
+    "atRisk": "À risque",
+    "behind": "En retard"
+  },
+  "priority": {
+    "low": "Faible",
+    "medium": "Moyen",
+    "high": "Élevé",
+    "urgent": "Urgent"
+  },
+  "settings": {
+    "language": "Langue",
+    "languageDescription": "Choisissez votre langue préférée pour l'interface.",
+    "timezone": "Fuseau horaire",
+    "timezoneDescription": "Toutes les dates et heures seront affichées dans ce fuseau horaire."
+  }
+}

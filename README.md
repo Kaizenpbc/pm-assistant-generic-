@@ -251,6 +251,44 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Mobile-friendly timesheet with day-by-day card layout
 - Responsive schedule views (auto-switches to mobile on small screens)
 
+### Dark Mode
+- Global dark theme with Tailwind `dark:` classes throughout
+- Toggle in the TopBar; preference persisted in `themeStore` (localStorage)
+
+### Project Milestones
+- Tasks flagged as milestones (`is_milestone`) render as diamonds on the Gantt chart
+
+### Dependency Types with Lag
+- Four dependency types: Finish-to-Start (FS), Finish-to-Finish (FF), Start-to-Start (SS), Start-to-Finish (SF)
+- Optional lag days per dependency; color-coded arrows on Gantt
+
+### Kanban WIP Limits
+- Per-column Work-In-Progress limits on the Kanban board
+- Limits stored in localStorage; columns visually flag when the limit is exceeded
+
+### Comment @Mentions
+- `@username` autocomplete in task comment input
+- Mentioned users receive in-app notifications automatically
+
+### Bulk Import (CSV)
+- Upload or paste a CSV file to import tasks into a schedule
+- Column mapping UI with preview before import is committed
+
+### Gantt PDF Export
+- Print-friendly Gantt export via `window.print()`; triggered from the schedule toolbar
+
+### Goals / OKR Tracking
+- Objectives and Key Results with progress tracking and nested hierarchy
+- OKRs can be linked to projects for portfolio alignment
+
+### Time Zone Support
+- Per-user timezone preference; all dates displayed in the user's local timezone
+- Preference stored server-side and applied on the frontend
+
+### Multi-Language (i18n)
+- English, French, and Spanish translations
+- Locale selection in user settings; active locale managed via `localeStore` and `useTranslation` hook
+
 ---
 
 ## Architecture
@@ -459,6 +497,9 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | RAG | `/api/v1/rag` | Semantic search |
 | WebSocket | `/api/v1/ws` | Real-time updates |
 | MCP | `/mcp` | MCP HTTP transport proxy |
+| Goals / OKR | `/api/v1/goals` | Objectives and Key Results CRUD |
+| Task Import | `/api/v1/schedules/:id/import` | Bulk CSV task import |
+| User Preferences | `/api/v1/users/me/preferences` | Timezone and locale preferences |
 
 ---
 

@@ -477,6 +477,9 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate, cpmDat
             ) : (
               <div className="flex items-center gap-2">
                 {task.parentTaskId && <span className="text-gray-300 ml-3">&lsaquo;</span>}
+                {(task as any).isMilestone && (
+                  <span className="inline-block w-2.5 h-2.5 rotate-45 bg-amber-500 flex-shrink-0" title="Milestone" />
+                )}
                 {task.name}
               </div>
             )}

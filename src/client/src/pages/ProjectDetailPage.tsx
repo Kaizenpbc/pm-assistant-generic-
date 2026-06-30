@@ -21,6 +21,7 @@ import {
   Play,
   SlidersHorizontal,
   Download,
+  Upload,
   Printer,
   BarChart3,
   Kanban,
@@ -63,6 +64,7 @@ import { BurndownPanel } from '../components/burndown/BurndownPanel';
 import { ChangeRequestList } from '../components/approvals/ChangeRequestList';
 import { ChangeRequestForm } from '../components/approvals/ChangeRequestForm';
 import { ChangeRequestDetail } from '../components/approvals/ChangeRequestDetail';
+import { ImportModal } from '../components/schedule/ImportModal';
 import { WorkflowEditor } from '../components/approvals/WorkflowEditor';
 import { PortalLinkManager } from '../components/portal/PortalLinkManager';
 import { ResourceLevelingPanel } from '../components/resources/ResourceLevelingPanel';
@@ -716,6 +718,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   const queryClient = useQueryClient();
   const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [showCriticalPath, setShowCriticalPath] = useState(false);
   const [selectedBaselineId, setSelectedBaselineId] = useState<string>('');
   const [showComparison, setShowComparison] = useState(false);
@@ -778,6 +781,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         estimatedDays: data.estimatedDays ? parseInt(data.estimatedDays) : undefined,
         recurrenceRule: data.recurrenceRule || undefined,
         isRecurrenceTemplate: data.isRecurrenceTemplate || undefined,
+        isMilestone: data.isMilestone || undefined,
+        dependencyType: data.dependency ? (data.dependencyType || 'FS') : undefined,
+        dependencyLagDays: data.dependency && data.dependencyLagDays ? parseInt(data.dependencyLagDays) : undefined,
       };
       return apiService.createTask(schedule.id, payload as any);
     },
@@ -807,6 +813,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           estimatedDays: d.estimatedDays ? parseInt(d.estimatedDays) : undefined,
           recurrenceRule: d.recurrenceRule || undefined,
           isRecurrenceTemplate: d.isRecurrenceTemplate || undefined,
+          isMilestone: d.isMilestone || undefined,
+          dependencyType: d.dependency ? (d.dependencyType || 'FS') : undefined,
+          dependencyLagDays: d.dependency && d.dependencyLagDays ? parseInt(d.dependencyLagDays) : undefined,
         };
         return apiService.updateTask(schedule.id, taskId, payload);
       }
@@ -901,6 +910,14 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           )}
 
           <div className="h-4 w-px bg-gray-200 mx-1" />
+
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
+          >
+            <Upload className="w-3 h-3" />
+            Import CSV
+          </button>
 
           <button
             onClick={() => setShowReschedulePanel(true)}
@@ -1095,6 +1112,14 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           isSaving={createMutation.isPending}
         />
       )}
+
+      {/* Import CSV Modal */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        scheduleId={schedule.id}
+        onImported={() => queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] })}
+      />
 
       {/* AI Reschedule Panel */}
       {showReschedulePanel && (

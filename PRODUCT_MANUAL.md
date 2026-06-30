@@ -789,6 +789,87 @@ On mobile, the timesheet displays a card-per-day layout instead of the grid tabl
 
 ---
 
+## 25. Dark Mode
+
+A global dark theme is available throughout the application. The user toggles it via the **dark mode button** in the TopBar. The selected theme is persisted in `themeStore` (localStorage) and applied immediately by adding the `dark` class to the root `<html>` element. All UI components use Tailwind `dark:` variant classes so colours, borders, and backgrounds switch automatically.
+
+---
+
+## 26. Project Milestones
+
+Any task can be marked as a milestone by setting `is_milestone = true`. Milestone tasks render as **diamonds** on the Gantt chart (zero-width diamond icon centred on the task date) rather than as horizontal bars. Milestones are still full tasks — they carry status, assignee, and dependency information — but conventionally have zero estimated duration.
+
+---
+
+## 27. Dependency Types and Lag
+
+Task dependencies support four relationship types:
+
+| Type | Meaning |
+|------|---------|
+| **FS** (Finish-to-Start) | Successor starts after predecessor finishes (default) |
+| **FF** (Finish-to-Finish) | Successor finishes no earlier than predecessor finishes |
+| **SS** (Start-to-Start) | Successor starts no earlier than predecessor starts |
+| **SF** (Start-to-Finish) | Successor finishes after predecessor starts |
+
+An optional **lag** (positive integer, days) can be added to any dependency to introduce a waiting period. Dependency arrows on the Gantt chart are colour-coded by type. CPM forward/backward pass calculations respect all four types and lag values.
+
+---
+
+## 28. Kanban WIP Limits
+
+Each status column on the Kanban board can have a **Work-In-Progress (WIP) limit**. When a column's task count reaches the configured limit, the column header turns amber and further drops are visually flagged. WIP limits are set per-column from the Kanban toolbar and stored in `localStorage`. A limit of `0` means unlimited.
+
+---
+
+## 29. Comment @Mentions
+
+When writing a task comment, typing `@` opens an autocomplete dropdown listing project members. Selecting a username inserts the mention token into the comment. When the comment is saved, the `NotificationService` creates an in-app notification for every mentioned user, linking back to the task.
+
+---
+
+## 30. Bulk Import (CSV)
+
+Tasks can be imported in bulk from a CSV file via `POST /api/v1/schedules/:id/import`. The UI provides:
+
+1. **Upload or paste** — drag-and-drop a `.csv` file or paste raw CSV text.
+2. **Column mapping** — map CSV columns to task fields (name, start date, end date, estimated days, status, priority, assignee).
+3. **Preview** — inspect the parsed rows before committing.
+4. **Import** — valid rows are created as tasks in the target schedule; errors are reported per-row.
+
+---
+
+## 31. Gantt PDF Export
+
+A **Print / Export PDF** button in the schedule toolbar calls `window.print()` with a print-optimised CSS stylesheet applied. The Gantt chart expands to show all tasks, hides navigation chrome, and formats page breaks appropriately. The result is a print-ready PDF when saved from the browser's print dialog.
+
+---
+
+## 32. Goals / OKR Tracking
+
+The Goals module provides Objectives and Key Results (OKR) tracking alongside traditional project scheduling.
+
+- **Objectives** — High-level goals with a title, description, owner, and time period.
+- **Key Results** — Measurable outcomes nested under an objective, each with a numeric target, current value, and unit.
+- **Progress** — Automatically calculated from key result completion percentages.
+- **Project linking** — OKRs can be associated with one or more projects to show how project work contributes to strategic goals.
+
+**API endpoints:** `GET/POST /api/v1/goals`, `GET/PUT/DELETE /api/v1/goals/:id`.
+
+---
+
+## 33. Time Zone Support
+
+Each user can set a preferred timezone in **Settings → Preferences** (stored via `PUT /api/v1/users/me/preferences`). All date and time values rendered in the UI are converted to the user's timezone using the stored IANA timezone string (e.g., `America/Toronto`). Server timestamps remain in UTC; conversion happens client-side. When no preference is set the browser's local timezone is used as a fallback.
+
+---
+
+## 34. Multi-Language (i18n)
+
+The frontend supports **English (en)**, **French (fr)**, and **Spanish (es)**. The active locale is managed by `localeStore` (Zustand, persisted in localStorage) and consumed via the `useTranslation()` hook. All user-facing strings are keyed through the translation map; switching locale applies immediately without a page reload. The locale can be changed from **Settings → Language**.
+
+---
+
 ## Technical Architecture
 
 ### Backend
