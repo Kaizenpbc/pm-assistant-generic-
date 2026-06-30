@@ -693,6 +693,32 @@ The dashboard displays AI-generated prediction cards forecasting project outcome
 
 When delays are detected, the AI can suggest schedule adjustments that minimize overall project impact. Review and accept or reject proposed changes.
 
+### Task Slip Predictions
+
+In the **AI Insights** tab of any project, the Task Slip Predictions section shows which tasks are most likely to slip. Each task is scored (0-100%) based on:
+
+- Whether it's already overdue
+- Progress gap (actual vs expected)
+- Incomplete predecessor tasks
+- Task duration (longer = higher risk)
+
+Tasks are shown sorted by slip probability with color-coded bars and suggested actions.
+
+### Scope Creep Detector
+
+Also in the **AI Insights** tab, the Scope Creep Detector compares the current project state against its baseline. It shows:
+
+- New tasks added since the baseline
+- Estimate growth (total days added)
+- Open change requests
+- Schedule health percentage
+
+A severity badge (Low/Medium/High/Critical) flags the degree of scope drift. Create a baseline first to enable this feature.
+
+### Status Report Generator
+
+Click the **Status Report** button in the project header to generate an AI-powered weekly status report. The report opens in a modal with formatted sections (Executive Summary, Key Metrics, Risks, Milestones, Recommendations). You can copy the report to clipboard or download it as a markdown file.
+
 ---
 
 ## 15. Templates

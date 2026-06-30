@@ -1,6 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { PredictiveIntelligenceService } from '../../services/predictiveIntelligence';
 import { sCurveService } from '../../services/SCurveService';
+import { scheduleService } from '../../services/ScheduleService';
+import { baselineService } from '../../services/BaselineService';
+import { databaseService } from '../../database/connection';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 
@@ -95,6 +98,85 @@ export async function predictionRoutes(fastify: FastifyInstance) {
     } catch (err) {
       fastify.log.error({ err }, 'S-Curve computation failed');
       return reply.status(500).send({ error: 'Failed to compute S-Curve data' });
+    }
+  });
+
+  // GET /project/:projectId/scope-creep — Scope creep indicators
+  fastify.get('/project/:projectId/scope-creep', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { projectId } = request.params as { projectId: string };
+      const schedules = await scheduleService.findByProjectId(projectId);
+      if (schedules.length === 0) {
+        return reply.send({ indicators: null, baselineComparison: null, severity: 'low', hasBaseline: false, aiPowered: false });
+      }
+
+      // Find the first schedule with a baseline
+      let comparison: any = null;
+      let hasBaseline = false;
+      for (const sched of schedules) {
+        const baselines = await baselineService.findByScheduleId(sched.id);
+        if (baselines.length > 0) {
+          hasBaseline = true;
+          comparison = await baselineService.compareBaseline(baselines[baselines.length - 1].id);
+          break;
+        }
+      }
+
+      // Count current tasks across all schedules
+      let currentTaskCount = 0;
+      let totalEstimateDays = 0;
+      for (const sched of schedules) {
+        const tasks = await scheduleService.findTasksByScheduleId(sched.id);
+        currentTaskCount += tasks.length;
+        totalEstimateDays += tasks.reduce((sum, t) => sum + (t.estimatedDays || 0), 0);
+      }
+
+      // Count open change requests
+      const crRows = await databaseService.query(
+        "SELECT COUNT(*) as cnt FROM change_requests WHERE project_id = ? AND status IN ('draft','pending')",
+        [projectId]
+      );
+      const changeRequestCount = Number(crRows[0]?.cnt || 0);
+
+      // Compute indicators
+      const originalTaskCount = comparison?.summary?.totalTasks ?? currentTaskCount;
+      const taskCountDelta = comparison ? (comparison.summary.newTasks || 0) : 0;
+      const estimateIncreaseDays = comparison
+        ? comparison.taskVariances.reduce((sum: number, v: any) => sum + Math.max(0, v.durationVarianceDays || 0), 0)
+        : 0;
+
+      // Determine severity
+      let severity: 'low' | 'medium' | 'high' | 'critical' = 'low';
+      if (taskCountDelta >= 10 || estimateIncreaseDays >= 20) severity = 'critical';
+      else if (taskCountDelta >= 5 || estimateIncreaseDays >= 10) severity = 'high';
+      else if (taskCountDelta >= 3 || estimateIncreaseDays >= 5 || changeRequestCount >= 2) severity = 'medium';
+
+      return reply.send({
+        indicators: { taskCountDelta, estimateIncreaseDays, changeRequestCount, originalTaskCount, currentTaskCount },
+        baselineComparison: comparison ? { summary: comparison.summary, taskVariances: comparison.taskVariances } : null,
+        severity,
+        hasBaseline,
+        aiPowered: false,
+      });
+    } catch (err) {
+      fastify.log.error({ err }, 'Scope creep detection failed');
+      return reply.status(500).send({ error: 'Failed to detect scope creep' });
+    }
+  });
+
+  // GET /project/:projectId/task-slips — Task slip predictions
+  fastify.get('/project/:projectId/task-slips', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { projectId } = request.params as { projectId: string };
+      const result = await service.predictTaskSlips(projectId);
+      return reply.send(result);
+    } catch (err) {
+      fastify.log.error({ err }, 'Task slip prediction failed');
+      return reply.status(500).send({ error: 'Failed to predict task slips' });
     }
   });
 }

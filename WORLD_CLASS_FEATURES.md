@@ -330,3 +330,6 @@ An agentic AI project management platform that combines the scheduling power of 
 | Recurring Tasks | Done | Enhancement |
 | Resource Availability Calendar | Done | Enhancement |
 | Customizable Dashboard Widgets | Done | Enhancement |
+| AI Task Slip Predictor | Done | Enhancement |
+| AI Status Report Generator | Done | Enhancement |
+| AI Scope Creep Detector | Done | Enhancement |

@@ -1181,4 +1181,127 @@ export class PredictiveIntelligenceService {
       });
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Task Slip Predictions — deterministic analysis of which tasks are likely to slip
+  // ---------------------------------------------------------------------------
+
+  async predictTaskSlips(projectId: string): Promise<{ data: any; aiPowered: boolean }> {
+    const { scheduleService } = await import('./ScheduleService');
+    const schedules = await scheduleService.findByProjectId(projectId);
+    if (schedules.length === 0) return { data: { tasks: [], summary: 'No schedules found.' }, aiPowered: false };
+
+    const now = new Date();
+    const nowMs = now.getTime();
+    const DAY_MS = 86_400_000;
+
+    interface SlipTask {
+      taskId: string;
+      taskName: string;
+      scheduleName: string;
+      slipProbability: number;
+      confidence: number;
+      severity: 'low' | 'medium' | 'high' | 'critical';
+      reasons: string[];
+      suggestedAction?: string;
+      currentProgress: number;
+      expectedProgress: number;
+      daysOverdue: number;
+    }
+
+    const slipTasks: SlipTask[] = [];
+
+    for (const sched of schedules) {
+      const tasks = await scheduleService.findTasksByScheduleId(sched.id);
+      const taskMap = new Map(tasks.map((t: any) => [t.id, t]));
+
+      for (const task of tasks) {
+        if (task.status === 'completed' || task.status === 'cancelled') continue;
+        if (!task.startDate || !task.endDate) continue;
+
+        const startMs = new Date(task.startDate).getTime();
+        const endMs = new Date(task.endDate).getTime();
+        const durationDays = Math.max(1, Math.round((endMs - startMs) / DAY_MS));
+        const elapsed = Math.max(0, (nowMs - startMs) / DAY_MS);
+        const progress = task.progressPercentage ?? 0;
+        const expectedProgress = Math.min(100, Math.round((elapsed / durationDays) * 100));
+        const daysOverdue = Math.max(0, Math.round((nowMs - endMs) / DAY_MS));
+
+        const reasons: string[] = [];
+        let score = 0;
+
+        // Factor 1: Overdue (40% weight)
+        if (daysOverdue > 0) {
+          const overdueFactor = Math.min(1, daysOverdue / Math.max(durationDays, 1));
+          score += overdueFactor * 40;
+          reasons.push(`${daysOverdue} day${daysOverdue > 1 ? 's' : ''} overdue`);
+        }
+
+        // Factor 2: Progress gap (30% weight)
+        const progressGap = Math.max(0, expectedProgress - progress);
+        if (progressGap > 10) {
+          score += Math.min(1, progressGap / 50) * 30;
+          reasons.push(`Progress ${progress}% vs expected ${expectedProgress}%`);
+        }
+
+        // Factor 3: Incomplete predecessors (20% weight)
+        const deps = (task.dependency || '').split(',').filter(Boolean);
+        if (deps.length > 0) {
+          const incompleteDeps = deps.filter((did: string) => {
+            const dep = taskMap.get(did.trim());
+            return dep && dep.status !== 'completed';
+          });
+          if (incompleteDeps.length > 0) {
+            score += (incompleteDeps.length / deps.length) * 20;
+            reasons.push(`${incompleteDeps.length}/${deps.length} predecessor${deps.length > 1 ? 's' : ''} incomplete`);
+          }
+        }
+
+        // Factor 4: Long duration (10% weight)
+        if (durationDays > 20) {
+          score += Math.min(1, durationDays / 60) * 10;
+          reasons.push(`Long duration task (${durationDays} days)`);
+        }
+
+        if (score < 10 && reasons.length === 0) continue;
+
+        const slipProbability = Math.min(100, Math.round(score));
+        const severity: 'low' | 'medium' | 'high' | 'critical' =
+          slipProbability >= 80 ? 'critical' : slipProbability >= 60 ? 'high' : slipProbability >= 30 ? 'medium' : 'low';
+
+        let suggestedAction: string | undefined;
+        if (daysOverdue > 0) suggestedAction = 'Review blockers and consider rescheduling or adding resources';
+        else if (progressGap > 30) suggestedAction = 'Escalate — significant progress gap detected';
+        else if (reasons.some(r => r.includes('predecessor'))) suggestedAction = 'Unblock predecessors to prevent cascade delay';
+
+        slipTasks.push({
+          taskId: task.id,
+          taskName: task.name,
+          scheduleName: sched.name,
+          slipProbability,
+          confidence: Math.min(95, 50 + slipProbability * 0.4),
+          severity,
+          reasons,
+          suggestedAction,
+          currentProgress: progress,
+          expectedProgress,
+          daysOverdue,
+        });
+      }
+    }
+
+    slipTasks.sort((a, b) => b.slipProbability - a.slipProbability);
+    const top = slipTasks.slice(0, 20);
+    const atRisk = top.filter(t => t.slipProbability >= 30).length;
+
+    return {
+      data: {
+        tasks: top,
+        summary: atRisk > 0
+          ? `${atRisk} task${atRisk > 1 ? 's' : ''} at risk of slipping`
+          : 'No tasks currently at risk of slipping',
+      },
+      aiPowered: false,
+    };
+  }
 }

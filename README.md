@@ -157,6 +157,9 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Lessons Learned** -- AI-assisted capture and retrieval of project lessons
 - **Task Prioritization** -- Intelligent priority scoring
 - **Predictive Intelligence** -- Forecast delays, cost overruns, and risks
+- **Task Slip Predictor** -- Identifies which tasks are likely to slip with confidence scores and reasons
+- **Scope Creep Detector** -- Compares current state against baselines to flag unauthorized scope growth
+- **Status Report Generator** -- One-click AI-generated weekly status reports with copy/download
 - **Anomaly Detection** -- Proactive alerts for unusual patterns
 - **Cross-Project Intelligence** -- Insights across the portfolio
 - **What-If Scenario Modeling** -- Simulate schedule and resource changes

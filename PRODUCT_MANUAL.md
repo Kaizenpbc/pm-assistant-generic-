@@ -439,6 +439,32 @@ The `predictiveIntelligence` module provides AI-driven assessments:
 - **Budget forecasting**: AI-adjusted budget projections considering trends and project context
 - **Dashboard predictions**: aggregated portfolio-level predictions
 
+### Task Slip Prediction
+
+The `predictTaskSlips()` method analyzes individual tasks to predict which are likely to slip, using deterministic scoring:
+
+- **Overdue factor** (40%): Days past due relative to task duration
+- **Progress gap** (30%): Actual vs expected progress based on elapsed time
+- **Dependency factor** (20%): Incomplete predecessor count
+- **Duration factor** (10%): Longer tasks carry higher inherent risk
+
+Returns the top 20 at-risk tasks with slip probability, severity, reasons, and suggested actions. Available at `GET /api/v1/predictions/project/:projectId/task-slips`.
+
+### Scope Creep Detector
+
+Deterministic analysis comparing current project state against baselines:
+
+- **Task count delta**: New tasks added since baseline
+- **Estimate growth**: Cumulative duration increase across tasks
+- **Change request count**: Open change requests
+- **Schedule health**: Percentage of tasks on track or ahead
+
+Severity thresholds: critical (10+ new tasks or 20+ days growth), high (5+/10+), medium (3+/5+ or 2+ change requests). Available at `GET /api/v1/predictions/project/:projectId/scope-creep`.
+
+### AI Status Report Generator
+
+One-click weekly status report generation from the project detail page. Uses Claude to produce a narrative markdown report with sections (Executive Summary, Key Metrics, Risks & Issues, Milestones, Recommendations). Supports copy-to-clipboard and download as `.md` file. Uses existing `POST /api/v1/ai-reports/generate` endpoint.
+
 ### Anomaly Detection
 
 The `anomalyDetectionService` identifies unusual patterns in project data such as sudden progress drops, budget spikes, or resource utilization anomalies.

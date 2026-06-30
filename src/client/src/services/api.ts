@@ -332,6 +332,16 @@ class ApiService {
     return response.data;
   }
 
+  async getScopeCreepIndicators(projectId: string) {
+    const response = await this.api.get(`/predictions/project/${projectId}/scope-creep`);
+    return response.data;
+  }
+
+  async getTaskSlipPredictions(projectId: string) {
+    const response = await this.api.get(`/predictions/project/${projectId}/task-slips`);
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // AI Reports endpoints
   // -------------------------------------------------------------------------

@@ -31,6 +31,10 @@ import {
   Plus,
   Trash2,
   Activity,
+  FileText,
+  ClipboardCopy,
+  X,
+  Target,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
@@ -192,6 +196,7 @@ export function ProjectDetailPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [showStatusReport, setShowStatusReport] = useState(false);
 
   const { user } = useAuthStore();
   const canEditStatus = user?.role === 'admin' || user?.role === 'manager';
@@ -317,6 +322,13 @@ export function ProjectDetailPage() {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
             <button
+              onClick={() => setShowStatusReport(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Status Report
+            </button>
+            <button
               onClick={() => setShowSaveTemplate(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors"
             >
@@ -439,6 +451,14 @@ export function ProjectDetailPage() {
           onClose={() => setShowSaveTemplate(false)}
           projectId={id!}
           projectName={project.name}
+        />
+      )}
+
+      {showStatusReport && (
+        <StatusReportModal
+          projectId={id!}
+          projectName={project?.name || ''}
+          onClose={() => setShowStatusReport(false)}
         />
       )}
     </div>
@@ -1049,6 +1069,8 @@ function AIInsightsTab({ projectId }: { projectId: string }) {
           <TaskPrioritizationPanel projectId={projectId} scheduleId={firstScheduleId} />
         </div>
       )}
+      <TaskSlipPredictionSection projectId={projectId} />
+      <ScopeCreepSection projectId={projectId} />
       <RiskAssessmentSection projectId={projectId} />
       <WeatherImpactSection projectId={projectId} />
       <div className="lg:col-span-2">
@@ -1056,6 +1078,238 @@ function AIInsightsTab({ projectId }: { projectId: string }) {
       </div>
       <div className="lg:col-span-2">
         <EVMSCurveSection projectId={projectId} />
+      </div>
+    </div>
+  );
+}
+
+// --- Task Slip Prediction Section ---
+
+function TaskSlipPredictionSection({ projectId }: { projectId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['taskSlips', projectId],
+    queryFn: () => apiService.getTaskSlipPredictions(projectId),
+    enabled: !!projectId,
+  });
+
+  const tasks = data?.data?.tasks || [];
+  const summary = data?.data?.summary || '';
+
+  const severityColor = (s: string) => {
+    switch (s) {
+      case 'critical': return 'bg-red-100 text-red-700';
+      case 'high': return 'bg-orange-100 text-orange-700';
+      case 'medium': return 'bg-amber-100 text-amber-700';
+      default: return 'bg-green-100 text-green-700';
+    }
+  };
+
+  const barColor = (prob: number) =>
+    prob >= 80 ? 'bg-red-500' : prob >= 60 ? 'bg-orange-500' : prob >= 30 ? 'bg-amber-500' : 'bg-green-500';
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Target className="h-5 w-5 text-orange-500" />
+        <h3 className="text-sm font-semibold text-gray-900">Task Slip Predictions</h3>
+      </div>
+      {isLoading ? (
+        <SectionSpinner />
+      ) : tasks.length === 0 ? (
+        <p className="text-xs text-gray-400 text-center py-4">{summary || 'No tasks at risk of slipping'}</p>
+      ) : (
+        <>
+          <p className="text-xs text-gray-500 mb-3">{summary}</p>
+          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+            {tasks.map((task: any) => (
+              <div key={task.taskId} className="p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-gray-900 truncate flex-1">{task.taskName}</span>
+                  <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-medium ${severityColor(task.severity)}`}>
+                    {task.slipProbability}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1.5">
+                  <div className={`h-1.5 rounded-full ${barColor(task.slipProbability)}`} style={{ width: `${task.slipProbability}%` }} />
+                </div>
+                {task.reasons.length > 0 && (
+                  <ul className="text-[10px] text-gray-500 space-y-0.5">
+                    {task.reasons.map((r: string, i: number) => (
+                      <li key={i}>• {r}</li>
+                    ))}
+                  </ul>
+                )}
+                {task.suggestedAction && (
+                  <p className="text-[10px] text-primary-600 mt-1 font-medium">{task.suggestedAction}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// --- Scope Creep Section ---
+
+function ScopeCreepSection({ projectId }: { projectId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['scopeCreep', projectId],
+    queryFn: () => apiService.getScopeCreepIndicators(projectId),
+    enabled: !!projectId,
+  });
+
+  const severityColor = (s: string) => {
+    switch (s) {
+      case 'critical': return 'bg-red-100 text-red-700 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200';
+      default: return 'bg-green-100 text-green-700 border-green-200';
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <TrendingUp className="h-5 w-5 text-amber-500" />
+        <h3 className="text-sm font-semibold text-gray-900">Scope Creep Detector</h3>
+      </div>
+      {isLoading ? (
+        <SectionSpinner />
+      ) : !data?.hasBaseline ? (
+        <div className="text-center py-4">
+          <p className="text-xs text-gray-400">Create a baseline to enable scope creep detection.</p>
+          <p className="text-[10px] text-gray-300 mt-1">Go to Schedule → Baselines to create one.</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2 mb-3">
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium border ${severityColor(data.severity)}`}>
+              {data.severity.charAt(0).toUpperCase() + data.severity.slice(1)} Risk
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="rounded-lg bg-gray-50 p-2.5 text-center">
+              <div className="text-lg font-bold text-gray-900">{data.indicators?.taskCountDelta ?? 0}</div>
+              <div className="text-[10px] text-gray-500">New Tasks</div>
+            </div>
+            <div className="rounded-lg bg-gray-50 p-2.5 text-center">
+              <div className="text-lg font-bold text-gray-900">+{data.indicators?.estimateIncreaseDays ?? 0}d</div>
+              <div className="text-[10px] text-gray-500">Estimate Growth</div>
+            </div>
+            <div className="rounded-lg bg-gray-50 p-2.5 text-center">
+              <div className="text-lg font-bold text-gray-900">{data.indicators?.changeRequestCount ?? 0}</div>
+              <div className="text-[10px] text-gray-500">Open Change Requests</div>
+            </div>
+            <div className="rounded-lg bg-gray-50 p-2.5 text-center">
+              <div className="text-lg font-bold text-gray-900">{data.baselineComparison?.summary?.scheduleHealthPct ?? 100}%</div>
+              <div className="text-[10px] text-gray-500">Schedule Health</div>
+            </div>
+          </div>
+          {data.baselineComparison?.summary && (
+            <div className="flex items-center gap-3 text-[10px] text-gray-500">
+              <span>{data.baselineComparison.summary.tasksSlipped} slipped</span>
+              <span>{data.baselineComparison.summary.tasksAhead} ahead</span>
+              <span>{data.baselineComparison.summary.tasksOnTrack} on track</span>
+              <span>{data.baselineComparison.summary.totalTasks} total</span>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// --- Status Report Modal ---
+
+function StatusReportModal({ projectId, projectName, onClose }: { projectId: string; projectName: string; onClose: () => void }) {
+  const [report, setReport] = useState<any>(null);
+  const [copied, setCopied] = useState(false);
+
+  const mutation = useMutation({
+    mutationFn: () => apiService.generateReport({ reportType: 'weekly-status', projectId }),
+    onSuccess: (data) => setReport(data),
+  });
+
+  useEffect(() => {
+    mutation.mutate();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const content = report?.report?.content || report?.content || '';
+
+  const sections = content.split(/^## /m).filter(Boolean).map((s: string) => {
+    const nlIdx = s.indexOf('\n');
+    return { title: s.slice(0, nlIdx).trim(), body: s.slice(nlIdx + 1).trim() };
+  });
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `status-report-${projectName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary-500" />
+            <h2 className="text-sm font-semibold text-gray-900">Status Report — {projectName}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {content && (
+              <>
+                <button onClick={handleCopy} className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded">
+                  <ClipboardCopy className="w-3 h-3" />
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+                <button onClick={handleDownload} className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded">
+                  <Download className="w-3 h-3" />
+                  Download
+                </button>
+              </>
+            )}
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
+              <X className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5">
+          {mutation.isPending ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-3" />
+              <p className="text-sm text-gray-500">Generating status report...</p>
+              <p className="text-xs text-gray-400 mt-1">This may take a few seconds</p>
+            </div>
+          ) : mutation.isError ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-red-500">Failed to generate report</p>
+              <button onClick={() => mutation.mutate()} className="mt-2 text-xs text-primary-600 hover:underline">Try again</button>
+            </div>
+          ) : sections.length > 0 ? (
+            <div className="space-y-4">
+              {sections.map((s: any, i: number) => (
+                <div key={i} className="rounded-lg border border-gray-100 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">{s.title}</h3>
+                  <div className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{s.body}</div>
+                </div>
+              ))}
+            </div>
+          ) : content ? (
+            <div className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{content}</div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
