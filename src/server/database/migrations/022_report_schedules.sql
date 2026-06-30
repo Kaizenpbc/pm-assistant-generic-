@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS report_schedules (
   last_run_error TEXT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (template_id) REFERENCES report_templates(id) ON DELETE CASCADE,
-  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
-  INDEX idx_next_run (is_active, next_run_at)
+  INDEX idx_next_run (is_active, next_run_at),
+  INDEX idx_template (template_id),
+  INDEX idx_created_by (created_by)
 );
