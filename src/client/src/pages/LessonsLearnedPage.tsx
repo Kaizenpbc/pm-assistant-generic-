@@ -10,7 +10,7 @@ import {
   TrendingUp,
   Database,
   RefreshCw,
-  Sparkles,
+  Brain,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { PatternCard } from '../components/lessons/PatternCard';
@@ -453,7 +453,7 @@ export const LessonsLearnedPage: React.FC = () => {
         {/* Patterns */}
         <div className="card flex items-center gap-4">
           <div className="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-amber-600" />
+            <Brain className="w-6 h-6 text-amber-600" />
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900">{patterns.length}</p>

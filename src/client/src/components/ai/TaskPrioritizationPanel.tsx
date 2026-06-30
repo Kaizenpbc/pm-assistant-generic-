@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../../services/api';
 import {
   ListOrdered,
-  Sparkles,
+  Bot,
   ChevronDown,
   ChevronUp,
   Check,
@@ -94,7 +94,7 @@ function PriorityBadge({ priority }: { priority: string }) {
 function AIPoweredBadge() {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600">
-      <Sparkles className="h-3 w-3" />
+      <Bot className="h-3 w-3" />
       AI Powered
     </span>
   );

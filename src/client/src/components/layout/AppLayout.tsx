@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import { Sparkles, X } from 'lucide-react';
+import { Bot, X } from 'lucide-react';
 import { AIChatPanel } from '../ai/AIChatPanel';
 import { useUIStore } from '../../stores/uiStore';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -161,7 +161,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-primary-600" />
+                    <Bot className="w-4 h-4 text-primary-600" />
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI Assistant</h2>
@@ -202,7 +202,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           aria-label="Open AI Assistant"
           title="Open AI Assistant"
         >
-          <Sparkles className="w-5 h-5" />
+          <Bot className="w-5 h-5" />
         </button>
       )}
     </div>

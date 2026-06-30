@@ -11,7 +11,7 @@ import {
   ShieldAlert,
   CloudRain,
   PieChart,
-  Sparkles,
+  Bot,
   AlertTriangle,
   CheckCircle2,
   XCircle,
@@ -159,7 +159,7 @@ function formatDollar(value: number | undefined | null): string {
 function AIPoweredBadge() {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600">
-      <Sparkles className="h-3 w-3" />
+      <Bot className="h-3 w-3" />
       AI Powered
     </span>
   );
@@ -806,7 +806,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
             onClick={() => setShowReschedulePanel(true)}
             className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors"
           >
-            <Sparkles className="w-3 h-3" />
+            <Bot className="w-3 h-3" />
             AI Reschedule
           </button>
 

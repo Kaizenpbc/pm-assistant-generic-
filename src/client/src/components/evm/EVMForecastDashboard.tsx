@@ -1,4 +1,4 @@
-import { Sparkles, AlertTriangle, AlertCircle, Info } from 'lucide-react';
+import { Bot, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 import { MetaPill } from '../ui/MetaPill';
 
 // ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ function MetricCard({
         {label}
         {badge && (
           <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-primary-50 px-1.5 py-0.5 text-xs font-semibold text-primary-600">
-            <Sparkles className="h-2.5 w-2.5" />
+            <Bot className="h-2.5 w-2.5" />
             {badge}
           </span>
         )}
@@ -151,7 +151,7 @@ export function EVMForecastDashboard({ data }: { data: any }) {
       {aiPredictions?.correctiveActions && aiPredictions.correctiveActions.length > 0 && (
         <div>
           <div className="flex items-center gap-1.5 mb-2">
-            <Sparkles className="h-4 w-4 text-primary-500" />
+            <Bot className="h-4 w-4 text-primary-500" />
             <h3 className="text-xs font-semibold text-gray-700">AI-Recommended Corrective Actions</h3>
           </div>
 

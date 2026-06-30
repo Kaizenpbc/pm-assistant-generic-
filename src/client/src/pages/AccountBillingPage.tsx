@@ -7,7 +7,7 @@ import {
   Clock,
   AlertCircle,
   ExternalLink,
-  Sparkles,
+  Zap,
   XCircle,
 } from 'lucide-react';
 import { apiService } from '../services/api';
@@ -205,10 +205,10 @@ export const AccountBillingPage: React.FC = () => {
         </>
       ) : (
         /* Free User — Upgrade Card */
-        <div className="bg-gradient-to-br from-primary-50 to-purple-50 border border-primary-200 rounded-xl shadow-sm p-6">
+        <div className="bg-primary-50 border border-primary-200 rounded-xl shadow-sm p-6">
           <div className="text-center max-w-md mx-auto">
             <div className="w-14 h-14 rounded-2xl bg-primary-100 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-7 h-7 text-primary-600" />
+              <Zap className="w-7 h-7 text-primary-600" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Upgrade to Pro</h2>
             <p className="text-sm text-gray-600 mb-6">

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import {
   MessageSquare,
-  Sparkles,
+  Search,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { QueryInput } from '../components/query/QueryInput';
@@ -253,7 +253,7 @@ export const QueryPage: React.FC = () => {
               onClick={() => handleExampleClick(eq)}
               className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-primary-50 hover:border-primary-200 hover:text-primary-700 transition-colors"
             >
-              <Sparkles className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+              <Search className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
               {eq}
             </button>
           ))}
