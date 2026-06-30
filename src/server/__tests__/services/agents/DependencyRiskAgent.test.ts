@@ -55,7 +55,7 @@ vi.mock('../../../services/NotificationService', () => ({
 vi.mock('../../../services/ScheduleService', () => ({
   scheduleService: {
     findByProjectId: vi.fn().mockResolvedValue([]),
-    findTasksByScheduleId: vi.fn().mockResolvedValue([]),
+    findTasksByScheduleIds: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -91,7 +91,7 @@ describe('DependencyRiskAgent', () => {
   it('detects bottleneck tasks with 3+ dependents', async () => {
     const { scheduleService } = await import('../../../services/ScheduleService');
     vi.mocked(scheduleService.findByProjectId).mockResolvedValueOnce([{ id: 's1' }] as any);
-    vi.mocked(scheduleService.findTasksByScheduleId).mockResolvedValueOnce([
+    vi.mocked(scheduleService.findTasksByScheduleIds).mockResolvedValueOnce([
       { id: 't1', name: 'Core Module', status: 'in_progress', dependency: null },
       { id: 't2', name: 'Feature A', status: 'pending', dependency: 't1' },
       { id: 't3', name: 'Feature B', status: 'pending', dependency: 't1' },
