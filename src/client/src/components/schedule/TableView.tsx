@@ -226,16 +226,58 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate, cpmDat
     }
   }, [cpmMap, baselineMap]);
 
+  // Build hierarchical ordering: parents followed by their children, recursively
+  const levelMap = useMemo(() => {
+    const map = new Map<string, number>();
+    const taskIds = new Set(tasks.map(t => t.id));
+    const childrenOf = new Map<string | null, GanttTask[]>();
+    for (const t of tasks) {
+      const parent = (t.parentTaskId && taskIds.has(t.parentTaskId)) ? t.parentTaskId : null;
+      if (!childrenOf.has(parent)) childrenOf.set(parent, []);
+      childrenOf.get(parent)!.push(t);
+    }
+    const assign = (parentId: string | null, level: number) => {
+      const children = childrenOf.get(parentId) || [];
+      for (const child of children) {
+        map.set(child.id, level);
+        assign(child.id, level + 1);
+      }
+    };
+    assign(null, 0);
+    return map;
+  }, [tasks]);
+
   const sorted = useMemo(() => {
-    const arr = [...tasks];
-    arr.sort((a, b) => {
-      const va = getSortValue(a, sortField);
-      const vb = getSortValue(b, sortField);
-      if (va < vb) return sortDir === 'asc' ? -1 : 1;
-      if (va > vb) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
-    return arr;
+    const taskIds = new Set(tasks.map(t => t.id));
+    const childrenOf = new Map<string | null, GanttTask[]>();
+    for (const t of tasks) {
+      const parent = (t.parentTaskId && taskIds.has(t.parentTaskId)) ? t.parentTaskId : null;
+      if (!childrenOf.has(parent)) childrenOf.set(parent, []);
+      childrenOf.get(parent)!.push(t);
+    }
+
+    // Sort children within each group
+    const sortChildren = (list: GanttTask[]) => {
+      return [...list].sort((a, b) => {
+        const va = getSortValue(a, sortField);
+        const vb = getSortValue(b, sortField);
+        if (va < vb) return sortDir === 'asc' ? -1 : 1;
+        if (va > vb) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    };
+
+    const result: GanttTask[] = [];
+    const flatten = (parentId: string | null) => {
+      const children = childrenOf.get(parentId);
+      if (!children) return;
+      for (const child of sortChildren(children)) {
+        result.push(child);
+        flatten(child.id);
+      }
+    };
+    flatten(null);
+    return result;
   }, [tasks, sortField, sortDir, getSortValue]);
 
   const SortIcon = ({ field }: { field: ColumnKey }) => {
@@ -475,12 +517,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate, cpmDat
                 onBlur={() => saveEdit(task.id, 'name', editValue)}
               />
             ) : (
-              <div className="flex items-center gap-2">
-                {task.parentTaskId && <span className="text-gray-300 ml-3">&lsaquo;</span>}
+              <div className="flex items-center gap-2" style={{ paddingLeft: `${(levelMap.get(task.id) || 0) * 20}px` }}>
                 {(task as any).isMilestone && (
                   <span className="inline-block w-2.5 h-2.5 rotate-45 bg-amber-500 flex-shrink-0" title="Milestone" />
                 )}
-                {task.name}
+                {(levelMap.get(task.id) || 0) > 0 && (
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${task.parentTaskId ? 'bg-gray-300' : ''}`} />
+                )}
+                <span className={(levelMap.get(task.id) || 0) === 0 ? 'font-semibold' : ''}>{task.name}</span>
               </div>
             )}
             {renderSaveIndicator(task.id, 'name')}

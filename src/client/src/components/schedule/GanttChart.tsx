@@ -58,7 +58,8 @@ function formatMonthYear(d: Date): string {
 /** Build a flat, sorted list of tasks with WBS numbers & hierarchy levels */
 function buildFlatRows(tasks: GanttTask[]): FlatRow[] {
   const rows: FlatRow[] = [];
-  const topLevel = tasks.filter((t) => !t.parentTaskId);
+  const taskIds = new Set(tasks.map((t) => t.id));
+  const topLevel = tasks.filter((t) => !t.parentTaskId || !taskIds.has(t.parentTaskId));
   // Sort by start date
   topLevel.sort((a, b) => {
     const da = toDate(a.startDate)?.getTime() ?? 0;
