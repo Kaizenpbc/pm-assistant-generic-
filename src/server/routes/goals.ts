@@ -51,10 +51,11 @@ export async function goalRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const body = request.body as any;
+      const userId = (request as any).user?.userId as string;
       const goal = await goalService.create({
         name: body.name,
         description: body.description,
-        ownerId: body.ownerId,
+        ownerId: body.ownerId || userId,
         parentId: body.parentId,
         goalType: body.goalType,
         status: body.status,

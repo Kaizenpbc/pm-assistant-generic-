@@ -179,7 +179,7 @@ export function ProjectTable({ projects }: Props) {
     const active = sortable !== undefined && sortKey === sortable;
     return (
       <th
-        className={`px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap ${col ?? ''} ${sortable ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
+        className={`px-3 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap ${col ?? ''} ${sortable ? 'cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200' : ''}`}
         onClick={sortable ? () => handleSort(sortable) : undefined}
       >
         <span className="inline-flex items-center gap-1">
@@ -194,16 +194,16 @@ export function ProjectTable({ projects }: Props) {
     return (
       <div className="card text-center py-12">
         <FolderKanban className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-        <h3 className="text-base font-semibold text-gray-900">No projects yet</h3>
-        <p className="mt-1 text-sm text-gray-500">Create your first project to get started.</p>
+        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">No projects yet</h3>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Create your first project to get started.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-      <table className="min-w-full divide-y divide-gray-100">
-        <thead className="bg-gray-50">
+    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-900">
           <tr>
             <Th label="Name" sortable="name" />
             <Th label="Status" sortable="status" />
@@ -217,7 +217,7 @@ export function ProjectTable({ projects }: Props) {
             <th className="px-3 py-2.5 w-10" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
           {sorted.map((project) => {
             const status = statusConfig[project.status] || statusConfig.planning;
             const progress = project.progressPercentage ?? 0;
@@ -230,11 +230,11 @@ export function ProjectTable({ projects }: Props) {
               <tr
                 key={project.id}
                 onClick={() => navigate(`/project/${project.id}`)}
-                className="cursor-pointer hover:bg-primary-50 transition-colors"
+                className="cursor-pointer hover:bg-primary-50 dark:hover:bg-gray-700 transition-colors"
               >
                 {/* Name */}
                 <td className="px-3 py-3 max-w-[220px]">
-                  <span className="text-sm font-medium text-gray-900 hover:text-primary-600 truncate block">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 truncate block">
                     {project.name}
                   </span>
                 </td>
@@ -256,14 +256,14 @@ export function ProjectTable({ projects }: Props) {
                 </td>
 
                 {/* Type */}
-                <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   {project.projectType ? (typeLabels[project.projectType] ?? project.projectType) : '—'}
                 </td>
 
                 {/* Progress */}
                 <td className="px-3 py-3 whitespace-nowrap">
                   <div className="flex items-center gap-2 min-w-[80px]">
-                    <div className="flex-1 h-1.5 rounded-full bg-gray-100">
+                    <div className="flex-1 h-1.5 rounded-full bg-gray-100 dark:bg-gray-600">
                       <div
                         className="h-full rounded-full bg-primary-500"
                         style={{ width: `${Math.min(progress, 100)}%` }}
@@ -274,7 +274,7 @@ export function ProjectTable({ projects }: Props) {
                 </td>
 
                 {/* Budget Allocated */}
-                <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap text-sm text-gray-600">
+                <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                   {budgetAllocated > 0 ? formatDollar(budgetAllocated) : <span className="text-gray-300">—</span>}
                 </td>
 
@@ -290,7 +290,7 @@ export function ProjectTable({ projects }: Props) {
                 </td>
 
                 {/* End Date */}
-                <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   {formatDate(project.endDate)}
                 </td>
 

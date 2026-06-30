@@ -61,7 +61,7 @@ export const PMDashboard: React.FC = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Projects</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Projects</h1>
             <p className="mt-1 text-sm text-gray-500">Manage your projects and track progress.</p>
           </div>
         </div>
@@ -90,27 +90,27 @@ export const PMDashboard: React.FC = () => {
         return (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="card">
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
                 <FolderKanban className="w-4 h-4" />
                 <span>Total</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{projects.length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{projects.length}</p>
             </div>
             <div className="card">
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
                 <TrendingUp className="w-4 h-4" />
                 <span>Active</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {projects.filter((p) => p.status === 'active').length}
               </p>
             </div>
             <div className="card">
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
                 <Clock className="w-4 h-4" />
                 <span>Planning</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {projects.filter((p) => p.status === 'planning').length}
               </p>
             </div>
@@ -134,7 +134,7 @@ export const PMDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Projects</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Projects</h1>
           <p className="mt-1 text-sm text-gray-500">
             Manage your projects and track progress.
           </p>
