@@ -316,7 +316,7 @@ An agentic AI project management platform that combines the scheduling power of 
 | Burndown/Burnup Charts | Done | P4 |
 | External Integrations | Partial | P5 |
 | Client/Stakeholder Portal | Done | P5 |
-| Approval Workflows & Change Requests | Backend Only | P5 |
+| Approval Workflows & Change Requests | Done | P5 |
 | Resource Leveling | Done | P5 |
 | Sprint Planning / Agile Mode | Done | P5 |
 | Custom Report Builder | Done | P5 |

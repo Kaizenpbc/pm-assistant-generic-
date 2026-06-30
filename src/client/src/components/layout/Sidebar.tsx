@@ -24,6 +24,7 @@ import {
   BarChart3,
   ShieldCheck,
   Bot,
+  GitPullRequest,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -111,6 +112,11 @@ const navItems: NavItem[] = [
     label: 'Intake',
     icon: ClipboardList,
     path: '/intake',
+  },
+  {
+    label: 'Change Requests',
+    icon: GitPullRequest,
+    path: '/change-requests',
   },
   {
     label: 'Ask AI',
