@@ -56,7 +56,15 @@
   .dark code {
     @apply bg-gray-800 text-gray-200;
   }
+  /* Dark mode: general text and span colors */
+  .dark span {
+    color: inherit;
+  }
+  .dark a:not(.btn):not(.btn-primary) {
+    color: inherit;
+  }
 }
+
 
 @layer components {
   .btn {

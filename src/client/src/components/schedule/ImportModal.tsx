@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { X, Upload, FileText } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { apiService } from '../../services/api';
 
 // ---------------------------------------------------------------------------
@@ -132,10 +133,34 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
     setColumnMap(autoMap(p.headers));
   }, []);
 
+  const isExcelFile = (file: File) => {
+    const ext = file.name.toLowerCase().split('.').pop();
+    return ext === 'xlsx' || ext === 'xls' || ext === 'xlsb' ||
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.type === 'application/vnd.ms-excel';
+  };
+
   const handleFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => loadText((e.target?.result as string) ?? '');
-    reader.readAsText(file);
+    if (isExcelFile(file)) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          if (!sheetName) { setError('Excel file has no sheets.'); return; }
+          const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
+          loadText(csv);
+        } catch (err: any) {
+          setError(`Failed to parse Excel file: ${err.message}`);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => loadText((e.target?.result as string) ?? '');
+      reader.readAsText(file);
+    }
   };
 
   const onDrop = (e: React.DragEvent) => {
@@ -177,7 +202,7 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Import Tasks from CSV</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Import Tasks from CSV / Excel</h2>
           <button onClick={handleClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
             <X size={20} />
           </button>
@@ -222,8 +247,9 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
                     }`}
                   >
                     <Upload size={32} className="text-gray-400 dark:text-gray-500" />
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Drag & drop a CSV file here, or click to browse</p>
-                    <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Drag & drop a CSV or Excel file here, or click to browse</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">.csv, .xlsx, .xls supported</p>
+                    <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
                   </div>
 
                   <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
