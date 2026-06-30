@@ -66,6 +66,7 @@ export interface CreateTaskData {
   endDate?: Date | string;
   progressPercentage?: number;
   dependency?: string;
+  dependencyType?: 'FS' | 'FF' | 'SS' | 'SF';
   risks?: string;
   issues?: string;
   comments?: string;
@@ -362,7 +363,7 @@ export class ScheduleService {
         toDateStr(data.endDate),
         data.progressPercentage ?? 0,
         data.dependency || null,
-        null, // dependencyType not in CreateTaskData currently
+        data.dependencyType || null,
         data.risks || null,
         data.issues || null,
         data.comments || null,

@@ -488,6 +488,7 @@ export class TemplateService {
         endDate: taskEnd,
         parentTaskId: tt.parentRefId ? refIdToTaskId.get(tt.parentRefId) : undefined,
         dependency: tt.dependencyRefId ? refIdToTaskId.get(tt.dependencyRefId) : undefined,
+        dependencyType: tt.dependencyType as 'FS' | 'FF' | 'SS' | 'SF' | undefined,
         createdBy: input.userId,
       });
 
