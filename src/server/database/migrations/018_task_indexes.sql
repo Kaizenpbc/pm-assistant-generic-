@@ -2,7 +2,6 @@
 CREATE INDEX IF NOT EXISTS idx_tasks_schedule_id ON tasks (schedule_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks (status);
 CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks (assigned_to);
-CREATE INDEX IF NOT EXISTS idx_tasks_project_id_status ON tasks (project_id, status);
 
 -- Sprint query performance
 CREATE INDEX IF NOT EXISTS idx_sprints_project_id ON sprints (project_id);
