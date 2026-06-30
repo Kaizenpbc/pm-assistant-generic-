@@ -348,29 +348,22 @@ export class SprintService {
   async getVelocityHistory(projectId: string): Promise<{
     sprints: Array<{ name: string; velocity: number; commitment: number }>;
   }> {
-    const rows = await databaseService.query<SprintRow>(
-      `SELECT * FROM sprints WHERE project_id = ? AND status = 'completed' ORDER BY start_date`,
+    const rows = await databaseService.query<SprintRow & { completed_points: number }>(
+      `SELECT s.*, COALESCE(SUM(CASE WHEN t.status = 'completed' THEN st.story_points ELSE 0 END), 0) as completed_points
+       FROM sprints s
+       LEFT JOIN sprint_tasks st ON st.sprint_id = s.id
+       LEFT JOIN tasks t ON t.id = st.task_id
+       WHERE s.project_id = ? AND s.status = 'completed'
+       GROUP BY s.id
+       ORDER BY s.start_date`,
       [projectId],
     );
 
-    const sprints: Array<{ name: string; velocity: number; commitment: number }> = [];
-
-    for (const row of rows) {
-      // Count completed story points for this sprint
-      const pointsRows = await databaseService.query<{ total: number }>(
-        `SELECT COALESCE(SUM(st.story_points), 0) as total
-         FROM sprint_tasks st
-         JOIN tasks t ON t.id = st.task_id
-         WHERE st.sprint_id = ? AND t.status = 'completed'`,
-        [row.id],
-      );
-
-      sprints.push({
-        name: row.name,
-        velocity: Number(pointsRows[0].total),
-        commitment: Number(row.velocity_commitment) || 0,
-      });
-    }
+    const sprints = rows.map(row => ({
+      name: row.name,
+      velocity: Number(row.completed_points),
+      commitment: Number(row.velocity_commitment) || 0,
+    }));
 
     return { sprints };
   }

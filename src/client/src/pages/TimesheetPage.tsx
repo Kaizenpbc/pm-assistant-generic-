@@ -12,7 +12,7 @@ export function TimesheetPage() {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedScheduleId, setSelectedScheduleId] = useState('');
 
-  const { data: projectsData } = useQuery({
+  const { data: projectsData, isError: projectsError } = useQuery({
     queryKey: ['projects'],
     queryFn: () => apiService.getProjects(),
   });
@@ -30,6 +30,14 @@ export function TimesheetPage() {
     queryFn: () => apiService.getActualVsEstimated(selectedScheduleId),
     enabled: !!selectedScheduleId,
   });
+
+  if (projectsError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="text-sm text-red-600">Failed to load projects. Please try refreshing.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

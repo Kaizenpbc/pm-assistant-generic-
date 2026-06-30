@@ -34,6 +34,32 @@ export const PMDashboard: React.FC = () => {
     );
   }
 
+  if (projects.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">My Projects</h1>
+            <p className="mt-1 text-sm text-gray-500">Manage your projects and track progress.</p>
+          </div>
+        </div>
+        <div className="card text-center py-16">
+          <FolderKanban className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+          <h3 className="text-sm font-semibold text-gray-900">No projects yet</h3>
+          <p className="mt-1 text-sm text-gray-500">Create your first project to get started.</p>
+          <button
+            onClick={() => setShowTemplatePicker(true)}
+            className="mt-4 btn btn-primary inline-flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            New Project
+          </button>
+        </div>
+        <TemplatePicker isOpen={showTemplatePicker} onClose={() => setShowTemplatePicker(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}

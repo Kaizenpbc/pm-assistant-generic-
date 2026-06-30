@@ -25,6 +25,10 @@ export async function adminRoutes(fastify: FastifyInstance) {
   fastify.get('/users', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!requireAdmin(request, reply)) return;
     try {
+      const query = request.query as { limit?: string; offset?: string };
+      const limit = Math.min(Math.max(parseInt(query.limit || '100', 10) || 100, 1), 500);
+      const offset = Math.max(parseInt(query.offset || '0', 10) || 0, 0);
+
       const rows = await databaseService.query<any>(
         `SELECT
           u.id, u.username, u.email, u.full_name, u.role, u.is_active,
@@ -33,7 +37,9 @@ export async function adminRoutes(fastify: FastifyInstance) {
         FROM users u
         LEFT JOIN projects p ON p.created_by = u.id
         GROUP BY u.id
-        ORDER BY u.created_at DESC`
+        ORDER BY u.created_at DESC
+        LIMIT ? OFFSET ?`,
+        [limit, offset]
       );
       return { users: rows };
     } catch (error) {
