@@ -186,12 +186,8 @@ export class DependencyRiskAgent {
       return { blockedChains: [], bottleneckTasks: [], longChains: [], totalTasks: 0, totalDependencies: 0 };
     }
 
-    // Gather all tasks across schedules
-    let allTasks: Task[] = [];
-    for (const s of schedules) {
-      const tasks = await scheduleService.findTasksByScheduleId(s.id);
-      allTasks = allTasks.concat(tasks);
-    }
+    // Gather all tasks across schedules (batch query)
+    const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
 
     if (allTasks.length === 0) {
       return { blockedChains: [], bottleneckTasks: [], longChains: [], totalTasks: 0, totalDependencies: 0 };
