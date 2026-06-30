@@ -35,13 +35,6 @@ async function start() {
     await registerPlugins(fastify);
     console.log('Plugins registered');
 
-    // General health check (no auth required)
-    fastify.get('/health', async () => ({
-      status: 'ok',
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString(),
-    }));
-
     // Request duration logging for API routes
     fastify.addHook('onResponse', (request, reply, done) => {
       if (request.url.startsWith('/api/')) {
