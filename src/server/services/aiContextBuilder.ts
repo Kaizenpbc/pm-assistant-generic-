@@ -190,7 +190,8 @@ export class AIContextBuilder {
   }
 
   portfolioToPromptString(ctx: PortfolioContext): string {
-    let s = `Portfolio Overview: ${ctx.totalProjects} projects\n`;
+    let s = `PORTFOLIO DATA (use these exact numbers — do not estimate or round):\n`;
+    s += `Total Projects: exactly ${ctx.totalProjects}\n`;
     s += `Total Budget: $${ctx.summary.totalBudget.toLocaleString()} | Spent: $${ctx.summary.totalSpent.toLocaleString()}\n`;
     s += `By Status: ${Object.entries(ctx.summary.byStatus).map(([k, v]) => `${k}=${v}`).join(', ')}\n`;
     s += `By Priority: ${Object.entries(ctx.summary.byPriority).map(([k, v]) => `${k}=${v}`).join(', ')}\n\n`;

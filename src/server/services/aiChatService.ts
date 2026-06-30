@@ -299,7 +299,8 @@ export class AIChatService {
       } catch {
         projectContext = `Project ID: ${req.context.projectId} (context unavailable)`;
       }
-    } else if (req.context?.type === 'dashboard' || req.context?.type === 'reports') {
+    } else {
+      // Always load portfolio context when no specific project is selected
       try {
         const ctx = await this.contextBuilder.buildPortfolioContext();
         projectContext = this.contextBuilder.portfolioToPromptString(ctx);
