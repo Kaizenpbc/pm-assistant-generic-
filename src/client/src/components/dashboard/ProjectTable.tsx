@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronUp, ChevronDown, ChevronsUpDown, FolderKanban } from 'lucide-react';
+import { MetaPill } from '../ui/MetaPill';
 
 export interface ProjectRow {
   id: string;
@@ -26,19 +27,19 @@ type SortKey =
   | 'endDate'
   | 'daysRemaining';
 
-const statusStyles: Record<string, { label: string; color: string }> = {
-  active: { label: 'Active', color: 'bg-green-100 text-green-700' },
-  planning: { label: 'Planning', color: 'bg-purple-100 text-purple-700' },
-  on_hold: { label: 'On Hold', color: 'bg-yellow-100 text-yellow-700' },
-  completed: { label: 'Completed', color: 'bg-blue-100 text-blue-700' },
-  cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-600' },
+const statusConfig: Record<string, { label: string; variant: 'success' | 'info' | 'warning' | 'default' | 'muted' }> = {
+  active: { label: 'Active', variant: 'success' },
+  planning: { label: 'Planning', variant: 'info' },
+  on_hold: { label: 'On Hold', variant: 'warning' },
+  completed: { label: 'Completed', variant: 'default' },
+  cancelled: { label: 'Cancelled', variant: 'muted' },
 };
 
-const priorityStyles: Record<string, string> = {
-  urgent: 'bg-red-100 text-red-700',
-  high: 'bg-orange-100 text-orange-700',
-  medium: 'bg-yellow-100 text-yellow-700',
-  low: 'bg-green-100 text-green-700',
+const priorityVariant: Record<string, 'danger' | 'warning' | 'default' | 'success'> = {
+  urgent: 'danger',
+  high: 'warning',
+  medium: 'default',
+  low: 'success',
 };
 
 const priorityOrder: Record<string, number> = {
@@ -206,7 +207,7 @@ export function ProjectTable({ projects }: Props) {
         </thead>
         <tbody className="divide-y divide-gray-50">
           {sorted.map((project) => {
-            const status = statusStyles[project.status] || statusStyles.planning;
+            const status = statusConfig[project.status] || statusConfig.planning;
             const progress = project.progressPercentage ?? 0;
             const budgetAllocated = project.budgetAllocated ?? 0;
             const budgetSpent = project.budgetSpent ?? 0;
@@ -228,17 +229,15 @@ export function ProjectTable({ projects }: Props) {
 
                 {/* Status */}
                 <td className="px-3 py-3 whitespace-nowrap">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
-                    {status.label}
-                  </span>
+                  <MetaPill variant={status.variant}>{status.label}</MetaPill>
                 </td>
 
                 {/* Priority */}
                 <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap">
                   {project.priority ? (
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${priorityStyles[project.priority] ?? 'bg-gray-100 text-gray-600'}`}>
+                    <MetaPill variant={priorityVariant[project.priority] ?? 'default'} className="capitalize">
                       {project.priority}
-                    </span>
+                    </MetaPill>
                   ) : (
                     <span className="text-xs text-gray-300">—</span>
                   )}

@@ -1,4 +1,5 @@
 import { Sparkles, AlertTriangle, AlertCircle, Info } from 'lucide-react';
+import { MetaPill } from '../ui/MetaPill';
 
 // ---------------------------------------------------------------------------
 // Dollar formatting (matches SCurveChart convention)
@@ -54,31 +55,13 @@ const severityStyles: Record<string, { bg: string; border: string; text: string;
 // Effort / priority badges
 // ---------------------------------------------------------------------------
 function EffortBadge({ effort }: { effort: string }) {
-  const cls =
-    effort === 'low'
-      ? 'bg-green-100 text-green-700'
-      : effort === 'medium'
-        ? 'bg-yellow-100 text-yellow-700'
-        : 'bg-red-100 text-red-700';
-  return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${cls}`}>
-      {effort}
-    </span>
-  );
+  const variant = effort === 'low' ? 'success' : effort === 'medium' ? 'warning' : 'danger';
+  return <MetaPill variant={variant} className="capitalize">{effort}</MetaPill>;
 }
 
 function PriorityBadge({ priority }: { priority: number }) {
-  const cls =
-    priority <= 1
-      ? 'bg-red-100 text-red-700'
-      : priority <= 2
-        ? 'bg-yellow-100 text-yellow-700'
-        : 'bg-gray-100 text-gray-600';
-  return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>
-      P{priority}
-    </span>
-  );
+  const variant = priority <= 1 ? 'danger' : priority <= 2 ? 'warning' : 'muted';
+  return <MetaPill variant={variant}>P{priority}</MetaPill>;
 }
 
 // ---------------------------------------------------------------------------

@@ -25,6 +25,9 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
+import { MetaPill } from '../components/ui/MetaPill';
+import { RiskBadge as RiskBadgePrimitive } from '../components/ui/RiskBadge';
+import { ConfidenceGauge as ConfidenceGaugePrimitive, ConfidenceBar } from '../components/ui/ConfidenceGauge';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -101,23 +104,6 @@ const STATUS_TABS = [
   { key: 'expired', label: 'Expired' },
 ] as const;
 
-const STATUS_STYLES: Record<string, string> = {
-  pending: 'bg-amber-50 text-amber-700 border border-amber-200',
-  approved: 'bg-blue-50 text-blue-700 border border-blue-200',
-  rejected: 'bg-red-50 text-red-700 border border-red-200',
-  expired: 'bg-gray-100 text-gray-500 border border-gray-200',
-  executing: 'bg-primary-50 text-primary-700 border border-primary-200',
-  executed: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  rolled_back: 'bg-orange-50 text-orange-700 border border-orange-200',
-  failed: 'bg-red-50 text-red-700 border border-red-200',
-};
-
-const RISK_STYLES: Record<string, { bg: string; text: string; bar: string; border: string }> = {
-  low: { bg: 'bg-emerald-600', text: 'text-emerald-700', bar: 'bg-emerald-500', border: 'border-emerald-300' },
-  medium: { bg: 'bg-amber-500', text: 'text-amber-700', bar: 'bg-amber-500', border: 'border-amber-300' },
-  high: { bg: 'bg-orange-600', text: 'text-orange-700', bar: 'bg-orange-500', border: 'border-orange-300' },
-  critical: { bg: 'bg-red-600', text: 'text-red-700', bar: 'bg-red-500', border: 'border-red-300' },
-};
 
 const KNOWN_AGENTS = [
   'schedule-recovery-v1', 'scope-creep-detection-v1', 'budget-burn-rate-v1',
@@ -130,18 +116,6 @@ const KNOWN_AGENTS = [
 // ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
-
-function confidenceColor(score: number): string {
-  if (score >= 80) return 'text-emerald-600';
-  if (score >= 60) return 'text-amber-600';
-  return 'text-red-600';
-}
-
-function confidenceBarColor(score: number): string {
-  if (score >= 80) return 'bg-emerald-500';
-  if (score >= 60) return 'bg-amber-500';
-  return 'bg-red-500';
-}
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -182,62 +156,37 @@ function formatActionType(type: string): string {
 // ---------------------------------------------------------------------------
 
 function ConfidenceGauge({ score, size = 'md' }: { score: number; size?: 'sm' | 'md' }) {
-  const isSm = size === 'sm';
-  const w = isSm ? 40 : 56;
-  const strokeWidth = isSm ? 4 : 5;
-  const r = (w - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference - (score / 100) * circumference;
-
-  return (
-    <div className={`relative inline-flex items-center justify-center ${isSm ? 'w-10 h-10' : 'w-14 h-14'}`}>
-      <svg width={w} height={w} className="-rotate-90">
-        <circle cx={w / 2} cy={w / 2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} />
-        <circle
-          cx={w / 2} cy={w / 2} r={r} fill="none"
-          stroke={score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444'}
-          strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset}
-          strokeLinecap="round" className="transition-all duration-500"
-        />
-      </svg>
-      <span className={`absolute font-bold ${isSm ? 'text-xs' : 'text-sm'} ${confidenceColor(score)}`}>
-        {score.toFixed(0)}
-      </span>
-    </div>
-  );
+  return <ConfidenceGaugePrimitive score={score} size={size} />;
 }
 
 // ---------------------------------------------------------------------------
-// Risk Badge (distinct from status — heavier, bolder)
+// Risk Badge — delegates to shared primitive
 // ---------------------------------------------------------------------------
 
 function RiskBadge({ level, size = 'md' }: { level: string; size?: 'sm' | 'md' }) {
-  const style = RISK_STYLES[level] || RISK_STYLES.medium;
-  if (size === 'sm') {
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold uppercase tracking-wider ${style.text} bg-white border-2 ${style.border} rounded`}>
-        <span className={`w-1.5 h-1.5 rounded-sm ${style.bg}`} />
-        {level}
-      </span>
-    );
-  }
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-bold uppercase tracking-wider ${style.text} bg-white border-2 ${style.border} rounded`}>
-      <span className={`w-2 h-2 rounded-sm ${style.bg}`} />
-      {level} risk
-    </span>
-  );
+  return <RiskBadgePrimitive level={level} size={size} />;
 }
 
 // ---------------------------------------------------------------------------
-// Status Pill (lightweight, lifecycle indicator)
+// Status Pill — delegates to MetaPill
 // ---------------------------------------------------------------------------
+
+const STATUS_VARIANT: Record<string, 'warning' | 'info' | 'danger' | 'success' | 'muted' | 'default'> = {
+  pending: 'warning',
+  approved: 'info',
+  rejected: 'danger',
+  expired: 'muted',
+  executing: 'info',
+  executed: 'success',
+  rolled_back: 'warning',
+  failed: 'danger',
+};
 
 function StatusPill({ status }: { status: string }) {
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status] || 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+    <MetaPill variant={STATUS_VARIANT[status] || 'default'}>
       {status.replace(/_/g, ' ')}
-    </span>
+    </MetaPill>
   );
 }
 
@@ -491,8 +440,8 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
 
             {/* Confidence Breakdown — visual bars */}
             {proposal.confidence_factors && Object.keys(proposal.confidence_factors).length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Confidence Breakdown</h3>
+              <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Confidence Breakdown</h3>
                 <div className="space-y-2.5">
                   {Object.entries(proposal.confidence_factors).map(([key, val]) => {
                     const score = Number(val) || 0;
@@ -500,15 +449,8 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                     const Icon = key === 'dataQuality' ? Database : key === 'historicalAccuracy' ? History : Cpu;
                     return (
                       <div key={key} className="flex items-center gap-3">
-                        <Icon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                        <span className="text-xs text-gray-600 w-28 flex-shrink-0">{label}</span>
-                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${confidenceBarColor(score)}`}
-                            style={{ width: `${Math.min(score, 100)}%` }}
-                          />
-                        </div>
-                        <span className={`text-xs font-bold w-8 text-right ${confidenceColor(score)}`}>{score.toFixed(0)}%</span>
+                        <Icon className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                        <ConfidenceBar score={score} label={label} className="flex-1" />
                       </div>
                     );
                   })}
@@ -1089,14 +1031,7 @@ export const AgentProposalsPage: React.FC = () => {
                         <RiskBadge level={p.risk_level} size="sm" />
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${confidenceBarColor(p.confidence_score)}`} style={{ width: `${p.confidence_score}%` }} />
-                          </div>
-                          <span className={`text-xs font-bold ${confidenceColor(p.confidence_score)}`}>
-                            {p.confidence_score?.toFixed(0)}%
-                          </span>
-                        </div>
+                        <ConfidenceBar score={p.confidence_score} />
                       </td>
                       <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
                         {timeAgo(p.created_at)}
