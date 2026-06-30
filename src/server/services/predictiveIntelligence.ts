@@ -764,7 +764,17 @@ export class PredictiveIntelligenceService {
         requestContext: {},
       });
 
-      return { predictions: result.data, aiPowered: true };
+      // Override AI-generated summary/risks/budget/projectHealthScores with
+      // deterministic values — AI can hallucinate counts, so we only trust it
+      // for qualitative fields (highlights, weather narrative).
+      const merged: AIDashboardPredictions = {
+        ...result.data,
+        summary: fallbackPredictions.summary,
+        risks: fallbackPredictions.risks,
+        budget: fallbackPredictions.budget,
+        projectHealthScores: fallbackPredictions.projectHealthScores,
+      };
+      return { predictions: merged, aiPowered: true };
     } catch (err) {
       this.fastify.log.warn(
         { err },
