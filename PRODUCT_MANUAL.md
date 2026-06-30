@@ -51,7 +51,7 @@ A daily cron job (02:00 UTC) scans for templates and generates instances within 
 - **Gantt chart** -- interactive timeline with dependency arrows and critical path highlighting. Supports drag-and-drop rescheduling: drag a bar to move a task, drag the right edge to resize. Date changes cascade through dependencies automatically.
 - **Kanban board** -- drag-and-drop cards grouped by status
 - **Calendar view** -- tasks plotted on a monthly/weekly calendar
-- **Table view** -- sortable, filterable spreadsheet-style listing with a customizable column picker. Choose from 21 columns across four groups (Standard, Scheduling/CPM, Baseline, Other). Column selections persist per schedule. Scheduling columns (Early Start, Late Finish, Total Float, etc.) automatically trigger CPM computation. Baseline columns show variance data when a baseline comparison is active.
+- **Table view** -- sortable, filterable spreadsheet-style listing with a customizable column picker. Choose from 21 columns across four groups (Standard, Scheduling/CPM, Baseline, Other). Column selections persist per schedule. Scheduling columns (Early Start, Late Finish, Total Float, etc.) automatically trigger CPM computation. Baseline columns show variance data when a baseline comparison is active. **Saved Views** let you name and store column+sort configurations; load, update, or delete them from the Views dropdown next to the Columns picker.
 
 ### Bulk Operations
 
@@ -530,6 +530,10 @@ The `NotificationService` delivers notifications to users with:
 - **Read/unread tracking**
 - **WebSocket delivery**: real-time push via the `WebSocketService`
 - **Bulk mark-as-read**
+
+### Real-Time Presence
+
+When multiple users view the same project, avatar circles appear in the project header showing who else is currently viewing. Presence is ephemeral (in-memory on the server) and updates instantly via WebSocket. Avatars show user initials with a tooltip displaying the full username. The current user is filtered out. Up to 5 avatars are shown, with a "+N" overflow indicator for larger teams.
 
 ---
 

@@ -79,12 +79,13 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 ### Project & Schedule Management
 - Full CRUD for projects, tasks, and schedules
-- Multiple views: Gantt chart, Kanban board, Calendar, Table (with MS Project-style column picker)
+- Multiple views: Gantt chart, Kanban board, Calendar, Table (with MS Project-style column picker and saved views)
 - Gantt drag-and-drop rescheduling (move and resize task bars)
 - Task hierarchy with summary task auto-calculation
 - Dependency management with predecessor/successor relationships
 - Recurring tasks (daily, weekly, biweekly, monthly) with auto-generation
 - Customizable dashboard widgets with per-user persistence
+- Real-time presence indicators showing who is viewing a project
 
 ### Critical Path Method (CPM)
 - Forward and backward pass computation

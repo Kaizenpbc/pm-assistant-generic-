@@ -103,6 +103,8 @@ An agentic AI project management platform that combines the scheduling power of 
 
 ### 2.4 Real-Time Collaboration
 - Real-time task updates (WebSocket)
+- Real-time presence indicators: avatar circles in project header show who else is viewing the same project
+- Presence is ephemeral (server in-memory), auto-cleans on disconnect
 - **Benchmark:** Monday.com, Smartsheet
 
 ### 2.5 Calendar & Table Views
@@ -114,6 +116,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Baseline variance columns populate when comparison is active
 - WBS auto-computed from task hierarchy
 - Column sorting on all numeric and date fields
+- Saved Views: name and store column+sort configurations per schedule, load/update/delete from dropdown
 - **Benchmark:** MS Project, Smartsheet, Monday.com
 
 ### 2.6 Portfolio-Level Gantt

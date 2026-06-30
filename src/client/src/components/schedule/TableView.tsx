@@ -4,6 +4,7 @@ import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Check, Loader2, X, Trash2, Che
 import type { GanttTask } from './GanttChart';
 import { apiService } from '../../services/api';
 import { ColumnPickerDropdown } from './ColumnPickerDropdown';
+import { SavedViewsDropdown, type SavedView } from './SavedViewsDropdown';
 import { COLUMN_DEFS, DEFAULT_VISIBLE_KEYS, SCHEDULING_KEYS } from './tableColumns';
 import type { ColumnKey, ColumnGroup, ColumnDef } from './tableColumns';
 
@@ -124,6 +125,12 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate, cpmDat
       }
       return next;
     });
+  }, []);
+
+  const loadSavedView = useCallback((view: SavedView) => {
+    setVisibleKeys(new Set(view.columns));
+    setSortField(view.sortField);
+    setSortDir(view.sortDir);
   }, []);
 
   const visibleColumns = useMemo(() =>
@@ -714,8 +721,15 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate, cpmDat
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-      {/* Column picker header */}
-      <div className="flex items-center justify-end px-3 py-1.5 border-b border-gray-100 bg-gray-50/50">
+      {/* Column picker + saved views header */}
+      <div className="flex items-center justify-end gap-1.5 px-3 py-1.5 border-b border-gray-100 bg-gray-50/50">
+        <SavedViewsDropdown
+          scheduleId={scheduleId}
+          currentColumns={visibleKeys}
+          currentSortField={sortField}
+          currentSortDir={sortDir}
+          onLoadView={loadSavedView}
+        />
         <ColumnPickerDropdown
           columns={COLUMN_DEFS}
           visibleKeys={visibleKeys}

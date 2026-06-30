@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import { WebSocketService } from '../../services/WebSocketService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
@@ -6,8 +6,12 @@ import { requireScope } from '../../middleware/requireScope';
 export async function websocketRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
-  fastify.get('/', { websocket: true, preHandler: [requireScope('read')] }, (socket, _request) => {
-    WebSocketService.addClient(socket);
+  fastify.get('/', { websocket: true, preHandler: [requireScope('read')] }, (socket, request) => {
+    const userInfo = request.user
+      ? { userId: request.user.userId, username: request.user.username }
+      : undefined;
+
+    WebSocketService.addClient(socket, userInfo);
 
     socket.send(JSON.stringify({
       type: 'connected',

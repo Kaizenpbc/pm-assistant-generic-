@@ -71,6 +71,7 @@ import { SprintPlanningPanel } from '../components/sprints/SprintPlanningPanel';
 import { SprintBoard } from '../components/sprints/SprintBoard';
 import { SprintBurndownChart } from '../components/sprints/SprintBurndownChart';
 import { AvailabilityCalendar } from '../components/resources/AvailabilityCalendar';
+import { usePresence } from '../hooks/usePresence';
 
 type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resource-leveling';
 
@@ -200,6 +201,8 @@ export function ProjectDetailPage() {
 
   const { user } = useAuthStore();
   const canEditStatus = user?.role === 'admin' || user?.role === 'manager';
+  const presenceViewers = usePresence(id);
+  const otherViewers = presenceViewers.filter(v => v.userId !== user?.id);
 
   const {
     data: projectData,
@@ -321,6 +324,38 @@ export function ProjectDetailPage() {
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+            {otherViewers.length > 0 && (
+              <div className="flex items-center mr-1">
+                <div className="flex -space-x-2">
+                  {otherViewers.slice(0, 5).map((viewer) => {
+                    const initials = viewer.username
+                      .split(/[\s._-]+/)
+                      .map(p => p[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2) || '?';
+                    return (
+                      <div
+                        key={viewer.userId}
+                        className="w-7 h-7 rounded-full bg-primary-100 border-2 border-white flex items-center justify-center"
+                        title={`${viewer.username} is viewing`}
+                      >
+                        <span className="text-[10px] font-semibold text-primary-700">{initials}</span>
+                      </div>
+                    );
+                  })}
+                  {otherViewers.length > 5 && (
+                    <div
+                      className="w-7 h-7 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center"
+                      title={`${otherViewers.length - 5} more viewers`}
+                    >
+                      <span className="text-[10px] font-semibold text-gray-500">+{otherViewers.length - 5}</span>
+                    </div>
+                  )}
+                </div>
+                <span className="text-[10px] text-gray-400 ml-1.5 whitespace-nowrap">viewing</span>
+              </div>
+            )}
             <button
               onClick={() => setShowStatusReport(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors"

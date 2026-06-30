@@ -134,6 +134,10 @@ Each project page provides tabs or sections for:
 - **Change Requests** -- Formal change management.
 - **Activity** -- Audit trail of all project changes.
 
+#### Real-Time Presence
+
+When other users are viewing the same project, their avatar circles appear in the project header next to the action buttons. Each circle shows the user's initials with a tooltip displaying their username. This helps teams coordinate and avoid conflicting edits.
+
 ---
 
 ## 3. Schedules and Tasks
@@ -236,6 +240,17 @@ A spreadsheet-like view of all tasks with inline editing. Click the **Columns** 
 - **Other** -- Predecessor, WBS (read-only; WBS is auto-computed from the task hierarchy)
 
 Column selections are saved per schedule and persist across page reloads. All visible columns support sorting. Bulk select, status/priority/assignee changes, and inline cell editing continue to work on the standard columns.
+
+#### Saved Views
+
+Click the **Views** button next to the Columns picker to save and load named view configurations. Each saved view stores the current column selection and sort order. You can:
+
+- **Save** a new view by entering a name and clicking Save
+- **Load** a saved view by clicking its name in the dropdown
+- **Update** the active view if you've changed columns or sorting since loading it
+- **Delete** a view by clicking the trash icon
+
+Saved views are stored per schedule in your browser's localStorage.
 
 ### Network Diagram
 
