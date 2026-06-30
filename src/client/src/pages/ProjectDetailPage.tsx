@@ -66,6 +66,7 @@ import { SprintList } from '../components/sprints/SprintList';
 import { SprintPlanningPanel } from '../components/sprints/SprintPlanningPanel';
 import { SprintBoard } from '../components/sprints/SprintBoard';
 import { SprintBurndownChart } from '../components/sprints/SprintBurndownChart';
+import { AvailabilityCalendar } from '../components/resources/AvailabilityCalendar';
 
 type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resource-leveling';
 
@@ -693,6 +694,8 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         dependency: data.dependency || undefined,
         parentTaskId: data.parentTaskId || undefined,
         estimatedDays: data.estimatedDays ? parseInt(data.estimatedDays) : undefined,
+        recurrenceRule: data.recurrenceRule || undefined,
+        isRecurrenceTemplate: data.isRecurrenceTemplate || undefined,
       };
       return apiService.createTask(schedule.id, payload as any);
     },
@@ -720,6 +723,8 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           dependency: d.dependency || undefined,
           parentTaskId: d.parentTaskId || undefined,
           estimatedDays: d.estimatedDays ? parseInt(d.estimatedDays) : undefined,
+          recurrenceRule: d.recurrenceRule || undefined,
+          isRecurrenceTemplate: d.isRecurrenceTemplate || undefined,
         };
         return apiService.updateTask(schedule.id, taskId, payload);
       }
@@ -837,6 +842,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           scheduleName={schedule.name}
           onTaskClick={(task) => setEditingTask(task)}
           onAddTask={() => setShowAddForm(true)}
+          onTaskDragEnd={(taskId, newStart, newEnd) => updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } })}
           criticalPathTaskIds={showCriticalPath ? cpmData?.criticalPathTaskIds : undefined}
           baselineTasks={selectedBaseline?.tasks?.map((bt: any) => ({
             taskId: bt.taskId,
@@ -2069,6 +2075,39 @@ function TeamTab() {
         <SectionSpinner />
       ) : (
         <WorkloadHeatmap workload={workload} resources={resources} />
+      )}
+
+      {/* Resource Availability Calendar */}
+      {resources.length > 0 && (
+        <ResourceAvailabilitySection resources={resources} />
+      )}
+    </div>
+  );
+}
+
+function ResourceAvailabilitySection({ resources }: { resources: any[] }) {
+  const [selectedResourceId, setSelectedResourceId] = useState(resources[0]?.id || '');
+  const selectedResource = resources.find((r: any) => r.id === selectedResourceId);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <label className="text-sm font-medium text-gray-700">Availability for:</label>
+        <select
+          value={selectedResourceId}
+          onChange={e => setSelectedResourceId(e.target.value)}
+          className="text-sm border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
+        >
+          {resources.map((r: any) => (
+            <option key={r.id} value={r.id}>{r.name}</option>
+          ))}
+        </select>
+      </div>
+      {selectedResource && (
+        <AvailabilityCalendar
+          resourceId={selectedResource.id}
+          resourceName={selectedResource.name}
+        />
       )}
     </div>
   );

@@ -570,6 +570,39 @@ class ApiService {
     return response.data;
   }
 
+  // -------------------------------------------------------------------------
+  // Resource Availability
+  // -------------------------------------------------------------------------
+
+  async getResourceAvailability(resourceId: string, from?: string, to?: string) {
+    const params: Record<string, string> = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    const response = await this.api.get(`/resources/${resourceId}/availability`, { params });
+    return response.data;
+  }
+
+  async createResourceAvailability(resourceId: string, data: {
+    dateFrom: string;
+    dateTo: string;
+    type: 'vacation' | 'holiday' | 'unavailable' | 'reduced';
+    hoursAvailable?: number;
+    note?: string;
+  }) {
+    const response = await this.api.post(`/resources/${resourceId}/availability`, data);
+    return response.data;
+  }
+
+  async updateResourceAvailability(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/resources/availability/${id}`, data);
+    return response.data;
+  }
+
+  async deleteResourceAvailability(id: string) {
+    const response = await this.api.delete(`/resources/availability/${id}`);
+    return response.data;
+  }
+
   async addTaskComment(scheduleId: string, taskId: string, text: string) {
     const response = await this.api.post(`/schedules/${scheduleId}/tasks/${taskId}/comments`, { text });
     return response.data;

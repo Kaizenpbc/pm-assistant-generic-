@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -18,6 +18,9 @@ export interface GanttTask {
   parentTaskId?: string;
   assignedTo?: string;
   estimatedDays?: number;
+  recurrenceRule?: string;
+  recurrenceParentId?: string;
+  isRecurrenceTemplate?: boolean;
 }
 
 interface FlatRow {
@@ -130,6 +133,7 @@ export function GanttChart({
   onAddTask,
   criticalPathTaskIds,
   baselineTasks,
+  onTaskDragEnd,
 }: {
   tasks: GanttTask[];
   scheduleName?: string;
@@ -141,6 +145,8 @@ export function GanttChart({
   criticalPathTaskIds?: string[];
   /** Baseline task data for ghost bars */
   baselineTasks?: Array<{ taskId: string; startDate: string; endDate: string }>;
+  /** Called when a task bar is dragged to new dates */
+  onTaskDragEnd?: (taskId: string, newStartDate: string, newEndDate: string) => void;
 }) {
   const criticalSet = useMemo(() => new Set(criticalPathTaskIds || []), [criticalPathTaskIds]);
   const baselineMap = useMemo(() => {
@@ -217,6 +223,93 @@ export function GanttChart({
     if (today < minDate || today > maxDate) return null;
     return daysBetween(minDate, today) * DAY_PX;
   }, [minDate, maxDate]);
+
+  // -----------------------------------------------------------------------
+  // Drag-and-drop state
+  // -----------------------------------------------------------------------
+  const [drag, setDrag] = useState<{
+    taskId: string;
+    mode: 'move' | 'resize';
+    startX: number;
+    origStartDate: Date;
+    origEndDate: Date;
+    dayDelta: number;
+  } | null>(null);
+
+  const handleBarMouseDown = useCallback(
+    (e: React.MouseEvent, task: GanttTask) => {
+      if (!onTaskDragEnd) return;
+      e.stopPropagation();
+      e.preventDefault();
+      const start = toDate(task.startDate);
+      const end = toDate(task.endDate);
+      if (!start || !end) return;
+
+      // Right 8px = resize, rest = move
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const localX = e.clientX - rect.left;
+      const mode = localX > rect.width - 8 ? 'resize' : 'move';
+
+      setDrag({
+        taskId: task.id,
+        mode,
+        startX: e.clientX,
+        origStartDate: start,
+        origEndDate: end,
+        dayDelta: 0,
+      });
+    },
+    [onTaskDragEnd]
+  );
+
+  useEffect(() => {
+    if (!drag) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - drag.startX;
+      const dayDelta = Math.round(deltaX / DAY_PX);
+      setDrag(prev => prev ? { ...prev, dayDelta } : null);
+    };
+
+    const handleMouseUp = () => {
+      if (drag && drag.dayDelta !== 0 && onTaskDragEnd) {
+        const fmt = (d: Date) => d.toISOString().split('T')[0];
+        if (drag.mode === 'move') {
+          const newStart = new Date(drag.origStartDate);
+          newStart.setDate(newStart.getDate() + drag.dayDelta);
+          const newEnd = new Date(drag.origEndDate);
+          newEnd.setDate(newEnd.getDate() + drag.dayDelta);
+          onTaskDragEnd(drag.taskId, fmt(newStart), fmt(newEnd));
+        } else {
+          // resize: only change end date, minimum 1 day duration
+          const newEnd = new Date(drag.origEndDate);
+          newEnd.setDate(newEnd.getDate() + drag.dayDelta);
+          if (newEnd > drag.origStartDate) {
+            onTaskDragEnd(drag.taskId, fmt(drag.origStartDate), fmt(newEnd));
+          }
+        }
+      }
+      setDrag(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [drag, onTaskDragEnd]);
+
+  // Compute drag visual offset for the dragged bar
+  const getDragOffset = useCallback(
+    (taskId: string) => {
+      if (!drag || drag.taskId !== taskId) return { leftDelta: 0, widthDelta: 0 };
+      const pxDelta = drag.dayDelta * DAY_PX;
+      if (drag.mode === 'move') return { leftDelta: pxDelta, widthDelta: 0 };
+      return { leftDelta: 0, widthDelta: pxDelta };
+    },
+    [drag]
+  );
 
   if (rows.length === 0) {
     return (
@@ -468,8 +561,11 @@ export function GanttChart({
               const end = toDate(task.endDate);
               if (!start || !end) return null;
 
-              const left = daysBetween(minDate, start) * DAY_PX;
-              const width = Math.max(daysBetween(start, end) * DAY_PX, 8);
+              const baseLeft = daysBetween(minDate, start) * DAY_PX;
+              const baseWidth = Math.max(daysBetween(start, end) * DAY_PX, 8);
+              const { leftDelta, widthDelta } = getDragOffset(task.id);
+              const left = baseLeft + leftDelta;
+              const width = Math.max(baseWidth + widthDelta, 8);
               const pct = task.progressPercentage ?? 0;
               const isCritical = criticalSet.has(task.id);
               const colors = isCritical
@@ -478,12 +574,19 @@ export function GanttChart({
               const isParent = rows.some((r) => r.task.parentTaskId === task.id);
               const top = HEADER_H + idx * ROW_H + 6;
               const barH = ROW_H - 12;
+              const isDragging = drag?.taskId === task.id;
+              const canDrag = !!onTaskDragEnd;
 
               return (
                 <div
                   key={task.id}
-                  className="absolute group/bar"
-                  style={{ left, top, width, height: barH }}
+                  className={`absolute group/bar ${isDragging ? 'opacity-80 z-20' : ''}`}
+                  style={{
+                    left, top, width, height: barH,
+                    cursor: canDrag ? (isDragging ? 'grabbing' : 'grab') : undefined,
+                    userSelect: isDragging ? 'none' : undefined,
+                  }}
+                  onMouseDown={canDrag ? (e) => handleBarMouseDown(e, task) : undefined}
                 >
                   {/* Background bar */}
                   <div
@@ -534,8 +637,25 @@ export function GanttChart({
                     </div>
                   )}
 
+                  {/* Recurring task indicator */}
+                  {task.isRecurrenceTemplate && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary-500 text-white flex items-center justify-center z-10" title="Recurring task">
+                      <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 014-4h14" /><path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 01-4 4H3" />
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Resize handle on right edge */}
+                  {canDrag && (
+                    <div
+                      className="absolute top-0 right-0 w-2 h-full cursor-ew-resize opacity-0 group-hover/bar:opacity-100 transition-opacity z-10"
+                      style={{ borderRight: `2px solid ${colors.fill}` }}
+                    />
+                  )}
+
                   {/* Tooltip on hover */}
-                  <div className="invisible group-hover/bar:visible absolute z-30 left-0 -top-16 bg-gray-900 text-white rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg pointer-events-none">
+                  <div className={`${isDragging ? 'invisible' : 'invisible group-hover/bar:visible'} absolute z-30 left-0 -top-16 bg-gray-900 text-white rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg pointer-events-none`}>
                     <div className="font-semibold">
                       {isCritical && <span className="text-red-400">[Critical] </span>}
                       {task.name}

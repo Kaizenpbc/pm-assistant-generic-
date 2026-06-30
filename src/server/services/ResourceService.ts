@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
 import { scheduleService } from './ScheduleService';
 import { auditLedgerService } from './AuditLedgerService';
+import { resourceAvailabilityService } from './ResourceAvailabilityService';
 
 export interface Resource {
   id: string;
@@ -272,11 +273,12 @@ export class ResourceService {
       if (!resource) continue;
 
       const resAssignments = projectAssignments.filter((a) => a.resourceId === resId);
-      const capacity = resource.capacityHoursPerWeek;
+      const baseCapacity = resource.capacityHoursPerWeek;
       let totalUtilization = 0;
       let isOverAllocated = false;
 
-      const weeklyData: WeeklyUtilization[] = weeks.map((weekStart) => {
+      const weeklyData: WeeklyUtilization[] = [];
+      for (const weekStart of weeks) {
         const weekEnd = new Date(weekStart.getTime() + WEEK_MS);
         let allocated = 0;
 
@@ -288,17 +290,19 @@ export class ResourceService {
           }
         }
 
+        // Use effective capacity accounting for availability blocks
+        const capacity = await resourceAvailabilityService.getEffectiveCapacity(resId, weekStart, baseCapacity);
         const utilization = capacity > 0 ? Math.round((allocated / capacity) * 100) : 0;
         if (utilization > 100) isOverAllocated = true;
         totalUtilization += utilization;
 
-        return {
+        weeklyData.push({
           weekStart: weekStart.toISOString().slice(0, 10),
           allocated,
           capacity,
           utilization,
-        };
-      });
+        });
+      }
 
       workloads.push({
         resourceId: resId,

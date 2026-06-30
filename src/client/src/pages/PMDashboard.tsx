@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   FolderKanban,
@@ -11,12 +11,34 @@ import { useUIStore } from '../stores/uiStore';
 import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
 import { TemplatePicker } from '../components/templates/TemplatePicker';
 import { ProjectTable, type ProjectRow } from '../components/dashboard/ProjectTable';
+import { CustomizeDropdown } from '../components/dashboard/CustomizeDropdown';
+import { WidgetGrid } from '../components/dashboard/WidgetGrid';
+import { PM_WIDGETS, loadWidgetIds, saveWidgetIds } from '../components/dashboard/WidgetRegistry';
+import { RecentActivityWidget } from '../components/dashboard/widgets/RecentActivityWidget';
+import { ResourceUtilizationWidget } from '../components/dashboard/widgets/ResourceUtilizationWidget';
+import { BurndownMiniWidget } from '../components/dashboard/widgets/BurndownMiniWidget';
+
+const STORAGE_KEY = 'dashboard-widgets:pm';
 
 export const PMDashboard: React.FC = () => {
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [enabledIds, setEnabledIds] = useState<Set<string>>(() => loadWidgetIds(STORAGE_KEY, PM_WIDGETS));
 
   useEffect(() => {
     useUIStore.getState().setAIPanelContext({ type: 'dashboard' });
+  }, []);
+
+  useEffect(() => {
+    saveWidgetIds(STORAGE_KEY, enabledIds);
+  }, [enabledIds]);
+
+  const toggleWidget = useCallback((id: string) => {
+    setEnabledIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }, []);
 
   const { data: projectsData, isLoading } = useQuery({
@@ -60,6 +82,53 @@ export const PMDashboard: React.FC = () => {
     );
   }
 
+  const renderWidget = (id: string) => {
+    switch (id) {
+      case 'ai-summary':
+        return <AISummaryBanner />;
+      case 'stats':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="card">
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <FolderKanban className="w-4 h-4" />
+                <span>Total</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{projects.length}</p>
+            </div>
+            <div className="card">
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <TrendingUp className="w-4 h-4" />
+                <span>Active</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {projects.filter((p) => p.status === 'active').length}
+              </p>
+            </div>
+            <div className="card">
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <Clock className="w-4 h-4" />
+                <span>Planning</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {projects.filter((p) => p.status === 'planning').length}
+              </p>
+            </div>
+          </div>
+        );
+      case 'projects':
+        return <ProjectTable projects={projects} />;
+      case 'activity':
+        return <RecentActivityWidget />;
+      case 'utilization':
+        return <ResourceUtilizationWidget />;
+      case 'burndown':
+        return <BurndownMiniWidget />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -70,49 +139,28 @@ export const PMDashboard: React.FC = () => {
             Manage your projects and track progress.
           </p>
         </div>
-        <button
-          onClick={() => setShowTemplatePicker(true)}
-          className="btn btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          New Project
-        </button>
-      </div>
-
-      {/* AI Summary Banner */}
-      <AISummaryBanner />
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <FolderKanban className="w-4 h-4" />
-            <span>Total</span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{projects.length}</p>
-        </div>
-        <div className="card">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <TrendingUp className="w-4 h-4" />
-            <span>Active</span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {projects.filter((p) => p.status === 'active').length}
-          </p>
-        </div>
-        <div className="card">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Clock className="w-4 h-4" />
-            <span>Planning</span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {projects.filter((p) => p.status === 'planning').length}
-          </p>
+        <div className="flex items-center gap-2">
+          <CustomizeDropdown
+            widgets={PM_WIDGETS}
+            enabledIds={enabledIds}
+            onToggle={toggleWidget}
+          />
+          <button
+            onClick={() => setShowTemplatePicker(true)}
+            className="btn btn-primary flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            New Project
+          </button>
         </div>
       </div>
 
-      {/* Project Table */}
-      <ProjectTable projects={projects} />
+      {/* Widget Grid */}
+      <WidgetGrid
+        widgets={PM_WIDGETS}
+        enabledIds={enabledIds}
+        renderWidget={renderWidget}
+      />
 
       <TemplatePicker
         isOpen={showTemplatePicker}

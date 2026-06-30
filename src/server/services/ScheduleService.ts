@@ -37,6 +37,9 @@ export interface Task {
   issues?: string;
   comments?: string;
   parentTaskId?: string;
+  recurrenceRule?: string;
+  recurrenceParentId?: string;
+  isRecurrenceTemplate?: boolean;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -158,6 +161,9 @@ function rowToTask(row: any): Task {
     issues: row.issues ?? undefined,
     comments: row.comments ?? undefined,
     parentTaskId: row.parent_task_id ?? undefined,
+    recurrenceRule: row.recurrence_rule ?? undefined,
+    recurrenceParentId: row.recurrence_parent_id ?? undefined,
+    isRecurrenceTemplate: row.is_recurrence_template === 1 || row.is_recurrence_template === true,
     createdBy: row.created_by,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -429,6 +435,9 @@ export class ScheduleService {
       issues: 'issues',
       comments: 'comments',
       parentTaskId: 'parent_task_id',
+      recurrenceRule: 'recurrence_rule',
+      recurrenceParentId: 'recurrence_parent_id',
+      isRecurrenceTemplate: 'is_recurrence_template',
       createdBy: 'created_by',
     };
 

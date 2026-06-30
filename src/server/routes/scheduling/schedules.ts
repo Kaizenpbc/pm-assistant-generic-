@@ -34,6 +34,8 @@ const createTaskSchema = z.object({
   issues: z.string().optional(),
   comments: z.string().optional(),
   parentTaskId: z.string().optional(),
+  recurrenceRule: z.string().optional(),
+  isRecurrenceTemplate: z.boolean().optional(),
 });
 
 const updateTaskSchema = createTaskSchema.partial().omit({ scheduleId: true });

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   FolderKanban,
@@ -10,6 +10,12 @@ import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
 import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
 import { ProjectTable } from '../components/dashboard/ProjectTable';
+import { CustomizeDropdown } from '../components/dashboard/CustomizeDropdown';
+import { WidgetGrid } from '../components/dashboard/WidgetGrid';
+import { EXEC_WIDGETS, loadWidgetIds, saveWidgetIds } from '../components/dashboard/WidgetRegistry';
+import { RecentActivityWidget } from '../components/dashboard/widgets/RecentActivityWidget';
+import { ResourceUtilizationWidget } from '../components/dashboard/widgets/ResourceUtilizationWidget';
+import { BurndownMiniWidget } from '../components/dashboard/widgets/BurndownMiniWidget';
 
 interface Project {
   id: string;
@@ -24,10 +30,26 @@ interface Project {
   endDate?: string;
 }
 
+const STORAGE_KEY = 'dashboard-widgets:exec';
+
 export const ExecutiveDashboard: React.FC = () => {
+  const [enabledIds, setEnabledIds] = useState<Set<string>>(() => loadWidgetIds(STORAGE_KEY, EXEC_WIDGETS));
 
   useEffect(() => {
     useUIStore.getState().setAIPanelContext({ type: 'dashboard' });
+  }, []);
+
+  useEffect(() => {
+    saveWidgetIds(STORAGE_KEY, enabledIds);
+  }, [enabledIds]);
+
+  const toggleWidget = useCallback((id: string) => {
+    setEnabledIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }, []);
 
   const { data: projectsData, isLoading } = useQuery({
@@ -54,55 +76,63 @@ export const ExecutiveDashboard: React.FC = () => {
     );
   }
 
+  const renderWidget = (id: string) => {
+    switch (id) {
+      case 'ai-summary':
+        return <AISummaryBanner />;
+      case 'stats':
+        return (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatsCard label="Total Projects" value={String(totalProjects)} icon={FolderKanban} color="bg-primary-50 text-primary-600" />
+            <StatsCard label="Active" value={String(activeProjects)} icon={TrendingUp} color="bg-green-50 text-green-600" />
+            <StatsCard label="Total Budget" value={`$${(totalBudget / 1000).toFixed(0)}K`} icon={DollarSign} color="bg-blue-50 text-blue-600" />
+            <StatsCard label="On Track" value={`${onTrackPct}%`} icon={CheckCircle} color="bg-emerald-50 text-emerald-600" />
+          </div>
+        );
+      case 'projects':
+        return (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">All Projects</h2>
+              <span className="text-xs text-gray-400">{totalProjects} projects</span>
+            </div>
+            <ProjectTable projects={projects} />
+          </div>
+        );
+      case 'activity':
+        return <RecentActivityWidget />;
+      case 'utilization':
+        return <ResourceUtilizationWidget />;
+      case 'burndown':
+        return <BurndownMiniWidget />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Executive Overview</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Portfolio-level view of all projects and key metrics.
-        </p>
-      </div>
-
-      {/* AI Summary Banner */}
-      <AISummaryBanner />
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatsCard
-          label="Total Projects"
-          value={String(totalProjects)}
-          icon={FolderKanban}
-          color="bg-primary-50 text-primary-600"
-        />
-        <StatsCard
-          label="Active"
-          value={String(activeProjects)}
-          icon={TrendingUp}
-          color="bg-green-50 text-green-600"
-        />
-        <StatsCard
-          label="Total Budget"
-          value={`$${(totalBudget / 1000).toFixed(0)}K`}
-          icon={DollarSign}
-          color="bg-blue-50 text-blue-600"
-        />
-        <StatsCard
-          label="On Track"
-          value={`${onTrackPct}%`}
-          icon={CheckCircle}
-          color="bg-emerald-50 text-emerald-600"
-        />
-      </div>
-
-      {/* Project Table */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">All Projects</h2>
-          <span className="text-xs text-gray-400">{totalProjects} projects</span>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Executive Overview</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Portfolio-level view of all projects and key metrics.
+          </p>
         </div>
-        <ProjectTable projects={projects} />
+        <CustomizeDropdown
+          widgets={EXEC_WIDGETS}
+          enabledIds={enabledIds}
+          onToggle={toggleWidget}
+        />
       </div>
+
+      {/* Widget Grid */}
+      <WidgetGrid
+        widgets={EXEC_WIDGETS}
+        enabledIds={enabledIds}
+        renderWidget={renderWidget}
+      />
     </div>
   );
 };

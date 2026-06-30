@@ -22,6 +22,8 @@ export interface TaskFormData {
   dependency: string;
   parentTaskId: string;
   estimatedDays: string;
+  recurrenceRule: string;
+  isRecurrenceTemplate: boolean;
 }
 
 interface TaskFormModalProps {
@@ -80,6 +82,8 @@ export function TaskFormModal({
     dependency: '',
     parentTaskId: '',
     estimatedDays: '',
+    recurrenceRule: '',
+    isRecurrenceTemplate: false,
   });
 
   // Pre-fill form when editing
@@ -97,6 +101,8 @@ export function TaskFormModal({
         dependency: task.dependency || '',
         parentTaskId: task.parentTaskId || '',
         estimatedDays: task.estimatedDays?.toString() || '',
+        recurrenceRule: (task as any).recurrenceRule || '',
+        isRecurrenceTemplate: (task as any).isRecurrenceTemplate || false,
       });
     }
   }, [task]);
@@ -322,6 +328,9 @@ export function TaskFormModal({
             </div>
           </div>
 
+          {/* Recurrence */}
+          <RecurrenceSection form={form} setForm={setForm} isRecurringInstance={!!(task as any)?.recurrenceParentId} />
+
           {/* Time Tracking (edit mode only) */}
           {isEdit && scheduleId && projectId && task && (
             <TimeLogForm taskId={task.id} scheduleId={scheduleId} projectId={projectId} />
@@ -389,6 +398,119 @@ export function TaskFormModal({
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Recurrence section
+// ---------------------------------------------------------------------------
+
+const DAYS_OF_WEEK = [
+  { key: 'MO', label: 'Mon' },
+  { key: 'TU', label: 'Tue' },
+  { key: 'WE', label: 'Wed' },
+  { key: 'TH', label: 'Thu' },
+  { key: 'FR', label: 'Fri' },
+  { key: 'SA', label: 'Sat' },
+  { key: 'SU', label: 'Sun' },
+];
+
+function parseFrequency(rule: string): string {
+  if (!rule) return 'none';
+  if (rule.startsWith('FREQ=DAILY')) return 'daily';
+  if (rule.startsWith('FREQ=BIWEEKLY')) return 'biweekly';
+  if (rule.startsWith('FREQ=WEEKLY')) return 'weekly';
+  if (rule.startsWith('FREQ=MONTHLY')) return 'monthly';
+  return 'none';
+}
+
+function parseDays(rule: string): string[] {
+  const match = rule.match(/BYDAY=([A-Z,]+)/);
+  return match ? match[1].split(',') : [];
+}
+
+function buildRule(freq: string, days: string[]): string {
+  if (freq === 'none') return '';
+  let rule = `FREQ=${freq.toUpperCase()}`;
+  if ((freq === 'weekly' || freq === 'biweekly') && days.length > 0) {
+    rule += `;BYDAY=${days.join(',')}`;
+  }
+  return rule;
+}
+
+function RecurrenceSection({
+  form,
+  setForm,
+  isRecurringInstance,
+}: {
+  form: TaskFormData;
+  setForm: React.Dispatch<React.SetStateAction<TaskFormData>>;
+  isRecurringInstance: boolean;
+}) {
+  const freq = parseFrequency(form.recurrenceRule);
+  const selectedDays = parseDays(form.recurrenceRule);
+
+  if (isRecurringInstance) {
+    return (
+      <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
+        <span className="text-xs text-blue-700 font-medium">This is a recurring task instance</span>
+      </div>
+    );
+  }
+
+  const setFreq = (newFreq: string) => {
+    const rule = buildRule(newFreq, selectedDays);
+    setForm(prev => ({
+      ...prev,
+      recurrenceRule: rule,
+      isRecurrenceTemplate: newFreq !== 'none',
+    }));
+  };
+
+  const toggleDay = (day: string) => {
+    const newDays = selectedDays.includes(day)
+      ? selectedDays.filter(d => d !== day)
+      : [...selectedDays, day];
+    const rule = buildRule(freq, newDays);
+    setForm(prev => ({ ...prev, recurrenceRule: rule }));
+  };
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">Recurrence</label>
+      <div className="flex items-center gap-3">
+        <select
+          value={freq}
+          onChange={e => setFreq(e.target.value)}
+          className="input"
+        >
+          <option value="none">None</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Biweekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+
+        {(freq === 'weekly' || freq === 'biweekly') && (
+          <div className="flex gap-1">
+            {DAYS_OF_WEEK.map(d => (
+              <button
+                key={d.key}
+                type="button"
+                onClick={() => toggleDay(d.key)}
+                className={`px-1.5 py-0.5 text-[10px] rounded font-medium transition-colors ${
+                  selectedDays.includes(d.key)
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

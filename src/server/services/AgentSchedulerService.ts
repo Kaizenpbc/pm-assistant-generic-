@@ -23,6 +23,7 @@ import { predictiveAlertingAgent } from './agents/PredictiveAlertingAgent';
 export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
   private overdueTask: cron.ScheduledTask | null = null;
+  private recurrenceTask: cron.ScheduledTask | null = null;
   private flaggedOverdue = new Set<string>();
   private activityLog = new AgentActivityLogService();
 
@@ -56,6 +57,20 @@ export class AgentSchedulerService {
         console.error('[Agent] Overdue scan failed:', error);
       }
     });
+
+    // Recurring task generator — runs daily at 02:00
+    console.log('[Agent] Starting recurring task generator (daily at 02:00)');
+    this.recurrenceTask = cron.schedule('0 2 * * *', async () => {
+      try {
+        const { recurrenceService } = await import('./RecurrenceService');
+        const count = await recurrenceService.generateInstances(14);
+        if (count > 0) {
+          console.log(`[Agent] Generated ${count} recurring task instance(s)`);
+        }
+      } catch (error) {
+        console.error('[Agent] Recurrence generation failed:', error);
+      }
+    });
   }
 
   stop(): void {
@@ -66,6 +81,10 @@ export class AgentSchedulerService {
     if (this.overdueTask) {
       this.overdueTask.stop();
       this.overdueTask = null;
+    }
+    if (this.recurrenceTask) {
+      this.recurrenceTask.stop();
+      this.recurrenceTask = null;
     }
     console.log('[Agent] Stopped agent scheduler');
   }

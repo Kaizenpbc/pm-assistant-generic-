@@ -36,6 +36,7 @@ import { resourceRoutes } from './routes/resources/resources';
 import { resourceOptimizerRoutes } from './routes/resources/resourceOptimizer';
 import { timeEntryRoutes } from './routes/resources/timeEntries';
 import { customFieldRoutes } from './routes/resources/customFields';
+import { availabilityRoutes } from './routes/resources/availability';
 
 // Collaboration
 import { approvalWorkflowRoutes } from './routes/collaboration/approvalWorkflows';
@@ -109,6 +110,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
 
   // Resources
   await fastify.register(resourceRoutes, { prefix: '/api/v1/resources' });
+  await fastify.register(availabilityRoutes, { prefix: '/api/v1/resources' });
   await fastify.register(resourceOptimizerRoutes, { prefix: '/api/v1/resource-optimizer' });
   await fastify.register(timeEntryRoutes, { prefix: '/api/v1/time-entries' });
   await fastify.register(customFieldRoutes, { prefix: '/api/v1/custom-fields' });
