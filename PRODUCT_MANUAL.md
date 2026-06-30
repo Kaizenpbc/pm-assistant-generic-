@@ -723,8 +723,10 @@ All API routes are prefixed with `/api/v1/` and organized by domain:
 /api/v1/lessons-learned   Retrospective knowledge base
 /api/v1/learning          AI learning feedback
 /api/v1/exports           Data export
-/api/v1/agent             Agent scheduler
+/api/v1/agent             Agent scheduler (14 agents)
 /api/v1/agent-log         Agent activity log
+/api/v1/agent/proposals   Agent proposal management
+/api/v1/agent/autonomy    Tier 3 autonomy configuration
 /api/v1/users             User management
 /api/v1/project-members   Project membership
 /api/v1/rag               Semantic search (RAG)

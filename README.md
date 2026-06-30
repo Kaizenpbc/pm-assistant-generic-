@@ -438,6 +438,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Exports | `/api/v1/exports` | Data export |
 | Agent | `/api/v1/agent` | Agent scheduler, health, and kill switch |
 | Agent Proposals | `/api/v1/agent/proposals` | Proposal lifecycle (list, approve, reject, execute, feedback) |
+| Agent Autonomy | `/api/v1/agent/autonomy` | Tier 3 autonomy configuration, promotion/demotion |
 | Agent Log | `/api/v1/agent-log` | Agent activity log |
 | RAG | `/api/v1/rag` | Semantic search |
 | WebSocket | `/api/v1/ws` | Real-time updates |

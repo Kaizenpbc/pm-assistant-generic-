@@ -473,6 +473,80 @@ Each agent follows the pattern: perceive -> reason -> plan -> propose. Registere
 - **Risk level**: low (informational report, no data mutations)
 - **Default policy**: require_approval
 
+### IV.I — Agent 11: Project Hygiene Agent
+
+- **Trigger**: per-project scan cycle
+- **Perception**: detects stale tasks (14+ days unchanged), missing dates/assignments/estimates, abandoned sprints (past end date, not completed), zero-progress in-progress tasks (7+ days stale)
+- **Reasoning**: Claude analyzes hygiene indicators and recommends cleanup actions
+- **Output**: proposal with notification listing hygiene issues and recommendations
+- **Registration**: `project-hygiene-v1`, capability `project.hygiene`
+- **Guard chain**: cost budget → kill switch → rate limiter → circuit breaker → gather indicators → reason → propose
+- **Significance**: ≥3 stale tasks OR ≥5 missing-date tasks OR ≥1 abandoned sprint OR ≥3 zero-progress tasks
+- **Risk level**: low
+- **Default policy**: require_approval
+
+### IV.J — Agent 12: Dependency Risk Agent
+
+- **Trigger**: per-project scan cycle
+- **Perception**: builds dependency graph from all tasks, detects blocked chains (tasks depending on overdue/stalled blockers, traverses up to 5 levels), bottleneck tasks (≥3 dependents), long chains (depth >5)
+- **Reasoning**: Claude analyzes dependency risks and proposes mitigation strategies
+- **Output**: proposal with dependency risk analysis and recommended actions
+- **Registration**: `dependency-risk-v1`, capability `dependency.analyze`
+- **Guard chain**: cost budget → kill switch → rate limiter → circuit breaker → gather indicators → reason → propose
+- **Significance**: ≥1 blocked chain OR ≥1 bottleneck task OR ≥1 long chain
+- **Risk level**: dynamic (critical/high/medium based on severity)
+- **Default policy**: require_approval
+
+### IV.K — Agent 13: Lessons Learned Agent
+
+- **Trigger**: per-project, only when completion ≥90% OR status = `completed`
+- **Perception**: gathers project completion rate, overdue task count, budget variance, project duration
+- **Reasoning**: Claude extracts structured lessons by category (schedule, budget, resource, risk, technical, communication, stakeholder, quality) with impact assessment and recommendations
+- **Output**: stores lessons in `lessons_learned` table; proposal with notification summarizing extracted lessons
+- **Registration**: `lessons-learned-v1`, capability `lessons.extract`
+- **Guard chain**: cost budget → kill switch → rate limiter → circuit breaker → check completion → gather data → reason → store → propose
+- **Skips when**: project already has ≥10 stored lessons (deduplication)
+- **Risk level**: low
+- **Default policy**: require_approval
+
+### IV.L — Agent 14: Predictive Alerting Agent
+
+- **Trigger**: per-project scan cycle
+- **Perception**: analyzes velocity trend (recent 3-sprint avg vs historical), progress trajectory (completion % vs time elapsed %), risk accumulation (agent proposals in last 30 days), similar project comparison (avg completion/budget from 10 similar completed projects)
+- **Reasoning**: Claude generates early warning with probability assessment
+- **Output**: proposal with predictive alert and recommended preventive actions
+- **Registration**: `predictive-alerting-v1`, capability `prediction.alert`
+- **Guard chain**: cost budget → kill switch → rate limiter → circuit breaker → gather indicators → reason → propose
+- **Significance**: velocity decline >20% OR behind schedule >15% OR ≥3 agent flags in 30 days
+- **Risk level**: dynamic (critical/high/medium based on severity)
+- **Default policy**: require_approval
+
+### IV.M — Autonomous Execution (Tier 3)
+
+Agents can be promoted from Tier 2 (propose-only) to Tier 3 (auto-execute) when they demonstrate sustained reliability.
+
+**Autonomy tiers:**
+- **Tier 1**: Disabled (agent does not run)
+- **Tier 2** (default): Propose only — proposals require manual approval
+- **Tier 3**: Auto-execute — proposals that meet confidence and risk gates are executed automatically
+
+**Promotion criteria (Tier 2 → 3):**
+- ≥30 days since first proposal
+- ≥20 total proposals
+- ≥80% acceptance rate
+- ≥70% effectiveness rate (executed / accepted)
+- Zero rollbacks
+
+**Auto-execute gates:** Tier 3 AND confidence ≥ `minConfidenceThreshold` (default 80) AND risk ≤ `maxRiskLevel` (default `low`)
+
+**API endpoints:**
+- `GET /api/v1/agent/autonomy` — list autonomy configs
+- `GET /api/v1/agent/autonomy/:agentId/eligibility` — promotion eligibility stats
+- `PUT /api/v1/agent/autonomy/:agentId` — promote/demote (admin only)
+
+**Service:** `AutonomyService` (`src/server/services/agents/AutonomyService.ts`)
+**Table:** `agent_autonomy_config` (migration 003_agent_autonomy.sql)
+
 ---
 
 ## V. Policy Engine Configuration

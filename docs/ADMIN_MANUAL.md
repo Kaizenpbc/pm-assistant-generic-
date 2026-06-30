@@ -322,6 +322,19 @@ Proposal creation is rate-limited to prevent alert fatigue:
 | `cross-project-intelligence-v1` | Portfolio-level analysis: systemic risks, common patterns, resource contention across projects |
 | `risk-escalation-v1` | Detects compound risks where multiple agents flag the same project; escalates to management |
 | `stakeholder-communication-v1` | Auto-generates stakeholder status reports with executive summaries, highlights, risks, and recommended actions |
+| `project-hygiene-v1` | Detects stale tasks, missing data, abandoned sprints, zero-progress tasks |
+| `dependency-risk-v1` | Builds dependency graph, detects blocked chains, bottleneck tasks, long chains |
+| `lessons-learned-v1` | Extracts structured lessons when projects near completion (≥90%) or complete |
+| `predictive-alerting-v1` | Velocity trend analysis, progress trajectory, risk accumulation, early warnings |
+
+### Autonomous Execution (Tier 3)
+
+Agents can be promoted from Tier 2 (propose-only) to Tier 3 (auto-execute) when they demonstrate sustained reliability. Promotion requires ≥30 days, ≥20 proposals, ≥80% acceptance, ≥70% effectiveness, and zero rollbacks.
+
+**API:**
+- `GET /api/v1/agent/autonomy` — list autonomy configs
+- `GET /api/v1/agent/autonomy/:agentId/eligibility` — check promotion eligibility
+- `PUT /api/v1/agent/autonomy/:agentId` — promote/demote (admin only)
 
 ---
 

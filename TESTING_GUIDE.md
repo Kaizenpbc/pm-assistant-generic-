@@ -402,7 +402,7 @@ SELECT * FROM _migrations WHERE name LIKE '015%';
 npx vitest run src/server/__tests__/services/agents/
 ```
 
-This runs 14 test files with 126+ tests covering:
+This runs 19 test files with 223+ tests covering:
 
 | Test File | What It Tests |
 |-----------|--------------|
@@ -417,6 +417,11 @@ This runs 14 test files with 126+ tests covering:
 | `CrossProjectIntelligenceAgent.test.ts` | Guard chain, portfolio indicator gathering, cross-project pattern detection, proposal creation |
 | `RiskEscalationAgent.test.ts` | Guard chain, compound risk detection (2+ agent flags), flag distribution, escalation proposal |
 | `StakeholderCommunicationAgent.test.ts` | Guard chain, snapshot gathering, EVM computation, report generation, proposal creation |
+| `ProjectHygieneAgent.test.ts` | Guard chain, stale task detection, missing data, abandoned sprints, zero-progress tasks |
+| `DependencyRiskAgent.test.ts` | Guard chain, dependency graph traversal, blocked chains, bottleneck detection |
+| `LessonsLearnedAgent.test.ts` | Guard chain, completion threshold, lesson extraction, deduplication |
+| `PredictiveAlertingAgent.test.ts` | Guard chain, velocity trend, progress trajectory, risk accumulation |
+| `AutonomyService.test.ts` | Tier lookup, auto-execute gates, promotion eligibility, promote/demote |
 | `ActionProposalService.test.ts` | Proposal creation via transaction, lifecycle |
 | `ActionExecutor.test.ts` | Sequential execution, rollback on failure |
 | `ConfidenceCalculator.test.ts` | Score computation, data quality scoring, weight verification |
