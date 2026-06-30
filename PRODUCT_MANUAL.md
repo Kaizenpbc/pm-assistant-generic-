@@ -535,6 +535,27 @@ The `NotificationService` delivers notifications to users with:
 
 When multiple users view the same project, avatar circles appear in the project header showing who else is currently viewing. Presence is ephemeral (in-memory on the server) and updates instantly via WebSocket. Avatars show user initials with a tooltip displaying the full username. The current user is filtered out. Up to 5 avatars are shown, with a "+N" overflow indicator for larger teams.
 
+### Email Notifications & Digests
+
+Critical and high-severity notifications are automatically sent via email (Resend) to users with `emailNotificationsEnabled = true` and a verified email. Users can configure a **digest frequency** (none, daily, weekly) in Settings > Notifications. The `DigestService` runs daily at 7 AM via cron and sends a summary containing:
+
+- **Overdue tasks** assigned to the user
+- **Upcoming deadlines** (next 3 days)
+- **Unread notification count**
+
+Preferences are stored in the database (`users.email_notifications_enabled`, `users.digest_frequency`, `users.digest_last_sent_at`) and managed via `PUT /api/v1/users/me/notification-preferences`.
+
+### Scheduled Report Delivery
+
+Report templates from the Report Builder can be scheduled for automatic email delivery. Configuration is stored in the `report_schedules` table with:
+
+- **Frequency**: daily, weekly (pick day of week), or monthly (pick day of month)
+- **Time of day**: configurable delivery time
+- **Recipients**: comma-separated email list
+- **Format**: CSV attachment via Resend
+
+The `ReportScheduleService` executes due schedules every 15 minutes via cron. Each execution generates the report, exports to CSV, and emails to all recipients. API endpoints at `/api/v1/report-schedules` provide full CRUD. The schedule modal is accessible via the clock icon on each report template card in the Report Builder.
+
 ---
 
 ## 16. Stakeholder Portal
@@ -738,6 +759,36 @@ Widgets render in a responsive CSS grid (1-3 columns depending on viewport). Whe
 
 ---
 
+## 24. Mobile-Optimized Views
+
+The application includes mobile-optimized layouts that activate automatically on screens narrower than 768px (the `useBreakpoint()` hook, shared across all pages).
+
+### Bottom Navigation Bar
+
+A fixed bottom navigation bar (`BottomNav`) replaces the sidebar on mobile, providing quick access to:
+- Dashboard, Projects, Timesheet, Notifications, and More (opens sidebar overlay)
+
+The main content area receives bottom padding (`pb-20`) to prevent overlap with the bottom nav.
+
+### Mobile Task Cards
+
+The `TaskCardMobile` component displays tasks in a touch-friendly card format with:
+- Task name, status pill, priority badge, assignee, and due date
+- Quick status cycle button (tap to advance: pending -> in_progress -> completed)
+- Comfortable tap targets (min 56px height)
+
+The `TaskListMobile` component wraps multiple cards with filter chips (status filter, "My Tasks" toggle).
+
+### Mobile Schedule View
+
+On mobile, the project Schedule tab automatically renders `TaskListMobile` instead of the Gantt/Kanban/Table/Calendar view toggle, providing a scrollable card-based task list.
+
+### Mobile Timesheet
+
+On mobile, the timesheet displays a card-per-day layout instead of the grid table. Each card shows the date, total hours, and a compact entry list. Week navigation is preserved.
+
+---
+
 ## Technical Architecture
 
 ### Backend
@@ -782,6 +833,7 @@ All API routes are prefixed with `/api/v1/` and organized by domain:
 /api/v1/workflows         DAG workflow definitions and execution
 /api/v1/approvals         Change request approval chains
 /api/v1/report-builder    Custom report templates and generation
+/api/v1/report-schedules  Scheduled report delivery CRUD
 /api/v1/ai-reports        AI-generated narrative reports
 /api/v1/stripe            Billing and subscription management
 /api/v1/api-keys          API key management

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   User,
@@ -168,13 +168,41 @@ const ProfileTab: React.FC = () => {
 const NotificationsTab: React.FC = () => {
   const [prefs, setPrefs] = useState<NotificationPreferences>(loadNotificationPrefs);
   const [saved, setSaved] = useState(false);
+  const [digestFrequency, setDigestFrequency] = useState<'none' | 'daily' | 'weekly'>('none');
+  const [serverSaving, setServerSaving] = useState(false);
+
+  // Fetch server-side notification preferences
+  const { data: serverPrefs } = useQuery({
+    queryKey: ['notification-preferences'],
+    queryFn: () => apiService.getNotificationPreferences(),
+  });
+
+  useEffect(() => {
+    if (serverPrefs?.user) {
+      setPrefs((prev) => ({
+        ...prev,
+        emailEnabled: serverPrefs.user.emailNotificationsEnabled ?? prev.emailEnabled,
+      }));
+      setDigestFrequency(serverPrefs.user.digestFrequency || 'none');
+    }
+  }, [serverPrefs]);
 
   const toggle = (key: keyof NotificationPreferences) => {
     setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(prefs));
+    setServerSaving(true);
+    try {
+      await apiService.updateNotificationPreferences({
+        emailNotificationsEnabled: prefs.emailEnabled,
+        digestFrequency,
+      });
+    } catch (err) {
+      console.error('Failed to save server notification prefs:', err);
+    }
+    setServerSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -212,6 +240,19 @@ const NotificationsTab: React.FC = () => {
         </div>
       </div>
       <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Email Digest</h2>
+        <p className="text-sm text-gray-500 mb-3">Receive a summary of overdue tasks, upcoming deadlines, and unread notifications.</p>
+        <select
+          value={digestFrequency}
+          onChange={(e) => setDigestFrequency(e.target.value as 'none' | 'daily' | 'weekly')}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          <option value="none">None</option>
+          <option value="daily">Daily (7:00 AM)</option>
+          <option value="weekly">Weekly (Monday 7:00 AM)</option>
+        </select>
+      </div>
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Notification Types</h2>
         <div className="divide-y divide-gray-100">
           <SettingsCheckbox checked={prefs.taskAssignments} onChange={() => toggle('taskAssignments')} label="Task Assignments" />
@@ -222,9 +263,9 @@ const NotificationsTab: React.FC = () => {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={handleSave} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors">
+        <button onClick={handleSave} disabled={serverSaving} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:opacity-50">
           <Save className="w-4 h-4" />
-          Save Preferences
+          {serverSaving ? 'Saving...' : 'Save Preferences'}
         </button>
         {saved && <span className="text-sm text-green-600">Saved successfully</span>}
       </div>

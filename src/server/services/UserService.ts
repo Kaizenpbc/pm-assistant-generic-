@@ -18,6 +18,9 @@ export interface User {
   subscriptionTier: 'free' | 'pro' | 'business';
   subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
   trialEndsAt: Date | null;
+  emailNotificationsEnabled: boolean;
+  digestFrequency: 'none' | 'daily' | 'weekly';
+  digestLastSentAt: Date | null;
   lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -53,6 +56,9 @@ function rowToUser(row: any): User {
     subscriptionTier: row.subscription_tier || 'free',
     subscriptionStatus: row.subscription_status || 'none',
     trialEndsAt: row.trial_ends_at,
+    emailNotificationsEnabled: row.email_notifications_enabled == null ? true : Boolean(row.email_notifications_enabled),
+    digestFrequency: row.digest_frequency || 'none',
+    digestLastSentAt: row.digest_last_sent_at ?? null,
     lastLoginAt: row.last_login_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -138,6 +144,9 @@ export class UserService {
       subscriptionTier: 'subscription_tier',
       subscriptionStatus: 'subscription_status',
       trialEndsAt: 'trial_ends_at',
+      emailNotificationsEnabled: 'email_notifications_enabled',
+      digestFrequency: 'digest_frequency',
+      digestLastSentAt: 'digest_last_sent_at',
       lastLoginAt: 'last_login_at',
     };
 

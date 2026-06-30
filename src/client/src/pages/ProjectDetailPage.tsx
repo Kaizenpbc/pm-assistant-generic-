@@ -72,6 +72,8 @@ import { SprintBoard } from '../components/sprints/SprintBoard';
 import { SprintBurndownChart } from '../components/sprints/SprintBurndownChart';
 import { AvailabilityCalendar } from '../components/resources/AvailabilityCalendar';
 import { usePresence } from '../hooks/usePresence';
+import { useBreakpoint } from '../hooks/useBreakpoint';
+import { TaskListMobile } from '../components/tasks/TaskListMobile';
 
 type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resource-leveling';
 
@@ -621,6 +623,8 @@ function OverviewTab({ project }: { project: any }) {
 // ---------------------------------------------------------------------------
 
 function ScheduleTab({ projectId }: { projectId: string }) {
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === 'mobile';
   const [viewMode, setViewMode] = useState<'gantt' | 'kanban' | 'table' | 'calendar'>('gantt');
 
   const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
@@ -651,11 +655,15 @@ function ScheduleTab({ projectId }: { projectId: string }) {
     );
   }
 
+  if (isMobile) {
+    return <MobileScheduleView schedules={schedules} />;
+  }
+
   return (
     <div className="space-y-4">
       {/* View Toggle */}
       <div className="flex items-center gap-2">
-        <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
+        <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 overflow-x-auto">
           {([
             { mode: 'gantt' as const, icon: GanttChartSquare, label: 'Gantt' },
             { mode: 'kanban' as const, icon: Kanban, label: 'Kanban' },
@@ -665,7 +673,7 @@ function ScheduleTab({ projectId }: { projectId: string }) {
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
                 viewMode === mode
                   ? 'bg-primary-600 text-white'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -681,6 +689,25 @@ function ScheduleTab({ projectId }: { projectId: string }) {
       {schedules.map((schedule: any) => (
         <ScheduleGantt key={schedule.id} schedule={schedule} viewMode={viewMode} projectId={projectId} />
       ))}
+    </div>
+  );
+}
+
+function MobileScheduleView({ schedules }: { schedules: any[] }) {
+  const { data: tasksData } = useQuery({
+    queryKey: ['tasks', schedules[0]?.id],
+    queryFn: () => apiService.getTasks(schedules[0]?.id),
+    enabled: schedules.length > 0,
+  });
+
+  const tasks = tasksData?.tasks || [];
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+        {schedules[0]?.name || 'Tasks'}
+      </h3>
+      <TaskListMobile tasks={tasks} />
     </div>
   );
 }

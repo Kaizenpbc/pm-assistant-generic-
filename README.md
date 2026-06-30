@@ -193,11 +193,14 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Portfolio-level analytics and executive dashboards
 - Project health scoring
 - Exportable reports
+- Scheduled report delivery via email (daily/weekly/monthly CSV)
 
 ### Notifications
 - In-app notification center
 - Real-time WebSocket push notifications
 - Configurable notification preferences
+- Email notifications for critical/high severity events
+- Daily and weekly email digests (overdue tasks, upcoming deadlines, unread count)
 
 ### Client / Stakeholder Portal
 - External-facing read-only project views
@@ -241,6 +244,12 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Offline capability via service worker
 - Installable on desktop and mobile
 - Push notification support
+
+### Mobile-Optimized Views
+- Bottom navigation bar for mobile devices
+- Card-based mobile task list with quick status cycling
+- Mobile-friendly timesheet with day-by-day card layout
+- Responsive schedule views (auto-switches to mobile on small screens)
 
 ---
 

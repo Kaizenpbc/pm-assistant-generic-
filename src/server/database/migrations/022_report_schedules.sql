@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS report_schedules (
+  id VARCHAR(36) PRIMARY KEY,
+  template_id VARCHAR(36) NOT NULL,
+  created_by VARCHAR(36) NOT NULL,
+  frequency ENUM('daily','weekly','monthly') NOT NULL DEFAULT 'weekly',
+  day_of_week TINYINT NULL,
+  day_of_month TINYINT NULL,
+  time_of_day VARCHAR(5) NOT NULL DEFAULT '08:00',
+  recipients JSON NOT NULL,
+  format ENUM('csv') NOT NULL DEFAULT 'csv',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  next_run_at DATETIME NOT NULL,
+  last_run_at DATETIME NULL,
+  last_run_status VARCHAR(20) NULL,
+  last_run_error TEXT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (template_id) REFERENCES report_templates(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_next_run (is_active, next_run_at)
+);

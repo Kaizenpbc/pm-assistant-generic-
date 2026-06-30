@@ -336,3 +336,6 @@ An agentic AI project management platform that combines the scheduling power of 
 | AI Task Slip Predictor | Done | Enhancement |
 | AI Status Report Generator | Done | Enhancement |
 | AI Scope Creep Detector | Done | Enhancement |
+| Mobile-Optimized Views | Done | Enhancement |
+| Email Notifications & Digests | Done | Enhancement |
+| Scheduled Report Delivery | Done | Enhancement |

@@ -1800,6 +1800,65 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     const response = await this.api.post(`/admin/users/${userId}/reset-password`, {});
     return response.data;
   }
+
+  // -------------------------------------------------------------------------
+  // Notification Preferences
+  // -------------------------------------------------------------------------
+
+  async getNotificationPreferences() {
+    const response = await this.api.get('/users/me');
+    return response.data;
+  }
+
+  async updateNotificationPreferences(prefs: {
+    emailNotificationsEnabled?: boolean;
+    digestFrequency?: 'none' | 'daily' | 'weekly';
+  }) {
+    const response = await this.api.put('/users/me/notification-preferences', prefs);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Report Schedules
+  // -------------------------------------------------------------------------
+
+  async createReportSchedule(data: {
+    templateId: string;
+    frequency: 'daily' | 'weekly' | 'monthly';
+    dayOfWeek?: number;
+    dayOfMonth?: number;
+    timeOfDay?: string;
+    recipients: string[];
+    isActive?: boolean;
+  }) {
+    const response = await this.api.post('/report-schedules', data);
+    return response.data;
+  }
+
+  async getReportSchedules() {
+    const response = await this.api.get('/report-schedules');
+    return response.data;
+  }
+
+  async getReportSchedule(id: string) {
+    const response = await this.api.get(`/report-schedules/${id}`);
+    return response.data;
+  }
+
+  async getReportSchedulesByTemplate(templateId: string) {
+    const response = await this.api.get(`/report-schedules/template/${templateId}`);
+    return response.data;
+  }
+
+  async updateReportSchedule(id: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/report-schedules/${id}`, data);
+    return response.data;
+  }
+
+  async deleteReportSchedule(id: string) {
+    const response = await this.api.delete(`/report-schedules/${id}`);
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

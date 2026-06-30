@@ -24,6 +24,8 @@ export class AgentSchedulerService {
   private task: cron.ScheduledTask | null = null;
   private overdueTask: cron.ScheduledTask | null = null;
   private recurrenceTask: cron.ScheduledTask | null = null;
+  private digestTask: cron.ScheduledTask | null = null;
+  private reportScheduleTask: cron.ScheduledTask | null = null;
   private flaggedOverdue = new Set<string>();
   private activityLog = new AgentActivityLogService();
 
@@ -71,6 +73,28 @@ export class AgentSchedulerService {
         console.error('[Agent] Recurrence generation failed:', error);
       }
     });
+
+    // Email digest — runs daily at 07:00
+    console.log('[Agent] Starting digest email sender (daily at 07:00)');
+    this.digestTask = cron.schedule('0 7 * * *', async () => {
+      try {
+        const { digestService } = await import('./DigestService');
+        await digestService.sendPendingDigests();
+      } catch (error) {
+        console.error('[Agent] Digest send failed:', error);
+      }
+    });
+
+    // Scheduled report delivery — runs every 15 minutes
+    console.log('[Agent] Starting report schedule executor (every 15 min)');
+    this.reportScheduleTask = cron.schedule('*/15 * * * *', async () => {
+      try {
+        const { reportScheduleService } = await import('./ReportScheduleService');
+        await reportScheduleService.executeDueSchedules();
+      } catch (error) {
+        console.error('[Agent] Report schedule execution failed:', error);
+      }
+    });
   }
 
   stop(): void {
@@ -85,6 +109,14 @@ export class AgentSchedulerService {
     if (this.recurrenceTask) {
       this.recurrenceTask.stop();
       this.recurrenceTask = null;
+    }
+    if (this.digestTask) {
+      this.digestTask.stop();
+      this.digestTask = null;
+    }
+    if (this.reportScheduleTask) {
+      this.reportScheduleTask.stop();
+      this.reportScheduleTask = null;
     }
     console.log('[Agent] Stopped agent scheduler');
   }

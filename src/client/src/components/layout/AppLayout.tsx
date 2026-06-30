@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import BottomNav from './BottomNav';
 import { Bot, X } from 'lucide-react';
 import { AIChatPanel } from '../ai/AIChatPanel';
 import { useUIStore } from '../../stores/uiStore';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -21,38 +23,6 @@ function readLocalStorageBool(key: string, defaultValue: boolean): boolean {
   } catch {
     return defaultValue;
   }
-}
-
-function useBreakpoint(): 'mobile' | 'tablet' | 'desktop' {
-  const [breakpoint, setBreakpoint] = useState<'mobile' | 'tablet' | 'desktop'>(() => {
-    if (typeof window === 'undefined') return 'desktop';
-    const w = window.innerWidth;
-    if (w < 768) return 'mobile';
-    if (w < 1280) return 'tablet';
-    return 'desktop';
-  });
-
-  useEffect(() => {
-    let rafId: number;
-
-    function handleResize() {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const w = window.innerWidth;
-        if (w < 768) setBreakpoint('mobile');
-        else if (w < 1280) setBreakpoint('tablet');
-        else setBreakpoint('desktop');
-      });
-    }
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(rafId);
-    };
-  }, []);
-
-  return breakpoint;
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
@@ -138,7 +108,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <TopBar onMobileMenuToggle={isMobile ? handleMobileSidebarToggle : undefined} />
 
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto" id="main-content">
+        <main className={`flex-1 p-4 lg:p-6 overflow-y-auto ${isMobile ? 'pb-20' : ''}`} id="main-content">
           {children}
         </main>
       </div>
@@ -185,6 +155,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           )}
         </aside>
       )}
+
+      {/* Mobile Bottom Nav */}
+      {isMobile && <BottomNav onMoreClick={handleMobileSidebarToggle} />}
 
       {/* Floating AI Toggle */}
       {breakpoint === 'desktop' && !aiPanelOpen && (

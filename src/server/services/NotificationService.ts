@@ -1,6 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
 import { WebSocketService } from './WebSocketService';
+import { emailService } from './EmailService';
+import { userService } from './UserService';
+import { config } from '../config';
 
 export interface CreateNotificationData {
   userId: string;
@@ -101,6 +104,30 @@ export class NotificationService {
 
     // Broadcast via WebSocket
     WebSocketService.broadcast({ type: 'notification', payload: dto });
+
+    // Fire-and-forget email for critical/high severity notifications
+    if (data.severity === 'critical' || data.severity === 'high') {
+      (async () => {
+        try {
+          const user = await userService.findById(data.userId);
+          if (user && user.emailNotificationsEnabled && user.emailVerified && user.email) {
+            const ctaUrl = data.linkType && data.linkId
+              ? `${config.APP_URL}/${data.linkType}s/${data.linkId}`
+              : undefined;
+            await emailService.sendNotificationEmail(
+              user.email,
+              `[${data.severity?.toUpperCase()}] ${data.title}`,
+              data.title,
+              data.message,
+              ctaUrl,
+              'View Details',
+            );
+          }
+        } catch (err) {
+          console.error('[NotificationService] Failed to send email notification:', err);
+        }
+      })();
+    }
 
     return dto;
   }

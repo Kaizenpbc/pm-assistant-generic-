@@ -6,10 +6,12 @@ import {
   Trash2,
   Eye,
   Activity,
+  Clock,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { ReportDesigner } from '../components/reports/ReportDesigner';
 import { ReportPreview } from '../components/reports/ReportPreview';
+import { ReportScheduleModal } from '../components/reports/ReportScheduleModal';
 
 type View = 'list' | 'designer' | 'preview';
 
@@ -27,6 +29,7 @@ export const ReportBuilderPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [view, setView] = useState<View>('list');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
+  const [scheduleTemplate, setScheduleTemplate] = useState<{ id: string; name: string } | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['reportTemplates'],
@@ -194,6 +197,13 @@ export const ReportBuilderPage: React.FC = () => {
                   Generate
                 </button>
                 <button
+                  onClick={() => setScheduleTemplate({ id: template.id, name: template.name })}
+                  className="flex items-center justify-center p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                  title="Schedule delivery"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                </button>
+                <button
                   onClick={() => handleDelete(template.id)}
                   disabled={deleteMutation.isPending}
                   className="flex items-center justify-center p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -204,6 +214,15 @@ export const ReportBuilderPage: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Schedule Modal */}
+      {scheduleTemplate && (
+        <ReportScheduleModal
+          templateId={scheduleTemplate.id}
+          templateName={scheduleTemplate.name}
+          onClose={() => setScheduleTemplate(null)}
+        />
       )}
     </div>
   );
