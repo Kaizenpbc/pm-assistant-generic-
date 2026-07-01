@@ -66,6 +66,7 @@ import { ChangeRequestForm } from '../components/approvals/ChangeRequestForm';
 import { ChangeRequestDetail } from '../components/approvals/ChangeRequestDetail';
 import { ImportModal } from '../components/schedule/ImportModal';
 import * as XLSX from 'xlsx';
+import { cleanCsvForImport } from '../utils/csvCleaner';
 import { WorkflowEditor } from '../components/approvals/WorkflowEditor';
 import { PortalLinkManager } from '../components/portal/PortalLinkManager';
 import { ResourceLevelingPanel } from '../components/resources/ResourceLevelingPanel';
@@ -656,9 +657,9 @@ function ScheduleTab({ projectId, projectName, projectStartDate }: { projectId: 
         const buffer = await file.arrayBuffer();
         const data = new Uint8Array(buffer);
         const workbook = XLSX.read(data, { type: 'array' });
-        csvText = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
+        csvText = cleanCsvForImport(XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]));
       } else if (ext === 'csv') {
-        csvText = await file.text();
+        csvText = cleanCsvForImport(await file.text());
       } else {
         setUploadError('Please upload a .csv, .xlsx, or .xls file.');
         setUploadingSchedule(false);

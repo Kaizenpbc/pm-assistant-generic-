@@ -18,6 +18,7 @@ import { apiService } from '../../services/api';
 import { TemplateCard } from './TemplateCard';
 import { TemplatePreview } from './TemplatePreview';
 import { TemplateCustomizeForm } from './TemplateCustomizeForm';
+import { cleanCsvForImport } from '../../utils/csvCleaner';
 
 interface TemplatePickerProps {
   isOpen: boolean;
@@ -63,7 +64,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
           const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
-          setParsedCsvText(csv);
+          setParsedCsvText(cleanCsvForImport(csv));
           setUploadedFileName(file.name);
         } catch {
           setErrorMessage('Failed to parse Excel file.');
@@ -74,7 +75,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
-        setParsedCsvText(text);
+        setParsedCsvText(cleanCsvForImport(text));
         setUploadedFileName(file.name);
       };
       reader.readAsText(file);

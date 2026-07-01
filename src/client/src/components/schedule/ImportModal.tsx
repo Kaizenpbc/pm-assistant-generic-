@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { X, Upload, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { apiService } from '../../services/api';
+import { cleanCsvForImport } from '../../utils/csvCleaner';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -150,7 +151,7 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
           const sheetName = workbook.SheetNames[0];
           if (!sheetName) { setError('Excel file has no sheets.'); return; }
           const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
-          loadText(csv);
+          loadText(cleanCsvForImport(csv));
         } catch (err: any) {
           setError(`Failed to parse Excel file: ${err.message}`);
         }
@@ -158,7 +159,7 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
       reader.readAsArrayBuffer(file);
     } else {
       const reader = new FileReader();
-      reader.onload = (e) => loadText((e.target?.result as string) ?? '');
+      reader.onload = (e) => loadText(cleanCsvForImport((e.target?.result as string) ?? ''));
       reader.readAsText(file);
     }
   };
