@@ -204,7 +204,6 @@ export function TaskFormModal({
                 <option value="pending">Not Started</option>
                 <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
               </select>
             </div>
             <div>

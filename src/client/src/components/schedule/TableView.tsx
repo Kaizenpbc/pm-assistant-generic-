@@ -54,7 +54,7 @@ interface TableViewProps {
   onCpmNeeded?: (needed: boolean) => void;
 }
 
-const statusOptions = ['pending', 'in_progress', 'completed', 'cancelled'];
+const statusOptions = ['pending', 'in_progress', 'completed'];
 const priorityOptions = ['low', 'medium', 'high', 'urgent'];
 
 type EditableField = 'name' | 'status' | 'priority' | 'startDate' | 'endDate' | 'progressPercentage' | 'assignedTo';
@@ -425,14 +425,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate, cpmDat
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
     const confirmed = window.confirm(
-      `Are you sure you want to delete ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''}? This will set them to cancelled.`
+      `Are you sure you want to delete ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`
     );
     if (!confirmed) return;
     setBulkLoading(true);
     try {
       await Promise.all(
         Array.from(selectedIds).map(taskId =>
-          apiService.updateTask(scheduleId, taskId, { status: 'cancelled' })
+          apiService.deleteTask(scheduleId, taskId)
         )
       );
       queryClient.invalidateQueries({ queryKey: ['tasks', scheduleId] });
