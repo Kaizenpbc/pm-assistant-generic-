@@ -422,30 +422,44 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate, cpmDat
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`
-    );
-    if (!confirmed) return;
+  const handleDeleteTasks = async (taskIds: string[]) => {
+    if (taskIds.length === 0) return;
+    const label = taskIds.length === 1
+      ? `Are you sure you want to delete this task? This cannot be undone.`
+      : `Are you sure you want to delete ${taskIds.length} tasks? This cannot be undone.`;
+    if (!window.confirm(label)) return;
     setBulkLoading(true);
     try {
-      await Promise.all(
-        Array.from(selectedIds).map(taskId =>
-          apiService.deleteTask(scheduleId, taskId)
-        )
-      );
+      await Promise.all(taskIds.map(id => apiService.deleteTask(scheduleId, id)));
       queryClient.invalidateQueries({ queryKey: ['tasks', scheduleId] });
-      showBulkSuccess(`Deleted ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''}`);
+      showBulkSuccess(`Deleted ${taskIds.length} task${taskIds.length > 1 ? 's' : ''}`);
       clearBulkState();
     } catch (err) {
-      console.error('Bulk delete failed:', err);
+      console.error('Delete failed:', err);
       setBulkMessage('Some deletes failed');
       setTimeout(() => setBulkMessage(''), 3000);
     } finally {
       setBulkLoading(false);
     }
   };
+
+  const handleBulkDelete = () => handleDeleteTasks(Array.from(selectedIds));
+
+  const handleRowDelete = (taskId: string) => handleDeleteTasks([taskId]);
+
+  // Keyboard Delete key support
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' && selectedIds.size > 0) {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
+        e.preventDefault();
+        handleBulkDelete();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [selectedIds]);
 
   const renderSaveIndicator = (taskId: string, field: string) => {
     if (isSaving(taskId, field)) {
@@ -938,13 +952,22 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate, cpmDat
                   {visibleColumns.map(col => renderCell(task, col))}
 
                   <td className="px-2 py-2">
-                    <button
-                      onClick={() => onTaskClick(task)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 transition-all"
-                      title="Edit task"
-                    >
-                      <Pencil className="w-3.5 h-3.5 text-gray-400" />
-                    </button>
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                      <button
+                        onClick={() => onTaskClick(task)}
+                        className="p-1 rounded hover:bg-gray-200"
+                        title="Edit task"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                      </button>
+                      <button
+                        onClick={() => handleRowDelete(task.id)}
+                        className="p-1 rounded hover:bg-red-100"
+                        title="Delete task"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
