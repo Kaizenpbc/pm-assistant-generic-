@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -65,6 +65,7 @@ import { ChangeRequestList } from '../components/approvals/ChangeRequestList';
 import { ChangeRequestForm } from '../components/approvals/ChangeRequestForm';
 import { ChangeRequestDetail } from '../components/approvals/ChangeRequestDetail';
 import { ImportModal } from '../components/schedule/ImportModal';
+import * as XLSX from 'xlsx';
 import { WorkflowEditor } from '../components/approvals/WorkflowEditor';
 import { PortalLinkManager } from '../components/portal/PortalLinkManager';
 import { ResourceLevelingPanel } from '../components/resources/ResourceLevelingPanel';
@@ -472,7 +473,7 @@ export function ProjectDetailPage() {
 
       {/* Tab Content */}
       {activeTab === 'overview' && <OverviewTab project={project} />}
-      {activeTab === 'schedule' && <ScheduleTab projectId={id!} />}
+      {activeTab === 'schedule' && <ScheduleTab projectId={id!} projectName={project.name} projectStartDate={project.startDate || project.start_date} />}
       {activeTab === 'ai-insights' && <AIInsightsTab projectId={id!} />}
       {activeTab === 'evm-forecast' && <EVMForecastTab projectId={id!} />}
       {activeTab === 'scenarios' && <ScenariosTab projectId={id!} />}
@@ -624,10 +625,14 @@ function OverviewTab({ project }: { project: any }) {
 // Schedule Tab
 // ---------------------------------------------------------------------------
 
-function ScheduleTab({ projectId }: { projectId: string }) {
+function ScheduleTab({ projectId, projectName, projectStartDate }: { projectId: string; projectName?: string; projectStartDate?: string }) {
+  const queryClient = useQueryClient();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
   const [viewMode, setViewMode] = useState<'gantt' | 'kanban' | 'table' | 'calendar'>('gantt');
+  const [uploadingSchedule, setUploadingSchedule] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const scheduleFileRef = useRef<HTMLInputElement>(null);
 
   const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
     queryKey: ['schedules', projectId],
@@ -636,6 +641,52 @@ function ScheduleTab({ projectId }: { projectId: string }) {
   });
 
   const schedules: any[] = schedulesData?.schedules || [];
+
+  const handleScheduleFileUpload = useCallback(async (file: File) => {
+    setUploadError(null);
+    setUploadingSchedule(true);
+    try {
+      let csvText: string;
+      const ext = file.name.toLowerCase().split('.').pop();
+      const isExcel = ext === 'xlsx' || ext === 'xls' || ext === 'xlsb' ||
+        file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.type === 'application/vnd.ms-excel';
+
+      if (isExcel) {
+        const buffer = await file.arrayBuffer();
+        const data = new Uint8Array(buffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        csvText = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
+      } else if (ext === 'csv') {
+        csvText = await file.text();
+      } else {
+        setUploadError('Please upload a .csv, .xlsx, or .xls file.');
+        setUploadingSchedule(false);
+        return;
+      }
+
+      const startDate = projectStartDate || new Date().toISOString().split('T')[0];
+      const endDate = new Date(startDate);
+      endDate.setFullYear(endDate.getFullYear() + 1);
+
+      const schedule = await apiService.createSchedule({
+        projectId,
+        name: `${projectName || 'Project'} Schedule`,
+        startDate,
+        endDate: endDate.toISOString().split('T')[0],
+      });
+      const scheduleId = schedule.schedule?.id || schedule.id;
+      if (scheduleId) {
+        await apiService.importTasks(scheduleId, csvText);
+      }
+      queryClient.invalidateQueries({ queryKey: ['schedules', projectId] });
+    } catch {
+      setUploadError('Failed to create schedule or import tasks.');
+    } finally {
+      setUploadingSchedule(false);
+      if (scheduleFileRef.current) scheduleFileRef.current.value = '';
+    }
+  }, [projectId, projectName, projectStartDate, queryClient]);
 
   if (schedulesLoading) {
     return (
@@ -653,6 +704,29 @@ function ScheduleTab({ projectId }: { projectId: string }) {
         <p className="mt-1 text-sm text-gray-500">
           No schedules have been created for this project yet.
         </p>
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <button
+            onClick={() => scheduleFileRef.current?.click()}
+            disabled={uploadingSchedule}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 rounded-lg transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            {uploadingSchedule ? 'Importing...' : 'Upload Schedule (.xlsx / .csv)'}
+          </button>
+          {uploadError && (
+            <p className="text-xs text-red-600">{uploadError}</p>
+          )}
+          <input
+            ref={scheduleFileRef}
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleScheduleFileUpload(file);
+            }}
+          />
+        </div>
       </div>
     );
   }
