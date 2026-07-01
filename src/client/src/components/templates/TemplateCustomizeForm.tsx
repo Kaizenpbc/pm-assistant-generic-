@@ -28,6 +28,7 @@ interface TemplateCustomizeFormProps {
     selectedTaskRefIds?: string[];
   }) => void;
   isSubmitting: boolean;
+  extraContent?: React.ReactNode;
 }
 
 export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
@@ -39,6 +40,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
   onBack,
   onSubmit,
   isSubmitting,
+  extraContent,
 }) => {
   const today = new Date().toISOString().split('T')[0];
   const [projectName, setProjectName] = useState(templateName || '');
@@ -335,6 +337,8 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
             )}
           </div>
         )}
+
+        {extraContent}
 
         <button
           type="submit"

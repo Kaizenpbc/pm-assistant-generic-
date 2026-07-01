@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -10,7 +10,10 @@ import {
   Layout,
   FileText,
   AlertCircle,
+  Upload,
+  CheckCircle2,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { apiService } from '../../services/api';
 import { TemplateCard } from './TemplateCard';
 import { TemplatePreview } from './TemplatePreview';
@@ -38,6 +41,53 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [parsedCsvText, setParsedCsvText] = useState<string | null>(null);
+  const [scratchSubmitting, setScratchSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isExcelFile = (file: File) => {
+    const ext = file.name.toLowerCase().split('.').pop();
+    return ext === 'xlsx' || ext === 'xls' || ext === 'xlsb' ||
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.type === 'application/vnd.ms-excel';
+  };
+
+  const handleFileUpload = useCallback((file: File) => {
+    setErrorMessage(null);
+    if (isExcelFile(file)) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
+          setParsedCsvText(csv);
+          setUploadedFileName(file.name);
+        } catch {
+          setErrorMessage('Failed to parse Excel file.');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else if (file.name.toLowerCase().endsWith('.csv')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        setParsedCsvText(text);
+        setUploadedFileName(file.name);
+      };
+      reader.readAsText(file);
+    } else {
+      setErrorMessage('Please upload a .csv, .xlsx, or .xls file.');
+    }
+  }, []);
+
+  const clearFile = useCallback(() => {
+    setUploadedFileName(null);
+    setParsedCsvText(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, []);
 
   const { data: templatesData } = useQuery({
     queryKey: ['templates', selectedCategory],
@@ -72,27 +122,6 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     },
   });
 
-  const blankProjectMutation = useMutation({
-    mutationFn: (data: {
-      name: string;
-      status: string;
-      priority: string;
-      budgetAllocated?: number;
-      startDate?: string;
-      location?: string;
-    }) => apiService.createProject(data),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      onClose();
-      resetState();
-      const projectId = result.project?.id || result.id;
-      if (projectId) navigate(`/project/${projectId}`);
-    },
-    onError: () => {
-      setErrorMessage('Failed to create project. Please try again.');
-    },
-  });
-
   const templates = templatesData?.templates || [];
   const template = templateDetail?.template;
 
@@ -101,6 +130,10 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     setSelectedCategory(null);
     setSelectedTemplateId(null);
     setErrorMessage(null);
+    setUploadedFileName(null);
+    setParsedCsvText(null);
+    setScratchSubmitting(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleClose = () => {
@@ -145,7 +178,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     });
   };
 
-  const handleBlankProjectSubmit = (data: {
+  const handleBlankProjectSubmit = async (data: {
     projectName: string;
     startDate: string;
     budget?: number;
@@ -153,14 +186,50 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     location?: string;
   }) => {
     setErrorMessage(null);
-    blankProjectMutation.mutate({
-      name: data.projectName,
-      status: 'planning',
-      priority: data.priority,
-      budgetAllocated: data.budget,
-      startDate: data.startDate,
-      location: data.location,
-    });
+    setScratchSubmitting(true);
+    try {
+      // 1. Create the project
+      const result = await apiService.createProject({
+        name: data.projectName,
+        status: 'planning',
+        priority: data.priority,
+        budgetAllocated: data.budget,
+        startDate: data.startDate,
+        location: data.location,
+      });
+      const projectId = result.project?.id || result.id;
+
+      // 2. If file was uploaded, create schedule + import tasks
+      if (parsedCsvText && projectId) {
+        try {
+          const endDate = new Date(data.startDate);
+          endDate.setFullYear(endDate.getFullYear() + 1);
+          const schedule = await apiService.createSchedule({
+            projectId,
+            name: `${data.projectName} Schedule`,
+            startDate: data.startDate,
+            endDate: endDate.toISOString().split('T')[0],
+          });
+          const scheduleId = schedule.schedule?.id || schedule.id;
+          if (scheduleId) {
+            await apiService.importTasks(scheduleId, parsedCsvText);
+          }
+        } catch {
+          // Project was created successfully, but import failed — still navigate
+          console.warn('Schedule creation or task import failed, but project was created.');
+        }
+      }
+
+      // 3. Navigate to the new project
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      onClose();
+      resetState();
+      if (projectId) navigate(`/project/${projectId}`);
+    } catch {
+      setErrorMessage('Failed to create project. Please try again.');
+    } finally {
+      setScratchSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -315,7 +384,55 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
               tasks={[]}
               onBack={() => setStep('category')}
               onSubmit={handleBlankProjectSubmit}
-              isSubmitting={blankProjectMutation.isPending}
+              isSubmitting={scratchSubmitting}
+              extraContent={
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <Upload className="w-3 h-3 inline mr-1" />
+                    Import Schedule (optional)
+                  </label>
+                  {uploadedFileName ? (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <span className="text-sm text-green-700 flex-1 truncate">{uploadedFileName}</span>
+                      <button
+                        type="button"
+                        onClick={clearFile}
+                        className="text-xs text-gray-500 hover:text-red-600 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const file = e.dataTransfer.files[0];
+                        if (file) handleFileUpload(file);
+                      }}
+                    >
+                      <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                      <p className="text-xs text-gray-500">
+                        Drop .xlsx or .csv here, or <span className="text-primary-600 font-medium">browse</span>
+                      </p>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file);
+                    }}
+                  />
+                </div>
+              }
             />
           )}
         </div>
