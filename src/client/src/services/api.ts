@@ -233,6 +233,11 @@ class ApiService {
     return response.data;
   }
 
+  async deleteTask(scheduleId: string, taskId: string) {
+    const response = await this.api.delete(`/schedules/${scheduleId}/tasks/${taskId}`);
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // AI Chat endpoints
   // -------------------------------------------------------------------------

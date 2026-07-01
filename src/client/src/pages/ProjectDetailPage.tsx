@@ -905,7 +905,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   // Delete task
   const deleteMutation = useMutation({
     mutationFn: (taskId: string) => {
-      return apiService.updateTask(schedule.id, taskId, { status: 'cancelled' });
+      return apiService.deleteTask(schedule.id, taskId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
