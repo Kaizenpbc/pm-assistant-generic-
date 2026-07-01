@@ -222,6 +222,7 @@ class ApiService {
       progressPercentage?: number;
       dependency?: string;
       parentTaskId?: string;
+      afterTaskId?: string;
     }
   ) {
     const response = await this.api.post(`/schedules/${scheduleId}/tasks`, taskData);

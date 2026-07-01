@@ -42,6 +42,8 @@ interface TaskFormModalProps {
   scheduleId?: string;
   /** Project ID for custom fields, time tracking, and attachments */
   projectId?: string;
+  /** ID of the currently active/selected task (used to pre-fill parent in create mode) */
+  activeTaskId?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +72,7 @@ export function TaskFormModal({
   isSaving,
   scheduleId,
   projectId,
+  activeTaskId,
 }: TaskFormModalProps) {
   const isEdit = !!task;
 
@@ -115,6 +118,22 @@ export function TaskFormModal({
       });
     }
   }, [task]);
+
+  // Pre-fill parentTaskId based on active task context (create mode only)
+  useEffect(() => {
+    if (isEdit || !activeTaskId) return;
+    const activeTask = allTasks.find(t => t.id === activeTaskId);
+    if (!activeTask) return;
+    const hasChildren = allTasks.some(t => t.parentTaskId === activeTask.id);
+    if (hasChildren) {
+      // Active task is a parent — new task becomes its child
+      setForm(f => ({ ...f, parentTaskId: activeTask.id }));
+    } else if (activeTask.parentTaskId) {
+      // Active task is a child — new task becomes sibling (same parent)
+      setForm(f => ({ ...f, parentTaskId: activeTask.parentTaskId || '' }));
+    }
+    // If active task is a top-level leaf, no parent pre-fill
+  }, [isEdit, activeTaskId, allTasks]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>

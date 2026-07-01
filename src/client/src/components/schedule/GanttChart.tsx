@@ -23,6 +23,7 @@ export interface GanttTask {
   recurrenceParentId?: string;
   isRecurrenceTemplate?: boolean;
   isMilestone?: boolean;
+  sortOrder?: number;
 }
 
 interface FlatRow {
@@ -60,8 +61,11 @@ function buildFlatRows(tasks: GanttTask[]): FlatRow[] {
   const rows: FlatRow[] = [];
   const taskIds = new Set(tasks.map((t) => t.id));
   const topLevel = tasks.filter((t) => !t.parentTaskId || !taskIds.has(t.parentTaskId));
-  // Sort by start date
+  // Sort by sort_order (user-defined), then start date as fallback
   topLevel.sort((a, b) => {
+    const sa = a.sortOrder ?? 0;
+    const sb = b.sortOrder ?? 0;
+    if (sa !== sb) return sa - sb;
     const da = toDate(a.startDate)?.getTime() ?? 0;
     const db = toDate(b.startDate)?.getTime() ?? 0;
     return da - db;
@@ -71,6 +75,9 @@ function buildFlatRows(tasks: GanttTask[]): FlatRow[] {
     const children = tasks
       .filter((t) => t.parentTaskId === parentId)
       .sort((a, b) => {
+        const sa = a.sortOrder ?? 0;
+        const sb = b.sortOrder ?? 0;
+        if (sa !== sb) return sa - sb;
         const da = toDate(a.startDate)?.getTime() ?? 0;
         const db = toDate(b.startDate)?.getTime() ?? 0;
         return da - db;

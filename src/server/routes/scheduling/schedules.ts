@@ -41,6 +41,7 @@ const createTaskSchema = z.object({
   isMilestone: z.boolean().optional(),
   dependencyLagDays: z.number().int().optional(),
   dependencyType: z.enum(['FS', 'SS', 'FF', 'SF']).optional(),
+  afterTaskId: z.string().optional(),
 });
 
 const updateTaskSchema = createTaskSchema.partial().omit({ scheduleId: true });

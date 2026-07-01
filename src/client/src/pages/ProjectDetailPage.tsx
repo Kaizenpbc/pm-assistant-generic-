@@ -793,6 +793,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   const queryClient = useQueryClient();
   const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showCriticalPath, setShowCriticalPath] = useState(false);
   const [selectedBaselineId, setSelectedBaselineId] = useState<string>('');
@@ -841,7 +842,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
 
   // Create task mutation
   const createMutation = useMutation({
-    mutationFn: (data: TaskFormData) => {
+    mutationFn: (data: TaskFormData & { afterTaskId?: string }) => {
       const payload: Record<string, unknown> = {
         name: data.name,
         description: data.description || undefined,
@@ -859,12 +860,14 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         isMilestone: data.isMilestone || undefined,
         dependencyType: data.dependency ? (data.dependencyType || 'FS') : undefined,
         dependencyLagDays: data.dependency && data.dependencyLagDays ? parseInt(data.dependencyLagDays) : undefined,
+        afterTaskId: data.afterTaskId || undefined,
       };
       return apiService.createTask(schedule.id, payload as any);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
       setShowAddForm(false);
+      setActiveTaskId(null);
     },
   });
 
@@ -1014,7 +1017,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         <GanttChart
           tasks={tasks}
           scheduleName={schedule.name}
-          onTaskClick={(task) => setEditingTask(task)}
+          onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task); }}
           onAddTask={() => setShowAddForm(true)}
           onTaskDragEnd={(taskId, newStart, newEnd) => updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } })}
           criticalPathTaskIds={showCriticalPath ? cpmData?.criticalPathTaskIds : undefined}
@@ -1028,7 +1031,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
       {viewMode === 'kanban' && (
         <KanbanBoard
           tasks={tasks}
-          onTaskClick={(task) => setEditingTask(task as GanttTask)}
+          onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task as GanttTask); }}
           onStatusChange={handleKanbanStatusChange}
         />
       )}
@@ -1036,7 +1039,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         <TableView
           tasks={tasks}
           scheduleId={schedule.id}
-          onTaskClick={(task) => setEditingTask(task)}
+          onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task); }}
           onTaskUpdate={(taskId, data) => updateMutation.mutate({ taskId, data })}
           cpmData={cpmData}
           baselineData={comparison}
@@ -1047,7 +1050,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
       {viewMode === 'calendar' && (
         <CalendarView
           tasks={tasks}
-          onTaskClick={(task) => setEditingTask(task)}
+          onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task); }}
         />
       )}
 
@@ -1182,7 +1185,22 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           allTasks={tasks}
           scheduleId={schedule.id}
           projectId={projectId}
-          onSave={(data) => createMutation.mutate(data)}
+          activeTaskId={activeTaskId}
+          onSave={(data) => {
+            // Determine afterTaskId based on active task context
+            const activeTask = activeTaskId ? tasks.find(t => t.id === activeTaskId) : null;
+            let afterTaskId: string | undefined;
+            if (activeTask) {
+              const hasChildren = tasks.some(t => t.parentTaskId === activeTask.id);
+              if (hasChildren) {
+                // Active task is a parent — new task becomes its last child (no afterTaskId needed, parentTaskId set in modal)
+              } else {
+                // Active task is a leaf/sibling — insert after it
+                afterTaskId = activeTask.id;
+              }
+            }
+            createMutation.mutate({ ...data, afterTaskId });
+          }}
           onClose={() => setShowAddForm(false)}
           isSaving={createMutation.isPending}
         />

@@ -42,6 +42,7 @@ export interface Task {
   isRecurrenceTemplate?: boolean;
   isMilestone?: boolean;
   dependencyLagDays?: number;
+  sortOrder: number;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -78,6 +79,7 @@ export interface CreateTaskData {
   parentTaskId?: string;
   isMilestone?: boolean;
   dependencyLagDays?: number;
+  afterTaskId?: string;
   createdBy: string;
 }
 
@@ -170,6 +172,7 @@ function rowToTask(row: any): Task {
     isRecurrenceTemplate: row.is_recurrence_template === 1 || row.is_recurrence_template === true,
     isMilestone: row.is_milestone === 1 || row.is_milestone === true,
     dependencyLagDays: row.dependency_lag_days != null ? Number(row.dependency_lag_days) : 0,
+    sortOrder: row.sort_order != null ? Number(row.sort_order) : 0,
     createdBy: row.created_by,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -296,7 +299,7 @@ export class ScheduleService {
     if (scheduleIds.length === 0) return [];
     const placeholders = scheduleIds.map(() => '?').join(', ');
     const rows = await databaseService.query(
-      `SELECT * FROM tasks WHERE schedule_id IN (${placeholders}) ORDER BY created_at`,
+      `SELECT * FROM tasks WHERE schedule_id IN (${placeholders}) ORDER BY sort_order, created_at`,
       scheduleIds,
     );
     return rows.map(rowToTask);
@@ -308,7 +311,7 @@ export class ScheduleService {
 
   async findTasksByScheduleId(scheduleId: string): Promise<Task[]> {
     const rows = await databaseService.query(
-      'SELECT * FROM tasks WHERE schedule_id = ? ORDER BY created_at',
+      'SELECT * FROM tasks WHERE schedule_id = ? ORDER BY sort_order, created_at',
       [scheduleId],
     );
     return rows.map(rowToTask);
@@ -320,7 +323,7 @@ export class ScheduleService {
   }
 
   async findAllTasks(): Promise<Task[]> {
-    const rows = await databaseService.query('SELECT * FROM tasks ORDER BY created_at LIMIT 1000');
+    const rows = await databaseService.query('SELECT * FROM tasks ORDER BY sort_order, created_at LIMIT 1000');
     return rows.map(rowToTask);
   }
 
@@ -353,12 +356,34 @@ export class ScheduleService {
 
   async createTask(data: CreateTaskData): Promise<Task> {
     const id = uuidv4();
+
+    // Determine sort_order based on afterTaskId
+    let sortOrder = 0;
+    if (data.afterTaskId) {
+      const afterTask = await this.findTaskById(data.afterTaskId);
+      if (afterTask) {
+        sortOrder = afterTask.sortOrder + 1;
+        // Shift all subsequent tasks in this schedule
+        await databaseService.query(
+          'UPDATE tasks SET sort_order = sort_order + 1 WHERE schedule_id = ? AND sort_order >= ?',
+          [data.scheduleId, sortOrder],
+        );
+      }
+    } else {
+      // Append to end: max sort_order + 1
+      const maxRows = await databaseService.query(
+        'SELECT COALESCE(MAX(sort_order), -1) AS max_order FROM tasks WHERE schedule_id = ?',
+        [data.scheduleId],
+      );
+      sortOrder = (maxRows[0]?.max_order ?? -1) + 1;
+    }
+
     await databaseService.query(
       `INSERT INTO tasks (id, schedule_id, name, description, status, priority, assigned_to,
         due_date, estimated_days, estimated_duration_hours, actual_duration_hours,
         start_date, end_date, progress_percentage, dependency, dependency_type,
-        risks, issues, comments, parent_task_id, is_milestone, dependency_lag_days, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        risks, issues, comments, parent_task_id, is_milestone, dependency_lag_days, sort_order, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.scheduleId,
@@ -382,6 +407,7 @@ export class ScheduleService {
         data.parentTaskId || null,
         data.isMilestone ? 1 : 0,
         data.dependencyLagDays ?? 0,
+        sortOrder,
         data.createdBy,
       ],
     );
