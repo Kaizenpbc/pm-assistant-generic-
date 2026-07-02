@@ -63,8 +63,9 @@ function formatShortDate(d: Date): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-/** Build a flat, sorted list of tasks with WBS numbers & hierarchy levels */
-function buildFlatRows(tasks: GanttTask[]): FlatRow[] {
+/** Build a flat, sorted list of tasks with WBS numbers & hierarchy levels.
+ *  Collapsed parents have their children omitted from the result. */
+function buildFlatRows(tasks: GanttTask[], collapsedIds?: Set<string>): FlatRow[] {
   const rows: FlatRow[] = [];
   const taskIds = new Set(tasks.map((t) => t.id));
   const topLevel = tasks.filter((t) => !t.parentTaskId || !taskIds.has(t.parentTaskId));
@@ -79,6 +80,7 @@ function buildFlatRows(tasks: GanttTask[]): FlatRow[] {
   });
 
   function addChildren(parentId: string, level: number, parentWbs: string) {
+    if (collapsedIds?.has(parentId)) return; // skip children of collapsed parents
     const children = tasks
       .filter((t) => t.parentTaskId === parentId)
       .sort((a, b) => {
@@ -154,11 +156,13 @@ interface GanttColDef {
   flex?: boolean;
   /** Fixed columns cannot be resized and ignore width state */
   fixed?: boolean;
+  /** If true, column cannot be hidden via column picker */
+  alwaysVisible?: boolean;
 }
 
 const GANTT_COLUMNS: GanttColDef[] = [
-  { key: 'rowNum',    label: '#',        defaultWidth: 40,  minWidth: 30,  resizable: false, fixed: true },
-  { key: 'name',      label: 'Task Name',defaultWidth: 0,   minWidth: 120, resizable: false, flex: true },
+  { key: 'rowNum',    label: '#',        defaultWidth: 40,  minWidth: 30,  resizable: false, fixed: true, alwaysVisible: true },
+  { key: 'name',      label: 'Task Name',defaultWidth: 0,   minWidth: 120, resizable: false, flex: true, alwaysVisible: true },
   { key: 'pred',      label: 'Pred',     defaultWidth: 56,  minWidth: 40,  resizable: true },
   { key: 'start',     label: 'Start',    defaultWidth: 80,  minWidth: 60,  resizable: true },
   { key: 'end',       label: 'End',      defaultWidth: 80,  minWidth: 60,  resizable: true },
@@ -168,8 +172,15 @@ const GANTT_COLUMNS: GanttColDef[] = [
   { key: 'priority',  label: 'Priority', defaultWidth: 64,  minWidth: 50,  resizable: true },
   { key: 'assigned',  label: 'Assigned', defaultWidth: 96,  minWidth: 60,  resizable: true },
   { key: 'status',    label: 'Status',   defaultWidth: 64,  minWidth: 50,  resizable: true },
-  { key: 'editIcon',  label: '',         defaultWidth: 32,  minWidth: 32,  resizable: false, fixed: true },
+  { key: 'editIcon',  label: '',         defaultWidth: 32,  minWidth: 32,  resizable: false, fixed: true, alwaysVisible: true },
 ];
+
+/** Default visible columns (all toggleable columns visible by default) */
+const DEFAULT_VISIBLE_COLS = new Set(GANTT_COLUMNS.filter(c => !c.alwaysVisible).map(c => c.key));
+
+/** Auto-scroll edge zone width (px) and speed */
+const AUTO_SCROLL_EDGE = 60;
+const AUTO_SCROLL_SPEED = 12;
 
 // ---------------------------------------------------------------------------
 // Zoom / Timescale
@@ -454,6 +465,84 @@ export function GanttChart({
   }, [ganttColWidths]);
 
   // -----------------------------------------------------------------------
+  // Column visibility state — persisted per schedule in localStorage
+  // -----------------------------------------------------------------------
+  const [ganttVisibleCols, setGanttVisibleCols] = useState<Set<string>>(() => {
+    if (!scheduleId) return new Set(DEFAULT_VISIBLE_COLS);
+    try {
+      const stored = localStorage.getItem(`gantt-visible-cols:${scheduleId}`);
+      return stored ? new Set(JSON.parse(stored)) : new Set(DEFAULT_VISIBLE_COLS);
+    } catch { return new Set(DEFAULT_VISIBLE_COLS); }
+  });
+  const [showColPicker, setShowColPicker] = useState(false);
+  const colPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scheduleId) {
+      localStorage.setItem(`gantt-visible-cols:${scheduleId}`, JSON.stringify([...ganttVisibleCols]));
+    }
+  }, [ganttVisibleCols, scheduleId]);
+
+  // Close column picker on outside click
+  useEffect(() => {
+    if (!showColPicker) return;
+    const onClick = (e: MouseEvent) => {
+      if (colPickerRef.current && !colPickerRef.current.contains(e.target as Node)) setShowColPicker(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [showColPicker]);
+
+  const isColVisible = useCallback((col: GanttColDef): boolean => {
+    if (col.alwaysVisible) return true;
+    return ganttVisibleCols.has(col.key);
+  }, [ganttVisibleCols]);
+
+  const toggleColVisibility = useCallback((key: string) => {
+    setGanttVisibleCols(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  // -----------------------------------------------------------------------
+  // Row expand/collapse state — persisted per schedule in localStorage
+  // -----------------------------------------------------------------------
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => {
+    if (!scheduleId) return new Set();
+    try {
+      const stored = localStorage.getItem(`gantt-collapsed:${scheduleId}`);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  useEffect(() => {
+    if (scheduleId) {
+      localStorage.setItem(`gantt-collapsed:${scheduleId}`, JSON.stringify([...collapsedIds]));
+    }
+  }, [collapsedIds, scheduleId]);
+
+  const toggleCollapse = useCallback((taskId: string) => {
+    setCollapsedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }, []);
+
+  /** Set of all task IDs that have children (parent tasks) */
+  const parentTaskIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of tasks) {
+      if (t.parentTaskId) set.add(t.parentTaskId);
+    }
+    return set;
+  }, [tasks]);
+
+  // -----------------------------------------------------------------------
   // Row drag reorder state
   // -----------------------------------------------------------------------
   const [rowDrag, setRowDrag] = useState<{
@@ -475,7 +564,7 @@ export function GanttChart({
   const lastClickedIdRef = useRef<string | null>(null);
   const someSelected = selectedIds.size > 0;
 
-  const rows = useMemo(() => buildFlatRows(tasks), [tasks]);
+  const rows = useMemo(() => buildFlatRows(tasks, collapsedIds), [tasks, collapsedIds]);
 
   const allSelected = rows.length > 0 && rows.every(r => selectedIds.has(r.task.id));
 
@@ -895,16 +984,36 @@ export function GanttChart({
     [onTaskDragEnd]
   );
 
+  // Auto-scroll state for bar drag
+  const autoScrollRef = useRef<number | null>(null);
+  const lastMouseXRef = useRef<number>(0);
+
   useEffect(() => {
     if (!drag) return;
 
     const handleMouseMove = (e: MouseEvent) => {
+      lastMouseXRef.current = e.clientX;
       const deltaX = e.clientX - drag.startX;
       const dayDelta = Math.round(deltaX / dayPx);
       setDrag(prev => prev ? { ...prev, dayDelta } : null);
+
+      // Auto-scroll when near timeline edges
+      const tl = timelineRef.current;
+      if (tl) {
+        const rect = tl.getBoundingClientRect();
+        const relX = e.clientX - rect.left;
+        if (relX < AUTO_SCROLL_EDGE && tl.scrollLeft > 0) {
+          startAutoScroll(-AUTO_SCROLL_SPEED);
+        } else if (relX > rect.width - AUTO_SCROLL_EDGE && tl.scrollLeft < tl.scrollWidth - tl.clientWidth) {
+          startAutoScroll(AUTO_SCROLL_SPEED);
+        } else {
+          stopAutoScroll();
+        }
+      }
     };
 
     const handleMouseUp = () => {
+      stopAutoScroll();
       if (drag && drag.dayDelta !== 0 && onTaskDragEnd) {
         const fmt = (d: Date) => d.toISOString().split('T')[0];
         if (drag.mode === 'move') {
@@ -925,9 +1034,27 @@ export function GanttChart({
       setDrag(null);
     };
 
+    function startAutoScroll(speed: number) {
+      if (autoScrollRef.current != null) return;
+      const tick = () => {
+        const tl = timelineRef.current;
+        if (tl) tl.scrollLeft += speed;
+        autoScrollRef.current = requestAnimationFrame(tick);
+      };
+      autoScrollRef.current = requestAnimationFrame(tick);
+    }
+
+    function stopAutoScroll() {
+      if (autoScrollRef.current != null) {
+        cancelAnimationFrame(autoScrollRef.current);
+        autoScrollRef.current = null;
+      }
+    }
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     return () => {
+      stopAutoScroll();
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -1096,6 +1223,42 @@ export function GanttChart({
                 </svg>
               </button>
             )}
+            {/* Column picker */}
+            <div className="relative" ref={colPickerRef}>
+              <button
+                onClick={() => setShowColPicker(prev => !prev)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border ${showColPicker ? 'bg-primary-50 text-primary-700 border-primary-300' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                title="Show/hide columns"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125z" />
+                </svg>
+                Columns
+              </button>
+              {showColPicker && (
+                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-30 py-1 min-w-[160px]">
+                  {GANTT_COLUMNS.filter(c => !c.alwaysVisible).map(col => (
+                    <label key={col.key} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-xs text-gray-700 dark:text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={ganttVisibleCols.has(col.key)}
+                        onChange={() => toggleColVisibility(col.key)}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      {col.label || col.key}
+                    </label>
+                  ))}
+                  <div className="border-t border-gray-200 dark:border-gray-600 mt-1 pt-1 px-3 py-1">
+                    <button
+                      className="text-xs text-primary-600 hover:text-primary-700"
+                      onClick={() => setGanttVisibleCols(new Set(DEFAULT_VISIBLE_COLS))}
+                    >
+                      Reset to default
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => {
                 const el = document.getElementById('gantt-print-container');
@@ -1215,6 +1378,8 @@ export function GanttChart({
             {GANTT_COLUMNS.map(col => {
               // Skip editIcon column if no onTaskClick
               if (col.key === 'editIcon' && !onTaskClick) return null;
+              // Skip hidden columns
+              if (!isColVisible(col)) return null;
               const w = getColWidth(col);
               return (
                 <div
@@ -1248,7 +1413,7 @@ export function GanttChart({
             const start = toDate(task.startDate);
             const end = toDate(task.endDate);
             const pct = task.progressPercentage ?? 0;
-            const isParent = rows.some((r) => r.task.parentTaskId === task.id);
+            const isParent = parentTaskIds.has(task.id);
 
             return (
               <div
@@ -1305,7 +1470,21 @@ export function GanttChart({
                       onKeyDown={e => handleKeyDown(e, task.id, 'name')}
                     />
                   ) : (
-                    <div className="flex items-center gap-1.5 px-2">
+                    <div className="flex items-center gap-1 px-2">
+                      {/* Expand/collapse toggle for parent tasks */}
+                      {isParent ? (
+                        <button
+                          className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-gray-400 hover:text-gray-700 transition-colors"
+                          onClick={(e) => { e.stopPropagation(); toggleCollapse(task.id); }}
+                          title={collapsedIds.has(task.id) ? 'Expand children' : 'Collapse children'}
+                        >
+                          <svg className={`w-3 h-3 transition-transform ${collapsedIds.has(task.id) ? '' : 'rotate-90'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <span className="w-4 flex-shrink-0" />
+                      )}
                       {task.isMilestone && (
                         <span className="w-3 h-3 flex-shrink-0 rotate-45 bg-primary-500 inline-block" title="Milestone" />
                       )}
@@ -1323,6 +1502,7 @@ export function GanttChart({
                 </div>
 
                 {/* Predecessor(s) */}
+                {isColVisible(GANTT_COLUMNS[2]) && (
                 <div
                   className={`shrink-0 px-1 text-center text-xs text-gray-500 font-mono ${editableCellClass(task.id, 'dependency')}`}
                   style={{ width: getColWidth(GANTT_COLUMNS[2]) }}
@@ -1371,8 +1551,10 @@ export function GanttChart({
                     })() : '—'
                   )}
                 </div>
+                )}
 
                 {/* Start */}
+                {isColVisible(GANTT_COLUMNS[3]) && (
                 <div
                   className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'startDate')}`}
                   style={{ width: getColWidth(GANTT_COLUMNS[3]) }}
@@ -1392,8 +1574,10 @@ export function GanttChart({
                     start ? formatShortDate(start) : '—'
                   )}
                 </div>
+                )}
 
                 {/* End */}
+                {isColVisible(GANTT_COLUMNS[4]) && (
                 <div
                   className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'endDate')}`}
                   style={{ width: getColWidth(GANTT_COLUMNS[4]) }}
@@ -1413,8 +1597,10 @@ export function GanttChart({
                     end ? formatShortDate(end) : '—'
                   )}
                 </div>
+                )}
 
                 {/* Duration */}
+                {isColVisible(GANTT_COLUMNS[5]) && (
                 <div
                   className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'duration')}`}
                   style={{ width: getColWidth(GANTT_COLUMNS[5]) }}
@@ -1434,8 +1620,10 @@ export function GanttChart({
                     start && end ? `${daysBetween(start, end)}d` : '—'
                   )}
                 </div>
+                )}
 
                 {/* Estimated Days */}
+                {isColVisible(GANTT_COLUMNS[6]) && (
                 <div
                   className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'estimatedDays')}`}
                   style={{ width: getColWidth(GANTT_COLUMNS[6]) }}
@@ -1456,8 +1644,10 @@ export function GanttChart({
                     task.estimatedDays != null ? `${task.estimatedDays}d` : '—'
                   )}
                 </div>
+                )}
 
                 {/* % Complete */}
+                {isColVisible(GANTT_COLUMNS[7]) && (
                 <div
                   className={`shrink-0 px-1 text-center text-xs font-medium text-gray-600 ${editableCellClass(task.id, 'progressPercentage')}`}
                   style={{ width: getColWidth(GANTT_COLUMNS[7]) }}
@@ -1479,8 +1669,10 @@ export function GanttChart({
                     `${pct}%`
                   )}
                 </div>
+                )}
 
                 {/* Priority */}
+                {isColVisible(GANTT_COLUMNS[8]) && (
                 <div
                   className={`shrink-0 px-1 text-center ${editableCellClass(task.id, 'priority')}`}
                   style={{ width: getColWidth(GANTT_COLUMNS[8]) }}
@@ -1508,8 +1700,10 @@ export function GanttChart({
                     ) : '—'
                   )}
                 </div>
+                )}
 
                 {/* Assigned To */}
+                {isColVisible(GANTT_COLUMNS[9]) && (
                 <div
                   className={`shrink-0 px-1 text-center text-xs text-gray-500 truncate ${editableCellClass(task.id, 'assignedTo')}`}
                   style={{ width: getColWidth(GANTT_COLUMNS[9]) }}
@@ -1529,8 +1723,10 @@ export function GanttChart({
                     task.assignedTo || '—'
                   )}
                 </div>
+                )}
 
                 {/* Status */}
+                {isColVisible(GANTT_COLUMNS[10]) && (
                 <div
                   className={`shrink-0 px-1 text-center ${editableCellClass(task.id, 'status')}`}
                   style={{ width: getColWidth(GANTT_COLUMNS[10]) }}
@@ -1569,6 +1765,7 @@ export function GanttChart({
                     </span>
                   )}
                 </div>
+                )}
 
                 {/* Edit icon (visible on hover) */}
                 {onTaskClick && (
@@ -1721,7 +1918,7 @@ export function GanttChart({
               const colors = isCritical
                 ? { bg: '#fef2f2', fill: '#dc2626', text: '#991b1b' }
                 : barColors[task.status] || barColors.pending;
-              const isParent = rows.some((r) => r.task.parentTaskId === task.id);
+              const isParent = parentTaskIds.has(task.id);
               const top = HEADER_H + idx * ROW_H + 6;
               const barH = ROW_H - 12;
               const isDragging = drag?.taskId === task.id;
