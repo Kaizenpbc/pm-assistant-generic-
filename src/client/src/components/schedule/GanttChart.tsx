@@ -136,7 +136,9 @@ const priorityDot: Record<string, string> = {
 
 const ROW_H = 36;
 const HEADER_H = 52;
-const TABLE_MIN_W = 600;
+const TABLE_DEFAULT_W = 720;
+const TABLE_MIN_W = 200;
+const TABLE_MAX_W = 1100;
 
 // ---------------------------------------------------------------------------
 // Zoom / Timescale
@@ -314,6 +316,41 @@ export function GanttChart({
   useEffect(() => {
     if (scheduleId) localStorage.setItem(`gantt-zoom:${scheduleId}`, zoom);
   }, [zoom, scheduleId]);
+
+  // Draggable splitter: table panel width
+  const [tableWidth, setTableWidth] = useState<number>(() => {
+    if (!scheduleId) return TABLE_DEFAULT_W;
+    const stored = localStorage.getItem(`gantt-table-w:${scheduleId}`);
+    return stored ? Math.max(TABLE_MIN_W, Math.min(TABLE_MAX_W, Number(stored))) : TABLE_DEFAULT_W;
+  });
+  const [splitterDrag, setSplitterDrag] = useState<{ startX: number; startW: number } | null>(null);
+
+  useEffect(() => {
+    if (scheduleId) localStorage.setItem(`gantt-table-w:${scheduleId}`, String(tableWidth));
+  }, [tableWidth, scheduleId]);
+
+  useEffect(() => {
+    if (!splitterDrag) return;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    const onMove = (e: MouseEvent) => {
+      const newW = Math.max(TABLE_MIN_W, Math.min(TABLE_MAX_W, splitterDrag.startW + (e.clientX - splitterDrag.startX)));
+      setTableWidth(newW);
+    };
+    const onUp = () => {
+      setSplitterDrag(null);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [splitterDrag]);
 
   const rows = useMemo(() => buildFlatRows(tasks), [tasks]);
 
@@ -573,22 +610,26 @@ export function GanttChart({
         {/* LEFT: Task table                                               */}
         {/* ============================================================= */}
         <div
-          className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto"
-          style={{ minWidth: TABLE_MIN_W, maxWidth: TABLE_MIN_W }}
+          className="flex-shrink-0 overflow-y-auto overflow-x-hidden"
+          style={{ width: tableWidth }}
         >
           {/* Table header */}
           <div
             className="sticky top-0 z-10 flex items-center bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
             style={{ height: HEADER_H }}
           >
-            <div className="w-10 px-1 text-center">#</div>
-            <div className="flex-1 px-2">Task Name</div>
-            <div className="w-14 px-1 text-center">Pred</div>
-            <div className="w-20 px-1 text-center">Start</div>
-            <div className="w-20 px-1 text-center">End</div>
-            <div className="w-12 px-1 text-center">%</div>
-            <div className="w-16 px-1 text-center">Status</div>
-            {onTaskClick && <div className="w-8" title="Double-click row or click icon to edit" />}
+            <div className="w-10 shrink-0 px-1 text-center">#</div>
+            <div className="flex-1 min-w-0 px-2">Task Name</div>
+            <div className="w-14 shrink-0 px-1 text-center">Pred</div>
+            <div className="w-20 shrink-0 px-1 text-center">Start</div>
+            <div className="w-20 shrink-0 px-1 text-center">End</div>
+            <div className="w-12 shrink-0 px-1 text-center">Dur</div>
+            <div className="w-12 shrink-0 px-1 text-center">Est</div>
+            <div className="w-12 shrink-0 px-1 text-center">%</div>
+            <div className="w-16 shrink-0 px-1 text-center">Priority</div>
+            <div className="w-24 shrink-0 px-1 text-center">Assigned</div>
+            <div className="w-16 shrink-0 px-1 text-center">Status</div>
+            {onTaskClick && <div className="w-8 shrink-0" title="Double-click row or click icon to edit" />}
           </div>
 
           {/* Task rows */}
@@ -607,7 +648,7 @@ export function GanttChart({
                 onDoubleClick={() => onTaskClick?.(task)}
               >
                 {/* Row # */}
-                <div className="w-10 px-1 text-center text-xs text-gray-400 font-mono">
+                <div className="w-10 shrink-0 px-1 text-center text-xs text-gray-400 font-mono">
                   {rowIdx + 1}
                 </div>
 
@@ -633,7 +674,7 @@ export function GanttChart({
                 </div>
 
                 {/* Predecessor(s) */}
-                <div className="w-14 px-1 text-center text-xs text-gray-500 font-mono" title={
+                <div className="w-14 shrink-0 px-1 text-center text-xs text-gray-500 font-mono" title={
                   (task.dependencies || []).map(d => tasks.find(t => t.id === d.dependencyId)?.name || '').filter(Boolean).join(', ') || undefined
                 }>
                   {(task.dependencies && task.dependencies.length > 0) ? (() => {
@@ -662,22 +703,47 @@ export function GanttChart({
                 </div>
 
                 {/* Start */}
-                <div className="w-20 px-1 text-center text-xs text-gray-500">
+                <div className="w-20 shrink-0 px-1 text-center text-xs text-gray-500">
                   {start ? formatShortDate(start) : '—'}
                 </div>
 
                 {/* End */}
-                <div className="w-20 px-1 text-center text-xs text-gray-500">
+                <div className="w-20 shrink-0 px-1 text-center text-xs text-gray-500">
                   {end ? formatShortDate(end) : '—'}
                 </div>
 
+                {/* Duration */}
+                <div className="w-12 shrink-0 px-1 text-center text-xs text-gray-500">
+                  {start && end ? `${daysBetween(start, end)}d` : '—'}
+                </div>
+
+                {/* Estimated Days */}
+                <div className="w-12 shrink-0 px-1 text-center text-xs text-gray-500">
+                  {task.estimatedDays != null ? `${task.estimatedDays}d` : '—'}
+                </div>
+
                 {/* % Complete */}
-                <div className="w-12 px-1 text-center text-xs font-medium text-gray-600">
+                <div className="w-12 shrink-0 px-1 text-center text-xs font-medium text-gray-600">
                   {pct}%
                 </div>
 
+                {/* Priority */}
+                <div className="w-16 shrink-0 px-1 text-center">
+                  {task.priority ? (
+                    <span className={`inline-flex items-center gap-1 text-xs font-medium`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${priorityDot[task.priority] || 'bg-gray-300'}`} />
+                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                    </span>
+                  ) : '—'}
+                </div>
+
+                {/* Assigned To */}
+                <div className="w-24 shrink-0 px-1 text-center text-xs text-gray-500 truncate" title={task.assignedTo || undefined}>
+                  {task.assignedTo || '—'}
+                </div>
+
                 {/* Status */}
-                <div className="w-16 px-1 text-center">
+                <div className="w-16 shrink-0 px-1 text-center">
                   <span
                     className="text-xs font-medium px-1.5 py-0.5 rounded-full"
                     style={{
@@ -698,7 +764,7 @@ export function GanttChart({
                 {/* Edit icon (visible on hover) */}
                 {onTaskClick && (
                   <div
-                    className="w-8 flex items-center justify-center"
+                    className="w-8 shrink-0 flex items-center justify-center"
                     onClick={(e) => { e.stopPropagation(); onTaskClick(task); }}
                   >
                     <svg
@@ -720,6 +786,13 @@ export function GanttChart({
             );
           })}
         </div>
+
+        {/* Draggable splitter */}
+        <div
+          className={`flex-shrink-0 cursor-col-resize select-none transition-colors ${splitterDrag ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-600 hover:bg-primary-400'}`}
+          style={{ width: 5 }}
+          onMouseDown={(e) => { e.preventDefault(); setSplitterDrag({ startX: e.clientX, startW: tableWidth }); }}
+        />
 
         {/* ============================================================= */}
         {/* RIGHT: Gantt timeline                                          */}
