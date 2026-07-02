@@ -76,7 +76,7 @@ export function useColumnState(scheduleId: string): ColumnState {
     setVisibleKeys(prev => {
       const next = new Set(prev);
       for (const col of COLUMN_DEFS) {
-        if (col.group === group && col.key !== 'name') {
+        if (col.group === group && col.key !== 'name' && col.key !== 'rowNum') {
           if (visible) next.add(col.key);
           else next.delete(col.key);
         }
@@ -85,13 +85,28 @@ export function useColumnState(scheduleId: string): ColumnState {
     });
   }, []);
 
+  // Ensure rowNum is always in the visible set
+  useEffect(() => {
+    if (!visibleKeys.has('rowNum')) {
+      setVisibleKeys(prev => {
+        const next = new Set(prev);
+        next.add('rowNum');
+        return next;
+      });
+    }
+  }, [visibleKeys]);
+
   const visibleColumns = useMemo(() => {
-    const visible = COLUMN_DEFS.filter(c => visibleKeys.has(c.key));
+    // Always include rowNum even if somehow missing from visibleKeys
+    const keysWithRowNum = new Set(visibleKeys);
+    keysWithRowNum.add('rowNum');
+    const visible = COLUMN_DEFS.filter(c => keysWithRowNum.has(c.key));
     if (columnOrder.length === 0) return visible;
     const orderMap = new Map(columnOrder.map((k, i) => [k, i]));
+    // rowNum always first (use -1 so it sorts before everything)
     return [...visible].sort((a, b) => {
-      const ia = orderMap.get(a.key) ?? 999;
-      const ib = orderMap.get(b.key) ?? 999;
+      const ia = a.key === 'rowNum' ? -1 : (orderMap.get(a.key) ?? 999);
+      const ib = b.key === 'rowNum' ? -1 : (orderMap.get(b.key) ?? 999);
       return ia - ib;
     });
   }, [visibleKeys, columnOrder]);
