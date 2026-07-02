@@ -1020,7 +1020,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
+        <table className="text-sm" style={{ minWidth: '100%' }}>
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="w-10 px-2 py-2.5">
@@ -1042,7 +1042,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                   className={`px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide select-none relative ${
                     col.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
                   } ${dragOverCol === col.key ? 'bg-primary-50 border-l-2 border-primary-400' : ''}`}
-                  style={colWidths[col.key] ? { width: colWidths[col.key], minWidth: colWidths[col.key] } : undefined}
+                  style={colWidths[col.key] ? { width: colWidths[col.key], minWidth: colWidths[col.key], maxWidth: colWidths[col.key] } : { minWidth: col.key === 'name' ? 200 : 100 }}
                   onClick={() => col.sortable && toggleSort(col.key)}
                 >
                   <div className="flex items-center gap-1 whitespace-nowrap">
