@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Check, Loader2, X, Trash2, CheckSquare } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Check, Loader2, X, Trash2, CheckSquare, GripVertical } from 'lucide-react';
 import type { GanttTask } from './GanttChart';
 import { apiService } from '../../services/api';
 import { ColumnPickerDropdown } from './ColumnPickerDropdown';
@@ -135,9 +135,110 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     setSortDir(view.sortDir);
   }, []);
 
-  const visibleColumns = useMemo(() =>
-    COLUMN_DEFS.filter(c => visibleKeys.has(c.key)),
-  [visibleKeys]);
+  // Column order — user can drag to reorder
+  const [columnOrder, setColumnOrder] = useState<ColumnKey[]>(() => {
+    try {
+      const stored = localStorage.getItem(`tableview-col-order:${scheduleId}`);
+      if (stored) return JSON.parse(stored) as ColumnKey[];
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    if (columnOrder.length > 0) {
+      localStorage.setItem(`tableview-col-order:${scheduleId}`, JSON.stringify(columnOrder));
+    }
+  }, [columnOrder, scheduleId]);
+
+  const visibleColumns = useMemo(() => {
+    const visible = COLUMN_DEFS.filter(c => visibleKeys.has(c.key));
+    if (columnOrder.length === 0) return visible;
+    const orderMap = new Map(columnOrder.map((k, i) => [k, i]));
+    return [...visible].sort((a, b) => {
+      const ia = orderMap.get(a.key) ?? 999;
+      const ib = orderMap.get(b.key) ?? 999;
+      return ia - ib;
+    });
+  }, [visibleKeys, columnOrder]);
+
+  // Column widths — user can resize
+  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
+    try {
+      const stored = localStorage.getItem(`tableview-col-widths:${scheduleId}`);
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return {};
+  });
+
+  useEffect(() => {
+    if (Object.keys(colWidths).length > 0) {
+      localStorage.setItem(`tableview-col-widths:${scheduleId}`, JSON.stringify(colWidths));
+    }
+  }, [colWidths, scheduleId]);
+
+  // Column resize handler
+  const resizingRef = useRef<{ key: string; startX: number; startW: number } | null>(null);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent, colKey: string, currentWidth: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizingRef.current = { key: colKey, startX: e.clientX, startW: currentWidth };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!resizingRef.current) return;
+      const diff = ev.clientX - resizingRef.current.startX;
+      const newW = Math.max(60, resizingRef.current.startW + diff);
+      setColWidths(prev => ({ ...prev, [resizingRef.current!.key]: newW }));
+    };
+    const onUp = () => {
+      resizingRef.current = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, []);
+
+  // Column drag-to-reorder
+  const dragColRef = useRef<string | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+
+  const handleColDragStart = useCallback((e: React.DragEvent, colKey: string) => {
+    dragColRef.current = colKey;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', colKey);
+  }, []);
+
+  const handleColDragOver = useCallback((e: React.DragEvent, colKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragColRef.current && dragColRef.current !== colKey) {
+      setDragOverCol(colKey);
+    }
+  }, []);
+
+  const handleColDrop = useCallback((e: React.DragEvent, targetKey: string) => {
+    e.preventDefault();
+    setDragOverCol(null);
+    const srcKey = dragColRef.current;
+    dragColRef.current = null;
+    if (!srcKey || srcKey === targetKey) return;
+
+    const currentOrder = visibleColumns.map(c => c.key);
+    const srcIdx = currentOrder.indexOf(srcKey as ColumnKey);
+    const tgtIdx = currentOrder.indexOf(targetKey as ColumnKey);
+    if (srcIdx === -1 || tgtIdx === -1) return;
+
+    const newOrder = [...currentOrder];
+    newOrder.splice(srcIdx, 1);
+    newOrder.splice(tgtIdx, 0, srcKey as ColumnKey);
+    setColumnOrder(newOrder);
+  }, [visibleColumns]);
+
+  const handleColDragEnd = useCallback(() => {
+    dragColRef.current = null;
+    setDragOverCol(null);
+  }, []);
 
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -919,7 +1020,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="w-10 px-2 py-2.5">
@@ -933,15 +1034,30 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
               {visibleColumns.map(col => (
                 <th
                   key={col.key}
-                  className={`px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide select-none ${
+                  draggable
+                  onDragStart={(e) => handleColDragStart(e, col.key)}
+                  onDragOver={(e) => handleColDragOver(e, col.key)}
+                  onDrop={(e) => handleColDrop(e, col.key)}
+                  onDragEnd={handleColDragEnd}
+                  className={`px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide select-none relative ${
                     col.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
-                  }`}
+                  } ${dragOverCol === col.key ? 'bg-primary-50 border-l-2 border-primary-400' : ''}`}
+                  style={colWidths[col.key] ? { width: colWidths[col.key], minWidth: colWidths[col.key] } : undefined}
                   onClick={() => col.sortable && toggleSort(col.key)}
                 >
                   <div className="flex items-center gap-1 whitespace-nowrap">
+                    <GripVertical className="w-3 h-3 text-gray-300 cursor-grab flex-shrink-0" />
                     {col.label}
                     {col.sortable && <SortIcon field={col.key} />}
                   </div>
+                  {/* Resize handle */}
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary-400 transition-colors"
+                    onMouseDown={(e) => {
+                      const th = e.currentTarget.parentElement;
+                      handleResizeStart(e, col.key, th?.offsetWidth ?? 120);
+                    }}
+                  />
                 </th>
               ))}
               <th className="w-10" />
