@@ -457,7 +457,7 @@ export function GanttChart({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [drag, onTaskDragEnd]);
+  }, [drag, onTaskDragEnd, dayPx]);
 
   // Compute drag visual offset for the dragged bar
   const getDragOffset = useCallback(
@@ -467,7 +467,7 @@ export function GanttChart({
       if (drag.mode === 'move') return { leftDelta: pxDelta, widthDelta: 0 };
       return { leftDelta: 0, widthDelta: pxDelta };
     },
-    [drag]
+    [drag, dayPx]
   );
 
   if (rows.length === 0) {
