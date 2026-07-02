@@ -131,7 +131,7 @@ const priorityDot: Record<string, string> = {
 const ROW_H = 36;
 const HEADER_H = 48;
 const DAY_PX = 3.2; // pixels per day — controls how wide the timeline is
-const TABLE_MIN_W = 550;
+const TABLE_MIN_W = 600;
 
 // ---------------------------------------------------------------------------
 // GanttChart component
@@ -182,6 +182,27 @@ export function GanttChart({
     return m;
   }, [baselineTasks]);
   const rows = useMemo(() => buildFlatRows(tasks), [tasks]);
+
+  // Row number map: taskId → 1-based row index
+  const rowNumMap = useMemo(() => {
+    const map = new Map<string, number>();
+    rows.forEach(({ task }, idx) => map.set(task.id, idx + 1));
+    return map;
+  }, [rows]);
+
+  // Get dependency health status
+  const getDepHealth = useCallback((depTaskId: string): 'satisfied' | 'in_progress' | 'at_risk' => {
+    const depTask = tasks.find(t => t.id === depTaskId);
+    if (!depTask) return 'at_risk';
+    if (depTask.status === 'completed') return 'satisfied';
+    if (depTask.status === 'in_progress') return 'in_progress';
+    if (depTask.endDate && new Date(depTask.endDate) < new Date()) return 'at_risk';
+    return 'in_progress';
+  }, [tasks]);
+
+  const healthColor = (health: 'satisfied' | 'in_progress' | 'at_risk') =>
+    health === 'satisfied' ? '#22c55e' : health === 'in_progress' ? '#eab308' : '#ef4444';
+
   const timelineRef = useRef<HTMLDivElement>(null);
 
   // Compute date range
@@ -428,8 +449,9 @@ export function GanttChart({
             className="sticky top-0 z-10 flex items-center bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
             style={{ height: HEADER_H }}
           >
-            <div className="w-12 px-2 text-center">#</div>
+            <div className="w-10 px-1 text-center">#</div>
             <div className="flex-1 px-2">Task Name</div>
+            <div className="w-14 px-1 text-center">Pred</div>
             <div className="w-20 px-1 text-center">Start</div>
             <div className="w-20 px-1 text-center">End</div>
             <div className="w-12 px-1 text-center">%</div>
@@ -453,7 +475,7 @@ export function GanttChart({
                 onDoubleClick={() => onTaskClick?.(task)}
               >
                 {/* Row # */}
-                <div className="w-12 px-2 text-center text-xs text-gray-400 font-mono">
+                <div className="w-10 px-1 text-center text-xs text-gray-400 font-mono">
                   {rowIdx + 1}
                 </div>
 
@@ -476,6 +498,25 @@ export function GanttChart({
                   >
                     {task.name}
                   </span>
+                </div>
+
+                {/* Predecessor */}
+                <div className="w-14 px-1 text-center text-xs text-gray-500 font-mono" title={task.dependency ? (tasks.find(t => t.id === task.dependency)?.name || '') : undefined}>
+                  {task.dependency ? (() => {
+                    const depRowNum = rowNumMap.get(task.dependency);
+                    const depType = (task.dependencyType || 'FS').toUpperCase();
+                    const lag = task.dependencyLagDays || 0;
+                    const health = getDepHealth(task.dependency);
+                    let label = depRowNum != null ? String(depRowNum) : '?';
+                    if (depType !== 'FS') label += depType;
+                    if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+                    return (
+                      <span className="inline-flex items-center gap-1 justify-center">
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: healthColor(health) }} />
+                        {label}
+                      </span>
+                    );
+                  })() : '—'}
                 </div>
 
                 {/* Start */}
@@ -774,6 +815,23 @@ export function GanttChart({
                         Assigned: {task.assignedTo}
                       </div>
                     )}
+                    {task.dependency && (() => {
+                      const depTask = tasks.find(t => t.id === task.dependency);
+                      const depRowNum = rowNumMap.get(task.dependency!);
+                      const depType = (task.dependencyType || 'FS').toUpperCase();
+                      const lag = task.dependencyLagDays || 0;
+                      const health = getDepHealth(task.dependency!);
+                      let label = depRowNum != null ? String(depRowNum) : '?';
+                      if (depType !== 'FS') label += depType;
+                      if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+                      const healthLabel = health === 'satisfied' ? 'Done' : health === 'in_progress' ? 'Active' : 'At Risk';
+                      return (
+                        <div className="text-gray-300">
+                          Pred: <span className="font-mono">{label}</span> {depTask ? `(${depTask.name})` : ''}{' '}
+                          <span style={{ color: healthColor(health) }}>[{healthLabel}]</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );
@@ -788,15 +846,17 @@ export function GanttChart({
               }}
             >
               <defs>
-                <marker
-                  id="arrowhead"
-                  markerWidth="6"
-                  markerHeight="4"
-                  refX="6"
-                  refY="2"
-                  orient="auto"
-                >
+                <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
                   <polygon points="0 0, 6 2, 0 4" fill="#9ca3af" />
+                </marker>
+                <marker id="arrowhead-green" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                  <polygon points="0 0, 6 2, 0 4" fill="#22c55e" />
+                </marker>
+                <marker id="arrowhead-yellow" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                  <polygon points="0 0, 6 2, 0 4" fill="#eab308" />
+                </marker>
+                <marker id="arrowhead-red" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                  <polygon points="0 0, 6 2, 0 4" fill="#ef4444" />
                 </marker>
               </defs>
               {rows.map(({ task }, idx) => {
@@ -838,7 +898,9 @@ export function GanttChart({
                 }
 
                 const midX = x1 + (x1 <= x2 ? 10 : -10);
-                const arrowColor = depType === 'FS' ? '#9ca3af' : depType === 'SS' ? '#3b82f6' : depType === 'FF' ? '#8b5cf6' : '#f59e0b';
+                const health = getDepHealth(task.dependency!);
+                const arrowColor = healthColor(health);
+                const arrowheadId = health === 'satisfied' ? 'arrowhead-green' : health === 'in_progress' ? 'arrowhead-yellow' : 'arrowhead-red';
 
                 return (
                   <path
@@ -847,8 +909,8 @@ export function GanttChart({
                     fill="none"
                     stroke={arrowColor}
                     strokeWidth="1.5"
-                    markerEnd="url(#arrowhead)"
-                    opacity={0.6}
+                    markerEnd={`url(#${arrowheadId})`}
+                    opacity={0.7}
                   />
                 );
               })}
