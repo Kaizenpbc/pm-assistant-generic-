@@ -542,6 +542,14 @@ export function GanttChart({
     return set;
   }, [tasks]);
 
+  const collapseAll = useCallback(() => {
+    setCollapsedIds(new Set(parentTaskIds));
+  }, [parentTaskIds]);
+
+  const expandAll = useCallback(() => {
+    setCollapsedIds(new Set());
+  }, []);
+
   // -----------------------------------------------------------------------
   // Row drag reorder state
   // -----------------------------------------------------------------------
@@ -904,10 +912,102 @@ export function GanttChart({
     editingCell?.taskId === taskId && editingCell.field === field;
   const isSaved = (taskId: string, field: string) =>
     savedCell?.taskId === taskId && savedCell.field === field;
+
+  // -----------------------------------------------------------------------
+  // Focused cell state (keyboard navigation without editing)
+  // -----------------------------------------------------------------------
+  const [focusedCell, setFocusedCell] = useState<{ taskId: string; field: EditableField } | null>(null);
+  const isFocused = (taskId: string, field: string) =>
+    focusedCell?.taskId === taskId && focusedCell.field === field && !editingCell;
+
+  /** Get visible FIELD_ORDER (only fields whose columns are visible) */
+  const visibleFieldOrder = useMemo(() => {
+    const colKeyToField: Record<string, EditableField> = {
+      name: 'name', pred: 'dependency', start: 'startDate', end: 'endDate',
+      dur: 'duration', est: 'estimatedDays', pct: 'progressPercentage',
+      priority: 'priority', assigned: 'assignedTo', status: 'status',
+    };
+    return GANTT_COLUMNS
+      .filter(c => isColVisible(c) && colKeyToField[c.key])
+      .map(c => colKeyToField[c.key]);
+  }, [isColVisible]);
+
+  // Arrow key navigation
+  useEffect(() => {
+    if (!onTaskUpdate || editingCell) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
+      if (!focusedCell) {
+        // If no cell focused, Enter on a selected row focuses the first field
+        if (e.key === 'Enter' && activeTaskId) {
+          e.preventDefault();
+          const field = visibleFieldOrder[0] || 'name';
+          setFocusedCell({ taskId: activeTaskId, field });
+        }
+        return;
+      }
+      const rowIdx = rows.findIndex(r => r.task.id === focusedCell.taskId);
+      const fieldIdx = visibleFieldOrder.indexOf(focusedCell.field);
+      if (rowIdx === -1 || fieldIdx === -1) return;
+
+      switch (e.key) {
+        case 'ArrowRight':
+          e.preventDefault();
+          if (fieldIdx < visibleFieldOrder.length - 1) {
+            setFocusedCell({ taskId: focusedCell.taskId, field: visibleFieldOrder[fieldIdx + 1] });
+          }
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (fieldIdx > 0) {
+            setFocusedCell({ taskId: focusedCell.taskId, field: visibleFieldOrder[fieldIdx - 1] });
+          }
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          if (rowIdx < rows.length - 1) {
+            const nextTask = rows[rowIdx + 1].task;
+            setFocusedCell({ taskId: nextTask.id, field: focusedCell.field });
+            onTaskSelect?.(nextTask);
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          if (rowIdx > 0) {
+            const prevTask = rows[rowIdx - 1].task;
+            setFocusedCell({ taskId: prevTask.id, field: focusedCell.field });
+            onTaskSelect?.(prevTask);
+          }
+          break;
+        case 'Enter':
+        case 'F2':
+          e.preventDefault();
+          startEditing(focusedCell.taskId, focusedCell.field, rows[rowIdx].task);
+          break;
+        case 'Escape':
+          e.preventDefault();
+          setFocusedCell(null);
+          break;
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [focusedCell, editingCell, rows, visibleFieldOrder, onTaskUpdate, activeTaskId, onTaskSelect, startEditing]);
+
+  // When editing ends, restore focus to that cell
+  useEffect(() => {
+    if (!editingCell) return;
+    return () => {
+      setFocusedCell(editingCell);
+    };
+  }, [editingCell]);
+
   const editableCellClass = (taskId: string, field: string) => {
     if (!onTaskUpdate) return '';
     const base = 'relative cursor-pointer transition-all duration-150';
     if (isEditing(taskId, field)) return `${base} ring-2 ring-blue-400 ring-inset rounded`;
+    if (isFocused(taskId, field)) return `${base} ring-2 ring-primary-300 ring-inset rounded bg-primary-50/30`;
     if (isSaved(taskId, field)) return `${base} bg-green-50`;
     return `${base} hover:bg-blue-50/50`;
   };
@@ -1146,6 +1246,30 @@ export function GanttChart({
             <span className="text-xs text-gray-400 ml-2">
               {rows.length} tasks
             </span>
+            {parentTaskIds.size > 0 && (
+              <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-500 ml-2">
+                <button
+                  onClick={expandAll}
+                  disabled={collapsedIds.size === 0}
+                  className={`px-1.5 py-0.5 text-xs rounded-l-md transition-colors ${collapsedIds.size > 0 ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                  title="Expand all"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={collapseAll}
+                  disabled={collapsedIds.size === parentTaskIds.size}
+                  className={`px-1.5 py-0.5 text-xs rounded-r-md transition-colors ${collapsedIds.size < parentTaskIds.size ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                  title="Collapse all"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
           {/* Zoom controls */}
           <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-500">
