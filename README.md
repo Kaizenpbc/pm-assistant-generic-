@@ -82,7 +82,8 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Multiple views: Gantt chart, Kanban board, Calendar, Table (with MS Project-style column picker and saved views)
 - Gantt drag-and-drop rescheduling (move and resize task bars)
 - Task hierarchy with summary task auto-calculation
-- Dependency management with predecessor/successor relationships
+- Dependency management with predecessor/successor relationships and health badges
+- MS Project-style row numbers and predecessor notation (e.g. "3", "7SS+2d") with inline editing
 - Recurring tasks (daily, weekly, biweekly, monthly) with auto-generation
 - Customizable dashboard widgets with per-user persistence
 - Real-time presence indicators showing who is viewing a project
@@ -260,7 +261,11 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 ### Dependency Types with Lag
 - Four dependency types: Finish-to-Start (FS), Finish-to-Finish (FF), Start-to-Start (SS), Start-to-Finish (SF)
-- Optional lag days per dependency; color-coded arrows on Gantt
+- Optional lag days per dependency
+- MS Project-style row-number notation in Table view and Gantt left panel
+- Dependency health badges: green (completed), yellow (in progress), red (overdue)
+- Gantt arrows color-coded by predecessor health status
+- Inline predecessor editing in Table view with validation
 
 ### Kanban WIP Limits
 - Per-column Work-In-Progress limits on the Kanban board

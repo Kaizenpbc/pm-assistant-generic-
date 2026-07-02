@@ -110,14 +110,18 @@ An agentic AI project management platform that combines the scheduling power of 
 ### 2.5 Calendar & Table Views
 - Calendar view with task bars across dates
 - Table view with inline editing (spreadsheet-like)
-- MS Project-style column picker: 21 columns across 4 groups (Standard, Scheduling/CPM, Baseline, Other)
+- MS Project-style column picker: 22 columns across 4 groups (Standard, Scheduling/CPM, Baseline, Other)
+- **Row number (#) column** — always visible, sequential numbering, cannot be toggled off
+- **MS Project-style predecessor display** — compact row-number notation (e.g. "3", "7SS+2d") instead of full task names
+- **Dependency health badges** — colour-coded dots (green/yellow/red) showing predecessor completion status. No other PM tool shows dependency health inline.
+- **Inline predecessor editing** — click and type row numbers with optional type and lag; validated with error feedback
 - Column visibility persisted per schedule in localStorage
 - CPM columns (Early Start, Late Finish, Total Float, etc.) auto-trigger critical path computation
 - Baseline variance columns populate when comparison is active
 - WBS auto-computed from task hierarchy
 - Column sorting on all numeric and date fields
 - Saved Views: name and store column+sort configurations per schedule, load/update/delete from dropdown
-- **Benchmark:** MS Project, Smartsheet, Monday.com
+- **Benchmark:** MS Project, Smartsheet, Monday.com — **exceeds MS Project** with health badges and inline predecessor editing
 
 ### 2.6 Portfolio-Level Gantt
 - Program view: multiple projects on one timeline
@@ -342,6 +346,10 @@ An agentic AI project management platform that combines the scheduling power of 
 | Dark Mode | Done | Enhancement |
 | Project Milestones (Gantt diamonds) | Done | Enhancement |
 | Dependency Types (FS/FF/SS/SF + lag) | Done | Enhancement |
+| Row Numbers & MS Project-style Predecessors | Done | Enhancement |
+| Dependency Health Badges (green/yellow/red) | Done | Innovation |
+| Inline Predecessor Editing | Done | Enhancement |
+| Health-Colored Gantt Dependency Arrows | Done | Innovation |
 | Kanban WIP Limits | Done | Enhancement |
 | Comment @Mentions | Done | Enhancement |
 | Bulk CSV Task Import | Done | Enhancement |

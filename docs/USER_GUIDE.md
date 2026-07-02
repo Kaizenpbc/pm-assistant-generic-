@@ -180,10 +180,11 @@ Tasks can be organized hierarchically:
 
 Set task dependencies to define execution order:
 
-- **Dependency** -- Select the predecessor task.
+- **Dependency** -- Select the predecessor task. In Table view, you can also type the predecessor's row number directly (e.g. `3`, `5SS`, `7FS+2d`).
 - **Dependency Type** -- Finish-to-Start (FS), Start-to-Start (SS), Finish-to-Finish (FF), or Start-to-Finish (SF).
 - **Lag** -- Optional number of days to add between the two tasks (e.g., a 2-day lag on FS means the successor starts 2 days after the predecessor finishes).
-- Dependencies are visualized as colour-coded connector arrows on the Gantt chart (colour varies by type) and used in critical path analysis.
+- Dependencies are displayed in compact row-number format with a health dot indicating predecessor status (green = done, yellow = in progress, red = overdue).
+- Gantt dependency arrows are colour-coded by predecessor health and used in critical path analysis.
 
 ### Task Activity Panel
 
@@ -215,13 +216,14 @@ The default schedule view. Displays tasks as horizontal bars on a timeline:
 - **Bar length** represents task duration (start to end date).
 - **Bar color** indicates status (blue for in progress, green for completed, gray for pending).
 - **Progress fill** shows completion percentage within each bar.
-- **Dependency arrows** connect predecessor and successor tasks.
-- **WBS numbering** is displayed in the task list column.
+- **Row numbers (#)** are displayed in the left panel instead of WBS, providing a sequential task index.
+- **Predecessor column (Pred)** in the left panel shows dependencies in compact row-number format (e.g. "3", "7SS+2d") with a colour-coded health dot: green (predecessor done), yellow (in progress), red (overdue).
+- **Dependency arrows** connect predecessor and successor tasks, colour-coded by predecessor health: green arrows for completed predecessors, yellow for in-progress, red for overdue.
 - **Drag-and-drop rescheduling**: Drag a bar to move the task to new dates. Drag the right edge to resize (change end date only). Changes automatically cascade through dependencies.
 - **Recurring task indicator**: Template tasks display a repeat icon on their bar.
 - **Milestones**: Tasks marked as milestones appear as diamonds instead of bars.
 - **PDF Export**: Click the **Print / Export PDF** button in the toolbar to open a print-optimised Gantt ready for saving as PDF.
-- Hover over a bar to see task details. Click to edit.
+- Hover over a bar to see task details including predecessor info (row number, task name, and health status). Click to edit.
 
 ### Kanban Board
 
@@ -242,12 +244,23 @@ Tasks plotted on a monthly calendar grid. Each day cell shows tasks that are act
 
 ### Table View
 
-A spreadsheet-like view of all tasks with inline editing. Click the **Columns** button (gear icon) in the table header to open the column picker. Choose from 21 columns organized into four groups:
+A spreadsheet-like view of all tasks with inline editing. Click the **Columns** button (gear icon) to open the column picker. Choose from 22 columns organized into four groups:
 
-- **Standard** -- Name, Status, Priority, Start Date, End Date, Progress, Assigned To (visible by default, inline-editable)
+- **Standard** -- # (row number, always visible), Name, Status, Priority, Start Date, End Date, Progress, Assigned To (visible by default, inline-editable)
 - **Scheduling (CPM)** -- Duration, Early Start, Early Finish, Late Start, Late Finish, Total Float, Free Float, Critical (read-only; enabling any of these triggers CPM computation automatically)
 - **Baseline** -- Baseline Start, Baseline End, Start Variance, End Variance (read-only; populated when a baseline comparison is active)
-- **Other** -- Predecessor, WBS (read-only; WBS is auto-computed from the task hierarchy)
+- **Other** -- Predecessor (inline-editable), WBS (read-only; auto-computed from task hierarchy)
+
+The **# column** always appears as the first column and cannot be toggled off. It shows sequential row numbers (1, 2, 3...) based on the current sort order.
+
+The **Predecessor column** displays dependencies in MS Project-style row-number format:
+- `3` — Finish-to-Start on row 3 (FS is default, omitted)
+- `7SS` — Start-to-Start on row 7
+- `3FS+2d` — Finish-to-Start on row 3 with 2-day lag
+
+Each predecessor shows a **health dot**: green (predecessor completed), yellow (in progress), red (overdue). Hover to see the full predecessor task name.
+
+**Inline predecessor editing**: Click the Predecessor cell and type a row number with optional type and lag. Press Enter to save. Invalid inputs (bad row number, self-reference) show a red error. Clear the field to remove the dependency.
 
 Column selections are saved per schedule and persist across page reloads. All visible columns support sorting. Bulk select, status/priority/assignee changes, and inline cell editing continue to work on the standard columns.
 

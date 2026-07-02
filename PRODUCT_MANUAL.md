@@ -48,10 +48,10 @@ A daily cron job (02:00 UTC) scans for templates and generates instances within 
 
 ### Views
 
-- **Gantt chart** -- interactive timeline with dependency arrows and critical path highlighting. Supports drag-and-drop rescheduling: drag a bar to move a task, drag the right edge to resize. Date changes cascade through dependencies automatically.
+- **Gantt chart** -- interactive timeline with dependency arrows and critical path highlighting. Supports drag-and-drop rescheduling: drag a bar to move a task, drag the right edge to resize. Date changes cascade through dependencies automatically. The left panel shows sequential row numbers (#), task name, predecessor (row-number format with health dot), start/end dates, progress, and status. Dependency arrows are colour-coded by predecessor health: green (completed), yellow (in progress), red (overdue/at risk). Hover over a bar to see predecessor details including row number, task name, and health status.
 - **Kanban board** -- drag-and-drop cards grouped by status
 - **Calendar view** -- tasks plotted on a monthly/weekly calendar
-- **Table view** -- sortable, filterable spreadsheet-style listing with a customizable column picker. Choose from 21 columns across four groups (Standard, Scheduling/CPM, Baseline, Other). Column selections persist per schedule. Scheduling columns (Early Start, Late Finish, Total Float, etc.) automatically trigger CPM computation. Baseline columns show variance data when a baseline comparison is active. **Saved Views** let you name and store column+sort configurations; load, update, or delete them from the Views dropdown next to the Columns picker.
+- **Table view** -- sortable, filterable spreadsheet-style listing with a customizable column picker. Choose from 22 columns across four groups (Standard, Scheduling/CPM, Baseline, Other). The **# (row number)** column is always visible and shows sequential numbering. The **Predecessor** column displays dependencies in compact MS Project-style row-number format (e.g. "3", "7SS+2d") with colour-coded health badges: green dot (predecessor completed), yellow dot (in progress), red dot (overdue). Predecessors are **inline-editable** — click and type a row number with optional type and lag. Column selections persist per schedule. Scheduling columns automatically trigger CPM computation. Baseline columns show variance data when a baseline comparison is active. **Saved Views** let you name and store column+sort configurations; load, update, or delete them from the Views dropdown.
 
 ### Bulk Operations
 
@@ -812,7 +812,34 @@ Task dependencies support four relationship types:
 | **SS** (Start-to-Start) | Successor starts no earlier than predecessor starts |
 | **SF** (Start-to-Finish) | Successor finishes after predecessor starts |
 
-An optional **lag** (positive integer, days) can be added to any dependency to introduce a waiting period. Dependency arrows on the Gantt chart are colour-coded by type. CPM forward/backward pass calculations respect all four types and lag values.
+An optional **lag** (positive integer, days) can be added to any dependency to introduce a waiting period. CPM forward/backward pass calculations respect all four types and lag values.
+
+### Predecessor Display Format
+
+Dependencies are displayed in compact **row-number notation** matching MS Project conventions:
+
+| Display | Meaning |
+|---------|---------|
+| `3` | Finish-to-Start dependency on row 3 (FS is default, omitted for brevity) |
+| `7SS` | Start-to-Start dependency on row 7 |
+| `3FS+2d` | Finish-to-Start on row 3 with 2-day lag |
+| `12FF-1d` | Finish-to-Finish on row 12 with 1-day negative lag (lead) |
+
+### Dependency Health Badges
+
+Each predecessor displays a colour-coded health dot indicating the predecessor's status:
+
+| Colour | Meaning |
+|--------|---------|
+| Green | Predecessor is **completed** — dependency satisfied |
+| Yellow | Predecessor is **in progress** — being worked on |
+| Red | Predecessor is **overdue** — not completed and past its end date |
+
+Health badges appear in the Table view Predecessor column, the Gantt left panel Pred column, and Gantt bar tooltips. Dependency arrows on the Gantt chart are also colour-coded by health status (green, yellow, or red).
+
+### Inline Predecessor Editing
+
+In Table view, the Predecessor column is inline-editable. Click a predecessor cell and type a row number with optional type and lag (e.g. `3`, `5SS`, `7FS+2d`). The input is validated: invalid row numbers, self-references, and malformed formats display a red error border with a message. Clearing the field removes the dependency.
 
 ---
 
