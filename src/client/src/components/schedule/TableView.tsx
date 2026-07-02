@@ -1034,43 +1034,36 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
               {visibleColumns.map(col => (
                 <th
                   key={col.key}
+                  draggable
+                  onDragStart={(e) => handleColDragStart(e, col.key)}
                   onDragOver={(e) => handleColDragOver(e, col.key)}
                   onDrop={(e) => handleColDrop(e, col.key)}
                   onDragEnd={handleColDragEnd}
-                  className={`py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide select-none relative ${
-                    dragOverCol === col.key ? 'bg-primary-50 border-l-2 border-primary-400' : ''
+                  className={`px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide select-none relative cursor-grab ${
+                    dragOverCol === col.key ? 'bg-primary-100' : 'hover:bg-gray-100'
                   }`}
                   style={colWidths[col.key] ? { width: colWidths[col.key], minWidth: colWidths[col.key], maxWidth: colWidths[col.key] } : { minWidth: col.key === 'name' ? 200 : 100 }}
                 >
-                  <div className="flex items-center gap-0.5 whitespace-nowrap px-1">
-                    {/* Drag grip — only this element is draggable */}
-                    <span
-                      draggable
-                      onDragStart={(e) => handleColDragStart(e, col.key)}
-                      className="cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-gray-200 flex-shrink-0"
-                      title="Drag to reorder"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <GripVertical className="w-3 h-3 text-gray-300" />
-                    </span>
-                    {/* Column label — clickable to sort */}
-                    <span
-                      className={`flex items-center gap-1 px-1 ${col.sortable ? 'cursor-pointer hover:text-gray-700' : ''}`}
-                      onClick={() => col.sortable && toggleSort(col.key)}
-                    >
-                      {col.label}
-                      {col.sortable && <SortIcon field={col.key} />}
-                    </span>
-                  </div>
-                  {/* Resize handle */}
                   <div
-                    className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize group/resize"
+                    className="flex items-center gap-1 whitespace-nowrap"
+                    onClick={() => col.sortable && toggleSort(col.key)}
+                  >
+                    <GripVertical className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                    {col.label}
+                    {col.sortable && <SortIcon field={col.key} />}
+                  </div>
+                  {/* Resize handle — wider hit area */}
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-3 cursor-col-resize z-10 flex items-center justify-end"
                     onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       const th = e.currentTarget.parentElement;
                       handleResizeStart(e, col.key, th?.offsetWidth ?? 120);
                     }}
+                    draggable={false}
                   >
-                    <div className="absolute right-0 top-1 bottom-1 w-0.5 bg-gray-200 group-hover/resize:bg-primary-400 transition-colors" />
+                    <div className="w-0.5 h-4 bg-gray-300 hover:bg-primary-500 rounded-full transition-colors" />
                   </div>
                 </th>
               ))}
