@@ -43,7 +43,14 @@ An agentic AI project management platform that combines the scheduling power of 
 - S-Curve visualization (PV vs EV vs AC over time)
 - **Benchmark:** Primavera P6
 
-### 1.4 Kanban Board View
+### 1.4 Gantt Timescale Zoom
+- Five zoom levels: Day (32px/day), Week (10px/day), Month (3.2px/day), Quarter (1.2px/day), Year (0.27px/day)
+- Two-tier timescale header (upper tier: coarser unit, lower tier: finer unit)
+- Segmented zoom control in toolbar (D | W | M | Q | Y)
+- Zoom persists per schedule via localStorage
+- **Benchmark:** MS Project, Primavera P6 — matches P6/MS Project zoom + dual header
+
+### 1.5 Kanban Board View
 - Toggle between Gantt / Kanban / Table views
 - Columns by status (Pending, In Progress, Completed, Cancelled)
 - Drag-and-drop cards between columns

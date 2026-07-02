@@ -1040,6 +1040,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         <GanttChart
           tasks={tasks}
           scheduleName={schedule.name}
+          scheduleId={schedule.id}
           onTaskSelect={(task) => setActiveTaskId(task.id)}
           onTaskClick={(task) => setEditingTask(task)}
           activeTaskId={activeTaskId}

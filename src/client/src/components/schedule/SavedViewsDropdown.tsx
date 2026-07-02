@@ -10,6 +10,7 @@ export interface SavedView {
   columns: ColumnKey[];
   sortField: ColumnKey;
   sortDir: SortDir;
+  zoom?: string;
 }
 
 interface SavedViewsDropdownProps {

@@ -216,6 +216,7 @@ The schedule page offers multiple visualization modes:
 
 The default schedule view. Displays tasks as horizontal bars on a timeline:
 
+- **Timescale zoom**: Use the **D | W | M | Q | Y** buttons in the toolbar to switch between Day, Week, Month (default), Quarter, and Year zoom levels. A **two-tier header** shows coarser units on top (e.g. months) and finer units below (e.g. weeks). Your zoom choice is remembered per schedule.
 - **Bar length** represents task duration (start to end date).
 - **Bar color** indicates status (blue for in progress, green for completed, gray for pending).
 - **Progress fill** shows completion percentage within each bar.

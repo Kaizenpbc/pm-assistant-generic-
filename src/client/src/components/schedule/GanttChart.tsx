@@ -63,10 +63,6 @@ function formatShortDate(d: Date): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function formatMonthYear(d: Date): string {
-  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-}
-
 /** Build a flat, sorted list of tasks with WBS numbers & hierarchy levels */
 function buildFlatRows(tasks: GanttTask[]): FlatRow[] {
   const rows: FlatRow[] = [];
@@ -139,9 +135,122 @@ const priorityDot: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 const ROW_H = 36;
-const HEADER_H = 48;
-const DAY_PX = 3.2; // pixels per day — controls how wide the timeline is
+const HEADER_H = 52;
 const TABLE_MIN_W = 600;
+
+// ---------------------------------------------------------------------------
+// Zoom / Timescale
+// ---------------------------------------------------------------------------
+
+type ZoomLevel = 'day' | 'week' | 'month' | 'quarter' | 'year';
+type TierUnit = 'day' | 'week' | 'month' | 'quarter' | 'year';
+
+const ZOOM_CONFIGS: Record<ZoomLevel, { dayPx: number; lower: TierUnit; upper: TierUnit | null }> = {
+  day:     { dayPx: 32,   lower: 'day',     upper: 'month' },
+  week:    { dayPx: 10,   lower: 'week',    upper: 'month' },
+  month:   { dayPx: 3.2,  lower: 'month',   upper: 'year' },
+  quarter: { dayPx: 1.2,  lower: 'quarter', upper: 'year' },
+  year:    { dayPx: 0.27, lower: 'year',    upper: null },
+};
+
+const ZOOM_LEVELS: ZoomLevel[] = ['day', 'week', 'month', 'quarter', 'year'];
+const ZOOM_LABELS: Record<ZoomLevel, string> = { day: 'D', week: 'W', month: 'M', quarter: 'Q', year: 'Y' };
+
+interface TimescaleBand { label: string; left: number; width: number }
+interface Timescale { upper: TimescaleBand[]; lower: TimescaleBand[] }
+
+function daysBetweenRaw(a: Date, b: Date): number {
+  return (b.getTime() - a.getTime()) / DAY_MS;
+}
+
+function snapToUnitStart(d: Date, unit: TierUnit): Date {
+  const r = new Date(d);
+  r.setHours(0, 0, 0, 0);
+  switch (unit) {
+    case 'day':
+      break;
+    case 'week': {
+      // ISO week: Monday
+      const day = r.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      r.setDate(r.getDate() + diff);
+      break;
+    }
+    case 'month':
+      r.setDate(1);
+      break;
+    case 'quarter':
+      r.setDate(1);
+      r.setMonth(Math.floor(r.getMonth() / 3) * 3);
+      break;
+    case 'year':
+      r.setMonth(0, 1);
+      break;
+  }
+  return r;
+}
+
+function advanceByUnit(d: Date, unit: TierUnit): Date {
+  const r = new Date(d);
+  switch (unit) {
+    case 'day': r.setDate(r.getDate() + 1); break;
+    case 'week': r.setDate(r.getDate() + 7); break;
+    case 'month': r.setMonth(r.getMonth() + 1); break;
+    case 'quarter': r.setMonth(r.getMonth() + 3); break;
+    case 'year': r.setFullYear(r.getFullYear() + 1); break;
+  }
+  return r;
+}
+
+function getISOWeek(d: Date): number {
+  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - (tmp.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+  return Math.ceil(((tmp.getTime() - yearStart.getTime()) / DAY_MS + 1) / 7);
+}
+
+function formatTierLabel(d: Date, unit: TierUnit): string {
+  switch (unit) {
+    case 'day': return String(d.getDate());
+    case 'week': return `W${getISOWeek(d)}`;
+    case 'month': return d.toLocaleDateString('en-US', { month: 'short' });
+    case 'quarter': return `Q${Math.floor(d.getMonth() / 3) + 1}`;
+    case 'year': return String(d.getFullYear());
+  }
+}
+
+function formatUpperLabel(d: Date, unit: TierUnit): string {
+  switch (unit) {
+    case 'month': return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    case 'year': return String(d.getFullYear());
+    default: return formatTierLabel(d, unit);
+  }
+}
+
+function buildTier(unit: TierUnit, minDate: Date, maxDate: Date, dayPx: number, isUpper: boolean): TimescaleBand[] {
+  const bands: TimescaleBand[] = [];
+  let cursor = snapToUnitStart(new Date(minDate), unit);
+
+  while (cursor <= maxDate) {
+    const unitStart = new Date(Math.max(cursor.getTime(), minDate.getTime()));
+    const nextUnit = advanceByUnit(new Date(cursor), unit);
+    const unitEnd = new Date(Math.min(nextUnit.getTime(), maxDate.getTime()));
+
+    const left = daysBetweenRaw(minDate, unitStart) * dayPx;
+    const width = Math.max(daysBetweenRaw(unitStart, unitEnd) * dayPx, 1);
+
+    bands.push({ label: isUpper ? formatUpperLabel(cursor, unit) : formatTierLabel(cursor, unit), left, width });
+    cursor = nextUnit;
+  }
+  return bands;
+}
+
+function buildTimescale(zoom: ZoomLevel, minDate: Date, maxDate: Date, dayPx: number): Timescale {
+  const cfg = ZOOM_CONFIGS[zoom];
+  const lower = buildTier(cfg.lower, minDate, maxDate, dayPx, false);
+  const upper = cfg.upper ? buildTier(cfg.upper, minDate, maxDate, dayPx, true) : [];
+  return { upper, lower };
+}
 
 // ---------------------------------------------------------------------------
 // GanttChart component
@@ -150,6 +259,7 @@ const TABLE_MIN_W = 600;
 export function GanttChart({
   tasks,
   scheduleName,
+  scheduleId,
   onTaskClick,
   onTaskSelect,
   activeTaskId,
@@ -162,6 +272,8 @@ export function GanttChart({
 }: {
   tasks: GanttTask[];
   scheduleName?: string;
+  /** Schedule ID for persisting zoom level */
+  scheduleId?: string;
   /** Called when a task row is double-clicked (opens edit modal) */
   onTaskClick?: (task: GanttTask) => void;
   /** Called when a task row is single-clicked (selects it) */
@@ -191,6 +303,18 @@ export function GanttChart({
     }
     return m;
   }, [baselineTasks]);
+  // Zoom state — persisted per schedule in localStorage
+  const [zoom, setZoom] = useState<ZoomLevel>(() => {
+    if (!scheduleId) return 'month';
+    const stored = localStorage.getItem(`gantt-zoom:${scheduleId}`);
+    return (stored && ZOOM_LEVELS.includes(stored as ZoomLevel)) ? stored as ZoomLevel : 'month';
+  });
+  const dayPx = ZOOM_CONFIGS[zoom].dayPx;
+
+  useEffect(() => {
+    if (scheduleId) localStorage.setItem(`gantt-zoom:${scheduleId}`, zoom);
+  }, [zoom, scheduleId]);
+
   const rows = useMemo(() => buildFlatRows(tasks), [tasks]);
 
   // Row number map: taskId → 1-based row index
@@ -238,44 +362,25 @@ export function GanttChart({
     };
   }, [rows]);
 
-  const timelineWidth = totalDays * DAY_PX;
+  const timelineWidth = totalDays * dayPx;
 
   // Scroll to today on mount
   useEffect(() => {
     if (!timelineRef.current) return;
     const today = new Date();
     const dayOffset = daysBetween(minDate, today);
-    const px = dayOffset * DAY_PX - 200;
+    const px = dayOffset * dayPx - 200;
     timelineRef.current.scrollLeft = Math.max(0, px);
-  }, [minDate]);
+  }, [minDate, dayPx]);
 
-  // Build month columns for header
-  const months = useMemo(() => {
-    const result: { label: string; left: number; width: number }[] = [];
-    const cursor = new Date(minDate);
-    cursor.setDate(1);
-    if (cursor < minDate) cursor.setMonth(cursor.getMonth() + 1);
-
-    while (cursor <= maxDate) {
-      const monthStart = new Date(Math.max(cursor.getTime(), minDate.getTime()));
-      const nextMonth = new Date(cursor);
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      const monthEnd = new Date(Math.min(nextMonth.getTime(), maxDate.getTime()));
-
-      const left = daysBetween(minDate, monthStart) * DAY_PX;
-      const width = daysBetween(monthStart, monthEnd) * DAY_PX;
-
-      result.push({ label: formatMonthYear(cursor), left, width });
-      cursor.setMonth(cursor.getMonth() + 1);
-    }
-    return result;
-  }, [minDate, maxDate]);
+  // Build two-tier timescale header bands
+  const timescale = useMemo(() => buildTimescale(zoom, minDate, maxDate, dayPx), [zoom, minDate, maxDate, dayPx]);
 
   // Today line position
   const todayOffset = useMemo(() => {
     const today = new Date();
     if (today < minDate || today > maxDate) return null;
-    return daysBetween(minDate, today) * DAY_PX;
+    return daysBetween(minDate, today) * dayPx;
   }, [minDate, maxDate]);
 
   // -----------------------------------------------------------------------
@@ -321,7 +426,7 @@ export function GanttChart({
 
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - drag.startX;
-      const dayDelta = Math.round(deltaX / DAY_PX);
+      const dayDelta = Math.round(deltaX / dayPx);
       setDrag(prev => prev ? { ...prev, dayDelta } : null);
     };
 
@@ -358,7 +463,7 @@ export function GanttChart({
   const getDragOffset = useCallback(
     (taskId: string) => {
       if (!drag || drag.taskId !== taskId) return { leftDelta: 0, widthDelta: 0 };
-      const pxDelta = drag.dayDelta * DAY_PX;
+      const pxDelta = drag.dayDelta * dayPx;
       if (drag.mode === 'move') return { leftDelta: pxDelta, widthDelta: 0 };
       return { leftDelta: 0, widthDelta: pxDelta };
     },
@@ -386,6 +491,23 @@ export function GanttChart({
             <span className="text-xs text-gray-400 ml-2">
               {rows.length} tasks
             </span>
+            {/* Zoom controls */}
+            <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-500 ml-3">
+              {ZOOM_LEVELS.map((level, i) => (
+                <button
+                  key={level}
+                  onClick={() => setZoom(level)}
+                  className={`px-2 py-1 text-xs font-medium transition-colors ${
+                    zoom === level
+                      ? 'bg-primary-600 text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                  } ${i === 0 ? 'rounded-l-md' : ''} ${i === ZOOM_LEVELS.length - 1 ? 'rounded-r-md' : ''}`}
+                  title={level.charAt(0).toUpperCase() + level.slice(1)}
+                >
+                  {ZOOM_LABELS[level]}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {onAddTask && (
@@ -607,38 +729,47 @@ export function GanttChart({
           className="flex-1 overflow-x-auto overflow-y-auto"
         >
           <div style={{ width: timelineWidth, position: 'relative' }}>
-            {/* Timeline header — months */}
+            {/* Timeline header — two-tier timescale */}
             <div
-              className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200"
+              className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600"
               style={{ height: HEADER_H }}
             >
-              {months.map((m, i) => (
+              {/* Upper tier (26px) */}
+              {timescale.upper.length > 0 && timescale.upper.map((band, i) => (
                 <div
-                  key={i}
-                  className="absolute top-0 flex items-end pb-1.5 border-l border-gray-200"
-                  style={{
-                    left: m.left,
-                    width: m.width,
-                    height: HEADER_H,
-                  }}
+                  key={`u-${i}`}
+                  className="absolute top-0 flex items-center border-l border-gray-300 dark:border-gray-500 overflow-hidden"
+                  style={{ left: band.left, width: band.width, height: 26 }}
                 >
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2">
-                    {m.label}
+                  <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide px-1.5 truncate">
+                    {band.label}
+                  </span>
+                </div>
+              ))}
+              {/* Lower tier (26px) */}
+              {timescale.lower.map((band, i) => (
+                <div
+                  key={`l-${i}`}
+                  className="absolute flex items-center border-l border-gray-200 dark:border-gray-600 overflow-hidden"
+                  style={{ left: band.left, width: band.width, height: 26, top: timescale.upper.length > 0 ? 26 : 0 }}
+                >
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 px-1 truncate">
+                    {band.label}
                   </span>
                 </div>
               ))}
             </div>
 
-            {/* Grid lines (vertical month borders) */}
+            {/* Grid lines (vertical from lower-tier boundaries) */}
             <div
               className="absolute top-0 left-0"
               style={{ width: timelineWidth, height: HEADER_H + rows.length * ROW_H }}
             >
-              {months.map((m, i) => (
+              {timescale.lower.map((band, i) => (
                 <div
                   key={i}
-                  className="absolute top-0 bottom-0 border-l border-gray-100"
-                  style={{ left: m.left }}
+                  className="absolute top-0 bottom-0 border-l border-gray-100 dark:border-gray-700"
+                  style={{ left: band.left }}
                 />
               ))}
             </div>
@@ -668,8 +799,8 @@ export function GanttChart({
               const bEnd = toDate(bl.endDate);
               if (!bStart || !bEnd) return null;
 
-              const left = daysBetween(minDate, bStart) * DAY_PX;
-              const width = Math.max(daysBetween(bStart, bEnd) * DAY_PX, 8);
+              const left = daysBetween(minDate, bStart) * dayPx;
+              const width = Math.max(daysBetween(bStart, bEnd) * dayPx, 8);
               const top = HEADER_H + idx * ROW_H + 2;
               const barH = ROW_H - 4;
 
@@ -697,8 +828,8 @@ export function GanttChart({
               const end = toDate(task.endDate);
               if (!start || !end) return null;
 
-              const baseLeft = daysBetween(minDate, start) * DAY_PX;
-              const baseWidth = Math.max(daysBetween(start, end) * DAY_PX, 8);
+              const baseLeft = daysBetween(minDate, start) * dayPx;
+              const baseWidth = Math.max(daysBetween(start, end) * dayPx, 8);
               const { leftDelta, widthDelta } = getDragOffset(task.id);
               const left = baseLeft + leftDelta;
               const width = Math.max(baseWidth + widthDelta, 8);
@@ -903,20 +1034,20 @@ export function GanttChart({
                   let x1: number, x2: number;
                   switch (depType) {
                     case 'SS':
-                      x1 = daysBetween(minDate, depStart) * DAY_PX;
-                      x2 = daysBetween(minDate, taskStart) * DAY_PX;
+                      x1 = daysBetween(minDate, depStart) * dayPx;
+                      x2 = daysBetween(minDate, taskStart) * dayPx;
                       break;
                     case 'FF':
-                      x1 = daysBetween(minDate, depEnd) * DAY_PX;
-                      x2 = daysBetween(minDate, taskEnd) * DAY_PX;
+                      x1 = daysBetween(minDate, depEnd) * dayPx;
+                      x2 = daysBetween(minDate, taskEnd) * dayPx;
                       break;
                     case 'SF':
-                      x1 = daysBetween(minDate, depStart) * DAY_PX;
-                      x2 = daysBetween(minDate, taskEnd) * DAY_PX;
+                      x1 = daysBetween(minDate, depStart) * dayPx;
+                      x2 = daysBetween(minDate, taskEnd) * dayPx;
                       break;
                     default: // FS
-                      x1 = daysBetween(minDate, depEnd) * DAY_PX;
-                      x2 = daysBetween(minDate, taskStart) * DAY_PX;
+                      x1 = daysBetween(minDate, depEnd) * dayPx;
+                      x2 = daysBetween(minDate, taskStart) * dayPx;
                       break;
                   }
 
