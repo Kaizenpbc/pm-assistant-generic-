@@ -121,6 +121,17 @@ export interface TaskActivityEntry {
 }
 
 // ---------------------------------------------------------------------------
+// Dependency validation
+// ---------------------------------------------------------------------------
+
+export class DependencyValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DependencyValidationError';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Row mappers
 // ---------------------------------------------------------------------------
 
@@ -354,6 +365,32 @@ export class ScheduleService {
     return result;
   }
 
+  async validateDependency(taskId: string | null, dependencyId: string, scheduleId: string): Promise<void> {
+    // 1. Self-reference
+    if (taskId && dependencyId === taskId) {
+      throw new DependencyValidationError('A task cannot depend on itself');
+    }
+
+    // 2. Dependency must exist
+    const depTask = await this.findTaskById(dependencyId);
+    if (!depTask) {
+      throw new DependencyValidationError(`Dependency task '${dependencyId}' not found`);
+    }
+
+    // 3. Same schedule
+    if (depTask.scheduleId !== scheduleId) {
+      throw new DependencyValidationError('Dependency must be in the same schedule');
+    }
+
+    // 4. Circular detection (skip for new tasks — no downstream possible)
+    if (taskId) {
+      const downstream = await this.findAllDownstreamTasks(taskId);
+      if (downstream.some(d => d.id === dependencyId)) {
+        throw new DependencyValidationError('Circular dependency detected: the dependency task is already downstream of this task');
+      }
+    }
+  }
+
   async createTask(data: CreateTaskData): Promise<Task> {
     const id = uuidv4();
 
@@ -376,6 +413,11 @@ export class ScheduleService {
         [data.scheduleId],
       );
       sortOrder = (maxRows[0]?.max_order ?? -1) + 1;
+    }
+
+    // Validate dependency before insert
+    if (data.dependency) {
+      await this.validateDependency(null, data.dependency, data.scheduleId);
     }
 
     await databaseService.query(
@@ -437,6 +479,11 @@ export class ScheduleService {
   async updateTask(id: string, data: Partial<Omit<Task, 'id' | 'scheduleId' | 'createdAt' | 'updatedAt'>>): Promise<Task | null> {
     const oldTask = await this.findTaskById(id);
     if (!oldTask) return null;
+
+    // Validate dependency before applying update
+    if (data.dependency) {
+      await this.validateDependency(id, data.dependency, oldTask.scheduleId);
+    }
 
     // Auto-log field changes as activity
     const trackFields: (keyof Task)[] = ['status', 'priority', 'assignedTo', 'progressPercentage', 'startDate', 'endDate', 'name'];
@@ -524,6 +571,12 @@ export class ScheduleService {
     const deleted = (result.affectedRows ?? 0) > 0;
 
     if (deleted && existing) {
+      // Clear dependency references pointing to the deleted task
+      await databaseService.query(
+        'UPDATE tasks SET dependency = NULL, dependency_type = NULL, dependency_lag_days = 0 WHERE dependency = ?',
+        [id],
+      );
+
       const schedule = await this.findById(existing.scheduleId);
       auditLedgerService.append({
         actorId: existing.createdBy,

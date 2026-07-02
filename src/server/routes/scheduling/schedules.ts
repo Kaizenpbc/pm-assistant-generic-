@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { scheduleService } from '../../services/ScheduleService';
+import { scheduleService, DependencyValidationError } from '../../services/ScheduleService';
 import { criticalPathService } from '../../services/CriticalPathService';
 import { baselineService } from '../../services/BaselineService';
 import { dagWorkflowService } from '../../services/DagWorkflowService';
@@ -152,6 +152,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       webhookService.dispatch('task.created', { task }, user?.userId);
       return reply.status(201).send({ task });
     } catch (error) {
+      if (error instanceof DependencyValidationError) {
+        return reply.status(400).send({ error: 'Validation error', message: error.message });
+      }
       console.error('Create task error:', error);
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create task' });
     }
@@ -199,6 +202,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
 
       return { task, cascadedChanges };
     } catch (error) {
+      if (error instanceof DependencyValidationError) {
+        return reply.status(400).send({ error: 'Validation error', message: error.message });
+      }
       console.error('Update task error:', error);
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update task' });
     }

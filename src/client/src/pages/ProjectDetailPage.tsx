@@ -907,6 +907,10 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
       queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
       setEditingTask(null);
     },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || error?.message || 'Failed to update task';
+      alert(msg);
+    },
   });
 
   // Delete task

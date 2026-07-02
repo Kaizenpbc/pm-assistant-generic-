@@ -1,7 +1,7 @@
 // C:\Users\gerog\Documents\pm-assistant-generic\src\server\services\aiActionExecutor.ts
 
 import { projectService, type CreateProjectData, type Project } from './ProjectService';
-import { scheduleService, type CreateTaskData } from './ScheduleService';
+import { scheduleService, type CreateTaskData, DependencyValidationError } from './ScheduleService';
 import { userService } from './UserService';
 import { auditLedgerService } from './AuditLedgerService';
 import { policyEngineService } from './PolicyEngineService';
@@ -435,20 +435,14 @@ export class AIActionExecutor {
       return { success: false, toolName: 'set_dependency', summary: `Task '${taskId}' not found`, error: 'Task not found' };
     }
 
-    const predecessor = await scheduleService.findTaskById(predecessorId);
-    if (!predecessor) {
-      return { success: false, toolName: 'set_dependency', summary: `Predecessor task '${predecessorId}' not found`, error: 'Predecessor not found' };
-    }
-
-    // Check for circular dependency
-    const downstreamOfTask = await scheduleService.findAllDownstreamTasks(taskId);
-    if (downstreamOfTask.some(d => d.id === predecessorId)) {
-      return {
-        success: false,
-        toolName: 'set_dependency',
-        summary: `Cannot set dependency: "${predecessor.name}" is already downstream of "${task.name}" — this would create a circular dependency`,
-        error: 'Circular dependency detected',
-      };
+    // Use shared validation (covers self-ref, existence, same-schedule, circular)
+    try {
+      await scheduleService.validateDependency(taskId, predecessorId, task.scheduleId);
+    } catch (error) {
+      if (error instanceof DependencyValidationError) {
+        return { success: false, toolName: 'set_dependency', summary: error.message, error: error.message };
+      }
+      throw error;
     }
 
     const depType = dependencyType || 'FS';
@@ -457,11 +451,12 @@ export class AIActionExecutor {
       dependencyType: depType,
     });
 
+    const predecessor = await scheduleService.findTaskById(predecessorId);
     return {
       success: true,
       toolName: 'set_dependency',
-      summary: `Set dependency: "${task.name}" now depends on "${predecessor.name}" (${depType})`,
-      data: { taskId, taskName: task.name, predecessorId, predecessorName: predecessor.name, dependencyType: depType },
+      summary: `Set dependency: "${task.name}" now depends on "${predecessor?.name}" (${depType})`,
+      data: { taskId, taskName: task.name, predecessorId, predecessorName: predecessor?.name, dependencyType: depType },
     };
   }
 
