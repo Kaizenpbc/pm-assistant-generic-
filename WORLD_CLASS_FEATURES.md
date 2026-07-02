@@ -43,14 +43,15 @@ An agentic AI project management platform that combines the scheduling power of 
 - S-Curve visualization (PV vs EV vs AC over time)
 - **Benchmark:** Primavera P6
 
-### 1.4 Gantt Timescale Zoom & Resizable Splitter
+### 1.4 Gantt Timescale Zoom, Resizable Splitter & Inline Grid Editing
 - Five zoom levels: Day (32px/day), Week (10px/day), Month (3.2px/day), Quarter (1.2px/day), Year (0.27px/day)
 - Two-tier timescale header (upper tier: coarser unit, lower tier: finer unit)
 - Segmented zoom control in toolbar (D | W | M | Q | Y)
 - Draggable splitter between task table and timeline (width persists per schedule)
 - 11 columns in left panel: #, Task Name, Pred, Start, End, Duration, Est Days, %, Priority, Assigned, Status
 - Zoom and splitter width persist per schedule via localStorage
-- **Benchmark:** MS Project, Primavera P6 — matches P6/MS Project zoom + dual header + resizable splitter
+- **Inline grid editing** — click any cell to edit directly in the left panel (10 editable fields: name, predecessor, start, end, duration, est days, %, priority, assigned, status). Tab/Shift+Tab navigates across cells and rows. Duration edits auto-compute end date. Enter saves, Escape cancels, blur auto-saves, green flash confirms success. Input types match field: text, date picker, number, select dropdown, MS Project predecessor notation.
+- **Benchmark:** MS Project, Primavera P6 — matches P6/MS Project zoom + dual header + resizable splitter + inline cell editing
 
 ### 1.5 Kanban Board View
 - Toggle between Gantt / Kanban / Table views
