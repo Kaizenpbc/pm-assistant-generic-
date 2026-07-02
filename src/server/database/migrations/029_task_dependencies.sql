@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS task_dependencies (
   INDEX idx_dep_id (dependency_id),
   CONSTRAINT fk_td_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
   CONSTRAINT fk_td_dep FOREIGN KEY (dependency_id) REFERENCES tasks(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Migrate existing single-dependency data into junction table
 INSERT INTO task_dependencies (id, task_id, dependency_id, dependency_type, lag_days)
