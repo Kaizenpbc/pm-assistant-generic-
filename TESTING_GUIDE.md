@@ -332,7 +332,18 @@ The overdue scanner runs every 15 minutes (configurable via `AGENT_OVERDUE_SCAN_
 
 ## 5b. Testing Dependency Validation
 
-The server enforces dependency rules on all create/update task requests. All tests require an authenticated session (see section 3).
+Tasks support up to 20 predecessors via the `dependencies[]` array. The server enforces dependency rules on all create/update task requests. All tests require an authenticated session (see section 3).
+
+The legacy single `dependency` field is still accepted for backward compatibility, but the preferred format is:
+
+```json
+{
+  "dependencies": [
+    { "dependencyId": "TASK_ID", "dependencyType": "FS", "lagDays": 0 },
+    { "dependencyId": "TASK_ID_2", "dependencyType": "SS", "lagDays": 2 }
+  ]
+}
+```
 
 ### Self-reference (expect 400)
 
@@ -340,7 +351,7 @@ The server enforces dependency rules on all create/update task requests. All tes
 curl -s -b cookies.txt -X PUT \
   "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_ID" \
   -H 'Content-Type: application/json' \
-  -d "{\"dependency\":\"$TASK_ID\"}"
+  -d "{\"dependencies\":[{\"dependencyId\":\"$TASK_ID\"}]}"
 # Expected: {"error":"Validation error","message":"A task cannot depend on itself"}
 ```
 
@@ -350,7 +361,7 @@ curl -s -b cookies.txt -X PUT \
 curl -s -b cookies.txt -X PUT \
   "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_ID" \
   -H 'Content-Type: application/json' \
-  -d '{"dependency":"00000000-0000-0000-0000-000000000000"}'
+  -d '{"dependencies":[{"dependencyId":"00000000-0000-0000-0000-000000000000"}]}'
 # Expected: {"error":"Validation error","message":"Dependency task '...' not found"}
 ```
 
@@ -361,13 +372,13 @@ curl -s -b cookies.txt -X PUT \
 curl -s -b cookies.txt -X PUT \
   "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_A" \
   -H 'Content-Type: application/json' \
-  -d "{\"dependency\":\"$TASK_B\"}"
+  -d "{\"dependencies\":[{\"dependencyId\":\"$TASK_B\"}]}"
 
 # Then try B→A (should fail with 400)
 curl -s -b cookies.txt -X PUT \
   "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_B" \
   -H 'Content-Type: application/json' \
-  -d "{\"dependency\":\"$TASK_A\"}"
+  -d "{\"dependencies\":[{\"dependencyId\":\"$TASK_A\"}]}"
 # Expected: {"error":"Validation error","message":"Circular dependency detected..."}
 ```
 
@@ -377,17 +388,45 @@ curl -s -b cookies.txt -X PUT \
 curl -s -b cookies.txt -X PUT \
   "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_ID" \
   -H 'Content-Type: application/json' \
-  -d "{\"dependency\":\"$TASK_IN_OTHER_SCHEDULE\"}"
+  -d "{\"dependencies\":[{\"dependencyId\":\"$TASK_IN_OTHER_SCHEDULE\"}]}"
 # Expected: {"error":"Validation error","message":"Dependency must be in the same schedule"}
 ```
 
-### Orphan cleanup on delete
+### Max 20 predecessors (expect 400)
 
 ```bash
-# Set A→B, then delete B. Verify A's dependency is cleared:
+# Create a task with 21 dependencies — should fail
+curl -s -b cookies.txt -X PUT \
+  "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_ID" \
+  -H 'Content-Type: application/json' \
+  -d '{"dependencies":[...21 items...]}'
+# Expected: 400 validation error (max 20)
+```
+
+### Cascade cleanup on delete
+
+```bash
+# Set A→B, then delete B. Junction table rows are cascade-deleted automatically:
 curl -s -b cookies.txt -X DELETE \
   "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_B"
-# Then GET task A and confirm dependency is null
+# Then GET task A and confirm B is removed from its dependencies array
+```
+
+### Multiple predecessors
+
+```bash
+# Create a task with two predecessors (FS and SS with 2-day lag)
+curl -s -b cookies.txt -X POST \
+  "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "Integration Testing",
+    "dependencies": [
+      { "dependencyId": "'$TASK_A'", "dependencyType": "FS", "lagDays": 0 },
+      { "dependencyId": "'$TASK_B'", "dependencyType": "SS", "lagDays": 2 }
+    ]
+  }'
+# Expected: 201 with dependencies array in response
 ```
 
 ---

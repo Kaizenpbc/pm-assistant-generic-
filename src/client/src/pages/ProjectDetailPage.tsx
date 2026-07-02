@@ -847,6 +847,10 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   // Create task mutation
   const createMutation = useMutation({
     mutationFn: (data: TaskFormData & { afterTaskId?: string }) => {
+      // Build dependencies[] from predecessors
+      const deps = (data.predecessors || [])
+        .filter(p => p.dependencyId)
+        .map(p => ({ dependencyId: p.dependencyId, dependencyType: p.dependencyType || 'FS', lagDays: parseInt(p.lagDays) || 0 }));
       const payload: Record<string, unknown> = {
         name: data.name,
         description: data.description || undefined,
@@ -856,14 +860,12 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         startDate: data.startDate || undefined,
         endDate: data.endDate || undefined,
         progressPercentage: data.progressPercentage,
-        dependency: data.dependency || undefined,
         parentTaskId: data.parentTaskId || undefined,
         estimatedDays: data.estimatedDays ? parseInt(data.estimatedDays) : undefined,
         recurrenceRule: data.recurrenceRule || undefined,
         isRecurrenceTemplate: data.isRecurrenceTemplate || undefined,
         isMilestone: data.isMilestone || undefined,
-        dependencyType: data.dependency ? (data.dependencyType || 'FS') : undefined,
-        dependencyLagDays: data.dependency && data.dependencyLagDays ? parseInt(data.dependencyLagDays) : undefined,
+        dependencies: deps.length > 0 ? deps : undefined,
         afterTaskId: data.afterTaskId || undefined,
       };
       return apiService.createTask(schedule.id, payload as any);
@@ -881,6 +883,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
       if ('name' in data && 'status' in data && 'priority' in data && 'assignedTo' in data) {
         // Full TaskFormData
         const d = data as TaskFormData;
+        const deps = (d.predecessors || [])
+          .filter(p => p.dependencyId)
+          .map(p => ({ dependencyId: p.dependencyId, dependencyType: p.dependencyType || 'FS', lagDays: parseInt(p.lagDays) || 0 }));
         const payload: Record<string, unknown> = {
           name: d.name,
           description: d.description || undefined,
@@ -890,14 +895,12 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           startDate: d.startDate || undefined,
           endDate: d.endDate || undefined,
           progressPercentage: d.progressPercentage,
-          dependency: d.dependency || undefined,
           parentTaskId: d.parentTaskId || undefined,
           estimatedDays: d.estimatedDays ? parseInt(d.estimatedDays) : undefined,
           recurrenceRule: d.recurrenceRule || undefined,
           isRecurrenceTemplate: d.isRecurrenceTemplate || undefined,
           isMilestone: d.isMilestone || undefined,
-          dependencyType: d.dependency ? (d.dependencyType || 'FS') : undefined,
-          dependencyLagDays: d.dependency && d.dependencyLagDays ? parseInt(d.dependencyLagDays) : undefined,
+          dependencies: deps,
         };
         return apiService.updateTask(schedule.id, taskId, payload);
       }

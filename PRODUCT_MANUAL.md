@@ -28,7 +28,7 @@ Tasks are the atomic unit of work. Each task supports:
 
 - Status: pending, in_progress, completed, cancelled
 - Priority: low, medium, high, urgent
-- Dependency linking (finish-to-start)
+- Multiple predecessor dependencies (up to 20 per task) with type and lag per dependency
 - Estimated duration (days) and work effort
 - Assigned resource
 - Parent-child hierarchy (subtasks)
@@ -801,9 +801,13 @@ Any task can be marked as a milestone by setting `is_milestone = true`. Mileston
 
 ---
 
-## 27. Dependency Types and Lag
+## 27. Multi-Dependency Support
 
-Task dependencies support four relationship types:
+Each task supports up to **20 predecessors**. Dependencies are stored in a `task_dependencies` junction table (with `ON DELETE CASCADE`) rather than columns on the task row, allowing any number of predecessors per task.
+
+### Dependency Types and Lag
+
+Each individual predecessor relationship carries its own type and optional lag:
 
 | Type | Meaning |
 |------|---------|
@@ -812,11 +816,21 @@ Task dependencies support four relationship types:
 | **SS** (Start-to-Start) | Successor starts no earlier than predecessor starts |
 | **SF** (Start-to-Finish) | Successor finishes after predecessor starts |
 
-An optional **lag** (positive integer, days) can be added to any dependency to introduce a waiting period. CPM forward/backward pass calculations respect all four types and lag values.
+An optional **lag** (positive integer, days) can be added to any individual dependency to introduce a waiting period. Negative lag (lead time) is also supported. CPM forward/backward pass calculations respect all four types and lag values across all predecessors, taking the maximum constraint when a task has multiple predecessors.
+
+### API Payload
+
+On task create and update, pass a `dependencies` array. Each entry has:
+
+```json
+{ "dependencyId": "<taskId>", "dependencyType": "FS", "lagDays": 0 }
+```
+
+Omitting `dependencies` leaves existing dependencies unchanged. Passing an empty array `[]` clears all predecessors.
 
 ### Predecessor Display Format
 
-Dependencies are displayed in compact **row-number notation** matching MS Project conventions:
+Multiple predecessors are displayed as a comma-separated list in compact **row-number notation** matching MS Project conventions:
 
 | Display | Meaning |
 |---------|---------|
@@ -824,10 +838,13 @@ Dependencies are displayed in compact **row-number notation** matching MS Projec
 | `7SS` | Start-to-Start dependency on row 7 |
 | `3FS+2d` | Finish-to-Start on row 3 with 2-day lag |
 | `12FF-1d` | Finish-to-Finish on row 12 with 1-day negative lag (lead) |
+| `3FS+2d,5SS,7` | Three predecessors on rows 3, 5, and 7 |
+
+This format is also used in CSV export, matching MS Project's export convention.
 
 ### Dependency Health Badges
 
-Each predecessor displays a colour-coded health dot indicating the predecessor's status:
+Each predecessor in the list displays a colour-coded health dot indicating that predecessor's status:
 
 | Colour | Meaning |
 |--------|---------|
@@ -835,15 +852,19 @@ Each predecessor displays a colour-coded health dot indicating the predecessor's
 | Yellow | Predecessor is **in progress** — being worked on |
 | Red | Predecessor is **overdue** — not completed and past its end date |
 
-Health badges appear in the Table view Predecessor column, the Gantt left panel Pred column, and Gantt bar tooltips. Dependency arrows on the Gantt chart are also colour-coded by health status (green, yellow, or red).
+Health badges appear in the Table view Predecessor column, the Gantt left panel Pred column, and Gantt bar tooltips. Dependency arrows on the Gantt chart are drawn for each predecessor and colour-coded by health status (green, yellow, or red).
 
 ### Inline Predecessor Editing
 
-In Table view, the Predecessor column is inline-editable. Click a predecessor cell and type a row number with optional type and lag (e.g. `3`, `5SS`, `7FS+2d`). The input is validated: invalid row numbers, self-references, and malformed formats display a red error border with a message. Clearing the field removes the dependency.
+In Table view, the Predecessor column is inline-editable. Click a predecessor cell and type one or more predecessor entries separated by commas (e.g. `3`, `5SS`, `7FS+2d`, `3FS+2d,5SS,7`). The input is validated: invalid row numbers, self-references, duplicate entries, and malformed formats display a red error border with a message. Clearing the field removes all dependencies.
+
+### Task Form Modal
+
+The task form modal shows a multi-predecessor UI: a list of dependency rows, each with a predecessor selector, dependency type dropdown (FS/SS/FF/SF), and lag-days field. Use the **Add Predecessor** button to append a new row (up to the 20-predecessor limit) and the remove button on each row to delete it.
 
 ### Server-Side Dependency Validation
 
-All dependency writes — API, UI, and AI tools — go through a single `validateDependency()` method on the server. The server is the single source of truth; no client-side pre-flight checks are needed. The following rules are enforced, returning HTTP 400 on violation:
+All dependency writes — API, UI, and AI tools — go through `validateDependency()` on the server for each dependency entry. The server is the single source of truth; no client-side pre-flight checks are needed. The following rules are enforced per dependency, returning HTTP 400 on violation:
 
 | Rule | Error Message |
 |------|---------------|
@@ -851,8 +872,9 @@ All dependency writes — API, UI, and AI tools — go through a single `validat
 | **Nonexistent dependency** — the referenced task must exist | "Dependency task '{id}' not found" |
 | **Cross-schedule** — both tasks must be in the same schedule | "Dependency must be in the same schedule" |
 | **Circular dependency** — the dependency must not create a cycle (A→B→C→A) | "Circular dependency detected: the dependency task is already downstream of this task" |
+| **Limit exceeded** — tasks may not have more than 20 predecessors | "A task cannot have more than 20 predecessors" |
 
-**Orphan cleanup:** When a task is deleted, any other tasks that depended on it have their `dependency`, `dependency_type`, and `dependency_lag_days` fields automatically cleared.
+**Orphan cleanup:** When a task is deleted, its row in `task_dependencies` is removed by `ON DELETE CASCADE` for both the predecessor and successor sides, so no dangling references remain.
 
 ---
 

@@ -92,10 +92,10 @@ describe('DependencyRiskAgent', () => {
     const { scheduleService } = await import('../../../services/ScheduleService');
     vi.mocked(scheduleService.findByProjectId).mockResolvedValueOnce([{ id: 's1' }] as any);
     vi.mocked(scheduleService.findTasksByScheduleIds).mockResolvedValueOnce([
-      { id: 't1', name: 'Core Module', status: 'in_progress', dependency: null },
-      { id: 't2', name: 'Feature A', status: 'pending', dependency: 't1' },
-      { id: 't3', name: 'Feature B', status: 'pending', dependency: 't1' },
-      { id: 't4', name: 'Feature C', status: 'pending', dependency: 't1' },
+      { id: 't1', name: 'Core Module', status: 'in_progress', dependency: null, dependencies: [] },
+      { id: 't2', name: 'Feature A', status: 'pending', dependency: 't1', dependencies: [{ dependencyId: 't1', dependencyType: 'FS', lagDays: 0 }] },
+      { id: 't3', name: 'Feature B', status: 'pending', dependency: 't1', dependencies: [{ dependencyId: 't1', dependencyType: 'FS', lagDays: 0 }] },
+      { id: 't4', name: 'Feature C', status: 'pending', dependency: 't1', dependencies: [{ dependencyId: 't1', dependencyType: 'FS', lagDays: 0 }] },
     ] as any);
 
     const indicators = await agent.gatherIndicators('proj-1');

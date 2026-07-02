@@ -267,6 +267,7 @@ export class TaskPrioritizationService {
       endDate: t.endDate ? new Date(t.endDate).toISOString().split('T')[0] : null,
       progressPercentage: t.progressPercentage ?? 0,
       dependency: t.dependency ?? null,
+      dependencies: t.dependencies.map(d => ({ id: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
       estimatedDays: t.estimatedDays ?? null,
     }));
 

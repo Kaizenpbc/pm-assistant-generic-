@@ -477,6 +477,7 @@ export class TemplateService {
       const taskEnd = new Date(taskStart);
       taskEnd.setDate(taskEnd.getDate() + tt.estimatedDays);
 
+      const depId = tt.dependencyRefId ? refIdToTaskId.get(tt.dependencyRefId) : undefined;
       const task = await scheduleService.createTask({
         scheduleId: schedule.id,
         name: tt.name,
@@ -487,8 +488,7 @@ export class TemplateService {
         startDate: taskStart,
         endDate: taskEnd,
         parentTaskId: tt.parentRefId ? refIdToTaskId.get(tt.parentRefId) : undefined,
-        dependency: tt.dependencyRefId ? refIdToTaskId.get(tt.dependencyRefId) : undefined,
-        dependencyType: tt.dependencyType as 'FS' | 'FF' | 'SS' | 'SF' | undefined,
+        dependencies: depId ? [{ dependencyId: depId, dependencyType: (tt.dependencyType as 'FS' | 'FF' | 'SS' | 'SF') || 'FS', lagDays: 0 }] : [],
         createdBy: input.userId,
       });
 
@@ -526,7 +526,8 @@ export class TemplateService {
         const t = tasks[i];
         const refId = taskIdToRefId.get(t.id)!;
         const parentRefId = t.parentTaskId ? taskIdToRefId.get(t.parentTaskId) || null : null;
-        const depRefId = t.dependency ? taskIdToRefId.get(t.dependency) || null : null;
+        const firstDep = t.dependencies?.[0];
+        const depRefId = firstDep ? taskIdToRefId.get(firstDep.dependencyId) || null : null;
 
         // Calculate offset from schedule start
         const offsetDays = t.startDate && schedule.startDate
@@ -547,7 +548,7 @@ export class TemplateService {
           priority: t.priority || 'medium',
           parentRefId,
           dependencyRefId: depRefId,
-          dependencyType: t.dependencyType || 'FS',
+          dependencyType: firstDep?.dependencyType || t.dependencyType || 'FS',
           offsetDays,
           skills: [],
           isSummary: hasChildren,

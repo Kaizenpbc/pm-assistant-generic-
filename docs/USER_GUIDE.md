@@ -178,15 +178,16 @@ Tasks can be organized hierarchically:
 
 ### Dependencies
 
-Set task dependencies to define execution order:
+Each task supports up to **20 predecessors**. Set dependencies to define execution order:
 
-- **Dependency** -- Select the predecessor task. In Table view, you can also type the predecessor's row number directly (e.g. `3`, `5SS`, `7FS+2d`).
-- **Dependency Type** -- Finish-to-Start (FS), Start-to-Start (SS), Finish-to-Finish (FF), or Start-to-Finish (SF).
-- **Lag** -- Optional number of days to add between the two tasks (e.g., a 2-day lag on FS means the successor starts 2 days after the predecessor finishes).
-- Dependencies are displayed in compact row-number format with a health dot indicating predecessor status (green = done, yellow = in progress, red = overdue).
-- Gantt dependency arrows are colour-coded by predecessor health and used in critical path analysis.
-- **Validation** -- The server enforces dependency rules: no self-references, no circular dependencies (A→B→C→A), dependencies must exist and be in the same schedule. Invalid dependencies return an error message explaining the issue.
-- **Orphan cleanup** -- Deleting a task automatically clears any dependencies that pointed to it.
+- **Adding predecessors** -- In the task form modal, use the multi-predecessor panel: click **Add Predecessor** to add a row, then choose the predecessor task, dependency type, and optional lag days. Use the remove button on any row to delete it.
+- **Dependency Type** -- Each predecessor has its own type: Finish-to-Start (FS), Start-to-Start (SS), Finish-to-Finish (FF), or Start-to-Finish (SF). FS is the default.
+- **Lag** -- Optional number of days on each individual dependency (e.g., a 2-day lag on FS means the successor starts 2 days after the predecessor finishes). Negative lag represents lead time.
+- **In Table view** -- Click the Predecessor cell and type one or more entries separated by commas (e.g. `3`, `5SS`, `7FS+2d`, `3FS+2d,5SS,7`). Press Enter to save.
+- Dependencies are displayed as a comma-separated list in compact MS Project row-number format. Each predecessor shows a health dot: green (done), yellow (in progress), red (overdue).
+- Gantt dependency arrows are drawn for each predecessor and colour-coded by predecessor health. All predecessors are used in critical path and Monte Carlo analysis.
+- **Validation** -- The server enforces dependency rules for each predecessor: no self-references, no circular dependencies (A→B→C→A), dependencies must exist and be in the same schedule, and the 20-predecessor limit is enforced. Invalid dependencies return an error message explaining the issue.
+- **Orphan cleanup** -- Deleting a task automatically removes all dependency records that referenced it (via `ON DELETE CASCADE`), so no other tasks are left with broken predecessors.
 
 ### Task Activity Panel
 
@@ -219,13 +220,13 @@ The default schedule view. Displays tasks as horizontal bars on a timeline:
 - **Bar color** indicates status (blue for in progress, green for completed, gray for pending).
 - **Progress fill** shows completion percentage within each bar.
 - **Row numbers (#)** are displayed in the left panel instead of WBS, providing a sequential task index.
-- **Predecessor column (Pred)** in the left panel shows dependencies in compact row-number format (e.g. "3", "7SS+2d") with a colour-coded health dot: green (predecessor done), yellow (in progress), red (overdue).
-- **Dependency arrows** connect predecessor and successor tasks, colour-coded by predecessor health: green arrows for completed predecessors, yellow for in-progress, red for overdue.
+- **Predecessor column (Pred)** in the left panel shows all predecessors as a comma-separated list in compact row-number format (e.g. "3FS+2d,5SS,7") with a colour-coded health dot per predecessor: green (done), yellow (in progress), red (overdue).
+- **Dependency arrows** are drawn for each predecessor individually, colour-coded by that predecessor's health: green for completed, yellow for in-progress, red for overdue.
 - **Drag-and-drop rescheduling**: Drag a bar to move the task to new dates. Drag the right edge to resize (change end date only). Changes automatically cascade through dependencies.
 - **Recurring task indicator**: Template tasks display a repeat icon on their bar.
 - **Milestones**: Tasks marked as milestones appear as diamonds instead of bars.
 - **PDF Export**: Click the **Print / Export PDF** button in the toolbar to open a print-optimised Gantt ready for saving as PDF.
-- Hover over a bar to see task details including predecessor info (row number, task name, and health status). Click to edit.
+- Hover over a bar to see task details including all predecessors (row number, task name, dependency type, lag, and health status per predecessor). Click to edit.
 
 ### Kanban Board
 
@@ -255,14 +256,15 @@ A spreadsheet-like view of all tasks with inline editing. Click the **Columns** 
 
 The **# column** always appears as the first column and cannot be toggled off. It shows sequential row numbers (1, 2, 3...) based on the current sort order.
 
-The **Predecessor column** displays dependencies in MS Project-style row-number format:
+The **Predecessor column** displays all predecessors as a comma-separated list in MS Project-style row-number format:
 - `3` — Finish-to-Start on row 3 (FS is default, omitted)
 - `7SS` — Start-to-Start on row 7
 - `3FS+2d` — Finish-to-Start on row 3 with 2-day lag
+- `3FS+2d,5SS,7` — three predecessors: rows 3, 5, and 7
 
-Each predecessor shows a **health dot**: green (predecessor completed), yellow (in progress), red (overdue). Hover to see the full predecessor task name.
+Each predecessor in the list shows a **health dot**: green (completed), yellow (in progress), red (overdue). Hover to see the full predecessor task name, type, and lag.
 
-**Inline predecessor editing**: Click the Predecessor cell and type a row number with optional type and lag. Press Enter to save. Invalid inputs (bad row number, self-reference) show a red error. Clear the field to remove the dependency.
+**Inline predecessor editing**: Click the Predecessor cell and type one or more comma-separated entries (e.g. `3`, `5SS`, `7FS+2d`, `3FS+2d,5SS,7`). Press Enter to save. Invalid inputs (bad row number, self-reference, more than 20 predecessors) show a red error. Clear the field to remove all dependencies.
 
 Column selections are saved per schedule and persist across page reloads. All visible columns support sorting. Bulk select, status/priority/assignee changes, and inline cell editing continue to work on the standard columns.
 

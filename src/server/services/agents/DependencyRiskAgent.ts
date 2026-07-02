@@ -203,13 +203,12 @@ export class DependencyRiskAgent {
     }
 
     for (const task of allTasks) {
-      if (task.dependency) {
-        const depId = task.dependency;
-        if (taskMap.has(depId)) {
+      for (const dep of task.dependencies) {
+        if (taskMap.has(dep.dependencyId)) {
           totalDependencies++;
-          const deps = dependents.get(depId) || [];
+          const deps = dependents.get(dep.dependencyId) || [];
           deps.push(task.id);
-          dependents.set(depId, deps);
+          dependents.set(dep.dependencyId, deps);
         }
       }
     }
@@ -219,8 +218,9 @@ export class DependencyRiskAgent {
     // Detect blocked chains: tasks depending on overdue or stalled tasks
     const blockedChains: DependencyIndicators['blockedChains'] = [];
     for (const task of allTasks) {
-      if (!task.dependency) continue;
-      const blocker = taskMap.get(task.dependency);
+      if (task.dependencies.length === 0) continue;
+      for (const dep of task.dependencies) {
+      const blocker = taskMap.get(dep.dependencyId);
       if (!blocker) continue;
 
       const isBlockerOverdue = blocker.endDate && new Date(blocker.endDate) < now &&
@@ -240,6 +240,7 @@ export class DependencyRiskAgent {
           reason: isBlockerOverdue ? 'overdue' : 'stalled',
         });
       }
+      } // end for dep
     }
 
     // Detect bottleneck tasks: tasks with 3+ dependents
@@ -257,7 +258,7 @@ export class DependencyRiskAgent {
     // Detect long chains: dependency depth > 5
     const longChains: DependencyIndicators['longChains'] = [];
     for (const task of allTasks) {
-      if (task.dependency) continue; // Start from root tasks (no dependency)
+      if (task.dependencies.length > 0) continue; // Start from root tasks (no dependencies)
       const chain = this.measureDepth(task.id, dependents, taskMap, 10);
       if (chain.length > 5) {
         longChains.push({

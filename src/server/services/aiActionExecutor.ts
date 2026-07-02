@@ -1,7 +1,7 @@
 // C:\Users\gerog\Documents\pm-assistant-generic\src\server\services\aiActionExecutor.ts
 
 import { projectService, type CreateProjectData, type Project } from './ProjectService';
-import { scheduleService, type CreateTaskData, DependencyValidationError } from './ScheduleService';
+import { scheduleService, type CreateTaskData, type Task, DependencyValidationError } from './ScheduleService';
 import { userService } from './UserService';
 import { auditLedgerService } from './AuditLedgerService';
 import { policyEngineService } from './PolicyEngineService';
@@ -344,6 +344,7 @@ export class AIActionExecutor {
       parentTaskId: t.parentTaskId,
       dependency: t.dependency,
       dependencyType: t.dependencyType,
+      dependencies: t.dependencies.map(d => ({ dependencyId: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
     }));
 
     return {
@@ -446,10 +447,12 @@ export class AIActionExecutor {
     }
 
     const depType = dependencyType || 'FS';
+    // Add to existing dependencies (don't replace)
+    const existingDeps = task.dependencies.filter(d => d.dependencyId !== predecessorId);
+    existingDeps.push({ taskId, dependencyId: predecessorId, dependencyType: depType, lagDays: 0 });
     await scheduleService.updateTask(taskId, {
-      dependency: predecessorId,
-      dependencyType: depType,
-    });
+      dependencies: existingDeps.map(d => ({ dependencyId: d.dependencyId, dependencyType: d.dependencyType, lagDays: d.lagDays })),
+    } as any);
 
     const predecessor = await scheduleService.findTaskById(predecessorId);
     return {
@@ -468,16 +471,20 @@ export class AIActionExecutor {
       return { success: false, toolName: 'get_dependency_chain', summary: `Task '${taskId}' not found`, error: 'Task not found' };
     }
 
-    // Walk upstream (predecessors)
+    // Walk upstream (predecessors) via BFS for multi-dep
     const upstream: Array<{ id: string; name: string; type: string }> = [];
-    let current = task;
     const visitedUp = new Set<string>();
-    while (current.dependency && !visitedUp.has(current.dependency)) {
-      visitedUp.add(current.dependency);
-      const pred = await scheduleService.findTaskById(current.dependency);
-      if (!pred) break;
-      upstream.push({ id: pred.id, name: pred.name, type: current.dependencyType || 'FS' });
-      current = pred;
+    const queue: Task[] = [task];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      for (const dep of current.dependencies) {
+        if (visitedUp.has(dep.dependencyId)) continue;
+        visitedUp.add(dep.dependencyId);
+        const pred = await scheduleService.findTaskById(dep.dependencyId);
+        if (!pred) continue;
+        upstream.push({ id: pred.id, name: pred.name, type: dep.dependencyType || 'FS' });
+        queue.push(pred);
+      }
     }
     upstream.reverse(); // oldest predecessor first
 

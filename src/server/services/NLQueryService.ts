@@ -207,6 +207,7 @@ async function executeToolFn(
             startDate: t.startDate ?? null,
             endDate: t.endDate ?? null,
             dependency: t.dependency ?? null,
+            dependencies: t.dependencies.map(d => ({ id: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
             assignedTo: t.assignedTo ?? null,
           })),
         });
@@ -246,6 +247,7 @@ async function executeToolFn(
         startDate: t.startDate ?? null,
         endDate: t.endDate ?? null,
         dependency: t.dependency ?? null,
+        dependencies: t.dependencies.map(d => ({ id: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
         parentTaskId: t.parentTaskId ?? null,
         assignedTo: t.assignedTo ?? null,
       }));

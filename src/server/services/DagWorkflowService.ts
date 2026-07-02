@@ -577,7 +577,10 @@ class DagWorkflowService {
         return true;
       case 'dependency_change':
         if (!oldTask) return false;
-        return (oldTask.dependency ?? '') !== (task.dependency ?? '');
+        // Compare stringified dependencies arrays for change detection
+        const oldDeps = JSON.stringify((oldTask.dependencies || []).map(d => d.dependencyId).sort());
+        const newDeps = JSON.stringify((task.dependencies || []).map(d => d.dependencyId).sort());
+        return oldDeps !== newDeps;
       case 'priority_change': {
         if (!oldTask) return false;
         if (oldTask.priority === task.priority) return false;

@@ -19,6 +19,12 @@ const createScheduleSchema = z.object({
   endDate: z.string().date(),
 });
 
+const taskDependencySchema = z.object({
+  dependencyId: z.string(),
+  dependencyType: z.enum(['FS', 'SS', 'FF', 'SF']).default('FS'),
+  lagDays: z.number().int().default(0),
+});
+
 const createTaskSchema = z.object({
   scheduleId: z.string(),
   name: z.string().min(1),
@@ -42,6 +48,7 @@ const createTaskSchema = z.object({
   dependencyLagDays: z.number().int().optional(),
   dependencyType: z.enum(['FS', 'SS', 'FF', 'SF']).optional(),
   afterTaskId: z.string().optional(),
+  dependencies: z.array(taskDependencySchema).max(20).optional(),
 });
 
 const updateTaskSchema = createTaskSchema.partial().omit({ scheduleId: true });

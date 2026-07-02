@@ -53,9 +53,11 @@ export class NetworkDiagramService {
       if (!successors.has(t.id)) successors.set(t.id, []);
     }
     for (const t of tasks) {
-      if (t.dependency && taskMap.has(t.dependency)) {
-        successors.get(t.dependency)!.push(t.id);
-        predecessors.get(t.id)!.push(t.dependency);
+      for (const dep of t.dependencies) {
+        if (taskMap.has(dep.dependencyId)) {
+          successors.get(dep.dependencyId)!.push(t.id);
+          predecessors.get(t.id)!.push(dep.dependencyId);
+        }
       }
     }
 
@@ -146,18 +148,20 @@ export class NetworkDiagramService {
     const criticalSet = new Set(cpResult.criticalPathTaskIds);
 
     for (const t of tasks) {
-      if (t.dependency && nodeMap.has(t.id) && nodeMap.has(t.dependency)) {
-        const from = nodeMap.get(t.dependency)!;
-        const to = nodeMap.get(t.id)!;
-        edges.push({
-          fromId: t.dependency,
-          toId: t.id,
-          fromX: from.x + from.width,
-          fromY: from.y + from.height / 2,
-          toX: to.x,
-          toY: to.y + to.height / 2,
-          isCritical: criticalSet.has(t.dependency) && criticalSet.has(t.id),
-        });
+      for (const dep of t.dependencies) {
+        if (nodeMap.has(t.id) && nodeMap.has(dep.dependencyId)) {
+          const from = nodeMap.get(dep.dependencyId)!;
+          const to = nodeMap.get(t.id)!;
+          edges.push({
+            fromId: dep.dependencyId,
+            toId: t.id,
+            fromX: from.x + from.width,
+            fromY: from.y + from.height / 2,
+            toX: to.x,
+            toY: to.y + to.height / 2,
+            isCritical: criticalSet.has(dep.dependencyId) && criticalSet.has(t.id),
+          });
+        }
       }
     }
 

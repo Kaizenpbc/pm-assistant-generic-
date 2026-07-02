@@ -76,7 +76,8 @@ An agentic AI project management platform that combines the scheduling power of 
 
 ### 2.1 Auto-Scheduling Engine
 - Move one task -> cascade all dependent tasks automatically
-- Respect Finish-to-Start (FS) dependencies
+- Respect all four dependency types (FS, SS, FF, SF) and lag days across multiple predecessors
+- Up to 20 predecessors per task; cascades compute the correct early start by taking the maximum constraint from all predecessors
 - **Benchmark:** MS Project, Primavera P6
 
 ### 2.2 Workflow Automation Builder (DAG Engine)
@@ -112,17 +113,19 @@ An agentic AI project management platform that combines the scheduling power of 
 - Table view with inline editing (spreadsheet-like)
 - MS Project-style column picker: 22 columns across 4 groups (Standard, Scheduling/CPM, Baseline, Other)
 - **Row number (#) column** — always visible, sequential numbering, cannot be toggled off
-- **MS Project-style predecessor display** — compact row-number notation (e.g. "3", "7SS+2d") instead of full task names
-- **Dependency health badges** — colour-coded dots (green/yellow/red) showing predecessor completion status. No other PM tool shows dependency health inline.
-- **Inline predecessor editing** — click and type row numbers with optional type and lag; validated with error feedback
-- **Server-side dependency validation** — single `validateDependency()` method enforces self-reference, circular, cross-schedule, and existence checks across API, UI, and AI tools. Orphan cleanup on task deletion.
+- **Multi-predecessor support** — up to 20 predecessors per task, each with its own type (FS/SS/FF/SF) and lag days, stored in a `task_dependencies` junction table
+- **MS Project-style predecessor display** — comma-separated compact row-number notation (e.g. "3FS+2d,5SS,7") instead of full task names; same format used in CSV export
+- **Dependency health badges** — colour-coded dots (green/yellow/red) per predecessor showing completion status. No other PM tool shows dependency health inline.
+- **Inline predecessor editing** — click and type comma-separated row numbers with optional type and lag; validated with error feedback
+- **Task form multi-predecessor UI** — add/remove dependency rows in the task modal, each with predecessor selector, type dropdown, and lag field
+- **Server-side dependency validation** — single `validateDependency()` method enforces self-reference, circular, cross-schedule, existence, and 20-predecessor limit checks across API, UI, and AI tools. Orphan cleanup via `ON DELETE CASCADE` on task deletion.
 - Column visibility persisted per schedule in localStorage
 - CPM columns (Early Start, Late Finish, Total Float, etc.) auto-trigger critical path computation
 - Baseline variance columns populate when comparison is active
 - WBS auto-computed from task hierarchy
 - Column sorting on all numeric and date fields
 - Saved Views: name and store column+sort configurations per schedule, load/update/delete from dropdown
-- **Benchmark:** MS Project, Smartsheet, Monday.com — **exceeds MS Project** with health badges and inline predecessor editing
+- **Benchmark:** MS Project, Smartsheet, Monday.com — **exceeds MS Project** with multi-predecessor support, health badges, and inline predecessor editing
 
 ### 2.6 Portfolio-Level Gantt
 - Program view: multiple projects on one timeline
@@ -347,10 +350,11 @@ An agentic AI project management platform that combines the scheduling power of 
 | Dark Mode | Done | Enhancement |
 | Project Milestones (Gantt diamonds) | Done | Enhancement |
 | Dependency Types (FS/FF/SS/SF + lag) | Done | Enhancement |
+| Multi-Dependency Support (up to 20 predecessors, junction table) | Done | Enhancement |
 | Row Numbers & MS Project-style Predecessors | Done | Enhancement |
 | Dependency Health Badges (green/yellow/red) | Done | Innovation |
-| Inline Predecessor Editing | Done | Enhancement |
-| Health-Colored Gantt Dependency Arrows | Done | Innovation |
+| Inline Predecessor Editing (multi-predecessor comma syntax) | Done | Enhancement |
+| Health-Colored Gantt Dependency Arrows (one per predecessor) | Done | Innovation |
 | Kanban WIP Limits | Done | Enhancement |
 | Comment @Mentions | Done | Enhancement |
 | Bulk CSV/Excel Task Import (with guardrails) | Done | Enhancement |

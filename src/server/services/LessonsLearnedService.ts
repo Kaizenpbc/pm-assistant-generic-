@@ -314,6 +314,7 @@ export class LessonsLearnedService {
           endDate: t.endDate ?? null,
           dueDate: t.dueDate ?? null,
           dependency: t.dependency ?? null,
+          dependencies: t.dependencies.map(d => ({ id: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
         })),
       });
     }

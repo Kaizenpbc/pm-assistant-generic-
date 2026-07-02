@@ -277,24 +277,34 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
 
   const [depError, setDepError] = useState<{ taskId: string; message: string } | null>(null);
 
-  // Parse predecessor input like "3", "3FS", "3SS+2d", "3-1d"
-  const parsePredecessorInput = useCallback((input: string, currentTaskId: string): { taskId: string; type: string; lag: number } | { error: string } => {
+  // Parse predecessor input — comma-separated MS Project format: "3FS+2d,5SS,7"
+  const parsePredecessorInput = useCallback((input: string, currentTaskId: string): { deps: Array<{ taskId: string; type: string; lag: number }> } | { error: string } => {
     const trimmed = input.trim();
-    if (!trimmed) return { taskId: '', type: 'FS', lag: 0 }; // clear dependency
+    if (!trimmed) return { deps: [] }; // clear all dependencies
 
-    const match = trimmed.match(/^(\d+)\s*(FS|FF|SS|SF)?\s*([+-]\d+d?)?$/i);
-    if (!match) return { error: 'Format: row# or row#FS or row#SS+2d' };
+    const parts = trimmed.split(',').map(s => s.trim()).filter(Boolean);
+    const deps: Array<{ taskId: string; type: string; lag: number }> = [];
 
-    const rowNum = parseInt(match[1], 10);
-    const type = (match[2] || 'FS').toUpperCase();
-    const lagStr = match[3];
-    const lag = lagStr ? parseInt(lagStr.replace(/d$/i, ''), 10) : 0;
+    for (const part of parts) {
+      const match = part.match(/^(\d+)\s*(FS|FF|SS|SF)?\s*([+-]\d+d?)?$/i);
+      if (!match) return { error: `Invalid format: "${part}". Use: row# or row#FS or row#SS+2d` };
 
-    const targetTaskId = rowNumToTaskId.get(rowNum);
-    if (!targetTaskId) return { error: `Row ${rowNum} not found` };
-    if (targetTaskId === currentTaskId) return { error: 'Cannot reference self' };
+      const rowNum = parseInt(match[1], 10);
+      const type = (match[2] || 'FS').toUpperCase();
+      const lagStr = match[3];
+      const lag = lagStr ? parseInt(lagStr.replace(/d$/i, ''), 10) : 0;
 
-    return { taskId: targetTaskId, type, lag };
+      const targetTaskId = rowNumToTaskId.get(rowNum);
+      if (!targetTaskId) return { error: `Row ${rowNum} not found` };
+      if (targetTaskId === currentTaskId) return { error: 'Cannot reference self' };
+      if (deps.some(d => d.taskId === targetTaskId)) return { error: `Duplicate: row ${rowNum}` };
+
+      deps.push({ taskId: targetTaskId, type, lag });
+    }
+
+    if (deps.length > 20) return { error: 'Max 20 predecessors' };
+
+    return { deps };
   }, [rowNumToTaskId]);
 
   // Get dependency health status
@@ -325,15 +335,27 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
       case 'progressPercentage': return String(task.progressPercentage ?? 0);
       case 'assignedTo': return task.assignedTo || '';
       case 'dependency': {
-        if (!task.dependency) return '';
-        const depRowNum = rowNumMap.get(task.dependency);
-        if (!depRowNum) return '';
-        const type = task.dependencyType || 'FS';
-        const lag = task.dependencyLagDays || 0;
-        let label = String(depRowNum);
-        if (type !== 'FS') label += type;
-        if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
-        return label;
+        const deps = (task as any).dependencies as Array<{ dependencyId: string; dependencyType: string; lagDays: number }> | undefined;
+        if (!deps || deps.length === 0) {
+          // Fallback to legacy single dep
+          if (!task.dependency) return '';
+          const depRowNum = rowNumMap.get(task.dependency);
+          if (!depRowNum) return '';
+          const type = task.dependencyType || 'FS';
+          const lag = task.dependencyLagDays || 0;
+          let label = String(depRowNum);
+          if (type !== 'FS') label += type;
+          if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+          return label;
+        }
+        return deps.map(d => {
+          const depRowNum = rowNumMap.get(d.dependencyId);
+          if (!depRowNum) return '';
+          let label = String(depRowNum);
+          if (d.dependencyType !== 'FS') label += d.dependencyType;
+          if (d.lagDays !== 0) label += (d.lagDays > 0 ? `+${d.lagDays}d` : `${d.lagDays}d`);
+          return label;
+        }).filter(Boolean).join(',');
       }
       default: return '';
     }
@@ -356,7 +378,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     const originalValue = getTaskFieldValue(task, field);
     if (value === originalValue) { cancelEditing(); return; }
 
-    // Handle dependency field specially
+    // Handle dependency field specially — multi-dep
     if (field === 'dependency') {
       const result = parsePredecessorInput(value, taskId);
       if ('error' in result) {
@@ -368,9 +390,11 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
       setEditingCell(null);
       setEditValue('');
       onTaskUpdate(taskId, {
-        dependency: result.taskId || null,
-        dependencyType: result.type,
-        dependencyLagDays: result.lag,
+        dependencies: result.deps.map(d => ({
+          dependencyId: d.taskId,
+          dependencyType: d.type,
+          lagDays: d.lag,
+        })),
       });
 
       setTimeout(() => {
@@ -846,36 +870,43 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
               <input
                 ref={el => { inputRef.current = el; }}
                 type="text"
-                placeholder="e.g. 3 or 3SS+2d"
+                placeholder="e.g. 3FS+2d,5SS"
                 className={`w-full text-xs border ${hasDepError ? 'border-red-400' : 'border-blue-300'} rounded px-1 py-0.5 focus:outline-none focus:ring-1 ${hasDepError ? 'focus:ring-red-500' : 'focus:ring-blue-500'} bg-white font-mono`}
                 value={editValue}
                 onChange={e => { setEditValue(e.target.value); setDepError(null); }}
                 onKeyDown={e => handleKeyDown(e, task.id, 'dependency')}
                 onBlur={() => { if (editValue === getTaskFieldValue(task, 'dependency')) { cancelEditing(); setDepError(null); } else { saveEdit(task.id, 'dependency', editValue); } }}
               />
-            ) : task.dependency ? (() => {
-              const depRowNum = rowNumMap.get(task.dependency);
-              const depTask = tasks.find(t => t.id === task.dependency);
-              const depType = task.dependencyType || 'FS';
-              const lag = task.dependencyLagDays || 0;
-              const health = getDepHealth(task.dependency);
-              const healthDot = health === 'satisfied' ? 'bg-green-500' : health === 'in_progress' ? 'bg-yellow-500' : 'bg-red-500';
-
-              let label = depRowNum != null ? String(depRowNum) : '?';
-              if (depType !== 'FS') label += depType;
-              if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
-
-              const tooltipName = depTask ? depTask.name : 'Unknown task';
-
+            ) : (() => {
+              const deps = ((task as any).dependencies || []) as Array<{ dependencyId: string; dependencyType: string; lagDays: number }>;
+              if (deps.length === 0 && !task.dependency) {
+                return <span className="text-gray-400">-</span>;
+              }
+              // Build labels and find worst health
+              const items = deps.length > 0 ? deps : (task.dependency ? [{ dependencyId: task.dependency, dependencyType: task.dependencyType || 'FS', lagDays: task.dependencyLagDays || 0 }] : []);
+              let worstHealth: 'satisfied' | 'in_progress' | 'at_risk' = 'satisfied';
+              const labels: string[] = [];
+              const names: string[] = [];
+              for (const d of items) {
+                const depRowNum = rowNumMap.get(d.dependencyId);
+                let label = depRowNum != null ? String(depRowNum) : '?';
+                if (d.dependencyType !== 'FS') label += d.dependencyType;
+                if (d.lagDays !== 0) label += (d.lagDays > 0 ? `+${d.lagDays}d` : `${d.lagDays}d`);
+                labels.push(label);
+                const dt = tasks.find(t => t.id === d.dependencyId);
+                if (dt) names.push(dt.name);
+                const h = getDepHealth(d.dependencyId);
+                if (h === 'at_risk') worstHealth = 'at_risk';
+                else if (h === 'in_progress' && worstHealth !== 'at_risk') worstHealth = 'in_progress';
+              }
+              const healthDot = worstHealth === 'satisfied' ? 'bg-green-500' : worstHealth === 'in_progress' ? 'bg-yellow-500' : 'bg-red-500';
               return (
-                <span className="inline-flex items-center gap-1.5 font-mono group/dep relative" title={tooltipName}>
+                <span className="inline-flex items-center gap-1.5 font-mono group/dep relative" title={names.join(', ')}>
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${healthDot}`} />
-                  {label}
+                  {labels.join(',')}
                 </span>
               );
-            })() : (
-              <span className="text-gray-400">-</span>
-            )}
+            })()}
             {hasDepError && (
               <div className="text-[10px] text-red-500 mt-0.5">{depError!.message}</div>
             )}

@@ -64,11 +64,7 @@ export class MonteCarloService {
     // 3. Build predecessor map  (taskId -> predecessorId[])
     const predecessorMap = new Map<string, string[]>();
     for (const t of tasks) {
-      const preds: string[] = [];
-      if (t.dependency) {
-        preds.push(t.dependency);
-      }
-      predecessorMap.set(t.id, preds);
+      predecessorMap.set(t.id, t.dependencies.map(d => d.dependencyId));
     }
 
     // 4. Run iterations

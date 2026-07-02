@@ -37,10 +37,16 @@ export class CriticalPathService {
       if (!predecessors.has(t.id)) predecessors.set(t.id, []);
     }
 
+    // Build adjacency from task.dependencies[] (multi-dep)
+    // Also build a per-edge map: (predId, succId) -> { type, lag }
+    const edgeMap = new Map<string, { type: string; lag: number }>();
     for (const t of tasks) {
-      if (t.dependency && taskMap.has(t.dependency)) {
-        successors.get(t.dependency)!.push(t.id);
-        predecessors.get(t.id)!.push(t.dependency);
+      for (const dep of t.dependencies) {
+        if (taskMap.has(dep.dependencyId)) {
+          successors.get(dep.dependencyId)!.push(t.id);
+          predecessors.get(t.id)!.push(dep.dependencyId);
+          edgeMap.set(`${dep.dependencyId}:${t.id}`, { type: dep.dependencyType || 'FS', lag: dep.lagDays || 0 });
+        }
       }
     }
 
@@ -86,7 +92,7 @@ export class CriticalPathService {
       }
     }
 
-    // Forward pass: compute ES, EF — respecting dependency types and lag
+    // Forward pass: compute ES, EF — respecting per-edge dependency types and lag
     const esMap = new Map<string, number>();
     const efMap = new Map<string, number>();
 
@@ -95,12 +101,12 @@ export class CriticalPathService {
       const dur = getDuration(t);
       let es = 0;
       for (const pred of predecessors.get(id) || []) {
-        const predTask = taskMap.get(pred)!;
-        const predDur = getDuration(predTask);
+        const predDur = getDuration(taskMap.get(pred)!);
         const predES = esMap.get(pred) || 0;
         const predEF = efMap.get(pred) || 0;
-        const lag = t.dependencyLagDays || 0;
-        const depType = t.dependencyType || 'FS';
+        const edge = edgeMap.get(`${pred}:${id}`);
+        const lag = edge?.lag || 0;
+        const depType = edge?.type || 'FS';
         let constraint = 0;
         switch (depType) {
           case 'FS': constraint = predEF + lag; break;       // Finish-to-Start
@@ -134,12 +140,12 @@ export class CriticalPathService {
 
       let lf = projectDuration;
       for (const succ of succs) {
-        const succTask = taskMap.get(succ)!;
-        const succDur = getDuration(succTask);
+        const succDur = getDuration(taskMap.get(succ)!);
         const succLS = lsMap.get(succ) ?? projectDuration;
         const succLF = lfMap.get(succ) ?? projectDuration;
-        const lag = succTask.dependencyLagDays || 0;
-        const depType = succTask.dependencyType || 'FS';
+        const edge = edgeMap.get(`${id}:${succ}`);
+        const lag = edge?.lag || 0;
+        const depType = edge?.type || 'FS';
         let constraint = projectDuration;
         switch (depType) {
           case 'FS': constraint = succLS - lag; break;

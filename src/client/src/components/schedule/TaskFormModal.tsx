@@ -10,6 +10,12 @@ import { AttachmentPanel } from '../attachments/AttachmentPanel';
 // Types
 // ---------------------------------------------------------------------------
 
+export interface PredecessorEntry {
+  dependencyId: string;
+  dependencyType: string;
+  lagDays: string;
+}
+
 export interface TaskFormData {
   name: string;
   description: string;
@@ -19,14 +25,18 @@ export interface TaskFormData {
   startDate: string;
   endDate: string;
   progressPercentage: number;
+  /** @deprecated — kept for backward compat; use predecessors[] */
   dependency: string;
+  /** @deprecated */
   dependencyType: string;
+  /** @deprecated */
   dependencyLagDays: string;
   parentTaskId: string;
   estimatedDays: string;
   recurrenceRule: string;
   isRecurrenceTemplate: boolean;
   isMilestone: boolean;
+  predecessors: PredecessorEntry[];
 }
 
 interface TaskFormModalProps {
@@ -93,11 +103,21 @@ export function TaskFormModal({
     dependencyType: 'FS',
     dependencyLagDays: '',
     isMilestone: false,
+    predecessors: [],
   });
 
   // Pre-fill form when editing
   useEffect(() => {
     if (task) {
+      const deps: PredecessorEntry[] = (task as any).dependencies?.length > 0
+        ? (task as any).dependencies.map((d: any) => ({
+            dependencyId: d.dependencyId,
+            dependencyType: d.dependencyType || 'FS',
+            lagDays: d.lagDays?.toString() || '0',
+          }))
+        : task.dependency
+          ? [{ dependencyId: task.dependency, dependencyType: (task as any).dependencyType || 'FS', lagDays: (task as any).dependencyLagDays?.toString() || '0' }]
+          : [];
       setForm({
         name: task.name || '',
         description: task.description || '',
@@ -115,6 +135,7 @@ export function TaskFormModal({
         dependencyType: (task as any).dependencyType || 'FS',
         dependencyLagDays: (task as any).dependencyLagDays?.toString() || '',
         isMilestone: (task as any).isMilestone || false,
+        predecessors: deps,
       });
     }
   }, [task]);
@@ -315,76 +336,100 @@ export function TaskFormModal({
             />
           </div>
 
-          {/* Parent Task + Dependency */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Parent Task</label>
-              <select
-                name="parentTaskId"
-                value={form.parentTaskId}
-                onChange={handleChange}
-                className="input w-full"
-              >
-                <option value="">None (top-level)</option>
-                {otherTasks
-                  .filter((t) => !t.parentTaskId)
-                  .map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Depends On
-              </label>
-              <select
-                name="dependency"
-                value={form.dependency}
-                onChange={handleChange}
-                className="input w-full"
-              >
-                <option value="">None</option>
-                {otherTasks.map((t) => (
+          {/* Parent Task */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Parent Task</label>
+            <select
+              name="parentTaskId"
+              value={form.parentTaskId}
+              onChange={handleChange}
+              className="input w-full"
+            >
+              <option value="">None (top-level)</option>
+              {otherTasks
+                .filter((t) => !t.parentTaskId)
+                .map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
                   </option>
                 ))}
-              </select>
-            </div>
+            </select>
           </div>
 
-          {/* Dependency Type + Lag (visible when a dependency is selected) */}
-          {form.dependency && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Dependency Type</label>
+          {/* Multi-predecessor list */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Predecessors ({form.predecessors.length}/20)
+            </label>
+            {form.predecessors.map((pred, idx) => (
+              <div key={idx} className="flex items-center gap-2 mb-2">
                 <select
-                  name="dependencyType"
-                  value={form.dependencyType}
-                  onChange={handleChange}
-                  className="input w-full"
+                  value={pred.dependencyId}
+                  onChange={(e) => {
+                    const updated = [...form.predecessors];
+                    updated[idx] = { ...updated[idx], dependencyId: e.target.value };
+                    setForm(f => ({ ...f, predecessors: updated }));
+                  }}
+                  className="input flex-1 text-xs"
                 >
-                  <option value="FS">Finish-to-Start (FS)</option>
-                  <option value="SS">Start-to-Start (SS)</option>
-                  <option value="FF">Finish-to-Finish (FF)</option>
-                  <option value="SF">Start-to-Finish (SF)</option>
+                  <option value="">Select task...</option>
+                  {otherTasks.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
                 </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Lag (days)</label>
+                <select
+                  value={pred.dependencyType}
+                  onChange={(e) => {
+                    const updated = [...form.predecessors];
+                    updated[idx] = { ...updated[idx], dependencyType: e.target.value };
+                    setForm(f => ({ ...f, predecessors: updated }));
+                  }}
+                  className="input w-16 text-xs"
+                >
+                  <option value="FS">FS</option>
+                  <option value="SS">SS</option>
+                  <option value="FF">FF</option>
+                  <option value="SF">SF</option>
+                </select>
                 <input
                   type="number"
-                  name="dependencyLagDays"
-                  value={form.dependencyLagDays}
-                  onChange={handleChange}
-                  placeholder="0"
-                  className="input w-full"
+                  value={pred.lagDays}
+                  onChange={(e) => {
+                    const updated = [...form.predecessors];
+                    updated[idx] = { ...updated[idx], lagDays: e.target.value };
+                    setForm(f => ({ ...f, predecessors: updated }));
+                  }}
+                  placeholder="Lag"
+                  className="input w-16 text-xs"
                 />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = form.predecessors.filter((_, i) => i !== idx);
+                    setForm(f => ({ ...f, predecessors: updated }));
+                  }}
+                  className="text-red-400 hover:text-red-600 text-xs px-1"
+                  title="Remove predecessor"
+                >
+                  &times;
+                </button>
               </div>
-            </div>
-          )}
+            ))}
+            {form.predecessors.length < 20 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setForm(f => ({
+                    ...f,
+                    predecessors: [...f.predecessors, { dependencyId: '', dependencyType: 'FS', lagDays: '0' }],
+                  }));
+                }}
+                className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+              >
+                + Add Predecessor
+              </button>
+            )}
+          </div>
 
           {/* Milestone checkbox */}
           <label className="flex items-center gap-2 cursor-pointer">

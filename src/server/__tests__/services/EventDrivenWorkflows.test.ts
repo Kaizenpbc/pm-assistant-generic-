@@ -137,8 +137,8 @@ describe('EventDrivenWorkflows', () => {
 
     it('dependency_change: fires when dependency changes', () => {
       const config = { triggerType: 'dependency_change' };
-      const task = makeTask({ dependency: 'task-2' });
-      const oldTask = makeTask({ dependency: 'task-3' });
+      const task = makeTask({ dependency: 'task-2', dependencies: [{ dependencyId: 'task-2', dependencyType: 'FS' as const, lagDays: 0 }] });
+      const oldTask = makeTask({ dependency: 'task-3', dependencies: [{ dependencyId: 'task-3', dependencyType: 'FS' as const, lagDays: 0 }] });
       expect(service.matchesTrigger(config, task, oldTask)).toBe(true);
     });
 

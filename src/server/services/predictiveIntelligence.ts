@@ -1245,10 +1245,10 @@ export class PredictiveIntelligenceService {
         }
 
         // Factor 3: Incomplete predecessors (20% weight)
-        const deps = (task.dependency || '').split(',').filter(Boolean);
+        const deps = task.dependencies.map(d => d.dependencyId);
         if (deps.length > 0) {
           const incompleteDeps = deps.filter((did: string) => {
-            const dep = taskMap.get(did.trim());
+            const dep = taskMap.get(did);
             return dep && dep.status !== 'completed';
           });
           if (incompleteDeps.length > 0) {

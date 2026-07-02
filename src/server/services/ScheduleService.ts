@@ -16,6 +16,14 @@ export interface Schedule {
   updatedAt: string;
 }
 
+export interface TaskDependency {
+  id?: string;
+  taskId?: string;
+  dependencyId: string;
+  dependencyType: 'FS' | 'SS' | 'FF' | 'SF';
+  lagDays: number;
+}
+
 export interface Task {
   id: string;
   scheduleId: string;
@@ -31,7 +39,9 @@ export interface Task {
   startDate?: string;
   endDate?: string;
   progressPercentage?: number;
+  /** @deprecated Use dependencies[] instead. Kept for backward compat — synced from first dep. */
   dependency?: string;
+  /** @deprecated Use dependencies[] instead. */
   dependencyType?: 'FS' | 'SS' | 'FF' | 'SF';
   risks?: string;
   issues?: string;
@@ -41,11 +51,14 @@ export interface Task {
   recurrenceParentId?: string;
   isRecurrenceTemplate?: boolean;
   isMilestone?: boolean;
+  /** @deprecated Use dependencies[] instead. */
   dependencyLagDays?: number;
   sortOrder: number;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** Multi-dependency support — all predecessors for this task */
+  dependencies: TaskDependency[];
 }
 
 export interface CreateScheduleData {
@@ -71,16 +84,21 @@ export interface CreateTaskData {
   startDate?: Date | string;
   endDate?: Date | string;
   progressPercentage?: number;
+  /** @deprecated Use dependencies[] instead */
   dependency?: string;
+  /** @deprecated Use dependencies[] instead */
   dependencyType?: 'FS' | 'FF' | 'SS' | 'SF';
   risks?: string;
   issues?: string;
   comments?: string;
   parentTaskId?: string;
   isMilestone?: boolean;
+  /** @deprecated Use dependencies[] instead */
   dependencyLagDays?: number;
   afterTaskId?: string;
   createdBy: string;
+  /** Multi-dependency support */
+  dependencies?: Array<{ dependencyId: string; dependencyType?: 'FS' | 'SS' | 'FF' | 'SF'; lagDays?: number }>;
 }
 
 export interface TaskComment {
@@ -187,6 +205,7 @@ function rowToTask(row: any): Task {
     createdBy: row.created_by,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
+    dependencies: [],
   };
 }
 
@@ -220,6 +239,50 @@ function rowToActivity(row: any): TaskActivityEntry {
 // ---------------------------------------------------------------------------
 
 export class ScheduleService {
+
+  // -------------------------------------------------------------------------
+  // Multi-dependency helpers (junction table)
+  // -------------------------------------------------------------------------
+
+  async loadDependenciesForTasks(taskIds: string[]): Promise<Map<string, TaskDependency[]>> {
+    const map = new Map<string, TaskDependency[]>();
+    if (taskIds.length === 0) return map;
+    const placeholders = taskIds.map(() => '?').join(', ');
+    const rows = await databaseService.query(
+      `SELECT id, task_id, dependency_id, dependency_type, lag_days FROM task_dependencies WHERE task_id IN (${placeholders})`,
+      taskIds,
+    );
+    for (const r of rows) {
+      const dep: TaskDependency = {
+        id: r.id,
+        taskId: r.task_id,
+        dependencyId: r.dependency_id,
+        dependencyType: r.dependency_type,
+        lagDays: Number(r.lag_days) || 0,
+      };
+      const tid = r.task_id as string;
+      const arr = map.get(tid) || [];
+      arr.push(dep);
+      map.set(tid, arr);
+    }
+    return map;
+  }
+
+  async attachDependencies(tasks: Task[]): Promise<void> {
+    if (tasks.length === 0) return;
+    const depMap = await this.loadDependenciesForTasks(tasks.map(t => t.id));
+    for (const task of tasks) {
+      task.dependencies = depMap.get(task.id) || [];
+      // Sync legacy fields from first dependency for backward compat
+      if (task.dependencies.length > 0) {
+        const first = task.dependencies[0];
+        task.dependency = first.dependencyId;
+        task.dependencyType = first.dependencyType;
+        task.dependencyLagDays = first.lagDays;
+      }
+    }
+  }
+
   async findByProjectId(projectId: string): Promise<Schedule[]> {
     const rows = await databaseService.query(
       'SELECT * FROM schedules WHERE project_id = ? ORDER BY created_at DESC',
@@ -313,7 +376,9 @@ export class ScheduleService {
       `SELECT * FROM tasks WHERE schedule_id IN (${placeholders}) ORDER BY sort_order, created_at`,
       scheduleIds,
     );
-    return rows.map(rowToTask);
+    const tasks = rows.map(rowToTask);
+    await this.attachDependencies(tasks);
+    return tasks;
   }
 
   // -------------------------------------------------------------------------
@@ -325,25 +390,36 @@ export class ScheduleService {
       'SELECT * FROM tasks WHERE schedule_id = ? ORDER BY sort_order, created_at',
       [scheduleId],
     );
-    return rows.map(rowToTask);
+    const tasks = rows.map(rowToTask);
+    await this.attachDependencies(tasks);
+    return tasks;
   }
 
   async findTaskById(id: string): Promise<Task | null> {
     const rows = await databaseService.query('SELECT * FROM tasks WHERE id = ?', [id]);
-    return rows.length > 0 ? rowToTask(rows[0]) : null;
+    if (rows.length === 0) return null;
+    const task = rowToTask(rows[0]);
+    await this.attachDependencies([task]);
+    return task;
   }
 
   async findAllTasks(): Promise<Task[]> {
     const rows = await databaseService.query('SELECT * FROM tasks ORDER BY sort_order, created_at LIMIT 1000');
-    return rows.map(rowToTask);
+    const tasks = rows.map(rowToTask);
+    await this.attachDependencies(tasks);
+    return tasks;
   }
 
   async findDependentTasks(taskId: string): Promise<Task[]> {
     const rows = await databaseService.query(
-      'SELECT * FROM tasks WHERE dependency = ?',
+      `SELECT t.* FROM tasks t
+       INNER JOIN task_dependencies td ON td.task_id = t.id
+       WHERE td.dependency_id = ?`,
       [taskId],
     );
-    return rows.map(rowToTask);
+    const tasks = rows.map(rowToTask);
+    await this.attachDependencies(tasks);
+    return tasks;
   }
 
   async findAllDownstreamTasks(taskId: string): Promise<Task[]> {
@@ -415,10 +491,25 @@ export class ScheduleService {
       sortOrder = (maxRows[0]?.max_order ?? -1) + 1;
     }
 
-    // Validate dependency before insert
-    if (data.dependency) {
-      await this.validateDependency(null, data.dependency, data.scheduleId);
+    // Normalize dependencies: merge legacy single dep into dependencies array
+    let deps = data.dependencies || [];
+    if (deps.length === 0 && data.dependency) {
+      deps = [{ dependencyId: data.dependency, dependencyType: data.dependencyType || 'FS', lagDays: data.dependencyLagDays ?? 0 }];
     }
+    if (deps.length > 20) {
+      throw new DependencyValidationError('A task cannot have more than 20 predecessors');
+    }
+
+    // Validate all dependencies before insert
+    for (const dep of deps) {
+      await this.validateDependency(null, dep.dependencyId, data.scheduleId);
+    }
+
+    // Sync legacy columns from first dep (backward compat)
+    const firstDep = deps[0];
+    const legacyDepId = firstDep?.dependencyId || null;
+    const legacyDepType = firstDep?.dependencyType || null;
+    const legacyLag = firstDep?.lagDays ?? 0;
 
     await databaseService.query(
       `INSERT INTO tasks (id, schedule_id, name, description, status, priority, assigned_to,
@@ -441,18 +532,28 @@ export class ScheduleService {
         toDateStr(data.startDate),
         toDateStr(data.endDate),
         data.progressPercentage ?? 0,
-        data.dependency || null,
-        data.dependencyType || null,
+        legacyDepId,
+        legacyDepType,
         data.risks || null,
         data.issues || null,
         data.comments || null,
         data.parentTaskId || null,
         data.isMilestone ? 1 : 0,
-        data.dependencyLagDays ?? 0,
+        legacyLag,
         sortOrder,
         data.createdBy,
       ],
     );
+
+    // Insert junction table rows
+    for (const dep of deps) {
+      const depId = uuidv4();
+      await databaseService.query(
+        `INSERT INTO task_dependencies (id, task_id, dependency_id, dependency_type, lag_days) VALUES (?, ?, ?, ?, ?)`,
+        [depId, id, dep.dependencyId, dep.dependencyType || 'FS', dep.lagDays ?? 0],
+      );
+    }
+
     const task = (await this.findTaskById(id))!;
 
     // Look up projectId from schedule
@@ -480,9 +581,42 @@ export class ScheduleService {
     const oldTask = await this.findTaskById(id);
     if (!oldTask) return null;
 
-    // Validate dependency before applying update
-    if (data.dependency) {
-      await this.validateDependency(id, data.dependency, oldTask.scheduleId);
+    // Handle multi-dependency updates via junction table
+    if (data.dependencies !== undefined) {
+      const deps = data.dependencies;
+      if (deps.length > 20) {
+        throw new DependencyValidationError('A task cannot have more than 20 predecessors');
+      }
+      for (const dep of deps) {
+        await this.validateDependency(id, dep.dependencyId, oldTask.scheduleId);
+      }
+      // Replace strategy: delete all, re-insert
+      await databaseService.query('DELETE FROM task_dependencies WHERE task_id = ?', [id]);
+      for (const dep of deps) {
+        const depRowId = uuidv4();
+        await databaseService.query(
+          `INSERT INTO task_dependencies (id, task_id, dependency_id, dependency_type, lag_days) VALUES (?, ?, ?, ?, ?)`,
+          [depRowId, id, dep.dependencyId, dep.dependencyType || 'FS', dep.lagDays ?? 0],
+        );
+      }
+      // Sync legacy columns from first dep
+      const first = deps[0];
+      data.dependency = first?.dependencyId ?? (null as any);
+      data.dependencyType = first?.dependencyType ?? (null as any);
+      data.dependencyLagDays = first?.lagDays ?? 0;
+    } else if (data.dependency !== undefined) {
+      // Legacy single-dep update — sync to junction table
+      if (data.dependency) {
+        await this.validateDependency(id, data.dependency, oldTask.scheduleId);
+      }
+      await databaseService.query('DELETE FROM task_dependencies WHERE task_id = ?', [id]);
+      if (data.dependency) {
+        const depRowId = uuidv4();
+        await databaseService.query(
+          `INSERT INTO task_dependencies (id, task_id, dependency_id, dependency_type, lag_days) VALUES (?, ?, ?, ?, ?)`,
+          [depRowId, id, data.dependency, data.dependencyType || 'FS', data.dependencyLagDays ?? 0],
+        );
+      }
     }
 
     // Auto-log field changes as activity
@@ -571,7 +705,8 @@ export class ScheduleService {
     const deleted = (result.affectedRows ?? 0) > 0;
 
     if (deleted && existing) {
-      // Clear dependency references pointing to the deleted task
+      // Junction table rows are cascade-deleted automatically.
+      // Also clear legacy denormalized columns on other tasks that referenced this one.
       await databaseService.query(
         'UPDATE tasks SET dependency = NULL, dependency_type = NULL, dependency_lag_days = 0 WHERE dependency = ?',
         [id],
@@ -675,25 +810,56 @@ export class ScheduleService {
 
   async cascadeReschedule(taskId: string, oldEndDate: Date, newEndDate: Date): Promise<CascadeResult> {
     const deltaDays = Math.round((newEndDate.getTime() - oldEndDate.getTime()) / (1000 * 60 * 60 * 24));
-    const deltaMs = deltaDays * 24 * 60 * 60 * 1000;
 
     if (deltaDays === 0) {
       return { triggeredByTaskId: taskId, deltaDays: 0, affectedTasks: [] };
     }
 
+    // Load trigger task's schedule to get all tasks for multi-dep resolution
+    const triggerTask = await this.findTaskById(taskId);
+    if (!triggerTask) return { triggeredByTaskId: taskId, deltaDays: 0, affectedTasks: [] };
+
+    const allTasks = await this.findTasksByScheduleId(triggerTask.scheduleId);
+    const taskMap = new Map(allTasks.map(t => [t.id, t]));
     const downstream = await this.findAllDownstreamTasks(taskId);
     const affectedTasks: CascadeChange[] = [];
 
     for (const task of downstream) {
-      if (task.dependencyType && task.dependencyType !== 'FS') continue;
+      // For multi-dep: compute new start = MAX of all FS predecessors' endDate + lag
+      let computedStart: Date | null = null;
+      let allFS = true;
+      for (const dep of task.dependencies) {
+        if (dep.dependencyType !== 'FS') { allFS = false; continue; }
+        const predTask = taskMap.get(dep.dependencyId);
+        if (!predTask?.endDate) continue;
+        const predEnd = new Date(predTask.endDate);
+        const start = new Date(predEnd.getTime() + (dep.lagDays || 0) * 86_400_000 + 86_400_000);
+        if (!computedStart || start > computedStart) computedStart = start;
+      }
+
+      if (!allFS && !computedStart) continue; // skip non-FS-only tasks if no FS deps
 
       const oldStart = task.startDate ? new Date(task.startDate) : null;
       const oldEnd = task.endDate ? new Date(task.endDate) : null;
-
       if (!oldStart && !oldEnd) continue;
 
-      const newStart = oldStart ? new Date(oldStart.getTime() + deltaMs) : null;
-      const newEnd = oldEnd ? new Date(oldEnd.getTime() + deltaMs) : null;
+      let newStart: Date | null = null;
+      let newEnd: Date | null = null;
+
+      if (computedStart && oldStart && oldEnd) {
+        const duration = oldEnd.getTime() - oldStart.getTime();
+        newStart = computedStart;
+        newEnd = new Date(computedStart.getTime() + duration);
+      } else if (oldStart && oldEnd) {
+        // Fallback: simple shift
+        const deltaMs = deltaDays * 86_400_000;
+        newStart = new Date(oldStart.getTime() + deltaMs);
+        newEnd = new Date(oldEnd.getTime() + deltaMs);
+      }
+
+      if (!newStart && !newEnd) continue;
+      // Only shift if dates actually changed
+      if (newStart && oldStart && newStart.getTime() === oldStart.getTime()) continue;
 
       const change: CascadeChange = {
         taskId: task.id,
@@ -702,7 +868,7 @@ export class ScheduleService {
         newStartDate: newStart?.toISOString().split('T')[0] || '',
         oldEndDate: oldEnd?.toISOString().split('T')[0] || '',
         newEndDate: newEnd?.toISOString().split('T')[0] || '',
-        deltaDays,
+        deltaDays: newStart && oldStart ? Math.round((newStart.getTime() - oldStart.getTime()) / 86_400_000) : deltaDays,
       };
 
       // Apply the shift
@@ -717,6 +883,12 @@ export class ScheduleService {
           `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = ?`,
           updateValues,
         );
+        // Update the in-memory taskMap so subsequent tasks see the new dates
+        const updated = taskMap.get(task.id);
+        if (updated) {
+          if (newStart) updated.startDate = newStart.toISOString().split('T')[0];
+          if (newEnd) updated.endDate = newEnd.toISOString().split('T')[0];
+        }
       }
 
       await this.logActivity(task.id, '1', 'System', 'auto-rescheduled', 'dates',

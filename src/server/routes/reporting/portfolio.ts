@@ -60,6 +60,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
             assignedTo: t.assignedTo,
             dependency: t.dependency,
             dependencyType: t.dependencyType,
+            dependencies: t.dependencies.map(d => ({ id: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
           })),
         };
       });

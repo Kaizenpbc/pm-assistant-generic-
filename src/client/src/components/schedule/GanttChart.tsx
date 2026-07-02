@@ -5,6 +5,12 @@ import type { ColumnState } from '../../hooks/useColumnState';
 // Types
 // ---------------------------------------------------------------------------
 
+export interface TaskDependencyRef {
+  dependencyId: string;
+  dependencyType: string;
+  lagDays: number;
+}
+
 export interface GanttTask {
   id: string;
   name: string;
@@ -14,8 +20,11 @@ export interface GanttTask {
   startDate?: string;
   endDate?: string;
   progressPercentage?: number;
+  /** @deprecated Use dependencies[] */
   dependency?: string;
+  /** @deprecated Use dependencies[] */
   dependencyType?: string;
+  /** @deprecated Use dependencies[] */
   dependencyLagDays?: number;
   parentTaskId?: string;
   assignedTo?: string;
@@ -25,6 +34,7 @@ export interface GanttTask {
   isRecurrenceTemplate?: boolean;
   isMilestone?: boolean;
   sortOrder?: number;
+  dependencies?: TaskDependencyRef[];
 }
 
 interface FlatRow {
@@ -500,20 +510,30 @@ export function GanttChart({
                   </span>
                 </div>
 
-                {/* Predecessor */}
-                <div className="w-14 px-1 text-center text-xs text-gray-500 font-mono" title={task.dependency ? (tasks.find(t => t.id === task.dependency)?.name || '') : undefined}>
-                  {task.dependency ? (() => {
-                    const depRowNum = rowNumMap.get(task.dependency);
-                    const depType = (task.dependencyType || 'FS').toUpperCase();
-                    const lag = task.dependencyLagDays || 0;
-                    const health = getDepHealth(task.dependency);
-                    let label = depRowNum != null ? String(depRowNum) : '?';
-                    if (depType !== 'FS') label += depType;
-                    if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+                {/* Predecessor(s) */}
+                <div className="w-14 px-1 text-center text-xs text-gray-500 font-mono" title={
+                  (task.dependencies || []).map(d => tasks.find(t => t.id === d.dependencyId)?.name || '').filter(Boolean).join(', ') || undefined
+                }>
+                  {(task.dependencies && task.dependencies.length > 0) ? (() => {
+                    // Show worst health among all predecessors
+                    let worstHealth: 'satisfied' | 'in_progress' | 'at_risk' = 'satisfied';
+                    const labels: string[] = [];
+                    for (const dep of task.dependencies) {
+                      const depRowNum = rowNumMap.get(dep.dependencyId);
+                      const depType = (dep.dependencyType || 'FS').toUpperCase();
+                      const lag = dep.lagDays || 0;
+                      let label = depRowNum != null ? String(depRowNum) : '?';
+                      if (depType !== 'FS') label += depType;
+                      if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+                      labels.push(label);
+                      const h = getDepHealth(dep.dependencyId);
+                      if (h === 'at_risk') worstHealth = 'at_risk';
+                      else if (h === 'in_progress' && worstHealth !== 'at_risk') worstHealth = 'in_progress';
+                    }
                     return (
                       <span className="inline-flex items-center gap-1 justify-center">
-                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: healthColor(health) }} />
-                        {label}
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: healthColor(worstHealth) }} />
+                        {labels.join(',')}
                       </span>
                     );
                   })() : '—'}
@@ -815,22 +835,24 @@ export function GanttChart({
                         Assigned: {task.assignedTo}
                       </div>
                     )}
-                    {task.dependency && (() => {
-                      const depTask = tasks.find(t => t.id === task.dependency);
-                      const depRowNum = rowNumMap.get(task.dependency!);
-                      const depType = (task.dependencyType || 'FS').toUpperCase();
-                      const lag = task.dependencyLagDays || 0;
-                      const health = getDepHealth(task.dependency!);
-                      let label = depRowNum != null ? String(depRowNum) : '?';
-                      if (depType !== 'FS') label += depType;
-                      if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
-                      const healthLabel = health === 'satisfied' ? 'Done' : health === 'in_progress' ? 'Active' : 'At Risk';
-                      return (
-                        <div className="text-gray-300">
-                          Pred: <span className="font-mono">{label}</span> {depTask ? `(${depTask.name})` : ''}{' '}
-                          <span style={{ color: healthColor(health) }}>[{healthLabel}]</span>
-                        </div>
-                      );
+                    {task.dependencies && task.dependencies.length > 0 && (() => {
+                      return task.dependencies.map((dep, di) => {
+                        const depTask = tasks.find(t => t.id === dep.dependencyId);
+                        const depRowNum = rowNumMap.get(dep.dependencyId);
+                        const depType = (dep.dependencyType || 'FS').toUpperCase();
+                        const lag = dep.lagDays || 0;
+                        const health = getDepHealth(dep.dependencyId);
+                        let label = depRowNum != null ? String(depRowNum) : '?';
+                        if (depType !== 'FS') label += depType;
+                        if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+                        const healthLabel = health === 'satisfied' ? 'Done' : health === 'in_progress' ? 'Active' : 'At Risk';
+                        return (
+                          <div key={di} className="text-gray-300">
+                            Pred: <span className="font-mono">{label}</span> {depTask ? `(${depTask.name})` : ''}{' '}
+                            <span style={{ color: healthColor(health) }}>[{healthLabel}]</span>
+                          </div>
+                        );
+                      });
                     })()}
                   </div>
                 </div>
@@ -859,60 +881,62 @@ export function GanttChart({
                   <polygon points="0 0, 6 2, 0 4" fill="#ef4444" />
                 </marker>
               </defs>
-              {rows.map(({ task }, idx) => {
-                if (!task.dependency) return null;
-                const depIdx = rows.findIndex(
-                  (r) => r.task.id === task.dependency
-                );
-                if (depIdx === -1) return null;
-
-                const depTask = rows[depIdx].task;
-                const depStart = toDate(depTask.startDate);
-                const depEnd = toDate(depTask.endDate);
+              {rows.flatMap(({ task }, idx) => {
+                if (!task.dependencies || task.dependencies.length === 0) return [];
                 const taskStart = toDate(task.startDate);
                 const taskEnd = toDate(task.endDate);
-                if (!depStart || !depEnd || !taskStart || !taskEnd) return null;
+                if (!taskStart || !taskEnd) return [];
 
-                const depType = (task.dependencyType || 'FS').toUpperCase();
-                const y1 = HEADER_H + depIdx * ROW_H + ROW_H / 2;
-                const y2 = HEADER_H + idx * ROW_H + ROW_H / 2;
+                return task.dependencies.map((dep, di) => {
+                  const depIdx = rows.findIndex(r => r.task.id === dep.dependencyId);
+                  if (depIdx === -1) return null;
 
-                let x1: number, x2: number;
-                switch (depType) {
-                  case 'SS': // Start-to-Start
-                    x1 = daysBetween(minDate, depStart) * DAY_PX;
-                    x2 = daysBetween(minDate, taskStart) * DAY_PX;
-                    break;
-                  case 'FF': // Finish-to-Finish
-                    x1 = daysBetween(minDate, depEnd) * DAY_PX;
-                    x2 = daysBetween(minDate, taskEnd) * DAY_PX;
-                    break;
-                  case 'SF': // Start-to-Finish
-                    x1 = daysBetween(minDate, depStart) * DAY_PX;
-                    x2 = daysBetween(minDate, taskEnd) * DAY_PX;
-                    break;
-                  default: // FS: Finish-to-Start
-                    x1 = daysBetween(minDate, depEnd) * DAY_PX;
-                    x2 = daysBetween(minDate, taskStart) * DAY_PX;
-                    break;
-                }
+                  const depTask = rows[depIdx].task;
+                  const depStart = toDate(depTask.startDate);
+                  const depEnd = toDate(depTask.endDate);
+                  if (!depStart || !depEnd) return null;
 
-                const midX = x1 + (x1 <= x2 ? 10 : -10);
-                const health = getDepHealth(task.dependency!);
-                const arrowColor = healthColor(health);
-                const arrowheadId = health === 'satisfied' ? 'arrowhead-green' : health === 'in_progress' ? 'arrowhead-yellow' : 'arrowhead-red';
+                  const depType = (dep.dependencyType || 'FS').toUpperCase();
+                  const y1 = HEADER_H + depIdx * ROW_H + ROW_H / 2;
+                  const y2 = HEADER_H + idx * ROW_H + ROW_H / 2;
 
-                return (
-                  <path
-                    key={`dep-${task.id}`}
-                    d={`M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`}
-                    fill="none"
-                    stroke={arrowColor}
-                    strokeWidth="1.5"
-                    markerEnd={`url(#${arrowheadId})`}
-                    opacity={0.7}
-                  />
-                );
+                  let x1: number, x2: number;
+                  switch (depType) {
+                    case 'SS':
+                      x1 = daysBetween(minDate, depStart) * DAY_PX;
+                      x2 = daysBetween(minDate, taskStart) * DAY_PX;
+                      break;
+                    case 'FF':
+                      x1 = daysBetween(minDate, depEnd) * DAY_PX;
+                      x2 = daysBetween(minDate, taskEnd) * DAY_PX;
+                      break;
+                    case 'SF':
+                      x1 = daysBetween(minDate, depStart) * DAY_PX;
+                      x2 = daysBetween(minDate, taskEnd) * DAY_PX;
+                      break;
+                    default: // FS
+                      x1 = daysBetween(minDate, depEnd) * DAY_PX;
+                      x2 = daysBetween(minDate, taskStart) * DAY_PX;
+                      break;
+                  }
+
+                  const midX = x1 + (x1 <= x2 ? 10 : -10);
+                  const health = getDepHealth(dep.dependencyId);
+                  const arrowColor = healthColor(health);
+                  const arrowheadId = health === 'satisfied' ? 'arrowhead-green' : health === 'in_progress' ? 'arrowhead-yellow' : 'arrowhead-red';
+
+                  return (
+                    <path
+                      key={`dep-${task.id}-${di}`}
+                      d={`M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`}
+                      fill="none"
+                      stroke={arrowColor}
+                      strokeWidth="1.5"
+                      markerEnd={`url(#${arrowheadId})`}
+                      opacity={0.7}
+                    />
+                  );
+                });
               })}
             </svg>
           </div>

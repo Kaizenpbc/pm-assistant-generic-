@@ -82,8 +82,8 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Multiple views: Gantt chart, Kanban board, Calendar, Table (with MS Project-style column picker and saved views)
 - Gantt drag-and-drop rescheduling (move and resize task bars)
 - Task hierarchy with summary task auto-calculation
-- Dependency management with predecessor/successor relationships and health badges
-- MS Project-style row numbers and predecessor notation (e.g. "3", "7SS+2d") with inline editing
+- Multi-dependency support: up to 20 predecessors per task (FS/SS/FF/SF + lag), stored in a `task_dependencies` junction table
+- MS Project-style predecessor notation (e.g. "3FS+2d,5SS,7") with health badges and inline editing in Table view
 - Recurring tasks (daily, weekly, biweekly, monthly) with auto-generation
 - Customizable dashboard widgets with per-user persistence
 - Real-time presence indicators showing who is viewing a project
@@ -259,15 +259,17 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 ### Project Milestones
 - Tasks flagged as milestones (`is_milestone`) render as diamonds on the Gantt chart
 
-### Dependency Types with Lag
-- Four dependency types: Finish-to-Start (FS), Finish-to-Finish (FF), Start-to-Start (SS), Start-to-Finish (SF)
-- Optional lag days per dependency
-- MS Project-style row-number notation in Table view and Gantt left panel
-- Dependency health badges: green (completed), yellow (in progress), red (overdue)
-- Gantt arrows color-coded by predecessor health status
-- Inline predecessor editing in Table view with validation
-- Server-side dependency validation: self-reference, circular, cross-schedule, and existence checks (400 errors)
-- Orphan cleanup: deleting a task clears all references to it
+### Multi-Dependency Support
+- Up to 20 predecessors per task, each with its own type (FS/FF/SS/SF) and lag days
+- Stored in `task_dependencies` junction table with `ON DELETE CASCADE`
+- API: `dependencies[]` array on create/update payloads (`dependencyId`, `dependencyType`, `lagDays`)
+- MS Project-style comma-separated row-number notation in Table view and Gantt left panel (e.g. "3FS+2d,5SS,7"); same format in CSV export
+- Dependency health badges per predecessor: green (completed), yellow (in progress), red (overdue)
+- Gantt arrows drawn per predecessor, color-coded by health status
+- Task form modal: multi-predecessor UI with add/remove rows, type dropdown, and lag field per entry
+- Inline predecessor editing in Table view with comma-separated syntax and validation
+- Server-side validation per dependency: self-reference, circular, cross-schedule, existence, and 20-predecessor limit (400 errors)
+- Orphan cleanup via `ON DELETE CASCADE` — deleting a task removes all its dependency records automatically
 
 ### Kanban WIP Limits
 - Per-column Work-In-Progress limits on the Kanban board

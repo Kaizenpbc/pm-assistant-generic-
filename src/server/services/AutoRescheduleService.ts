@@ -164,6 +164,7 @@ export class AutoRescheduleService {
       startDate: t.startDate ? toDateStr(new Date(t.startDate)) : null,
       endDate: t.endDate ? toDateStr(new Date(t.endDate)) : null,
       progressPercentage: t.progressPercentage ?? 0,
+      dependencies: t.dependencies.map(d => ({ dependencyId: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
       dependency: t.dependency ?? null,
       estimatedDays: t.estimatedDays ?? null,
     }));
@@ -255,7 +256,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
         });
 
         // Also shift dependent tasks
-        const dependents = allTasks.filter((t) => t.dependency === task.id);
+        const dependents = allTasks.filter((t) => t.dependencies.some(d => d.dependencyId === task.id));
         for (const dep of dependents) {
           if (!dep.startDate || !dep.endDate) continue;
           if (dep.status === 'completed' || dep.status === 'cancelled') continue;

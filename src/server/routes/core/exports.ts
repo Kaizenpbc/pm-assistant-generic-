@@ -48,6 +48,11 @@ export async function exportRoutes(fastify: FastifyInstance) {
               endDate: t.endDate ? new Date(t.endDate).toISOString().slice(0, 10) : '',
               progressPercentage: t.progressPercentage ?? 0,
               dependency: t.dependency || '',
+              dependencies: t.dependencies.map(d => ({
+                dependencyId: d.dependencyId,
+                dependencyType: d.dependencyType,
+                lagDays: d.lagDays,
+              })),
               parentTaskId: t.parentTaskId || '',
               estimatedDays: t.estimatedDays,
             })),
@@ -87,7 +92,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
         'Start Date',
         'End Date',
         'Progress %',
-        'Dependency',
+        'Predecessors',
         'Parent Task',
       ];
 
@@ -95,7 +100,21 @@ export async function exportRoutes(fastify: FastifyInstance) {
 
       for (const schedule of schedules) {
         const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
+        // Build row number map for MS Project-style predecessor labels
+        const taskRowNum = new Map<string, number>();
+        tasks.forEach((t, idx) => taskRowNum.set(t.id, idx + 1));
+
         for (const task of tasks) {
+          // Build predecessor string in MS Project format: "3FS+2d,5SS"
+          const predLabels = task.dependencies.map(d => {
+            const rowNum = taskRowNum.get(d.dependencyId);
+            if (!rowNum) return '';
+            let label = String(rowNum);
+            if (d.dependencyType !== 'FS') label += d.dependencyType;
+            if (d.lagDays !== 0) label += (d.lagDays > 0 ? `+${d.lagDays}d` : `${d.lagDays}d`);
+            return label;
+          }).filter(Boolean);
+
           rows.push([
             schedule.name,
             task.id,
@@ -106,7 +125,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
             task.startDate ? new Date(task.startDate).toISOString().slice(0, 10) : '',
             task.endDate ? new Date(task.endDate).toISOString().slice(0, 10) : '',
             String(task.progressPercentage ?? 0),
-            task.dependency || '',
+            predLabels.join(','),
             task.parentTaskId || '',
           ]);
         }

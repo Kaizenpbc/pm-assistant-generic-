@@ -2485,6 +2485,7 @@ Each action must specify the exact field, old value, and new value. Dates should
         progress: t.progressPercentage ?? 0,
         estimatedDays: t.estimatedDays,
         dependency: t.dependency,
+        dependencies: t.dependencies.map(d => ({ id: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
         isCritical: criticalPathInfo?.isCritical ?? false,
         totalFloat: criticalPathInfo?.totalFloat ?? 0,
       };
