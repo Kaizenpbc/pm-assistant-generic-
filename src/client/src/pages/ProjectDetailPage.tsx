@@ -913,6 +913,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
       setEditingTask(null);
+      setActiveTaskId(null);
     },
   });
 
@@ -1021,6 +1022,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           onTaskClick={(task) => setEditingTask(task)}
           activeTaskId={activeTaskId}
           onAddTask={() => setShowAddForm(true)}
+          onDeleteTask={(taskId) => deleteMutation.mutate(taskId)}
           onTaskDragEnd={(taskId, newStart, newEnd) => updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } })}
           criticalPathTaskIds={showCriticalPath ? cpmData?.criticalPathTaskIds : undefined}
           baselineTasks={selectedBaseline?.tasks?.map((bt: any) => ({
