@@ -81,6 +81,7 @@ import { useColumnState } from '../hooks/useColumnState';
 import { COLUMN_DEFS } from '../components/schedule/tableColumns';
 import { ColumnPickerDropdown } from '../components/schedule/ColumnPickerDropdown';
 import { TaskListMobile } from '../components/tasks/TaskListMobile';
+import { useUndoRedo } from '../hooks/useUndoRedo';
 
 type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resource-leveling';
 
@@ -928,6 +929,91 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     },
   });
 
+  // Undo/redo
+  const { canUndo, canRedo, undoDescription, redoDescription, pushAction, undo, redo } = useUndoRedo();
+
+  // Update task with undo support
+  const updateTaskWithUndo = useCallback((taskId: string, data: Record<string, unknown>) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) { updateMutation.mutate({ taskId, data }); return; }
+    // Capture old values for undo
+    const oldValues: Record<string, unknown> = {};
+    for (const key of Object.keys(data)) {
+      oldValues[key] = (task as any)[key];
+    }
+    const fieldNames = Object.keys(data).join(', ');
+    pushAction({
+      description: `Edit ${task.name} (${fieldNames})`,
+      undo: () => updateMutation.mutate({ taskId, data: oldValues }),
+      redo: () => updateMutation.mutate({ taskId, data }),
+    });
+    updateMutation.mutate({ taskId, data });
+  }, [tasks, updateMutation, pushAction]);
+
+  // Drag-end with undo (bar drag for dates)
+  const handleTaskDragEndWithUndo = useCallback((taskId: string, newStart: string, newEnd: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const oldStart = task.startDate;
+    const oldEnd = task.endDate;
+    pushAction({
+      description: `Move ${task.name}`,
+      undo: () => updateMutation.mutate({ taskId, data: { startDate: oldStart, endDate: oldEnd } }),
+      redo: () => updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } }),
+    });
+    updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } });
+  }, [tasks, updateMutation, pushAction]);
+
+  // Row reorder with undo
+  const handleTaskReorder = useCallback((updates: Array<{ taskId: string; sortOrder: number }>) => {
+    // Capture old sortOrders
+    const oldOrders = updates.map(u => {
+      const t = tasks.find(tt => tt.id === u.taskId);
+      return { taskId: u.taskId, sortOrder: t?.sortOrder ?? 0 };
+    });
+    pushAction({
+      description: `Reorder tasks`,
+      undo: () => {
+        apiService.bulkUpdateTasks(oldOrders.map(o => ({ id: o.taskId, scheduleId: schedule.id, sortOrder: o.sortOrder })));
+        queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+      },
+      redo: () => {
+        apiService.bulkUpdateTasks(updates.map(u => ({ id: u.taskId, scheduleId: schedule.id, sortOrder: u.sortOrder })));
+        queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+      },
+    });
+    apiService.bulkUpdateTasks(updates.map(u => ({ id: u.taskId, scheduleId: schedule.id, sortOrder: u.sortOrder })));
+    queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+  }, [tasks, schedule.id, pushAction, queryClient]);
+
+  // Bulk update with undo
+  const handleBulkUpdate = useCallback(async (taskIds: string[], field: string, value: string) => {
+    // Capture old values
+    const oldValues = taskIds.map(id => {
+      const t = tasks.find(tt => tt.id === id);
+      return { id, oldValue: t ? (t as any)[field] : undefined };
+    });
+    pushAction({
+      description: `Bulk update ${field} on ${taskIds.length} tasks`,
+      undo: () => {
+        Promise.all(oldValues.map(o => apiService.updateTask(schedule.id, o.id, { [field]: o.oldValue })));
+        queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+      },
+      redo: () => {
+        Promise.all(taskIds.map(id => apiService.updateTask(schedule.id, id, { [field]: value })));
+        queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+      },
+    });
+    await Promise.all(taskIds.map(id => apiService.updateTask(schedule.id, id, { [field]: value })));
+    queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+  }, [tasks, schedule.id, pushAction, queryClient]);
+
+  // Bulk delete (NOT undoable — confirmed by delete dialog)
+  const handleBulkDelete = useCallback(async (taskIds: string[]) => {
+    await Promise.all(taskIds.map(id => apiService.deleteTask(schedule.id, id)));
+    queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+  }, [schedule.id, queryClient]);
+
   // Kanban status change
   const handleKanbanStatusChange = (taskId: string, newStatus: string) => {
     updateMutation.mutate({ taskId, data: { status: newStatus } as any });
@@ -1047,8 +1133,17 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           onAddTask={() => setShowAddForm(true)}
           onDeleteTask={(taskId) => deleteMutation.mutate(taskId)}
           columnState={columnState}
-          onTaskDragEnd={(taskId, newStart, newEnd) => updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } })}
-          onTaskUpdate={(taskId, data) => updateMutation.mutate({ taskId, data })}
+          onTaskDragEnd={handleTaskDragEndWithUndo}
+          onTaskUpdate={updateTaskWithUndo}
+          onTaskReorder={handleTaskReorder}
+          onBulkUpdate={handleBulkUpdate}
+          onBulkDelete={handleBulkDelete}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          undoDescription={undoDescription}
+          redoDescription={redoDescription}
+          onUndo={undo}
+          onRedo={redo}
           criticalPathTaskIds={showCriticalPath ? cpmData?.criticalPathTaskIds : undefined}
           baselineTasks={selectedBaseline?.tasks?.map((bt: any) => ({
             taskId: bt.taskId,

@@ -303,6 +303,15 @@ export function GanttChart({
   baselineTasks,
   onTaskDragEnd,
   onTaskUpdate,
+  onTaskReorder,
+  onBulkUpdate,
+  onBulkDelete,
+  canUndo,
+  canRedo,
+  undoDescription,
+  redoDescription,
+  onUndo,
+  onRedo,
 }: {
   tasks: GanttTask[];
   scheduleName?: string;
@@ -328,6 +337,19 @@ export function GanttChart({
   onTaskDragEnd?: (taskId: string, newStartDate: string, newEndDate: string) => void;
   /** Called when a task field is edited inline in the left panel */
   onTaskUpdate?: (taskId: string, data: Record<string, unknown>) => void;
+  /** Called when rows are reordered via drag-and-drop */
+  onTaskReorder?: (updates: Array<{ taskId: string; sortOrder: number }>) => void;
+  /** Called when bulk field update is applied to selected tasks */
+  onBulkUpdate?: (taskIds: string[], field: string, value: string) => Promise<void>;
+  /** Called when bulk delete is applied to selected tasks */
+  onBulkDelete?: (taskIds: string[]) => Promise<void>;
+  /** Undo/redo state */
+  canUndo?: boolean;
+  canRedo?: boolean;
+  undoDescription?: string;
+  redoDescription?: string;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }) {
   const criticalSet = useMemo(() => new Set(criticalPathTaskIds || []), [criticalPathTaskIds]);
   const baselineMap = useMemo(() => {
@@ -431,7 +453,114 @@ export function GanttChart({
     return ganttColWidths[col.key] ?? col.defaultWidth;
   }, [ganttColWidths]);
 
+  // -----------------------------------------------------------------------
+  // Row drag reorder state
+  // -----------------------------------------------------------------------
+  const [rowDrag, setRowDrag] = useState<{
+    taskId: string;
+    parentTaskId: string | null;
+    startIdx: number;
+    targetIdx: number;
+  } | null>(null);
+
+  // -----------------------------------------------------------------------
+  // Multi-select bulk edit state
+  // -----------------------------------------------------------------------
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkPriority, setBulkPriority] = useState('');
+  const [bulkAssignee, setBulkAssignee] = useState('');
+  const [bulkMessage, setBulkMessage] = useState('');
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const lastClickedIdRef = useRef<string | null>(null);
+  const someSelected = selectedIds.size > 0;
+
   const rows = useMemo(() => buildFlatRows(tasks), [tasks]);
+
+  const allSelected = rows.length > 0 && rows.every(r => selectedIds.has(r.task.id));
+
+  const toggleSelectAll = useCallback(() => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(rows.map(r => r.task.id)));
+  }, [allSelected, rows]);
+
+  const toggleSelect = useCallback((taskId: string, shiftKey: boolean) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (shiftKey && lastClickedIdRef.current) {
+        const lastIdx = rows.findIndex(r => r.task.id === lastClickedIdRef.current);
+        const curIdx = rows.findIndex(r => r.task.id === taskId);
+        if (lastIdx !== -1 && curIdx !== -1) {
+          const [from, to] = lastIdx < curIdx ? [lastIdx, curIdx] : [curIdx, lastIdx];
+          for (let i = from; i <= to; i++) next.add(rows[i].task.id);
+          return next;
+        }
+      }
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+    lastClickedIdRef.current = taskId;
+  }, [rows]);
+
+  const clearBulkState = useCallback(() => {
+    setSelectedIds(new Set());
+    setBulkStatus('');
+    setBulkPriority('');
+    setBulkAssignee('');
+  }, []);
+
+  const showBulkMessage = useCallback((msg: string) => {
+    setBulkMessage(msg);
+    setTimeout(() => setBulkMessage(''), 3000);
+  }, []);
+
+  const applyBulkUpdate = useCallback(async (field: string, value: string) => {
+    if (!value || selectedIds.size === 0 || !onBulkUpdate) return;
+    setBulkLoading(true);
+    try {
+      await onBulkUpdate(Array.from(selectedIds), field, value);
+      showBulkMessage(`Updated ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''}`);
+      clearBulkState();
+    } catch {
+      showBulkMessage('Some updates failed');
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [selectedIds, onBulkUpdate, showBulkMessage, clearBulkState]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.size === 0 || !onBulkDelete) return;
+    const label = selectedIds.size === 1
+      ? 'Are you sure you want to delete this task? This cannot be undone.'
+      : `Are you sure you want to delete ${selectedIds.size} tasks? This cannot be undone.`;
+    if (!window.confirm(label)) return;
+    setBulkLoading(true);
+    try {
+      await onBulkDelete(Array.from(selectedIds));
+      showBulkMessage(`Deleted ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''}`);
+      clearBulkState();
+    } catch {
+      showBulkMessage('Some deletes failed');
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [selectedIds, onBulkDelete, showBulkMessage, clearBulkState]);
+
+  // Delete key for bulk delete
+  useEffect(() => {
+    if (!onBulkDelete) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' && selectedIds.size > 0) {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
+        e.preventDefault();
+        handleBulkDelete();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [selectedIds, onBulkDelete, handleBulkDelete]);
 
   // Row number map: taskId → 1-based row index
   const rowNumMap = useMemo(() => {
@@ -815,6 +944,60 @@ export function GanttChart({
     [drag, dayPx]
   );
 
+  // -----------------------------------------------------------------------
+  // Row drag reorder handlers
+  // -----------------------------------------------------------------------
+  const handleRowDragStart = useCallback((e: React.DragEvent, task: GanttTask, rowIdx: number) => {
+    if (editingCell || !onTaskReorder) return;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', task.id);
+    setRowDrag({
+      taskId: task.id,
+      parentTaskId: task.parentTaskId || null,
+      startIdx: rowIdx,
+      targetIdx: rowIdx,
+    });
+  }, [editingCell, onTaskReorder]);
+
+  const handleRowDragOver = useCallback((e: React.DragEvent, task: GanttTask, rowIdx: number) => {
+    if (!rowDrag || !onTaskReorder) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    // Only allow reorder within same parent level
+    const draggedParent = rowDrag.parentTaskId;
+    const targetParent = task.parentTaskId || null;
+    if (draggedParent !== targetParent) return;
+    setRowDrag(prev => prev ? { ...prev, targetIdx: rowIdx } : null);
+  }, [rowDrag, onTaskReorder]);
+
+  const handleRowDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    if (!rowDrag || !onTaskReorder || rowDrag.startIdx === rowDrag.targetIdx) {
+      setRowDrag(null);
+      return;
+    }
+    // Get all siblings of the same parent, in their current row order
+    const parentId = rowDrag.parentTaskId;
+    const siblings = rows
+      .map((r, idx) => ({ ...r, rowIdx: idx }))
+      .filter(r => (r.task.parentTaskId || null) === parentId);
+    // Compute new order by removing dragged task and inserting at target position
+    const draggedSibIdx = siblings.findIndex(s => s.task.id === rowDrag.taskId);
+    const targetSibIdx = siblings.findIndex(s => s.rowIdx === rowDrag.targetIdx);
+    if (draggedSibIdx === -1 || targetSibIdx === -1) { setRowDrag(null); return; }
+    const reordered = [...siblings];
+    const [removed] = reordered.splice(draggedSibIdx, 1);
+    reordered.splice(targetSibIdx, 0, removed);
+    // Assign sortOrder with gaps of 10
+    const updates = reordered.map((s, i) => ({ taskId: s.task.id, sortOrder: (i + 1) * 10 }));
+    onTaskReorder(updates);
+    setRowDrag(null);
+  }, [rowDrag, onTaskReorder, rows]);
+
+  const handleRowDragEnd = useCallback(() => {
+    setRowDrag(null);
+  }, []);
+
   if (rows.length === 0) {
     return (
       <div className="text-center py-8 text-sm text-gray-400">
@@ -854,6 +1037,31 @@ export function GanttChart({
               </button>
             ))}
           </div>
+          {/* Undo/Redo buttons */}
+          {(onUndo || onRedo) && (
+            <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-500 ml-2">
+              <button
+                onClick={onUndo}
+                disabled={!canUndo}
+                className={`px-2 py-1 text-xs rounded-l-md transition-colors ${canUndo ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                title={canUndo ? `Undo: ${undoDescription || ''}` : 'Nothing to undo'}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+              </button>
+              <button
+                onClick={onRedo}
+                disabled={!canRedo}
+                className={`px-2 py-1 text-xs rounded-r-md transition-colors ${canRedo ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                title={canRedo ? `Redo: ${redoDescription || ''}` : 'Nothing to redo'}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+                </svg>
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             {onAddTask && (
               <button
@@ -913,6 +1121,84 @@ export function GanttChart({
         </div>
       )}
 
+      {/* Bulk action toolbar */}
+      {someSelected && onBulkUpdate && (
+        <div className="sticky top-0 z-10 bg-primary-50 border-b border-primary-200 px-4 py-2 flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-primary-700">{selectedIds.size} selected</span>
+          </div>
+          <div className="h-4 w-px bg-primary-200" />
+          <div className="flex items-center gap-1">
+            <select
+              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              value={bulkStatus}
+              onChange={e => setBulkStatus(e.target.value)}
+              disabled={bulkLoading}
+            >
+              <option value="">Status...</option>
+              {statusOptions.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+            </select>
+            {bulkStatus && (
+              <button className="text-xs px-2 py-1 rounded bg-primary-100 text-primary-700 hover:bg-primary-200 disabled:opacity-50" onClick={() => applyBulkUpdate('status', bulkStatus)} disabled={bulkLoading}>Apply</button>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <select
+              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              value={bulkPriority}
+              onChange={e => setBulkPriority(e.target.value)}
+              disabled={bulkLoading}
+            >
+              <option value="">Priority...</option>
+              {priorityOptions.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            {bulkPriority && (
+              <button className="text-xs px-2 py-1 rounded bg-primary-100 text-primary-700 hover:bg-primary-200 disabled:opacity-50" onClick={() => applyBulkUpdate('priority', bulkPriority)} disabled={bulkLoading}>Apply</button>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <input
+              type="text"
+              placeholder="Assign to..."
+              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400 w-28"
+              value={bulkAssignee}
+              onChange={e => setBulkAssignee(e.target.value)}
+              disabled={bulkLoading}
+              onKeyDown={e => { if (e.key === 'Enter' && bulkAssignee) applyBulkUpdate('assignedTo', bulkAssignee); }}
+            />
+            {bulkAssignee && (
+              <button className="text-xs px-2 py-1 rounded bg-primary-100 text-primary-700 hover:bg-primary-200 disabled:opacity-50" onClick={() => applyBulkUpdate('assignedTo', bulkAssignee)} disabled={bulkLoading}>Apply</button>
+            )}
+          </div>
+          {onBulkDelete && (
+            <>
+              <div className="h-4 w-px bg-primary-200" />
+              <button
+                className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 flex items-center gap-1"
+                onClick={handleBulkDelete}
+                disabled={bulkLoading}
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+                Delete
+              </button>
+            </>
+          )}
+          <button
+            className="text-xs px-2 py-1 rounded bg-white text-gray-500 hover:bg-gray-100 border border-gray-200 ml-auto"
+            onClick={clearBulkState}
+          >
+            Clear
+          </button>
+          {bulkMessage && (
+            <span className={`text-xs font-medium ${bulkMessage.includes('fail') ? 'text-red-600' : 'text-green-600'}`}>
+              {bulkMessage}
+            </span>
+          )}
+        </div>
+      )}
+
       <div id="gantt-print-container" className="flex overflow-hidden" style={{ maxHeight: '70vh' }}>
         {/* ============================================================= */}
         {/* LEFT: Task table                                               */}
@@ -937,7 +1223,15 @@ export function GanttChart({
                   style={col.flex ? undefined : { width: w }}
                   title={col.key === 'editIcon' ? 'Double-click row or click icon to edit' : undefined}
                 >
-                  {col.label}
+                  {col.key === 'rowNum' && onBulkUpdate ? (
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      title="Select all"
+                    />
+                  ) : col.label}
                   {col.resizable && (
                     <div
                       className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-10 hover:bg-primary-400/40 transition-colors"
@@ -959,14 +1253,40 @@ export function GanttChart({
             return (
               <div
                 key={task.id}
-                className={`flex items-center border-b border-gray-100 hover:bg-blue-50/40 transition-colors group cursor-pointer ${activeTaskId === task.id ? 'bg-primary-50 ring-1 ring-inset ring-primary-200' : ''}`}
+                className={`flex items-center border-b border-gray-100 hover:bg-blue-50/40 transition-colors group cursor-pointer ${activeTaskId === task.id ? 'bg-primary-50 ring-1 ring-inset ring-primary-200' : ''} ${rowDrag?.targetIdx === rowIdx && rowDrag?.taskId !== task.id && rowDrag?.parentTaskId === (task.parentTaskId || null) ? 'border-t-2 border-t-blue-500' : ''} ${rowDrag?.taskId === task.id ? 'opacity-40' : ''}`}
                 style={{ height: ROW_H }}
-                onClick={() => { if (!editingCell) onTaskSelect?.(task); }}
+                onClick={() => {
+                  if (editingCell) return;
+                  if (someSelected && onBulkUpdate) { toggleSelect(task.id, false); return; }
+                  onTaskSelect?.(task);
+                }}
                 onDoubleClick={() => { if (!editingCell) onTaskClick?.(task); }}
+                draggable={!!onTaskReorder && !editingCell && !someSelected}
+                onDragStart={(e) => handleRowDragStart(e, task, rowIdx)}
+                onDragOver={(e) => handleRowDragOver(e, task, rowIdx)}
+                onDrop={handleRowDrop}
+                onDragEnd={handleRowDragEnd}
               >
-                {/* Row # */}
-                <div className="shrink-0 px-1 text-center text-xs text-gray-400 font-mono" style={{ width: getColWidth(GANTT_COLUMNS[0]) }}>
-                  {rowIdx + 1}
+                {/* Row # / Checkbox / Drag handle */}
+                <div
+                  className="shrink-0 px-1 text-center text-xs text-gray-400 font-mono flex items-center justify-center"
+                  style={{ width: getColWidth(GANTT_COLUMNS[0]) }}
+                >
+                  {someSelected && onBulkUpdate ? (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(task.id)}
+                      onChange={() => {}}
+                      onClick={(e) => { e.stopPropagation(); toggleSelect(task.id, e.shiftKey); }}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    />
+                  ) : onTaskReorder && !editingCell ? (
+                    <span className="hidden group-hover:inline cursor-grab text-gray-400" title="Drag to reorder">&#x2807;</span>
+                  ) : null}
+                  {!(someSelected && onBulkUpdate) && !(onTaskReorder && !editingCell) && (rowIdx + 1)}
+                  {!(someSelected && onBulkUpdate) && onTaskReorder && !editingCell && (
+                    <span className="group-hover:hidden">{rowIdx + 1}</span>
+                  )}
                 </div>
 
                 {/* Task name with indent */}
