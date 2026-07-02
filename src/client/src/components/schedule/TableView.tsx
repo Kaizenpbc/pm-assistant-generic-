@@ -212,7 +212,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
       case 'endDate': return task.endDate || '';
       case 'progressPercentage': return task.progressPercentage ?? 0;
       case 'assignedTo': return (task.assignedTo || '').toLowerCase();
-      case 'duration': return task.estimatedDays ?? 0;
+      case 'duration': {
+        if (task.estimatedDays != null) return task.estimatedDays;
+        if (task.startDate && task.endDate) {
+          const diff = Math.round((new Date(task.endDate).getTime() - new Date(task.startDate).getTime()) / 86400000);
+          return diff > 0 ? diff : 0;
+        }
+        return 0;
+      }
       case 'earlyStart': return cpmMap.get(task.id)?.ES ?? Infinity;
       case 'earlyFinish': return cpmMap.get(task.id)?.EF ?? Infinity;
       case 'lateStart': return cpmMap.get(task.id)?.LS ?? Infinity;
@@ -719,8 +726,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
         );
 
       // Read-only columns
-      case 'duration':
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600">{task.estimatedDays != null ? `${task.estimatedDays}d` : '-'}</td>;
+      case 'duration': {
+        let days: number | null = task.estimatedDays ?? null;
+        if (days == null && task.startDate && task.endDate) {
+          const diff = Math.round((new Date(task.endDate).getTime() - new Date(task.startDate).getTime()) / 86400000);
+          if (diff > 0) days = diff;
+        }
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600">{days != null ? `${days}d` : '-'}</td>;
+      }
 
       case 'earlyStart':
         return <td key={col.key} className="px-3 py-2 text-xs text-gray-600">{formatCpmDate(cpm?.ES)}</td>;
