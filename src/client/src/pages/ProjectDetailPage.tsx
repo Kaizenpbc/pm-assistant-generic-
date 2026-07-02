@@ -77,6 +77,9 @@ import { SprintBurndownChart } from '../components/sprints/SprintBurndownChart';
 import { AvailabilityCalendar } from '../components/resources/AvailabilityCalendar';
 import { usePresence } from '../hooks/usePresence';
 import { useBreakpoint } from '../hooks/useBreakpoint';
+import { useColumnState } from '../hooks/useColumnState';
+import { COLUMN_DEFS } from '../components/schedule/tableColumns';
+import { ColumnPickerDropdown } from '../components/schedule/ColumnPickerDropdown';
 import { TaskListMobile } from '../components/tasks/TaskListMobile';
 
 type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resource-leveling';
@@ -796,10 +799,11 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showCriticalPath, setShowCriticalPath] = useState(false);
+  const columnState = useColumnState(schedule.id);
   const [selectedBaselineId, setSelectedBaselineId] = useState<string>('');
   const [showComparison, setShowComparison] = useState(false);
   const [showReschedulePanel, setShowReschedulePanel] = useState(false);
-  const [cpmNeeded, setCpmNeeded] = useState(false);
+  const cpmNeeded = columnState.cpmNeeded;
 
   const { data: tasksData, isLoading: tasksLoading } = useQuery({
     queryKey: ['tasks', schedule.id],
@@ -935,8 +939,18 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   return (
     <>
       {/* Controls bar */}
-      {viewMode === 'gantt' && (
-        <div className="flex items-center gap-2 flex-wrap mb-2">
+      {/* Shared column picker — all views */}
+      <div className="flex items-center gap-2 flex-wrap mb-2">
+        <ColumnPickerDropdown
+          columns={COLUMN_DEFS}
+          visibleKeys={columnState.visibleKeys}
+          onToggle={columnState.toggleColumn}
+          onToggleGroup={columnState.toggleGroup}
+        />
+
+        {viewMode === 'gantt' && (
+          <>
+          <div className="h-4 w-px bg-gray-200 mx-1" />
           <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
             <input
               type="checkbox"
@@ -1011,8 +1025,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
               Project duration: {cpmData.projectDuration} days | Critical tasks: {cpmData.criticalPathTaskIds?.length || 0}
             </span>
           )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {viewMode === 'gantt' && (
         <GanttChart
@@ -1023,6 +1038,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           activeTaskId={activeTaskId}
           onAddTask={() => setShowAddForm(true)}
           onDeleteTask={(taskId) => deleteMutation.mutate(taskId)}
+          columnState={columnState}
           onTaskDragEnd={(taskId, newStart, newEnd) => updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } })}
           criticalPathTaskIds={showCriticalPath ? cpmData?.criticalPathTaskIds : undefined}
           baselineTasks={selectedBaseline?.tasks?.map((bt: any) => ({
@@ -1048,10 +1064,10 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           onTaskClick={(task) => setEditingTask(task)}
           activeTaskId={activeTaskId}
           onTaskUpdate={(taskId, data) => updateMutation.mutate({ taskId, data })}
+          columnState={columnState}
           cpmData={cpmData}
           baselineData={comparison}
           scheduleStartDate={schedule.startDate}
-          onCpmNeeded={setCpmNeeded}
         />
       )}
       {viewMode === 'calendar' && (

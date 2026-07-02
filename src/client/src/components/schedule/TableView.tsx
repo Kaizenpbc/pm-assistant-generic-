@@ -3,10 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ArrowUpDown, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Pencil, Check, Loader2, X, Trash2, CheckSquare } from 'lucide-react';
 import type { GanttTask } from './GanttChart';
 import { apiService } from '../../services/api';
-import { ColumnPickerDropdown } from './ColumnPickerDropdown';
 import { SavedViewsDropdown, type SavedView } from './SavedViewsDropdown';
-import { COLUMN_DEFS, DEFAULT_VISIBLE_KEYS, SCHEDULING_KEYS } from './tableColumns';
-import type { ColumnKey, ColumnGroup, ColumnDef } from './tableColumns';
+import type { ColumnKey, ColumnDef } from './tableColumns';
+import type { ColumnState } from '../../hooks/useColumnState';
 
 const barColors: Record<string, { bg: string; text: string }> = {
   completed: { bg: 'bg-green-100', text: 'text-green-700' },
@@ -50,16 +49,16 @@ interface TableViewProps {
   onTaskSelect?: (task: GanttTask) => void;
   activeTaskId?: string | null;
   onTaskUpdate: (taskId: string, data: Record<string, unknown>) => void;
+  columnState: ColumnState;
   cpmData?: { tasks: CpmTaskData[]; criticalPathTaskIds: string[] };
   baselineData?: { taskVariances: BaselineTaskVariance[] };
   scheduleStartDate?: string;
-  onCpmNeeded?: (needed: boolean) => void;
 }
 
 const statusOptions = ['pending', 'in_progress', 'completed'];
 const priorityOptions = ['low', 'medium', 'high', 'urgent'];
 
-type EditableField = 'name' | 'status' | 'priority' | 'startDate' | 'endDate' | 'progressPercentage' | 'assignedTo';
+type EditableField = 'name' | 'status' | 'priority' | 'startDate' | 'endDate' | 'progressPercentage' | 'assignedTo' | 'dependency';
 
 function addDaysToDate(baseDate: string, days: number): string {
   const d = new Date(baseDate);
@@ -67,7 +66,8 @@ function addDaysToDate(baseDate: string, days: number): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, activeTaskId, onTaskUpdate, cpmData, baselineData, scheduleStartDate, onCpmNeeded }: TableViewProps) {
+export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, activeTaskId, onTaskUpdate, columnState, cpmData, baselineData, scheduleStartDate }: TableViewProps) {
+  const { visibleKeys, visibleColumns, colWidths, setColWidths, moveColumn } = columnState;
   const queryClient = useQueryClient();
   const [sortField, setSortField] = useState<ColumnKey>('startDate');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -82,99 +82,11 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
   const [bulkMessage, setBulkMessage] = useState('');
   const [bulkLoading, setBulkLoading] = useState(false);
 
-  // Column visibility state — persisted per schedule
-  const [visibleKeys, setVisibleKeys] = useState<Set<ColumnKey>>(() => {
-    try {
-      const stored = localStorage.getItem(`tableview-cols:${scheduleId}`);
-      if (stored) {
-        const arr = JSON.parse(stored) as ColumnKey[];
-        return new Set(arr);
-      }
-    } catch { /* ignore */ }
-    return new Set(DEFAULT_VISIBLE_KEYS);
-  });
-
-  // Persist to localStorage on change
-  useEffect(() => {
-    localStorage.setItem(`tableview-cols:${scheduleId}`, JSON.stringify([...visibleKeys]));
-  }, [visibleKeys, scheduleId]);
-
-  // Notify parent when CPM columns are visible
-  useEffect(() => {
-    if (!onCpmNeeded) return;
-    const needsCpm = [...visibleKeys].some(k => SCHEDULING_KEYS.has(k));
-    onCpmNeeded(needsCpm);
-  }, [visibleKeys, onCpmNeeded]);
-
-  const toggleColumn = useCallback((key: ColumnKey) => {
-    if (key === 'name') return; // always visible
-    setVisibleKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }, []);
-
-  const toggleGroup = useCallback((group: ColumnGroup, visible: boolean) => {
-    setVisibleKeys(prev => {
-      const next = new Set(prev);
-      for (const col of COLUMN_DEFS) {
-        if (col.group === group && col.key !== 'name') {
-          if (visible) next.add(col.key);
-          else next.delete(col.key);
-        }
-      }
-      return next;
-    });
-  }, []);
-
   const loadSavedView = useCallback((view: SavedView) => {
-    setVisibleKeys(new Set(view.columns));
+    columnState.setVisibleKeys(new Set(view.columns));
     setSortField(view.sortField);
     setSortDir(view.sortDir);
-  }, []);
-
-  // Column order — user can drag to reorder
-  const [columnOrder, setColumnOrder] = useState<ColumnKey[]>(() => {
-    try {
-      const stored = localStorage.getItem(`tableview-col-order:${scheduleId}`);
-      if (stored) return JSON.parse(stored) as ColumnKey[];
-    } catch {}
-    return [];
-  });
-
-  useEffect(() => {
-    if (columnOrder.length > 0) {
-      localStorage.setItem(`tableview-col-order:${scheduleId}`, JSON.stringify(columnOrder));
-    }
-  }, [columnOrder, scheduleId]);
-
-  const visibleColumns = useMemo(() => {
-    const visible = COLUMN_DEFS.filter(c => visibleKeys.has(c.key));
-    if (columnOrder.length === 0) return visible;
-    const orderMap = new Map(columnOrder.map((k, i) => [k, i]));
-    return [...visible].sort((a, b) => {
-      const ia = orderMap.get(a.key) ?? 999;
-      const ib = orderMap.get(b.key) ?? 999;
-      return ia - ib;
-    });
-  }, [visibleKeys, columnOrder]);
-
-  // Column widths — user can resize
-  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
-    try {
-      const stored = localStorage.getItem(`tableview-col-widths:${scheduleId}`);
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return {};
-  });
-
-  useEffect(() => {
-    if (Object.keys(colWidths).length > 0) {
-      localStorage.setItem(`tableview-col-widths:${scheduleId}`, JSON.stringify(colWidths));
-    }
-  }, [colWidths, scheduleId]);
+  }, [columnState]);
 
   // Column resize handler
   const resizingRef = useRef<{ key: string; startX: number; startW: number } | null>(null);
@@ -197,19 +109,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
-  }, []);
-
-  // Column move left/right
-  const moveColumn = useCallback((colKey: ColumnKey, direction: 'left' | 'right') => {
-    const currentOrder = visibleColumns.map(c => c.key);
-    const idx = currentOrder.indexOf(colKey);
-    if (idx === -1) return;
-    const targetIdx = direction === 'left' ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= currentOrder.length) return;
-    const newOrder = [...currentOrder];
-    [newOrder[idx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[idx]];
-    setColumnOrder(newOrder);
-  }, [visibleColumns]);
+  }, [setColWidths]);
 
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -361,6 +261,53 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     return result;
   }, [tasks, sortField, sortDir, getSortValue]);
 
+  // Row number map: taskId → sequential row number (1-based)
+  const rowNumMap = useMemo(() => {
+    const map = new Map<string, number>();
+    sorted.forEach((task, idx) => map.set(task.id, idx + 1));
+    return map;
+  }, [sorted]);
+
+  // Reverse map: row number → taskId
+  const rowNumToTaskId = useMemo(() => {
+    const map = new Map<number, string>();
+    sorted.forEach((task, idx) => map.set(idx + 1, task.id));
+    return map;
+  }, [sorted]);
+
+  const [depError, setDepError] = useState<{ taskId: string; message: string } | null>(null);
+
+  // Parse predecessor input like "3", "3FS", "3SS+2d", "3-1d"
+  const parsePredecessorInput = useCallback((input: string, currentTaskId: string): { taskId: string; type: string; lag: number } | { error: string } => {
+    const trimmed = input.trim();
+    if (!trimmed) return { taskId: '', type: 'FS', lag: 0 }; // clear dependency
+
+    const match = trimmed.match(/^(\d+)\s*(FS|FF|SS|SF)?\s*([+-]\d+d?)?$/i);
+    if (!match) return { error: 'Format: row# or row#FS or row#SS+2d' };
+
+    const rowNum = parseInt(match[1], 10);
+    const type = (match[2] || 'FS').toUpperCase();
+    const lagStr = match[3];
+    const lag = lagStr ? parseInt(lagStr.replace(/d$/i, ''), 10) : 0;
+
+    const targetTaskId = rowNumToTaskId.get(rowNum);
+    if (!targetTaskId) return { error: `Row ${rowNum} not found` };
+    if (targetTaskId === currentTaskId) return { error: 'Cannot reference self' };
+
+    return { taskId: targetTaskId, type, lag };
+  }, [rowNumToTaskId]);
+
+  // Get dependency health status
+  const getDepHealth = useCallback((depTaskId: string): 'satisfied' | 'in_progress' | 'at_risk' => {
+    const depTask = tasks.find(t => t.id === depTaskId);
+    if (!depTask) return 'at_risk';
+    if (depTask.status === 'completed') return 'satisfied';
+    if (depTask.status === 'in_progress') return 'in_progress';
+    // Check if overdue: not started and past end date
+    if (depTask.endDate && new Date(depTask.endDate) < new Date()) return 'at_risk';
+    return 'in_progress';
+  }, [tasks]);
+
   const SortIcon = ({ field }: { field: ColumnKey }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3 h-3 text-gray-400" />;
     return sortDir === 'asc'
@@ -377,6 +324,17 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
       case 'endDate': return task.endDate?.split('T')[0] || '';
       case 'progressPercentage': return String(task.progressPercentage ?? 0);
       case 'assignedTo': return task.assignedTo || '';
+      case 'dependency': {
+        if (!task.dependency) return '';
+        const depRowNum = rowNumMap.get(task.dependency);
+        if (!depRowNum) return '';
+        const type = task.dependencyType || 'FS';
+        const lag = task.dependencyLagDays || 0;
+        let label = String(depRowNum);
+        if (type !== 'FS') label += type;
+        if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+        return label;
+      }
       default: return '';
     }
   };
@@ -397,6 +355,32 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
 
     const originalValue = getTaskFieldValue(task, field);
     if (value === originalValue) { cancelEditing(); return; }
+
+    // Handle dependency field specially
+    if (field === 'dependency') {
+      const result = parsePredecessorInput(value, taskId);
+      if ('error' in result) {
+        setDepError({ taskId, message: result.error });
+        return;
+      }
+      setDepError(null);
+      setSavingCell({ taskId, field });
+      setEditingCell(null);
+      setEditValue('');
+      onTaskUpdate(taskId, {
+        dependency: result.taskId || null,
+        dependencyType: result.type,
+        dependencyLagDays: result.lag,
+      });
+
+      setTimeout(() => {
+        setSavingCell(null);
+        setSavedCell({ taskId, field });
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setSavedCell(null), 1200);
+      }, 300);
+      return;
+    }
 
     const saveValue = field === 'progressPercentage'
       ? Math.max(0, Math.min(100, Number(value)))
@@ -850,14 +834,59 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
         return <td key={col.key} className="px-3 py-2">{renderVarianceBadge(baseline?.endVarianceDays)}</td>;
 
       case 'dependency': {
-        let depLabel = '-';
-        if (task.dependency) {
-          const depTask = tasks.find(t => t.id === task.dependency);
-          const depType = task.dependencyType || 'FS';
-          depLabel = depTask ? `${depTask.name} (${depType})` : `${task.dependency.slice(0, 8)}... (${depType})`;
-        }
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600 max-w-[160px] truncate" title={depLabel !== '-' ? depLabel : undefined}>{depLabel}</td>;
+        const hasDepError = depError?.taskId === task.id;
+        return (
+          <td
+            key={col.key}
+            className={`px-3 py-2 text-xs w-28 ${hasDepError ? 'ring-2 ring-red-400 ring-inset rounded' : editableCellClass(task.id, 'dependency')}`}
+            onClick={() => { if (!isEditing(task.id, 'dependency')) startEditing(task.id, 'dependency', task); }}
+            title={hasDepError ? depError!.message : undefined}
+          >
+            {isEditing(task.id, 'dependency') ? (
+              <input
+                ref={el => { inputRef.current = el; }}
+                type="text"
+                placeholder="e.g. 3 or 3SS+2d"
+                className={`w-full text-xs border ${hasDepError ? 'border-red-400' : 'border-blue-300'} rounded px-1 py-0.5 focus:outline-none focus:ring-1 ${hasDepError ? 'focus:ring-red-500' : 'focus:ring-blue-500'} bg-white font-mono`}
+                value={editValue}
+                onChange={e => { setEditValue(e.target.value); setDepError(null); }}
+                onKeyDown={e => handleKeyDown(e, task.id, 'dependency')}
+                onBlur={() => { if (editValue === getTaskFieldValue(task, 'dependency')) { cancelEditing(); setDepError(null); } else { saveEdit(task.id, 'dependency', editValue); } }}
+              />
+            ) : task.dependency ? (() => {
+              const depRowNum = rowNumMap.get(task.dependency);
+              const depTask = tasks.find(t => t.id === task.dependency);
+              const depType = task.dependencyType || 'FS';
+              const lag = task.dependencyLagDays || 0;
+              const health = getDepHealth(task.dependency);
+              const healthDot = health === 'satisfied' ? 'bg-green-500' : health === 'in_progress' ? 'bg-yellow-500' : 'bg-red-500';
+
+              let label = depRowNum != null ? String(depRowNum) : '?';
+              if (depType !== 'FS') label += depType;
+              if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+
+              const tooltipName = depTask ? depTask.name : 'Unknown task';
+
+              return (
+                <span className="inline-flex items-center gap-1.5 font-mono group/dep relative" title={tooltipName}>
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${healthDot}`} />
+                  {label}
+                </span>
+              );
+            })() : (
+              <span className="text-gray-400">-</span>
+            )}
+            {hasDepError && (
+              <div className="text-[10px] text-red-500 mt-0.5">{depError!.message}</div>
+            )}
+            {renderSaveIndicator(task.id, 'dependency')}
+            {!hasDepError && renderHoverPencil(task.id, 'dependency')}
+          </td>
+        );
       }
+
+      case 'rowNum':
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-400 font-mono text-center w-12">{rowNumMap.get(task.id) || '-'}</td>;
 
       case 'wbs':
         return <td key={col.key} className="px-3 py-2 text-xs text-gray-500 font-mono">{wbsMap.get(task.id) || '-'}</td>;
@@ -869,7 +898,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-      {/* Column picker + saved views header */}
+      {/* Saved views header */}
       <div className="flex items-center justify-end gap-1.5 px-3 py-1.5 border-b border-gray-100 bg-gray-50/50">
         <SavedViewsDropdown
           scheduleId={scheduleId}
@@ -877,12 +906,6 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
           currentSortField={sortField}
           currentSortDir={sortDir}
           onLoadView={loadSavedView}
-        />
-        <ColumnPickerDropdown
-          columns={COLUMN_DEFS}
-          visibleKeys={visibleKeys}
-          onToggle={toggleColumn}
-          onToggleGroup={toggleGroup}
         />
       </div>
 

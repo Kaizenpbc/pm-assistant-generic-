@@ -80,7 +80,7 @@ export function ColumnPickerDropdown({ columns, visibleKeys, onToggle, onToggleG
                       type="checkbox"
                       checked={visibleKeys.has(col.key)}
                       onChange={() => onToggle(col.key)}
-                      disabled={col.key === 'name'}
+                      disabled={col.key === 'name' || col.key === 'rowNum'}
                       className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="text-xs text-gray-700">{col.label}</span>

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
+import type { ColumnState } from '../../hooks/useColumnState';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -144,6 +145,7 @@ export function GanttChart({
   activeTaskId,
   onAddTask,
   onDeleteTask,
+  columnState: _columnState,
   criticalPathTaskIds,
   baselineTasks,
   onTaskDragEnd,
@@ -160,6 +162,8 @@ export function GanttChart({
   onAddTask?: () => void;
   /** Called when the delete button is clicked for the active task */
   onDeleteTask?: (taskId: string) => void;
+  /** Shared column state (for future left-panel column rendering) */
+  columnState?: ColumnState;
   /** Task IDs that are on the critical path (rendered in red) */
   criticalPathTaskIds?: string[];
   /** Baseline task data for ghost bars */
@@ -424,7 +428,7 @@ export function GanttChart({
             className="sticky top-0 z-10 flex items-center bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
             style={{ height: HEADER_H }}
           >
-            <div className="w-12 px-2 text-center">WBS</div>
+            <div className="w-12 px-2 text-center">#</div>
             <div className="flex-1 px-2">Task Name</div>
             <div className="w-20 px-1 text-center">Start</div>
             <div className="w-20 px-1 text-center">End</div>
@@ -434,7 +438,7 @@ export function GanttChart({
           </div>
 
           {/* Task rows */}
-          {rows.map(({ task, level, wbs }) => {
+          {rows.map(({ task, level }, rowIdx) => {
             const start = toDate(task.startDate);
             const end = toDate(task.endDate);
             const pct = task.progressPercentage ?? 0;
@@ -448,9 +452,9 @@ export function GanttChart({
                 onClick={() => onTaskSelect?.(task)}
                 onDoubleClick={() => onTaskClick?.(task)}
               >
-                {/* WBS */}
+                {/* Row # */}
                 <div className="w-12 px-2 text-center text-xs text-gray-400 font-mono">
-                  {wbs}
+                  {rowIdx + 1}
                 </div>
 
                 {/* Task name with indent */}

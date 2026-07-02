@@ -1,5 +1,5 @@
 export type ColumnKey =
-  | 'name' | 'status' | 'priority' | 'startDate' | 'endDate'
+  | 'rowNum' | 'name' | 'status' | 'priority' | 'startDate' | 'endDate'
   | 'progressPercentage' | 'assignedTo' | 'duration' | 'earlyStart' | 'earlyFinish'
   | 'lateStart' | 'lateFinish' | 'totalFloat' | 'freeFloat' | 'critical'
   | 'baselineStart' | 'baselineEnd' | 'startVariance' | 'endVariance'
@@ -17,6 +17,9 @@ export interface ColumnDef {
 }
 
 export const COLUMN_DEFS: ColumnDef[] = [
+  // Row number (always first)
+  { key: 'rowNum', label: '#', group: 'standard', defaultVisible: true, editable: false, sortable: false },
+
   // Standard
   { key: 'name', label: 'Task Name', group: 'standard', defaultVisible: true, editable: true, sortable: true },
   { key: 'status', label: 'Status', group: 'standard', defaultVisible: true, editable: true, sortable: true },
@@ -43,7 +46,7 @@ export const COLUMN_DEFS: ColumnDef[] = [
   { key: 'endVariance', label: 'End Variance', group: 'baseline', defaultVisible: false, editable: false, sortable: true },
 
   // Other
-  { key: 'dependency', label: 'Predecessor', group: 'other', defaultVisible: false, editable: false, sortable: false },
+  { key: 'dependency', label: 'Predecessor', group: 'other', defaultVisible: false, editable: true, sortable: false },
   { key: 'wbs', label: 'WBS', group: 'other', defaultVisible: false, editable: false, sortable: false },
 ];
 
