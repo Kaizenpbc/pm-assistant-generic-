@@ -220,8 +220,9 @@ The default schedule view. Displays tasks as horizontal bars on a timeline:
 - **Bar length** represents task duration (start to end date).
 - **Bar color** indicates status (blue for in progress, green for completed, gray for pending).
 - **Progress fill** shows completion percentage within each bar.
-- **Row numbers (#)** are displayed in the left panel instead of WBS, providing a sequential task index.
-- **Predecessor column (Pred)** in the left panel shows all predecessors as a comma-separated list in compact row-number format (e.g. "3FS+2d,5SS,7") with a colour-coded health dot per predecessor: green (done), yellow (in progress), red (overdue).
+- **Resizable panel splitter**: Drag the vertical bar between the task table and the Gantt timeline to resize the panels. Your chosen width is remembered per schedule. Drag right to reveal more columns, drag left to give more room to the timeline.
+- **Left panel columns**: #, Task Name, Pred, Start, End, Duration, Est Days, %, Priority, Assigned, Status. Fixed-width columns stay in place; only Task Name grows/shrinks as you resize.
+- **Predecessor column (Pred)** shows all predecessors as a comma-separated list in compact row-number format (e.g. "3FS+2d,5SS,7") with a colour-coded health dot: green (done), yellow (in progress), red (overdue).
 - **Dependency arrows** are drawn for each predecessor individually, colour-coded by that predecessor's health: green for completed, yellow for in-progress, red for overdue.
 - **Drag-and-drop rescheduling**: Drag a bar to move the task to new dates. Drag the right edge to resize (change end date only). Changes automatically cascade through dependencies.
 - **Recurring task indicator**: Template tasks display a repeat icon on their bar.

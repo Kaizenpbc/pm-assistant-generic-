@@ -43,12 +43,14 @@ An agentic AI project management platform that combines the scheduling power of 
 - S-Curve visualization (PV vs EV vs AC over time)
 - **Benchmark:** Primavera P6
 
-### 1.4 Gantt Timescale Zoom
+### 1.4 Gantt Timescale Zoom & Resizable Splitter
 - Five zoom levels: Day (32px/day), Week (10px/day), Month (3.2px/day), Quarter (1.2px/day), Year (0.27px/day)
 - Two-tier timescale header (upper tier: coarser unit, lower tier: finer unit)
 - Segmented zoom control in toolbar (D | W | M | Q | Y)
-- Zoom persists per schedule via localStorage
-- **Benchmark:** MS Project, Primavera P6 — matches P6/MS Project zoom + dual header
+- Draggable splitter between task table and timeline (width persists per schedule)
+- 11 columns in left panel: #, Task Name, Pred, Start, End, Duration, Est Days, %, Priority, Assigned, Status
+- Zoom and splitter width persist per schedule via localStorage
+- **Benchmark:** MS Project, Primavera P6 — matches P6/MS Project zoom + dual header + resizable splitter
 
 ### 1.5 Kanban Board View
 - Toggle between Gantt / Kanban / Table views
@@ -57,7 +59,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Card shows: task name, assignee, priority, due date, progress
 - **Benchmark:** Monday.com, Jira, Asana
 
-### 1.5 Resource Pool & Workload View
+### 1.6 Resource Pool & Workload View
 - Resource pool: list all team members with roles and capacity
 - Assign resources to tasks with effort hours
 - Workload heatmap: visual capacity per person per week
