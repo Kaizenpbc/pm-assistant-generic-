@@ -185,6 +185,8 @@ Set task dependencies to define execution order:
 - **Lag** -- Optional number of days to add between the two tasks (e.g., a 2-day lag on FS means the successor starts 2 days after the predecessor finishes).
 - Dependencies are displayed in compact row-number format with a health dot indicating predecessor status (green = done, yellow = in progress, red = overdue).
 - Gantt dependency arrows are colour-coded by predecessor health and used in critical path analysis.
+- **Validation** -- The server enforces dependency rules: no self-references, no circular dependencies (A→B→C→A), dependencies must exist and be in the same schedule. Invalid dependencies return an error message explaining the issue.
+- **Orphan cleanup** -- Deleting a task automatically clears any dependencies that pointed to it.
 
 ### Task Activity Panel
 

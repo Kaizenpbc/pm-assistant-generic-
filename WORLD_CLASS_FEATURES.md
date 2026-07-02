@@ -115,6 +115,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - **MS Project-style predecessor display** — compact row-number notation (e.g. "3", "7SS+2d") instead of full task names
 - **Dependency health badges** — colour-coded dots (green/yellow/red) showing predecessor completion status. No other PM tool shows dependency health inline.
 - **Inline predecessor editing** — click and type row numbers with optional type and lag; validated with error feedback
+- **Server-side dependency validation** — single `validateDependency()` method enforces self-reference, circular, cross-schedule, and existence checks across API, UI, and AI tools. Orphan cleanup on task deletion.
 - Column visibility persisted per schedule in localStorage
 - CPM columns (Early Start, Late Finish, Total Float, etc.) auto-trigger critical path computation
 - Baseline variance columns populate when comparison is active

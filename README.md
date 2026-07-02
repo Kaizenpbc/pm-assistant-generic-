@@ -266,6 +266,8 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Dependency health badges: green (completed), yellow (in progress), red (overdue)
 - Gantt arrows color-coded by predecessor health status
 - Inline predecessor editing in Table view with validation
+- Server-side dependency validation: self-reference, circular, cross-schedule, and existence checks (400 errors)
+- Orphan cleanup: deleting a task clears all references to it
 
 ### Kanban WIP Limits
 - Per-column Work-In-Progress limits on the Kanban board

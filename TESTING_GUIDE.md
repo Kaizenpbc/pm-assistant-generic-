@@ -330,6 +330,68 @@ The overdue scanner runs every 15 minutes (configurable via `AGENT_OVERDUE_SCAN_
 
 ---
 
+## 5b. Testing Dependency Validation
+
+The server enforces dependency rules on all create/update task requests. All tests require an authenticated session (see section 3).
+
+### Self-reference (expect 400)
+
+```bash
+curl -s -b cookies.txt -X PUT \
+  "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_ID" \
+  -H 'Content-Type: application/json' \
+  -d "{\"dependency\":\"$TASK_ID\"}"
+# Expected: {"error":"Validation error","message":"A task cannot depend on itself"}
+```
+
+### Nonexistent dependency (expect 400)
+
+```bash
+curl -s -b cookies.txt -X PUT \
+  "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_ID" \
+  -H 'Content-Type: application/json' \
+  -d '{"dependency":"00000000-0000-0000-0000-000000000000"}'
+# Expected: {"error":"Validation error","message":"Dependency task '...' not found"}
+```
+
+### Circular dependency (expect 400)
+
+```bash
+# First set A→B (should succeed)
+curl -s -b cookies.txt -X PUT \
+  "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_A" \
+  -H 'Content-Type: application/json' \
+  -d "{\"dependency\":\"$TASK_B\"}"
+
+# Then try B→A (should fail with 400)
+curl -s -b cookies.txt -X PUT \
+  "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_B" \
+  -H 'Content-Type: application/json' \
+  -d "{\"dependency\":\"$TASK_A\"}"
+# Expected: {"error":"Validation error","message":"Circular dependency detected..."}
+```
+
+### Cross-schedule dependency (expect 400)
+
+```bash
+curl -s -b cookies.txt -X PUT \
+  "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_ID" \
+  -H 'Content-Type: application/json' \
+  -d "{\"dependency\":\"$TASK_IN_OTHER_SCHEDULE\"}"
+# Expected: {"error":"Validation error","message":"Dependency must be in the same schedule"}
+```
+
+### Orphan cleanup on delete
+
+```bash
+# Set A→B, then delete B. Verify A's dependency is cleared:
+curl -s -b cookies.txt -X DELETE \
+  "https://pm.kpbc.ca/api/v1/schedules/$SCHED/tasks/$TASK_B"
+# Then GET task A and confirm dependency is null
+```
+
+---
+
 ## 6. Database Verification
 
 The database is MariaDB hosted on TMD Hosting. There is no local database instance. All database verification is done via SSH.

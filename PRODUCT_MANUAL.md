@@ -841,6 +841,19 @@ Health badges appear in the Table view Predecessor column, the Gantt left panel 
 
 In Table view, the Predecessor column is inline-editable. Click a predecessor cell and type a row number with optional type and lag (e.g. `3`, `5SS`, `7FS+2d`). The input is validated: invalid row numbers, self-references, and malformed formats display a red error border with a message. Clearing the field removes the dependency.
 
+### Server-Side Dependency Validation
+
+All dependency writes — API, UI, and AI tools — go through a single `validateDependency()` method on the server. The server is the single source of truth; no client-side pre-flight checks are needed. The following rules are enforced, returning HTTP 400 on violation:
+
+| Rule | Error Message |
+|------|---------------|
+| **Self-reference** — a task cannot depend on itself | "A task cannot depend on itself" |
+| **Nonexistent dependency** — the referenced task must exist | "Dependency task '{id}' not found" |
+| **Cross-schedule** — both tasks must be in the same schedule | "Dependency must be in the same schedule" |
+| **Circular dependency** — the dependency must not create a cycle (A→B→C→A) | "Circular dependency detected: the dependency task is already downstream of this task" |
+
+**Orphan cleanup:** When a task is deleted, any other tasks that depended on it have their `dependency`, `dependency_type`, and `dependency_lag_days` fields automatically cleared.
+
 ---
 
 ## 28. Kanban WIP Limits
