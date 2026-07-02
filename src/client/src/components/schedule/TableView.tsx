@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Check, Loader2, X, Trash2, CheckSquare, GripVertical } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Pencil, Check, Loader2, X, Trash2, CheckSquare } from 'lucide-react';
 import type { GanttTask } from './GanttChart';
 import { apiService } from '../../services/api';
 import { ColumnPickerDropdown } from './ColumnPickerDropdown';
@@ -199,46 +199,17 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     document.addEventListener('mouseup', onUp);
   }, []);
 
-  // Column drag-to-reorder
-  const dragColRef = useRef<string | null>(null);
-  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
-
-  const handleColDragStart = useCallback((e: React.DragEvent, colKey: string) => {
-    dragColRef.current = colKey;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', colKey);
-  }, []);
-
-  const handleColDragOver = useCallback((e: React.DragEvent, colKey: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (dragColRef.current && dragColRef.current !== colKey) {
-      setDragOverCol(colKey);
-    }
-  }, []);
-
-  const handleColDrop = useCallback((e: React.DragEvent, targetKey: string) => {
-    e.preventDefault();
-    setDragOverCol(null);
-    const srcKey = dragColRef.current;
-    dragColRef.current = null;
-    if (!srcKey || srcKey === targetKey) return;
-
+  // Column move left/right
+  const moveColumn = useCallback((colKey: ColumnKey, direction: 'left' | 'right') => {
     const currentOrder = visibleColumns.map(c => c.key);
-    const srcIdx = currentOrder.indexOf(srcKey as ColumnKey);
-    const tgtIdx = currentOrder.indexOf(targetKey as ColumnKey);
-    if (srcIdx === -1 || tgtIdx === -1) return;
-
+    const idx = currentOrder.indexOf(colKey);
+    if (idx === -1) return;
+    const targetIdx = direction === 'left' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= currentOrder.length) return;
     const newOrder = [...currentOrder];
-    newOrder.splice(srcIdx, 1);
-    newOrder.splice(tgtIdx, 0, srcKey as ColumnKey);
+    [newOrder[idx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[idx]];
     setColumnOrder(newOrder);
   }, [visibleColumns]);
-
-  const handleColDragEnd = useCallback(() => {
-    dragColRef.current = null;
-    setDragOverCol(null);
-  }, []);
 
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1031,39 +1002,52 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                   className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
                 />
               </th>
-              {visibleColumns.map(col => (
+              {visibleColumns.map((col, colIdx) => (
                 <th
                   key={col.key}
-                  draggable
-                  onDragStart={(e) => handleColDragStart(e, col.key)}
-                  onDragOver={(e) => handleColDragOver(e, col.key)}
-                  onDrop={(e) => handleColDrop(e, col.key)}
-                  onDragEnd={handleColDragEnd}
-                  className={`px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide select-none relative cursor-grab ${
-                    dragOverCol === col.key ? 'bg-primary-100' : 'hover:bg-gray-100'
-                  }`}
+                  className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide select-none relative group/th hover:bg-gray-100"
                   style={colWidths[col.key] ? { width: colWidths[col.key], minWidth: colWidths[col.key], maxWidth: colWidths[col.key] } : { minWidth: col.key === 'name' ? 200 : 100 }}
                 >
-                  <div
-                    className="flex items-center gap-1 whitespace-nowrap"
-                    onClick={() => col.sortable && toggleSort(col.key)}
-                  >
-                    <GripVertical className="w-3 h-3 text-gray-300 flex-shrink-0" />
-                    {col.label}
-                    {col.sortable && <SortIcon field={col.key} />}
+                  <div className="flex items-center gap-1 whitespace-nowrap">
+                    {/* Move arrows — visible on hover */}
+                    <span className="flex items-center gap-0 opacity-0 group-hover/th:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); moveColumn(col.key, 'left'); }}
+                        disabled={colIdx === 0}
+                        className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
+                        title="Move left"
+                      >
+                        <ArrowLeft className="w-2.5 h-2.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); moveColumn(col.key, 'right'); }}
+                        disabled={colIdx === visibleColumns.length - 1}
+                        className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
+                        title="Move right"
+                      >
+                        <ArrowRight className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                    {/* Column label — clickable to sort */}
+                    <span
+                      className={`flex items-center gap-1 ${col.sortable ? 'cursor-pointer' : ''}`}
+                      onClick={() => col.sortable && toggleSort(col.key)}
+                    >
+                      {col.label}
+                      {col.sortable && <SortIcon field={col.key} />}
+                    </span>
                   </div>
-                  {/* Resize handle — wider hit area */}
+                  {/* Resize handle */}
                   <div
-                    className="absolute right-0 top-0 bottom-0 w-3 cursor-col-resize z-10 flex items-center justify-end"
+                    className="absolute right-0 top-0 bottom-0 w-4 cursor-col-resize z-10 flex items-center justify-center"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       const th = e.currentTarget.parentElement;
                       handleResizeStart(e, col.key, th?.offsetWidth ?? 120);
                     }}
-                    draggable={false}
                   >
-                    <div className="w-0.5 h-4 bg-gray-300 hover:bg-primary-500 rounded-full transition-colors" />
+                    <div className="w-0.5 h-4 bg-gray-200 group-hover/th:bg-primary-400 rounded-full transition-colors" />
                   </div>
                 </th>
               ))}
