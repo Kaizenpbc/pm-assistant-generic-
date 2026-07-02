@@ -140,6 +140,8 @@ export function GanttChart({
   tasks,
   scheduleName,
   onTaskClick,
+  onTaskSelect,
+  activeTaskId,
   onAddTask,
   criticalPathTaskIds,
   baselineTasks,
@@ -147,8 +149,12 @@ export function GanttChart({
 }: {
   tasks: GanttTask[];
   scheduleName?: string;
-  /** Called when a task row is clicked */
+  /** Called when a task row is double-clicked (opens edit modal) */
   onTaskClick?: (task: GanttTask) => void;
+  /** Called when a task row is single-clicked (selects it) */
+  onTaskSelect?: (task: GanttTask) => void;
+  /** Currently active/selected task ID */
+  activeTaskId?: string | null;
   /** Called when the "Add Task" button is clicked */
   onAddTask?: () => void;
   /** Task IDs that are on the critical path (rendered in red) */
@@ -399,7 +405,7 @@ export function GanttChart({
             <div className="w-20 px-1 text-center">End</div>
             <div className="w-12 px-1 text-center">%</div>
             <div className="w-16 px-1 text-center">Status</div>
-            {onTaskClick && <div className="w-8" />}
+            {onTaskClick && <div className="w-8" title="Double-click row or click icon to edit" />}
           </div>
 
           {/* Task rows */}
@@ -412,9 +418,10 @@ export function GanttChart({
             return (
               <div
                 key={task.id}
-                className={`flex items-center border-b border-gray-100 hover:bg-blue-50/40 transition-colors group ${onTaskClick ? 'cursor-pointer' : ''}`}
+                className={`flex items-center border-b border-gray-100 hover:bg-blue-50/40 transition-colors group cursor-pointer ${activeTaskId === task.id ? 'bg-primary-50 ring-1 ring-inset ring-primary-200' : ''}`}
                 style={{ height: ROW_H }}
-                onClick={() => onTaskClick?.(task)}
+                onClick={() => onTaskSelect?.(task)}
+                onDoubleClick={() => onTaskClick?.(task)}
               >
                 {/* WBS */}
                 <div className="w-12 px-2 text-center text-xs text-gray-400 font-mono">
@@ -478,7 +485,10 @@ export function GanttChart({
 
                 {/* Edit icon (visible on hover) */}
                 {onTaskClick && (
-                  <div className="w-8 flex items-center justify-center">
+                  <div
+                    className="w-8 flex items-center justify-center"
+                    onClick={(e) => { e.stopPropagation(); onTaskClick(task); }}
+                  >
                     <svg
                       className="w-3.5 h-3.5 text-gray-300 group-hover:text-primary-500 transition-colors"
                       fill="none"

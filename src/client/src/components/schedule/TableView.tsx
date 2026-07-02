@@ -47,6 +47,8 @@ interface TableViewProps {
   tasks: GanttTask[];
   scheduleId: string;
   onTaskClick: (task: GanttTask) => void;
+  onTaskSelect?: (task: GanttTask) => void;
+  activeTaskId?: string | null;
   onTaskUpdate: (taskId: string, data: Record<string, unknown>) => void;
   cpmData?: { tasks: CpmTaskData[]; criticalPathTaskIds: string[] };
   baselineData?: { taskVariances: BaselineTaskVariance[] };
@@ -65,7 +67,7 @@ function addDaysToDate(baseDate: string, days: number): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate, cpmData, baselineData, scheduleStartDate, onCpmNeeded }: TableViewProps) {
+export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, activeTaskId, onTaskUpdate, cpmData, baselineData, scheduleStartDate, onCpmNeeded }: TableViewProps) {
   const queryClient = useQueryClient();
   const [sortField, setSortField] = useState<ColumnKey>('startDate');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -938,7 +940,8 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskUpdate, cpmDat
               return (
                 <tr
                   key={task.id}
-                  className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors group ${isSelected ? 'bg-primary-50/40' : ''}`}
+                  className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors group cursor-pointer ${isSelected ? 'bg-primary-50/40' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 bg-primary-50/60' : ''}`}
+                  onClick={() => onTaskSelect?.(task)}
                 >
                   <td className="px-2 py-2">
                     <input

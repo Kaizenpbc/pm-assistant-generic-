@@ -1017,7 +1017,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         <GanttChart
           tasks={tasks}
           scheduleName={schedule.name}
-          onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task); }}
+          onTaskSelect={(task) => setActiveTaskId(task.id)}
+          onTaskClick={(task) => setEditingTask(task)}
+          activeTaskId={activeTaskId}
           onAddTask={() => setShowAddForm(true)}
           onTaskDragEnd={(taskId, newStart, newEnd) => updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } })}
           criticalPathTaskIds={showCriticalPath ? cpmData?.criticalPathTaskIds : undefined}
@@ -1033,13 +1035,16 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           tasks={tasks}
           onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task as GanttTask); }}
           onStatusChange={handleKanbanStatusChange}
+          activeTaskId={activeTaskId}
         />
       )}
       {viewMode === 'table' && (
         <TableView
           tasks={tasks}
           scheduleId={schedule.id}
-          onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task); }}
+          onTaskSelect={(task) => setActiveTaskId(task.id)}
+          onTaskClick={(task) => setEditingTask(task)}
+          activeTaskId={activeTaskId}
           onTaskUpdate={(taskId, data) => updateMutation.mutate({ taskId, data })}
           cpmData={cpmData}
           baselineData={comparison}

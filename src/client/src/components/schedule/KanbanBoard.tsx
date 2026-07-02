@@ -18,6 +18,7 @@ interface KanbanBoardProps {
   onTaskClick?: (task: KanbanTask) => void;
   onStatusChange?: (taskId: string, newStatus: string) => void;
   scheduleId?: string;
+  activeTaskId?: string | null;
 }
 
 const COLUMNS: { id: string; label: string; color: string; bg: string; border: string }[] = [
@@ -84,7 +85,7 @@ function saveWipLimits(scheduleId: string, limits: Record<string, number>) {
   } catch {}
 }
 
-export function KanbanBoard({ tasks, onTaskClick, onStatusChange, scheduleId }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onTaskClick, onStatusChange, scheduleId, activeTaskId }: KanbanBoardProps) {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [wipLimits, setWipLimits] = useState<Record<string, number>>(() =>
     loadWipLimits(scheduleId || 'default')
@@ -211,7 +212,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, scheduleId }: 
                       draggable
                       onDragStart={(e) => handleDragStart(e, task.id)}
                       onClick={() => onTaskClick?.(task)}
-                      className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group"
+                      className={`bg-white dark:bg-gray-700 rounded-lg border p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group ${activeTaskId === task.id ? 'border-primary-400 ring-1 ring-primary-200' : 'border-gray-200 dark:border-gray-600'}`}
                     >
                       {/* Title */}
                       <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors flex items-center gap-1.5">
