@@ -271,6 +271,7 @@ export function GanttChart({
   criticalPathTaskIds,
   baselineTasks,
   onTaskDragEnd,
+  onTaskUpdate,
 }: {
   tasks: GanttTask[];
   scheduleName?: string;
@@ -294,6 +295,8 @@ export function GanttChart({
   baselineTasks?: Array<{ taskId: string; startDate: string; endDate: string }>;
   /** Called when a task bar is dragged to new dates */
   onTaskDragEnd?: (taskId: string, newStartDate: string, newEndDate: string) => void;
+  /** Called when a task field is edited inline in the left panel */
+  onTaskUpdate?: (taskId: string, data: Record<string, unknown>) => void;
 }) {
   const criticalSet = useMemo(() => new Set(criticalPathTaskIds || []), [criticalPathTaskIds]);
   const baselineMap = useMemo(() => {
@@ -374,6 +377,247 @@ export function GanttChart({
   const healthColor = (health: 'satisfied' | 'in_progress' | 'at_risk') =>
     health === 'satisfied' ? '#22c55e' : health === 'in_progress' ? '#eab308' : '#ef4444';
 
+  // -----------------------------------------------------------------------
+  // Drag-and-drop state (declared early so editing helpers can check it)
+  // -----------------------------------------------------------------------
+  const [drag, setDrag] = useState<{
+    taskId: string;
+    mode: 'move' | 'resize';
+    startX: number;
+    origStartDate: Date;
+    origEndDate: Date;
+    dayDelta: number;
+  } | null>(null);
+
+  // -----------------------------------------------------------------------
+  // Inline editing state & helpers
+  // -----------------------------------------------------------------------
+  type EditableField = 'name' | 'dependency' | 'startDate' | 'endDate' | 'duration' | 'estimatedDays' | 'progressPercentage' | 'priority' | 'assignedTo' | 'status';
+  const FIELD_ORDER: EditableField[] = ['name', 'dependency', 'startDate', 'endDate', 'duration', 'estimatedDays', 'progressPercentage', 'priority', 'assignedTo', 'status'];
+  const statusOptions = ['pending', 'in_progress', 'completed'];
+  const priorityOptions = ['low', 'medium', 'high', 'urgent'];
+
+  const [editingCell, setEditingCell] = useState<{ taskId: string; field: EditableField } | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  // savingCell tracks the cell currently being saved (used for timing the green flash)
+  const [savingCell, setSavingCell] = useState<{ taskId: string; field: string } | null>(null);
+  void savingCell; // read to satisfy TS — value used internally for save timing
+  const [savedCell, setSavedCell] = useState<{ taskId: string; field: string } | null>(null);
+  const [depError, setDepError] = useState<{ taskId: string; message: string } | null>(null);
+  const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (editingCell && inputRef.current) inputRef.current.focus();
+  }, [editingCell]);
+
+  useEffect(() => {
+    return () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current); };
+  }, []);
+
+  // Reverse map: row number → taskId
+  const rowNumToTaskId = useMemo(() => {
+    const map = new Map<number, string>();
+    rows.forEach(({ task }, idx) => map.set(idx + 1, task.id));
+    return map;
+  }, [rows]);
+
+  const parsePredecessorInput = useCallback((input: string, currentTaskId: string): { deps: Array<{ taskId: string; type: string; lag: number }> } | { error: string } => {
+    const trimmed = input.trim();
+    if (!trimmed) return { deps: [] };
+    const parts = trimmed.split(',').map(s => s.trim()).filter(Boolean);
+    const deps: Array<{ taskId: string; type: string; lag: number }> = [];
+    for (const part of parts) {
+      const match = part.match(/^(\d+)\s*(FS|FF|SS|SF)?\s*([+-]\d+d?)?$/i);
+      if (!match) return { error: `Invalid format: "${part}". Use: row# or row#FS or row#SS+2d` };
+      const rowNum = parseInt(match[1], 10);
+      const type = (match[2] || 'FS').toUpperCase();
+      const lagStr = match[3];
+      const lag = lagStr ? parseInt(lagStr.replace(/d$/i, ''), 10) : 0;
+      const targetTaskId = rowNumToTaskId.get(rowNum);
+      if (!targetTaskId) return { error: `Row ${rowNum} not found` };
+      if (targetTaskId === currentTaskId) return { error: 'Cannot reference self' };
+      if (deps.some(d => d.taskId === targetTaskId)) return { error: `Duplicate: row ${rowNum}` };
+      deps.push({ taskId: targetTaskId, type, lag });
+    }
+    if (deps.length > 20) return { error: 'Max 20 predecessors' };
+    return { deps };
+  }, [rowNumToTaskId]);
+
+  const getTaskFieldValue = useCallback((task: GanttTask, field: EditableField): string => {
+    switch (field) {
+      case 'name': return task.name || '';
+      case 'status': return task.status || 'pending';
+      case 'priority': return task.priority || 'medium';
+      case 'startDate': return task.startDate?.split('T')[0] || '';
+      case 'endDate': return task.endDate?.split('T')[0] || '';
+      case 'duration': {
+        const s = toDate(task.startDate);
+        const e = toDate(task.endDate);
+        return s && e ? String(daysBetween(s, e)) : '';
+      }
+      case 'estimatedDays': return task.estimatedDays != null ? String(task.estimatedDays) : '';
+      case 'progressPercentage': return String(task.progressPercentage ?? 0);
+      case 'assignedTo': return task.assignedTo || '';
+      case 'dependency': {
+        const deps = task.dependencies;
+        if (!deps || deps.length === 0) {
+          if (!task.dependency) return '';
+          const depRowNum = rowNumMap.get(task.dependency);
+          if (!depRowNum) return '';
+          const type = task.dependencyType || 'FS';
+          const lag = task.dependencyLagDays || 0;
+          let label = String(depRowNum);
+          if (type !== 'FS') label += type;
+          if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+          return label;
+        }
+        return deps.map(d => {
+          const depRowNum = rowNumMap.get(d.dependencyId);
+          if (!depRowNum) return '';
+          let label = String(depRowNum);
+          if (d.dependencyType !== 'FS') label += d.dependencyType;
+          if (d.lagDays !== 0) label += (d.lagDays > 0 ? `+${d.lagDays}d` : `${d.lagDays}d`);
+          return label;
+        }).filter(Boolean).join(',');
+      }
+      default: return '';
+    }
+  }, [rowNumMap]);
+
+  const startEditing = useCallback((taskId: string, field: EditableField, task: GanttTask) => {
+    if (!onTaskUpdate || drag) return;
+    setEditingCell({ taskId, field });
+    setEditValue(getTaskFieldValue(task, field));
+    setDepError(null);
+  }, [onTaskUpdate, drag, getTaskFieldValue]);
+
+  const cancelEditing = useCallback(() => {
+    setEditingCell(null);
+    setEditValue('');
+    setDepError(null);
+  }, []);
+
+  const saveEdit = useCallback((taskId: string, field: EditableField, value: string) => {
+    if (!onTaskUpdate) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const originalValue = getTaskFieldValue(task, field);
+    if (value === originalValue) { cancelEditing(); return; }
+
+    // Name cannot be empty
+    if (field === 'name' && !value.trim()) { cancelEditing(); return; }
+
+    // Duration: compute new endDate
+    if (field === 'duration') {
+      const days = parseInt(value.replace(/d$/i, ''), 10);
+      if (isNaN(days) || days < 1 || !task.startDate) { cancelEditing(); return; }
+      const newEnd = new Date(task.startDate);
+      newEnd.setDate(newEnd.getDate() + days);
+      setSavingCell({ taskId, field });
+      setEditingCell(null);
+      setEditValue('');
+      onTaskUpdate(taskId, { endDate: newEnd.toISOString().split('T')[0] });
+      setTimeout(() => {
+        setSavingCell(null);
+        setSavedCell({ taskId, field });
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setSavedCell(null), 1200);
+      }, 300);
+      return;
+    }
+
+    // Dependency: multi-dep parsing
+    if (field === 'dependency') {
+      const result = parsePredecessorInput(value, taskId);
+      if ('error' in result) { setDepError({ taskId, message: result.error }); return; }
+      setDepError(null);
+      setSavingCell({ taskId, field });
+      setEditingCell(null);
+      setEditValue('');
+      onTaskUpdate(taskId, {
+        dependencies: result.deps.map(d => ({
+          dependencyId: d.taskId,
+          dependencyType: d.type,
+          lagDays: d.lag,
+        })),
+      });
+      setTimeout(() => {
+        setSavingCell(null);
+        setSavedCell({ taskId, field });
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setSavedCell(null), 1200);
+      }, 300);
+      return;
+    }
+
+    const saveValue = field === 'progressPercentage'
+      ? Math.max(0, Math.min(100, Number(value)))
+      : field === 'estimatedDays'
+        ? Math.max(0, Number(value))
+        : value;
+
+    setSavingCell({ taskId, field });
+    setEditingCell(null);
+    setEditValue('');
+    onTaskUpdate(taskId, { [field]: saveValue });
+    setTimeout(() => {
+      setSavingCell(null);
+      setSavedCell({ taskId, field });
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSavedCell(null), 1200);
+    }, 300);
+  }, [onTaskUpdate, tasks, getTaskFieldValue, cancelEditing, parsePredecessorInput]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, taskId: string, field: EditableField) => {
+    if (e.key === 'Enter') { e.preventDefault(); saveEdit(taskId, field, editValue); }
+    else if (e.key === 'Escape') { e.preventDefault(); cancelEditing(); }
+    else if (e.key === 'Tab') {
+      e.preventDefault();
+      // Save current cell first
+      saveEdit(taskId, field, editValue);
+      // Navigate to next/prev editable field
+      const fieldIdx = FIELD_ORDER.indexOf(field);
+      const rowIdx = rows.findIndex(r => r.task.id === taskId);
+      if (rowIdx === -1) return;
+      if (e.shiftKey) {
+        if (fieldIdx > 0) {
+          startEditing(taskId, FIELD_ORDER[fieldIdx - 1], rows[rowIdx].task);
+        } else if (rowIdx > 0) {
+          startEditing(rows[rowIdx - 1].task.id, FIELD_ORDER[FIELD_ORDER.length - 1], rows[rowIdx - 1].task);
+        }
+      } else {
+        if (fieldIdx < FIELD_ORDER.length - 1) {
+          startEditing(taskId, FIELD_ORDER[fieldIdx + 1], rows[rowIdx].task);
+        } else if (rowIdx < rows.length - 1) {
+          startEditing(rows[rowIdx + 1].task.id, FIELD_ORDER[0], rows[rowIdx + 1].task);
+        }
+      }
+    }
+  }, [saveEdit, cancelEditing, editValue, rows, startEditing]);
+
+  const handleSelectChange = useCallback((taskId: string, field: EditableField, value: string) => {
+    setEditValue(value);
+    saveEdit(taskId, field, value);
+  }, [saveEdit]);
+
+  const handleDateChange = useCallback((taskId: string, field: EditableField, value: string) => {
+    setEditValue(value);
+    saveEdit(taskId, field, value);
+  }, [saveEdit]);
+
+  const isEditing = (taskId: string, field: string) =>
+    editingCell?.taskId === taskId && editingCell.field === field;
+  const isSaved = (taskId: string, field: string) =>
+    savedCell?.taskId === taskId && savedCell.field === field;
+  const editableCellClass = (taskId: string, field: string) => {
+    if (!onTaskUpdate) return '';
+    const base = 'relative cursor-pointer transition-all duration-150';
+    if (isEditing(taskId, field)) return `${base} ring-2 ring-blue-400 ring-inset rounded`;
+    if (isSaved(taskId, field)) return `${base} bg-green-50`;
+    return `${base} hover:bg-blue-50/50`;
+  };
+
   const timelineRef = useRef<HTMLDivElement>(null);
 
   // Compute date range
@@ -419,18 +663,6 @@ export function GanttChart({
     if (today < minDate || today > maxDate) return null;
     return daysBetween(minDate, today) * dayPx;
   }, [minDate, maxDate]);
-
-  // -----------------------------------------------------------------------
-  // Drag-and-drop state
-  // -----------------------------------------------------------------------
-  const [drag, setDrag] = useState<{
-    taskId: string;
-    mode: 'move' | 'resize';
-    startX: number;
-    origStartDate: Date;
-    origEndDate: Date;
-    dayDelta: number;
-  } | null>(null);
 
   const handleBarMouseDown = useCallback(
     (e: React.MouseEvent, task: GanttTask) => {
@@ -644,8 +876,8 @@ export function GanttChart({
                 key={task.id}
                 className={`flex items-center border-b border-gray-100 hover:bg-blue-50/40 transition-colors group cursor-pointer ${activeTaskId === task.id ? 'bg-primary-50 ring-1 ring-inset ring-primary-200' : ''}`}
                 style={{ height: ROW_H }}
-                onClick={() => onTaskSelect?.(task)}
-                onDoubleClick={() => onTaskClick?.(task)}
+                onClick={() => { if (!editingCell) onTaskSelect?.(task); }}
+                onDoubleClick={() => { if (!editingCell) onTaskClick?.(task); }}
               >
                 {/* Row # */}
                 <div className="w-10 shrink-0 px-1 text-center text-xs text-gray-400 font-mono">
@@ -654,111 +886,274 @@ export function GanttChart({
 
                 {/* Task name with indent */}
                 <div
-                  className="flex-1 px-2 flex items-center gap-1.5 min-w-0"
+                  className={`flex-1 min-w-0 ${editableCellClass(task.id, 'name')}`}
                   style={{ paddingLeft: `${8 + level * 20}px` }}
+                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'name', task); } }}
                 >
-                  {task.isMilestone && (
-                    <span className="w-3 h-3 flex-shrink-0 rotate-45 bg-primary-500 inline-block" title="Milestone" />
-                  )}
-                  {task.priority && !task.isMilestone && (
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${priorityDot[task.priority] || 'bg-gray-300'}`}
+                  {isEditing(task.id, 'name') ? (
+                    <input
+                      ref={el => { inputRef.current = el; }}
+                      className="w-full h-full text-xs bg-white border-0 outline-none px-1"
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onBlur={() => saveEdit(task.id, 'name', editValue)}
+                      onKeyDown={e => handleKeyDown(e, task.id, 'name')}
                     />
+                  ) : (
+                    <div className="flex items-center gap-1.5 px-2">
+                      {task.isMilestone && (
+                        <span className="w-3 h-3 flex-shrink-0 rotate-45 bg-primary-500 inline-block" title="Milestone" />
+                      )}
+                      {task.priority && !task.isMilestone && (
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${priorityDot[task.priority] || 'bg-gray-300'}`} />
+                      )}
+                      <span
+                        className={`text-xs truncate ${isParent ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'}`}
+                        title={task.name}
+                      >
+                        {task.name}
+                      </span>
+                    </div>
                   )}
-                  <span
-                    className={`text-xs truncate ${isParent ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'}`}
-                    title={task.name}
-                  >
-                    {task.name}
-                  </span>
                 </div>
 
                 {/* Predecessor(s) */}
-                <div className="w-14 shrink-0 px-1 text-center text-xs text-gray-500 font-mono" title={
-                  (task.dependencies || []).map(d => tasks.find(t => t.id === d.dependencyId)?.name || '').filter(Boolean).join(', ') || undefined
-                }>
-                  {(task.dependencies && task.dependencies.length > 0) ? (() => {
-                    // Show worst health among all predecessors
-                    let worstHealth: 'satisfied' | 'in_progress' | 'at_risk' = 'satisfied';
-                    const labels: string[] = [];
-                    for (const dep of task.dependencies) {
-                      const depRowNum = rowNumMap.get(dep.dependencyId);
-                      const depType = (dep.dependencyType || 'FS').toUpperCase();
-                      const lag = dep.lagDays || 0;
-                      let label = depRowNum != null ? String(depRowNum) : '?';
-                      if (depType !== 'FS') label += depType;
-                      if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
-                      labels.push(label);
-                      const h = getDepHealth(dep.dependencyId);
-                      if (h === 'at_risk') worstHealth = 'at_risk';
-                      else if (h === 'in_progress' && worstHealth !== 'at_risk') worstHealth = 'in_progress';
-                    }
-                    return (
-                      <span className="inline-flex items-center gap-1 justify-center">
-                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: healthColor(worstHealth) }} />
-                        {labels.join(',')}
-                      </span>
-                    );
-                  })() : '—'}
+                <div
+                  className={`w-14 shrink-0 px-1 text-center text-xs text-gray-500 font-mono ${editableCellClass(task.id, 'dependency')}`}
+                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'dependency', task); } }}
+                  title={(task.dependencies || []).map(d => tasks.find(t => t.id === d.dependencyId)?.name || '').filter(Boolean).join(', ') || undefined}
+                >
+                  {isEditing(task.id, 'dependency') ? (
+                    <div>
+                      <input
+                        ref={el => { inputRef.current = el; }}
+                        className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center font-mono"
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onBlur={() => saveEdit(task.id, 'dependency', editValue)}
+                        onKeyDown={e => handleKeyDown(e, task.id, 'dependency')}
+                        placeholder="e.g. 3FS"
+                      />
+                      {depError?.taskId === task.id && (
+                        <div className="absolute z-30 top-full left-0 bg-red-50 border border-red-200 text-red-600 text-[10px] px-1.5 py-0.5 rounded shadow whitespace-nowrap">
+                          {depError.message}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    (task.dependencies && task.dependencies.length > 0) ? (() => {
+                      let worstHealth: 'satisfied' | 'in_progress' | 'at_risk' = 'satisfied';
+                      const labels: string[] = [];
+                      for (const dep of task.dependencies) {
+                        const depRowNum = rowNumMap.get(dep.dependencyId);
+                        const depType = (dep.dependencyType || 'FS').toUpperCase();
+                        const lag = dep.lagDays || 0;
+                        let label = depRowNum != null ? String(depRowNum) : '?';
+                        if (depType !== 'FS') label += depType;
+                        if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+                        labels.push(label);
+                        const h = getDepHealth(dep.dependencyId);
+                        if (h === 'at_risk') worstHealth = 'at_risk';
+                        else if (h === 'in_progress' && worstHealth !== 'at_risk') worstHealth = 'in_progress';
+                      }
+                      return (
+                        <span className="inline-flex items-center gap-1 justify-center">
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: healthColor(worstHealth) }} />
+                          {labels.join(',')}
+                        </span>
+                      );
+                    })() : '—'
+                  )}
                 </div>
 
                 {/* Start */}
-                <div className="w-20 shrink-0 px-1 text-center text-xs text-gray-500">
-                  {start ? formatShortDate(start) : '—'}
+                <div
+                  className={`w-20 shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'startDate')}`}
+                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'startDate', task); } }}
+                >
+                  {isEditing(task.id, 'startDate') ? (
+                    <input
+                      ref={el => { inputRef.current = el; }}
+                      type="date"
+                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5"
+                      value={editValue}
+                      onChange={e => handleDateChange(task.id, 'startDate', e.target.value)}
+                      onBlur={() => cancelEditing()}
+                      onKeyDown={e => handleKeyDown(e, task.id, 'startDate')}
+                    />
+                  ) : (
+                    start ? formatShortDate(start) : '—'
+                  )}
                 </div>
 
                 {/* End */}
-                <div className="w-20 shrink-0 px-1 text-center text-xs text-gray-500">
-                  {end ? formatShortDate(end) : '—'}
+                <div
+                  className={`w-20 shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'endDate')}`}
+                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'endDate', task); } }}
+                >
+                  {isEditing(task.id, 'endDate') ? (
+                    <input
+                      ref={el => { inputRef.current = el; }}
+                      type="date"
+                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5"
+                      value={editValue}
+                      onChange={e => handleDateChange(task.id, 'endDate', e.target.value)}
+                      onBlur={() => cancelEditing()}
+                      onKeyDown={e => handleKeyDown(e, task.id, 'endDate')}
+                    />
+                  ) : (
+                    end ? formatShortDate(end) : '—'
+                  )}
                 </div>
 
                 {/* Duration */}
-                <div className="w-12 shrink-0 px-1 text-center text-xs text-gray-500">
-                  {start && end ? `${daysBetween(start, end)}d` : '—'}
+                <div
+                  className={`w-12 shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'duration')}`}
+                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'duration', task); } }}
+                >
+                  {isEditing(task.id, 'duration') ? (
+                    <input
+                      ref={el => { inputRef.current = el; }}
+                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onBlur={() => saveEdit(task.id, 'duration', editValue)}
+                      onKeyDown={e => handleKeyDown(e, task.id, 'duration')}
+                      placeholder="days"
+                    />
+                  ) : (
+                    start && end ? `${daysBetween(start, end)}d` : '—'
+                  )}
                 </div>
 
                 {/* Estimated Days */}
-                <div className="w-12 shrink-0 px-1 text-center text-xs text-gray-500">
-                  {task.estimatedDays != null ? `${task.estimatedDays}d` : '—'}
+                <div
+                  className={`w-12 shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'estimatedDays')}`}
+                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'estimatedDays', task); } }}
+                >
+                  {isEditing(task.id, 'estimatedDays') ? (
+                    <input
+                      ref={el => { inputRef.current = el; }}
+                      type="number"
+                      min="0"
+                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onBlur={() => saveEdit(task.id, 'estimatedDays', editValue)}
+                      onKeyDown={e => handleKeyDown(e, task.id, 'estimatedDays')}
+                    />
+                  ) : (
+                    task.estimatedDays != null ? `${task.estimatedDays}d` : '—'
+                  )}
                 </div>
 
                 {/* % Complete */}
-                <div className="w-12 shrink-0 px-1 text-center text-xs font-medium text-gray-600">
-                  {pct}%
+                <div
+                  className={`w-12 shrink-0 px-1 text-center text-xs font-medium text-gray-600 ${editableCellClass(task.id, 'progressPercentage')}`}
+                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'progressPercentage', task); } }}
+                >
+                  {isEditing(task.id, 'progressPercentage') ? (
+                    <input
+                      ref={el => { inputRef.current = el; }}
+                      type="number"
+                      min="0"
+                      max="100"
+                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onBlur={() => saveEdit(task.id, 'progressPercentage', editValue)}
+                      onKeyDown={e => handleKeyDown(e, task.id, 'progressPercentage')}
+                    />
+                  ) : (
+                    `${pct}%`
+                  )}
                 </div>
 
                 {/* Priority */}
-                <div className="w-16 shrink-0 px-1 text-center">
-                  {task.priority ? (
-                    <span className={`inline-flex items-center gap-1 text-xs font-medium`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${priorityDot[task.priority] || 'bg-gray-300'}`} />
-                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                    </span>
-                  ) : '—'}
+                <div
+                  className={`w-16 shrink-0 px-1 text-center ${editableCellClass(task.id, 'priority')}`}
+                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'priority', task); } }}
+                >
+                  {isEditing(task.id, 'priority') ? (
+                    <select
+                      ref={el => { inputRef.current = el; }}
+                      className="w-full h-full text-xs bg-white border-0 outline-none"
+                      value={editValue}
+                      onChange={e => handleSelectChange(task.id, 'priority', e.target.value)}
+                      onBlur={() => cancelEditing()}
+                      onKeyDown={e => handleKeyDown(e, task.id, 'priority')}
+                    >
+                      {priorityOptions.map(o => (
+                        <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    task.priority ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium">
+                        <span className={`w-1.5 h-1.5 rounded-full ${priorityDot[task.priority] || 'bg-gray-300'}`} />
+                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                      </span>
+                    ) : '—'
+                  )}
                 </div>
 
                 {/* Assigned To */}
-                <div className="w-24 shrink-0 px-1 text-center text-xs text-gray-500 truncate" title={task.assignedTo || undefined}>
-                  {task.assignedTo || '—'}
+                <div
+                  className={`w-24 shrink-0 px-1 text-center text-xs text-gray-500 truncate ${editableCellClass(task.id, 'assignedTo')}`}
+                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'assignedTo', task); } }}
+                  title={task.assignedTo || undefined}
+                >
+                  {isEditing(task.id, 'assignedTo') ? (
+                    <input
+                      ref={el => { inputRef.current = el; }}
+                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onBlur={() => saveEdit(task.id, 'assignedTo', editValue)}
+                      onKeyDown={e => handleKeyDown(e, task.id, 'assignedTo')}
+                    />
+                  ) : (
+                    task.assignedTo || '—'
+                  )}
                 </div>
 
                 {/* Status */}
-                <div className="w-16 shrink-0 px-1 text-center">
-                  <span
-                    className="text-xs font-medium px-1.5 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: barColors[task.status]?.bg || '#f3f4f6',
-                      color: barColors[task.status]?.text || '#374151',
-                    }}
-                  >
-                    {task.status === 'in_progress'
-                      ? 'Active'
-                      : task.status === 'completed'
-                        ? 'Done'
-                        : task.status === 'pending'
-                          ? 'Pending'
-                          : task.status}
-                  </span>
+                <div
+                  className={`w-16 shrink-0 px-1 text-center ${editableCellClass(task.id, 'status')}`}
+                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'status', task); } }}
+                >
+                  {isEditing(task.id, 'status') ? (
+                    <select
+                      ref={el => { inputRef.current = el; }}
+                      className="w-full h-full text-xs bg-white border-0 outline-none"
+                      value={editValue}
+                      onChange={e => handleSelectChange(task.id, 'status', e.target.value)}
+                      onBlur={() => cancelEditing()}
+                      onKeyDown={e => handleKeyDown(e, task.id, 'status')}
+                    >
+                      {statusOptions.map(o => (
+                        <option key={o} value={o}>
+                          {o === 'in_progress' ? 'Active' : o === 'completed' ? 'Done' : o === 'pending' ? 'Pending' : o}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span
+                      className="text-xs font-medium px-1.5 py-0.5 rounded-full"
+                      style={{
+                        backgroundColor: barColors[task.status]?.bg || '#f3f4f6',
+                        color: barColors[task.status]?.text || '#374151',
+                      }}
+                    >
+                      {task.status === 'in_progress'
+                        ? 'Active'
+                        : task.status === 'completed'
+                          ? 'Done'
+                          : task.status === 'pending'
+                            ? 'Pending'
+                            : task.status}
+                    </span>
+                  )}
                 </div>
 
                 {/* Edit icon (visible on hover) */}

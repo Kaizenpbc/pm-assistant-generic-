@@ -1048,6 +1048,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           onDeleteTask={(taskId) => deleteMutation.mutate(taskId)}
           columnState={columnState}
           onTaskDragEnd={(taskId, newStart, newEnd) => updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } })}
+          onTaskUpdate={(taskId, data) => updateMutation.mutate({ taskId, data })}
           criticalPathTaskIds={showCriticalPath ? cpmData?.criticalPathTaskIds : undefined}
           baselineTasks={selectedBaseline?.tasks?.map((bt: any) => ({
             taskId: bt.taskId,
