@@ -112,6 +112,9 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState('');
+  const workbookRef = useRef<XLSX.WorkBook | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const reset = () => {
@@ -120,6 +123,9 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
     setColumnMap({});
     setResult(null);
     setError('');
+    setSheetNames([]);
+    setSelectedSheet('');
+    workbookRef.current = null;
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -142,16 +148,29 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
   };
 
   const handleFile = (file: File) => {
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_FILE_SIZE) {
+      setError(`File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is 5MB.`);
+      return;
+    }
+
     if (isExcelFile(file)) {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          if (!sheetName) { setError('Excel file has no sheets.'); return; }
-          const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
-          loadText(cleanCsvForImport(csv));
+          if (workbook.SheetNames.length === 0) { setError('Excel file has no sheets.'); return; }
+
+          if (workbook.SheetNames.length > 1) {
+            // Store workbook and show sheet selector
+            workbookRef.current = workbook;
+            setSheetNames(workbook.SheetNames);
+            setSelectedSheet(workbook.SheetNames[0]);
+          } else {
+            const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
+            loadText(cleanCsvForImport(csv));
+          }
         } catch (err: any) {
           setError(`Failed to parse Excel file: ${err.message}`);
         }
@@ -161,6 +180,14 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
       const reader = new FileReader();
       reader.onload = (e) => loadText(cleanCsvForImport((e.target?.result as string) ?? ''));
       reader.readAsText(file);
+    }
+  };
+
+  const handleSheetSelect = (name: string) => {
+    setSelectedSheet(name);
+    if (workbookRef.current) {
+      const csv = XLSX.utils.sheet_to_csv(workbookRef.current.Sheets[name]);
+      loadText(cleanCsvForImport(csv));
     }
   };
 
@@ -249,7 +276,7 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
                   >
                     <Upload size={32} className="text-gray-400 dark:text-gray-500" />
                     <p className="text-sm text-gray-600 dark:text-gray-400">Drag & drop a CSV or Excel file here, or click to browse</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">.csv, .xlsx, .xls supported</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">.csv, .xlsx, .xls supported (max 5MB)</p>
                     <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
                   </div>
 
@@ -272,6 +299,22 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
                     <FileText size={16} /> Parse CSV
                   </button>
                 </>
+              )}
+
+              {/* Sheet selector for multi-sheet Excel files */}
+              {sheetNames.length > 1 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Sheet</h3>
+                  <select
+                    value={selectedSheet}
+                    onChange={(e) => handleSheetSelect(e.target.value)}
+                    className="text-sm rounded border dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-3 py-2 w-full"
+                  >
+                    {sheetNames.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
               )}
 
               {/* Column mapping & preview */}

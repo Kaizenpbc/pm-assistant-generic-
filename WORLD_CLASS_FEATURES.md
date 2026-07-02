@@ -353,7 +353,7 @@ An agentic AI project management platform that combines the scheduling power of 
 | Health-Colored Gantt Dependency Arrows | Done | Innovation |
 | Kanban WIP Limits | Done | Enhancement |
 | Comment @Mentions | Done | Enhancement |
-| Bulk CSV Task Import | Done | Enhancement |
+| Bulk CSV/Excel Task Import (with guardrails) | Done | Enhancement |
 | Gantt PDF Export | Done | Enhancement |
 | Goals / OKR Tracking | Done | Enhancement |
 | Time Zone Support | Done | Enhancement |

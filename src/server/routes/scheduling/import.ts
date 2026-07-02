@@ -1,7 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { v4 as uuidv4 } from 'uuid';
 import { parse as csvParse } from 'csv-parse/sync';
-import { databaseService } from '../../database/connection';
+import { scheduleService } from '../../services/ScheduleService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 
@@ -78,6 +77,17 @@ export async function importRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'csv field is required and must be a string' });
       }
 
+      // CSV size limit (5MB server-side defense in depth)
+      if (csv.length > 5 * 1024 * 1024) {
+        return reply.status(400).send({ error: 'CSV data too large. Maximum is 5MB.' });
+      }
+
+      // Schedule existence check
+      const schedule = await scheduleService.findById(scheduleId);
+      if (!schedule) {
+        return reply.status(404).send({ error: 'Schedule not found' });
+      }
+
       const userId = (request as any).user?.userId as string;
 
       let records: Record<string, string>[];
@@ -99,6 +109,12 @@ export async function importRoutes(fastify: FastifyInstance) {
       if (records.length > MAX_BULK) {
         return reply.status(400).send({ error: `Too many rows (${records.length}). Maximum is ${MAX_BULK}.` });
       }
+
+      // Build dedup set from existing tasks
+      const existingTasks = await scheduleService.findTasksByScheduleId(scheduleId);
+      const existingKeys = new Set(
+        existingTasks.map(t => `${t.name.toLowerCase().trim()}|${t.startDate || ''}`)
+      );
 
       const succeeded: number[] = [];
       const failed: { row: number; error: string }[] = [];
@@ -154,38 +170,29 @@ export async function importRoutes(fastify: FastifyInstance) {
             throw new Error(`Invalid estimated_hours value "${row.estimatedDurationHours}"`);
           }
 
-          const id = uuidv4();
+          // Duplicate detection
+          const dedupKey = `${row.name.trim().toLowerCase()}|${startDate || ''}`;
+          if (existingKeys.has(dedupKey)) {
+            throw new Error(`Duplicate task: "${row.name.trim()}" with start date ${startDate || '(none)'} already exists`);
+          }
 
-          await databaseService.query(
-            `INSERT INTO tasks (id, schedule_id, name, description, status, priority, assigned_to,
-              due_date, estimated_days, estimated_duration_hours, actual_duration_hours,
-              start_date, end_date, progress_percentage, dependency, dependency_type,
-              risks, issues, comments, parent_task_id, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-              id,
-              scheduleId,
-              row.name.trim(),
-              row.description || null,
-              status,
-              priority,
-              row.assignedTo || null,
-              dueDate,
-              null, // estimatedDays
-              estimatedDurationHours,
-              null, // actualDurationHours
-              startDate,
-              endDate,
-              progressPercentage,
-              null, // dependency
-              null, // dependencyType
-              null, // risks
-              null, // issues
-              null, // comments
-              null, // parentTaskId
-              userId,
-            ],
-          );
+          await scheduleService.createTask({
+            scheduleId,
+            name: row.name.trim(),
+            description: row.description || undefined,
+            status: status as any,
+            priority: priority as any,
+            assignedTo: row.assignedTo || undefined,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+            dueDate: dueDate || undefined,
+            progressPercentage,
+            estimatedDurationHours: estimatedDurationHours ?? undefined,
+            createdBy: userId,
+          });
+
+          // Add to dedup set to catch intra-batch duplicates
+          existingKeys.add(dedupKey);
 
           succeeded.push(rowNum);
         } catch (rowErr: any) {

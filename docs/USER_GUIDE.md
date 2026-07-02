@@ -1055,15 +1055,18 @@ In the objective detail panel, use **Link Project** to associate one or more pro
 
 ---
 
-## 25. Bulk CSV Import
+## 25. Bulk CSV / Excel Import
 
-You can import tasks into any schedule from a CSV file without entering them one by one.
+You can import tasks into any schedule from a CSV or Excel file without entering them one by one.
 
 1. Open a schedule and click **Import CSV** in the toolbar.
-2. Either **drag-and-drop** a `.csv` file into the upload area or **paste CSV text** directly.
-3. The **Column Mapping** step lets you match each CSV column to a task field (name, start date, end date, estimated days, status, priority, assignee). Required: name.
-4. The **Preview** table shows the parsed rows with any validation warnings highlighted.
-5. Click **Import** to create all valid tasks. A summary shows how many rows were imported and any rows skipped due to errors.
+2. Either **drag-and-drop** a `.csv`, `.xlsx`, or `.xls` file into the upload area or **paste CSV text** directly. Maximum file size is **5MB**.
+3. For **multi-sheet Excel files**, a sheet selector dropdown appears — choose which sheet to import.
+4. The **Column Mapping** step lets you match each column to a task field (name, start date, end date, estimated days, status, priority, assignee). Required: name.
+5. The **Preview** table shows the parsed rows with any validation warnings highlighted.
+6. Click **Import** to create all valid tasks. A summary shows how many rows were imported and any rows skipped due to errors.
+
+**Duplicate detection:** If a task with the same name and start date already exists in the schedule, the row is skipped and reported as a duplicate.
 
 Accepted date formats: `YYYY-MM-DD` and `MM/DD/YYYY`. Unrecognised status or priority values default to `pending` and `medium` respectively.
 

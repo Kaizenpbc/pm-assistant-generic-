@@ -868,14 +868,21 @@ When writing a task comment, typing `@` opens an autocomplete dropdown listing p
 
 ---
 
-## 30. Bulk Import (CSV)
+## 30. Bulk Import (CSV / Excel)
 
-Tasks can be imported in bulk from a CSV file via `POST /api/v1/schedules/:id/import`. The UI provides:
+Tasks can be imported in bulk from a CSV or Excel file via `POST /api/v1/schedules/:id/import`. The UI provides:
 
-1. **Upload or paste** — drag-and-drop a `.csv` file or paste raw CSV text.
-2. **Column mapping** — map CSV columns to task fields (name, start date, end date, estimated days, status, priority, assignee).
-3. **Preview** — inspect the parsed rows before committing.
-4. **Import** — valid rows are created as tasks in the target schedule; errors are reported per-row.
+1. **Upload or paste** — drag-and-drop a `.csv`, `.xlsx`, or `.xls` file (max 5MB) or paste raw CSV text.
+2. **Sheet selection** — for multi-sheet Excel files, a dropdown lets you choose which sheet to import.
+3. **Column mapping** — map columns to task fields (name, start date, end date, estimated days, status, priority, assignee).
+4. **Preview** — inspect the parsed rows before committing.
+5. **Import** — valid rows are created as tasks via `scheduleService.createTask()` (with full dependency validation, audit logging, workflow triggers, sort order management, and WebSocket broadcasts); errors are reported per-row.
+
+**Guardrails:**
+- **Schedule validation** — the target schedule must exist (404 otherwise).
+- **Duplicate detection** — rows with the same name + start date as an existing task (or earlier row in the same batch) are skipped.
+- **File size limit** — 5MB enforced both client-side (before upload) and server-side (before parsing).
+- **Row limit** — maximum 100 rows per import.
 
 ---
 

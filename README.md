@@ -277,9 +277,13 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - `@username` autocomplete in task comment input
 - Mentioned users receive in-app notifications automatically
 
-### Bulk Import (CSV)
-- Upload or paste a CSV file to import tasks into a schedule
+### Bulk Import (CSV / Excel)
+- Upload CSV or Excel (.xlsx, .xls) files to import tasks into a schedule
+- Multi-sheet Excel support with sheet selector
 - Column mapping UI with preview before import is committed
+- Duplicate detection (same name + start date skipped)
+- 5MB file size limit (client and server enforced)
+- Schedule existence validation before import
 
 ### Gantt PDF Export
 - Print-friendly Gantt export via `window.print()`; triggered from the schedule toolbar
