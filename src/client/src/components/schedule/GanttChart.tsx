@@ -141,6 +141,37 @@ const TABLE_MIN_W = 200;
 const TABLE_MAX_W = 1100;
 
 // ---------------------------------------------------------------------------
+// Gantt left-panel column definitions (for resizable columns)
+// ---------------------------------------------------------------------------
+
+interface GanttColDef {
+  key: string;
+  label: string;
+  defaultWidth: number;
+  minWidth: number;
+  resizable: boolean;
+  /** If true, column uses flex-1 instead of fixed width */
+  flex?: boolean;
+  /** Fixed columns cannot be resized and ignore width state */
+  fixed?: boolean;
+}
+
+const GANTT_COLUMNS: GanttColDef[] = [
+  { key: 'rowNum',    label: '#',        defaultWidth: 40,  minWidth: 30,  resizable: false, fixed: true },
+  { key: 'name',      label: 'Task Name',defaultWidth: 0,   minWidth: 120, resizable: false, flex: true },
+  { key: 'pred',      label: 'Pred',     defaultWidth: 56,  minWidth: 40,  resizable: true },
+  { key: 'start',     label: 'Start',    defaultWidth: 80,  minWidth: 60,  resizable: true },
+  { key: 'end',       label: 'End',      defaultWidth: 80,  minWidth: 60,  resizable: true },
+  { key: 'dur',       label: 'Dur',      defaultWidth: 48,  minWidth: 36,  resizable: true },
+  { key: 'est',       label: 'Est',      defaultWidth: 48,  minWidth: 36,  resizable: true },
+  { key: 'pct',       label: '%',        defaultWidth: 48,  minWidth: 36,  resizable: true },
+  { key: 'priority',  label: 'Priority', defaultWidth: 64,  minWidth: 50,  resizable: true },
+  { key: 'assigned',  label: 'Assigned', defaultWidth: 96,  minWidth: 60,  resizable: true },
+  { key: 'status',    label: 'Status',   defaultWidth: 64,  minWidth: 50,  resizable: true },
+  { key: 'editIcon',  label: '',         defaultWidth: 32,  minWidth: 32,  resizable: false, fixed: true },
+];
+
+// ---------------------------------------------------------------------------
 // Zoom / Timescale
 // ---------------------------------------------------------------------------
 
@@ -354,6 +385,51 @@ export function GanttChart({
       document.body.style.userSelect = '';
     };
   }, [splitterDrag]);
+
+  // Column resize state — persisted per schedule in localStorage
+  const [ganttColWidths, setGanttColWidths] = useState<Record<string, number>>(() => {
+    if (!scheduleId) return {};
+    try {
+      const stored = localStorage.getItem(`gantt-col-widths:${scheduleId}`);
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
+
+  useEffect(() => {
+    if (scheduleId && Object.keys(ganttColWidths).length > 0) {
+      localStorage.setItem(`gantt-col-widths:${scheduleId}`, JSON.stringify(ganttColWidths));
+    }
+  }, [ganttColWidths, scheduleId]);
+
+  const colResizingRef = useRef<{ key: string; startX: number; startW: number } | null>(null);
+
+  const handleColResizeStart = useCallback((e: React.MouseEvent, colKey: string, currentWidth: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    colResizingRef.current = { key: colKey, startX: e.clientX, startW: currentWidth };
+    const colDef = GANTT_COLUMNS.find(c => c.key === colKey);
+    const minW = colDef?.minWidth ?? 36;
+
+    const onMove = (ev: MouseEvent) => {
+      if (!colResizingRef.current) return;
+      const diff = ev.clientX - colResizingRef.current.startX;
+      const newW = Math.max(minW, colResizingRef.current.startW + diff);
+      setGanttColWidths(prev => ({ ...prev, [colResizingRef.current!.key]: newW }));
+    };
+    const onUp = () => {
+      colResizingRef.current = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, []);
+
+  /** Get the effective width for a gantt column */
+  const getColWidth = useCallback((col: GanttColDef): number => {
+    if (col.flex || col.fixed) return col.defaultWidth;
+    return ganttColWidths[col.key] ?? col.defaultWidth;
+  }, [ganttColWidths]);
 
   const rows = useMemo(() => buildFlatRows(tasks), [tasks]);
 
@@ -850,18 +926,27 @@ export function GanttChart({
             className="sticky top-0 z-10 flex items-center bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
             style={{ height: HEADER_H }}
           >
-            <div className="w-10 shrink-0 px-1 text-center">#</div>
-            <div className="flex-1 min-w-0 px-2">Task Name</div>
-            <div className="w-14 shrink-0 px-1 text-center">Pred</div>
-            <div className="w-20 shrink-0 px-1 text-center">Start</div>
-            <div className="w-20 shrink-0 px-1 text-center">End</div>
-            <div className="w-12 shrink-0 px-1 text-center">Dur</div>
-            <div className="w-12 shrink-0 px-1 text-center">Est</div>
-            <div className="w-12 shrink-0 px-1 text-center">%</div>
-            <div className="w-16 shrink-0 px-1 text-center">Priority</div>
-            <div className="w-24 shrink-0 px-1 text-center">Assigned</div>
-            <div className="w-16 shrink-0 px-1 text-center">Status</div>
-            {onTaskClick && <div className="w-8 shrink-0" title="Double-click row or click icon to edit" />}
+            {GANTT_COLUMNS.map(col => {
+              // Skip editIcon column if no onTaskClick
+              if (col.key === 'editIcon' && !onTaskClick) return null;
+              const w = getColWidth(col);
+              return (
+                <div
+                  key={col.key}
+                  className={`shrink-0 px-1 text-center relative select-none ${col.flex ? 'flex-1 min-w-0 px-2' : ''}`}
+                  style={col.flex ? undefined : { width: w }}
+                  title={col.key === 'editIcon' ? 'Double-click row or click icon to edit' : undefined}
+                >
+                  {col.label}
+                  {col.resizable && (
+                    <div
+                      className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-10 hover:bg-primary-400/40 transition-colors"
+                      onMouseDown={(e) => handleColResizeStart(e, col.key, w)}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Task rows */}
@@ -880,7 +965,7 @@ export function GanttChart({
                 onDoubleClick={() => { if (!editingCell) onTaskClick?.(task); }}
               >
                 {/* Row # */}
-                <div className="w-10 shrink-0 px-1 text-center text-xs text-gray-400 font-mono">
+                <div className="shrink-0 px-1 text-center text-xs text-gray-400 font-mono" style={{ width: getColWidth(GANTT_COLUMNS[0]) }}>
                   {rowIdx + 1}
                 </div>
 
@@ -919,7 +1004,8 @@ export function GanttChart({
 
                 {/* Predecessor(s) */}
                 <div
-                  className={`w-14 shrink-0 px-1 text-center text-xs text-gray-500 font-mono ${editableCellClass(task.id, 'dependency')}`}
+                  className={`shrink-0 px-1 text-center text-xs text-gray-500 font-mono ${editableCellClass(task.id, 'dependency')}`}
+                  style={{ width: getColWidth(GANTT_COLUMNS[2]) }}
                   onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'dependency', task); } }}
                   title={(task.dependencies || []).map(d => tasks.find(t => t.id === d.dependencyId)?.name || '').filter(Boolean).join(', ') || undefined}
                 >
@@ -968,7 +1054,8 @@ export function GanttChart({
 
                 {/* Start */}
                 <div
-                  className={`w-20 shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'startDate')}`}
+                  className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'startDate')}`}
+                  style={{ width: getColWidth(GANTT_COLUMNS[3]) }}
                   onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'startDate', task); } }}
                 >
                   {isEditing(task.id, 'startDate') ? (
@@ -988,7 +1075,8 @@ export function GanttChart({
 
                 {/* End */}
                 <div
-                  className={`w-20 shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'endDate')}`}
+                  className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'endDate')}`}
+                  style={{ width: getColWidth(GANTT_COLUMNS[4]) }}
                   onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'endDate', task); } }}
                 >
                   {isEditing(task.id, 'endDate') ? (
@@ -1008,7 +1096,8 @@ export function GanttChart({
 
                 {/* Duration */}
                 <div
-                  className={`w-12 shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'duration')}`}
+                  className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'duration')}`}
+                  style={{ width: getColWidth(GANTT_COLUMNS[5]) }}
                   onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'duration', task); } }}
                 >
                   {isEditing(task.id, 'duration') ? (
@@ -1028,7 +1117,8 @@ export function GanttChart({
 
                 {/* Estimated Days */}
                 <div
-                  className={`w-12 shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'estimatedDays')}`}
+                  className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'estimatedDays')}`}
+                  style={{ width: getColWidth(GANTT_COLUMNS[6]) }}
                   onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'estimatedDays', task); } }}
                 >
                   {isEditing(task.id, 'estimatedDays') ? (
@@ -1049,7 +1139,8 @@ export function GanttChart({
 
                 {/* % Complete */}
                 <div
-                  className={`w-12 shrink-0 px-1 text-center text-xs font-medium text-gray-600 ${editableCellClass(task.id, 'progressPercentage')}`}
+                  className={`shrink-0 px-1 text-center text-xs font-medium text-gray-600 ${editableCellClass(task.id, 'progressPercentage')}`}
+                  style={{ width: getColWidth(GANTT_COLUMNS[7]) }}
                   onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'progressPercentage', task); } }}
                 >
                   {isEditing(task.id, 'progressPercentage') ? (
@@ -1071,7 +1162,8 @@ export function GanttChart({
 
                 {/* Priority */}
                 <div
-                  className={`w-16 shrink-0 px-1 text-center ${editableCellClass(task.id, 'priority')}`}
+                  className={`shrink-0 px-1 text-center ${editableCellClass(task.id, 'priority')}`}
+                  style={{ width: getColWidth(GANTT_COLUMNS[8]) }}
                   onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'priority', task); } }}
                 >
                   {isEditing(task.id, 'priority') ? (
@@ -1099,7 +1191,8 @@ export function GanttChart({
 
                 {/* Assigned To */}
                 <div
-                  className={`w-24 shrink-0 px-1 text-center text-xs text-gray-500 truncate ${editableCellClass(task.id, 'assignedTo')}`}
+                  className={`shrink-0 px-1 text-center text-xs text-gray-500 truncate ${editableCellClass(task.id, 'assignedTo')}`}
+                  style={{ width: getColWidth(GANTT_COLUMNS[9]) }}
                   onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'assignedTo', task); } }}
                   title={task.assignedTo || undefined}
                 >
@@ -1119,7 +1212,8 @@ export function GanttChart({
 
                 {/* Status */}
                 <div
-                  className={`w-16 shrink-0 px-1 text-center ${editableCellClass(task.id, 'status')}`}
+                  className={`shrink-0 px-1 text-center ${editableCellClass(task.id, 'status')}`}
+                  style={{ width: getColWidth(GANTT_COLUMNS[10]) }}
                   onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'status', task); } }}
                 >
                   {isEditing(task.id, 'status') ? (
@@ -1159,7 +1253,8 @@ export function GanttChart({
                 {/* Edit icon (visible on hover) */}
                 {onTaskClick && (
                   <div
-                    className="w-8 shrink-0 flex items-center justify-center"
+                    className="shrink-0 flex items-center justify-center"
+                    style={{ width: getColWidth(GANTT_COLUMNS[11]) }}
                     onClick={(e) => { e.stopPropagation(); onTaskClick(task); }}
                   >
                     <svg
