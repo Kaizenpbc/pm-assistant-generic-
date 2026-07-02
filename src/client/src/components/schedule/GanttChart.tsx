@@ -491,23 +491,23 @@ export function GanttChart({
             <span className="text-xs text-gray-400 ml-2">
               {rows.length} tasks
             </span>
-            {/* Zoom controls */}
-            <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-500 ml-3">
-              {ZOOM_LEVELS.map((level, i) => (
-                <button
-                  key={level}
-                  onClick={() => setZoom(level)}
-                  className={`px-2 py-1 text-xs font-medium transition-colors ${
-                    zoom === level
-                      ? 'bg-primary-600 text-white'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
-                  } ${i === 0 ? 'rounded-l-md' : ''} ${i === ZOOM_LEVELS.length - 1 ? 'rounded-r-md' : ''}`}
-                  title={level.charAt(0).toUpperCase() + level.slice(1)}
-                >
-                  {ZOOM_LABELS[level]}
-                </button>
-              ))}
-            </div>
+          </div>
+          {/* Zoom controls */}
+          <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-500">
+            {ZOOM_LEVELS.map((level, i) => (
+              <button
+                key={level}
+                onClick={() => setZoom(level)}
+                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                  zoom === level
+                    ? 'bg-primary-600 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                } ${i === 0 ? 'rounded-l-md' : ''} ${i === ZOOM_LEVELS.length - 1 ? 'rounded-r-md' : ''}`}
+                title={level.charAt(0).toUpperCase() + level.slice(1)}
+              >
+                {ZOOM_LABELS[level]}
+              </button>
+            ))}
           </div>
           <div className="flex items-center gap-2">
             {onAddTask && (
