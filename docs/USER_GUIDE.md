@@ -237,6 +237,11 @@ The default schedule view. Displays tasks as horizontal bars on a timeline:
 - **Milestones**: Tasks marked as milestones appear as diamonds instead of bars.
 - **PDF Export**: Click the **Print / Export PDF** button in the toolbar to open a print-optimised Gantt ready for saving as PDF.
 - Hover over a bar to see task details including all predecessors (row number, task name, dependency type, lag, and health status per predecessor). Click to edit.
+- **Column header sort**: Click any column header in the left panel to sort rows ascending, then descending, then back to default (none). A ▲ or ▼ indicator appears in the header to show the active sort direction. Sort preserves task hierarchy — children are sorted within their own sibling group, not mixed across levels. Row drag reorder is disabled while a sort is active.
+- **Copy/Paste cells**: Press **Ctrl+C** to copy the focused cell's value to the clipboard. Press **Ctrl+V** to paste the clipboard value into the focused cell (paste only applies when the field types match). A green flash confirms the paste.
+- **Baseline bar refinement**: When a baseline is active, ghost bars are shown only for tasks whose baseline dates differ from their current dates. Tasks that are exactly on schedule show no ghost bar, keeping the chart uncluttered.
+- **Indent/Outdent**: Press **Tab** to indent the focused task (makes it a child of the task immediately above it). Press **Shift+Tab** to outdent (promotes the task up one level to its parent's parent). Both operations go through the standard update path and are automatically undoable with Ctrl+Z.
+- **Bar progress drag**: Hover over the right edge of a task bar's progress fill to reveal a drag handle. Drag left or right to adjust the task's completion percentage directly on the timeline. The change is applied via the standard update path and is automatically undoable with Ctrl+Z.
 
 ### Kanban Board
 

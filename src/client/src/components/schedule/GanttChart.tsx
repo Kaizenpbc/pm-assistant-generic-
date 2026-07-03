@@ -572,7 +572,93 @@ export function GanttChart({
   const lastClickedIdRef = useRef<string | null>(null);
   const someSelected = selectedIds.size > 0;
 
-  const rows = useMemo(() => buildFlatRows(tasks, collapsedIds), [tasks, collapsedIds]);
+  // -----------------------------------------------------------------------
+  // Column header sort state
+  // -----------------------------------------------------------------------
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
+
+  const handleHeaderSort = useCallback((colKey: string) => {
+    // Map column key to task field
+    const colKeyToSortField: Record<string, string> = {
+      name: 'name', pred: 'dependency', start: 'startDate', end: 'endDate',
+      dur: 'duration', est: 'estimatedDays', pct: 'progressPercentage',
+      priority: 'priority', assigned: 'assignedTo', status: 'status',
+    };
+    const field = colKeyToSortField[colKey];
+    if (!field) return;
+    if (sortField === field) {
+      if (sortDirection === 'asc') setSortDirection('desc');
+      else { setSortField(null); setSortDirection(null); }
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  }, [sortField, sortDirection]);
+
+  const baseRows = useMemo(() => buildFlatRows(tasks, collapsedIds), [tasks, collapsedIds]);
+
+  const rows = useMemo(() => {
+    if (!sortField || !sortDirection) return baseRows;
+    // Sort within sibling groups to preserve hierarchy
+    const priorityOrder: Record<string, number> = { low: 0, medium: 1, high: 2, urgent: 3 };
+    const statusOrder: Record<string, number> = { pending: 0, in_progress: 1, completed: 2, cancelled: 3 };
+
+    const getSortValue = (task: GanttTask): string | number => {
+      switch (sortField) {
+        case 'name': return (task.name || '').toLowerCase();
+        case 'startDate': return task.startDate || '';
+        case 'endDate': return task.endDate || '';
+        case 'duration': {
+          const s = toDate(task.startDate), e = toDate(task.endDate);
+          return s && e ? daysBetween(s, e) : 0;
+        }
+        case 'estimatedDays': return task.estimatedDays ?? 0;
+        case 'progressPercentage': return task.progressPercentage ?? 0;
+        case 'priority': return priorityOrder[task.priority || 'medium'] ?? 1;
+        case 'status': return statusOrder[task.status] ?? 0;
+        case 'assignedTo': return (task.assignedTo || '').toLowerCase();
+        default: return '';
+      }
+    };
+
+    // Group rows by parentTaskId, sort within each group, reassemble
+    const result: FlatRow[] = [];
+    let i = 0;
+    while (i < baseRows.length) {
+      const row = baseRows[i];
+      // Collect contiguous sibling group at same level with same parent
+      const parentId = row.task.parentTaskId || null;
+      const level = row.level;
+      const group: { row: FlatRow; children: FlatRow[] }[] = [];
+      while (i < baseRows.length && baseRows[i].level === level && (baseRows[i].task.parentTaskId || null) === parentId) {
+        const parentRow = baseRows[i];
+        const children: FlatRow[] = [];
+        i++;
+        // Collect all nested children (higher level) until we hit same or lower level
+        while (i < baseRows.length && baseRows[i].level > level) {
+          children.push(baseRows[i]);
+          i++;
+        }
+        group.push({ row: parentRow, children });
+      }
+      // Sort the group
+      const dir = sortDirection === 'asc' ? 1 : -1;
+      group.sort((a, b) => {
+        const va = getSortValue(a.row.task);
+        const vb = getSortValue(b.row.task);
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+      });
+      // Flatten back — parent row followed by its children (children keep their internal order)
+      for (const g of group) {
+        result.push(g.row);
+        result.push(...g.children);
+      }
+    }
+    return result;
+  }, [baseRows, sortField, sortDirection]);
 
   const allSelected = rows.length > 0 && rows.every(r => selectedIds.has(r.task.id));
 
@@ -690,6 +776,51 @@ export function GanttChart({
     origEndDate: Date;
     dayDelta: number;
   } | null>(null);
+
+  // -----------------------------------------------------------------------
+  // Bar progress drag state
+  // -----------------------------------------------------------------------
+  const [progressDrag, setProgressDrag] = useState<{
+    taskId: string; barWidth: number; barLeft: number;
+    origPct: number; currentPct: number;
+  } | null>(null);
+
+  const handleProgressMouseDown = useCallback((e: React.MouseEvent, task: GanttTask, barWidth: number, barLeft: number) => {
+    if (!onTaskUpdate) return;
+    e.stopPropagation();
+    e.preventDefault();
+    setProgressDrag({
+      taskId: task.id,
+      barWidth,
+      barLeft,
+      origPct: task.progressPercentage ?? 0,
+      currentPct: task.progressPercentage ?? 0,
+    });
+  }, [onTaskUpdate]);
+
+  useEffect(() => {
+    if (!progressDrag) return;
+    const onMove = (e: MouseEvent) => {
+      setProgressDrag(prev => {
+        if (!prev) return null;
+        const relX = e.clientX - prev.barLeft;
+        const pct = Math.max(0, Math.min(100, Math.round((relX / prev.barWidth) * 100)));
+        return { ...prev, currentPct: pct };
+      });
+    };
+    const onUp = () => {
+      if (progressDrag && progressDrag.currentPct !== progressDrag.origPct && onTaskUpdate) {
+        onTaskUpdate(progressDrag.taskId, { progressPercentage: progressDrag.currentPct });
+      }
+      setProgressDrag(null);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [progressDrag, onTaskUpdate]);
 
   // -----------------------------------------------------------------------
   // Inline editing state & helpers
@@ -920,6 +1051,12 @@ export function GanttChart({
   const isFocused = (taskId: string, field: string) =>
     focusedCell?.taskId === taskId && focusedCell.field === field && !editingCell;
 
+  // -----------------------------------------------------------------------
+  // Copy/paste cell state
+  // -----------------------------------------------------------------------
+  const [copiedValue, setCopiedValue] = useState<{ field: EditableField; value: string } | null>(null);
+  const [pasteFlash, setPasteFlash] = useState<{ taskId: string; field: string } | null>(null);
+
   /** Get visible FIELD_ORDER (only fields whose columns are visible) */
   const visibleFieldOrder = useMemo(() => {
     const colKeyToField: Record<string, EditableField> = {
@@ -932,12 +1069,61 @@ export function GanttChart({
       .map(c => colKeyToField[c.key]);
   }, [isColVisible]);
 
-  // Arrow key navigation
+  // Arrow key navigation + copy/paste + indent/outdent
   useEffect(() => {
     if (!onTaskUpdate || editingCell) return;
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
+
+      // Copy/paste when a cell is focused
+      if (focusedCell && (e.ctrlKey || e.metaKey)) {
+        if (e.key === 'c') {
+          e.preventDefault();
+          const task = tasks.find(t => t.id === focusedCell.taskId);
+          if (task) {
+            const val = getTaskFieldValue(task, focusedCell.field);
+            setCopiedValue({ field: focusedCell.field, value: val });
+            navigator.clipboard.writeText(val).catch(() => {});
+          }
+          return;
+        }
+        if (e.key === 'v') {
+          if (copiedValue && copiedValue.field === focusedCell.field) {
+            e.preventDefault();
+            onTaskUpdate(focusedCell.taskId, { [focusedCell.field === 'dependency' ? 'dependencies' : focusedCell.field]: focusedCell.field === 'progressPercentage' ? Math.max(0, Math.min(100, Number(copiedValue.value))) : focusedCell.field === 'estimatedDays' ? Math.max(0, Number(copiedValue.value)) : copiedValue.value });
+            setPasteFlash({ taskId: focusedCell.taskId, field: focusedCell.field });
+            setTimeout(() => setPasteFlash(null), 800);
+          }
+          return;
+        }
+      }
+
+      // Indent/outdent with Tab/Shift+Tab
+      if (focusedCell && e.key === 'Tab') {
+        e.preventDefault();
+        const rowIdx = rows.findIndex(r => r.task.id === focusedCell.taskId);
+        if (rowIdx === -1) return;
+        const task = rows[rowIdx].task;
+        if (e.shiftKey) {
+          // Outdent: promote to parent's parent
+          if (task.parentTaskId) {
+            const parent = tasks.find(t => t.id === task.parentTaskId);
+            onTaskUpdate(task.id, { parentTaskId: parent?.parentTaskId || null });
+          }
+        } else {
+          // Indent: make child of the row above (must be same level or parent)
+          if (rowIdx > 0) {
+            const aboveTask = rows[rowIdx - 1].task;
+            // Don't indent under itself or if already a child
+            if (aboveTask.id !== task.parentTaskId) {
+              onTaskUpdate(task.id, { parentTaskId: aboveTask.id });
+            }
+          }
+        }
+        return;
+      }
+
       if (!focusedCell) {
         // If no cell focused, Enter on a selected row focuses the first field
         if (e.key === 'Enter' && activeTaskId) {
@@ -993,7 +1179,7 @@ export function GanttChart({
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [focusedCell, editingCell, rows, visibleFieldOrder, onTaskUpdate, activeTaskId, onTaskSelect, startEditing]);
+  }, [focusedCell, editingCell, rows, visibleFieldOrder, onTaskUpdate, activeTaskId, onTaskSelect, startEditing, tasks, getTaskFieldValue, copiedValue]);
 
   // When editing ends, restore focus to that cell
   useEffect(() => {
@@ -1003,10 +1189,14 @@ export function GanttChart({
     };
   }, [editingCell]);
 
+  const isPasteFlash = (taskId: string, field: string) =>
+    pasteFlash?.taskId === taskId && pasteFlash.field === field;
+
   const editableCellClass = (taskId: string, field: string) => {
     if (!onTaskUpdate) return '';
     const base = 'relative cursor-pointer transition-all duration-150';
     if (isEditing(taskId, field)) return `${base} ring-2 ring-blue-400 ring-inset rounded`;
+    if (isPasteFlash(taskId, field)) return `${base} ring-2 ring-green-400 ring-inset rounded bg-green-50`;
     if (isFocused(taskId, field)) return `${base} ring-2 ring-primary-300 ring-inset rounded bg-primary-50/30`;
     if (isSaved(taskId, field)) return `${base} bg-green-50`;
     return `${base} hover:bg-blue-50/50`;
@@ -1505,12 +1695,21 @@ export function GanttChart({
               // Skip hidden columns
               if (!isColVisible(col)) return null;
               const w = getColWidth(col);
+              const sortableKeys = ['name', 'pred', 'start', 'end', 'dur', 'est', 'pct', 'priority', 'assigned', 'status'];
+              const isSortable = sortableKeys.includes(col.key);
+              const colKeyToSortField: Record<string, string> = {
+                name: 'name', pred: 'dependency', start: 'startDate', end: 'endDate',
+                dur: 'duration', est: 'estimatedDays', pct: 'progressPercentage',
+                priority: 'priority', assigned: 'assignedTo', status: 'status',
+              };
+              const isActiveSortCol = sortField === colKeyToSortField[col.key];
               return (
                 <div
                   key={col.key}
-                  className={`shrink-0 px-1 text-center relative select-none ${col.flex ? 'flex-1 min-w-0 px-2' : ''}`}
+                  className={`shrink-0 px-1 text-center relative select-none ${col.flex ? 'flex-1 min-w-0 px-2' : ''} ${isSortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600' : ''}`}
                   style={col.flex ? undefined : { width: w }}
-                  title={col.key === 'editIcon' ? 'Double-click row or click icon to edit' : undefined}
+                  title={col.key === 'editIcon' ? 'Double-click row or click icon to edit' : isSortable ? 'Click to sort' : undefined}
+                  onClick={isSortable ? () => handleHeaderSort(col.key) : undefined}
                 >
                   {col.key === 'rowNum' && onBulkUpdate ? (
                     <input
@@ -1520,11 +1719,18 @@ export function GanttChart({
                       className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                       title="Select all"
                     />
-                  ) : col.label}
+                  ) : (
+                    <span className="inline-flex items-center gap-0.5">
+                      {col.label}
+                      {isActiveSortCol && (
+                        <span className="text-primary-600 text-[9px]">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </span>
+                  )}
                   {col.resizable && (
                     <div
                       className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-10 hover:bg-primary-400/40 transition-colors"
-                      onMouseDown={(e) => handleColResizeStart(e, col.key, w)}
+                      onMouseDown={(e) => { e.stopPropagation(); handleColResizeStart(e, col.key, w); }}
                     />
                   )}
                 </div>
@@ -1550,7 +1756,7 @@ export function GanttChart({
                   onTaskSelect?.(task);
                 }}
                 onDoubleClick={() => { if (!editingCell) onTaskClick?.(task); }}
-                draggable={!!onTaskReorder && !editingCell && !someSelected}
+                draggable={!!onTaskReorder && !editingCell && !someSelected && !sortField}
                 onDragStart={(e) => handleRowDragStart(e, task, rowIdx)}
                 onDragOver={(e) => handleRowDragOver(e, task, rowIdx)}
                 onDrop={handleRowDrop}
@@ -1569,11 +1775,11 @@ export function GanttChart({
                       onClick={(e) => { e.stopPropagation(); toggleSelect(task.id, e.shiftKey); }}
                       className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                     />
-                  ) : onTaskReorder && !editingCell ? (
+                  ) : onTaskReorder && !editingCell && !sortField ? (
                     <span className="hidden group-hover:inline cursor-grab text-gray-400" title="Drag to reorder">&#x2807;</span>
                   ) : null}
-                  {!(someSelected && onBulkUpdate) && !(onTaskReorder && !editingCell) && (rowIdx + 1)}
-                  {!(someSelected && onBulkUpdate) && onTaskReorder && !editingCell && (
+                  {!(someSelected && onBulkUpdate) && !(onTaskReorder && !editingCell && !sortField) && (rowIdx + 1)}
+                  {!(someSelected && onBulkUpdate) && onTaskReorder && !editingCell && !sortField && (
                     <span className="group-hover:hidden">{rowIdx + 1}</span>
                   )}
                 </div>
@@ -1995,10 +2201,11 @@ export function GanttChart({
               </div>
             )}
 
-            {/* Baseline ghost bars */}
+            {/* Baseline ghost bars (only when baseline differs from actual) */}
             {rows.map(({ task }, idx) => {
               const bl = baselineMap.get(task.id);
               if (!bl) return null;
+              if (bl.startDate === (task.startDate?.split('T')[0] || task.startDate) && bl.endDate === (task.endDate?.split('T')[0] || task.endDate)) return null;
               const bStart = toDate(bl.startDate);
               const bEnd = toDate(bl.endDate);
               if (!bStart || !bEnd) return null;
@@ -2037,7 +2244,8 @@ export function GanttChart({
               const { leftDelta, widthDelta } = getDragOffset(task.id);
               const left = baseLeft + leftDelta;
               const width = Math.max(baseWidth + widthDelta, 8);
-              const pct = task.progressPercentage ?? 0;
+              const isProgressDragging = progressDrag?.taskId === task.id;
+              const pct = isProgressDragging ? progressDrag.currentPct : (task.progressPercentage ?? 0);
               const isCritical = criticalSet.has(task.id);
               const colors = isCritical
                 ? { bg: '#fef2f2', fill: '#dc2626', text: '#991b1b' }
@@ -2108,6 +2316,24 @@ export function GanttChart({
                         opacity: isParent ? 0.7 : 0.5,
                       }}
                     />
+                  )}
+
+                  {/* Progress drag handle */}
+                  {onTaskUpdate && !isParent && !task.isMilestone && (
+                    <div
+                      className="absolute top-0 bottom-0 w-2 cursor-col-resize z-10 opacity-0 group-hover/bar:opacity-100 transition-opacity"
+                      style={{ left: `calc(${Math.min(pct, 100)}% - 4px)` }}
+                      onMouseDown={(e) => {
+                        const barEl = (e.currentTarget as HTMLElement).parentElement;
+                        if (barEl) {
+                          const rect = barEl.getBoundingClientRect();
+                          handleProgressMouseDown(e, task, rect.width, rect.left);
+                        }
+                      }}
+                      title={`Progress: ${pct}% — drag to adjust`}
+                    >
+                      <div className="w-1 h-full mx-auto rounded-full" style={{ backgroundColor: colors.fill }} />
+                    </div>
                   )}
 
                   {/* Summary bar style — diamond markers for parent tasks */}
