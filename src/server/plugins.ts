@@ -10,7 +10,7 @@ import websocket from '@fastify/websocket';
 import multipart from '@fastify/multipart';
 import rawBody from 'fastify-raw-body';
 import { config } from './config';
-import { requestLogger } from './utils/logger';
+import { requestLogger, responseLogger } from './utils/logger';
 import { toCamelCaseKeys } from './utils/caseConverter';
 import { auditService } from './services/auditService';
 import { databaseService } from './database/connection';
@@ -26,6 +26,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.addHook('onRequest', requestLogger);
   fastify.addHook('onRequest', securityMiddleware);
   fastify.addHook('preHandler', securityValidationMiddleware);
+  fastify.addHook('onResponse', responseLogger);
 
   // Normalize DB snake_case keys to camelCase in JSON API responses only
   fastify.addHook('preSerialization', async (request, _reply, payload) => {
@@ -139,7 +140,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-user-role', 'x-user-id', 'Mcp-Session-Id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-user-role', 'x-user-id', 'x-admin-key', 'Mcp-Session-Id'],
     exposedHeaders: ['Mcp-Session-Id'],
   });
 

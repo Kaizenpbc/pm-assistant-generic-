@@ -30,7 +30,7 @@
 - **Performance:** Pool size is fixed. No evidence of query timeouts or statement timeouts. Some routes (e.g. projects list) use a hard `LIMIT 1000`; no cursor/offset pagination contract. Large payloads (e.g. schedules with many tasks) could grow unbounded without pagination.
 - **Availability:** DB failure leads to “offline mode” (startup still succeeds); many endpoints will fail at query time. No circuit breaker around Anthropic; failures surface as 500s. Health check returns 503 when DB is down — good.
 - **Maintainability:** Many small route files and a large service set. No shared “repository” or query helpers, so SQL and column names are repeated. Agent capabilities are registered at startup (`agentCapabilities`); adding a new capability is clear but requires code changes.
-- **Observability:** Request logging and a global error handler that logs and writes to `auditService`. No structured request/response logging with duration, no metrics (e.g. request rate, latency percentiles, AI token usage), no tracing. Log level is configurable; production defaults to `info`.
+- **Observability:** Request logging (onRequest) and response logging with duration and status code (onResponse, added July 2026). Global error handler logs and writes to `auditService`. No metrics (e.g. request rate, latency percentiles, AI token usage) or tracing. Log level is configurable; production defaults to `info`.
 
 ### 2.3 Security & Compliance
 
@@ -38,7 +38,7 @@
 - **Input validation:** Zod used in several routes; others rely on Swagger or manual checks. Security middleware enforces JSON for non-empty body and 10MB body limit; good. No centralized sanitization for logging (e.g. masking PII in error payloads).
 - **Secrets:** Config validated with Zod; JWT/refresh/cookie secrets must differ. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, Stripe keys are env-based — no secret manager integration.
 - **CORS:** Configured with allowlist (config origin, localhost, Claude domains for MCP). Credentials allowed. Sensible for a known front-end and MCP.
-- **Rate limiting:** Only for API keys (per-key, in-memory). No rate limit on login, register, forgot-password, or public waitlist — abuse/DoS risk on those endpoints.
+- **Rate limiting:** Per-key (API keys) and per-IP (auth, waitlist) rate limiting, both in-memory. Auth routes (login, register, forgot-password, reset-password, verify-email) and waitlist routes (join, count) are rate limited (added July 2026).
 - **Data protection:** Passwords via bcrypt; tokens in cookies with secure/sameSite. No explicit discussion of encryption at rest for DB or uploads.
 
 ### 2.4 AI/LLM Integration
@@ -62,8 +62,8 @@
 
 | Risk | Severity | Description |
 |------|----------|-------------|
-| No rate limiting on auth and public endpoints | **High** | Login, register, forgot-password, waitlist POST/count are unauthenticated and not rate limited. Enables brute-force and DoS. |
-| Waitlist admin key in query string | **High** | `WAITLIST_ADMIN_KEY` in `?key=`. Keys in URL get logged and cached; should be header or proper auth. |
+| ~~No rate limiting on auth and public endpoints~~ | ~~High~~ | **Mitigated (July 2026).** Per-IP rate limits added to all auth and waitlist endpoints. |
+| ~~Waitlist admin key in query string~~ | ~~High~~ | **Mitigated (July 2026).** Moved to `X-Admin-Key` header. |
 | Single process / in-memory rate limiter | **Medium** | Multi-instance deployment would need a shared rate limiter (e.g. Redis). Current design assumes one Node process. |
 | No per-user or per-tenant AI budget | **Medium** | Heavy AI usage can spike cost; no caps or quotas per user/tenant. |
 | Services own all SQL | **Medium** | Harder to add caching, read replicas, or change DB without touching many services. |
@@ -124,10 +124,10 @@ Target state: same process layout, but with explicit rate limiting on all public
 
 ## 6. Phased Roadmap
 
-**Now (critical / quick wins)**  
-- Add rate limiting for `/api/v1/auth/*` (login, register, forgot-password, reset-password) and `/api/v1/waitlist` (POST and GET count). Use the existing in-memory limiter with a per-IP or per-identifier window.  
-- Switch waitlist admin to a header (e.g. `X-Waitlist-Admin-Key`) or a dedicated admin JWT; remove `key` from query string.  
-- Add request duration and status code to the request logger (or to the response hook) so logs can be used for latency and error rates.
+**Now (critical / quick wins)** -- ALL DONE (July 2026)
+- ~~Add rate limiting for `/api/v1/auth/*` (login, register, forgot-password, reset-password) and `/api/v1/waitlist` (POST and GET count).~~ Done: per-IP rate limits on all auth and waitlist endpoints.
+- ~~Switch waitlist admin to a header or a dedicated admin JWT; remove `key` from query string.~~ Done: moved to `X-Admin-Key` header.
+- ~~Add request duration and status code to the request logger (or to the response hook).~~ Done: `responseLogger` onResponse hook logs method, url, statusCode, durationMs, ip.
 
 **Next (this/next sprint)**  
 - Define pagination (e.g. `limit` + `cursor` or `offset`) for list endpoints (projects, schedules, tasks, etc.) and enforce a max page size.  

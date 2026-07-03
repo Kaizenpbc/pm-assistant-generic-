@@ -35,17 +35,6 @@ async function start() {
     await registerPlugins(fastify);
     console.log('Plugins registered');
 
-    // Request duration logging for API routes
-    fastify.addHook('onResponse', (request, reply, done) => {
-      if (request.url.startsWith('/api/')) {
-        const duration = reply.elapsedTime;
-        if (duration > 2000) {
-          console.warn(`SLOW REQUEST: ${request.method} ${request.url} — ${Math.round(duration)}ms`);
-        }
-      }
-      done();
-    });
-
     console.log('Registering routes...');
     await registerRoutes(fastify);
     console.log('Routes registered');

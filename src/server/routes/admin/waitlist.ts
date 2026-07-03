@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../../database/connection';
+import { rateLimiter } from '../../middleware/rateLimiter';
 
 const joinSchema = z.object({
   email: z.string().email(),
@@ -9,6 +10,13 @@ const joinSchema = z.object({
 
 export async function waitlistRoutes(fastify: FastifyInstance) {
   fastify.post('/', async (request: FastifyRequest, reply: FastifyReply) => {
+    // Rate limit: 5 joins per minute per IP
+    const ip = request.ip || 'unknown';
+    const rl = rateLimiter.check(`waitlist:join:${ip}`, 5, 60_000);
+    if (!rl.allowed) {
+      return reply.status(429).send({ error: 'Too many requests. Please try again later.' });
+    }
+
     const result = joinSchema.safeParse(request.body);
     if (!result.success) {
       return reply.status(400).send({ error: 'Valid email required' });
@@ -31,14 +39,21 @@ export async function waitlistRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/count', async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/count', async (request: FastifyRequest, reply: FastifyReply) => {
+    // Rate limit: 30 requests per minute per IP
+    const ip = request.ip || 'unknown';
+    const rl = rateLimiter.check(`waitlist:count:${ip}`, 30, 60_000);
+    if (!rl.allowed) {
+      return reply.status(429).send({ error: 'Too many requests. Please try again later.' });
+    }
+
     const rows = await databaseService.query<any>('SELECT COUNT(*) as count FROM waitlist');
     return reply.send({ count: rows[0]?.count ?? 0 });
   });
 
   fastify.get('/admin', async (request: FastifyRequest, reply: FastifyReply) => {
     const adminKey = process.env.WAITLIST_ADMIN_KEY || 'changeme';
-    const { key } = request.query as { key?: string };
+    const key = request.headers['x-admin-key'] as string | undefined;
     if (key !== adminKey) return reply.status(401).send({ error: 'Unauthorized' });
     const rows = await databaseService.query<any>(
       'SELECT email, created_at FROM waitlist ORDER BY created_at DESC'
@@ -48,7 +63,7 @@ export async function waitlistRoutes(fastify: FastifyInstance) {
 
   fastify.get('/admin/export', async (request: FastifyRequest, reply: FastifyReply) => {
     const adminKey = process.env.WAITLIST_ADMIN_KEY || 'changeme';
-    const { key } = request.query as { key?: string };
+    const key = request.headers['x-admin-key'] as string | undefined;
     if (key !== adminKey) return reply.status(401).send({ error: 'Unauthorized' });
     const rows = await databaseService.query<any>(
       'SELECT email, created_at FROM waitlist ORDER BY created_at ASC'

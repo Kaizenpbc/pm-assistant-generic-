@@ -33,6 +33,18 @@ export const requestLogger = (request: any, reply: any, done: any) => {
   done();
 };
 
+export const responseLogger = (request: any, reply: any, done: any) => {
+  const durationMs = Math.round(reply.elapsedTime || 0);
+  logger.info('Response sent', {
+    method: request.method,
+    url: request.url,
+    statusCode: reply.statusCode,
+    durationMs,
+    ip: request.ip,
+  });
+  done();
+};
+
 export const errorLogger = logger;
 export const auditLogger = logger;
 export default logger;

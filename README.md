@@ -244,6 +244,11 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - API key generation and revocation
 - Per-key rate limiting and scope control
 
+### Auth & Public Route Rate Limiting
+- Per-IP rate limiting on login, register, forgot-password, reset-password, and email verification
+- Per-IP rate limiting on waitlist join and count endpoints
+- Prevents brute-force attacks and abuse on unauthenticated routes
+
 ### Immutable Audit Ledger
 - Hash-chain integrity for all audit records
 - Tamper-evident logging of every mutation

@@ -176,6 +176,13 @@ export async function authRoutes(fastify: FastifyInstance) {
     schema: { description: 'Verify email address', tags: ['auth'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Rate limit: 10 verifications per minute per IP
+      const ip = request.ip || 'unknown';
+      const rl = rateLimiter.check(`auth:verify:${ip}`, 10, 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many verification attempts. Please try again later.' });
+      }
+
       const { token } = request.query as { token?: string };
       if (!token) {
         return reply.status(400).send({ error: 'Missing token', message: 'Verification token is required' });
@@ -206,6 +213,13 @@ export async function authRoutes(fastify: FastifyInstance) {
     schema: { description: 'Request password reset', tags: ['auth'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Rate limit: 5 requests per minute per IP
+      const ip = request.ip || 'unknown';
+      const rl = rateLimiter.check(`auth:forgot:${ip}`, 5, 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many password reset requests. Please try again later.' });
+      }
+
       const { email } = forgotPasswordSchema.parse(request.body);
 
       // Always return 200 to prevent email enumeration
@@ -233,6 +247,13 @@ export async function authRoutes(fastify: FastifyInstance) {
     schema: { description: 'Reset password with token', tags: ['auth'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Rate limit: 5 requests per minute per IP
+      const ip = request.ip || 'unknown';
+      const rl = rateLimiter.check(`auth:reset:${ip}`, 5, 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many password reset attempts. Please try again later.' });
+      }
+
       const { token, password } = resetPasswordSchema.parse(request.body);
 
       const user = await userService.findByResetToken(token);
