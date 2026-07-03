@@ -100,7 +100,7 @@ The sidebar can be collapsed using the toggle at the bottom. On mobile devices, 
 
 ### Command Palette
 
-Press **Ctrl+K** (or **Cmd+K** on Mac) to open the Command Palette. Type to quickly search and navigate to any page, project, or action.
+Press **Ctrl+K** (or **Cmd+K** on Mac) to open the Command Palette. Type to quickly search and navigate to any page, project, or action. The global search covers 6 entity types — **projects, tasks, goals, lessons learned, resources, and change requests** — with all queries running in parallel. Results from each entity type appear together; if one type is temporarily unavailable it is silently omitted rather than blocking the whole search.
 
 ### Notifications
 
@@ -903,21 +903,27 @@ Reviewers can filter by status, open the Review Panel for each submission, and t
 
 ## 18. Portfolio
 
-The **Portfolio** page provides a cross-project view of all active work.
+The **Portfolio** page provides a cross-project view of all active work with two modes selectable via a toggle in the toolbar.
 
-### Portfolio Gantt
+### Portfolio Dashboard (default view)
 
-A multi-project Gantt chart showing:
+The dashboard mode shows:
 
-- Each project as a parent row with its tasks as children.
-- Aggregated progress and date ranges.
+- **6 KPI cards** at the top of the page: Total Projects, Active, On Track, At Risk, Budget Allocated, and Budget Spent. These update as you apply status filters.
+- **Status filter pills** — click All, Active, On Hold, Planning, or Completed to narrow which projects appear in the card grid below.
+- **Portfolio budget progress bar** — a single bar showing aggregate budget spent vs. allocated across all currently visible projects, with a percentage label.
+- **Project cards** — one card per project displaying: project name, status badge, a color-coded health indicator, an overall progress bar with percentage, a task completion ratio (e.g. "12 / 20 tasks"), and a budget utilization bar showing spend against the allocated budget. Click the project name or the arrow link on a card to navigate to the project detail page.
+
+### Portfolio Timeline (Gantt view)
+
+Click the **Timeline** toggle to switch to the multi-project Gantt chart:
+
+- Each project appears as a parent row with its tasks as children.
+- Aggregated progress and date ranges per project.
 - Color-coded status indicators.
+- Click a project row to navigate to its detail page.
 
-Click on a project row to navigate to its detail page.
-
-### Portfolio Overview
-
-Summary metrics across all projects, including total budget, overall progress, and project count by status.
+Click **Dashboard** in the toggle to return to the KPI card view.
 
 ---
 
@@ -948,6 +954,14 @@ Navigate to **Intelligence** in the sidebar to access:
    - **Recommendation** -- What to do differently.
    - **Project** (optional) -- Associate with a specific project.
 4. Save the lesson.
+
+### Editing a Lesson
+
+Click the **Edit** (pencil) icon on any lesson card. The lesson modal opens pre-filled with the existing values. Make your changes and click **Save** to update the record.
+
+### Deleting a Lesson
+
+Click the **Delete** (trash) icon on any lesson card. A confirmation modal appears asking you to confirm the deletion. Click **Delete** to remove the lesson permanently, or **Cancel** to dismiss without making changes.
 
 ### Pattern Detection
 
@@ -1038,11 +1052,14 @@ Navigate to **Account** in the sidebar to manage:
 Navigate to **Settings** to configure:
 
 - **User management** -- Add, edit, or deactivate users. Assign roles (admin, executive, manager, member).
-- **API keys** -- Generate and manage API keys for programmatic access.
+- **API keys** -- Generate and manage API keys for programmatic access. Revoking a key shows a styled confirmation modal before the key is deleted.
+- **Webhooks** -- Configure outbound webhook endpoints. Deleting a webhook shows a styled confirmation modal.
 - **Custom fields** -- Define organization-wide custom fields that appear on tasks and projects.
 - **Notifications** -- Configure notification preferences and channels.
 - **Language** -- Select your preferred display language (English, French, or Spanish). The change applies instantly without a page reload.
 - **Time Zone** -- Set your IANA timezone (e.g., `America/Toronto`). All dates in the application are displayed in this timezone.
+
+Destructive actions throughout the application (deleting integrations, change requests, intake forms, report templates, goals, lessons, API keys, and webhooks) use a consistent styled confirmation modal instead of the browser's native dialog, providing a cleaner experience that respects the application's design and dark mode.
 
 ### User Roles
 

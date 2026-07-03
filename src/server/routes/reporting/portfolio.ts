@@ -41,6 +41,10 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
         const projScheduleIds = schedulesByProject.get(project.id) ?? [];
         const projectTasks = projScheduleIds.flatMap(sid => tasksBySchedule.get(sid) ?? []);
 
+        const totalTasks = projectTasks.length;
+        const completedTasks = projectTasks.filter(t => t.status === 'completed').length;
+        const avgProgress = totalTasks > 0 ? Math.round(projectTasks.reduce((s, t) => s + (t.progressPercentage || 0), 0) / totalTasks) : 0;
+
         return {
           projectId: project.id,
           projectName: project.name,
@@ -48,6 +52,11 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
           priority: project.priority,
           startDate: project.startDate,
           endDate: project.endDate,
+          budgetAllocated: project.budgetAllocated || 0,
+          budgetSpent: project.budgetSpent || 0,
+          progressPercentage: avgProgress,
+          totalTasks,
+          completedTasks,
           tasks: projectTasks.map(t => ({
             id: t.id,
             name: t.name,

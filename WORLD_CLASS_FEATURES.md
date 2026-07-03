@@ -150,9 +150,14 @@ An agentic AI project management platform that combines the scheduling power of 
 - Saved Views: name and store column+sort configurations per schedule, load/update/delete from dropdown
 - **Benchmark:** MS Project, Smartsheet, Monday.com — **exceeds MS Project** with multi-predecessor support, health badges, and inline predecessor editing
 
-### 2.6 Portfolio-Level Gantt
-- Program view: multiple projects on one timeline
-- **Benchmark:** Primavera P6, Smartsheet
+### 2.6 Portfolio Dashboard
+- Full portfolio dashboard with 6 KPI cards: Total Projects, Active, On Track, At Risk, Budget Allocated, Budget Spent
+- Status filter pills to narrow the project card grid (All / Active / On Hold / Planning / Completed)
+- Aggregate portfolio budget progress bar (allocated vs. spent)
+- Per-project cards with health indicator, progress bar, task completion ratio, and budget utilization bar
+- Dashboard / Timeline toggle preserving the original multi-project Gantt view
+- Server-side aggregation via `/api/v1/reporting/portfolio` returning `budgetAllocated`, `budgetSpent`, `progressPercentage`, `totalTasks`, `completedTasks` per project
+- **Benchmark:** Primavera P6, Smartsheet, Monday.com — **exceeds** with budget KPI cards and per-project health cards alongside the Gantt timeline
 
 ### 2.7 Advanced Security
 - Role-based access control (admin, executive, manager, member) with project member roles
@@ -192,6 +197,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Pattern recognition across project types
 - Auto-suggests risk mitigations from past projects
 - Knowledge base that grows smarter
+- Full CRUD on the Lessons Learned page: edit opens the lesson modal pre-filled; delete presents a styled confirmation modal before removing the record
 
 ### 3.6 Monte Carlo Simulation
 - Probabilistic schedule modeling
@@ -405,3 +411,8 @@ An agentic AI project management platform that combines the scheduling power of 
 | Notification Mark-as-Read Persistence (individual read state saved to server API) | Done | Bug Fix |
 | Executive Dashboard On Track Metric (uses schedule/budget variance, not progress heuristic) | Done | Bug Fix |
 | Goals Project Dropdown (replaces free-text Project ID input with searchable dropdown) | Done | Bug Fix |
+| Lessons Learned Edit/Delete (pre-filled modal for edit, ConfirmModal for delete) | Done | Enhancement |
+| Styled ConfirmModal (replaces window.confirm() across Integrations, Change Requests, Intake, Settings, Report Builder, Goals) | Done | Enhancement |
+| Expanded Global Search (6 entity types: projects, tasks, goals, lessons, resources, change requests; parallel queries) | Done | Enhancement |
+| Portfolio Dashboard (6 KPI cards, status filter pills, budget progress bar, project health cards, Dashboard/Timeline toggle) | Done | Enhancement |
+| Portfolio API Enhancement (budgetAllocated, budgetSpent, progressPercentage, totalTasks, completedTasks per project) | Done | Enhancement |

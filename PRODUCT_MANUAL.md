@@ -59,7 +59,7 @@ Bulk create, update, and status-change endpoints allow operating on multiple tas
 
 ### Search
 
-Full-text search across projects, tasks, and schedules with keyword matching.
+Full-text search across 6 entity types: projects, tasks, goals, lessons learned, resources, and change requests. All queries execute in parallel and return a unified result set; any entity type that fails is silently omitted so a partial outage does not block the entire search.
 
 ---
 
@@ -447,7 +447,7 @@ The `MeetingIntelligenceService` processes meeting transcripts or notes to extra
 
 ### Lessons Learned
 
-The `LessonsLearnedService` captures and retrieves project retrospective insights, categorized and searchable, to improve future project execution.
+The `LessonsLearnedService` captures and retrieves project retrospective insights, categorized and searchable, to improve future project execution. Lessons can be edited and deleted directly from the Lessons Learned page: the edit action opens the same lesson modal pre-filled with existing values; the delete action presents a styled `ConfirmModal` before removing the record.
 
 ### Task Prioritization
 
@@ -544,6 +544,23 @@ The `AnalyticsSummaryService` computes portfolio-level KPIs:
 - Resource allocation summary
 - Schedule performance overview
 - **On Track percentage** — displayed on the Executive Dashboard; calculated using actual schedule variance (SPI) and budget variance (CPI/budget ratio) rather than a progress threshold heuristic, so the metric accurately reflects project health
+
+### Portfolio Dashboard
+
+The `/api/v1/reporting/portfolio` endpoint performs server-side aggregation and returns per-project enrichment data alongside the standard project fields:
+
+- `budgetAllocated` / `budgetSpent` — drawn from the project's budget fields
+- `progressPercentage` — weighted average of task progress across all project tasks
+- `totalTasks` / `completedTasks` — task count summary
+- Full task detail array for client-side drill-down
+
+The Portfolio page UI consumes this endpoint and renders a full dashboard:
+
+- **6 KPI cards** at the top: Total Projects, Active, On Track, At Risk, Budget Allocated, Budget Spent
+- **Status filter pills** — click to filter the project card grid by status (All, Active, On Hold, Planning, Completed)
+- **Portfolio budget progress bar** — aggregate allocated vs. spent across all visible projects
+- **Project cards** — each card shows name, status badge, health indicator, progress bar, task completion ratio, budget utilization bar, and a link to the project detail page
+- **Dashboard / Timeline toggle** — switch between the KPI dashboard view and the original Portfolio Gantt timeline; selection persists within the session
 
 ---
 
@@ -679,6 +696,7 @@ The `WebhookService` allows registering outbound webhook endpoints that fire on 
 - Credential storage in encrypted config blobs
 - Sync logging with direction (inbound/outbound), item counts, and error tracking
 - Last-sync timestamp for monitoring
+- Destructive actions (delete integration, delete webhook, revoke API key, delete change request, delete intake form, delete report template, delete goal) use a reusable `ConfirmModal` component instead of the browser's native `window.confirm()`, providing a consistent, styled confirmation dialog that respects the application's dark mode and design system
 
 ---
 

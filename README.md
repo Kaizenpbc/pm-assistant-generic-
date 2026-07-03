@@ -170,7 +170,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Auto-Reschedule** -- AI-driven schedule optimization
 - **Natural Language Queries** -- Ask questions about project data in plain English
 - **Meeting Intelligence** -- Automated meeting minutes and action item extraction
-- **Lessons Learned** -- AI-assisted capture and retrieval of project lessons
+- **Lessons Learned** -- AI-assisted capture, edit, delete, and retrieval of project lessons; edit opens pre-filled modal, delete uses a styled confirmation modal
 - **Task Prioritization** -- Intelligent priority scoring
 - **Predictive Intelligence** -- Forecast delays, cost overruns, and risks
 - **Task Slip Predictor** -- Identifies which tasks are likely to slip with confidence scores and reasons
@@ -205,6 +205,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 ### Reporting & Analytics
 - Custom report builder with saved templates
+- Portfolio dashboard with 6 KPI cards (Total Projects, Active, On Track, At Risk, Budget Allocated, Budget Spent), status filter pills, project health cards with progress bars and budget utilization, and Dashboard/Timeline toggle
 - Portfolio-level analytics and executive dashboards
 - Project health scoring
 - Exportable reports
@@ -269,6 +270,10 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Responsive schedule views (auto-switches to mobile on small screens)
 - Touch-gesture support for Gantt chart: bar drag (move/resize), progress drag, and drag-to-create via single-finger touch events
 
+### Styled Confirmation Modals
+- Reusable `ConfirmModal` component replaces all native `window.confirm()` calls
+- Used across: Integrations, Change Requests, Intake Forms, Settings (API keys, webhooks), Report Builder, Goals, and Lessons Learned pages
+
 ### Dark Mode
 - Global dark theme with Tailwind `dark:` classes throughout
 - Toggle in the TopBar; preference persisted in `themeStore` (localStorage)
@@ -295,6 +300,10 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 ### Comment @Mentions
 - `@username` autocomplete in task comment input
 - Mentioned users receive in-app notifications automatically
+
+### Global Search
+- Full-text search across 6 entity types: projects, tasks, goals, lessons learned, resources, and change requests
+- All entity queries run in parallel with graceful per-entity fallbacks
 
 ### Bulk Import (CSV / Excel)
 - Upload CSV or Excel (.xlsx, .xls) files to import tasks into a schedule
