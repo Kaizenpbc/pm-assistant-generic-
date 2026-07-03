@@ -44,8 +44,6 @@ nul
 !src/client/public/pwa-512x512.png
 !src/client/public/apple-touch-icon.png
 *mc_test.json
-.claude/
-
 # MCP config (contains API keys)
 .mcp.json
 
