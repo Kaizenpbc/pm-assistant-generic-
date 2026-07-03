@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
 import { auditLedgerService } from './AuditLedgerService';
+import { deadLetterService } from './DeadLetterService';
 
 export interface ApprovalWorkflow {
   id: string;
@@ -243,7 +244,7 @@ export class ApprovalWorkflowService {
       projectId: cr.projectId,
       payload: { before: before?.changeRequest, after: cr, workflowId },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     return cr;
   }
@@ -318,7 +319,7 @@ export class ApprovalWorkflowService {
         resultStatus: result.status,
       },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     return result;
   }

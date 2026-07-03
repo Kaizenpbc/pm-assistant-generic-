@@ -2,6 +2,7 @@ import { projectRepository } from '../database/ProjectRepository';
 import { auditLedgerService } from './AuditLedgerService';
 import { policyEngineService } from './PolicyEngineService';
 import { dagWorkflowService } from './DagWorkflowService';
+import { deadLetterService } from './DeadLetterService';
 
 export interface Project {
   id: string;
@@ -84,7 +85,7 @@ export class ProjectService {
       projectId: project.id,
       payload: { after: project },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     return project;
   }
@@ -119,7 +120,7 @@ export class ProjectService {
       projectId: id,
       payload: { before: existing, after: updated, changes: data },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     // Fire project-level workflow triggers (non-blocking)
     if ('budgetSpent' in data && data.budgetSpent !== existing.budgetSpent) {
@@ -168,7 +169,7 @@ export class ProjectService {
         projectId: id,
         payload: { before: existing },
         source: 'web',
-      }).catch(() => {});
+      }).catch(err => deadLetterService.capture('audit.append', {}, err));
     }
 
     return deleted;

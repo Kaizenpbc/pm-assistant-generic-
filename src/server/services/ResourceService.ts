@@ -3,6 +3,7 @@ import { databaseService } from '../database/connection';
 import { scheduleService } from './ScheduleService';
 import { auditLedgerService } from './AuditLedgerService';
 import { resourceAvailabilityService } from './ResourceAvailabilityService';
+import { deadLetterService } from './DeadLetterService';
 
 export interface Resource {
   id: string;
@@ -160,7 +161,7 @@ export class ResourceService {
       entityId: id,
       payload: { before: existing, after: updated, changes: data },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     return updated;
   }
@@ -207,7 +208,7 @@ export class ResourceService {
       entityId: id,
       payload: { after: assignment },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     return assignment;
   }

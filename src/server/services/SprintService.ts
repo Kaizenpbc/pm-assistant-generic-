@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
 import { auditLedgerService } from './AuditLedgerService';
+import { deadLetterService } from './DeadLetterService';
 
 export interface Sprint {
   id: string;
@@ -114,7 +115,7 @@ export class SprintService {
       projectId: projectId,
       payload: { after: sprint },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     return sprint;
   }
@@ -206,7 +207,7 @@ export class SprintService {
       projectId: sprint?.projectId ?? null,
       payload: { sprintId, taskId, storyPoints },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     return sprintTask;
   }
@@ -236,7 +237,7 @@ export class SprintService {
       projectId: sprint.projectId,
       payload: { before, after: sprint },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     return sprint;
   }
@@ -259,7 +260,7 @@ export class SprintService {
       projectId: sprint.projectId,
       payload: { before, after: sprint },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     return sprint;
   }

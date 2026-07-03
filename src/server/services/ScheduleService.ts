@@ -3,6 +3,7 @@ import { databaseService } from '../database/connection';
 import { scheduleRepository } from '../database/ScheduleRepository';
 import { auditLedgerService } from './AuditLedgerService';
 import { dagWorkflowService } from './DagWorkflowService';
+import { deadLetterService } from './DeadLetterService';
 
 export interface Schedule {
   id: string;
@@ -525,7 +526,7 @@ export class ScheduleService {
       projectId: schedule?.projectId ?? null,
       payload: { after: task },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     dagWorkflowService.evaluateTaskChange(task, null, this).catch(err =>
       console.error('[Workflow] evaluateTaskChange error:', err)
@@ -661,7 +662,7 @@ export class ScheduleService {
       projectId: schedule?.projectId ?? null,
       payload: { before: oldTask, after: updated, changes: data },
       source: 'web',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     dagWorkflowService.evaluateTaskChange(updated, oldTask, this).catch(err =>
       console.error('[Workflow] evaluateTaskChange error:', err)
@@ -702,7 +703,7 @@ export class ScheduleService {
         projectId: schedule?.projectId ?? null,
         payload: { before: existing },
         source: 'web',
-      }).catch(() => {});
+      }).catch(err => deadLetterService.capture('audit.append', {}, err));
     }
 
     return deleted;
