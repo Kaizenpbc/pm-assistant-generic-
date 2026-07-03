@@ -66,7 +66,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Workload heatmap: visual capacity per person per week
 - Over-allocation detection and warnings
 - Resource utilization percentage
-- Paginated list endpoint (`?limit=&offset=`, max 200, default 50)
+- Paginated list endpoints (`?limit=&offset=`, max 200, default 50) on resources, projects, schedule tasks, sprints, and templates — shared `paginationSchema` with `PaginatedResponse<T>` format (data, total, page, pageSize, totalPages)
 - Dedicated Resource Management page (`/resources`) with project selector, summary cards, and four tabs: Team (full resource table with create/edit/delete CRUD), Workload Heatmap (color-coded weekly utilization grid), Resource Histogram (SVG bar charts with 8h capacity line), Capacity Forecast (8-week bottleneck predictions + AI recommendations)
 - **Benchmark:** MS Project, Wrike, Asana
 
@@ -163,6 +163,8 @@ An agentic AI project management platform that combines the scheduling power of 
 - Role-based access control (admin, executive, manager, member) with project member roles
 - Append-only chained audit ledger with API search, filter, and pagination
 - Data encryption at rest and in transit
+- Per-user AI token budget enforcement (`AIBudgetService`) — monthly limits, custom per-user overrides, `GET /api/v1/ai/budget` usage endpoint, automatic enforcement before every AI call
+- Zod validation on 24 route files covering all critical API inputs
 - **Benchmark:** Enterprise tools
 
 ---
@@ -424,3 +426,6 @@ An agentic AI project management platform that combines the scheduling power of 
 | Portfolio API Enhancement (budgetAllocated, budgetSpent, progressPercentage, totalTasks, completedTasks per project) | Done | Enhancement |
 | Load More Pagination (Notifications Center, Lessons Learned, Agent Proposals pages) | Done | Enhancement |
 | Report Builder Data Shape Fixes (KPI/chart/table sections, groupBy SQL injection guard, user-owned template delete, designer section persistence) | Done | Bug Fix |
+| Shared Pagination Schema (paginationSchema.ts + PaginatedResponse on projects, schedule tasks, sprints, templates) | Done | Enhancement |
+| Per-User AI Token Budget (AIBudgetService, ai_usage_log table, GET /ai/budget endpoint, enforcement in claudeService) | Done | Enhancement |
+| Zod Validation Expansion (9 additional route files: users, bulk, sprints, timeEntries, aiChat, apiKeys, webhooks, intakeForms, goals) | Done | Enhancement |

@@ -157,6 +157,14 @@ The `ResourceService` maintains a central resource registry. Each resource has:
 
 The `GET /api/v1/resources` endpoint supports pagination via `?limit=` and `?offset=` query parameters (default limit 50, max 200). The response includes a `total` count for client-side pagination controls.
 
+All major list endpoints use a shared pagination schema (`paginationSchema.ts`) with consistent defaults (limit 1–200, default 50; offset ≥ 0). Paginated endpoints return a `PaginatedResponse<T>` containing `data`, `total`, `page`, `pageSize`, and `totalPages`. The following endpoints support pagination:
+
+- `GET /api/v1/projects` — user's projects
+- `GET /api/v1/resources` — resource pool
+- `GET /api/v1/schedules/:id/tasks` — tasks within a schedule
+- `GET /api/v1/sprints/project/:projectId` — sprints for a project
+- `GET /api/v1/templates` — project templates
+
 ### Workload Heatmap
 
 The resource workload endpoint aggregates task assignments across projects to produce a per-resource, per-day demand profile. Over-allocated days are flagged.
@@ -749,12 +757,22 @@ The `PolicyEngineService` enforces configurable governance rules:
 - **Evaluation logging**: every policy evaluation is recorded with context snapshot
 - Project-scoped or global policies
 
+### AI Token Budget
+
+The `AIBudgetService` enforces per-user monthly AI token limits:
+
+- Tracks all AI usage in the `ai_usage_log` table (input/output tokens, cost, latency, feature, model)
+- System-wide default budget configurable via `AI_MONTHLY_TOKEN_BUDGET` env var (default 500k tokens/month)
+- Per-user custom budgets via `users.ai_monthly_token_budget` column (overrides system default)
+- Budget checked before every AI call in `claudeService` — throws `AIBudgetExceededError` when exceeded
+- `GET /api/v1/ai/budget` returns current month's usage summary: `totalInputTokens`, `totalOutputTokens`, `totalTokens`, `totalCost`, `requestCount`, `budget`, `remaining`, `percentUsed`
+
 ### Security Middleware
 
 - Content Security Policy (CSP) via Helmet
 - Rate limiting per endpoint
 - CORS protection with environment-aware origins
-- Input validation via Zod schemas on all routes
+- Input validation via Zod schemas on all routes (24 route files validated)
 - Scope-based route protection via `requireScope` middleware
 
 ---
@@ -1141,11 +1159,12 @@ The frontend supports **English (en)**, **French (fr)**, and **Spanish (es)**. T
 - **Runtime**: Node.js 22 with TypeScript
 - **Framework**: Fastify (high-performance HTTP server)
 - **Database**: MySQL (MariaDB compatible)
-- **Validation**: Zod schemas on all API inputs
+- **Validation**: Zod schemas on all API inputs (shared `paginationSchema` for list endpoints)
 - **AI**: Anthropic Claude SDK (gated by `AI_ENABLED` env var)
 - **Real-time**: WebSocket service for live notifications
 - **Email**: Configurable email service for password reset and notifications
-- **Service layer**: Stateless services use module-level singletons to avoid redundant instantiation and preserve in-memory caches (e.g., EmbeddingService). Internal queries include safety `LIMIT 1000` on unbounded SELECTs; public list endpoints use proper pagination.
+- **Service layer**: Stateless services use module-level singletons to avoid redundant instantiation and preserve in-memory caches (e.g., EmbeddingService). Internal queries include safety `LIMIT 1000` on unbounded SELECTs; public list endpoints use proper pagination with `PaginatedResponse<T>`.
+- **AI Budget**: Per-user monthly token budget enforcement via `AIBudgetService`
 
 ### Frontend
 
@@ -1212,6 +1231,7 @@ All API routes are prefixed with `/api/v1/` and organized by domain:
 /api/v1/agent/autonomy    Tier 3 autonomy configuration
 /api/v1/users             User management
 /api/v1/project-members   Project membership
+/api/v1/ai/budget         AI token budget usage (per-user)
 /api/v1/rag               Semantic search (RAG)
 /api/v1/ws                WebSocket connections
 /mcp                      MCP HTTP transport proxy
