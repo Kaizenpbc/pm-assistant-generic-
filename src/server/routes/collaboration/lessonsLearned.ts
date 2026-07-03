@@ -6,6 +6,25 @@ import { requireScope } from '../../middleware/requireScope';
 export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
+  // GET / — Paginated list of lessons
+  fastify.get('/', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { limit = '20', offset = '0' } = request.query as { limit?: string; offset?: string };
+      const parsedLimit = parseInt(limit, 10);
+      const parsedOffset = parseInt(offset, 10);
+      const [lessons, total] = await Promise.all([
+        lessonsLearnedService.getLessons(parsedLimit, parsedOffset),
+        lessonsLearnedService.countLessons(),
+      ]);
+      return reply.send({ lessons, total, limit: parsedLimit, offset: parsedOffset });
+    } catch (err) {
+      fastify.log.error({ err }, 'Failed to list lessons');
+      return reply.status(500).send({ error: 'Failed to list lessons' });
+    }
+  });
+
   // GET /knowledge-base — Aggregated knowledge base overview
   fastify.get('/knowledge-base', {
     preHandler: [requireScope('read')],

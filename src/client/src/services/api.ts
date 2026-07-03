@@ -873,8 +873,8 @@ class ApiService {
     return response.data;
   }
 
-  async getLessons() {
-    const response = await this.api.get('/lessons-learned/knowledge-base');
+  async getLessons(limit = 20, offset = 0) {
+    const response = await this.api.get('/lessons-learned', { params: { limit, offset } });
     return response.data;
   }
 

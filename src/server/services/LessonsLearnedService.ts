@@ -828,6 +828,21 @@ export class LessonsLearnedService {
   // Private: get all lessons from DB
   // -----------------------------------------------------------------------
 
+  async getLessons(limit = 20, offset = 0): Promise<LessonLearned[]> {
+    const rows = await databaseService.query<any>(
+      'SELECT * FROM lessons_learned ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      [limit, offset],
+    );
+    return rows.map(rowToLesson);
+  }
+
+  async countLessons(): Promise<number> {
+    const rows = await databaseService.query<{ cnt: number }>(
+      'SELECT COUNT(*) as cnt FROM lessons_learned',
+    );
+    return Number(rows[0]?.cnt ?? 0);
+  }
+
   private async getAllLessons(): Promise<LessonLearned[]> {
     const rows = await databaseService.query<any>(
       'SELECT * FROM lessons_learned ORDER BY created_at DESC LIMIT 1000',

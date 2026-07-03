@@ -171,15 +171,16 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
 
   const saveMutation = useMutation({
     mutationFn: (data: TemplateFormData) => {
-      if (templateId) {
-        return apiService.updateReportTemplate(templateId, data as unknown as Record<string, unknown>);
-      }
-      return apiService.createReportTemplate({
+      const payload = {
         name: data.name,
         description: data.description,
-        config: { ...data.config, sections: data.sections },
+        config: { sections: data.sections },
         isShared: data.isShared,
-      });
+      };
+      if (templateId) {
+        return apiService.updateReportTemplate(templateId, payload as unknown as Record<string, unknown>);
+      }
+      return apiService.createReportTemplate(payload);
     },
     onSuccess: () => {
       onSaved();

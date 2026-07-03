@@ -151,19 +151,22 @@ class ReportBuilderService {
   }
 
   private async executeSectionQuery(
-    type: ReportSectionConfig['type'],
+    type: ReportSectionConfig['type'] | string,
     dataSource: ReportSectionConfig['dataSource'],
     filters: ReportSectionConfig['filters'],
     groupBy?: string,
   ): Promise<any> {
+    // Normalize kpi_card → kpi (designer sends kpi_card, service expects kpi)
+    const normalizedType = type === 'kpi_card' ? 'kpi' : type;
+
     const tableName = this.getTableName(dataSource);
     const { whereClause, whereParams } = this.buildWhereClause(dataSource, filters);
 
-    if (type === 'kpi') {
+    if (normalizedType === 'kpi') {
       return this.executeKpiQuery(dataSource, tableName, whereClause, whereParams);
     }
 
-    if (type === 'table') {
+    if (normalizedType === 'table') {
       return this.executeTableQuery(tableName, whereClause, whereParams);
     }
 
@@ -238,13 +241,16 @@ class ReportBuilderService {
   ): Promise<any> {
     if (dataSource === 'budgets') {
       const rows = await databaseService.query<any>(
-        `SELECT COUNT(*) as total_projects, COALESCE(SUM(budget), 0) as total_budget, COALESCE(AVG(budget), 0) as avg_budget FROM ${tableName}${whereClause}`,
+        `SELECT COUNT(*) as total_projects, COALESCE(SUM(budget_allocated), 0) as total_allocated, COALESCE(SUM(budget_spent), 0) as total_spent, COALESCE(AVG(budget_allocated), 0) as avg_budget FROM ${tableName}${whereClause}`,
         whereParams,
       );
       return {
-        totalProjects: Number(rows[0].total_projects),
-        totalBudget: Number(rows[0].total_budget),
-        avgBudget: Number(rows[0].avg_budget),
+        kpis: [
+          { label: 'Total Projects', value: Number(rows[0].total_projects) },
+          { label: 'Total Allocated', value: Number(rows[0].total_allocated) },
+          { label: 'Total Spent', value: Number(rows[0].total_spent) },
+          { label: 'Avg Budget', value: Number(rows[0].avg_budget) },
+        ],
       };
     }
 
@@ -254,8 +260,10 @@ class ReportBuilderService {
         whereParams,
       );
       return {
-        total: Number(rows[0].total),
-        avgProgress: Number(rows[0].avg_progress),
+        kpis: [
+          { label: 'Total', value: Number(rows[0].total) },
+          { label: 'Avg Progress', value: Number(rows[0].avg_progress) },
+        ],
       };
     }
 
@@ -264,10 +272,15 @@ class ReportBuilderService {
         `SELECT COUNT(*) as total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed FROM ${tableName}${whereClause}`,
         whereParams,
       );
+      const total = Number(rows[0].total);
+      const completed = Number(rows[0].completed);
+      const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
       return {
-        total: Number(rows[0].total),
-        completed: Number(rows[0].completed),
-        completionRate: rows[0].total > 0 ? Number(rows[0].completed) / Number(rows[0].total) : 0,
+        kpis: [
+          { label: 'Total', value: total },
+          { label: 'Completed', value: completed },
+          { label: 'Completion Rate', value: `${completionRate}%` },
+        ],
       };
     }
 
@@ -277,13 +290,15 @@ class ReportBuilderService {
         whereParams,
       );
       return {
-        totalEntries: Number(rows[0].total_entries),
-        totalHours: Number(rows[0].total_hours),
-        avgHours: Number(rows[0].avg_hours),
+        kpis: [
+          { label: 'Total Entries', value: Number(rows[0].total_entries) },
+          { label: 'Total Hours', value: Number(rows[0].total_hours) },
+          { label: 'Avg Hours', value: Number(rows[0].avg_hours) },
+        ],
       };
     }
 
-    return {};
+    return { kpis: [] };
   }
 
   private async executeTableQuery(
@@ -295,7 +310,17 @@ class ReportBuilderService {
       `SELECT * FROM ${tableName}${whereClause} ORDER BY created_at DESC LIMIT 500`,
       whereParams,
     );
-    return { rows };
+    if (rows.length === 0) {
+      return { table: { headers: [], rows: [] } };
+    }
+    const headers = Object.keys(rows[0]);
+    const humanize = (s: string) => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return {
+      table: {
+        headers: headers.map(humanize),
+        rows: rows.map((r: any) => headers.map(h => r[h] ?? '')),
+      },
+    };
   }
 
   private async executeChartQuery(
@@ -304,15 +329,16 @@ class ReportBuilderService {
     whereParams: any[],
     groupBy: string,
   ): Promise<any> {
+    // Allowlist to prevent SQL injection via groupBy
+    const ALLOWED_GROUP_BY = ['status', 'priority', 'project_id', 'assigned_to', 'category', 'role'];
+    const safeGroupBy = ALLOWED_GROUP_BY.includes(groupBy) ? groupBy : 'status';
+
     const rows = await databaseService.query<any>(
-      `SELECT ${groupBy} as label, COUNT(*) as value FROM ${tableName}${whereClause} GROUP BY ${groupBy} ORDER BY value DESC`,
+      `SELECT ${safeGroupBy} as label, COUNT(*) as value FROM ${tableName}${whereClause} GROUP BY ${safeGroupBy} ORDER BY value DESC`,
       whereParams,
     );
     return {
-      labels: rows.map((r: any) => r.label || 'N/A'),
-      datasets: [{
-        data: rows.map((r: any) => Number(r.value)),
-      }],
+      chartData: rows.map((r: any) => ({ label: r.label || 'N/A', value: Number(r.value) })),
     };
   }
 
@@ -431,27 +457,25 @@ class ReportBuilderService {
       lines.push(`"${section.title}"`);
       lines.push('');
 
-      if (section.type === 'kpi') {
-        const data = section.data;
-        for (const [key, value] of Object.entries(data)) {
-          lines.push(`"${key}","${value}"`);
+      if (section.type === 'kpi' || section.type === 'kpi_card') {
+        const kpis = section.data.kpis || [];
+        for (const kpi of kpis) {
+          lines.push(`"${kpi.label}","${kpi.value}"`);
         }
       } else if (section.type === 'table') {
-        const rows = section.data.rows || [];
-        if (rows.length > 0) {
-          const headers = Object.keys(rows[0]);
-          lines.push(headers.map((h: string) => `"${h}"`).join(','));
-          for (const row of rows) {
-            lines.push(headers.map((h: string) => `"${String(row[h] ?? '')}"`).join(','));
+        const table = section.data.table;
+        if (table && table.headers?.length > 0) {
+          lines.push(table.headers.map((h: string) => `"${h}"`).join(','));
+          for (const row of table.rows) {
+            lines.push(row.map((v: any) => `"${String(v ?? '')}"`).join(','));
           }
         }
       } else {
         // Chart types
-        const labels = section.data.labels || [];
-        const values = section.data.datasets?.[0]?.data || [];
+        const chartData = section.data.chartData || [];
         lines.push('"Label","Value"');
-        for (let i = 0; i < labels.length; i++) {
-          lines.push(`"${labels[i]}","${values[i] ?? 0}"`);
+        for (const item of chartData) {
+          lines.push(`"${item.label}","${item.value ?? 0}"`);
         }
       }
 

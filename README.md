@@ -170,7 +170,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Auto-Reschedule** -- AI-driven schedule optimization
 - **Natural Language Queries** -- Ask questions about project data in plain English
 - **Meeting Intelligence** -- Automated meeting minutes and action item extraction
-- **Lessons Learned** -- AI-assisted capture, edit, delete, and retrieval of project lessons; edit opens pre-filled modal, delete uses a styled confirmation modal
+- **Lessons Learned** -- AI-assisted capture, edit, delete, and retrieval of project lessons; edit opens pre-filled modal, delete uses a styled confirmation modal; "Load More" pagination on the Lessons Learned page
 - **Task Prioritization** -- Intelligent priority scoring
 - **Predictive Intelligence** -- Forecast delays, cost overruns, and risks
 - **Task Slip Predictor** -- Identifies which tasks are likely to slip with confidence scores and reasons
@@ -201,10 +201,10 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Circuit Breakers** -- Per-agent circuit breakers open after 3 consecutive failures, auto-retry after cooldown
 - **Degradation Handling** -- Graceful scope reduction when Claude API or database is unhealthy
 - **Feedback Loop** -- Users rate proposal outcomes; feedback improves future confidence scores
-- **Agent Proposals UI** -- Dedicated page (`/agent`) for managers/admins to review, approve/reject, execute, rollback, and rate agent proposals with full reasoning and action detail
+- **Agent Proposals UI** -- Dedicated page (`/agent`) for managers/admins to review, approve/reject, execute, rollback, and rate agent proposals with full reasoning and action detail; "Load More" pagination for large proposal lists
 
 ### Reporting & Analytics
-- Custom report builder with saved templates
+- Custom report builder with saved templates; KPI, chart, and table sections render correctly with proper data shapes; SQL injection protection on groupBy; regular users can delete their own templates; report designer properly saves sections on template update
 - Portfolio dashboard with 6 KPI cards (Total Projects, Active, On Track, At Risk, Budget Allocated, Budget Spent), status filter pills, project health cards with progress bars and budget utilization, and Dashboard/Timeline toggle
 - Portfolio-level analytics and executive dashboards
 - Project health scoring
@@ -213,7 +213,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 ### Notifications
 - In-app notification center
-- Full-page Notifications Center (`/notifications`) with severity summary cards (Critical, High, Medium, Low), type/severity filters, and full notification list with mark-read controls
+- Full-page Notifications Center (`/notifications`) with severity summary cards (Critical, High, Medium, Low), type/severity filters, and full notification list with mark-read controls; "Load More" pagination for large notification lists
 - Individual mark-as-read calls the server API so read state persists across page refreshes
 - Real-time WebSocket push notifications
 - Configurable notification preferences

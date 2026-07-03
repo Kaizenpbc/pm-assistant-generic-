@@ -57,7 +57,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   });
 
   // DELETE /templates/:id — delete template
-  fastify.delete('/templates/:id', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.delete('/templates/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       await reportBuilderService.deleteTemplate(id);

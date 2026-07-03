@@ -14,12 +14,13 @@ export async function notificationRoutes(fastify: FastifyInstance) {
     try {
       const user = request.user!;
       const { limit = '50', offset = '0' } = request.query as { limit?: string; offset?: string };
-      const notifications = await notificationService.getByUserId(
-        user.userId,
-        parseInt(limit, 10),
-        parseInt(offset, 10),
-      );
-      return { notifications };
+      const parsedLimit = parseInt(limit, 10);
+      const parsedOffset = parseInt(offset, 10);
+      const [notifications, total] = await Promise.all([
+        notificationService.getByUserId(user.userId, parsedLimit, parsedOffset),
+        notificationService.countByUserId(user.userId),
+      ]);
+      return { notifications, total, limit: parsedLimit, offset: parsedOffset };
     } catch (error) {
       console.error('Get notifications error:', error);
       return reply.status(500).send({ error: 'Failed to fetch notifications' });

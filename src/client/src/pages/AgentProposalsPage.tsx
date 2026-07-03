@@ -925,17 +925,56 @@ export const AgentProposalsPage: React.FC = () => {
   const [pageTab, setPageTab] = useState<'proposals' | 'autonomy'>('proposals');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [allProposals, setAllProposals] = useState<Proposal[]>([]);
+  const [proposalsTotal, setProposalsTotal] = useState(0);
+  const [proposalsOffset, setProposalsOffset] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PROPOSALS_PAGE_SIZE = 20;
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['agent-proposals', statusFilter],
     queryFn: () => apiService.getAgentProposals({
       status: statusFilter === 'all' ? undefined : statusFilter,
-      limit: 100,
+      limit: PROPOSALS_PAGE_SIZE,
+      offset: 0,
     }),
     enabled: pageTab === 'proposals',
   });
 
-  const proposals: Proposal[] = data?.proposals || [];
+  // Sync initial fetch into accumulated state
+  React.useEffect(() => {
+    if (data) {
+      const items: Proposal[] = data.proposals || [];
+      setAllProposals(items);
+      setProposalsTotal(data.total ?? items.length);
+      setProposalsOffset(items.length);
+    }
+  }, [data]);
+
+  // Reset accumulated state when filter changes
+  React.useEffect(() => {
+    setAllProposals([]);
+    setProposalsOffset(0);
+    setProposalsTotal(0);
+  }, [statusFilter]);
+
+  const handleLoadMoreProposals = React.useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const res = await apiService.getAgentProposals({
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        limit: PROPOSALS_PAGE_SIZE,
+        offset: proposalsOffset,
+      });
+      const items: Proposal[] = res?.proposals || [];
+      setAllProposals(prev => [...prev, ...items]);
+      setProposalsOffset(prev => prev + items.length);
+      if (res?.total !== undefined) setProposalsTotal(res.total);
+    } catch { /* non-critical */ }
+    setLoadingMore(false);
+  }, [statusFilter, proposalsOffset]);
+
+  const proposals: Proposal[] = allProposals;
 
   return (
     <div className="space-y-6">
@@ -1015,57 +1054,76 @@ export const AgentProposalsPage: React.FC = () => {
 
           {/* Proposals Table */}
           {!isLoading && !isError && proposals.length > 0 && (
-            <div className="overflow-x-auto border border-gray-200 rounded-lg">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Agent</th>
-                    <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Title</th>
-                    <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Status</th>
-                    <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Risk</th>
-                    <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Confidence</th>
-                    <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Created</th>
-                    <th className="w-8" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {proposals.map(p => (
-                    <tr
-                      key={p.id}
-                      onClick={() => setSelectedId(p.id)}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Bot className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span className="font-medium text-gray-900 truncate max-w-[140px]">
-                            {formatAgentName(p.agent_id)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-gray-900 truncate block max-w-[280px]">{p.title}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusPill status={p.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <RiskBadge level={p.risk_level} size="sm" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <ConfidenceBar score={p.confidence_score} />
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
-                        {timeAgo(p.created_at)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      </td>
+            <>
+              <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Agent</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Title</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Status</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Risk</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Confidence</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Created</th>
+                      <th className="w-8" />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {proposals.map(p => (
+                      <tr
+                        key={p.id}
+                        onClick={() => setSelectedId(p.id)}
+                        className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <Bot className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="font-medium text-gray-900 truncate max-w-[140px]">
+                              {formatAgentName(p.agent_id)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-gray-900 truncate block max-w-[280px]">{p.title}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusPill status={p.status} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <RiskBadge level={p.risk_level} size="sm" />
+                        </td>
+                        <td className="px-4 py-3">
+                          <ConfidenceBar score={p.confidence_score} />
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
+                          {timeAgo(p.created_at)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Load More + Count */}
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-xs text-gray-500">Showing {proposals.length} of {proposalsTotal}</p>
+                {proposals.length < proposalsTotal && (
+                  <button
+                    onClick={handleLoadMoreProposals}
+                    disabled={loadingMore}
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {loadingMore ? (
+                      <div className="w-3.5 h-3.5 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin" />
+                    ) : null}
+                    Load More
+                  </button>
+                )}
+              </div>
+            </>
           )}
         </>
       )}

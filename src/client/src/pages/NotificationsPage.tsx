@@ -84,6 +84,10 @@ export function NotificationsPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [fetched, setFetched] = useState(false);
+  const [totalNotifications, setTotalNotifications] = useState(0);
+  const [notifOffset, setNotifOffset] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 20;
 
   // Fetch persisted notifications if not already loaded
   useEffect(() => {
@@ -93,7 +97,7 @@ export function NotificationsPage() {
       try {
         const [alertsRes, notifRes] = await Promise.all([
           apiService.getAlerts().catch(() => null),
-          apiService.getNotifications(100, 0).catch(() => null),
+          apiService.getNotifications(PAGE_SIZE, 0).catch(() => null),
         ]);
         if (cancelled) return;
 
@@ -105,6 +109,9 @@ export function NotificationsPage() {
         }
 
         const items = notifRes?.notifications ?? [];
+        const total = notifRes?.total ?? items.length;
+        setTotalNotifications(total);
+        setNotifOffset(items.length);
         for (const item of items) {
           const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(item.type) ? item.type : 'info') as Notification['type'];
           const severity = (['critical', 'high', 'medium', 'low'].includes(item.severity) ? item.severity : 'medium') as Notification['severity'];
@@ -116,6 +123,22 @@ export function NotificationsPage() {
     fetchAll();
     return () => { cancelled = true; };
   }, [fetched, notifications.length, addNotification]);
+
+  const handleLoadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const res = await apiService.getNotifications(PAGE_SIZE, notifOffset);
+      const items = res?.notifications ?? [];
+      for (const item of items) {
+        const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(item.type) ? item.type : 'info') as Notification['type'];
+        const severity = (['critical', 'high', 'medium', 'low'].includes(item.severity) ? item.severity : 'medium') as Notification['severity'];
+        addNotification({ type, severity, title: item.title, message: item.message, projectId: item.projectId, scheduleId: item.scheduleId, linkType: item.linkType, linkId: item.linkId, read: item.isRead });
+      }
+      setNotifOffset(prev => prev + items.length);
+      if (res?.total !== undefined) setTotalNotifications(res.total);
+    } catch { /* non-critical */ }
+    setLoadingMore(false);
+  }, [notifOffset, addNotification]);
 
   const handleMarkAllRead = useCallback(async () => {
     markAllRead();
@@ -224,7 +247,7 @@ export function NotificationsPage() {
             <p className="text-sm text-gray-400">{notifications.length === 0 ? 'No notifications yet' : 'No notifications match your filters'}</p>
           </div>
         ) : (
-          filtered.map(n => {
+          filtered.map((n: Notification) => {
             const Icon = typeIcons[n.type] || Info;
             const isClickable = n.linkType === 'proposal' && n.projectId;
             return (
@@ -282,6 +305,25 @@ export function NotificationsPage() {
           })
         )}
       </div>
+
+      {/* Load More + Count */}
+      {totalNotifications > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-500">Showing {notifications.length} of {totalNotifications}</p>
+          {notifications.length < totalNotifications && (
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {loadingMore ? (
+                <div className="w-3.5 h-3.5 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin" />
+              ) : null}
+              Load More
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

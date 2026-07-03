@@ -198,6 +198,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Auto-suggests risk mitigations from past projects
 - Knowledge base that grows smarter
 - Full CRUD on the Lessons Learned page: edit opens the lesson modal pre-filled; delete presents a styled confirmation modal before removing the record
+- "Load More" pagination on the Lessons Learned page for incremental loading of large knowledge bases
 
 ### 3.6 Monte Carlo Simulation
 - Probabilistic schedule modeling
@@ -229,6 +230,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - In-app notification center with unread badge
 - Full-page Notifications Center (`/notifications`) with severity summary cards (Critical/High/Medium/Low), type and severity filters, full notification list with severity color bars, type icons, project names, and mark-read controls
 - Individual mark-as-read persists to the server via API so read state survives page refreshes
+- "Load More" pagination on the Notifications Center page for incremental loading of large notification lists
 - Accessible from sidebar ("Notifications" under Workspace) and "View all alerts" in bell dropdown
 - Email alerts for assignments, deadlines, status changes
 - Configurable notification preferences per user
@@ -317,6 +319,10 @@ An agentic AI project management platform that combines the scheduling power of 
 ### 5.6 Custom Report Builder
 - Drag-and-drop report designer
 - Configurable data sources and filters
+- KPI, chart, and table sections render with correct data shapes (fixed section rendering bugs)
+- `groupBy` parameter validated against an allowlist for SQL injection protection
+- Regular users can delete their own templates (no longer requires admin role)
+- Report Designer correctly persists all sections when updating an existing template
 - Scheduled report delivery via email
 - Shareable report links
 - **Benchmark:** Smartsheet, Monday.com
@@ -416,3 +422,5 @@ An agentic AI project management platform that combines the scheduling power of 
 | Expanded Global Search (6 entity types: projects, tasks, goals, lessons, resources, change requests; parallel queries) | Done | Enhancement |
 | Portfolio Dashboard (6 KPI cards, status filter pills, budget progress bar, project health cards, Dashboard/Timeline toggle) | Done | Enhancement |
 | Portfolio API Enhancement (budgetAllocated, budgetSpent, progressPercentage, totalTasks, completedTasks per project) | Done | Enhancement |
+| Load More Pagination (Notifications Center, Lessons Learned, Agent Proposals pages) | Done | Enhancement |
+| Report Builder Data Shape Fixes (KPI/chart/table sections, groupBy SQL injection guard, user-owned template delete, designer section persistence) | Done | Bug Fix |

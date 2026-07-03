@@ -154,6 +154,14 @@ export class NotificationService {
     );
   }
 
+  async countByUserId(userId: string): Promise<number> {
+    const rows = await databaseService.query<{ cnt: number }>(
+      `SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ?`,
+      [userId],
+    );
+    return Number(rows[0]?.cnt ?? 0);
+  }
+
   async getUnreadCount(userId: string): Promise<number> {
     const rows = await databaseService.query<{ cnt: number }>(
       `SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = FALSE`,

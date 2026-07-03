@@ -447,7 +447,7 @@ The `MeetingIntelligenceService` processes meeting transcripts or notes to extra
 
 ### Lessons Learned
 
-The `LessonsLearnedService` captures and retrieves project retrospective insights, categorized and searchable, to improve future project execution. Lessons can be edited and deleted directly from the Lessons Learned page: the edit action opens the same lesson modal pre-filled with existing values; the delete action presents a styled `ConfirmModal` before removing the record.
+The `LessonsLearnedService` captures and retrieves project retrospective insights, categorized and searchable, to improve future project execution. Lessons can be edited and deleted directly from the Lessons Learned page: the edit action opens the same lesson modal pre-filled with existing values; the delete action presents a styled `ConfirmModal` before removing the record. The page supports **"Load More" pagination** so large lesson databases load incrementally rather than all at once.
 
 ### Task Prioritization
 
@@ -517,6 +517,10 @@ The `aiReportService` generates narrative project reports using AI, summarizing 
 
 The `proactiveAlertService` continuously monitors project metrics and generates alerts when thresholds are breached (schedule slip, budget overrun, resource over-allocation).
 
+### Agent Proposals UI
+
+The `/agent` page (`AgentProposalsPage`) lets managers and admins review, approve/reject, execute, rollback, and rate agentic proposals. The page uses **"Load More" pagination** so only an initial batch of proposals is rendered at startup; clicking "Load More" appends the next batch, keeping the page responsive for teams with a large proposal history.
+
 ---
 
 ## 14. Reporting
@@ -529,7 +533,12 @@ The `ReportBuilderService` provides a configurable report engine:
 - **Section types**: KPI cards, tables, bar charts, line charts, pie charts
 - **Data sources**: projects, tasks, time entries, budgets
 - **Filters**: date range, project, status
-- **Group-by**: aggregate data by any dimension
+- **Group-by**: aggregate data by any dimension; the `groupBy` parameter is validated against an allowlist to prevent SQL injection
+
+**Recent fixes:**
+- KPI, chart, and table sections now receive correctly shaped data objects, resolving blank section renders in the report preview.
+- Regular users can delete their own report templates (previously required admin role).
+- The Report Designer correctly persists all configured sections when updating an existing template.
 
 ### AI-Generated Reports
 
@@ -585,6 +594,7 @@ A full-page notification center is available at `/notifications`, accessible fro
 - **Filter panel**: filter by notification type (Risk, Budget, Schedule, Resource, etc.) and severity level.
 - **Full notification list**: each entry shows a severity color bar, type icon, title, message, relative time ("2 hours ago"), type label, and project name.
 - **Mark as read**: mark individual notifications as read (calls `apiService.markNotificationRead` so read state persists across page refreshes), or click "Mark all read" to clear all unread indicators at once.
+- **Load More pagination**: a "Load More" button at the bottom of the list fetches the next page of notifications, avoiding unbounded list rendering on accounts with many notifications.
 - **Data sources**: fetches both proactive alerts and persisted database notifications into a unified list.
 - Uses the same severity colors and type icons as the existing notification bell dropdown for visual consistency.
 

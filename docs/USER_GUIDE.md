@@ -653,8 +653,10 @@ For custom reports, use the **Report Builder**:
 ### Generating Reports
 
 1. From the report list, click **Generate** on any saved template.
-2. The Report Preview renders live data into the configured sections.
+2. The Report Preview renders live data into the configured sections. KPI cards, charts, and tables all render with the correct data shapes.
 3. Export or print the generated report as needed.
+
+> **Note:** Regular users can delete report templates they created. Deleting another user's template still requires an admin role. When updating a template in the Report Designer, all configured sections are saved correctly.
 
 ### Analytics Dashboard
 
@@ -963,6 +965,10 @@ Click the **Edit** (pencil) icon on any lesson card. The lesson modal opens pre-
 
 Click the **Delete** (trash) icon on any lesson card. A confirmation modal appears asking you to confirm the deletion. Click **Delete** to remove the lesson permanently, or **Cancel** to dismiss without making changes.
 
+### Browsing Lessons
+
+The Lessons Learned page loads an initial set of lessons. Click **"Load More"** at the bottom of the list to fetch additional records incrementally.
+
 ### Pattern Detection
 
 The AI analyzes your lessons learned database and identifies recurring patterns:
@@ -985,6 +991,7 @@ The proposals page shows:
 - **Health banner** -- Current agent system status, scan scope, daily cost, and pending proposal count.
 - **Status tabs** -- Filter by All, Pending, Approved, Executed, Rejected, or Expired.
 - **Proposals table** -- Each row shows the agent name, title, status badge, risk level, confidence score, and age.
+- **Load More** -- Click "Load More" at the bottom of the table to fetch additional proposals. The page loads in batches to remain responsive for teams with large proposal histories.
 
 Click any proposal row to open the detail modal.
 
@@ -1224,6 +1231,7 @@ Each notification entry displays:
 
 - Click the **mark read** button on any individual notification to dismiss it. The read state is saved to the server so it persists across page refreshes and sessions.
 - Click **"Mark all read"** at the top of the list to mark all notifications as read at once.
+- Click **"Load More"** at the bottom of the list to fetch additional notifications. The list loads in pages so the initial view stays fast even on accounts with many notifications.
 
 ---
 

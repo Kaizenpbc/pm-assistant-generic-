@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen,
@@ -295,6 +295,13 @@ export const LessonsLearnedPage: React.FC = () => {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  // Pagination state
+  const [allLessonsAccum, setAllLessonsAccum] = useState<Lesson[]>([]);
+  const [lessonsTotal, setLessonsTotal] = useState(0);
+  const [lessonsOffset, setLessonsOffset] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const LESSONS_PAGE_SIZE = 20;
+
   // Extract lessons selector
   const [extractProjectId, setExtractProjectId] = useState('');
 
@@ -307,8 +314,18 @@ export const LessonsLearnedPage: React.FC = () => {
 
   const { data: lessonsData, isLoading: lessonsLoading } = useQuery({
     queryKey: ['lessons'],
-    queryFn: () => (apiService as any).getLessons(),
+    queryFn: () => (apiService as any).getLessons(LESSONS_PAGE_SIZE, 0),
   });
+
+  // Sync initial query into accumulated state
+  useEffect(() => {
+    if (lessonsData) {
+      const items: Lesson[] = lessonsData.lessons || [];
+      setAllLessonsAccum(items);
+      setLessonsTotal(lessonsData.total ?? items.length);
+      setLessonsOffset(items.length);
+    }
+  }, [lessonsData]);
 
   const { data: patternsData } = useQuery({
     queryKey: ['patterns'],
@@ -316,8 +333,20 @@ export const LessonsLearnedPage: React.FC = () => {
   });
 
   const projects: Project[] = projectsData?.projects || [];
-  const allLessons: Lesson[] = lessonsData?.lessons || [];
+  const allLessons: Lesson[] = allLessonsAccum;
   const patterns: Pattern[] = patternsData?.patterns || [];
+
+  const handleLoadMoreLessons = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const res = await (apiService as any).getLessons(LESSONS_PAGE_SIZE, lessonsOffset);
+      const items: Lesson[] = res?.lessons || [];
+      setAllLessonsAccum(prev => [...prev, ...items]);
+      setLessonsOffset(prev => prev + items.length);
+      if (res?.total !== undefined) setLessonsTotal(res.total);
+    } catch { /* non-critical */ }
+    setLoadingMore(false);
+  }, [lessonsOffset]);
 
   // ---- Filtered lessons ----
 
@@ -655,6 +684,25 @@ export const LessonsLearnedPage: React.FC = () => {
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Load More + Count */}
+        {lessonsTotal > 0 && (
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-xs text-gray-500">Showing {allLessons.length} of {lessonsTotal}</p>
+            {allLessons.length < lessonsTotal && (
+              <button
+                onClick={handleLoadMoreLessons}
+                disabled={loadingMore}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {loadingMore ? (
+                  <div className="w-3.5 h-3.5 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin" />
+                ) : null}
+                Load More
+              </button>
+            )}
           </div>
         )}
       </div>
