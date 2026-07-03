@@ -765,6 +765,7 @@ The `AIBudgetService` enforces per-user monthly AI token limits:
 - System-wide default budget configurable via `AI_MONTHLY_TOKEN_BUDGET` env var (default 500k tokens/month)
 - Per-user custom budgets via `users.ai_monthly_token_budget` column (overrides system default)
 - Budget checked before every AI call in `claudeService` — throws `AIBudgetExceededError` when exceeded
+- **80% threshold warning**: When usage reaches 80%, a daily-deduped `ai_budget_warning` notification is automatically created (severity: high) informing the user of tokens remaining and days left in the month
 - `GET /api/v1/ai/budget` returns current month's usage summary: `totalInputTokens`, `totalOutputTokens`, `totalTokens`, `totalCost`, `requestCount`, `budget`, `remaining`, `percentUsed`
 
 ### Security Middleware
@@ -1158,7 +1159,8 @@ The frontend supports **English (en)**, **French (fr)**, and **Spanish (es)**. T
 
 - **Runtime**: Node.js 22 with TypeScript
 - **Framework**: Fastify (high-performance HTTP server)
-- **Database**: MySQL (MariaDB compatible)
+- **Database**: MySQL (MariaDB compatible) with connection pool timeouts (`connectTimeout: 5s`, `idleTimeout: 30s`, `queueLimit: 50` — env-configurable via `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT`, `DB_QUEUE_LIMIT`)
+- **Transaction safety**: Multi-table writes use `databaseService.transaction()` with a `queryOn()` helper for ACID guarantees. Fire-and-forget side effects (audit logs, workflow triggers) run after commit.
 - **Validation**: Zod schemas on all API inputs (shared `paginationSchema` for list endpoints)
 - **AI**: Anthropic Claude SDK (gated by `AI_ENABLED` env var)
 - **Real-time**: WebSocket service for live notifications
@@ -1257,6 +1259,9 @@ All API routes are prefixed with `/api/v1/` and organized by domain:
 | `APP_URL` | Public application URL |
 | `PM_API_KEY` | API key for MCP server |
 | `PM_BASE_URL` | Base URL for MCP server API calls |
+| `DB_CONNECT_TIMEOUT` | DB connection establishment timeout in ms (default: 5000) |
+| `DB_IDLE_TIMEOUT` | Idle connection cleanup timeout in ms (default: 30000) |
+| `DB_QUEUE_LIMIT` | Max queued connection requests (default: 50) |
 
 ---
 
