@@ -136,6 +136,7 @@ Each project page provides tabs or sections for:
 - **Custom Fields** -- User-defined metadata fields.
 - **Change Requests** -- Formal change management.
 - **Activity** -- Audit trail of all project changes.
+- **Export XML** -- Click the **Export XML** button (same row as Export CSV and Export PDF) to download the project as an MSPDI XML file. This format is compatible with Microsoft Project and ProjectLibre and includes tasks, resources, assignments, and dependency links.
 
 #### Real-Time Presence
 
@@ -249,6 +250,8 @@ The default schedule view. Displays tasks as horizontal bars on a timeline:
 - **Row striping**: Alternating row backgrounds (every other row) in both the left task panel and the timeline for improved readability. Stripes are subtle and support dark mode. Active task and hover highlights override the stripe.
 - **Resource avatars**: Task bars show a small circle with the assignee's initials at the right edge. Colors are deterministic — the same person always gets the same color. Avatars appear on non-parent, non-milestone bars wider than 40px. Hover over the circle to see the full assignee name.
 - **Drag-to-create**: Click and drag on an empty area of the timeline to create a new task. A dashed blue preview rectangle appears while dragging. On release, the Add Task form opens with the start and end dates pre-filled from the drag range. The parent task is auto-detected: dragging on a parent row creates a child task, dragging on a child row creates a sibling. A minimum drag width of half a day prevents accidental creation.
+- **Resource overallocation warnings**: Click the **Overalloc** button (warning triangle icon) in the toolbar to highlight tasks with overlapping resource assignments. The system detects when the same person is assigned to multiple tasks with overlapping dates, then marks those bars with an amber border, glow effect, and a small "!" warning dot. A badge on the button shows the total count of flagged bars. The legend adds an "Overallocated" entry when active. Toggle the button off to hide the highlights.
+- **Minimap**: A small overview panel (200×80px) appears in the bottom-right corner of the timeline, showing the entire schedule at a glance. Each task is shown as a coloured rectangle matching its status colour. A semi-transparent blue rectangle indicates the currently visible area. Click anywhere on the minimap to jump to that position, or drag the viewport rectangle to scroll proportionally. Toggle the **Map** button in the toolbar to show or hide the minimap. Enabled by default.
 
 ### Kanban Board
 

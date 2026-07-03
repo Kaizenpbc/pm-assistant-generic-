@@ -78,8 +78,121 @@ export async function exportRoutes(fastify: FastifyInstance) {
         });
       }
 
+      if (format === 'xml') {
+        // MS Project XML (MSPDI) export
+        const project = await projectService.findById(id);
+        const projectName = project ? xmlEscape(project.name) : 'Project';
+
+        // Collect all tasks across schedules
+        interface XTask { id: string; name: string; startDate?: string; endDate?: string; progressPercentage?: number; isMilestone?: boolean; parentTaskId?: string; assignedTo?: string; dependencies: { dependencyId: string; dependencyType: string; lagDays: number }[]; wbs: string; outlineLevel: number; isParent: boolean; }
+        const allTasks: XTask[] = [];
+        const parentIds = new Set<string>();
+
+        for (const schedule of schedules) {
+          const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
+          for (const t of tasks) { if (t.parentTaskId) parentIds.add(t.parentTaskId); }
+          // Build WBS by outline level
+          const wbsCounters: number[] = [0];
+          for (const t of tasks) {
+            const level = t.parentTaskId ? 2 : 1; // simplified: 1 for root, 2 for children
+            if (level <= wbsCounters.length) wbsCounters.length = level;
+            while (wbsCounters.length < level) wbsCounters.push(0);
+            wbsCounters[level - 1]++;
+            const wbs = wbsCounters.map(n => String(n)).join('.');
+            allTasks.push({
+              id: t.id, name: t.name, startDate: t.startDate, endDate: t.endDate,
+              progressPercentage: t.progressPercentage ?? 0, isMilestone: t.isMilestone ?? false,
+              parentTaskId: t.parentTaskId, assignedTo: t.assignedTo || '',
+              dependencies: t.dependencies.map(d => ({ dependencyId: d.dependencyId, dependencyType: d.dependencyType, lagDays: d.lagDays })),
+              wbs, outlineLevel: level, isParent: parentIds.has(t.id),
+            });
+          }
+        }
+
+        // Build UID maps
+        const taskUidMap = new Map<string, number>();
+        allTasks.forEach((t, i) => taskUidMap.set(t.id, i + 1));
+
+        const resourceNames = [...new Set(allTasks.map(t => t.assignedTo).filter(Boolean))] as string[];
+        const resourceUidMap = new Map<string, number>();
+        resourceNames.forEach((name, i) => resourceUidMap.set(name, i + 1));
+
+        const depTypeMap: Record<string, number> = { FF: 0, FS: 1, SS: 2, SF: 3 };
+
+        // Build XML
+        const tasksXml = allTasks.map(t => {
+          const uid = taskUidMap.get(t.id)!;
+          const start = t.startDate ? toISODate(t.startDate) : '';
+          const finish = t.endDate ? toISODate(t.endDate) : '';
+          const durationDays = start && finish ? Math.max(1, Math.round((new Date(finish).getTime() - new Date(start).getTime()) / 86400000)) : 1;
+          const predLinks = t.dependencies.map(d => {
+            const predUid = taskUidMap.get(d.dependencyId);
+            if (!predUid) return '';
+            const type = depTypeMap[d.dependencyType?.toUpperCase() || 'FS'] ?? 1;
+            const lag = (d.lagDays || 0) * 4800; // tenths of minutes per day (8h * 60 * 10)
+            return `          <PredecessorLink><PredecessorUID>${predUid}</PredecessorUID><Type>${type}</Type><LinkLag>${lag}</LinkLag><LagFormat>7</LagFormat></PredecessorLink>`;
+          }).filter(Boolean).join('\n');
+
+          return `      <Task>
+        <UID>${uid}</UID>
+        <ID>${uid}</ID>
+        <Name>${xmlEscape(t.name)}</Name>
+        <WBS>${t.wbs}</WBS>
+        <OutlineLevel>${t.outlineLevel}</OutlineLevel>
+        <Start>${start}T08:00:00</Start>
+        <Finish>${finish}T17:00:00</Finish>
+        <Duration>${durationISO(durationDays)}</Duration>
+        <Milestone>${t.isMilestone ? 1 : 0}</Milestone>
+        <Summary>${t.isParent ? 1 : 0}</Summary>
+        <PercentComplete>${t.progressPercentage}</PercentComplete>
+${predLinks ? predLinks + '\n' : ''}      </Task>`;
+        }).join('\n');
+
+        const resourcesXml = resourceNames.map(name => {
+          const uid = resourceUidMap.get(name)!;
+          return `      <Resource><UID>${uid}</UID><ID>${uid}</ID><Name>${xmlEscape(name)}</Name><Type>1</Type></Resource>`;
+        }).join('\n');
+
+        let assignmentUid = 0;
+        const assignmentsXml = allTasks.filter(t => t.assignedTo).map(t => {
+          assignmentUid++;
+          const tUid = taskUidMap.get(t.id)!;
+          const rUid = resourceUidMap.get(t.assignedTo!)!;
+          return `      <Assignment><UID>${assignmentUid}</UID><TaskUID>${tUid}</TaskUID><ResourceUID>${rUid}</ResourceUID></Assignment>`;
+        }).join('\n');
+
+        const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+  <Name>${projectName}</Name>
+  <Calendars>
+    <Calendar>
+      <UID>1</UID>
+      <Name>Standard</Name>
+      <IsBaseCalendar>1</IsBaseCalendar>
+      <WeekDays>
+        <WeekDay><DayType>1</DayType><DayWorking>0</DayWorking></WeekDay>
+        <WeekDay><DayType>7</DayType><DayWorking>0</DayWorking></WeekDay>
+      </WeekDays>
+    </Calendar>
+  </Calendars>
+  <Tasks>
+${tasksXml}
+  </Tasks>
+  <Resources>
+${resourcesXml}
+  </Resources>
+  <Assignments>
+${assignmentsXml}
+  </Assignments>
+</Project>`;
+
+        reply.header('Content-Type', 'application/xml');
+        reply.header('Content-Disposition', `attachment; filename="project-${id}.xml"`);
+        return reply.send(xml);
+      }
+
       if (format !== 'csv') {
-        return reply.status(400).send({ error: 'Supported formats: csv, json' });
+        return reply.status(400).send({ error: 'Supported formats: csv, json, xml' });
       }
 
       const headers = [
@@ -152,4 +265,18 @@ export async function exportRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: 'Failed to export project data' });
     }
   });
+}
+
+// XML helpers
+function xmlEscape(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+function toISODate(d: string | Date): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return date.toISOString().slice(0, 10);
+}
+
+function durationISO(days: number): string {
+  return `PT${days * 8}H0M0S`;
 }

@@ -69,7 +69,12 @@ An agentic AI project management platform that combines the scheduling power of 
 - Paginated list endpoint (`?limit=&offset=`, max 200, default 50)
 - **Benchmark:** MS Project, Wrike, Asana
 
-### 1.6 Comments & Activity Feed
+### 1.6a Gantt Overallocation Warnings & Minimap
+- **Overallocation warnings**: Toggle "Overalloc" button in Gantt toolbar; client-side detection of overlapping assignments per resource; amber 2px border + glow + "!" dot on flagged bars; count badge on toolbar button; legend entry
+- **Minimap**: 200×80px overview panel (bottom-right); colored rectangles per task matching status colors; semi-transparent blue viewport rectangle tracks scroll position; click/drag to scroll timeline proportionally; enabled by default, toggleable via "Map" button
+- **Benchmark:** MS Project (overallocation indicators), Primavera P6 (minimap navigation)
+
+### 1.6b Comments & Activity Feed
 - Comment thread on each task
 - Activity feed: auto-log all changes (status, assignee, dates, etc.)
 - Timestamp and user attribution
@@ -78,7 +83,12 @@ An agentic AI project management platform that combines the scheduling power of 
 ### 1.7 Export Capabilities
 - Export project summary report to PDF (browser print)
 - Export project data to CSV
-- **Benchmark:** All top tools
+- Export project as MSPDI XML (compatible with MS Project and ProjectLibre)
+  - Tasks with UID, Name, WBS, OutlineLevel, Start, Finish, Duration, Milestone, Summary, PercentComplete, PredecessorLinks
+  - Resources extracted from assignedTo, Assignments linking tasks to resources
+  - Dependency types: FS=1, FF=0, SS=2, SF=3; lag in tenths-of-minutes
+  - Duration format: PT{days×8}H0M0S
+- **Benchmark:** All top tools; MSPDI export matches MS Project, Primavera P6
 
 ---
 
@@ -375,3 +385,6 @@ An agentic AI project management platform that combines the scheduling power of 
 | Gantt Row Striping (alternating backgrounds, dark mode) | Done | Enhancement |
 | Gantt Resource Avatars (initials circles on bars) | Done | Enhancement |
 | Gantt Drag-to-Create (click-drag timeline to create task) | Done | Innovation |
+| Gantt Resource Overallocation Warnings (amber highlights on overlapping assignments) | Done | Innovation |
+| Gantt Minimap (200×80px overview panel with draggable viewport) | Done | Enhancement |
+| MS Project XML Export (MSPDI format with tasks, resources, assignments) | Done | Enhancement |

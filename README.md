@@ -91,6 +91,8 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Gantt row striping: alternating row backgrounds in both left panel and timeline for improved readability (dark mode aware)
 - Gantt resource avatars: assignee initials circles on task bars with deterministic color palette
 - Gantt drag-to-create: click-drag on empty timeline area to create a task with pre-filled start/end dates and auto-detected parent
+- Gantt resource overallocation warnings: toggle to highlight bars with overlapping assignments (amber border + warning dot), with count badge
+- Gantt minimap: 200×80px overview panel in bottom-right showing colored task rectangles with draggable viewport indicator
 - Task hierarchy with summary task auto-calculation
 - Multi-dependency support: up to 20 predecessors per task (FS/SS/FF/SF + lag), stored in a `task_dependencies` junction table
 - MS Project-style predecessor notation (e.g. "3FS+2d,5SS,7") with health badges and inline editing in both Gantt and Table views
@@ -299,6 +301,12 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 ### Gantt PDF Export
 - Print-friendly Gantt export via `window.print()`; triggered from the schedule toolbar
+
+### MS Project XML Export (MSPDI)
+- Export project data as MSPDI XML compatible with MS Project and ProjectLibre
+- Includes tasks (WBS, outline levels, durations, milestones, predecessors), resources, and assignments
+- Endpoint: `GET /api/v1/exports/projects/:id/export?format=xml`
+- "Export XML" button on the Project Detail page
 
 ### Goals / OKR Tracking
 - Objectives and Key Results with progress tracking and nested hierarchy
@@ -512,7 +520,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Meeting Intelligence | `/api/v1/meeting-intelligence` | Transcript analysis |
 | Lessons Learned | `/api/v1/lessons-learned` | Retrospective knowledge base |
 | Learning | `/api/v1/learning` | AI learning feedback |
-| Exports | `/api/v1/exports` | Data export |
+| Exports | `/api/v1/exports` | Data export (CSV, PDF, MSPDI XML) |
 | Agent | `/api/v1/agent` | Agent scheduler, health, and kill switch |
 | Agent Proposals | `/api/v1/agent/proposals` | Proposal lifecycle (list, approve, reject, execute, feedback) |
 | Agent Autonomy | `/api/v1/agent/autonomy` | Tier 3 autonomy configuration, promotion/demotion |

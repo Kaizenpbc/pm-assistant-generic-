@@ -388,6 +388,13 @@ export function ProjectDetailPage() {
               Export CSV
             </button>
             <button
+              onClick={() => apiService.exportProjectXML(id!)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export XML
+            </button>
+            <button
               onClick={() => apiService.exportProjectPDF(id!)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
             >

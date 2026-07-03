@@ -558,6 +558,17 @@ export function GanttChart({
     });
   }, []);
 
+  // -----------------------------------------------------------------------
+  // Resource overallocation detection
+  // -----------------------------------------------------------------------
+  const [showOverallocation, setShowOverallocation] = useState(false);
+
+  // -----------------------------------------------------------------------
+  // Minimap
+  // -----------------------------------------------------------------------
+  const [showMinimap, setShowMinimap] = useState(true);
+  const [scrollPos, setScrollPos] = useState({ left: 0, top: 0 });
+
   /** Set of all task IDs that have children (parent tasks) */
   const parentTaskIds = useMemo(() => {
     const set = new Set<string>();
@@ -566,6 +577,35 @@ export function GanttChart({
     }
     return set;
   }, [tasks]);
+
+  /** Set of task IDs that overlap with another task assigned to the same resource */
+  const overallocatedTaskIds = useMemo(() => {
+    if (!showOverallocation) return new Set<string>();
+    const byResource = new Map<string, GanttTask[]>();
+    for (const t of tasks) {
+      if (!t.assignedTo?.trim() || !t.startDate || !t.endDate) continue;
+      const key = t.assignedTo.trim().toLowerCase();
+      if (!byResource.has(key)) byResource.set(key, []);
+      byResource.get(key)!.push(t);
+    }
+    const ids = new Set<string>();
+    for (const group of byResource.values()) {
+      if (group.length < 2) continue;
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const aStart = new Date(group[i].startDate!).getTime();
+          const aEnd = new Date(group[i].endDate!).getTime();
+          const bStart = new Date(group[j].startDate!).getTime();
+          const bEnd = new Date(group[j].endDate!).getTime();
+          if (aStart <= bEnd && bStart <= aEnd) {
+            ids.add(group[i].id);
+            ids.add(group[j].id);
+          }
+        }
+      }
+    }
+    return ids;
+  }, [showOverallocation, tasks]);
 
   const collapseAll = useCallback(() => {
     setCollapsedIds(new Set(parentTaskIds));
@@ -1448,6 +1488,15 @@ export function GanttChart({
     timelineRef.current.scrollLeft = Math.max(0, px);
   }, [minDate, dayPx]);
 
+  // Track scroll position for minimap viewport
+  useEffect(() => {
+    const el = timelineRef.current;
+    if (!el) return;
+    const handler = () => setScrollPos({ left: el.scrollLeft, top: el.scrollTop });
+    el.addEventListener('scroll', handler, { passive: true });
+    return () => el.removeEventListener('scroll', handler);
+  }, []);
+
   // Build two-tier timescale header bands
   const timescale = useMemo(() => buildTimescale(zoom, minDate, maxDate, dayPx), [zoom, minDate, maxDate, dayPx]);
 
@@ -1986,6 +2035,31 @@ export function GanttChart({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               PDF
+            </button>
+            {/* Resource overallocation toggle */}
+            <button
+              onClick={() => setShowOverallocation(v => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors print:hidden ${showOverallocation ? 'text-amber-700 bg-amber-50 border-amber-300 hover:bg-amber-100' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              title="Highlight tasks with resource overallocation"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              Overalloc
+              {showOverallocation && overallocatedTaskIds.size > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-bold bg-amber-200 text-amber-800 rounded-full">{overallocatedTaskIds.size}</span>
+              )}
+            </button>
+            {/* Minimap toggle */}
+            <button
+              onClick={() => setShowMinimap(v => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors print:hidden ${showMinimap ? 'text-primary-700 bg-primary-50 border-primary-300 hover:bg-primary-100' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              title="Toggle minimap"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              Map
             </button>
             {/* Saved views */}
             {scheduleId && (
@@ -2822,6 +2896,7 @@ export function GanttChart({
               const pct = isProgressDragging ? progressDrag.currentPct : (task.progressPercentage ?? 0);
               const isCritical = criticalSet.has(task.id);
               const isSelected = selectedIds.has(task.id);
+              const isOverallocated = overallocatedTaskIds.has(task.id);
               const floatDays = taskFloatMap?.[task.id] ?? 0;
               const colors = isCritical
                 ? { bg: '#fef2f2', fill: '#dc2626', text: '#991b1b' }
@@ -2895,8 +2970,8 @@ export function GanttChart({
                     className="absolute inset-0 rounded-sm"
                     style={{
                       backgroundColor: colors.bg,
-                      border: isSelected ? '2px solid #3b82f6' : isCritical ? '2px solid #dc2626' : `1px solid ${colors.fill}40`,
-                      boxShadow: isSelected ? '0 0 0 2px rgba(59,130,246,0.3)' : undefined,
+                      border: isSelected ? '2px solid #3b82f6' : isCritical ? '2px solid #dc2626' : isOverallocated ? '2px solid #f59e0b' : `1px solid ${colors.fill}40`,
+                      boxShadow: isSelected ? '0 0 0 2px rgba(59,130,246,0.3)' : isOverallocated ? '0 0 0 2px rgba(245,158,11,0.3)' : undefined,
                     }}
                   />
 
@@ -2976,6 +3051,17 @@ export function GanttChart({
                       title={task.assignedTo}
                     >
                       {avatarInitials(task.assignedTo)}
+                    </div>
+                  )}
+
+                  {/* Overallocation warning dot */}
+                  {isOverallocated && (
+                    <div
+                      className="absolute -top-1 -left-1 w-3.5 h-3.5 rounded-full bg-amber-500 text-white flex items-center justify-center z-10 pointer-events-none"
+                      style={{ fontSize: 9, fontWeight: 700, lineHeight: 1 }}
+                      title="Resource overallocated"
+                    >
+                      !
                     </div>
                   )}
 
@@ -3170,6 +3256,71 @@ export function GanttChart({
               )}
             </svg>
           </div>
+
+          {/* Minimap */}
+          {showMinimap && rows.length > 0 && (() => {
+            const MINIMAP_W = 200;
+            const MINIMAP_H = 80;
+            const contentH = HEADER_H + rows.length * ROW_H;
+            const scaleX = MINIMAP_W / timelineWidth;
+            const scaleY = MINIMAP_H / contentH;
+            const el = timelineRef.current;
+            const vpW = el ? el.clientWidth * scaleX : MINIMAP_W;
+            const vpH = el ? el.clientHeight * scaleY : MINIMAP_H;
+            const vpX = scrollPos.left * scaleX;
+            const vpY = scrollPos.top * scaleY;
+
+            const handleMinimapMouse = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              e.preventDefault();
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const setScroll = (clientX: number, clientY: number) => {
+                const tl = timelineRef.current;
+                if (!tl) return;
+                const mx = clientX - rect.left;
+                const my = clientY - rect.top;
+                tl.scrollLeft = (mx / MINIMAP_W) * timelineWidth - tl.clientWidth / 2;
+                tl.scrollTop = (my / MINIMAP_H) * contentH - tl.clientHeight / 2;
+              };
+              setScroll(e.clientX, e.clientY);
+              const onMove = (ev: MouseEvent) => setScroll(ev.clientX, ev.clientY);
+              const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+              document.addEventListener('mousemove', onMove);
+              document.addEventListener('mouseup', onUp);
+            };
+
+            return (
+              <div
+                className="sticky bottom-2 float-right mr-2 z-30 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg cursor-pointer print:hidden"
+                style={{ width: MINIMAP_W, height: MINIMAP_H, marginTop: -MINIMAP_H - 12 }}
+                onMouseDown={handleMinimapMouse}
+              >
+                <svg width={MINIMAP_W} height={MINIMAP_H}>
+                  {rows.map(({ task }, idx) => {
+                    const s = toDate(task.startDate);
+                    const en = toDate(task.endDate);
+                    if (!s || !en) return null;
+                    const x = daysBetween(minDate, s) * dayPx * scaleX;
+                    const w = Math.max(daysBetween(s, en) * dayPx * scaleX, 1);
+                    const y = (HEADER_H + idx * ROW_H + 4) * scaleY;
+                    const h = Math.max((ROW_H - 8) * scaleY, 1);
+                    const c = barColors[task.status]?.fill || '#9ca3af';
+                    return <rect key={task.id} x={x} y={y} width={w} height={h} fill={c} opacity={0.7} rx={0.5} />;
+                  })}
+                  <rect
+                    x={Math.max(0, vpX)}
+                    y={Math.max(0, vpY)}
+                    width={Math.min(vpW, MINIMAP_W - Math.max(0, vpX))}
+                    height={Math.min(vpH, MINIMAP_H - Math.max(0, vpY))}
+                    fill="rgba(59,130,246,0.15)"
+                    stroke="#3b82f6"
+                    strokeWidth={1.5}
+                    rx={1}
+                  />
+                </svg>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -3226,6 +3377,12 @@ export function GanttChart({
               }}
             />
             <span className="text-xs text-gray-500">Float/Slack</span>
+          </div>
+        )}
+        {showOverallocation && overallocatedTaskIds.size > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-2.5 rounded-sm border-2 border-amber-500 bg-amber-50" />
+            <span className="text-xs text-gray-500">Overallocated</span>
           </div>
         )}
       </div>

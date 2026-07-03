@@ -710,6 +710,21 @@ class ApiService {
     window.URL.revokeObjectURL(url);
   }
 
+  async exportProjectXML(projectId: string) {
+    const response = await this.api.get(`/exports/projects/${projectId}/export?format=xml`, {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'application/xml' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `project-${projectId}.xml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+
   // -------------------------------------------------------------------------
   // Monte Carlo Simulation
   // -------------------------------------------------------------------------

@@ -979,7 +979,52 @@ A minimum drag width of half a day (`0.5 × dayPx`) prevents accidental task cre
 
 ---
 
-## 34. Goals / OKR Tracking
+## 34. Gantt Resource Overallocation Warnings
+
+A toggle button labelled **"Overalloc"** (with a warning triangle icon) in the Gantt toolbar enables client-side detection of resource overallocation. When enabled:
+
+- The system groups all tasks by their `assignedTo` field and identifies date overlaps — i.e., where the same person is assigned to two or more tasks whose date ranges overlap.
+- Overallocated task bars receive an **amber highlight** — a 2px amber border with a glow effect — plus a small amber **"!" warning dot** on the bar.
+- A **badge with count** appears on the toolbar button showing how many bars are currently flagged.
+- The Gantt **legend** includes an entry showing an amber-bordered box labelled "Overallocated".
+
+Detection is entirely client-side (no server API required). Toggle the button off to hide all overallocation highlights.
+
+---
+
+## 35. Gantt Minimap
+
+A **200×80px overview panel** in the bottom-right corner of the Gantt timeline provides a bird's-eye view of the entire schedule. Toggle it with the **"Map"** button (map icon) in the toolbar. The minimap is enabled by default.
+
+- Each task bar is represented as a small coloured rectangle matching its status colour (blue for in progress, green for completed, grey for pending).
+- A **semi-transparent blue viewport rectangle** shows the currently visible portion of the timeline and tracks scroll position in real time.
+- **Click** anywhere on the minimap to jump the timeline to that position.
+- **Drag** the viewport rectangle to scroll the timeline proportionally.
+
+Toggle the button off to hide the minimap panel.
+
+---
+
+## 36. MS Project XML Export (MSPDI)
+
+PM Assistant can export a project as an **MSPDI XML file** compatible with Microsoft Project and ProjectLibre.
+
+**Server endpoint:** `GET /api/v1/exports/projects/:id/export?format=xml`
+
+The generated XML includes:
+
+- **Project metadata** — project name, start date, and a standard calendar definition (weekdays Mon–Fri).
+- **Tasks** — each task includes UID, Name, WBS, OutlineLevel, Start, Finish, Duration (formatted as `PT{days×8}H0M0S`), Milestone flag, Summary flag, PercentComplete, and PredecessorLink elements for each dependency.
+- **Resources** — extracted from the `assignedTo` field of all tasks, deduplicated.
+- **Assignments** — task-to-resource mappings linking each task to its assigned resource.
+
+**Dependency mapping:** FS = type 1, FF = type 0, SS = type 2, SF = type 3. Lag is expressed in tenths-of-minutes.
+
+**Client access:** The API client exposes `exportProjectXML(projectId)`. On the **Project Detail** page, an **"Export XML"** button appears in the same action row as Export CSV and Export PDF.
+
+---
+
+## 37. Goals / OKR Tracking
 
 The Goals module provides Objectives and Key Results (OKR) tracking alongside traditional project scheduling.
 
@@ -992,13 +1037,13 @@ The Goals module provides Objectives and Key Results (OKR) tracking alongside tr
 
 ---
 
-## 35. Time Zone Support
+## 38. Time Zone Support
 
 Each user can set a preferred timezone in **Settings → Preferences** (stored via `PUT /api/v1/users/me/preferences`). All date and time values rendered in the UI are converted to the user's timezone using the stored IANA timezone string (e.g., `America/Toronto`). Server timestamps remain in UTC; conversion happens client-side. When no preference is set the browser's local timezone is used as a fallback.
 
 ---
 
-## 36. Multi-Language (i18n)
+## 39. Multi-Language (i18n)
 
 The frontend supports **English (en)**, **French (fr)**, and **Spanish (es)**. The active locale is managed by `localeStore` (Zustand, persisted in localStorage) and consumed via the `useTranslation()` hook. All user-facing strings are keyed through the translation map; switching locale applies immediately without a page reload. The locale can be changed from **Settings → Language**.
 
