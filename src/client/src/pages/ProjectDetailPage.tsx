@@ -1145,6 +1145,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           onUndo={undo}
           onRedo={redo}
           criticalPathTaskIds={showCriticalPath ? cpmData?.criticalPathTaskIds : undefined}
+          taskFloatMap={showCriticalPath && cpmData?.tasks ? Object.fromEntries(cpmData.tasks.map((t: any) => [t.taskId, t.totalFloat])) : undefined}
           baselineTasks={selectedBaseline?.tasks?.map((bt: any) => ({
             taskId: bt.taskId,
             startDate: bt.startDate,

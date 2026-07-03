@@ -313,6 +313,7 @@ export function GanttChart({
   onDeleteTask,
   columnState: _columnState,
   criticalPathTaskIds,
+  taskFloatMap,
   baselineTasks,
   onTaskDragEnd,
   onTaskUpdate,
@@ -344,6 +345,8 @@ export function GanttChart({
   columnState?: ColumnState;
   /** Task IDs that are on the critical path (rendered in red) */
   criticalPathTaskIds?: string[];
+  /** Map of taskId → total float days (from CPM analysis) */
+  taskFloatMap?: Record<string, number>;
   /** Baseline task data for ghost bars */
   baselineTasks?: Array<{ taskId: string; startDate: string; endDate: string }>;
   /** Called when a task bar is dragged to new dates */
@@ -1430,6 +1433,24 @@ export function GanttChart({
     return daysBetween(minDate, today) * dayPx;
   }, [minDate, maxDate]);
 
+  const handleZoomToFit = useCallback(() => {
+    const tl = timelineRef.current;
+    if (!tl || totalDays <= 0) return;
+    const containerWidth = tl.clientWidth;
+    // Pick the largest zoom level where all tasks fit within 110% of viewport
+    let bestZoom: ZoomLevel = 'year';
+    for (let i = ZOOM_LEVELS.length - 1; i >= 0; i--) {
+      const level = ZOOM_LEVELS[i];
+      if (ZOOM_CONFIGS[level].dayPx * totalDays <= containerWidth * 1.1) {
+        bestZoom = level;
+        break;
+      }
+    }
+    setZoom(bestZoom);
+    // Scroll to left edge after zoom change
+    setTimeout(() => { if (tl) tl.scrollLeft = 0; }, 0);
+  }, [totalDays]);
+
   const handleBarMouseDown = useCallback(
     (e: React.MouseEvent, task: GanttTask) => {
       if (!onTaskDragEnd) return;
@@ -1489,11 +1510,22 @@ export function GanttChart({
       if (drag && drag.dayDelta !== 0 && onTaskDragEnd) {
         const fmt = (d: Date) => d.toISOString().split('T')[0];
         if (drag.mode === 'move') {
-          const newStart = new Date(drag.origStartDate);
-          newStart.setDate(newStart.getDate() + drag.dayDelta);
-          const newEnd = new Date(drag.origEndDate);
-          newEnd.setDate(newEnd.getDate() + drag.dayDelta);
-          onTaskDragEnd(drag.taskId, fmt(newStart), fmt(newEnd));
+          // If dragged bar is selected, move all selected bars together
+          const idsToMove = selectedIds.has(drag.taskId) && selectedIds.size > 1
+            ? Array.from(selectedIds)
+            : [drag.taskId];
+          for (const id of idsToMove) {
+            const t = tasks.find(tk => tk.id === id);
+            if (!t) continue;
+            const s = toDate(t.startDate);
+            const e = toDate(t.endDate);
+            if (!s || !e) continue;
+            const newStart = new Date(s);
+            newStart.setDate(newStart.getDate() + drag.dayDelta);
+            const newEnd = new Date(e);
+            newEnd.setDate(newEnd.getDate() + drag.dayDelta);
+            onTaskDragEnd(id, fmt(newStart), fmt(newEnd));
+          }
         } else {
           // resize: only change end date, minimum 1 day duration
           const newEnd = new Date(drag.origEndDate);
@@ -1530,17 +1562,24 @@ export function GanttChart({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [drag, onTaskDragEnd, dayPx]);
+  }, [drag, onTaskDragEnd, dayPx, selectedIds, tasks]);
 
-  // Compute drag visual offset for the dragged bar
+  // Compute drag visual offset for the dragged bar (and all selected bars during move)
   const getDragOffset = useCallback(
     (taskId: string) => {
-      if (!drag || drag.taskId !== taskId) return { leftDelta: 0, widthDelta: 0 };
-      const pxDelta = drag.dayDelta * dayPx;
-      if (drag.mode === 'move') return { leftDelta: pxDelta, widthDelta: 0 };
-      return { leftDelta: 0, widthDelta: pxDelta };
+      if (!drag) return { leftDelta: 0, widthDelta: 0 };
+      if (drag.taskId === taskId) {
+        const pxDelta = drag.dayDelta * dayPx;
+        if (drag.mode === 'move') return { leftDelta: pxDelta, widthDelta: 0 };
+        return { leftDelta: 0, widthDelta: pxDelta };
+      }
+      // If this bar is selected and we're moving the dragged bar (which is also selected), move together
+      if (drag.mode === 'move' && selectedIds.has(drag.taskId) && selectedIds.has(taskId)) {
+        return { leftDelta: drag.dayDelta * dayPx, widthDelta: 0 };
+      }
+      return { leftDelta: 0, widthDelta: 0 };
     },
-    [drag, dayPx]
+    [drag, dayPx, selectedIds]
   );
 
   // -----------------------------------------------------------------------
@@ -1695,6 +1734,16 @@ export function GanttChart({
               </button>
             ))}
           </div>
+          {/* Zoom-to-Fit button */}
+          <button
+            onClick={handleZoomToFit}
+            className="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-500 transition-colors"
+            title="Zoom to fit all tasks"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+            </svg>
+          </button>
           {/* Undo/Redo buttons */}
           {(onUndo || onRedo) && (
             <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-500 ml-2">
@@ -2649,6 +2698,8 @@ export function GanttChart({
               const isProgressDragging = progressDrag?.taskId === task.id;
               const pct = isProgressDragging ? progressDrag.currentPct : (task.progressPercentage ?? 0);
               const isCritical = criticalSet.has(task.id);
+              const isSelected = selectedIds.has(task.id);
+              const floatDays = taskFloatMap?.[task.id] ?? 0;
               const colors = isCritical
                 ? { bg: '#fef2f2', fill: '#dc2626', text: '#991b1b' }
                 : barColors[task.status] || barColors.pending;
@@ -2657,6 +2708,20 @@ export function GanttChart({
               const barH = ROW_H - 12;
               const isDragging = drag?.taskId === task.id;
               const canDrag = !!onTaskDragEnd;
+
+              const handleBarClick = (e: React.MouseEvent) => {
+                // Skip if a drag occurred
+                if (drag && drag.dayDelta !== 0) return;
+                e.stopPropagation();
+                if (e.ctrlKey || e.metaKey) {
+                  toggleSelect(task.id, false);
+                } else if (e.shiftKey) {
+                  toggleSelect(task.id, true);
+                } else {
+                  setSelectedIds(new Set([task.id]));
+                  lastClickedIdRef.current = task.id;
+                }
+              };
 
               // Milestone: render as a diamond instead of a bar
               if (task.isMilestone) {
@@ -2668,12 +2733,14 @@ export function GanttChart({
                     key={task.id}
                     className="absolute group/bar"
                     style={{ left: cx - diamondSize / 2, top: cy - diamondSize / 2, width: diamondSize, height: diamondSize }}
+                    onClick={handleBarClick}
                   >
                     <div
                       className="w-full h-full rotate-45"
                       style={{
                         backgroundColor: colors.fill,
-                        border: isCritical ? '2px solid #dc2626' : `1px solid ${colors.fill}`,
+                        border: isSelected ? '2px solid #3b82f6' : isCritical ? '2px solid #dc2626' : `1px solid ${colors.fill}`,
+                        boxShadow: isSelected ? '0 0 0 2px rgba(59,130,246,0.3)' : undefined,
                       }}
                     />
                     {/* Milestone tooltip */}
@@ -2698,13 +2765,15 @@ export function GanttChart({
                     userSelect: isDragging ? 'none' : undefined,
                   }}
                   onMouseDown={canDrag ? (e) => handleBarMouseDown(e, task) : undefined}
+                  onClick={handleBarClick}
                 >
                   {/* Background bar */}
                   <div
                     className="absolute inset-0 rounded-sm"
                     style={{
                       backgroundColor: colors.bg,
-                      border: isCritical ? '2px solid #dc2626' : `1px solid ${colors.fill}40`,
+                      border: isSelected ? '2px solid #3b82f6' : isCritical ? '2px solid #dc2626' : `1px solid ${colors.fill}40`,
+                      boxShadow: isSelected ? '0 0 0 2px rgba(59,130,246,0.3)' : undefined,
                     }}
                   />
 
@@ -2783,6 +2852,23 @@ export function GanttChart({
                     />
                   )}
 
+                  {/* Float/slack extension */}
+                  {floatDays > 0 && !isCritical && !isParent && (
+                    <div
+                      className="absolute top-0 bottom-0 pointer-events-none"
+                      style={{
+                        left: width,
+                        width: floatDays * dayPx,
+                        background: 'repeating-linear-gradient(135deg, transparent, transparent 3px, rgba(234,179,8,0.25) 3px, rgba(234,179,8,0.25) 6px)',
+                        borderTop: '1px dashed #eab308',
+                        borderBottom: '1px dashed #eab308',
+                        borderRight: '1px dashed #eab308',
+                        borderRadius: '0 2px 2px 0',
+                        opacity: 0.7,
+                      }}
+                    />
+                  )}
+
                   {/* Dependency connector dots */}
                   {onTaskUpdate && !isParent && !task.isMilestone && (
                     <>
@@ -2810,6 +2896,7 @@ export function GanttChart({
                     <div className="text-gray-300 mt-0.5">
                       {formatShortDate(start)} — {formatShortDate(end)} &middot;{' '}
                       {daysBetween(start, end)}d &middot; {pct}% complete
+                      {floatDays > 0 && <span className="text-yellow-400"> &middot; Float: {floatDays}d</span>}
                     </div>
                     {task.assignedTo && (
                       <div className="text-gray-300">
@@ -2983,6 +3070,18 @@ export function GanttChart({
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-2.5 rounded-sm bg-gray-300 border border-dashed border-gray-400 opacity-50" />
             <span className="text-xs text-gray-500">Baseline</span>
+          </div>
+        )}
+        {taskFloatMap && Object.values(taskFloatMap).some(v => v > 0) && (
+          <div className="flex items-center gap-1.5">
+            <div
+              className="w-5 h-2.5 rounded-sm"
+              style={{
+                background: 'repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(234,179,8,0.35) 2px, rgba(234,179,8,0.35) 4px)',
+                border: '1px dashed #eab308',
+              }}
+            />
+            <span className="text-xs text-gray-500">Float/Slack</span>
           </div>
         )}
       </div>
