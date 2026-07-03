@@ -874,7 +874,9 @@ Touch support is added to all Gantt chart drag interactions, enabling full use o
 
 ## 25. Dark Mode
 
-A global dark theme is available throughout the application. The user toggles it via the **dark mode button** in the TopBar. The selected theme is persisted in `themeStore` (localStorage) and applied immediately by adding the `dark` class to the root `<html>` element. All UI components use Tailwind `dark:` variant classes so colours, borders, and backgrounds switch automatically.
+A global dark theme is available throughout the application. The user toggles it via the **dark mode button** in the TopBar. The selected theme is persisted in `themeStore` (localStorage) and applied immediately by adding the `dark` class to the root `<html>` element. All UI components and pages use Tailwind `dark:` variant classes so colours, borders, and backgrounds switch automatically.
+
+**Full coverage:** Every page in the application has `dark:` companion classes — including all auth pages (Login, Register, Forgot/Reset Password, Verify Email), public pages (Landing, Pricing, Privacy, Terms), dashboard pages (Executive, Portfolio, Analytics), tool pages (Report Builder, Workflow, Monte Carlo, Scenario Modeling), admin pages, and all shared components (report designer/preview, lessons cards, etc.).
 
 ---
 

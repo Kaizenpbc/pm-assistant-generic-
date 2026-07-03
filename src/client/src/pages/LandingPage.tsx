@@ -129,7 +129,7 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Navbar */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+      <nav className="bg-white dark:bg-gray-800/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -165,9 +165,9 @@ export const LandingPage: React.FC = () => {
 
         <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-50 border border-primary-100 mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-50 dark:bg-primary-900/30 border border-primary-100 mb-8">
               <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
-              <span className="text-sm font-medium text-primary-700">AI-Powered Project Intelligence</span>
+              <span className="text-sm font-medium text-primary-700 dark:text-primary-300">AI-Powered Project Intelligence</span>
             </div>
             <h1 className="text-5xl sm:text-6xl font-bold tracking-tight">
               <span className="text-slate-900">Manage Projects</span>
@@ -189,7 +189,7 @@ export const LandingPage: React.FC = () => {
               </Link>
               <Link
                 to="/pricing"
-                className="px-8 py-3.5 text-base font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-xl transition-all border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                className="px-8 py-3.5 text-base font-semibold text-slate-700 bg-white dark:bg-gray-800 hover:bg-slate-50 rounded-xl transition-all border border-slate-200 shadow-sm dark:shadow-gray-900/30 hover:shadow-md hover:-translate-y-0.5"
               >
                 View Pricing
               </Link>
@@ -211,7 +211,7 @@ export const LandingPage: React.FC = () => {
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className={`group relative rounded-2xl p-6 shadow-sm border hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${feature.cardBg}`}
+                className={`group relative rounded-2xl p-6 shadow-sm dark:shadow-gray-900/30 border hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${feature.cardBg}`}
               >
                 {/* Top accent gradient bar */}
                 <div className={`absolute top-0 left-6 right-6 h-1 rounded-b-full bg-gradient-to-r ${feature.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
@@ -242,11 +242,11 @@ export const LandingPage: React.FC = () => {
                 className={`rounded-2xl p-8 transition-all duration-300 ${
                   tier.highlighted
                     ? 'bg-gradient-to-br from-primary-600 to-purple-700 text-white ring-4 ring-primary-400/30 ring-offset-2 shadow-2xl shadow-primary-300 scale-105'
-                    : 'bg-white border border-slate-200 shadow-sm hover:shadow-md'
+                    : 'bg-white dark:bg-gray-800 border border-slate-200 shadow-sm dark:shadow-gray-900/30 hover:shadow-md'
                 } ${tier.disabled ? 'opacity-75' : ''}`}
               >
                 {tier.badge && (
-                  <span className="inline-block px-3 py-1 text-xs font-semibold bg-white/20 text-white rounded-full mb-4 backdrop-blur-sm">
+                  <span className="inline-block px-3 py-1 text-xs font-semibold bg-white dark:bg-gray-800/20 text-white rounded-full mb-4 backdrop-blur-sm">
                     {tier.badge}
                   </span>
                 )}
@@ -285,7 +285,7 @@ export const LandingPage: React.FC = () => {
                 <div className="mt-8">
                   {tier.disabled ? (
                     <span className={`block w-full text-center py-2.5 px-4 text-sm font-medium rounded-lg ${
-                      tier.highlighted ? 'bg-white/10 text-primary-200' : 'bg-slate-100 text-slate-400'
+                      tier.highlighted ? 'bg-white dark:bg-gray-800/10 text-primary-200' : 'bg-slate-100 text-slate-400'
                     } cursor-not-allowed`}>
                       {tier.cta}
                     </span>
@@ -294,7 +294,7 @@ export const LandingPage: React.FC = () => {
                       to={tier.ctaLink}
                       className={`block w-full text-center py-2.5 px-4 text-sm font-semibold rounded-lg transition-all ${
                         tier.highlighted
-                          ? 'bg-white text-primary-600 hover:bg-primary-50 shadow-md'
+                          ? 'bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:bg-primary-900/30 shadow-md'
                           : 'bg-gradient-to-r from-primary-600 to-purple-600 text-white hover:from-primary-700 hover:to-purple-700 shadow-md shadow-primary-100'
                       }`}
                     >

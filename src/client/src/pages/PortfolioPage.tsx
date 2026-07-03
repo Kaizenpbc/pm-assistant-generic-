@@ -44,7 +44,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> =
   active: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
   planning: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
   on_hold: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
-  completed: { bg: 'bg-gray-50', text: 'text-gray-600', dot: 'bg-gray-400' },
+  completed: { bg: 'bg-gray-50 dark:bg-gray-900', text: 'text-gray-600 dark:text-gray-300', dot: 'bg-gray-400' },
   cancelled: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-400' },
 };
 
@@ -161,7 +161,7 @@ export function PortfolioPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-sm text-gray-500">Failed to load portfolio data</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Failed to load portfolio data</p>
       </div>
     );
   }
@@ -171,24 +171,24 @@ export function PortfolioPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100">
-            <Layers className="h-5 w-5 text-primary-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/40">
+            <Layers className="h-5 w-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Portfolio Overview</h1>
-            <p className="text-sm text-gray-500">{kpis.total} projects &middot; {kpis.totalTasks} tasks</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Portfolio Overview</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{kpis.total} projects &middot; {kpis.totalTasks} tasks</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setView('dashboard')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${view === 'dashboard' ? 'bg-primary-100 text-primary-700' : 'text-gray-500 hover:bg-gray-100'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${view === 'dashboard' ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'}`}
           >
             <BarChart3 className="w-3.5 h-3.5 inline mr-1" />Dashboard
           </button>
           <button
             onClick={() => setView('gantt')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${view === 'gantt' ? 'bg-primary-100 text-primary-700' : 'text-gray-500 hover:bg-gray-100'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${view === 'gantt' ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'}`}
           >
             <Layers className="w-3.5 h-3.5 inline mr-1" />Timeline
           </button>
@@ -196,16 +196,16 @@ export function PortfolioPage() {
       </div>
 
       {portfolioItems.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center">
           <Layers className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-          <h3 className="text-sm font-semibold text-gray-900">No Projects</h3>
-          <p className="mt-1 text-sm text-gray-500">No projects found in your portfolio.</p>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">No Projects</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">No projects found in your portfolio.</p>
         </div>
       ) : (
         <>
           {/* KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <KPICard label="Total Projects" value={String(kpis.total)} icon={FolderKanban} color="bg-primary-50 text-primary-600" />
+            <KPICard label="Total Projects" value={String(kpis.total)} icon={FolderKanban} color="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" />
             <KPICard label="Active" value={String(kpis.active)} icon={TrendingUp} color="bg-green-50 text-green-600" />
             <KPICard label="On Track" value={String(kpis.onTrack)} icon={CheckCircle} color="bg-emerald-50 text-emerald-600" />
             <KPICard label="At Risk" value={String(kpis.atRisk)} icon={AlertTriangle} color="bg-amber-50 text-amber-600" />
@@ -217,7 +217,7 @@ export function PortfolioPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${statusFilter === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${statusFilter === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
             >
               All ({portfolioItems.length})
             </button>
@@ -227,7 +227,7 @@ export function PortfolioPage() {
                 <button
                   key={status}
                   onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors capitalize ${statusFilter === status ? `${sc.bg} ${sc.text} ring-2 ring-offset-1 ring-current` : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors capitalize ${statusFilter === status ? `${sc.bg} ${sc.text} ring-2 ring-offset-1 ring-current` : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
                 >
                   {status.replace('_', ' ')} ({count})
                 </button>
@@ -239,14 +239,14 @@ export function PortfolioPage() {
             <>
               {/* Budget Overview Bar */}
               {kpis.totalBudget > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-900">Portfolio Budget</h3>
-                    <span className="text-sm text-gray-500">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Portfolio Budget</h3>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       {formatCurrency(kpis.totalSpent)} of {formatCurrency(kpis.totalBudget)} ({kpis.totalBudget > 0 ? Math.round((kpis.totalSpent / kpis.totalBudget) * 100) : 0}%)
                     </span>
                   </div>
-                  <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="w-full h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${kpis.totalSpent > kpis.totalBudget ? 'bg-red-500' : kpis.totalSpent > kpis.totalBudget * 0.9 ? 'bg-amber-500' : 'bg-primary-500'}`}
                       style={{ width: `${Math.min(100, kpis.totalBudget > 0 ? (kpis.totalSpent / kpis.totalBudget) * 100 : 0)}%` }}
@@ -265,18 +265,18 @@ export function PortfolioPage() {
                     <div
                       key={item.projectId}
                       onClick={() => navigate(`/project/${item.projectId}`)}
-                      className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer"
+                      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-4 mb-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-sm font-semibold text-gray-900 truncate">{item.projectName}</h3>
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{item.projectName}</h3>
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${sc.bg} ${sc.text}`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
                               {item.status.replace('_', ' ')}
                             </span>
                           </div>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                             <span>{item.completedTasks}/{item.totalTasks} tasks</span>
                             {item.budgetAllocated > 0 && <span>{formatCurrency(item.budgetSpent)} / {formatCurrency(item.budgetAllocated)}</span>}
                             {item.endDate && <span>Due {new Date(item.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
@@ -284,17 +284,17 @@ export function PortfolioPage() {
                         </div>
                         <div className="text-right shrink-0">
                           <span className={`text-xs font-semibold ${health.color}`}>{health.label}</span>
-                          <p className="text-lg font-bold text-gray-900">{item.progressPercentage}%</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{item.progressPercentage}%</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         {/* Progress bar */}
-                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                           <div className="h-full bg-primary-500 rounded-full" style={{ width: `${item.progressPercentage}%` }} />
                         </div>
                         {/* Budget bar (if applicable) */}
                         {item.budgetAllocated > 0 && (
-                          <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden" title={`Budget: ${budgetPct}%`}>
+                          <div className="w-24 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden" title={`Budget: ${budgetPct}%`}>
                             <div
                               className={`h-full rounded-full ${budgetPct > 100 ? 'bg-red-500' : budgetPct > 90 ? 'bg-amber-500' : 'bg-blue-500'}`}
                               style={{ width: `${Math.min(100, budgetPct)}%` }}
@@ -327,14 +327,14 @@ export function PortfolioPage() {
 
 function KPICard({ label, value, icon: Icon, color }: { label: string; value: string; icon: React.ElementType; color: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       <div className="flex items-center gap-2 mb-1">
         <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${color}`}>
           <Icon className="h-3.5 w-3.5" />
         </div>
-        <span className="text-xs font-medium text-gray-500">{label}</span>
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</span>
       </div>
-      <p className="text-xl font-bold text-gray-900">{value}</p>
+      <p className="text-xl font-bold text-gray-900 dark:text-white">{value}</p>
     </div>
   );
 }

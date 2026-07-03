@@ -87,8 +87,8 @@ export function TimesheetPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Timesheets</h1>
-          <p className="text-sm text-gray-500 mt-1">Track time and compare against estimates</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Timesheets</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track time and compare against estimates</p>
         </div>
         <button
           onClick={() => setShowLogForm(v => !v)}
@@ -100,14 +100,14 @@ export function TimesheetPage() {
 
       {/* Log Time Form */}
       {showLogForm && (
-        <div className="bg-white rounded-xl border border-primary-200 p-5 space-y-4 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-primary-200 p-5 space-y-4 shadow-sm dark:shadow-gray-900/30">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-900">Log Time Entry</h3>
-            <button onClick={() => setShowLogForm(false)} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Log Time Entry</h3>
+            <button onClick={() => setShowLogForm(false)} className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X className="w-4 h-4" /></button>
           </div>
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4'} gap-3`}>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Project</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Project</label>
               <select
                 value={logProjectId}
                 onChange={(e) => { setLogProjectId(e.target.value); setLogScheduleId(''); setLogTaskId(''); }}
@@ -118,7 +118,7 @@ export function TimesheetPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Schedule</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Schedule</label>
               <select
                 value={logScheduleId}
                 onChange={(e) => { setLogScheduleId(e.target.value); setLogTaskId(''); }}
@@ -130,7 +130,7 @@ export function TimesheetPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Task</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Task</label>
               <select
                 value={logTaskId}
                 onChange={(e) => setLogTaskId(e.target.value)}
@@ -142,17 +142,17 @@ export function TimesheetPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Date</label>
               <input type="date" value={logDate} onChange={(e) => setLogDate(e.target.value)} className="input w-full text-sm" />
             </div>
           </div>
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} gap-3`}>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Hours</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Hours</label>
               <input type="number" step="0.25" min="0.25" max="24" value={logHours} onChange={(e) => setLogHours(e.target.value)} className="input w-full text-sm" placeholder="e.g. 2.5" />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Description (optional)</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Description (optional)</label>
               <input type="text" value={logDescription} onChange={(e) => setLogDescription(e.target.value)} className="input w-full text-sm" placeholder="What did you work on?" />
             </div>
           </div>
@@ -172,25 +172,25 @@ export function TimesheetPage() {
       )}
 
       {/* Tab navigation */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
         <button
           onClick={() => setTab('my-timesheet')}
           className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md transition-colors
-            ${tab === 'my-timesheet' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            ${tab === 'my-timesheet' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm dark:shadow-gray-900/30' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'}`}
         >
           <Clock className="w-4 h-4" /> My Timesheet
         </button>
         <button
           onClick={() => setTab('project-summary')}
           className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md transition-colors
-            ${tab === 'project-summary' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            ${tab === 'project-summary' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm dark:shadow-gray-900/30' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'}`}
         >
           <BarChart3 className="w-4 h-4" /> Project Summary
         </button>
       </div>
 
       {tab === 'my-timesheet' && (
-        <div className={`bg-white rounded-xl border border-gray-200 ${isMobile ? 'p-3' : 'p-6'}`}>
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 ${isMobile ? 'p-3' : 'p-6'}`}>
           {isMobile ? <MobileTimesheetView /> : <TimesheetGrid />}
         </div>
       )}
@@ -223,14 +223,14 @@ export function TimesheetPage() {
           </div>
 
           {selectedScheduleId && comparisonData?.tasks && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h3 className="text-sm font-bold text-gray-900 mb-4">Actual vs Estimated Hours</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Actual vs Estimated Hours</h3>
               <ActualVsEstimatedChart tasks={comparisonData.tasks} />
             </div>
           )}
 
           {!selectedScheduleId && (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center text-gray-400 dark:text-gray-500">
               Select a project and schedule to view time comparison
             </div>
           )}
@@ -287,13 +287,13 @@ function MobileTimesheetView() {
     <div className="space-y-3">
       {/* Week navigation */}
       <div className="flex items-center justify-between">
-        <button onClick={() => navigateWeek(-1)} className="p-2 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigateWeek(-1)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200">
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-sm font-medium text-gray-700">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
           Week of {new Date(weekStart + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>
-        <button onClick={() => navigateWeek(1)} className="p-2 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigateWeek(1)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -305,24 +305,24 @@ function MobileTimesheetView() {
       )}
 
       {!isLoading && dayList.map((day) => (
-        <div key={day.date} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+        <div key={day.date} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{formatDay(day.date)}</span>
-            <span className={`text-sm font-semibold ${day.total > 0 ? 'text-primary-600' : 'text-gray-400'}`}>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{formatDay(day.date)}</span>
+            <span className={`text-sm font-semibold ${day.total > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500'}`}>
               {day.total.toFixed(1)}h
             </span>
           </div>
           {day.entries.length > 0 ? (
             <div className="space-y-1">
               {day.entries.map((e: any) => (
-                <div key={e.id} className="flex items-center justify-between text-xs text-gray-500">
+                <div key={e.id} className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                   <span className="truncate flex-1">{e.taskName || e.task_name || 'Task'}</span>
                   <span className="ml-2 font-medium">{Number(e.hours).toFixed(1)}h</span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-400">No entries</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">No entries</p>
           )}
         </div>
       ))}

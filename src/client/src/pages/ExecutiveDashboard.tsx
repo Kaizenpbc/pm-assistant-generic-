@@ -99,7 +99,7 @@ export const ExecutiveDashboard: React.FC = () => {
       case 'stats':
         return (
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatsCard label="Total Projects" value={String(totalProjects)} icon={FolderKanban} color="bg-primary-50 text-primary-600" />
+            <StatsCard label="Total Projects" value={String(totalProjects)} icon={FolderKanban} color="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" />
             <StatsCard label="Active" value={String(activeProjects)} icon={TrendingUp} color="bg-green-50 text-green-600" />
             <StatsCard label="Total Budget" value={`$${(totalBudget / 1000).toFixed(0)}K`} icon={DollarSign} color="bg-blue-50 text-blue-600" />
             <StatsCard label="On Track" value={`${onTrackPct}%`} icon={CheckCircle} color="bg-emerald-50 text-emerald-600" />
@@ -109,8 +109,8 @@ export const ExecutiveDashboard: React.FC = () => {
         return (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">All Projects</h2>
-              <span className="text-xs text-gray-400">{totalProjects} projects</span>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">All Projects</h2>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{totalProjects} projects</span>
             </div>
             <ProjectTable projects={projects} />
           </div>
@@ -131,8 +131,8 @@ export const ExecutiveDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Executive Overview</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Executive Overview</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Portfolio-level view of all projects and key metrics.
           </p>
         </div>
@@ -167,14 +167,14 @@ function StatsCard({
   color: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       <div className="flex items-center gap-2">
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
           <Icon className="h-4 w-4" />
         </div>
-        <span className="text-sm font-medium text-gray-500">{label}</span>
+        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</span>
       </div>
-      <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
+      <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
     </div>
   );
 }

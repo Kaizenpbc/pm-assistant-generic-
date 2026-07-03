@@ -1089,7 +1089,7 @@ Destructive actions throughout the application (deleting integrations, change re
 
 ### Dark Mode
 
-Click the **dark mode toggle** (sun/moon icon) in the TopBar to switch between light and dark themes. The choice is saved and applied automatically on your next visit.
+Click the **dark mode toggle** (sun/moon icon) in the TopBar to switch between light and dark themes. The choice is saved and applied automatically on your next visit. Every page in the application supports dark mode — including auth pages, public pages, dashboards, tools, and admin areas.
 
 ### Language
 

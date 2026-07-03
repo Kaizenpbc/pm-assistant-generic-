@@ -128,16 +128,16 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
   icon: Icon,
   color,
 }) => (
-  <div className="rounded-xl border border-gray-200 bg-white p-5">
+  <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
     <div className="flex items-center gap-2 mb-2">
       <Icon className={`w-4 h-4 ${color}`} />
-      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
         {label}
       </span>
     </div>
-    <p className="text-2xl font-bold text-gray-900">{value}</p>
+    <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
     {subValue && (
-      <p className="text-xs text-gray-500 mt-1">{subValue}</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subValue}</p>
     )}
   </div>
 );
@@ -217,31 +217,31 @@ export function MonteCarloPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <Dices className="w-6 h-6 text-primary-500" />
           Monte Carlo Simulation
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Probabilistic schedule and cost risk analysis using Monte Carlo methods.
         </p>
       </div>
 
       {/* Configuration Panel */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Settings2Icon className="w-4 h-4 text-gray-400" />
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <Settings2Icon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           Simulation Configuration
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Project selector */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
               Project
             </label>
             <div className="relative">
               <select
-                className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
+                className="w-full appearance-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 pr-8 text-sm text-gray-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
                 value={selectedProjectId}
                 onChange={handleProjectChange}
                 disabled={projectsLoading}
@@ -253,18 +253,18 @@ export function MonteCarloPage() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
             </div>
           </div>
 
           {/* Schedule selector */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
               Schedule
             </label>
             <div className="relative">
               <select
-                className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors disabled:bg-gray-50 disabled:text-gray-400"
+                className="w-full appearance-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 pr-8 text-sm text-gray-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors disabled:bg-gray-50 dark:bg-gray-900 disabled:text-gray-400 dark:text-gray-500"
                 value={selectedScheduleId}
                 onChange={handleScheduleChange}
                 disabled={!selectedProjectId || schedulesLoading}
@@ -282,18 +282,18 @@ export function MonteCarloPage() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
             </div>
           </div>
 
           {/* Iterations */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
               Iterations
             </label>
             <input
               type="number"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
               value={iterations}
               onChange={(e) =>
                 setIterations(Math.max(100, Math.min(100000, Number(e.target.value) || 10000)))
@@ -306,19 +306,19 @@ export function MonteCarloPage() {
 
           {/* Uncertainty model */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
               Uncertainty Model
             </label>
             <div className="relative">
               <select
-                className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
+                className="w-full appearance-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 pr-8 text-sm text-gray-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
                 value={uncertaintyModel}
                 onChange={(e) => setUncertaintyModel(e.target.value)}
               >
                 <option value="PERT">PERT Distribution</option>
                 <option value="Triangular">Triangular Distribution</option>
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
             </div>
           </div>
         </div>
@@ -328,7 +328,7 @@ export function MonteCarloPage() {
           <button
             onClick={handleRun}
             disabled={!selectedScheduleId || simulation.isPending}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm dark:shadow-gray-900/30 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {simulation.isPending ? (
               <>
@@ -344,7 +344,7 @@ export function MonteCarloPage() {
           </button>
 
           {simulation.isPending && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               Running {iterations.toLocaleString()} iterations...
             </span>
           )}
@@ -366,7 +366,7 @@ export function MonteCarloPage() {
         <div className="space-y-6">
           {/* Summary Cards - Duration */}
           <div>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary-500" />
               Duration Forecast
             </h2>
@@ -397,14 +397,14 @@ export function MonteCarloPage() {
                 value={`${Math.round(stats?.mean || 0)} days`}
                 subValue={`Std Dev: ${(stats?.standardDeviation || 0).toFixed(1)} days`}
                 icon={BarChart3}
-                color="text-gray-500"
+                color="text-gray-500 dark:text-gray-400"
               />
             </div>
           </div>
 
           {/* Histogram */}
-          <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-primary-500" />
               Duration Distribution
             </h2>
@@ -418,12 +418,12 @@ export function MonteCarloPage() {
 
           {/* Sensitivity Analysis */}
           {result.sensitivityAnalysis && result.sensitivityAnalysis.length > 0 && (
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-orange-500" />
                 Sensitivity Analysis
               </h2>
-              <p className="text-xs text-gray-500 mb-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
                 Tasks ranked by their correlation to overall project duration. Higher values
                 indicate a stronger influence on the project finish date.
               </p>
@@ -433,12 +433,12 @@ export function MonteCarloPage() {
 
           {/* Criticality Index */}
           {result.criticalityIndex && result.criticalityIndex.length > 0 && (
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Target className="w-4 h-4 text-red-500" />
                 Criticality Index
               </h2>
-              <p className="text-xs text-gray-500 mb-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
                 Percentage of simulation iterations where each task appeared on the critical path.
                 Tasks with higher criticality deserve closer monitoring.
               </p>
@@ -449,7 +449,7 @@ export function MonteCarloPage() {
           {/* Cost Forecast */}
           {costForecast && (
             <div>
-              <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-green-500" />
                 Cost Forecast
               </h2>
@@ -480,23 +480,23 @@ export function MonteCarloPage() {
                   value={formatCurrency(costForecast.mean)}
                   subValue={`Std Dev: ${formatCurrency(costForecast.standardDeviation)}`}
                   icon={BarChart3}
-                  color="text-gray-500"
+                  color="text-gray-500 dark:text-gray-400"
                 />
               </div>
             </div>
           )}
 
           {/* Simulation metadata footer */}
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-5 py-3">
-            <div className="flex items-center gap-6 text-xs text-gray-500">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-5 py-3">
+            <div className="flex items-center gap-6 text-xs text-gray-500 dark:text-gray-400">
               <span>
-                Iterations: <strong className="text-gray-700">{result.iterations?.toLocaleString()}</strong>
+                Iterations: <strong className="text-gray-700 dark:text-gray-200">{result.iterations?.toLocaleString()}</strong>
               </span>
               <span>
-                Model: <strong className="text-gray-700">{result.uncertaintyModel}</strong>
+                Model: <strong className="text-gray-700 dark:text-gray-200">{result.uncertaintyModel}</strong>
               </span>
               <span>
-                Range: <strong className="text-gray-700">
+                Range: <strong className="text-gray-700 dark:text-gray-200">
                   {Math.round(stats?.min || 0)} - {Math.round(stats?.max || 0)} days
                 </strong>
               </span>
@@ -507,12 +507,12 @@ export function MonteCarloPage() {
 
       {/* Empty state when no simulation has been run */}
       {!result && !simulation.isPending && !simulation.isError && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5 text-center py-16">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 text-center py-16">
           <Dices className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
             No Simulation Results
           </h3>
-          <p className="text-xs text-gray-500 max-w-md mx-auto">
+          <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md mx-auto">
             Select a project and schedule above, configure the simulation parameters, then
             click "Run Simulation" to generate probabilistic forecasts.
           </p>
@@ -521,11 +521,11 @@ export function MonteCarloPage() {
 
       {/* Loading state */}
       {simulation.isPending && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
           <div className="flex flex-col items-center justify-center py-12">
             <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4" />
-            <p className="text-sm font-medium text-gray-700">Running Monte Carlo Simulation</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Running Monte Carlo Simulation</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Processing {iterations.toLocaleString()} iterations with {uncertaintyModel} distribution...
             </p>
           </div>

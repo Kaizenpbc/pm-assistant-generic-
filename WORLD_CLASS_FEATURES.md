@@ -386,7 +386,7 @@ An agentic AI project management platform that combines the scheduling power of 
 | Mobile-Optimized Views | Done | Enhancement |
 | Email Notifications & Digests | Done | Enhancement |
 | Scheduled Report Delivery | Done | Enhancement |
-| Dark Mode | Done | Enhancement |
+| Dark Mode (full coverage — all 41 pages + shared components) | Done | Enhancement |
 | Project Milestones (Gantt diamonds) | Done | Enhancement |
 | Dependency Types (FS/FF/SS/SF + lag) | Done | Enhancement |
 | Multi-Dependency Support (up to 20 predecessors, junction table) | Done | Enhancement |

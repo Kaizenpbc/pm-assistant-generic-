@@ -37,19 +37,19 @@ function renderMarkdown(text: string): string {
   if (!text) return '';
   let html = text
     // Headers
-    .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-gray-900 mt-4 mb-2">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-lg font-semibold text-gray-900 mt-4 mb-2">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-gray-900 mt-4 mb-2">$1</h1>')
+    .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-gray-900 dark:text-white mt-4 mb-2">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="text-lg font-semibold text-gray-900 dark:text-white mt-4 mb-2">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-gray-900 dark:text-white mt-4 mb-2">$1</h1>')
     // Bold
     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
     // Italic
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     // Unordered lists
-    .replace(/^[-*] (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 leading-relaxed">$1</li>')
+    .replace(/^[-*] (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 dark:text-gray-200 leading-relaxed">$1</li>')
     // Ordered lists
-    .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 leading-relaxed list-decimal">$1</li>')
+    .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 dark:text-gray-200 leading-relaxed list-decimal">$1</li>')
     // Paragraphs (double newlines)
-    .replace(/\n\n/g, '</p><p class="text-sm text-gray-700 leading-relaxed mb-2">')
+    .replace(/\n\n/g, '</p><p class="text-sm text-gray-700 dark:text-gray-200 leading-relaxed mb-2">')
     // Single newlines within paragraphs
     .replace(/\n/g, '<br/>');
 
@@ -59,7 +59,7 @@ function renderMarkdown(text: string): string {
     (match) => `<ul class="list-disc space-y-1 mb-3">${match}</ul>`
   );
 
-  return `<p class="text-sm text-gray-700 leading-relaxed mb-2">${html}</p>`;
+  return `<p class="text-sm text-gray-700 dark:text-gray-200 leading-relaxed mb-2">${html}</p>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,13 +86,13 @@ const DynamicChart: React.FC<{ chart: ChartData }> = ({ chart }) => {
     return (
       <div className="card mb-4">
         {chart.title && (
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">{chart.title}</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{chart.title}</h3>
         )}
         <div className="space-y-3">
           {chart.datasets.map((ds, dsIdx) => (
             <div key={dsIdx}>
               {chart.datasets.length > 1 && (
-                <p className="text-xs font-medium text-gray-500 mb-2">{ds.label}</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{ds.label}</p>
               )}
               <div className="space-y-2">
                 {chart.labels.map((label, i) => {
@@ -105,8 +105,8 @@ const DynamicChart: React.FC<{ chart: ChartData }> = ({ chart }) => {
                   return (
                     <div key={i}>
                       <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-gray-600 truncate">{label}</span>
-                        <span className="font-medium text-gray-900 ml-2">{val}</span>
+                        <span className="text-gray-600 dark:text-gray-300 truncate">{label}</span>
+                        <span className="font-medium text-gray-900 dark:text-white ml-2">{val}</span>
                       </div>
                       <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                         <div
@@ -134,7 +134,7 @@ const DynamicChart: React.FC<{ chart: ChartData }> = ({ chart }) => {
     return (
       <div className="card mb-4">
         {chart.title && (
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">{chart.title}</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{chart.title}</h3>
         )}
         {/* Stacked bar */}
         <div className="w-full h-6 bg-gray-200 rounded-full overflow-hidden flex">
@@ -167,7 +167,7 @@ const DynamicChart: React.FC<{ chart: ChartData }> = ({ chart }) => {
                   className="w-3 h-3 rounded-sm flex-shrink-0"
                   style={{ backgroundColor: color }}
                 />
-                <span className="text-xs text-gray-600">
+                <span className="text-xs text-gray-600 dark:text-gray-300">
                   {label} ({ds.data[i]})
                 </span>
               </div>
@@ -226,11 +226,11 @@ export const QueryPage: React.FC = () => {
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-2">
           <MessageSquare className="w-6 h-6 text-primary-500" />
           Project Query
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Ask questions about your projects in natural language.
         </p>
       </div>
@@ -251,7 +251,7 @@ export const QueryPage: React.FC = () => {
             <button
               key={eq}
               onClick={() => handleExampleClick(eq)}
-              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-primary-50 hover:border-primary-200 hover:text-primary-700 transition-colors"
+              className="rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:bg-primary-900/30 hover:border-primary-200 hover:text-primary-700 dark:text-primary-300 transition-colors"
             >
               <Search className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
               {eq}
@@ -273,7 +273,7 @@ export const QueryPage: React.FC = () => {
           {/* Answer */}
           {result.answer && (
             <div className="card">
-              <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary-500" />
                 Answer
               </h2>
@@ -294,13 +294,13 @@ export const QueryPage: React.FC = () => {
           {/* Suggested follow-ups */}
           {result.suggestedFollowUps && result.suggestedFollowUps.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-2">Suggested follow-up questions:</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Suggested follow-up questions:</p>
               <div className="flex flex-wrap gap-2">
                 {result.suggestedFollowUps.map((fu, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleFollowUpClick(fu)}
-                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-primary-50 hover:border-primary-200 hover:text-primary-700 transition-colors"
+                    className="rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:bg-primary-900/30 hover:border-primary-200 hover:text-primary-700 dark:text-primary-300 transition-colors"
                   >
                     {fu}
                   </button>

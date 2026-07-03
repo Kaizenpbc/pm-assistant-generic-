@@ -87,7 +87,7 @@ const features = [
 function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center">
-      <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+      <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white dark:bg-gray-800/5 border border-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm">
         <span className="text-3xl sm:text-4xl font-bold text-white tabular-nums">
           {String(value).padStart(2, '0')}
         </span>
@@ -277,7 +277,7 @@ export const PrelaunchLandingPage: React.FC = () => {
                   onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   required
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm transition-all"
+                  className="flex-1 bg-white dark:bg-gray-800/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm transition-all"
                 />
                 <button
                   type="submit"

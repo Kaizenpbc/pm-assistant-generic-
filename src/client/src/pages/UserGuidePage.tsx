@@ -485,14 +485,14 @@ const sections: Section[] = [
 export const UserGuideContent: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">User Guide</h1>
-      <p className="text-gray-500 mb-8">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">User Guide</h1>
+      <p className="text-gray-500 dark:text-gray-400 mb-8">
         Everything you need to know to get the most out of Kovarti PM Assistant.
       </p>
 
       {/* Table of Contents */}
-      <nav className="bg-gray-50 rounded-xl p-6 mb-10 border border-gray-200">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+      <nav className="bg-gray-50 dark:bg-gray-900 rounded-xl p-6 mb-10 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
           Contents
         </h2>
         <ol className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
@@ -500,7 +500,7 @@ export const UserGuideContent: React.FC = () => {
             <li key={s.id}>
               <a
                 href={`#${s.id}`}
-                className="text-sm text-primary-600 hover:text-primary-800 hover:underline"
+                className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 hover:underline"
               >
                 {i + 1}. {s.title}
               </a>
@@ -516,15 +516,15 @@ export const UserGuideContent: React.FC = () => {
           return (
             <section key={s.id} id={s.id} className="scroll-mt-24">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-5 h-5 text-primary-600" />
+                <div className="w-9 h-9 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {s.title}
                 </h2>
               </div>
-              <p className="text-gray-600 mb-3">{s.description}</p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+              <p className="text-gray-600 dark:text-gray-300 mb-3">{s.description}</p>
+              <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 dark:text-gray-300">
                 {s.items.map((item, idx) => (
                   <li key={idx}>{item}</li>
                 ))}

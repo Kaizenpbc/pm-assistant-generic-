@@ -80,13 +80,13 @@ function StatCard({ icon: Icon, label, value, color }: {
   color: string;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-start gap-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-5 flex items-start gap-4">
       <div className={`flex-shrink-0 w-11 h-11 rounded-lg flex items-center justify-center ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
       <div>
-        <p className="text-sm text-gray-500 font-medium">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 mt-0.5">{value}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">{value}</p>
       </div>
     </div>
   );
@@ -120,7 +120,7 @@ function UsersTab() {
     },
   });
 
-  if (isLoading) return <div className="text-center py-12 text-gray-500">Loading users…</div>;
+  if (isLoading) return <div className="text-center py-12 text-gray-500 dark:text-gray-400">Loading users…</div>;
   if (error) return <div className="text-center py-12 text-red-500">Failed to load users.</div>;
 
   const users: AdminUser[] = data?.users ?? [];
@@ -135,7 +135,7 @@ function UsersTab() {
       )}
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             <th className="pb-3 pr-4">User</th>
             <th className="pb-3 pr-4">Role</th>
             <th className="pb-3 pr-4">Signed up</th>
@@ -145,28 +145,28 @@ function UsersTab() {
             <th className="pb-3 pl-4">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
           {users.map((u: AdminUser) => {
             const active = Boolean(u.is_active);
             return (
-              <tr key={u.id} className="hover:bg-gray-50">
+              <tr key={u.id} className="hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700">
                 <td className="py-3 pr-4">
-                  <div className="font-medium text-gray-900">{u.full_name}</div>
-                  <div className="text-xs text-gray-500">{u.email}</div>
-                  <div className="text-xs text-gray-400">@{u.username}</div>
+                  <div className="font-medium text-gray-900 dark:text-white">{u.full_name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{u.email}</div>
+                  <div className="text-xs text-gray-400 dark:text-gray-500">@{u.username}</div>
                 </td>
                 <td className="py-3 pr-4">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                     u.role === 'admin'
                       ? 'bg-purple-100 text-purple-800'
-                      : 'bg-gray-100 text-gray-700'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'
                   }`}>
                     {u.role}
                   </span>
                 </td>
-                <td className="py-3 pr-4 text-gray-600">{fmt(u.created_at)}</td>
-                <td className="py-3 pr-4 text-gray-600">{fmt(u.last_login_at)}</td>
-                <td className="py-3 pr-4 text-right font-medium text-gray-700">{u.project_count}</td>
+                <td className="py-3 pr-4 text-gray-600 dark:text-gray-300">{fmt(u.created_at)}</td>
+                <td className="py-3 pr-4 text-gray-600 dark:text-gray-300">{fmt(u.last_login_at)}</td>
+                <td className="py-3 pr-4 text-right font-medium text-gray-700 dark:text-gray-200">{u.project_count}</td>
                 <td className="py-3 text-center">
                   <button
                     onClick={() => toggleStatus.mutate({ id: u.id, active: !active })}
@@ -177,9 +177,9 @@ function UsersTab() {
                     {active ? (
                       <ToggleRight className="w-6 h-6 text-green-500" />
                     ) : (
-                      <ToggleLeft className="w-6 h-6 text-gray-400" />
+                      <ToggleLeft className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                     )}
-                    <span className={active ? 'text-green-600' : 'text-gray-400'}>
+                    <span className={active ? 'text-green-600' : 'text-gray-400 dark:text-gray-500'}>
                       {active ? 'Active' : 'Inactive'}
                     </span>
                   </button>
@@ -213,7 +213,7 @@ function SystemTab() {
     queryFn: () => apiService.getAdminStats(),
   });
 
-  if (isLoading) return <div className="text-center py-12 text-gray-500">Loading stats…</div>;
+  if (isLoading) return <div className="text-center py-12 text-gray-500 dark:text-gray-400">Loading stats…</div>;
   if (error) return <div className="text-center py-12 text-red-500">Failed to load stats.</div>;
 
   const s: AdminStats | undefined = data?.stats;
@@ -221,7 +221,7 @@ function SystemTab() {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      <StatCard icon={Users} label="Total Users" value={s.total_users} color="bg-primary-100 text-primary-600" />
+      <StatCard icon={Users} label="Total Users" value={s.total_users} color="bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400" />
       <StatCard icon={Activity} label="Active Users" value={s.active_users} color="bg-green-100 text-green-600" />
       <StatCard icon={FolderKanban} label="Total Projects" value={s.total_projects} color="bg-blue-100 text-blue-600" />
       <StatCard icon={Cpu} label="AI API Calls" value={Number(s.total_ai_calls).toLocaleString()} color="bg-purple-100 text-purple-600" />
@@ -240,7 +240,7 @@ function AiUsageTab() {
     queryFn: () => apiService.getAdminAiUsage(),
   });
 
-  if (isLoading) return <div className="text-center py-12 text-gray-500">Loading AI usage…</div>;
+  if (isLoading) return <div className="text-center py-12 text-gray-500 dark:text-gray-400">Loading AI usage…</div>;
   if (error) return <div className="text-center py-12 text-red-500">Failed to load AI usage.</div>;
 
   const rows: AiUsageRow[] = data?.usage ?? [];
@@ -249,7 +249,7 @@ function AiUsageTab() {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             <th className="pb-3 pr-4">User</th>
             <th className="pb-3 pr-4 text-right">Calls</th>
             <th className="pb-3 pr-4 text-right">Tokens</th>
@@ -257,17 +257,17 @@ function AiUsageTab() {
             <th className="pb-3">Last Used</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
           {rows.map((r: AiUsageRow) => (
-            <tr key={r.username} className="hover:bg-gray-50">
+            <tr key={r.username} className="hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700">
               <td className="py-3 pr-4">
-                <div className="font-medium text-gray-900">{r.full_name}</div>
-                <div className="text-xs text-gray-500">{r.email}</div>
+                <div className="font-medium text-gray-900 dark:text-white">{r.full_name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{r.email}</div>
               </td>
-              <td className="py-3 pr-4 text-right text-gray-700">{Number(r.call_count).toLocaleString()}</td>
-              <td className="py-3 pr-4 text-right text-gray-700">{Number(r.total_tokens).toLocaleString()}</td>
-              <td className="py-3 pr-4 text-right font-medium text-gray-900">{fmtCost(r.total_cost)}</td>
-              <td className="py-3 text-gray-500">{fmt(r.last_used)}</td>
+              <td className="py-3 pr-4 text-right text-gray-700 dark:text-gray-200">{Number(r.call_count).toLocaleString()}</td>
+              <td className="py-3 pr-4 text-right text-gray-700 dark:text-gray-200">{Number(r.total_tokens).toLocaleString()}</td>
+              <td className="py-3 pr-4 text-right font-medium text-gray-900 dark:text-white">{fmtCost(r.total_cost)}</td>
+              <td className="py-3 text-gray-500 dark:text-gray-400">{fmt(r.last_used)}</td>
             </tr>
           ))}
         </tbody>
@@ -300,13 +300,13 @@ export function AdminPage() {
           <ShieldCheck className="w-5 h-5 text-purple-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
-          <p className="text-sm text-gray-500">Platform management and monitoring</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Platform management and monitoring</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -316,8 +316,8 @@ export function AdminPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 active
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -328,7 +328,7 @@ export function AdminPage() {
       </div>
 
       {/* Tab content */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6">
         {activeTab === 'users' && <UsersTab />}
         {activeTab === 'system' && <SystemTab />}
         {activeTab === 'ai-usage' && <AiUsageTab />}

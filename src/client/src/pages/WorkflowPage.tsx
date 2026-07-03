@@ -215,8 +215,8 @@ export function WorkflowPage() {
             <Workflow className="h-5 w-5 text-purple-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Workflow Automation</h1>
-            <p className="text-sm text-gray-500">DAG-based workflow engine with conditions, approvals, and execution history</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Workflow Automation</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">DAG-based workflow engine with conditions, approvals, and execution history</p>
           </div>
         </div>
         <button
@@ -229,16 +229,16 @@ export function WorkflowPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setTab('definitions')}
-          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'definitions' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'definitions' ? 'border-primary-600 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200'}`}
         >
           Definitions ({definitions.length})
         </button>
         <button
           onClick={() => setTab('executions')}
-          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'executions' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'executions' ? 'border-primary-600 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200'}`}
         >
           Executions ({executions.length})
         </button>
@@ -246,20 +246,20 @@ export function WorkflowPage() {
 
       {/* Builder Form */}
       {showForm && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-900">{editingId ? 'Edit Workflow' : 'Create Workflow'}</h3>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{editingId ? 'Edit Workflow' : 'Create Workflow'}</h3>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Name</label>
               <input type="text" value={name} onChange={e => setName(e.target.value)}
-                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 placeholder="e.g., Auto-complete on 100%" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Description</label>
               <input type="text" value={description} onChange={e => setDescription(e.target.value)}
-                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 placeholder="Optional description" />
             </div>
           </div>
@@ -267,11 +267,11 @@ export function WorkflowPage() {
           {/* Nodes */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-semibold text-gray-700">Nodes ({nodes.length})</h4>
+              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-200">Nodes ({nodes.length})</h4>
               <div className="flex gap-1">
                 {(['condition', 'action', 'approval', 'delay'] as NodeType[]).map(t => (
                   <button key={t} onClick={() => addNode(t)}
-                    className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors">
+                    className="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 rounded transition-colors">
                     + {nodeTypeLabel[t]}
                   </button>
                 ))}
@@ -286,14 +286,14 @@ export function WorkflowPage() {
                       <ArrowRight className="w-3.5 h-3.5 text-gray-300 rotate-90" />
                     </div>
                   )}
-                  <div className={`p-3 rounded-lg border ${nodeTypeColors[node.nodeType] || 'border-gray-200 bg-gray-50'}`}>
+                  <div className={`p-3 rounded-lg border ${nodeTypeColors[node.nodeType] || 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-white/60 font-medium uppercase tracking-wide text-gray-600">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-white dark:bg-gray-800/60 font-medium uppercase tracking-wide text-gray-600 dark:text-gray-300">
                           {nodeTypeLabel[node.nodeType]}
                         </span>
                         <input type="text" value={node.name} onChange={e => updateNode(idx, { name: e.target.value })}
-                          className="text-xs font-medium text-gray-800 bg-transparent border-0 border-b border-transparent hover:border-gray-300 focus:border-primary-500 focus:outline-none px-1 py-0.5" />
+                          className="text-xs font-medium text-gray-800 dark:text-gray-100 bg-transparent border-0 border-b border-transparent hover:border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-1 py-0.5" />
                       </div>
                       {idx > 0 && (
                         <button onClick={() => removeNode(idx)} className="p-0.5 text-gray-300 hover:text-red-500 transition-colors">
@@ -314,7 +314,7 @@ export function WorkflowPage() {
 
           {/* Save/Cancel */}
           <div className="flex justify-end gap-2">
-            <button onClick={resetForm} className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+            <button onClick={resetForm} className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 rounded-lg transition-colors">
               Cancel
             </button>
             <button onClick={handleSave}
@@ -328,9 +328,9 @@ export function WorkflowPage() {
 
       {/* Definitions List */}
       {tab === 'definitions' && (
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-            <h3 className="text-sm font-semibold text-gray-700">Workflows ({definitions.length})</h3>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Workflows ({definitions.length})</h3>
           </div>
 
           {isLoading ? (
@@ -338,11 +338,11 @@ export function WorkflowPage() {
               <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
             </div>
           ) : definitions.length === 0 ? (
-            <div className="text-center py-8 text-sm text-gray-400">No workflows defined yet.</div>
+            <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">No workflows defined yet.</div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {definitions.map((def) => (
-                <div key={def.id} className="px-4 py-3 hover:bg-gray-50/50 transition-colors">
+                <div key={def.id} className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700/50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <button
@@ -357,22 +357,22 @@ export function WorkflowPage() {
                       </button>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className={`text-sm font-medium ${def.isEnabled ? 'text-gray-900' : 'text-gray-400'}`}>
+                          <span className={`text-sm font-medium ${def.isEnabled ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
                             {def.name}
                           </span>
-                          <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">v{def.version}</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">v{def.version}</span>
                           {!def.isEnabled && (
-                            <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Disabled</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">Disabled</span>
                           )}
                         </div>
                         {def.description && (
-                          <p className="text-xs text-gray-400 mt-0.5">{def.description}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{def.description}</p>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <button onClick={() => openEdit(def)}
-                        className="px-2 py-1 text-xs text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors">
+                        className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:bg-primary-900/30 rounded transition-colors">
                         Edit
                       </button>
                       <button onClick={() => deleteMut.mutate(def.id)}
@@ -391,34 +391,34 @@ export function WorkflowPage() {
       {/* Executions Tab */}
       {tab === 'executions' && (
         <div className="space-y-4">
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-gray-400" />
-                <h3 className="text-sm font-semibold text-gray-700">Execution History</h3>
+                <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Execution History</h3>
               </div>
             </div>
             {executions.length === 0 ? (
-              <div className="text-center py-6 text-xs text-gray-400">No workflow executions yet.</div>
+              <div className="text-center py-6 text-xs text-gray-400 dark:text-gray-500">No workflow executions yet.</div>
             ) : (
               <div className="divide-y divide-gray-50">
                 {executions.map((exec: any) => (
-                  <div key={exec.id} className="px-4 py-2 text-xs flex items-center gap-3 hover:bg-gray-50/50 cursor-pointer"
+                  <div key={exec.id} className="px-4 py-2 text-xs flex items-center gap-3 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700/50 cursor-pointer"
                     onClick={() => setViewExecId(viewExecId === exec.id ? null : exec.id)}>
                     <div className="flex-shrink-0">
-                      {viewExecId === exec.id ? <ChevronDown className="w-3 h-3 text-gray-400" /> : <ChevronRight className="w-3 h-3 text-gray-400" />}
+                      {viewExecId === exec.id ? <ChevronDown className="w-3 h-3 text-gray-400 dark:text-gray-500" /> : <ChevronRight className="w-3 h-3 text-gray-400 dark:text-gray-500" />}
                     </div>
                     <Zap className="w-3 h-3 text-yellow-500 flex-shrink-0" />
                     <div className="flex-1">
-                      <span className="font-medium text-gray-700">{exec.workflowId}</span>
-                      <span className="text-gray-400"> — {exec.entityType}:{exec.entityId}</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-200">{exec.workflowId}</span>
+                      <span className="text-gray-400 dark:text-gray-500"> — {exec.entityType}:{exec.entityId}</span>
                     </div>
                     <span className={`px-1.5 py-0.5 rounded text-xs capitalize ${
                       exec.status === 'completed' ? 'bg-green-100 text-green-700' :
                       exec.status === 'failed' ? 'bg-red-100 text-red-700' :
                       exec.status === 'waiting' ? 'bg-amber-100 text-amber-700' :
                       exec.status === 'running' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-500'
+                      'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                     }`}>
                       {exec.status}
                     </span>
@@ -431,11 +431,11 @@ export function WorkflowPage() {
 
           {/* Execution detail */}
           {viewExecId && execDetail?.execution && (
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Eye className="w-4 h-4 text-gray-400" />
-                <h4 className="text-sm font-semibold text-gray-700">Execution Detail</h4>
-                <span className="text-xs text-gray-400 font-mono">{viewExecId}</span>
+                <Eye className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Execution Detail</h4>
+                <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">{viewExecId}</span>
               </div>
               <ExecutionDetail
                 execution={execDetail.execution}

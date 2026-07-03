@@ -138,11 +138,11 @@ export const MeetingMinutesPage: React.FC = () => {
       <div className="flex-1 space-y-6 min-w-0">
         {/* Header */}
         <div>
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Mic className="w-6 h-6 text-primary-500" />
             Meeting Minutes
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Paste a meeting transcript and let AI extract action items, decisions, risks, and task updates.
           </p>
         </div>
@@ -153,7 +153,7 @@ export const MeetingMinutesPage: React.FC = () => {
           <div>
             <label
               htmlFor="transcript"
-              className="block text-xs font-medium text-gray-600 mb-1"
+              className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1"
             >
               Meeting Transcript
             </label>
@@ -174,7 +174,7 @@ export const MeetingMinutesPage: React.FC = () => {
             <div>
               <label
                 htmlFor="meeting-project"
-                className="block text-xs font-medium text-gray-600 mb-1"
+                className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1"
               >
                 Project
               </label>
@@ -193,7 +193,7 @@ export const MeetingMinutesPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
               </div>
             </div>
 
@@ -201,7 +201,7 @@ export const MeetingMinutesPage: React.FC = () => {
             <div>
               <label
                 htmlFor="meeting-schedule"
-                className="block text-xs font-medium text-gray-600 mb-1"
+                className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1"
               >
                 Schedule
               </label>
@@ -226,7 +226,7 @@ export const MeetingMinutesPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
               </div>
             </div>
 
@@ -263,7 +263,7 @@ export const MeetingMinutesPage: React.FC = () => {
         {/* Results */}
         {analysisResult && (
           <div>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary-500" />
               Analysis Results
             </h2>
@@ -291,28 +291,28 @@ export const MeetingMinutesPage: React.FC = () => {
       {/* History sidebar */}
       <div className="w-72 flex-shrink-0 hidden lg:block">
         <div className="card sticky top-4">
-          <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-gray-400" />
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
             Analysis History
           </h2>
 
           {!selectedProjectId ? (
-            <p className="text-xs text-gray-400 italic">Select a project to see history.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 italic">Select a project to see history.</p>
           ) : history.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">No previous analyses.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 italic">No previous analyses.</p>
           ) : (
             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
               {history.map((entry) => (
                 <button
                   key={entry.id}
                   onClick={() => handleHistoryClick(entry)}
-                  className="w-full text-left rounded-lg border border-gray-200 p-3 hover:bg-gray-50 hover:shadow-sm transition-all"
+                  className="w-full text-left rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 hover:shadow-sm dark:shadow-gray-900/30 transition-all"
                 >
-                  <p className="text-xs font-medium text-gray-900 line-clamp-2">
+                  <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-2">
                     {entry.summary || 'Meeting analysis'}
                   </p>
                   {entry.createdAt && (
-                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {formatDate(entry.createdAt)}
                     </p>

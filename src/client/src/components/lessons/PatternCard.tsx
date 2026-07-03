@@ -41,23 +41,23 @@ export const PatternCard: React.FC<PatternCardProps> = ({ pattern }) => {
         : 'text-red-700';
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow">
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:shadow-md transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-2">
-        <h3 className="text-sm font-semibold text-gray-900 flex-1">{pattern.title}</h3>
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 text-primary-700 px-2 py-0.5 text-xs font-semibold ml-2 flex-shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex-1">{pattern.title}</h3>
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 px-2 py-0.5 text-xs font-semibold ml-2 flex-shrink-0">
           <TrendingUp className="w-3 h-3" />
           {pattern.frequency}x
         </span>
       </div>
 
       {/* Category */}
-      <span className="inline-block rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-xs font-medium uppercase tracking-wide mb-2">
+      <span className="inline-block rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2 py-0.5 text-xs font-medium uppercase tracking-wide mb-2">
         {pattern.category}
       </span>
 
       {/* Description */}
-      <p className="text-xs text-gray-600 leading-relaxed mb-3">{pattern.description}</p>
+      <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-3">{pattern.description}</p>
 
       {/* Project type pills */}
       {pattern.projectTypes && pattern.projectTypes.length > 0 && (
@@ -86,7 +86,7 @@ export const PatternCard: React.FC<PatternCardProps> = ({ pattern }) => {
       {/* Confidence bar */}
       <div>
         <div className="flex items-center justify-between text-xs mb-1">
-          <span className="text-gray-500">Confidence</span>
+          <span className="text-gray-500 dark:text-gray-400">Confidence</span>
           <span className={`font-semibold ${confidenceTextColor}`}>{Math.round(confidencePct)}%</span>
         </div>
         <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">

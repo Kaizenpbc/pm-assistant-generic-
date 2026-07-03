@@ -41,7 +41,7 @@ export const WaitlistAdminPage: React.FC = () => {
   if (!authed) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-        <div className="w-full max-w-sm bg-white/5 border border-white/10 rounded-2xl p-8">
+        <div className="w-full max-w-sm bg-white dark:bg-gray-800/5 border border-white/10 rounded-2xl p-8">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,7 +57,7 @@ export const WaitlistAdminPage: React.FC = () => {
               onChange={e => setKey(e.target.value)}
               placeholder="Admin password"
               required
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              className="w-full bg-white dark:bg-gray-800/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
             />
             {error && <p className="text-rose-400 text-xs">{error}</p>}
             <button
@@ -86,7 +86,7 @@ export const WaitlistAdminPage: React.FC = () => {
           </div>
           <button
             onClick={exportCsv}
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-medium transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800/5 hover:bg-white dark:bg-gray-800/10 border border-white/10 rounded-xl text-sm font-medium transition-all"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -99,7 +99,7 @@ export const WaitlistAdminPage: React.FC = () => {
         {entries.length === 0 ? (
           <div className="text-center py-20 text-slate-500">No signups yet.</div>
         ) : (
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden">
+          <div className="bg-white dark:bg-gray-800/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/[0.06] text-slate-400 text-xs uppercase tracking-wide">
@@ -110,7 +110,7 @@ export const WaitlistAdminPage: React.FC = () => {
               </thead>
               <tbody>
                 {entries.map((entry, i) => (
-                  <tr key={entry.email} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors">
+                  <tr key={entry.email} className="border-b border-white/[0.04] hover:bg-white dark:bg-gray-800/[0.03] transition-colors">
                     <td className="px-6 py-3 text-slate-500">{i + 1}</td>
                     <td className="px-6 py-3 text-white font-medium">{entry.email}</td>
                     <td className="px-6 py-3 text-slate-400">

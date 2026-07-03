@@ -104,12 +104,12 @@ export const ReportBuilderPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
-            <FileBarChart className="w-5 h-5 text-primary-600" />
+          <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+            <FileBarChart className="w-5 h-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Report Builder</h1>
-            <p className="text-sm text-gray-500">Create custom reports with KPIs, charts, and tables</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Report Builder</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Create custom reports with KPIs, charts, and tables</p>
           </div>
         </div>
         <button
@@ -139,8 +139,8 @@ export const ReportBuilderPage: React.FC = () => {
       {!isLoading && !error && templates.length === 0 && (
         <div className="text-center py-20">
           <FileBarChart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-700 mb-1">No report templates yet</h3>
-          <p className="text-sm text-gray-500 mb-4">Create your first custom report template to get started.</p>
+          <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-1">No report templates yet</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Create your first custom report template to get started.</p>
           <button
             onClick={handleNewReport}
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
@@ -157,12 +157,12 @@ export const ReportBuilderPage: React.FC = () => {
           {templates.map((template) => (
             <div
               key={template.id}
-              className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-primary-500" />
-                  <h3 className="font-semibold text-gray-900 text-sm">{template.name}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{template.name}</h3>
                 </div>
                 {template.isShared && (
                   <span className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -172,10 +172,10 @@ export const ReportBuilderPage: React.FC = () => {
               </div>
 
               {template.description && (
-                <p className="text-xs text-gray-500 mb-3 line-clamp-2">{template.description}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{template.description}</p>
               )}
 
-              <p className="text-xs text-gray-400 mb-4">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
                 Created {new Date(template.createdAt).toLocaleDateString()}
                 {template.sections && ` \u00b7 ${template.sections.length} section${template.sections.length !== 1 ? 's' : ''}`}
               </p>
@@ -183,7 +183,7 @@ export const ReportBuilderPage: React.FC = () => {
               <div className="flex items-center gap-2 border-t border-gray-100 pt-3">
                 <button
                   onClick={() => handleEdit(template.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   Edit
                 </button>
@@ -196,7 +196,7 @@ export const ReportBuilderPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setScheduleTemplate({ id: template.id, name: template.name })}
-                  className="flex items-center justify-center p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                  className="flex items-center justify-center p-1.5 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:bg-primary-900/30 rounded-lg transition-colors"
                   title="Schedule delivery"
                 >
                   <Clock className="w-3.5 h-3.5" />
@@ -204,7 +204,7 @@ export const ReportBuilderPage: React.FC = () => {
                 <button
                   onClick={() => handleDelete(template.id)}
                   disabled={deleteMutation.isPending}
-                  className="flex items-center justify-center p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="flex items-center justify-center p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

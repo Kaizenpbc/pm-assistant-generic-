@@ -57,7 +57,7 @@ const KPI_COLORS = [
   { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
   { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
   { bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700' },
-  { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-700' },
+  { bg: 'bg-primary-50 dark:bg-primary-900/30', border: 'border-primary-200', text: 'text-primary-700 dark:text-primary-300' },
 ];
 
 const CHART_COLORS = [
@@ -75,7 +75,7 @@ function KpiCards({ kpis }: { kpis: KpiItem[] }) {
             key={i}
             className={`${colorSet.bg} ${colorSet.border} border rounded-xl p-4 text-center`}
           >
-            <p className="text-xs uppercase text-gray-500 tracking-wider font-medium mb-1">
+            <p className="text-xs uppercase text-gray-500 dark:text-gray-400 tracking-wider font-medium mb-1">
               {kpi.label}
             </p>
             <p className={`text-2xl font-bold ${colorSet.text}`}>
@@ -97,7 +97,7 @@ function DataTable({ table }: { table: TableData }) {
             {table.headers.map((header, i) => (
               <th
                 key={i}
-                className="text-left px-4 py-2 bg-gray-50 text-xs uppercase font-semibold text-gray-500 tracking-wider border-b-2 border-gray-200"
+                className="text-left px-4 py-2 bg-gray-50 dark:bg-gray-900 text-xs uppercase font-semibold text-gray-500 dark:text-gray-400 tracking-wider border-b-2 border-gray-200 dark:border-gray-700"
               >
                 {header}
               </th>
@@ -106,9 +106,9 @@ function DataTable({ table }: { table: TableData }) {
         </thead>
         <tbody>
           {table.rows.map((row, ri) => (
-            <tr key={ri} className={ri % 2 === 1 ? 'bg-gray-50/50' : ''}>
+            <tr key={ri} className={ri % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900/50' : ''}>
               {row.map((cell, ci) => (
-                <td key={ci} className="px-4 py-2 text-gray-700 border-b border-gray-100">
+                <td key={ci} className="px-4 py-2 text-gray-700 dark:text-gray-200 border-b border-gray-100">
                   {cell}
                 </td>
               ))}
@@ -293,8 +293,8 @@ function PieChartSvg({ data }: { data: ChartDataPoint[] }) {
         {slices.map((slice, i) => (
           <div key={i} className="flex items-center gap-2 text-xs">
             <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: slice.color }} />
-            <span className="text-gray-700">{slice.label}</span>
-            <span className="text-gray-400 ml-auto pl-3">
+            <span className="text-gray-700 dark:text-gray-200">{slice.label}</span>
+            <span className="text-gray-400 dark:text-gray-500 ml-auto pl-3">
               {slice.value} ({Math.round(slice.percent * 100)}%)
             </span>
           </div>
@@ -314,10 +314,10 @@ function SectionRenderer({ section }: { section: ReportSectionData }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 print:break-inside-avoid print:shadow-none">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 print:break-inside-avoid print:shadow-none">
       <div className="flex items-center gap-2 mb-4">
         {iconMap[section.type]}
-        <h3 className="font-semibold text-gray-900 text-sm">{section.title}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{section.title}</h3>
       </div>
 
       {section.type === 'kpi_card' && section.data.kpis && (
@@ -342,7 +342,7 @@ function SectionRenderer({ section }: { section: ReportSectionData }) {
 
       {/* Fallback if data is missing */}
       {!section.data.kpis && !section.data.table && !section.data.chartData && (
-        <p className="text-sm text-gray-400 italic">No data available for this section.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 italic">No data available for this section.</p>
       )}
     </div>
   );
@@ -412,19 +412,19 @@ export function ReportPreview({ templateId, onClose }: ReportPreviewProps) {
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
-            <FileBarChart className="w-5 h-5 text-primary-600" />
+          <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+            <FileBarChart className="w-5 h-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
               {report ? report.name : 'Generating Report...'}
             </h1>
             {report && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Generated {new Date(report.generatedAt).toLocaleString()}
               </p>
             )}
@@ -435,7 +435,7 @@ export function ReportPreview({ templateId, onClose }: ReportPreviewProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => exportCSV(report)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
               Export CSV
@@ -454,8 +454,8 @@ export function ReportPreview({ templateId, onClose }: ReportPreviewProps) {
       {/* Print header (visible only in print) */}
       {report && (
         <div className="hidden print:block mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">{report.name}</h1>
-          <p className="text-xs text-gray-500">Generated {new Date(report.generatedAt).toLocaleString()}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{report.name}</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Generated {new Date(report.generatedAt).toLocaleString()}</p>
         </div>
       )}
 
@@ -463,8 +463,8 @@ export function ReportPreview({ templateId, onClose }: ReportPreviewProps) {
       {generateMutation.isPending && (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4" />
-          <p className="text-sm text-gray-500">Generating report...</p>
-          <p className="text-xs text-gray-400 mt-1">This may take a moment while data is aggregated.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Generating report...</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">This may take a moment while data is aggregated.</p>
         </div>
       )}
 
@@ -491,15 +491,15 @@ export function ReportPreview({ templateId, onClose }: ReportPreviewProps) {
           {report.sections.length === 0 && (
             <div className="text-center py-12">
               <FileBarChart className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">This report has no sections configured.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">This report has no sections configured.</p>
             </div>
           )}
         </div>
       )}
 
       {/* Print footer */}
-      <div className="hidden print:block mt-8 pt-4 border-t border-gray-200 text-center">
-        <p className="text-xs text-gray-400">Kovarti PM Assistant - Custom Report</p>
+      <div className="hidden print:block mt-8 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
+        <p className="text-xs text-gray-400 dark:text-gray-500">Kovarti PM Assistant - Custom Report</p>
       </div>
 
       {/* Print-friendly styles */}

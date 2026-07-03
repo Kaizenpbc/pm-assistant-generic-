@@ -106,7 +106,7 @@ const statusStyles: Record<string, { label: string; color: string }> = {
   planning: { label: 'Planning', color: 'bg-purple-100 text-purple-700' },
   on_hold: { label: 'On Hold', color: 'bg-yellow-100 text-yellow-700' },
   completed: { label: 'Completed', color: 'bg-blue-100 text-blue-700' },
-  cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-600' },
+  cancelled: { label: 'Cancelled', color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300' },
 };
 
 
@@ -142,7 +142,7 @@ function riskLevelBadge(level: string): string {
     case 'low':
       return 'bg-green-100 text-green-700';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200';
   }
 }
 
@@ -158,7 +158,7 @@ function impactLevelBadge(level: string): string {
     case 'minimal':
       return 'bg-green-100 text-green-700';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200';
   }
 }
 
@@ -175,7 +175,7 @@ function formatDollar(value: number | undefined | null): string {
 
 function AIPoweredBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600">
+    <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 text-xs font-medium text-primary-600 dark:text-primary-400">
       <Bot className="h-3 w-3" />
       AI Powered
     </span>
@@ -269,10 +269,10 @@ export function ProjectDetailPage() {
   if (error || !project) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-sm text-gray-500">Project not found</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Project not found</p>
         <button
           onClick={() => navigate('/dashboard')}
-          className="mt-2 text-sm text-primary-600 hover:underline"
+          className="mt-2 text-sm text-primary-600 dark:text-primary-400 hover:underline"
         >
           Back to Dashboard
         </button>
@@ -301,7 +301,7 @@ export function ProjectDetailPage() {
       <div>
         <button
           onClick={() => navigate('/dashboard')}
-          className="mb-3 flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-gray-700"
+          className="mb-3 flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 transition-colors hover:text-gray-700 dark:text-gray-200"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
@@ -310,7 +310,7 @@ export function ProjectDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{project.name}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-words">{project.name}</h1>
               {canEditStatus ? (
                 <select
                   value={project.status}
@@ -345,7 +345,7 @@ export function ProjectDetailPage() {
               )}
             </div>
             {(project.description) && (
-              <p className="mt-1 text-sm text-gray-500">{project.description}</p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{project.description}</p>
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
@@ -362,35 +362,35 @@ export function ProjectDetailPage() {
                     return (
                       <div
                         key={viewer.userId}
-                        className="w-7 h-7 rounded-full bg-primary-100 border-2 border-white flex items-center justify-center"
+                        className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900/40 border-2 border-white flex items-center justify-center"
                         title={`${viewer.username} is viewing`}
                       >
-                        <span className="text-[10px] font-semibold text-primary-700">{initials}</span>
+                        <span className="text-[10px] font-semibold text-primary-700 dark:text-primary-300">{initials}</span>
                       </div>
                     );
                   })}
                   {otherViewers.length > 5 && (
                     <div
-                      className="w-7 h-7 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center"
+                      className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 border-2 border-white flex items-center justify-center"
                       title={`${otherViewers.length - 5} more viewers`}
                     >
-                      <span className="text-[10px] font-semibold text-gray-500">+{otherViewers.length - 5}</span>
+                      <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">+{otherViewers.length - 5}</span>
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] text-gray-400 ml-1.5 whitespace-nowrap">viewing</span>
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1.5 whitespace-nowrap">viewing</span>
               </div>
             )}
             <button
               onClick={() => setShowStatusReport(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 hover:bg-primary-100 dark:bg-primary-900/40 rounded-lg transition-colors"
             >
               <FileText className="w-3.5 h-3.5" />
               Status Report
             </button>
             <button
               onClick={() => setShowSaveTemplate(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 hover:bg-primary-100 dark:bg-primary-900/40 rounded-lg transition-colors"
             >
               <Save className="w-3.5 h-3.5" />
               Save as Template
@@ -398,31 +398,31 @@ export function ProjectDetailPage() {
             <div className="relative" ref={exportMenuRef}>
               <button
                 onClick={() => setShowExportMenu(v => !v)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export
                 <ChevronDown className="w-3 h-3" />
               </button>
               {showExportMenu && (
-                <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
                   <button
                     onClick={() => { apiService.exportProjectCSV(id!); setShowExportMenu(false); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Export as CSV
                   </button>
                   <button
                     onClick={() => { apiService.exportProjectXML(id!); setShowExportMenu(false); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Export for MS Project
                   </button>
                   <button
                     onClick={() => { apiService.exportProjectPDF(id!); setShowExportMenu(false); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Export as PDF
@@ -430,7 +430,7 @@ export function ProjectDetailPage() {
                   <div className="border-t border-gray-100 my-1" />
                   <button
                     onClick={() => { window.print(); setShowExportMenu(false); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition-colors"
                   >
                     <Printer className="w-3.5 h-3.5" />
                     Print Gantt
@@ -483,7 +483,7 @@ export function ProjectDetailPage() {
           color={
             daysRemaining !== null && daysRemaining < 14
               ? 'bg-orange-50 text-orange-600'
-              : 'bg-primary-50 text-primary-600'
+              : 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
           }
         />
         <ContextCard
@@ -495,7 +495,7 @@ export function ProjectDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <button
@@ -503,8 +503,8 @@ export function ProjectDetailPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`border-b-2 pb-3 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === tab.id
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200'
               }`}
             >
               {tab.label}
@@ -565,14 +565,14 @@ function ContextCard({
   detail?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       <div className="flex items-center gap-2">
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
           <Icon className="h-4 w-4" />
         </div>
-        <span className="text-xs font-medium text-gray-500">{label}</span>
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</span>
       </div>
-      <p className="mt-2 text-lg font-bold text-gray-900">{value}</p>
+      <p className="mt-2 text-lg font-bold text-gray-900 dark:text-white">{value}</p>
       {detail}
     </div>
   );
@@ -588,8 +588,8 @@ function OverviewTab({ project }: { project: any }) {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {/* Project Details */}
       <div className="lg:col-span-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <h3 className="mb-3 text-base font-semibold text-gray-900">Project Details</h3>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+          <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">Project Details</h3>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             {project.code && <DetailRow label="Code" value={project.code} />}
             {project.category && <DetailRow label="Category" value={project.category} />}
@@ -619,16 +619,16 @@ function OverviewTab({ project }: { project: any }) {
 
       {/* Right sidebar */}
       <div className="space-y-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <h3 className="mb-3 text-base font-semibold text-gray-900">Quick Info</h3>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+          <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">Quick Info</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Status</span>
-              <span className="font-medium text-gray-900 capitalize">{project.status}</span>
+              <span className="text-gray-500 dark:text-gray-400">Status</span>
+              <span className="font-medium text-gray-900 dark:text-white capitalize">{project.status}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Priority</span>
-              <span className="font-medium text-gray-900 capitalize">
+              <span className="text-gray-500 dark:text-gray-400">Priority</span>
+              <span className="font-medium text-gray-900 dark:text-white capitalize">
                 {project.priority || 'Not set'}
               </span>
             </div>
@@ -636,17 +636,17 @@ function OverviewTab({ project }: { project: any }) {
         </div>
 
         {/* Attachments */}
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
           <AttachmentPanel entityType="project" entityId={project.id} />
         </div>
 
         {/* Custom Fields */}
         {project.id && (
           <>
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
               <CustomFieldsSection entityType="project" entityId={project.id} projectId={project.id} />
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
               <CustomFieldManager projectId={project.id} entityType="task" />
             </div>
           </>
@@ -654,7 +654,7 @@ function OverviewTab({ project }: { project: any }) {
 
         {/* Portal Links */}
         {project.id && (
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
             <PortalLinkManager projectId={project.id} />
           </div>
         )}
@@ -740,10 +740,10 @@ function ScheduleTab({ projectId, projectName, projectStartDate }: { projectId: 
 
   if (schedules.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center">
         <Calendar className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-        <h3 className="text-base font-semibold text-gray-900">No Schedules</h3>
-        <p className="mt-1 text-sm text-gray-500">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white">No Schedules</h3>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           No schedules have been created for this project yet.
         </p>
         <div className="mt-4 flex flex-col items-center gap-2">
@@ -781,7 +781,7 @@ function ScheduleTab({ projectId, projectName, projectStartDate }: { projectId: 
     <div className="space-y-4">
       {/* View Toggle */}
       <div className="flex items-center gap-2">
-        <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 overflow-x-auto">
+        <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5 overflow-x-auto">
           {([
             { mode: 'gantt' as const, icon: GanttChartSquare, label: 'Gantt' },
             { mode: 'kanban' as const, icon: Kanban, label: 'Kanban' },
@@ -794,7 +794,7 @@ function ScheduleTab({ projectId, projectName, projectStartDate }: { projectId: 
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
                 viewMode === mode
                   ? 'bg-primary-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -822,7 +822,7 @@ function MobileScheduleView({ schedules }: { schedules: any[] }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
         {schedules[0]?.name || 'Tasks'}
       </h3>
       <TaskListMobile tasks={tasks} />
@@ -1059,7 +1059,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
 
   if (tasksLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
         <div className="flex items-center justify-center py-8">
           <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
@@ -1082,7 +1082,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         {viewMode === 'gantt' && (
           <>
           <div className="h-4 w-px bg-gray-200 mx-1" />
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 cursor-pointer">
             <input
               type="checkbox"
               checked={showCriticalPath}
@@ -1097,7 +1097,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           <button
             onClick={() => createBaselineMutation.mutate()}
             disabled={createBaselineMutation.isPending}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-md transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:bg-primary-900/40 rounded-md transition-colors"
           >
             <Save className="w-3 h-3" />
             Save Baseline
@@ -1108,7 +1108,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
               <select
                 value={selectedBaselineId}
                 onChange={(e) => { setSelectedBaselineId(e.target.value); setShowComparison(false); }}
-                className="text-xs border border-gray-200 rounded-md px-2 py-1 text-gray-600 bg-white"
+                className="text-xs border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800"
               >
                 <option value="">No baseline overlay</option>
                 {baselines.map((b: any) => (
@@ -1123,7 +1123,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
                   className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     showComparison
                       ? 'bg-primary-600 text-white'
-                      : 'text-primary-600 bg-primary-50 hover:bg-primary-100'
+                      : 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:bg-primary-900/40'
                   }`}
                 >
                   <BarChart3 className="w-3 h-3" />
@@ -1152,7 +1152,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           </button>
 
           {cpmData && showCriticalPath && (
-            <span className="text-xs text-gray-400 ml-auto">
+            <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
               Project duration: {cpmData.projectDuration} days | Critical tasks: {cpmData.criticalPathTaskIds?.length || 0}
             </span>
           )}
@@ -1226,20 +1226,20 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
 
       {/* Baseline Variance Report */}
       {showComparison && comparison && (
-        <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+        <div className="mt-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary-500" />
-              <h3 className="text-base font-semibold text-gray-900">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                 Baseline Variance Report — {comparison.baselineName}
               </h3>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-400 dark:text-gray-500">
                 Saved {new Date(comparison.baselineDate).toLocaleDateString()}
               </span>
             </div>
             <button
               onClick={() => setShowComparison(false)}
-              className="text-gray-400 hover:text-gray-600 text-xs"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 text-xs"
             >
               Close
             </button>
@@ -1247,8 +1247,8 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
 
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 mb-4">
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-xs font-medium text-gray-400 uppercase">Health</div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-900 p-3 text-center">
+              <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">Health</div>
               <div className={`mt-1 text-lg font-bold ${
                 comparison.summary.scheduleHealthPct >= 70 ? 'text-green-600' :
                 comparison.summary.scheduleHealthPct >= 40 ? 'text-yellow-600' : 'text-red-600'
@@ -1256,66 +1256,66 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
                 {comparison.summary.scheduleHealthPct}%
               </div>
             </div>
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-xs font-medium text-gray-400 uppercase">Slipped</div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-900 p-3 text-center">
+              <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">Slipped</div>
               <div className="mt-1 text-lg font-bold text-red-600">{comparison.summary.tasksSlipped}</div>
             </div>
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-xs font-medium text-gray-400 uppercase">On Track</div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-900 p-3 text-center">
+              <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">On Track</div>
               <div className="mt-1 text-lg font-bold text-green-600">{comparison.summary.tasksOnTrack}</div>
             </div>
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-xs font-medium text-gray-400 uppercase">Ahead</div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-900 p-3 text-center">
+              <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">Ahead</div>
               <div className="mt-1 text-lg font-bold text-blue-600">{comparison.summary.tasksAhead}</div>
             </div>
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-xs font-medium text-gray-400 uppercase">Avg End Var</div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-900 p-3 text-center">
+              <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">Avg End Var</div>
               <div className={`mt-1 text-lg font-bold ${
                 comparison.summary.avgEndVarianceDays > 0 ? 'text-red-600' : 'text-green-600'
               }`}>
                 {comparison.summary.avgEndVarianceDays > 0 ? '+' : ''}{comparison.summary.avgEndVarianceDays}d
               </div>
             </div>
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-              <div className="text-xs font-medium text-gray-400 uppercase">New Tasks</div>
-              <div className="mt-1 text-lg font-bold text-gray-900">{comparison.summary.newTasks}</div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-900 p-3 text-center">
+              <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">New Tasks</div>
+              <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{comparison.summary.newTasks}</div>
             </div>
           </div>
 
           {/* Task Variance Table */}
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50 sticky top-0">
+              <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
                 <tr>
-                  <th className="text-left px-2 py-1.5 font-semibold text-gray-500 uppercase">Task</th>
-                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 uppercase">Start Var</th>
-                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 uppercase">End Var</th>
-                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 uppercase">Duration Var</th>
-                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 uppercase">Progress Var</th>
-                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 uppercase">Status</th>
+                  <th className="text-left px-2 py-1.5 font-semibold text-gray-500 dark:text-gray-400 uppercase">Task</th>
+                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 dark:text-gray-400 uppercase">Start Var</th>
+                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 dark:text-gray-400 uppercase">End Var</th>
+                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 dark:text-gray-400 uppercase">Duration Var</th>
+                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 dark:text-gray-400 uppercase">Progress Var</th>
+                  <th className="text-center px-2 py-1.5 font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {comparison.taskVariances.map((tv: any) => (
-                  <tr key={tv.taskId} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-2 py-1.5 text-gray-800 font-medium">{tv.taskName}</td>
+                  <tr key={tv.taskId} className="border-b border-gray-50 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700">
+                    <td className="px-2 py-1.5 text-gray-800 dark:text-gray-100 font-medium">{tv.taskName}</td>
                     <td className={`text-center px-2 py-1.5 font-medium ${
-                      tv.startVarianceDays > 0 ? 'text-red-600' : tv.startVarianceDays < 0 ? 'text-green-600' : 'text-gray-500'
+                      tv.startVarianceDays > 0 ? 'text-red-600' : tv.startVarianceDays < 0 ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'
                     }`}>
                       {tv.startVarianceDays > 0 ? '+' : ''}{tv.startVarianceDays}d
                     </td>
                     <td className={`text-center px-2 py-1.5 font-medium ${
-                      tv.endVarianceDays > 0 ? 'text-red-600' : tv.endVarianceDays < 0 ? 'text-green-600' : 'text-gray-500'
+                      tv.endVarianceDays > 0 ? 'text-red-600' : tv.endVarianceDays < 0 ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'
                     }`}>
                       {tv.endVarianceDays > 0 ? '+' : ''}{tv.endVarianceDays}d
                     </td>
                     <td className={`text-center px-2 py-1.5 font-medium ${
-                      tv.durationVarianceDays > 0 ? 'text-red-600' : tv.durationVarianceDays < 0 ? 'text-green-600' : 'text-gray-500'
+                      tv.durationVarianceDays > 0 ? 'text-red-600' : tv.durationVarianceDays < 0 ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'
                     }`}>
                       {tv.durationVarianceDays > 0 ? '+' : ''}{tv.durationVarianceDays}d
                     </td>
                     <td className={`text-center px-2 py-1.5 font-medium ${
-                      tv.progressVariancePct > 0 ? 'text-green-600' : tv.progressVariancePct < 0 ? 'text-red-600' : 'text-gray-500'
+                      tv.progressVariancePct > 0 ? 'text-green-600' : tv.progressVariancePct < 0 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'
                     }`}>
                       {tv.progressVariancePct > 0 ? '+' : ''}{tv.progressVariancePct}%
                     </td>
@@ -1323,7 +1323,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
                       {tv.statusChanged ? (
                         <span className="text-amber-600">{tv.baselineStatus} → {tv.actualStatus}</span>
                       ) : (
-                        <span className="text-gray-400">{tv.actualStatus}</span>
+                        <span className="text-gray-400 dark:text-gray-500">{tv.actualStatus}</span>
                       )}
                     </td>
                   </tr>
@@ -1460,39 +1460,39 @@ function TaskSlipPredictionSection({ projectId }: { projectId: string }) {
     prob >= 80 ? 'bg-red-500' : prob >= 60 ? 'bg-orange-500' : prob >= 30 ? 'bg-amber-500' : 'bg-green-500';
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
       <div className="flex items-center gap-2 mb-3">
         <Target className="h-5 w-5 text-orange-500" />
-        <h3 className="text-sm font-semibold text-gray-900">Task Slip Predictions</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Task Slip Predictions</h3>
       </div>
       {isLoading ? (
         <SectionSpinner />
       ) : tasks.length === 0 ? (
-        <p className="text-xs text-gray-400 text-center py-4">{summary || 'No tasks at risk of slipping'}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">{summary || 'No tasks at risk of slipping'}</p>
       ) : (
         <>
-          <p className="text-xs text-gray-500 mb-3">{summary}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{summary}</p>
           <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
             {tasks.map((task: any) => (
-              <div key={task.taskId} className="p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50">
+              <div key={task.taskId} className="p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-gray-900 truncate flex-1">{task.taskName}</span>
+                  <span className="text-xs font-medium text-gray-900 dark:text-white truncate flex-1">{task.taskName}</span>
                   <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-medium ${severityColor(task.severity)}`}>
                     {task.slipProbability}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1.5">
+                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 mb-1.5">
                   <div className={`h-1.5 rounded-full ${barColor(task.slipProbability)}`} style={{ width: `${task.slipProbability}%` }} />
                 </div>
                 {task.reasons.length > 0 && (
-                  <ul className="text-[10px] text-gray-500 space-y-0.5">
+                  <ul className="text-[10px] text-gray-500 dark:text-gray-400 space-y-0.5">
                     {task.reasons.map((r: string, i: number) => (
                       <li key={i}>• {r}</li>
                     ))}
                   </ul>
                 )}
                 {task.suggestedAction && (
-                  <p className="text-[10px] text-primary-600 mt-1 font-medium">{task.suggestedAction}</p>
+                  <p className="text-[10px] text-primary-600 dark:text-primary-400 mt-1 font-medium">{task.suggestedAction}</p>
                 )}
               </div>
             ))}
@@ -1522,16 +1522,16 @@ function ScopeCreepSection({ projectId }: { projectId: string }) {
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
       <div className="flex items-center gap-2 mb-3">
         <TrendingUp className="h-5 w-5 text-amber-500" />
-        <h3 className="text-sm font-semibold text-gray-900">Scope Creep Detector</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Scope Creep Detector</h3>
       </div>
       {isLoading ? (
         <SectionSpinner />
       ) : !data?.hasBaseline ? (
         <div className="text-center py-4">
-          <p className="text-xs text-gray-400">Create a baseline to enable scope creep detection.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Create a baseline to enable scope creep detection.</p>
           <p className="text-[10px] text-gray-300 mt-1">Go to Schedule → Baselines to create one.</p>
         </div>
       ) : (
@@ -1542,25 +1542,25 @@ function ScopeCreepSection({ projectId }: { projectId: string }) {
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="rounded-lg bg-gray-50 p-2.5 text-center">
-              <div className="text-lg font-bold text-gray-900">{data.indicators?.taskCountDelta ?? 0}</div>
-              <div className="text-[10px] text-gray-500">New Tasks</div>
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-2.5 text-center">
+              <div className="text-lg font-bold text-gray-900 dark:text-white">{data.indicators?.taskCountDelta ?? 0}</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400">New Tasks</div>
             </div>
-            <div className="rounded-lg bg-gray-50 p-2.5 text-center">
-              <div className="text-lg font-bold text-gray-900">+{data.indicators?.estimateIncreaseDays ?? 0}d</div>
-              <div className="text-[10px] text-gray-500">Estimate Growth</div>
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-2.5 text-center">
+              <div className="text-lg font-bold text-gray-900 dark:text-white">+{data.indicators?.estimateIncreaseDays ?? 0}d</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400">Estimate Growth</div>
             </div>
-            <div className="rounded-lg bg-gray-50 p-2.5 text-center">
-              <div className="text-lg font-bold text-gray-900">{data.indicators?.changeRequestCount ?? 0}</div>
-              <div className="text-[10px] text-gray-500">Open Change Requests</div>
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-2.5 text-center">
+              <div className="text-lg font-bold text-gray-900 dark:text-white">{data.indicators?.changeRequestCount ?? 0}</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400">Open Change Requests</div>
             </div>
-            <div className="rounded-lg bg-gray-50 p-2.5 text-center">
-              <div className="text-lg font-bold text-gray-900">{data.baselineComparison?.summary?.scheduleHealthPct ?? 100}%</div>
-              <div className="text-[10px] text-gray-500">Schedule Health</div>
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-2.5 text-center">
+              <div className="text-lg font-bold text-gray-900 dark:text-white">{data.baselineComparison?.summary?.scheduleHealthPct ?? 100}%</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400">Schedule Health</div>
             </div>
           </div>
           {data.baselineComparison?.summary && (
-            <div className="flex items-center gap-3 text-[10px] text-gray-500">
+            <div className="flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400">
               <span>{data.baselineComparison.summary.tasksSlipped} slipped</span>
               <span>{data.baselineComparison.summary.tasksAhead} ahead</span>
               <span>{data.baselineComparison.summary.tasksOnTrack} on track</span>
@@ -1613,27 +1613,27 @@ function StatusReportModal({ projectId, projectName, onClose }: { projectId: str
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-primary-500" />
-            <h2 className="text-sm font-semibold text-gray-900">Status Report — {projectName}</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Status Report — {projectName}</h2>
           </div>
           <div className="flex items-center gap-2">
             {content && (
               <>
-                <button onClick={handleCopy} className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded">
+                <button onClick={handleCopy} className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded">
                   <ClipboardCopy className="w-3 h-3" />
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
-                <button onClick={handleDownload} className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded">
+                <button onClick={handleDownload} className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded">
                   <Download className="w-3 h-3" />
                   Download
                 </button>
               </>
             )}
-            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
-              <X className="w-4 h-4 text-gray-400" />
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded">
+              <X className="w-4 h-4 text-gray-400 dark:text-gray-500" />
             </button>
           </div>
         </div>
@@ -1641,25 +1641,25 @@ function StatusReportModal({ projectId, projectName, onClose }: { projectId: str
           {mutation.isPending ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-3" />
-              <p className="text-sm text-gray-500">Generating status report...</p>
-              <p className="text-xs text-gray-400 mt-1">This may take a few seconds</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Generating status report...</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">This may take a few seconds</p>
             </div>
           ) : mutation.isError ? (
             <div className="text-center py-8">
               <p className="text-sm text-red-500">Failed to generate report</p>
-              <button onClick={() => mutation.mutate()} className="mt-2 text-xs text-primary-600 hover:underline">Try again</button>
+              <button onClick={() => mutation.mutate()} className="mt-2 text-xs text-primary-600 dark:text-primary-400 hover:underline">Try again</button>
             </div>
           ) : sections.length > 0 ? (
             <div className="space-y-4">
               {sections.map((s: any, i: number) => (
                 <div key={i} className="rounded-lg border border-gray-100 p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">{s.title}</h3>
-                  <div className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{s.body}</div>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{s.title}</h3>
+                  <div className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{s.body}</div>
                 </div>
               ))}
             </div>
           ) : content ? (
-            <div className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{content}</div>
+            <div className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{content}</div>
           ) : null}
         </div>
       </div>
@@ -1686,10 +1686,10 @@ function EVMSCurveSection({ projectId }: { projectId: string }) {
   const sCurve = sCurveData?.data || [];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
       <div className="mb-4 flex items-center gap-2">
         <BarChart3 className="h-5 w-5 text-primary-500" />
-        <h3 className="text-base font-semibold text-gray-900">Earned Value Management — S-Curve</h3>
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white">Earned Value Management — S-Curve</h3>
       </div>
 
       {/* Extended EVM Metrics */}
@@ -1698,7 +1698,7 @@ function EVMSCurveSection({ projectId }: { projectId: string }) {
           <MetricCard
             label="PV"
             value={formatDollar(evm.plannedValue)}
-            color="text-gray-900"
+            color="text-gray-900 dark:text-white"
             tooltip="Planned Value"
           />
           <MetricCard
@@ -1734,7 +1734,7 @@ function EVMSCurveSection({ projectId }: { projectId: string }) {
           <MetricCard
             label="TCPI (EAC)"
             value={evm.tcpiEAC != null ? evm.tcpiEAC.toFixed(2) : 'N/A'}
-            color="text-gray-900"
+            color="text-gray-900 dark:text-white"
             tooltip="To-Complete Performance Index (EAC)"
           />
         </div>
@@ -1746,7 +1746,7 @@ function EVMSCurveSection({ projectId }: { projectId: string }) {
         <SCurveChart data={sCurve} height={280} />
       )}
       {!sCurveLoading && sCurve.length === 0 && (
-        <p className="text-xs text-gray-400 text-center py-4">No S-Curve data available for this project.</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">No S-Curve data available for this project.</p>
       )}
     </div>
   );
@@ -1764,11 +1764,11 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
   const riskData = data?.data;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ShieldAlert className="h-5 w-5 text-red-500" />
-          <h3 className="text-base font-semibold text-gray-900">Risk Assessment</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">Risk Assessment</h3>
         </div>
         {riskData?.aiPowered && <AIPoweredBadge />}
       </div>
@@ -1787,7 +1787,7 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
               <div className={`text-3xl font-bold ${riskScoreColor(riskData.overallRiskScore)}`}>
                 {riskData.overallRiskScore}
               </div>
-              <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+              <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">
                 Risk Score
               </div>
             </div>
@@ -1804,7 +1804,7 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
               {riskData.risks.map((risk: any, idx: number) => (
                 <div
                   key={idx}
-                  className={`rounded-lg border p-3 ${severityColors[risk.severity] || 'bg-gray-50 border-gray-200'}`}
+                  className={`rounded-lg border p-3 ${severityColors[risk.severity] || 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'}`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
@@ -1814,18 +1814,18 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
                       <span className="text-xs font-semibold capitalize">{risk.severity}</span>
                     </div>
                     {risk.trend && (
-                      <span className="text-xs text-gray-500 capitalize">{risk.trend}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{risk.trend}</span>
                     )}
                   </div>
-                  <h4 className="text-sm font-medium text-gray-900">{risk.title}</h4>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">{risk.title}</h4>
                   {risk.description && (
-                    <p className="mt-0.5 text-xs text-gray-600 line-clamp-2">
+                    <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-300 line-clamp-2">
                       {risk.description}
                     </p>
                   )}
                   <div className="mt-2 flex gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-0.5">
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-0.5">
                         <span>Probability</span>
                         <span>{Math.round((risk.probability || 0) * 100)}%</span>
                       </div>
@@ -1837,7 +1837,7 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-0.5">
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-0.5">
                         <span>Impact</span>
                         <span>{Math.round((risk.impact || 0) * 100)}%</span>
                       </div>
@@ -1853,7 +1853,7 @@ function RiskAssessmentSection({ projectId }: { projectId: string }) {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400">No risks identified for this project.</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">No risks identified for this project.</p>
           )}
         </div>
       )}
@@ -1873,11 +1873,11 @@ function WeatherImpactSection({ projectId }: { projectId: string }) {
   const weather = data?.data;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CloudRain className="h-5 w-5 text-blue-500" />
-          <h3 className="text-base font-semibold text-gray-900">Weather Impact</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">Weather Impact</h3>
         </div>
         {weather?.aiPowered && <AIPoweredBadge />}
       </div>
@@ -1894,10 +1894,10 @@ function WeatherImpactSection({ projectId }: { projectId: string }) {
           {!weather.currentConditions && !weather.impactLevel ? (
             <div className="flex flex-col items-center py-6 text-center">
               <MapPin className="mb-2 h-10 w-10 text-gray-300" />
-              <p className="text-sm font-medium text-gray-600">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Set project location for weather analysis
               </p>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                 Add a location to this project to receive weather-based impact assessments.
               </p>
             </div>
@@ -1911,7 +1911,7 @@ function WeatherImpactSection({ projectId }: { projectId: string }) {
                   {weather.impactLevel} Impact
                 </span>
                 {weather.currentConditions && (
-                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                     <CloudSun className="h-3.5 w-3.5" />
                     <span>{weather.currentConditions}</span>
                   </div>
@@ -1921,12 +1921,12 @@ function WeatherImpactSection({ projectId }: { projectId: string }) {
               {/* Affected Tasks */}
               {weather.affectedTasks && weather.affectedTasks.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold text-gray-700">Affected Tasks</h4>
+                  <h4 className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200">Affected Tasks</h4>
                   <div className="space-y-1.5 max-h-32 overflow-y-auto">
                     {weather.affectedTasks.map((task: any, idx: number) => (
                       <div
                         key={idx}
-                        className="flex items-center gap-2 rounded-md bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700"
+                        className="flex items-center gap-2 rounded-md bg-gray-50 dark:bg-gray-900 px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-200"
                       >
                         <AlertTriangle className="h-3 w-3 text-yellow-500 flex-shrink-0" />
                         <span>{typeof task === 'string' ? task : task.name || task.task || JSON.stringify(task)}</span>
@@ -1939,8 +1939,8 @@ function WeatherImpactSection({ projectId }: { projectId: string }) {
               {/* Weekly Outlook */}
               {weather.weeklyOutlook && (
                 <div>
-                  <h4 className="mb-1 text-xs font-semibold text-gray-700">Weekly Outlook</h4>
-                  <p className="text-xs text-gray-500 leading-relaxed">
+                  <h4 className="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-200">Weekly Outlook</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                     {typeof weather.weeklyOutlook === 'string'
                       ? weather.weeklyOutlook
                       : JSON.stringify(weather.weeklyOutlook)}
@@ -1951,12 +1951,12 @@ function WeatherImpactSection({ projectId }: { projectId: string }) {
               {/* Recommendations */}
               {weather.recommendations && weather.recommendations.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold text-gray-700">Recommendations</h4>
+                  <h4 className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200">Recommendations</h4>
                   <ul className="space-y-1.5">
                     {weather.recommendations.map((rec: string, idx: number) => (
                       <li
                         key={idx}
-                        className="flex items-start gap-2 text-xs text-gray-600"
+                        className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300"
                       >
                         <Lightbulb className="mt-0.5 h-3 w-3 text-yellow-500 flex-shrink-0" />
                         <span>{rec}</span>
@@ -1986,11 +1986,11 @@ function BudgetForecastSection({ projectId }: { projectId: string }) {
   const evm = budget?.evmMetrics;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <PieChart className="h-5 w-5 text-green-500" />
-          <h3 className="text-base font-semibold text-gray-900">Budget Forecast</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">Budget Forecast</h3>
         </div>
         {budget?.aiPowered && <AIPoweredBadge />}
       </div>
@@ -2021,13 +2021,13 @@ function BudgetForecastSection({ projectId }: { projectId: string }) {
               <MetricCard
                 label="EAC"
                 value={formatDollar(evm.eac)}
-                color="text-gray-900"
+                color="text-gray-900 dark:text-white"
                 tooltip="Estimate at Completion"
               />
               <MetricCard
                 label="ETC"
                 value={formatDollar(evm.etc)}
-                color="text-gray-900"
+                color="text-gray-900 dark:text-white"
                 tooltip="Estimate to Complete"
               />
               <MetricCard
@@ -2039,7 +2039,7 @@ function BudgetForecastSection({ projectId }: { projectId: string }) {
               <MetricCard
                 label="Burn Rate"
                 value={evm.burnRate != null ? `${(evm.burnRate * 100).toFixed(1)}%` : 'N/A'}
-                color="text-gray-900"
+                color="text-gray-900 dark:text-white"
                 tooltip="Current burn rate"
               />
             </div>
@@ -2049,7 +2049,7 @@ function BudgetForecastSection({ projectId }: { projectId: string }) {
           <div className="flex flex-wrap items-center gap-4">
             {budget.overrunProbability != null && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Overrun Probability:</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Overrun Probability:</span>
                 <span
                   className={`text-sm font-bold ${
                     budget.overrunProbability > 0.5 ? 'text-red-600' : 'text-green-600'
@@ -2061,8 +2061,8 @@ function BudgetForecastSection({ projectId }: { projectId: string }) {
             )}
             {budget.projectedCompletion && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Projected Completion:</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-xs text-gray-500 dark:text-gray-400">Projected Completion:</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
                   {new Date(budget.projectedCompletion).toLocaleDateString()}
                 </span>
               </div>
@@ -2072,12 +2072,12 @@ function BudgetForecastSection({ projectId }: { projectId: string }) {
           {/* Recommendations */}
           {budget.recommendations && budget.recommendations.length > 0 && (
             <div>
-              <h4 className="mb-2 text-xs font-semibold text-gray-700">Recommendations</h4>
+              <h4 className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200">Recommendations</h4>
               <ul className="space-y-1.5">
                 {budget.recommendations.map((rec: string, idx: number) => (
                   <li
                     key={idx}
-                    className="flex items-start gap-2 text-xs text-gray-600"
+                    className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300"
                   >
                     <CheckCircle2 className="mt-0.5 h-3 w-3 text-green-500 flex-shrink-0" />
                     <span>{rec}</span>
@@ -2104,8 +2104,8 @@ function MetricCard({
   tooltip?: string;
 }) {
   return (
-    <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center" title={tooltip}>
-      <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">{label}</div>
+    <div className="rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-900 p-3 text-center" title={tooltip}>
+      <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">{label}</div>
       <div className={`mt-1 text-lg font-bold ${color}`}>{value}</div>
     </div>
   );
@@ -2133,8 +2133,8 @@ function EVMForecastTab({ projectId }: { projectId: string }) {
           <EVMForecastDashboard data={forecast} />
 
           {forecast.historicalTrends?.weeklyData?.length > 0 && (
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">CPI / SPI Trend</h3>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">CPI / SPI Trend</h3>
               <EVMTrendChart
                 historicalData={forecast.historicalTrends.weeklyData}
                 predictions={forecast.aiPredictions?.predictedCPI}
@@ -2143,8 +2143,8 @@ function EVMForecastTab({ projectId }: { projectId: string }) {
           )}
 
           {forecast.forecastComparison?.length > 0 && (
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">Forecast Method Comparison</h3>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Forecast Method Comparison</h3>
               <ForecastComparisonChart
                 data={forecast.forecastComparison}
                 bac={forecast.currentMetrics?.BAC || 0}
@@ -2201,16 +2201,16 @@ function ScenariosTab({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-6">
       {/* Scenario Form */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
         <div className="flex items-center gap-2 mb-4">
           <SlidersHorizontal className="h-5 w-5 text-primary-500" />
-          <h3 className="text-base font-semibold text-gray-900">Model a Scenario</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">Model a Scenario</h3>
         </div>
 
         <div className="space-y-4">
           {/* Scenario Description */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-700">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-200">
               Scenario Description
             </label>
             <input
@@ -2218,7 +2218,7 @@ function ScenariosTab({ projectId }: { projectId: string }) {
               value={scenario}
               onChange={(e) => setScenario(e.target.value)}
               placeholder="e.g., What if we add 5 more workers and extend the deadline by 2 weeks?"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
@@ -2296,7 +2296,7 @@ function ScenariosTab({ projectId }: { projectId: string }) {
           {/* Confidence */}
           {result.confidence != null && (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-500">Confidence:</span>
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Confidence:</span>
               <div className="flex items-center gap-2">
                 <div className="h-2 w-24 rounded-full bg-gray-200">
                   <div
@@ -2304,7 +2304,7 @@ function ScenariosTab({ projectId }: { projectId: string }) {
                     style={{ width: `${Math.round(result.confidence * 100)}%` }}
                   />
                 </div>
-                <span className="text-sm font-bold text-primary-600">
+                <span className="text-sm font-bold text-primary-600 dark:text-primary-400">
                   {Math.round(result.confidence * 100)}%
                 </span>
               </div>
@@ -2341,9 +2341,9 @@ function ScenariosTab({ projectId }: { projectId: string }) {
 
           {/* Resource Impact */}
           {result.resourceImpact && (
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <h4 className="mb-2 text-xs font-semibold text-gray-700">Resource Impact</h4>
-              <p className="text-sm text-gray-600">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+              <h4 className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200">Resource Impact</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 {typeof result.resourceImpact === 'string'
                   ? result.resourceImpact
                   : JSON.stringify(result.resourceImpact)}
@@ -2353,13 +2353,13 @@ function ScenariosTab({ projectId }: { projectId: string }) {
 
           {/* Affected Tasks */}
           {result.affectedTasks && result.affectedTasks.length > 0 && (
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <h4 className="mb-2 text-xs font-semibold text-gray-700">Affected Tasks</h4>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+              <h4 className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200">Affected Tasks</h4>
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {result.affectedTasks.map((task: any, idx: number) => (
                   <div
                     key={idx}
-                    className="flex items-center gap-2 rounded-md bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700"
+                    className="flex items-center gap-2 rounded-md bg-gray-50 dark:bg-gray-900 px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-200"
                   >
                     <AlertTriangle className="h-3 w-3 text-yellow-500 flex-shrink-0" />
                     <span>
@@ -2375,13 +2375,13 @@ function ScenariosTab({ projectId }: { projectId: string }) {
 
           {/* Recommendations */}
           {result.recommendations && result.recommendations.length > 0 && (
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <h4 className="mb-2 text-xs font-semibold text-gray-700">Recommendations</h4>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+              <h4 className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200">Recommendations</h4>
               <ul className="space-y-1.5">
                 {result.recommendations.map((rec: string, idx: number) => (
                   <li
                     key={idx}
-                    className="flex items-start gap-2 text-xs text-gray-600"
+                    className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300"
                   >
                     <Lightbulb className="mt-0.5 h-3 w-3 text-yellow-500 flex-shrink-0" />
                     <span>{rec}</span>
@@ -2416,8 +2416,8 @@ function SliderInput({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <label className="text-xs font-medium text-gray-700">{label}</label>
-        <span className="text-xs font-bold text-gray-900">
+        <label className="text-xs font-medium text-gray-700 dark:text-gray-200">{label}</label>
+        <span className="text-xs font-bold text-gray-900 dark:text-white">
           {value > 0 ? '+' : ''}
           {value}
           {unit}
@@ -2432,7 +2432,7 @@ function SliderInput({
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full accent-primary-600"
       />
-      <div className="flex justify-between text-xs text-gray-400">
+      <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500">
         <span>
           {min}
           {unit}
@@ -2458,12 +2458,12 @@ function ImpactCard({
   content: any;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       <div className="flex items-center gap-2 mb-2">
         <Icon className={`h-4 w-4 ${iconColor}`} />
-        <h4 className="text-xs font-semibold text-gray-700">{title}</h4>
+        <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-200">{title}</h4>
       </div>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-gray-600 dark:text-gray-300">
         {typeof content === 'string' ? content : JSON.stringify(content)}
       </p>
     </div>
@@ -2528,7 +2528,7 @@ function TeamTab() {
     owner: 'bg-purple-100 text-purple-700',
     manager: 'bg-blue-100 text-blue-700',
     editor: 'bg-green-100 text-green-700',
-    viewer: 'bg-gray-100 text-gray-600',
+    viewer: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300',
   };
 
   const handleAddMember = () => {
@@ -2544,16 +2544,16 @@ function TeamTab() {
   return (
     <div className="space-y-6">
       {/* Team Members Section */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary-500" />
-            <h3 className="text-base font-semibold text-gray-900">Team Members</h3>
-            <span className="text-xs text-gray-400">({members.length})</span>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Team Members</h3>
+            <span className="text-xs text-gray-400 dark:text-gray-500">({members.length})</span>
           </div>
           <button
             onClick={() => setShowAddMember(!showAddMember)}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-md transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:bg-primary-900/40 rounded-md transition-colors"
           >
             <Plus className="w-3 h-3" />
             Add Member
@@ -2562,26 +2562,26 @@ function TeamTab() {
 
         {/* Add member form */}
         {showAddMember && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
               <input
                 type="text"
                 placeholder="Name"
                 value={newMember.userName}
                 onChange={e => setNewMember({ ...newMember, userName: e.target.value })}
-                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="text-xs border border-gray-300 dark:border-gray-600 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <input
                 type="email"
                 placeholder="Email"
                 value={newMember.email}
                 onChange={e => setNewMember({ ...newMember, email: e.target.value })}
-                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="text-xs border border-gray-300 dark:border-gray-600 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <select
                 value={newMember.role}
                 onChange={e => setNewMember({ ...newMember, role: e.target.value })}
-                className="text-xs border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="text-xs border border-gray-300 dark:border-gray-600 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="viewer">Viewer</option>
                 <option value="editor">Editor</option>
@@ -2604,16 +2604,16 @@ function TeamTab() {
         ) : (
           <div className="space-y-2">
             {members.map((member: any) => (
-              <div key={member.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+              <div key={member.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
-                    <span className="text-xs font-semibold text-primary-600">
+                  <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+                    <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">
                       {member.userName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
                     </span>
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-900">{member.userName}</div>
-                    <div className="text-xs text-gray-400">{member.email}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">{member.userName}</div>
+                    <div className="text-xs text-gray-400 dark:text-gray-500">{member.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -2637,33 +2637,33 @@ function TeamTab() {
       </div>
 
       {/* Activity Log Section */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
         <div className="flex items-center gap-2 mb-4">
           <Activity className="h-5 w-5 text-green-500" />
-          <h3 className="text-base font-semibold text-gray-900">Activity Log</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">Activity Log</h3>
         </div>
 
         {auditLoading ? (
           <SectionSpinner />
         ) : auditActivities.length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-4">No activity recorded yet.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">No activity recorded yet.</p>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
             {auditActivities.map((entry: any) => (
               <div key={entry.id} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Activity className="w-3 h-3 text-gray-400" />
+                <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Activity className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-700">
+                  <p className="text-xs text-gray-700 dark:text-gray-200">
                     <span className="font-medium">{entry.userName}</span>
                     {' '}{entry.action}{' '}
                     {entry.field && <span className="font-medium">{entry.field}</span>}
                     {entry.oldValue && entry.newValue && (
-                      <span className="text-gray-400"> from "{entry.oldValue}" to "{entry.newValue}"</span>
+                      <span className="text-gray-400 dark:text-gray-500"> from "{entry.oldValue}" to "{entry.newValue}"</span>
                     )}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                     {new Date(entry.createdAt).toLocaleString()}
                   </p>
                 </div>
@@ -2698,11 +2698,11 @@ function ResourceAvailabilitySection({ resources }: { resources: any[] }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-gray-700">Availability for:</label>
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Availability for:</label>
         <select
           value={selectedResourceId}
           onChange={e => setSelectedResourceId(e.target.value)}
-          className="text-sm border border-gray-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500"
         >
           {resources.map((r: any) => (
             <option key={r.id} value={r.id}>{r.name}</option>
@@ -2736,8 +2736,8 @@ function ResourceOptimizerSection({ projectId }: { projectId: string }) {
       <ResourceForecastPanel projectId={projectId} />
 
       {forecast.capacityForecast?.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">Capacity Forecast</h3>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Capacity Forecast</h3>
           <CapacityChart data={forecast.capacityForecast} />
         </div>
       )}
@@ -2762,7 +2762,7 @@ const agentLabels: Record<string, string> = {
 
 const resultBadgeColors: Record<string, string> = {
   alert_created: 'bg-red-100 text-red-700',
-  skipped: 'bg-gray-100 text-gray-600',
+  skipped: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300',
   error: 'bg-orange-100 text-orange-700',
 };
 
@@ -2784,11 +2784,11 @@ function AgentActivityTab({ projectId }: { projectId: string }) {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Agent Activity Log</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Agent Activity Log</h3>
         <select
           value={agentFilter}
           onChange={(e) => { setAgentFilter(e.target.value); setPage(0); }}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
         >
           <option value="">All Agents</option>
           <option value="auto_reschedule">Auto-Reschedule</option>
@@ -2799,36 +2799,36 @@ function AgentActivityTab({ projectId }: { projectId: string }) {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-gray-500">Loading...</div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
       ) : entries.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">No agent activity recorded yet</div>
+        <div className="text-center py-8 text-gray-400 dark:text-gray-500">No agent activity recorded yet</div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium text-gray-500">Time</th>
-                  <th className="px-4 py-2 text-left font-medium text-gray-500">Agent</th>
-                  <th className="px-4 py-2 text-left font-medium text-gray-500">Result</th>
-                  <th className="px-4 py-2 text-left font-medium text-gray-500">Summary</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Time</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Agent</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Result</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Summary</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {entries.map((entry: any) => (
-                  <tr key={entry.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                  <tr key={entry.id} className="hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700">
+                    <td className="px-4 py-2 whitespace-nowrap text-gray-500 dark:text-gray-400">
                       {new Date(entry.createdAt).toLocaleString()}
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap font-medium text-gray-700">
+                    <td className="px-4 py-2 whitespace-nowrap font-medium text-gray-700 dark:text-gray-200">
                       {agentLabels[entry.agentName] || entry.agentName}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${resultBadgeColors[entry.result] || 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${resultBadgeColors[entry.result] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>
                         {entry.result === 'alert_created' ? 'Alert Created' : entry.result === 'skipped' ? 'Skipped' : 'Error'}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-gray-600">{entry.summary}</td>
+                    <td className="px-4 py-2 text-gray-600 dark:text-gray-300">{entry.summary}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2836,7 +2836,7 @@ function AgentActivityTab({ projectId }: { projectId: string }) {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
               <span>Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total}</span>
               <div className="flex gap-2">
                 <button
@@ -2888,12 +2888,12 @@ function NetworkDiagramTab({ projectId }: { projectId: string }) {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Network Diagram</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Network Diagram</h3>
         {schedules.length > 1 && (
           <select
             value={selectedScheduleId}
             onChange={(e) => setSelectedScheduleId(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+            className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
           >
             {schedules.map((s: any) => (
               <option key={s.id} value={s.id}>{s.name}</option>
@@ -2931,12 +2931,12 @@ function BurndownTab({ projectId }: { projectId: string }) {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Burndown / Burnup</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Burndown / Burnup</h3>
         {schedules.length > 1 && (
           <select
             value={selectedScheduleId}
             onChange={(e) => setSelectedScheduleId(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+            className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
           >
             {schedules.map((s: any) => (
               <option key={s.id} value={s.id}>{s.name}</option>
@@ -2996,10 +2996,10 @@ function ChangeRequestsTab({ projectId }: { projectId: string }) {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Change Requests</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Change Requests</h3>
         <button
           onClick={() => setView('workflow')}
-          className="text-sm text-primary-600 hover:text-primary-800"
+          className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800"
         >
           Manage Workflows
         </button>
@@ -3038,13 +3038,13 @@ function SprintsTab({ projectId }: { projectId: string }) {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Sprint Planning</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sprint Planning</h3>
         <div className="flex items-center gap-3">
           {schedules.length > 1 && (
             <select
               value={selectedScheduleId}
               onChange={(e) => setSelectedScheduleId(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+              className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
             >
               {schedules.map((s: any) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
@@ -3057,7 +3057,7 @@ function SprintsTab({ projectId }: { projectId: string }) {
                 <button
                   key={v}
                   onClick={() => setSprintView(v)}
-                  className={`px-3 py-1 text-xs rounded-md capitalize ${sprintView === v ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                  className={`px-3 py-1 text-xs rounded-md capitalize ${sprintView === v ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'}`}
                 >
                   {v}
                 </button>
@@ -3115,12 +3115,12 @@ function ResourceLevelingTab({ projectId }: { projectId: string }) {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Resource Leveling</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Resource Leveling</h3>
         {schedules.length > 1 && (
           <select
             value={selectedScheduleId}
             onChange={(e) => setSelectedScheduleId(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+            className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
           >
             {schedules.map((s: any) => (
               <option key={s.id} value={s.id}>{s.name}</option>
@@ -3140,8 +3140,8 @@ function ResourceLevelingTab({ projectId }: { projectId: string }) {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-gray-500">{label}</dt>
-      <dd className="font-medium text-gray-900 capitalize">{value}</dd>
+      <dt className="text-xs text-gray-500 dark:text-gray-400">{label}</dt>
+      <dd className="font-medium text-gray-900 dark:text-white capitalize">{value}</dd>
     </div>
   );
 }

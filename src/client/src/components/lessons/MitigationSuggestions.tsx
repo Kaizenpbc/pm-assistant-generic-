@@ -27,7 +27,7 @@ export const MitigationSuggestions: React.FC<MitigationSuggestionsProps> = ({
     return (
       <div className="text-center py-8">
         <Shield className="mx-auto h-10 w-10 text-gray-300 mb-2" />
-        <p className="text-sm text-gray-500">No mitigation suggestions available.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">No mitigation suggestions available.</p>
       </div>
     );
   }
@@ -52,28 +52,28 @@ export const MitigationSuggestions: React.FC<MitigationSuggestionsProps> = ({
         return (
           <div
             key={idx}
-            className="rounded-lg border border-gray-200 bg-white p-4 hover:shadow-sm transition-shadow"
+            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:shadow-sm dark:shadow-gray-900/30 transition-shadow"
           >
             {/* Suggestion text */}
             <div className="flex items-start gap-2 mb-3">
               <Shield className="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-gray-900 font-medium leading-relaxed">
+              <p className="text-sm text-gray-900 dark:text-white font-medium leading-relaxed">
                 {item.suggestion}
               </p>
             </div>
 
             {/* Source project */}
             <div className="flex items-center gap-1.5 mb-3">
-              <Building2 className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-xs text-gray-500">
-                Source: <span className="font-medium text-gray-700">{item.sourceProject}</span>
+              <Building2 className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Source: <span className="font-medium text-gray-700 dark:text-gray-200">{item.sourceProject}</span>
               </span>
             </div>
 
             {/* Relevance score bar */}
             <div className="mb-3">
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-500 flex items-center gap-1">
+                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
                   <BarChart3 className="w-3 h-3" />
                   Relevance
                 </span>

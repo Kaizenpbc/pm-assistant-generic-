@@ -101,7 +101,7 @@ function riskLevelColor(level: string): string {
     case 'low':
       return 'bg-green-100 text-green-700';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200';
   }
 }
 
@@ -112,13 +112,13 @@ function anomalyTypeStyle(type: string): { bg: string; text: string } {
     case 'budget_spike':
       return { bg: 'bg-orange-100', text: 'text-orange-700' };
     case 'stale_project':
-      return { bg: 'bg-gray-200', text: 'text-gray-700' };
+      return { bg: 'bg-gray-200', text: 'text-gray-700 dark:text-gray-200' };
     case 'task_rescheduling':
       return { bg: 'bg-yellow-100', text: 'text-yellow-700' };
     case 'budget_flatline':
       return { bg: 'bg-purple-100', text: 'text-purple-700' };
     default:
-      return { bg: 'bg-gray-100', text: 'text-gray-600' };
+      return { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-300' };
   }
 }
 
@@ -130,7 +130,7 @@ function severityIcon(severity: string) {
     case 'medium':
       return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
     default:
-      return <AlertTriangle className="w-4 h-4 text-gray-400" />;
+      return <AlertTriangle className="w-4 h-4 text-gray-400 dark:text-gray-500" />;
   }
 }
 
@@ -141,7 +141,7 @@ function trendIcon(trend: string) {
     case 'declining':
       return <TrendingDown className="w-5 h-5 text-red-500" />;
     default:
-      return <Minus className="w-5 h-5 text-gray-400" />;
+      return <Minus className="w-5 h-5 text-gray-400 dark:text-gray-500" />;
   }
 }
 
@@ -200,48 +200,48 @@ const PortfolioIntelligence: React.FC = () => {
 
   return (
     <div className="card">
-      <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
         <Brain className="w-4 h-4 text-primary-500" />
         Portfolio Intelligence
       </h2>
 
       {/* Summary */}
       {cpData.summary && (
-        <p className="text-sm text-gray-600 mb-5 leading-relaxed">{cpData.summary}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-5 leading-relaxed">{cpData.summary}</p>
       )}
 
       {/* Risk Heat Map */}
       {heatMap.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5 text-gray-400" />
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
             Portfolio Risk Heat Map
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 pr-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-2 pr-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Project
                   </th>
-                  <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Health
                   </th>
-                  <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Risk
                   </th>
-                  <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Budget
                   </th>
-                  <th className="text-center py-2 pl-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="text-center py-2 pl-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Progress
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {heatMap.map((entry) => (
-                  <tr key={entry.projectId} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-2.5 pr-4 font-medium text-gray-900 whitespace-nowrap">
+                  <tr key={entry.projectId} className="hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition-colors">
+                    <td className="py-2.5 pr-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
                       {entry.projectName}
                     </td>
                     <td className="py-2.5 px-3 text-center">
@@ -260,8 +260,8 @@ const PortfolioIntelligence: React.FC = () => {
                     </td>
                     <td className="py-2.5 px-3 text-center">
                       <div className="flex items-center justify-center gap-1.5">
-                        <DollarSign className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-gray-700">
+                        <DollarSign className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                        <span className="text-gray-700 dark:text-gray-200">
                           {Math.round(entry.budgetUtilization)}%
                         </span>
                       </div>
@@ -274,7 +274,7 @@ const PortfolioIntelligence: React.FC = () => {
                             style={{ width: `${Math.min(entry.progress, 100)}%` }}
                           />
                         </div>
-                        <span className="text-xs text-gray-500 w-8 text-right">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 w-8 text-right">
                           {Math.round(entry.progress)}%
                         </span>
                       </div>
@@ -290,8 +290,8 @@ const PortfolioIntelligence: React.FC = () => {
       {/* Budget Reallocation */}
       {reallocation && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-            <DollarSign className="w-3.5 h-3.5 text-gray-400" />
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <DollarSign className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
             Budget Reallocation
           </h3>
 
@@ -345,8 +345,8 @@ const PortfolioIntelligence: React.FC = () => {
 
           {/* Recommendations */}
           {reallocation.recommendations && reallocation.recommendations.length > 0 && (
-            <div className="rounded-lg bg-primary-50 border border-primary-200 p-3">
-              <p className="text-xs font-semibold text-primary-700 mb-2 flex items-center gap-1">
+            <div className="rounded-lg bg-primary-50 dark:bg-primary-900/30 border border-primary-200 p-3">
+              <p className="text-xs font-semibold text-primary-700 dark:text-primary-300 mb-2 flex items-center gap-1">
                 <Zap className="w-3.5 h-3.5" />
                 Recommendations
               </p>
@@ -386,7 +386,7 @@ const AnomalyDetection: React.FC = () => {
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <Shield className="w-4 h-4 text-orange-500" />
           Anomaly Detection
         </h2>
@@ -398,7 +398,7 @@ const AnomalyDetection: React.FC = () => {
           </span>
 
           {/* Health trend */}
-          <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+          <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             {trendIcon(anomalyData.overallHealthTrend)}
             <span className="capitalize">{anomalyData.overallHealthTrend}</span>
           </span>
@@ -407,11 +407,11 @@ const AnomalyDetection: React.FC = () => {
 
       {/* Summary */}
       {anomalyData.summary && (
-        <p className="text-sm text-gray-600 mb-4 leading-relaxed">{anomalyData.summary}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">{anomalyData.summary}</p>
       )}
 
       {/* Scanned projects count */}
-      <p className="text-xs text-gray-400 mb-4">
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
         Scanned {anomalyData.scannedProjects} project{anomalyData.scannedProjects !== 1 ? 's' : ''}
       </p>
 
@@ -419,7 +419,7 @@ const AnomalyDetection: React.FC = () => {
       {anomalies.length === 0 ? (
         <div className="text-center py-8">
           <Shield className="mx-auto h-10 w-10 text-green-300 mb-2" />
-          <p className="text-sm text-gray-500">No anomalies detected. Portfolio looks healthy.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No anomalies detected. Portfolio looks healthy.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -428,13 +428,13 @@ const AnomalyDetection: React.FC = () => {
             return (
               <div
                 key={`${anomaly.projectId}-${anomaly.type}-${idx}`}
-                className="rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
+                className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-sm dark:shadow-gray-900/30 transition-shadow"
               >
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5">{severityIcon(anomaly.severity)}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h4 className="text-sm font-semibold text-gray-900">{anomaly.title}</h4>
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{anomaly.title}</h4>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-semibold ${typeStyle.bg} ${typeStyle.text}`}
                       >
@@ -446,8 +446,8 @@ const AnomalyDetection: React.FC = () => {
                         {anomaly.severity}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mb-1">{anomaly.projectName}</p>
-                    <p className="text-sm text-gray-600 leading-relaxed mb-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{anomaly.projectName}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-2">
                       {anomaly.description}
                     </p>
                     {anomaly.recommendation && (
@@ -492,7 +492,7 @@ const AIAccuracy: React.FC = () => {
 
   return (
     <div className="card">
-      <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
         <BarChart3 className="w-4 h-4 text-green-500" />
         AI Accuracy
       </h2>
@@ -506,18 +506,18 @@ const AIAccuracy: React.FC = () => {
             >
               {Math.round(overall.accuracy)}%
             </p>
-            <p className="text-xs text-gray-500 mt-1">Overall Accuracy</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Overall Accuracy</p>
           </div>
           <div className="flex-1 grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-gray-50 p-3 text-center">
-              <p className="text-lg font-semibold text-gray-900">{overall.totalRecords}</p>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Records</p>
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-3 text-center">
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">{overall.totalRecords}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Records</p>
             </div>
-            <div className="rounded-lg bg-gray-50 p-3 text-center">
-              <p className="text-lg font-semibold text-gray-900">
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-3 text-center">
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">
                 {overall.averageVariance?.toFixed(1)}%
               </p>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Avg Variance</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Avg Variance</p>
             </div>
           </div>
         </div>
@@ -526,14 +526,14 @@ const AIAccuracy: React.FC = () => {
       {/* Feedback summary */}
       {feedback && totalFeedback > 0 && (
         <div className="mb-6">
-          <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide mb-3">
             Feedback Summary
           </h3>
           <div className="space-y-2.5">
             {/* Accepted */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-600">Accepted</span>
+                <span className="text-gray-600 dark:text-gray-300">Accepted</span>
                 <span className="font-medium text-green-700">{feedback.accepted}</span>
               </div>
               <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -549,7 +549,7 @@ const AIAccuracy: React.FC = () => {
             {/* Modified */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-600">Modified</span>
+                <span className="text-gray-600 dark:text-gray-300">Modified</span>
                 <span className="font-medium text-yellow-700">{feedback.modified}</span>
               </div>
               <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -565,7 +565,7 @@ const AIAccuracy: React.FC = () => {
             {/* Rejected */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-600">Rejected</span>
+                <span className="text-gray-600 dark:text-gray-300">Rejected</span>
                 <span className="font-medium text-red-700">{feedback.rejected}</span>
               </div>
               <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -580,9 +580,9 @@ const AIAccuracy: React.FC = () => {
           </div>
 
           {/* Acceptance rate */}
-          <p className="mt-3 text-xs text-gray-500">
+          <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
             Acceptance rate:{' '}
-            <span className="font-semibold text-gray-700">
+            <span className="font-semibold text-gray-700 dark:text-gray-200">
               {Math.round(feedback.acceptanceRate)}%
             </span>
           </p>
@@ -592,7 +592,7 @@ const AIAccuracy: React.FC = () => {
       {/* Improvements */}
       {improvements.length > 0 && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide mb-3 flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-yellow-500" />
             Improvement Suggestions
           </h3>
@@ -600,7 +600,7 @@ const AIAccuracy: React.FC = () => {
             {improvements.map((item, idx) => (
               <li
                 key={idx}
-                className="text-sm text-gray-600 leading-relaxed flex items-start gap-2"
+                className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed flex items-start gap-2"
               >
                 <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0" />
                 {item}
@@ -622,11 +622,11 @@ export function ScenarioModelingPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <Brain className="w-6 h-6 text-primary-500" />
           Intelligence & Scenarios
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Portfolio-level intelligence, anomaly detection, and AI accuracy tracking.
         </p>
       </div>

@@ -275,7 +275,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Used across: Integrations, Change Requests, Intake Forms, Settings (API keys, webhooks), Report Builder, Goals, and Lessons Learned pages
 
 ### Dark Mode
-- Global dark theme with Tailwind `dark:` classes throughout
+- Full dark theme coverage across all 41 pages and shared components with Tailwind `dark:` classes
 - Toggle in the TopBar; preference persisted in `themeStore` (localStorage)
 
 ### Project Milestones
@@ -441,7 +441,7 @@ npm run start                # Start compiled server (serves API + static)
 npm run db:migrate           # Run database migrations
 npm run db:seed              # Seed initial data
 
-# Testing
+# Testing (31 test files, 325 tests — agents, core services, policy engine)
 npm run test                 # Run tests (Vitest)
 npm run test:unit            # Run unit tests once
 

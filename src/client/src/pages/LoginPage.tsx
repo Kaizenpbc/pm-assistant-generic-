@@ -39,11 +39,11 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
           <div className="text-center mb-8">
-            <div className="mx-auto w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4">
+            <div className="mx-auto w-12 h-12 bg-primary-100 dark:bg-primary-900/40 rounded-xl flex items-center justify-center mb-4">
               <svg
-                className="w-7 h-7 text-primary-600"
+                className="w-7 h-7 text-primary-600 dark:text-primary-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -56,8 +56,8 @@ export const LoginPage: React.FC = () => {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Kovarti PM Assistant</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Kovarti PM Assistant</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Sign in to your account
             </p>
           </div>
@@ -87,7 +87,7 @@ export const LoginPage: React.FC = () => {
             )}
 
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 Username
               </label>
               <input
@@ -104,10 +104,10 @@ export const LoginPage: React.FC = () => {
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Password
                 </label>
-                <Link to="/forgot-password" className="text-xs text-primary-600 hover:text-primary-700">
+                <Link to="/forgot-password" className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:text-primary-300">
                   Forgot password?
                 </Link>
               </div>
@@ -139,9 +139,9 @@ export const LoginPage: React.FC = () => {
             </button>
 
             <div className="text-center">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Don't have an account?{' '}
-                <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">Sign up</Link>
+                <Link to="/register" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:text-primary-300 font-medium">Sign up</Link>
               </p>
             </div>
           </form>

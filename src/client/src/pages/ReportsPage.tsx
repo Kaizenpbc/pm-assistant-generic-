@@ -83,7 +83,7 @@ const ReportViewerModal: React.FC<{
   report: Report;
   onClose: () => void;
 }> = ({ report, onClose }) => {
-  const badgeColor = badgeColorMap[report.reportType] || 'bg-gray-100 text-gray-700';
+  const badgeColor = badgeColorMap[report.reportType] || 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200';
   const typeLabel = labelMap[report.reportType] || report.reportType;
 
   return (
@@ -95,16 +95,16 @@ const ReportViewerModal: React.FC<{
       />
 
       {/* Modal card */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] mx-4 bg-white rounded-xl shadow-2xl flex flex-col">
+      <div className="relative w-full max-w-3xl max-h-[90vh] mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-gray-200">
+        <div className="flex items-start justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-gray-900 truncate">{report.title}</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{report.title}</h2>
             <div className="flex items-center gap-3 mt-2">
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeColor}`}>
                 {typeLabel}
               </span>
-              <span className="flex items-center gap-1 text-xs text-gray-400">
+              <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                 <Clock className="w-3 h-3" />
                 {formatDate(report.createdAt)}
               </span>
@@ -112,7 +112,7 @@ const ReportViewerModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            className="ml-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="ml-4 p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -120,7 +120,7 @@ const ReportViewerModal: React.FC<{
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 leading-relaxed">
+          <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
             {report.content}
           </pre>
         </div>
@@ -192,8 +192,8 @@ export const ReportsPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Reports</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Reports</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Generate AI-powered project reports and review past analyses.
         </p>
       </div>
@@ -202,7 +202,7 @@ export const ReportsPage: React.FC = () => {
       {/* Report Generator Card                                             */}
       {/* ----------------------------------------------------------------- */}
       <div className="card">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <FileBarChart className="w-4 h-4 text-primary-500" />
           Generate Report
         </h2>
@@ -210,7 +210,7 @@ export const ReportsPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Report type selector */}
           <div>
-            <label htmlFor="report-type" className="block text-xs font-medium text-gray-600 mb-1">
+            <label htmlFor="report-type" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
               Report Type
             </label>
             <div className="relative">
@@ -226,13 +226,13 @@ export const ReportsPage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
             </div>
           </div>
 
           {/* Project selector (optional) */}
           <div>
-            <label htmlFor="report-project" className="block text-xs font-medium text-gray-600 mb-1">
+            <label htmlFor="report-project" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
               Project (optional)
             </label>
             <div className="relative">
@@ -250,7 +250,7 @@ export const ReportsPage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
             </div>
           </div>
 
@@ -304,8 +304,8 @@ export const ReportsPage: React.FC = () => {
       {/* Report History                                                    */}
       {/* ----------------------------------------------------------------- */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-gray-400" />
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           Report History
         </h2>
 
@@ -316,15 +316,15 @@ export const ReportsPage: React.FC = () => {
         ) : reports.length === 0 ? (
           <div className="card text-center py-12">
             <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            <h3 className="text-sm font-semibold text-gray-900">No reports yet</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">No reports yet</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Generate your first report using the form above.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
             {reports.map((report) => {
-              const badgeColor = badgeColorMap[report.reportType] || 'bg-gray-100 text-gray-700';
+              const badgeColor = badgeColorMap[report.reportType] || 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200';
               const typeLabel = labelMap[report.reportType] || report.reportType;
 
               return (
@@ -333,14 +333,14 @@ export const ReportsPage: React.FC = () => {
                   className="card flex items-center justify-between gap-4 hover:shadow-md transition-shadow duration-200"
                 >
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-semibold text-gray-900 truncate">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                       {report.title}
                     </h3>
                     <div className="flex items-center gap-3 mt-1.5">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badgeColor}`}>
                         {typeLabel}
                       </span>
-                      <span className="flex items-center gap-1 text-xs text-gray-400">
+                      <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                         <Clock className="w-3 h-3" />
                         {formatDate(report.createdAt)}
                       </span>

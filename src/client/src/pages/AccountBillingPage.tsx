@@ -55,9 +55,9 @@ function getStatusBadge(status: string, cancelAtPeriodEnd: boolean) {
     case 'past_due':
       return { label: 'Past Due', color: 'bg-red-100 text-red-700', icon: AlertCircle };
     case 'canceled':
-      return { label: 'Canceled', color: 'bg-gray-100 text-gray-600', icon: XCircle };
+      return { label: 'Canceled', color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300', icon: XCircle };
     default:
-      return { label: status || 'Free', color: 'bg-gray-100 text-gray-600', icon: CreditCard };
+      return { label: status || 'Free', color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300', icon: CreditCard };
   }
 }
 
@@ -127,38 +127,38 @@ export const AccountBillingPage: React.FC = () => {
     <div className="p-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Account & Billing</h1>
-        <p className="text-sm text-gray-500 mt-1">Manage your subscription and billing details</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Account & Billing</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your subscription and billing details</p>
       </div>
 
       {isPro ? (
         <>
           {/* Current Plan Card */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-4">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Current Plan</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm dark:shadow-gray-900/30 p-6 mb-4">
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Current Plan</h2>
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
-                <Crown className="w-6 h-6 text-primary-600" />
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+                <Crown className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-lg font-semibold text-gray-900">Pro Plan</span>
+                  <span className="text-lg font-semibold text-gray-900 dark:text-white">Pro Plan</span>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
                     <BadgeIcon className="w-3 h-3" />
                     {badge.label}
                   </span>
                 </div>
 
-                <div className="mt-2 space-y-1 text-sm text-gray-600">
+                <div className="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-300">
                   {isTrialing && trialDays !== null && (
                     <p>
-                      Trial ends <span className="font-medium text-gray-900">{formatDate(data.trialEndsAt)}</span>
+                      Trial ends <span className="font-medium text-gray-900 dark:text-white">{formatDate(data.trialEndsAt)}</span>
                       {' '}({trialDays} day{trialDays !== 1 ? 's' : ''} remaining)
                     </p>
                   )}
                   {data.currentPeriodEnd && !data.cancelAtPeriodEnd && (
                     <p>
-                      Next billing date: <span className="font-medium text-gray-900">{formatDate(data.currentPeriodEnd)}</span>
+                      Next billing date: <span className="font-medium text-gray-900 dark:text-white">{formatDate(data.currentPeriodEnd)}</span>
                     </p>
                   )}
                   {data.cancelAtPeriodEnd && data.currentPeriodEnd && (
@@ -185,8 +185,8 @@ export const AccountBillingPage: React.FC = () => {
           </div>
 
           {/* Plan Details Card */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Plan Details</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm dark:shadow-gray-900/30 p-6">
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Plan Details</h2>
             <ul className="space-y-3">
               {[
                 'Unlimited projects',
@@ -195,7 +195,7 @@ export const AccountBillingPage: React.FC = () => {
                 'Meeting minutes & lessons learned',
                 'Priority support',
               ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm text-gray-700">
+                <li key={feature} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                   <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
                   {feature}
                 </li>
@@ -205,13 +205,13 @@ export const AccountBillingPage: React.FC = () => {
         </>
       ) : (
         /* Free User — Upgrade Card */
-        <div className="bg-primary-50 border border-primary-200 rounded-xl shadow-sm p-6">
+        <div className="bg-primary-50 dark:bg-primary-900/30 border border-primary-200 rounded-xl shadow-sm dark:shadow-gray-900/30 p-6">
           <div className="text-center max-w-md mx-auto">
-            <div className="w-14 h-14 rounded-2xl bg-primary-100 flex items-center justify-center mx-auto mb-4">
-              <Zap className="w-7 h-7 text-primary-600" />
+            <div className="w-14 h-14 rounded-2xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center mx-auto mb-4">
+              <Zap className="w-7 h-7 text-primary-600 dark:text-primary-400" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Upgrade to Pro</h2>
-            <p className="text-sm text-gray-600 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Upgrade to Pro</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
               Unlock AI insights, advanced forecasting, and unlimited projects with a 14-day free trial.
             </p>
 
@@ -223,7 +223,7 @@ export const AccountBillingPage: React.FC = () => {
                 'Meeting minutes & lessons learned',
                 'Priority support',
               ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm text-gray-700">
+                <li key={feature} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                   <CheckCircle2 className="w-4 h-4 text-primary-500 flex-shrink-0" />
                   {feature}
                 </li>
@@ -242,7 +242,7 @@ export const AccountBillingPage: React.FC = () => {
               )}
               Start Free Trial
             </button>
-            <p className="text-xs text-gray-500 mt-2">No charge until your trial ends</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">No charge until your trial ends</p>
           </div>
         </div>
       )}

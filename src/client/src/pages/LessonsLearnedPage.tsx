@@ -79,7 +79,7 @@ const PROJECT_TYPES = [
 const IMPACT_OPTIONS = [
   { value: 'positive', label: 'Positive', color: 'bg-green-100 text-green-700' },
   { value: 'negative', label: 'Negative', color: 'bg-red-100 text-red-700' },
-  { value: 'neutral', label: 'Neutral', color: 'bg-gray-100 text-gray-700' },
+  { value: 'neutral', label: 'Neutral', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -90,11 +90,11 @@ function impactBadge(impact: string) {
   const colors: Record<string, string> = {
     positive: 'bg-green-100 text-green-700',
     negative: 'bg-red-100 text-red-700',
-    neutral: 'bg-gray-100 text-gray-700',
+    neutral: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200',
   };
   return (
     <span
-      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${colors[impact] || 'bg-gray-100 text-gray-600'}`}
+      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${colors[impact] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
     >
       {impact}
     </span>
@@ -134,16 +134,16 @@ const AddLessonModal: React.FC<{
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-lg mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Plus className="w-5 h-5 text-primary-500" />
             {modalTitle || 'Add Lesson Learned'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -153,7 +153,7 @@ const AddLessonModal: React.FC<{
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
               Title <span className="text-red-500">*</span>
             </label>
             <input
@@ -168,7 +168,7 @@ const AddLessonModal: React.FC<{
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -183,7 +183,7 @@ const AddLessonModal: React.FC<{
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Category</label>
             <div className="relative">
               <select
                 value={form.category}
@@ -196,13 +196,13 @@ const AddLessonModal: React.FC<{
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
             </div>
           </div>
 
           {/* Impact */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Impact</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Impact</label>
             <div className="flex gap-2">
               {IMPACT_OPTIONS.map((opt) => (
                 <button
@@ -212,7 +212,7 @@ const AddLessonModal: React.FC<{
                   className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
                     form.impact === opt.value
                       ? `${opt.color} border-transparent ring-2 ring-primary-300`
-                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700'
                   }`}
                 >
                   {opt.label}
@@ -223,7 +223,7 @@ const AddLessonModal: React.FC<{
 
           {/* Recommendation */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Recommendation</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Recommendation</label>
             <textarea
               value={form.recommendation}
               onChange={(e) => update('recommendation', e.target.value)}
@@ -235,7 +235,7 @@ const AddLessonModal: React.FC<{
 
           {/* Project */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Project</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Project</label>
             <div className="relative">
               <select
                 value={form.projectId}
@@ -249,7 +249,7 @@ const AddLessonModal: React.FC<{
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
             </div>
           </div>
 
@@ -426,11 +426,11 @@ export const LessonsLearnedPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <BookOpen className="w-6 h-6 text-primary-500" />
             Lessons Learned
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Knowledge base of project lessons, patterns, and recommendations.
           </p>
         </div>
@@ -461,30 +461,30 @@ export const LessonsLearnedPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Total lessons */}
         <div className="card flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center">
-            <BookOpen className="w-6 h-6 text-primary-600" />
+          <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+            <BookOpen className="w-6 h-6 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-gray-900">{allLessons.length}</p>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Total Lessons</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{allLessons.length}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Lessons</p>
           </div>
         </div>
 
         {/* Category breakdown */}
         <div className="card">
-          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+          <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide mb-2">
             Categories
           </p>
           {categoryBreakdown.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">No data</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 italic">No data</p>
           ) : (
             <div className="space-y-1.5">
               {categoryBreakdown.slice(0, 5).map(([cat, count]) => (
                 <div key={cat} className="flex items-center gap-2">
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-xs mb-0.5">
-                      <span className="text-gray-600 truncate">{cat}</span>
-                      <span className="text-gray-500 font-medium">{count}</span>
+                      <span className="text-gray-600 dark:text-gray-300 truncate">{cat}</span>
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">{count}</span>
                     </div>
                     <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div
@@ -507,8 +507,8 @@ export const LessonsLearnedPage: React.FC = () => {
             <Brain className="w-6 h-6 text-amber-600" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-gray-900">{patterns.length}</p>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Patterns Detected</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{patterns.length}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Patterns Detected</p>
           </div>
         </div>
       </div>
@@ -530,7 +530,7 @@ export const LessonsLearnedPage: React.FC = () => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
           </div>
           <button
             onClick={() => {
@@ -577,7 +577,7 @@ export const LessonsLearnedPage: React.FC = () => {
       {/* Patterns section */}
       {patterns.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-amber-500" />
             Detected Patterns
           </h2>
@@ -592,8 +592,8 @@ export const LessonsLearnedPage: React.FC = () => {
       {/* Filter controls */}
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
-          <Search className="w-4 h-4 text-gray-400" />
-          <span className="text-xs font-medium text-gray-600">Filters:</span>
+          <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Filters:</span>
         </div>
 
         {/* Project type filter */}
@@ -609,7 +609,7 @@ export const LessonsLearnedPage: React.FC = () => {
               </option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
         </div>
 
         {/* Category filter */}
@@ -625,16 +625,16 @@ export const LessonsLearnedPage: React.FC = () => {
               </option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
         </div>
 
-        <span className="text-xs text-gray-400">{filteredLessons.length} lessons</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">{filteredLessons.length} lessons</span>
       </div>
 
       {/* Lessons list */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-gray-400" />
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           Lessons
         </h2>
 
@@ -645,8 +645,8 @@ export const LessonsLearnedPage: React.FC = () => {
         ) : filteredLessons.length === 0 ? (
           <div className="card text-center py-12">
             <BookOpen className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            <h3 className="text-sm font-semibold text-gray-900">No lessons found</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">No lessons found</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Add your first lesson or seed the knowledge base to get started.
             </p>
           </div>
@@ -658,17 +658,17 @@ export const LessonsLearnedPage: React.FC = () => {
                 className="card hover:shadow-md transition-shadow duration-200"
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
-                  <h3 className="text-sm font-semibold text-gray-900">{lesson.title}</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{lesson.title}</h3>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {impactBadge(lesson.impact)}
-                    <span className="inline-block rounded-full bg-primary-50 text-primary-600 px-2 py-0.5 text-xs font-medium">
+                    <span className="inline-block rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 px-2 py-0.5 text-xs font-medium">
                       {lesson.category}
                     </span>
-                    <button onClick={() => setEditingLesson(lesson)} className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100" title="Edit"><Edit2 className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => setConfirmDeleteId(lesson.id)} className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setEditingLesson(lesson)} className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700" title="Edit"><Edit2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setConfirmDeleteId(lesson.id)} className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
-                <p className="text-sm text-gray-600 leading-relaxed mb-2">{lesson.description}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-2">{lesson.description}</p>
                 {lesson.recommendation && (
                   <div className="rounded-md bg-amber-50 border border-amber-100 px-3 py-2 mb-2">
                     <p className="text-xs text-amber-800 flex items-start gap-1.5">
@@ -678,7 +678,7 @@ export const LessonsLearnedPage: React.FC = () => {
                   </div>
                 )}
                 {lesson.projectName && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     Project: {lesson.projectName}
                   </p>
                 )}
@@ -690,12 +690,12 @@ export const LessonsLearnedPage: React.FC = () => {
         {/* Load More + Count */}
         {lessonsTotal > 0 && (
           <div className="flex items-center justify-between mt-4">
-            <p className="text-xs text-gray-500">Showing {allLessons.length} of {lessonsTotal}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Showing {allLessons.length} of {lessonsTotal}</p>
             {allLessons.length < lessonsTotal && (
               <button
                 onClick={handleLoadMoreLessons}
                 disabled={loadingMore}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 hover:bg-primary-100 dark:bg-primary-900/40 rounded-lg transition-colors disabled:opacity-50"
               >
                 {loadingMore ? (
                   <div className="w-3.5 h-3.5 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin" />
@@ -740,11 +740,11 @@ export const LessonsLearnedPage: React.FC = () => {
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmDeleteId(null)} />
-          <div className="relative bg-white rounded-xl shadow-2xl p-6 max-w-sm mx-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Lesson</h3>
-            <p className="text-sm text-gray-600 mb-4">Are you sure you want to delete this lesson? This cannot be undone.</p>
+          <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Delete Lesson</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Are you sure you want to delete this lesson? This cannot be undone.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+              <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200">Cancel</button>
               <button onClick={() => deleteLessonMutation.mutate(confirmDeleteId)} disabled={deleteLessonMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50">
                 {deleteLessonMutation.isPending ? 'Deleting...' : 'Delete'}
               </button>

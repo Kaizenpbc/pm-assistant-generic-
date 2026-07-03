@@ -69,14 +69,14 @@ function KPICard({ icon: Icon, label, value, sub, color }: {
   color: string;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-start gap-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-5 flex items-start gap-4">
       <div className={`flex-shrink-0 w-11 h-11 rounded-lg flex items-center justify-center ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-sm text-gray-500 font-medium">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 mt-0.5">{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">{value}</p>
+        {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -146,8 +146,8 @@ function StatusDonutChart({ projects }: { projects: Project[] }) {
         {segments.map((seg) => (
           <div key={seg.status} className="flex items-center gap-2 text-sm">
             <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: seg.color }} />
-            <span className="text-gray-700">{STATUS_LABELS[seg.status] || seg.status}</span>
-            <span className="text-gray-400 ml-auto font-medium">{seg.count}</span>
+            <span className="text-gray-700 dark:text-gray-200">{STATUS_LABELS[seg.status] || seg.status}</span>
+            <span className="text-gray-400 dark:text-gray-500 ml-auto font-medium">{seg.count}</span>
           </div>
         ))}
       </div>
@@ -167,7 +167,7 @@ function BudgetBarChart({ projects }: { projects: Project[] }) {
   }, [projects]);
 
   if (items.length === 0) {
-    return <p className="text-sm text-gray-400 text-center py-8">No projects with budget data</p>;
+    return <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">No projects with budget data</p>;
   }
 
   const maxVal = Math.max(...items.map((p) => p.budgetAllocated || 0));
@@ -375,7 +375,7 @@ function ResourceUtilizationChart({ portfolioItems }: { portfolioItems: Portfoli
   }, [portfolioItems]);
 
   if (resources.length === 0) {
-    return <p className="text-sm text-gray-400 text-center py-8">No resource data available</p>;
+    return <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">No resource data available</p>;
   }
 
   const maxVal = Math.max(1, ...resources.map((r) => r.count));
@@ -513,7 +513,7 @@ export const AnalyticsPage: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Loading analytics...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Loading analytics...</p>
         </div>
       </div>
     );
@@ -524,19 +524,19 @@ export const AnalyticsPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-primary-600" />
+          <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+            <BarChart3 className="w-5 h-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-            <p className="text-sm text-gray-500">Portfolio-wide KPIs and trends</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Portfolio-wide KPIs and trends</p>
           </div>
         </div>
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
           <button
             onClick={() => setActiveTab('overview')}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'overview' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              activeTab === 'overview' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm dark:shadow-gray-900/30' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200'
             }`}
           >
             Overview
@@ -544,7 +544,7 @@ export const AnalyticsPage: React.FC = () => {
           <button
             onClick={() => setActiveTab('compliance')}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
-              activeTab === 'compliance' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              activeTab === 'compliance' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm dark:shadow-gray-900/30' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200'
             }`}
           >
             <Shield className="w-3.5 h-3.5" />
@@ -558,7 +558,7 @@ export const AnalyticsPage: React.FC = () => {
       )}
 
       {activeTab === 'compliance' && projects.length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-8">No projects available for compliance view</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">No projects available for compliance view</p>
       )}
 
       {activeTab === 'overview' && <>
@@ -596,28 +596,28 @@ export const AnalyticsPage: React.FC = () => {
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Projects by Status</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-5">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Projects by Status</h2>
           {projects.length > 0 ? (
             <StatusDonutChart projects={projects} />
           ) : (
-            <p className="text-sm text-gray-400 text-center py-8">No project data</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">No project data</p>
           )}
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Budget Overview</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-5">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Budget Overview</h2>
           <BudgetBarChart projects={projects} />
         </div>
       </div>
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Task Completion Trend (12 Weeks)</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-5">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Task Completion Trend (12 Weeks)</h2>
           <TaskCompletionTrendChart portfolioItems={portfolioItems} />
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Resource Utilization (by Tasks)</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-5">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Resource Utilization (by Tasks)</h2>
           <ResourceUtilizationChart portfolioItems={portfolioItems} />
         </div>
       </div>
@@ -625,22 +625,22 @@ export const AnalyticsPage: React.FC = () => {
       {/* Tables Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* At-Risk Projects */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <h2 className="text-sm font-semibold text-gray-700">At-Risk Projects</h2>
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">At-Risk Projects</h2>
           </div>
           {atRiskProjects.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No at-risk projects detected</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">No at-risk projects detected</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 uppercase">Project</th>
-                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="text-right py-2 px-2 text-xs font-medium text-gray-500 uppercase">Progress</th>
-                    <th className="text-right py-2 px-2 text-xs font-medium text-gray-500 uppercase">Budget Used</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Project</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                    <th className="text-right py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Progress</th>
+                    <th className="text-right py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Budget Used</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -649,8 +649,8 @@ export const AnalyticsPage: React.FC = () => {
                       ? Math.round(((p.budgetSpent || 0) / p.budgetAllocated) * 100)
                       : null;
                     return (
-                      <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="py-2 px-2 font-medium text-gray-900 truncate max-w-[180px]">{p.name}</td>
+                      <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700">
+                        <td className="py-2 px-2 font-medium text-gray-900 dark:text-white truncate max-w-[180px]">{p.name}</td>
                         <td className="py-2 px-2">
                           <span
                             className="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
@@ -662,14 +662,14 @@ export const AnalyticsPage: React.FC = () => {
                             {STATUS_LABELS[p.status] || p.status}
                           </span>
                         </td>
-                        <td className="py-2 px-2 text-right text-gray-700">{p.progressPercentage || 0}%</td>
+                        <td className="py-2 px-2 text-right text-gray-700 dark:text-gray-200">{p.progressPercentage || 0}%</td>
                         <td className="py-2 px-2 text-right">
                           {budgetPct !== null ? (
-                            <span className={budgetPct > 80 ? 'text-red-600 font-medium' : 'text-gray-700'}>
+                            <span className={budgetPct > 80 ? 'text-red-600 font-medium' : 'text-gray-700 dark:text-gray-200'}>
                               {budgetPct}%
                             </span>
                           ) : (
-                            <span className="text-gray-400">--</span>
+                            <span className="text-gray-400 dark:text-gray-500">--</span>
                           )}
                         </td>
                       </tr>
@@ -682,22 +682,22 @@ export const AnalyticsPage: React.FC = () => {
         </div>
 
         {/* Upcoming Deadlines */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="w-4 h-4 text-blue-500" />
-            <h2 className="text-sm font-semibold text-gray-700">Upcoming Deadlines (7 Days)</h2>
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Upcoming Deadlines (7 Days)</h2>
           </div>
           {upcomingDeadlines.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No tasks due in the next 7 days</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">No tasks due in the next 7 days</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 uppercase">Task</th>
-                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 uppercase">Project</th>
-                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 uppercase">Due</th>
-                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Task</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Project</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Due</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -706,16 +706,16 @@ export const AnalyticsPage: React.FC = () => {
                     const now = new Date();
                     const daysLeft = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
                     return (
-                      <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="py-2 px-2 font-medium text-gray-900 truncate max-w-[160px]">{t.taskName}</td>
-                        <td className="py-2 px-2 text-gray-600 truncate max-w-[120px]">{t.projectName}</td>
+                      <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700">
+                        <td className="py-2 px-2 font-medium text-gray-900 dark:text-white truncate max-w-[160px]">{t.taskName}</td>
+                        <td className="py-2 px-2 text-gray-600 dark:text-gray-300 truncate max-w-[120px]">{t.projectName}</td>
                         <td className="py-2 px-2">
-                          <span className={daysLeft <= 1 ? 'text-red-600 font-medium' : daysLeft <= 3 ? 'text-amber-600' : 'text-gray-700'}>
+                          <span className={daysLeft <= 1 ? 'text-red-600 font-medium' : daysLeft <= 3 ? 'text-amber-600' : 'text-gray-700 dark:text-gray-200'}>
                             {dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             {daysLeft <= 1 && ' (tomorrow)'}
                           </span>
                         </td>
-                        <td className="py-2 px-2 text-gray-500 capitalize">{t.status.replace('_', ' ')}</td>
+                        <td className="py-2 px-2 text-gray-500 dark:text-gray-400 capitalize">{t.status.replace('_', ' ')}</td>
                       </tr>
                     );
                   })}

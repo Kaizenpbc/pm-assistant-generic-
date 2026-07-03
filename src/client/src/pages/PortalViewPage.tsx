@@ -53,7 +53,7 @@ const statusStyles: Record<string, { label: string; bg: string; text: string }> 
   planning: { label: 'Planning', bg: 'bg-purple-100', text: 'text-purple-700' },
   on_hold: { label: 'On Hold', bg: 'bg-yellow-100', text: 'text-yellow-700' },
   completed: { label: 'Completed', bg: 'bg-blue-100', text: 'text-blue-700' },
-  cancelled: { label: 'Cancelled', bg: 'bg-gray-100', text: 'text-gray-600' },
+  cancelled: { label: 'Cancelled', bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-300' },
 };
 
 function daysRemaining(endDate: string): number {
@@ -113,10 +113,10 @@ export default function PortalViewPage() {
   // -- Loading state --
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-primary-600 animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Loading portal...</p>
+          <Loader2 className="w-8 h-8 text-primary-600 dark:text-primary-400 animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Loading portal...</p>
         </div>
       </div>
     );
@@ -125,13 +125,13 @@ export default function PortalViewPage() {
   // -- Error / invalid token state --
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md px-6">
           <ShieldAlert className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-900 mb-2">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
             Portal Unavailable
           </h1>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             This portal link is invalid, expired, or has been deactivated. Please
             contact your project manager for an updated link.
           </p>
@@ -149,7 +149,7 @@ export default function PortalViewPage() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-gradient-to-r from-primary-600 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto px-6 py-8">
@@ -165,9 +165,9 @@ export default function PortalViewPage() {
 
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         {/* Project Status Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Project Status
             </h2>
             <span
@@ -177,12 +177,12 @@ export default function PortalViewPage() {
             </span>
           </div>
           {project.description && (
-            <p className="text-sm text-gray-600 mb-4">{project.description}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{project.description}</p>
           )}
           {/* Progress bar */}
-          <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
+          <div className="mb-1 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>Progress</span>
-            <span className="font-medium text-gray-900">
+            <span className="font-medium text-gray-900 dark:text-white">
               {project.progressPercentage}%
             </span>
           </div>
@@ -197,10 +197,10 @@ export default function PortalViewPage() {
         {/* Task Statistics */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard
-            icon={<BarChart3 className="w-5 h-5 text-primary-600" />}
+            icon={<BarChart3 className="w-5 h-5 text-primary-600 dark:text-primary-400" />}
             label="Total Tasks"
             value={taskStats.total}
-            bg="bg-primary-50"
+            bg="bg-primary-50 dark:bg-primary-900/30"
           />
           <StatCard
             icon={<Clock className="w-5 h-5 text-yellow-600" />}
@@ -223,30 +223,30 @@ export default function PortalViewPage() {
         </div>
 
         {/* Timeline Info */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-primary-600" />
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             Timeline
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 Start Date
               </p>
-              <p className="text-sm font-medium text-gray-900 mt-0.5">
+              <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
                 {formatDate(project.startDate)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 End Date
               </p>
-              <p className="text-sm font-medium text-gray-900 mt-0.5">
+              <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
                 {formatDate(project.endDate)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 Days Remaining
               </p>
               <p
@@ -255,7 +255,7 @@ export default function PortalViewPage() {
                     ? 'text-red-600'
                     : remaining < 14
                     ? 'text-yellow-600'
-                    : 'text-gray-900'
+                    : 'text-gray-900 dark:text-white'
                 }`}
               >
                 {remaining < 0
@@ -268,30 +268,30 @@ export default function PortalViewPage() {
 
         {/* Budget Summary (conditional) */}
         {permissions.canViewBudget && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-primary-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               Budget Summary
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   Allocated
                 </p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
                   {formatCurrency(project.budgetAllocated)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   Spent
                 </p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
                   {formatCurrency(project.budgetSpent)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   Remaining
                 </p>
                 <p
@@ -303,11 +303,11 @@ export default function PortalViewPage() {
                 </p>
               </div>
             </div>
-            <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
+            <div className="mb-1 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
               <span>Budget Used</span>
               <span
                 className={`font-medium ${
-                  budgetPct > 90 ? 'text-red-600' : 'text-gray-900'
+                  budgetPct > 90 ? 'text-red-600' : 'text-gray-900 dark:text-white'
                 }`}
               >
                 {budgetPct}%
@@ -330,15 +330,15 @@ export default function PortalViewPage() {
 
         {/* Gantt placeholder (conditional) */}
         {permissions.canViewGantt && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <GanttChartSquare className="w-5 h-5 text-primary-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <GanttChartSquare className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               Gantt Chart
             </h2>
-            <div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+            <div className="flex items-center justify-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
               <div className="text-center">
                 <GanttChartSquare className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Timeline view - Interactive Gantt chart coming soon
                 </p>
               </div>
@@ -348,15 +348,15 @@ export default function PortalViewPage() {
 
         {/* Reports placeholder (conditional) */}
         {permissions.canViewReports && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               Reports
             </h2>
-            <div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+            <div className="flex items-center justify-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
               <div className="text-center">
                 <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Project reports and analytics will appear here
                 </p>
               </div>
@@ -366,15 +366,15 @@ export default function PortalViewPage() {
 
         {/* Comments Section (conditional) */}
         {permissions.canComment && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-primary-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               Comments
             </h2>
 
             {/* Comment List */}
             {comments.length === 0 ? (
-              <p className="text-sm text-gray-500 mb-6 py-4 text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 py-4 text-center">
                 No comments yet. Be the first to leave a comment.
               </p>
             ) : (
@@ -385,14 +385,14 @@ export default function PortalViewPage() {
                     className="border-b border-gray-100 pb-3 last:border-b-0"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {comment.authorName}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
                         {new Date(comment.created_at).toLocaleString()}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700">{comment.content}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-200">{comment.content}</p>
                   </div>
                 ))}
               </div>
@@ -401,7 +401,7 @@ export default function PortalViewPage() {
             {/* Add Comment Form */}
             <form onSubmit={handleSubmitComment} className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Your Name
                 </label>
                 <input
@@ -409,12 +409,12 @@ export default function PortalViewPage() {
                   value={authorName}
                   onChange={(e) => setAuthorName(e.target.value)}
                   placeholder="Enter your name"
-                  className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Comment
                 </label>
                 <textarea
@@ -422,7 +422,7 @@ export default function PortalViewPage() {
                   onChange={(e) => setCommentContent(e.target.value)}
                   placeholder="Write your comment..."
                   rows={3}
-                  className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                  className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
                   required
                 />
               </div>
@@ -449,9 +449,9 @@ export default function PortalViewPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white mt-8">
+      <footer className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 mt-8">
         <div className="max-w-4xl mx-auto px-6 py-4 text-center">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             Powered by Kovarti PM Assistant
           </p>
         </div>
@@ -472,10 +472,10 @@ function StatCard({
   bg: string;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-4">
       <div className={`inline-flex p-2 rounded-lg ${bg} mb-2`}>{icon}</div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
     </div>
   );
 }

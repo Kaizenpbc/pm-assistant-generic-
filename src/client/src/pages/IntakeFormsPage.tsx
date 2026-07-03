@@ -129,10 +129,10 @@ export const IntakeFormsPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <ClipboardList className="w-5 h-5" /> Project Intake Forms
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Create intake forms, collect submissions, and convert approved requests into projects
           </p>
         </div>
@@ -147,14 +147,14 @@ export const IntakeFormsPage: React.FC = () => {
       </div>
 
       {/* Tab navigation */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <div className="flex gap-6">
           <button
             onClick={() => setTab('forms')}
             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
               tab === 'forms'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200'
             }`}
           >
             <span className="flex items-center gap-1.5">
@@ -166,7 +166,7 @@ export const IntakeFormsPage: React.FC = () => {
             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
               tab === 'submissions'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200'
             }`}
           >
             <span className="flex items-center gap-1.5">
@@ -180,11 +180,11 @@ export const IntakeFormsPage: React.FC = () => {
       {tab === 'forms' && (
         <div>
           {formsLoading ? (
-            <div className="text-center py-12 text-gray-400">Loading forms...</div>
+            <div className="text-center py-12 text-gray-400 dark:text-gray-500">Loading forms...</div>
           ) : forms.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
               <FileText className="w-10 h-10 mx-auto text-gray-300 mb-3" />
-              <p className="text-gray-500 text-sm">No intake forms yet.</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">No intake forms yet.</p>
               <button
                 onClick={() => openDesigner()}
                 className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -197,24 +197,24 @@ export const IntakeFormsPage: React.FC = () => {
               {forms.map((form: any) => (
                 <div
                   key={form.id}
-                  className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow"
+                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900 text-sm">{form.name}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{form.name}</h3>
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         form.is_active
                           ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-500'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                       }`}
                     >
                       {form.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
                   {form.description && (
-                    <p className="text-xs text-gray-500 mb-3 line-clamp-2">{form.description}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{form.description}</p>
                   )}
-                  <p className="text-xs text-gray-400 mb-4">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
                     {form.fields?.length || 0} field{(form.fields?.length || 0) !== 1 ? 's' : ''}
                   </p>
                   <div className="flex items-center gap-2">
@@ -226,7 +226,7 @@ export const IntakeFormsPage: React.FC = () => {
                     </button>
                     <button
                       onClick={() => openDesigner(form.id)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
                     >
                       Edit
                     </button>
@@ -249,7 +249,7 @@ export const IntakeFormsPage: React.FC = () => {
         <div className="space-y-4">
           {/* Status filter */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 font-medium">Filter:</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Filter:</span>
             {['all', 'submitted', 'under_review', 'approved', 'rejected', 'converted'].map(
               (status) => (
                 <button
@@ -258,7 +258,7 @@ export const IntakeFormsPage: React.FC = () => {
                   className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                     statusFilter === status
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
                   }`}
                 >
                   {status === 'all' ? 'All' : statusLabels[status] || status}
@@ -269,57 +269,57 @@ export const IntakeFormsPage: React.FC = () => {
 
           {/* Submissions table */}
           {submissionsLoading ? (
-            <div className="text-center py-12 text-gray-400">Loading submissions...</div>
+            <div className="text-center py-12 text-gray-400 dark:text-gray-500">Loading submissions...</div>
           ) : submissions.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
               <ClipboardList className="w-10 h-10 mx-auto text-gray-300 mb-3" />
-              <p className="text-gray-500 text-sm">No submissions found.</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">No submissions found.</p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Form Name
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Submitted By
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {submissions.map((sub: any) => (
                     <tr
                       key={sub.id}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                       onClick={() => openReview(sub.id)}
                     >
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
                         {sub.form_name || sub.formName || 'Unknown Form'}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
                         {sub.submitted_by_name || sub.submittedByName || 'Unknown'}
                       </td>
                       <td className="px-4 py-3">
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            statusBadgeStyles[sub.status] || 'bg-gray-100 text-gray-600'
+                            statusBadgeStyles[sub.status] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
                           }`}
                         >
                           {statusLabels[sub.status] || sub.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
                         {sub.created_at
                           ? new Date(sub.created_at).toLocaleDateString()
                           : ''}
