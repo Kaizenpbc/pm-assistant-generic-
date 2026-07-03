@@ -2040,12 +2040,12 @@ export function GanttChart({
             <button
               onClick={() => setShowOverallocation(v => !v)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors print:hidden ${showOverallocation ? 'text-amber-700 bg-amber-50 border-amber-300 hover:bg-amber-100' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-              title="Highlight tasks with resource overallocation"
+              title="Highlight resource scheduling conflicts"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
-              Overalloc
+              Conflicts
               {showOverallocation && overallocatedTaskIds.size > 0 && (
                 <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-bold bg-amber-200 text-amber-800 rounded-full">{overallocatedTaskIds.size}</span>
               )}
@@ -2054,12 +2054,12 @@ export function GanttChart({
             <button
               onClick={() => setShowMinimap(v => !v)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors print:hidden ${showMinimap ? 'text-primary-700 bg-primary-50 border-primary-300 hover:bg-primary-100' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-              title="Toggle minimap"
+              title="Toggle timeline overview"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
-              Map
+              Overview
             </button>
             {/* Saved views */}
             {scheduleId && (
@@ -3382,7 +3382,7 @@ export function GanttChart({
         {showOverallocation && overallocatedTaskIds.size > 0 && (
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-2.5 rounded-sm border-2 border-amber-500 bg-amber-50" />
-            <span className="text-xs text-gray-500">Overallocated</span>
+            <span className="text-xs text-gray-500">Resource Conflict</span>
           </div>
         )}
       </div>
