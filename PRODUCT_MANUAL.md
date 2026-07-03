@@ -914,7 +914,37 @@ A **Print / Export PDF** button in the schedule toolbar calls `window.print()` w
 
 ---
 
-## 32. Goals / OKR Tracking
+## 32. Gantt Quick Search, Filter Panel & Saved Views
+
+### Quick Search (Ctrl+F)
+
+A **search bar** in the Gantt toolbar provides instant type-ahead filtering on task names. Press **Ctrl+F** to focus the search input. Typing filters the task list to show only tasks whose name contains the search term (case-insensitive substring match). Parent rows remain visible when any of their children match, preserving hierarchy context. A counter displays **"X / total tasks"** to indicate how many tasks match the current filter. Press **Escape** to clear the search and restore the full task list.
+
+### Filter Panel
+
+Click the **Filter** button (funnel icon) in the Gantt toolbar to open a collapsible filter panel. Available filters:
+
+- **Status** — Multi-select checkboxes (Pending, In Progress, Completed, Cancelled).
+- **Priority** — Multi-select checkboxes (Low, Medium, High, Critical).
+- **Assignee** — Free-text search to filter by assignee name.
+- **Date Range** — "Start After" and "Start Before" date pickers to narrow tasks by their start date.
+- **Progress Range** — Min and Max percentage sliders/inputs to filter by completion percentage.
+
+All active filters are combined with **AND** logic — a task must satisfy every filter to appear. Parent rows remain visible when any descendant matches, maintaining the hierarchy. An **active filter count badge** appears on the Filter button showing how many filters are currently applied. A **"Clear All"** button inside the panel resets every filter at once.
+
+### Saved Views
+
+The existing **SavedViewsDropdown** component is wired into the Gantt toolbar. It allows users to save and load named view configurations that capture:
+
+- **Visible columns** — which left-panel columns are shown or hidden.
+- **Sort field and direction** — the active column sort (ascending, descending, or none).
+- **Zoom level** — the selected timescale (Day, Week, Month, Quarter, Year).
+
+Saved views are stored in **localStorage** with a `gantt:` prefix to keep them separate from Table view configurations. Select a saved view from the dropdown to instantly restore its settings; create new views or delete existing ones from the same dropdown.
+
+---
+
+## 33. Goals / OKR Tracking
 
 The Goals module provides Objectives and Key Results (OKR) tracking alongside traditional project scheduling.
 

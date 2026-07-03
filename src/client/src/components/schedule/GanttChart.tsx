@@ -1,5 +1,7 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import type { ColumnState } from '../../hooks/useColumnState';
+import { SavedViewsDropdown } from './SavedViewsDropdown';
+import type { SavedView } from './SavedViewsDropdown';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -573,6 +575,43 @@ export function GanttChart({
   const someSelected = selectedIds.size > 0;
 
   // -----------------------------------------------------------------------
+  // Quick search state
+  // -----------------------------------------------------------------------
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // -----------------------------------------------------------------------
+  // Filter panel state
+  // -----------------------------------------------------------------------
+  interface GanttFilters {
+    statuses: Set<string>;
+    priorities: Set<string>;
+    assignee: string;
+    startAfter: string;
+    startBefore: string;
+    progressMin: number | null;
+    progressMax: number | null;
+  }
+  const [filters, setFilters] = useState<GanttFilters>({ statuses: new Set(), priorities: new Set(), assignee: '', startAfter: '', startBefore: '', progressMin: null, progressMax: null });
+  const [showFilters, setShowFilters] = useState(false);
+
+  const activeFilterCount = useMemo(() => {
+    let c = 0;
+    if (filters.statuses.size > 0) c++;
+    if (filters.priorities.size > 0) c++;
+    if (filters.assignee) c++;
+    if (filters.startAfter) c++;
+    if (filters.startBefore) c++;
+    if (filters.progressMin != null) c++;
+    if (filters.progressMax != null) c++;
+    return c;
+  }, [filters]);
+
+  const clearFilters = useCallback(() => {
+    setFilters({ statuses: new Set(), priorities: new Set(), assignee: '', startAfter: '', startBefore: '', progressMin: null, progressMax: null });
+  }, []);
+
+  // -----------------------------------------------------------------------
   // Column header sort state
   // -----------------------------------------------------------------------
   const [sortField, setSortField] = useState<string | null>(null);
@@ -598,8 +637,67 @@ export function GanttChart({
 
   const baseRows = useMemo(() => buildFlatRows(tasks, collapsedIds), [tasks, collapsedIds]);
 
+  // Build a set of task IDs that have descendants matching (for keeping parents visible)
+  const taskChildrenMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const t of tasks) {
+      if (t.parentTaskId) {
+        const list = map.get(t.parentTaskId) || [];
+        list.push(t.id);
+        map.set(t.parentTaskId, list);
+      }
+    }
+    return map;
+  }, [tasks]);
+
+  /** Check if a task or any of its descendants matches a predicate */
+  const taskOrDescendantMatches = useCallback((taskId: string, predicate: (t: GanttTask) => boolean): boolean => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return false;
+    if (predicate(task)) return true;
+    const children = taskChildrenMap.get(taskId);
+    if (!children) return false;
+    return children.some(childId => taskOrDescendantMatches(childId, predicate));
+  }, [tasks, taskChildrenMap]);
+
+  // Step 1: Search filter
+  const searchedRows = useMemo(() => {
+    if (!searchQuery.trim()) return baseRows;
+    const q = searchQuery.trim().toLowerCase();
+    const matchingIds = new Set<string>();
+    for (const { task } of baseRows) {
+      if (taskOrDescendantMatches(task.id, t => (t.name || '').toLowerCase().includes(q))) {
+        matchingIds.add(task.id);
+      }
+    }
+    return baseRows.filter(r => matchingIds.has(r.task.id));
+  }, [baseRows, searchQuery, taskOrDescendantMatches]);
+
+  // Step 2: Multi-field filters
+  const filteredRows = useMemo(() => {
+    if (activeFilterCount === 0) return searchedRows;
+    const matchesFilters = (t: GanttTask): boolean => {
+      if (filters.statuses.size > 0 && !filters.statuses.has(t.status)) return false;
+      if (filters.priorities.size > 0 && !filters.priorities.has(t.priority || 'medium')) return false;
+      if (filters.assignee && !(t.assignedTo || '').toLowerCase().includes(filters.assignee.toLowerCase())) return false;
+      if (filters.startAfter && (!t.startDate || t.startDate < filters.startAfter)) return false;
+      if (filters.startBefore && (!t.startDate || t.startDate > filters.startBefore)) return false;
+      if (filters.progressMin != null && (t.progressPercentage ?? 0) < filters.progressMin) return false;
+      if (filters.progressMax != null && (t.progressPercentage ?? 0) > filters.progressMax) return false;
+      return true;
+    };
+    const matchingIds = new Set<string>();
+    for (const { task } of searchedRows) {
+      if (taskOrDescendantMatches(task.id, matchesFilters)) {
+        matchingIds.add(task.id);
+      }
+    }
+    return searchedRows.filter(r => matchingIds.has(r.task.id));
+  }, [searchedRows, filters, activeFilterCount, taskOrDescendantMatches]);
+
+  // Step 3: Sort
   const rows = useMemo(() => {
-    if (!sortField || !sortDirection) return baseRows;
+    if (!sortField || !sortDirection) return filteredRows;
     // Sort within sibling groups to preserve hierarchy
     const priorityOrder: Record<string, number> = { low: 0, medium: 1, high: 2, urgent: 3 };
     const statusOrder: Record<string, number> = { pending: 0, in_progress: 1, completed: 2, cancelled: 3 };
@@ -625,19 +723,19 @@ export function GanttChart({
     // Group rows by parentTaskId, sort within each group, reassemble
     const result: FlatRow[] = [];
     let i = 0;
-    while (i < baseRows.length) {
-      const row = baseRows[i];
+    while (i < filteredRows.length) {
+      const row = filteredRows[i];
       // Collect contiguous sibling group at same level with same parent
       const parentId = row.task.parentTaskId || null;
       const level = row.level;
       const group: { row: FlatRow; children: FlatRow[] }[] = [];
-      while (i < baseRows.length && baseRows[i].level === level && (baseRows[i].task.parentTaskId || null) === parentId) {
-        const parentRow = baseRows[i];
+      while (i < filteredRows.length && filteredRows[i].level === level && (filteredRows[i].task.parentTaskId || null) === parentId) {
+        const parentRow = filteredRows[i];
         const children: FlatRow[] = [];
         i++;
         // Collect all nested children (higher level) until we hit same or lower level
-        while (i < baseRows.length && baseRows[i].level > level) {
-          children.push(baseRows[i]);
+        while (i < filteredRows.length && filteredRows[i].level > level) {
+          children.push(filteredRows[i]);
           i++;
         }
         group.push({ row: parentRow, children });
@@ -658,7 +756,7 @@ export function GanttChart({
       }
     }
     return result;
-  }, [baseRows, sortField, sortDirection]);
+  }, [filteredRows, sortField, sortDirection]);
 
   const allSelected = rows.length > 0 && rows.every(r => selectedIds.has(r.task.id));
 
@@ -1415,7 +1513,42 @@ export function GanttChart({
     setRowDrag(null);
   }, []);
 
-  if (rows.length === 0) {
+  // Ctrl+F focuses the search bar
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // Saved views: load handler
+  const handleLoadView = useCallback((view: SavedView) => {
+    if (view.columns) {
+      setGanttVisibleCols(new Set(view.columns as unknown as string[]));
+    }
+    if (view.sortField) {
+      const colKeyToSortField: Record<string, string> = {
+        name: 'name', pred: 'dependency', start: 'startDate', end: 'endDate',
+        dur: 'duration', est: 'estimatedDays', pct: 'progressPercentage',
+        priority: 'priority', assigned: 'assignedTo', status: 'status',
+      };
+      // View stores column keys, map to sort field
+      const mapped = colKeyToSortField[view.sortField as string] || view.sortField;
+      setSortField(mapped as string);
+    }
+    if (view.sortDir) {
+      setSortDirection(view.sortDir);
+    }
+    if (view.zoom && ZOOM_LEVELS.includes(view.zoom as ZoomLevel)) {
+      setZoom(view.zoom as ZoomLevel);
+    }
+  }, []);
+
+  if (rows.length === 0 && baseRows.length === 0) {
     return (
       <div className="text-center py-8 text-sm text-gray-400">
         No tasks to display.
@@ -1434,7 +1567,7 @@ export function GanttChart({
               {scheduleName}
             </span>
             <span className="text-xs text-gray-400 ml-2">
-              {rows.length} tasks
+              {rows.length !== baseRows.length ? `${rows.length} / ${baseRows.length}` : rows.length} tasks
             </span>
             {parentTaskIds.size > 0 && (
               <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-500 ml-2">
@@ -1504,6 +1637,45 @@ export function GanttChart({
             </div>
           )}
           <div className="flex items-center gap-2">
+            {/* Quick search */}
+            <div className="relative">
+              <svg className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search tasks... (Ctrl+F)"
+                className="text-xs pl-7 pr-6 py-1.5 w-44 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Escape') { setSearchQuery(''); searchInputRef.current?.blur(); } }}
+              />
+              {searchQuery && (
+                <button
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            {/* Filter toggle */}
+            <button
+              onClick={() => setShowFilters(prev => !prev)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors border ${showFilters || activeFilterCount > 0 ? 'bg-primary-50 text-primary-700 border-primary-300' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              title="Filter tasks"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+              </svg>
+              Filter
+              {activeFilterCount > 0 && (
+                <span className="ml-0.5 px-1.5 py-0 text-[10px] font-bold bg-primary-600 text-white rounded-full">{activeFilterCount}</span>
+              )}
+            </button>
             {onAddTask && (
               <button
                 onClick={onAddTask}
@@ -1594,7 +1766,130 @@ export function GanttChart({
               </svg>
               PDF
             </button>
+            {/* Saved views */}
+            {scheduleId && (
+              <SavedViewsDropdown
+                scheduleId={`gantt:${scheduleId}`}
+                currentColumns={ganttVisibleCols as unknown as Set<import('./tableColumns').ColumnKey>}
+                currentSortField={(sortField || 'name') as import('./tableColumns').ColumnKey}
+                currentSortDir={(sortDirection || 'asc') as 'asc' | 'desc'}
+                onLoadView={handleLoadView}
+              />
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Filter panel */}
+      {showFilters && (
+        <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex items-center gap-3 flex-wrap">
+          {/* Status multi-select */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase">Status</span>
+            {['pending', 'in_progress', 'completed', 'cancelled'].map(s => (
+              <label key={s} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.statuses.has(s)}
+                  onChange={() => setFilters(prev => {
+                    const next = new Set(prev.statuses);
+                    if (next.has(s)) next.delete(s); else next.add(s);
+                    return { ...prev, statuses: next };
+                  })}
+                  className="w-3 h-3 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                {statusLabels[s] || s}
+              </label>
+            ))}
+          </div>
+          <div className="h-4 w-px bg-gray-300 dark:bg-gray-500" />
+          {/* Priority multi-select */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase">Priority</span>
+            {['low', 'medium', 'high', 'urgent'].map(p => (
+              <label key={p} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.priorities.has(p)}
+                  onChange={() => setFilters(prev => {
+                    const next = new Set(prev.priorities);
+                    if (next.has(p)) next.delete(p); else next.add(p);
+                    return { ...prev, priorities: next };
+                  })}
+                  className="w-3 h-3 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className={`w-1.5 h-1.5 rounded-full ${priorityDot[p] || 'bg-gray-300'}`} />
+                {p.charAt(0).toUpperCase() + p.slice(1)}
+              </label>
+            ))}
+          </div>
+          <div className="h-4 w-px bg-gray-300 dark:bg-gray-500" />
+          {/* Assignee text */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase">Assignee</span>
+            <input
+              type="text"
+              placeholder="Name..."
+              className="text-xs px-2 py-1 w-24 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              value={filters.assignee}
+              onChange={e => setFilters(prev => ({ ...prev, assignee: e.target.value }))}
+            />
+          </div>
+          <div className="h-4 w-px bg-gray-300 dark:bg-gray-500" />
+          {/* Date range */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase">Start</span>
+            <input
+              type="date"
+              className="text-xs px-1.5 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              value={filters.startAfter}
+              onChange={e => setFilters(prev => ({ ...prev, startAfter: e.target.value }))}
+              title="Start after"
+            />
+            <span className="text-xs text-gray-400">to</span>
+            <input
+              type="date"
+              className="text-xs px-1.5 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              value={filters.startBefore}
+              onChange={e => setFilters(prev => ({ ...prev, startBefore: e.target.value }))}
+              title="Start before"
+            />
+          </div>
+          <div className="h-4 w-px bg-gray-300 dark:bg-gray-500" />
+          {/* Progress range */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase">Progress</span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              placeholder="Min%"
+              className="text-xs px-1.5 py-1 w-14 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              value={filters.progressMin ?? ''}
+              onChange={e => setFilters(prev => ({ ...prev, progressMin: e.target.value ? Number(e.target.value) : null }))}
+            />
+            <span className="text-xs text-gray-400">–</span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              placeholder="Max%"
+              className="text-xs px-1.5 py-1 w-14 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              value={filters.progressMax ?? ''}
+              onChange={e => setFilters(prev => ({ ...prev, progressMax: e.target.value ? Number(e.target.value) : null }))}
+            />
+          </div>
+          {activeFilterCount > 0 && (
+            <>
+              <div className="h-4 w-px bg-gray-300 dark:bg-gray-500" />
+              <button
+                className="text-xs px-2 py-1 rounded bg-white dark:bg-gray-800 text-gray-500 hover:text-gray-700 border border-gray-300 dark:border-gray-600"
+                onClick={clearFilters}
+              >
+                Clear all
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -1673,6 +1968,14 @@ export function GanttChart({
               {bulkMessage}
             </span>
           )}
+        </div>
+      )}
+
+      {/* No matching tasks message */}
+      {rows.length === 0 && baseRows.length > 0 && (
+        <div className="text-center py-6 text-sm text-gray-400">
+          No tasks match the current {searchQuery ? 'search' : 'filters'}.
+          <button className="ml-2 text-primary-600 hover:text-primary-700 underline" onClick={() => { setSearchQuery(''); clearFilters(); }}>Clear all</button>
         </div>
       )}
 
