@@ -1,7 +1,18 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { userService } from '../../services/UserService';
+
+const notificationPrefsSchema = z.object({
+  emailNotificationsEnabled: z.boolean().optional(),
+  digestFrequency: z.enum(['none', 'daily', 'weekly']).optional(),
+});
+
+const userPrefsSchema = z.object({
+  timezone: z.string().max(100).optional(),
+  locale: z.string().max(10).optional(),
+});
 
 export async function userRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -39,18 +50,14 @@ export async function userRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
-      const body = request.body as any || {};
-      const { emailNotificationsEnabled, digestFrequency } = body;
+      const parsed = notificationPrefsSchema.parse(request.body);
 
       const updateData: Record<string, any> = {};
-      if (emailNotificationsEnabled !== undefined) {
-        updateData.emailNotificationsEnabled = emailNotificationsEnabled;
+      if (parsed.emailNotificationsEnabled !== undefined) {
+        updateData.emailNotificationsEnabled = parsed.emailNotificationsEnabled;
       }
-      if (digestFrequency !== undefined) {
-        if (!['none', 'daily', 'weekly'].includes(digestFrequency)) {
-          return reply.status(400).send({ error: 'Invalid digestFrequency. Must be none, daily, or weekly.' });
-        }
-        updateData.digestFrequency = digestFrequency;
+      if (parsed.digestFrequency !== undefined) {
+        updateData.digestFrequency = parsed.digestFrequency;
       }
 
       const updated = await userService.update(userId, updateData);
@@ -70,14 +77,14 @@ export async function userRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
-      const body = request.body as any || {};
+      const parsed = userPrefsSchema.parse(request.body);
       const updateData: Record<string, any> = {};
 
-      if (body.timezone !== undefined) {
-        updateData.timezone = String(body.timezone);
+      if (parsed.timezone !== undefined) {
+        updateData.timezone = parsed.timezone;
       }
-      if (body.locale !== undefined) {
-        updateData.locale = String(body.locale);
+      if (parsed.locale !== undefined) {
+        updateData.locale = parsed.locale;
       }
 
       const updated = await userService.update(userId, updateData);

@@ -1,7 +1,32 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { intakeFormService } from '../../services/IntakeFormService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const intakeFieldSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  type: z.string().min(1),
+  required: z.boolean().default(false),
+  options: z.array(z.string()).optional(),
+});
+
+const createFormSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  fields: z.array(intakeFieldSchema).min(1),
+  projectDefaults: z.record(z.string(), z.unknown()).optional(),
+});
+
+const updateFormSchema = createFormSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
+
+const reviewSubmissionSchema = z.object({
+  status: z.string().min(1),
+  notes: z.string().max(5000).optional(),
+});
 
 export async function intakeFormRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -10,7 +35,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
   fastify.post('/forms', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
-      const body = request.body as any;
+      const body = createFormSchema.parse(request.body);
       const form = await intakeFormService.createForm(body, user.userId);
       return { form };
     } catch (error) {
@@ -46,7 +71,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
   fastify.put('/forms/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const body = request.body as any;
+      const body = updateFormSchema.parse(request.body);
       const form = await intakeFormService.updateForm(id, body);
       return { form };
     } catch (error) {
@@ -110,7 +135,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
     try {
       const user = request.user!;
       const { id } = request.params as { id: string };
-      const { status, notes } = request.body as { status: string; notes?: string };
+      const { status, notes } = reviewSubmissionSchema.parse(request.body);
       const result = await intakeFormService.reviewSubmission(id, status, notes || '', user.userId);
       return { result };
     } catch (error) {

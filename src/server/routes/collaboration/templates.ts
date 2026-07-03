@@ -4,6 +4,8 @@ import { templateService } from '../../services/TemplateService';
 import { createFromTemplateSchema, saveAsTemplateSchema } from '../../schemas/templateSchemas';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { paginate } from '../../dto/responses';
+import { parsePagination } from '../../schemas/paginationSchema';
 
 const createTemplateSchema = z.object({
   name: z.string().min(1),
@@ -34,10 +36,10 @@ export async function templateRoutes(fastify: FastifyInstance) {
   // GET / — List all templates (with optional filters)
   fastify.get('/', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { projectType, category } = request.query as { projectType?: string; category?: string };
-      const templates = await templateService.findAll(projectType, category);
-      // Return without full task arrays for listing
-      const summaries = templates.map(t => ({
+      const query = request.query as Record<string, any>;
+      const { limit, offset } = parsePagination(query);
+      const { rows, total } = await templateService.findAllPaginated(limit, offset, query.projectType, query.category);
+      const summaries = rows.map(t => ({
         id: t.id,
         name: t.name,
         description: t.description,
@@ -50,7 +52,8 @@ export async function templateRoutes(fastify: FastifyInstance) {
         tags: t.tags,
         usageCount: t.usageCount,
       }));
-      return { templates: summaries };
+      const page = Math.floor(offset / limit) + 1;
+      return paginate(summaries, total, page, limit);
     } catch (error) {
       console.error('List templates error:', error);
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch templates' });

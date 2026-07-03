@@ -56,7 +56,7 @@ export class ClaudeTaskBreakdownService {
         temperature: 0.3,
       });
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'task-breakdown',
         model: 'claude',
@@ -84,7 +84,7 @@ export class ClaudeTaskBreakdownService {
         'Claude task breakdown failed, falling back to template',
       );
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'task-breakdown',
         model: 'claude',

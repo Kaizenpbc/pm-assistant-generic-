@@ -496,10 +496,10 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Group | Prefix | Purpose |
 |-------|--------|---------|
 | Auth | `/api/v1/auth` | Login, register, refresh, logout, password reset |
-| Projects | `/api/v1/projects` | Project CRUD and membership |
+| Projects | `/api/v1/projects` | Project CRUD and membership (paginated: `?limit=&offset=`) |
 | Users | `/api/v1/users` | User management |
-| Schedules | `/api/v1/schedules` | Schedule and task management |
-| Sprints | `/api/v1/sprints` | Sprint lifecycle |
+| Schedules | `/api/v1/schedules` | Schedule and task management (tasks paginated: `?limit=&offset=`) |
+| Sprints | `/api/v1/sprints` | Sprint lifecycle (paginated: `?limit=&offset=`) |
 | Resources | `/api/v1/resources` | Resource pool (paginated: `?limit=&offset=`) |
 | Time Entries | `/api/v1/time-entries` | Time tracking |
 | Custom Fields | `/api/v1/custom-fields` | Custom field definitions and values |
@@ -507,13 +507,14 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Notifications | `/api/v1/notifications` | In-app notification center |
 | Portal | `/api/v1/portal` | Stakeholder portal |
 | Intake | `/api/v1/intake` | Intake form builder and submissions |
-| Templates | `/api/v1/templates` | Project templates |
+| Templates | `/api/v1/templates` | Project templates (paginated: `?limit=&offset=`) |
 | Integrations | `/api/v1/integrations` | Third-party integrations |
 | Webhooks | `/api/v1/webhooks` | Outbound webhook management |
 | Workflows | `/api/v1/workflows` | DAG workflow engine |
 | Approvals | `/api/v1/approvals` | Change request approval chains |
 | Report Builder | `/api/v1/report-builder` | Custom report templates |
 | AI Reports | `/api/v1/ai-reports` | AI-generated narrative reports |
+| AI Budget | `/api/v1/ai/budget` | Per-user AI token budget and usage |
 | Stripe | `/api/v1/stripe` | Billing and subscriptions |
 | API Keys | `/api/v1/api-keys` | API key management |
 | Audit | `/api/v1/audit` | Immutable audit ledger |

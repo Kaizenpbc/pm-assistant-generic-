@@ -91,6 +91,17 @@ export class ProjectService {
     return rows.map(rowToProject);
   }
 
+  async findByUserIdPaginated(userId: string, limit: number, offset: number): Promise<{ rows: Project[]; total: number }> {
+    const [countResult, rows] = await Promise.all([
+      databaseService.query('SELECT COUNT(*) AS cnt FROM projects WHERE created_by = ?', [userId]),
+      databaseService.query(
+        'SELECT * FROM projects WHERE created_by = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+        [userId, limit, offset],
+      ),
+    ]);
+    return { rows: rows.map(rowToProject), total: Number(countResult[0].cnt) };
+  }
+
   async findAll(): Promise<Project[]> {
     const rows = await databaseService.query('SELECT * FROM projects ORDER BY created_at DESC LIMIT 1000');
     return rows.map(rowToProject);

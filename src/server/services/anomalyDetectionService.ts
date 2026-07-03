@@ -125,7 +125,7 @@ export class AnomalyDetectionService {
         temperature: 0.3,
       });
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'anomaly_detection',
         model: 'claude',

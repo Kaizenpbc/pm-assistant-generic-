@@ -232,7 +232,7 @@ export class WhatIfScenarioService {
         temperature: 0.4,
       });
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'what_if_scenario',
         model: 'claude',

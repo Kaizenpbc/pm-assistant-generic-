@@ -395,6 +395,19 @@ export class ScheduleService {
     return tasks;
   }
 
+  async findTasksByScheduleIdPaginated(scheduleId: string, limit: number, offset: number): Promise<{ rows: Task[]; total: number }> {
+    const [countResult, rows] = await Promise.all([
+      databaseService.query('SELECT COUNT(*) AS cnt FROM tasks WHERE schedule_id = ?', [scheduleId]),
+      databaseService.query(
+        'SELECT * FROM tasks WHERE schedule_id = ? ORDER BY sort_order, created_at LIMIT ? OFFSET ?',
+        [scheduleId, limit, offset],
+      ),
+    ]);
+    const tasks = rows.map(rowToTask);
+    await this.attachDependencies(tasks);
+    return { rows: tasks, total: Number(countResult[0].cnt) };
+  }
+
   async findTaskById(id: string): Promise<Task | null> {
     const rows = await databaseService.query('SELECT * FROM tasks WHERE id = ?', [id]);
     if (rows.length === 0) return null;

@@ -305,7 +305,7 @@ export class AILearningServiceV2 {
         temperature: 0.3,
       });
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'accuracy_insights',
         model: 'claude',

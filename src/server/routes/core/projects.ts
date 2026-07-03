@@ -4,7 +4,8 @@ import { projectService } from '../../services/ProjectService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { webhookService } from '../../services/WebhookService';
-import { toProjectDTO } from '../../dto/responses';
+import { toProjectDTO, paginate } from '../../dto/responses';
+import { parsePagination } from '../../schemas/paginationSchema';
 
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -37,8 +38,10 @@ export async function projectRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
-      const projects = await projectService.findByUserId(userId);
-      return { projects: projects.map(toProjectDTO) };
+      const { limit, offset } = parsePagination(request.query as Record<string, unknown>);
+      const { rows, total } = await projectService.findByUserIdPaginated(userId, limit, offset);
+      const page = Math.floor(offset / limit) + 1;
+      return paginate(rows.map(toProjectDTO), total, page, limit);
     } catch (error) {
       console.error('Get projects error:', error);
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch projects' });

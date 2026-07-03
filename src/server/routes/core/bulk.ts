@@ -1,44 +1,56 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../../database/connection';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface BulkTaskInput {
-  name: string;
-  startDate?: string;
-  endDate?: string;
-  duration?: number;
-  progress?: number;
-  status?: string;
-  priority?: string;
-  assignedTo?: string;
-  dependencies?: string;
-  notes?: string;
-  wbs?: string;
-}
-
-interface BulkUpdateInput {
-  id: string;
-  scheduleId: string;
-  name?: string;
-  startDate?: string;
-  endDate?: string;
-  duration?: number;
-  progress?: number;
-  status?: string;
-  priority?: string;
-  assignedTo?: string;
-  dependencies?: string;
-  notes?: string;
-  wbs?: string;
-}
-
 const MAX_BULK = 100;
+
+const bulkTaskSchema = z.object({
+  name: z.string().min(1),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  duration: z.number().optional(),
+  progress: z.number().min(0).max(100).optional(),
+  status: z.string().optional(),
+  priority: z.string().optional(),
+  assignedTo: z.string().optional(),
+  dependencies: z.string().optional(),
+  notes: z.string().optional(),
+  wbs: z.string().optional(),
+});
+
+const bulkCreateSchema = z.object({
+  scheduleId: z.string().min(1),
+  tasks: z.array(bulkTaskSchema).min(1).max(MAX_BULK),
+});
+
+const bulkUpdateItemSchema = z.object({
+  id: z.string().min(1),
+  scheduleId: z.string().min(1),
+  name: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  duration: z.number().optional(),
+  progress: z.number().min(0).max(100).optional(),
+  status: z.string().optional(),
+  priority: z.string().optional(),
+  assignedTo: z.string().optional(),
+  dependencies: z.string().optional(),
+  notes: z.string().optional(),
+  wbs: z.string().optional(),
+});
+
+const bulkUpdateSchema = z.object({
+  updates: z.array(bulkUpdateItemSchema).min(1).max(MAX_BULK),
+});
+
+const bulkStatusSchema = z.object({
+  scheduleId: z.string().min(1),
+  taskIds: z.array(z.string().min(1)).min(1).max(MAX_BULK),
+  status: z.string().min(1),
+});
 
 // ---------------------------------------------------------------------------
 // Routes
@@ -54,14 +66,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
       const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
-      const body = request.body as { scheduleId: string; tasks: BulkTaskInput[] };
-
-      if (!body.scheduleId || !Array.isArray(body.tasks) || body.tasks.length === 0) {
-        return reply.status(400).send({ error: 'scheduleId and a non-empty tasks array are required' });
-      }
-      if (body.tasks.length > MAX_BULK) {
-        return reply.status(400).send({ error: `Maximum ${MAX_BULK} tasks per request` });
-      }
+      const body = bulkCreateSchema.parse(request.body);
 
       const succeeded: Array<{ id: string; name: string }> = [];
       const failed: Array<{ index: number; name: string; error: string }> = [];
@@ -70,11 +75,6 @@ export async function bulkRoutes(fastify: FastifyInstance) {
         for (let i = 0; i < body.tasks.length; i++) {
           const t = body.tasks[i];
           try {
-            if (!t.name) {
-              failed.push({ index: i, name: t.name || '', error: 'name is required' });
-              continue;
-            }
-
             const id = uuidv4();
             await connection.execute(
               `INSERT INTO tasks
@@ -119,14 +119,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
       const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
-      const body = request.body as { updates: BulkUpdateInput[] };
-
-      if (!Array.isArray(body.updates) || body.updates.length === 0) {
-        return reply.status(400).send({ error: 'A non-empty updates array is required' });
-      }
-      if (body.updates.length > MAX_BULK) {
-        return reply.status(400).send({ error: `Maximum ${MAX_BULK} updates per request` });
-      }
+      const body = bulkUpdateSchema.parse(request.body);
 
       const succeeded: Array<{ id: string }> = [];
       const failed: Array<{ id: string; error: string }> = [];
@@ -191,14 +184,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
       const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
-      const body = request.body as { scheduleId: string; taskIds: string[]; status: string };
-
-      if (!body.scheduleId || !Array.isArray(body.taskIds) || body.taskIds.length === 0 || !body.status) {
-        return reply.status(400).send({ error: 'scheduleId, taskIds (non-empty), and status are required' });
-      }
-      if (body.taskIds.length > MAX_BULK) {
-        return reply.status(400).send({ error: `Maximum ${MAX_BULK} task IDs per request` });
-      }
+      const body = bulkStatusSchema.parse(request.body);
 
       const placeholders = body.taskIds.map(() => '?').join(',');
       // databaseService.query returns the raw ResultSetHeader for non-SELECT

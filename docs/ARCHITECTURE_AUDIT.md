@@ -129,10 +129,10 @@ Target state: same process layout, but with explicit rate limiting on all public
 - ~~Switch waitlist admin to a header or a dedicated admin JWT; remove `key` from query string.~~ Done: moved to `X-Admin-Key` header.
 - ~~Add request duration and status code to the request logger (or to the response hook).~~ Done: `responseLogger` onResponse hook logs method, url, statusCode, durationMs, ip.
 
-**Next (this/next sprint)**  
-- Define pagination (e.g. `limit` + `cursor` or `offset`) for list endpoints (projects, schedules, tasks, etc.) and enforce a max page size.  
-- Add optional per-user or per-tenant AI token/cost budget (config or DB table) and check it in `claudeService` (or a wrapper) before calling Anthropic.  
-- Document and, where missing, add Zod (or equivalent) validation for all request bodies and critical query params.
+**Next (this/next sprint)** -- ALL DONE (July 2026)
+- ~~Define pagination for list endpoints and enforce a max page size.~~ Done: shared `paginationSchema.ts` (limit 1-200, default 50, offset). Applied to projects, schedule tasks, sprints, and templates. Uses `PaginatedResponse<T>` wrapper.
+- ~~Add optional per-user AI token/cost budget and check it in `claudeService`.~~ Done: migration 030 creates `ai_usage_log` table + `users.ai_monthly_token_budget` column. `AIBudgetService` checks monthly usage. `claudeService.complete/stream/completeToolLoop` enforce budget when `userId` provided. `GET /api/v1/ai/budget` returns usage. Fixed `aiUsageLogger` to use `databaseService`.
+- ~~Add Zod validation for all request bodies and critical query params.~~ Done: Added Zod schemas to 9 route files (users, bulk, sprints, timeEntries, aiChat, apiKeys, webhooks, intakeForms, goals). Coverage now 24/61 route files (39%).
 
 **Later (strategic)**  
 - Introduce a small repository layer for 2–3 core entities (e.g. projects, users) and move SQL there; keep services as orchestrators.  

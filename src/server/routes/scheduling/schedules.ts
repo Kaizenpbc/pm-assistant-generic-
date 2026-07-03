@@ -10,6 +10,8 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { notificationService } from '../../services/NotificationService';
 import { userService } from '../../services/UserService';
+import { paginate } from '../../dto/responses';
+import { parsePagination } from '../../schemas/paginationSchema';
 
 const createScheduleSchema = z.object({
   projectId: z.string(),
@@ -131,8 +133,10 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
-      const tasks = await scheduleService.findTasksByScheduleId(scheduleId);
-      return { tasks };
+      const { limit, offset } = parsePagination(request.query as Record<string, unknown>);
+      const { rows, total } = await scheduleService.findTasksByScheduleIdPaginated(scheduleId, limit, offset);
+      const page = Math.floor(offset / limit) + 1;
+      return paginate(rows, total, page, limit);
     } catch (error) {
       console.error('Get tasks error:', error);
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch tasks' });

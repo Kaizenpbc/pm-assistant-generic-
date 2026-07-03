@@ -1,7 +1,15 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { apiKeyService } from '../../services/ApiKeyService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const createApiKeySchema = z.object({
+  name: z.string().min(1).max(200),
+  scopes: z.array(z.enum(['read', 'write', 'admin'])).default(['read', 'write']),
+  rateLimit: z.number().int().positive().optional(),
+  expiresAt: z.string().optional(),
+});
 
 export async function apiKeyRoutes(fastify: FastifyInstance) {
   // All routes require authentication
@@ -13,21 +21,12 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
-      const body = request.body as {
-        name: string;
-        scopes?: string[];
-        rateLimit?: number;
-        expiresAt?: string;
-      };
-
-      if (!body.name) {
-        return reply.status(400).send({ error: 'name is required' });
-      }
+      const body = createApiKeySchema.parse(request.body);
 
       const apiKey = await apiKeyService.createKey(
         user.userId,
         body.name,
-        body.scopes || ['read', 'write'],
+        body.scopes,
         body.rateLimit,
         body.expiresAt,
       );

@@ -336,6 +336,11 @@ export class TemplateService {
     return result;
   }
 
+  async findAllPaginated(limit: number, offset: number, projectType?: string, category?: string): Promise<{ rows: ProjectTemplate[]; total: number }> {
+    const all = await this.findAll(projectType, category);
+    return { rows: all.slice(offset, offset + limit), total: all.length };
+  }
+
   async findById(id: string): Promise<ProjectTemplate | null> {
     return this.templates.find(t => t.id === id) || null;
   }

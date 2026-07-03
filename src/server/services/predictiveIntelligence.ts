@@ -404,7 +404,7 @@ export class PredictiveIntelligenceService {
         temperature: 0.3,
       });
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'risk_assessment',
         model: 'claude',
@@ -419,7 +419,7 @@ export class PredictiveIntelligenceService {
       return { assessment: result.data, aiPowered: true };
     } catch (err) {
       this.fastify.log.warn({ err }, 'AI risk assessment failed, using fallback');
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'risk_assessment',
         model: 'claude',
@@ -502,7 +502,7 @@ export class PredictiveIntelligenceService {
         temperature: 0.3,
       });
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'weather_impact',
         model: 'claude',
@@ -586,7 +586,7 @@ export class PredictiveIntelligenceService {
         temperature: 0.3,
       });
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'budget_forecast',
         model: 'claude',
@@ -755,7 +755,7 @@ export class PredictiveIntelligenceService {
         temperature: 0.3,
       });
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'dashboard_predictions',
         model: 'claude',

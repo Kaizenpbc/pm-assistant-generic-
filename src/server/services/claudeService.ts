@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { config } from '../config';
+import { aiBudgetService, AIBudgetExceededError } from './AIBudgetService';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -13,6 +14,7 @@ export interface CompletionOptions {
   responseFormat?: 'text' | 'json';
   maxTokens?: number;
   temperature?: number;
+  userId?: string;
 }
 
 export interface TokenUsage {
@@ -296,6 +298,7 @@ export class ClaudeService {
 
   async complete(options: CompletionOptions): Promise<CompletionResult> {
     this.assertAvailable();
+    if (options.userId) await aiBudgetService.checkBudget(options.userId);
 
     const startMs = Date.now();
     const effectiveMaxTokens = options.maxTokens ?? this.maxTokens;
@@ -330,6 +333,7 @@ export class ClaudeService {
 
   async *stream(options: CompletionOptions): AsyncGenerator<StreamChunk> {
     this.assertAvailable();
+    if (options.userId) await aiBudgetService.checkBudget(options.userId);
 
     const effectiveMaxTokens = options.maxTokens ?? this.maxTokens;
     const effectiveTemperature = options.temperature ?? this.temperature;
@@ -500,6 +504,7 @@ export class ClaudeService {
     totalLatencyMs: number;
   }> {
     this.assertAvailable();
+    if (options.userId) await aiBudgetService.checkBudget(options.userId);
 
     const maxIter = options.maxIterations ?? 5;
     const toolResults: Array<{ toolName: string; result: string }> = [];

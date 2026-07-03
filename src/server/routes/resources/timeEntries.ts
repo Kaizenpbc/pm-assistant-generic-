@@ -1,7 +1,25 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { timeEntryService } from '../../services/TimeEntryService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const createTimeEntrySchema = z.object({
+  taskId: z.string().min(1),
+  scheduleId: z.string().min(1),
+  projectId: z.string().min(1),
+  date: z.string().min(1),
+  hours: z.number().positive().max(24),
+  description: z.string().max(2000).optional(),
+  billable: z.boolean().optional(),
+});
+
+const updateTimeEntrySchema = z.object({
+  date: z.string().optional(),
+  hours: z.number().positive().max(24).optional(),
+  description: z.string().max(2000).optional(),
+  billable: z.boolean().optional(),
+});
 
 export async function timeEntryRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -10,10 +28,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
   fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
-      const body = request.body as {
-        taskId: string; scheduleId: string; projectId: string;
-        date: string; hours: number; description?: string; billable?: boolean;
-      };
+      const body = createTimeEntrySchema.parse(request.body);
       const entry = await timeEntryService.create({ ...body, userId: user.userId });
       return { entry };
     } catch (error) {
@@ -78,7 +93,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
   fastify.put('/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const body = request.body as { date?: string; hours?: number; description?: string; billable?: boolean };
+      const body = updateTimeEntrySchema.parse(request.body);
       const entry = await timeEntryService.update(id, body);
       return { entry };
     } catch (error) {

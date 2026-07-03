@@ -107,7 +107,7 @@ export class AIChatService {
           allActions.length > 0 ? allActions : undefined,
         );
 
-        logAIUsage(this.fastify, {
+        logAIUsage({
           userId: req.userId,
           feature: 'chat-tools',
           model: 'claude',
@@ -138,7 +138,7 @@ export class AIChatService {
 
         const conversationId = this.persistConversation(req, result.content, result.usage.inputTokens + result.usage.outputTokens);
 
-        logAIUsage(this.fastify, {
+        logAIUsage({
           userId: req.userId,
           feature: 'chat',
           model: 'claude',
@@ -153,7 +153,7 @@ export class AIChatService {
     } catch (error) {
       this.fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Chat completion failed');
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId: req.userId,
         feature: 'chat-tools',
         model: 'claude',
@@ -212,7 +212,7 @@ export class AIChatService {
             (chunk.usage?.inputTokens ?? 0) + (chunk.usage?.outputTokens ?? 0),
           );
 
-          logAIUsage(this.fastify, {
+          logAIUsage({
             userId: req.userId,
             feature: 'chat-stream',
             model: 'claude',
@@ -230,7 +230,7 @@ export class AIChatService {
     } catch (error) {
       this.fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Chat stream failed');
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId: req.userId,
         feature: 'chat-stream',
         model: 'claude',

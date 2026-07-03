@@ -90,7 +90,7 @@ export async function suggestDependenciesClaude(
     });
 
     if (fastify) {
-      logAIUsage(fastify, {
+      logAIUsage({
         userId,
         feature: 'dependency-suggestion',
         model: 'claude',
@@ -104,7 +104,7 @@ export async function suggestDependenciesClaude(
   } catch (error) {
     if (fastify) {
       fastify.log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, 'Claude dependency suggestion failed, using fallback');
-      logAIUsage(fastify, {
+      logAIUsage({
         userId,
         feature: 'dependency-suggestion',
         model: 'claude',
@@ -166,7 +166,7 @@ export async function optimizeScheduleClaude(
       temperature: 0.3,
     });
 
-    logAIUsage(fastify, {
+    logAIUsage({
       userId,
       feature: 'schedule-optimization',
       model: 'claude',
@@ -179,7 +179,7 @@ export async function optimizeScheduleClaude(
     return { optimizedSchedule: result.data, aiPowered: true };
   } catch (error) {
     fastify.log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, 'Claude schedule optimization failed');
-    logAIUsage(fastify, {
+    logAIUsage({
       userId,
       feature: 'schedule-optimization',
       model: 'claude',
@@ -237,7 +237,7 @@ export async function generateProjectInsightsClaude(
       temperature: 0.3,
     });
 
-    logAIUsage(fastify, {
+    logAIUsage({
       userId,
       feature: 'project-insights',
       model: 'claude',
@@ -250,7 +250,7 @@ export async function generateProjectInsightsClaude(
     return { insights: result.data, aiPowered: true };
   } catch (error) {
     fastify.log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, 'Claude project insights failed');
-    logAIUsage(fastify, {
+    logAIUsage({
       userId,
       feature: 'project-insights',
       model: 'claude',

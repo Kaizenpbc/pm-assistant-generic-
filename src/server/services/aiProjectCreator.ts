@@ -86,7 +86,7 @@ export class AIProjectCreatorService {
     }
 
     // 5. Log usage
-    logAIUsage(this.fastify, {
+    logAIUsage({
       userId,
       feature: 'nl-project-creation',
       model: 'claude',

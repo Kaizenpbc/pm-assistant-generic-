@@ -1,5 +1,5 @@
-import { FastifyInstance } from 'fastify';
 import { randomUUID } from 'crypto';
+import { databaseService } from '../database/connection';
 import { TokenUsage } from './claudeService';
 
 export interface AIUsageEntry {
@@ -30,15 +30,12 @@ export function calculateCost(model: string, usage: TokenUsage): number {
   return inputCost + outputCost;
 }
 
-export function logAIUsage(fastify: FastifyInstance, entry: AIUsageEntry): void {
-  const db = (fastify as any).mysql || (fastify as any).db;
-  if (!db) return;
-
+export function logAIUsage(entry: AIUsageEntry): void {
   const id = randomUUID();
   const costEstimate = calculateCost(entry.model, entry.usage);
 
   // Fire-and-forget — don't await, don't block the response
-  db.query(
+  databaseService.query(
     `INSERT INTO ai_usage_log (id, user_id, feature, model, input_tokens, output_tokens, cost_estimate, latency_ms, success, error_message, request_context)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -55,6 +52,6 @@ export function logAIUsage(fastify: FastifyInstance, entry: AIUsageEntry): void 
       entry.requestContext ? JSON.stringify(entry.requestContext) : null,
     ],
   ).catch((err: Error) => {
-    fastify.log.warn({ err }, 'Failed to log AI usage (non-critical)');
+    console.warn('Failed to log AI usage (non-critical):', err.message);
   });
 }

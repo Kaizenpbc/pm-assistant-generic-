@@ -108,7 +108,7 @@ export class AIReportService {
         },
       };
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: `report-${reportType}`,
         model: 'claude',
@@ -126,7 +126,7 @@ export class AIReportService {
         'AI report generation failed, using fallback',
       );
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: `report-${reportType}`,
         model: 'claude',

@@ -1,7 +1,26 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 import { goalService } from '../services/GoalService';
+
+const createGoalSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(5000).optional(),
+  ownerId: z.string().optional(),
+  parentId: z.string().optional(),
+  goalType: z.enum(['objective', 'key_result']),
+  status: z.enum(['on_track', 'at_risk', 'behind', 'completed']).optional(),
+  progress: z.number().min(0).max(100).optional(),
+  targetValue: z.number().optional(),
+  currentValue: z.number().optional(),
+  unit: z.string().max(50).optional(),
+  startDate: z.string().optional(),
+  dueDate: z.string().optional(),
+  projectId: z.string().optional(),
+});
+
+const updateGoalSchema = createGoalSchema.partial();
 
 export async function goalRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -50,22 +69,11 @@ export async function goalRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create a goal', tags: ['goals'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const body = request.body as any;
+      const body = createGoalSchema.parse(request.body);
       const userId = (request as any).user?.userId as string;
       const goal = await goalService.create({
-        name: body.name,
-        description: body.description,
+        ...body,
         ownerId: body.ownerId || userId,
-        parentId: body.parentId,
-        goalType: body.goalType,
-        status: body.status,
-        progress: body.progress,
-        targetValue: body.targetValue,
-        currentValue: body.currentValue,
-        unit: body.unit,
-        startDate: body.startDate,
-        dueDate: body.dueDate,
-        projectId: body.projectId,
       });
 
       // Auto-recalculate parent objective if creating a key_result
@@ -87,7 +95,7 @@ export async function goalRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const body = request.body as any;
+      const body = updateGoalSchema.parse(request.body);
 
       const goal = await goalService.update(id, body);
       if (!goal) {

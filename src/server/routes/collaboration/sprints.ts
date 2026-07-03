@@ -1,7 +1,22 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { sprintService } from '../../services/SprintService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { paginate } from '../../dto/responses';
+import { parsePagination } from '../../schemas/paginationSchema';
+
+const createSprintSchema = z.object({
+  projectId: z.string().uuid(),
+  scheduleId: z.string().uuid(),
+  name: z.string().min(1).max(200),
+  goal: z.string().max(2000).optional(),
+  startDate: z.string().min(1),
+  endDate: z.string().min(1),
+  velocityCommitment: z.number().int().positive().optional(),
+});
+
+const updateSprintSchema = createSprintSchema.omit({ projectId: true, scheduleId: true }).partial();
 
 export async function sprintRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -10,10 +25,11 @@ export async function sprintRoutes(fastify: FastifyInstance) {
   fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
-      const body = request.body as { projectId: string; scheduleId: string; name: string; goal?: string; startDate: string; endDate: string; velocityCommitment?: number };
+      const body = createSprintSchema.parse(request.body);
       const sprint = await sprintService.create(body.projectId, body.scheduleId, body, user.userId);
       return { sprint };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Create sprint error:', error);
       return reply.status(500).send({ error: 'Failed to create sprint' });
     }
@@ -23,8 +39,10 @@ export async function sprintRoutes(fastify: FastifyInstance) {
   fastify.get('/project/:projectId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const sprints = await sprintService.getByProject(projectId);
-      return { sprints };
+      const { limit, offset } = parsePagination(request.query as Record<string, unknown>);
+      const { rows, total } = await sprintService.getByProjectPaginated(projectId, limit, offset);
+      const page = Math.floor(offset / limit) + 1;
+      return paginate(rows, total, page, limit);
     } catch (error) {
       console.error('Get sprints error:', error);
       return reply.status(500).send({ error: 'Failed to fetch sprints' });
@@ -47,10 +65,11 @@ export async function sprintRoutes(fastify: FastifyInstance) {
   fastify.put('/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const body = request.body as any;
+      const body = updateSprintSchema.parse(request.body);
       const sprint = await sprintService.update(id, body);
       return { sprint };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Update sprint error:', error);
       return reply.status(500).send({ error: 'Failed to update sprint' });
     }

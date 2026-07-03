@@ -127,6 +127,17 @@ export class SprintService {
     return rows.map(rowToDTO);
   }
 
+  async getByProjectPaginated(projectId: string, limit: number, offset: number): Promise<{ rows: Sprint[]; total: number }> {
+    const [countResult, rows] = await Promise.all([
+      databaseService.query('SELECT COUNT(*) AS cnt FROM sprints WHERE project_id = ?', [projectId]),
+      databaseService.query<SprintRow>(
+        'SELECT * FROM sprints WHERE project_id = ? ORDER BY start_date DESC LIMIT ? OFFSET ?',
+        [projectId, limit, offset],
+      ),
+    ]);
+    return { rows: rows.map(rowToDTO), total: Number(countResult[0].cnt) };
+  }
+
   async getBySchedule(scheduleId: string): Promise<Sprint[]> {
     const rows = await databaseService.query<SprintRow>(
       'SELECT * FROM sprints WHERE schedule_id = ? ORDER BY start_date DESC',

@@ -1,7 +1,27 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { AIChatService } from '../../services/aiChatService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const chatMessageSchema = z.object({
+  message: z.string().min(1).max(10000),
+  conversationId: z.string().optional(),
+  context: z.object({
+    type: z.enum(['dashboard', 'project', 'schedule', 'reports', 'general']),
+    projectId: z.string().optional(),
+  }).optional(),
+});
+
+const createProjectSchema = z.object({
+  description: z.string().min(10).max(10000),
+});
+
+const extractTasksSchema = z.object({
+  meetingNotes: z.string().min(10).max(50000),
+  projectId: z.string().optional(),
+  scheduleId: z.string().optional(),
+});
 
 export async function aiChatRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -32,7 +52,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = request.body as any;
+        const body = chatMessageSchema.parse(request.body);
         const user = request.user!;
 
         const result = await chatService.sendMessage({
@@ -78,7 +98,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = request.body as any;
+        const body = chatMessageSchema.parse(request.body);
         const user = request.user!;
 
         reply.raw.writeHead(200, {
@@ -186,7 +206,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = request.body as any;
+        const body = createProjectSchema.parse(request.body);
         const user = request.user!;
 
         const { AIProjectCreatorService } = await import('../../services/aiProjectCreator');
@@ -231,7 +251,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = request.body as any;
+        const body = extractTasksSchema.parse(request.body);
         const user = request.user!;
 
         const { claudeService, promptTemplates } = await import('../../services/claudeService');
@@ -274,7 +294,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
         }
 
         const { logAIUsage } = await import('../../services/aiUsageLogger');
-        logAIUsage(fastify, {
+        logAIUsage({
           userId: user.userId,
           feature: 'meeting-extraction',
           model: 'claude',

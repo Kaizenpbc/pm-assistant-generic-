@@ -58,6 +58,9 @@ const configSchema = z.object({
   RAG_TOP_K: z.coerce.number().min(1).max(50).default(5),
   RAG_SIMILARITY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.3),
 
+  // AI Budget
+  AI_MONTHLY_TOKEN_BUDGET: z.coerce.number().min(0).default(500000),
+
   // File Upload Configuration
   UPLOAD_DIR: z.string().default(process.env['HOME'] || process.env['USERPROFILE'] ? `${process.env['HOME'] || process.env['USERPROFILE']}/uploads/pm-assistant` : './uploads/pm-assistant'),
   MAX_UPLOAD_SIZE_MB: z.coerce.number().min(1).max(100).default(10),
@@ -118,6 +121,7 @@ export function validateConfiguration() {
       EMBEDDING_DIMENSIONS: process.env['EMBEDDING_DIMENSIONS'],
       RAG_TOP_K: process.env['RAG_TOP_K'],
       RAG_SIMILARITY_THRESHOLD: process.env['RAG_SIMILARITY_THRESHOLD'],
+      AI_MONTHLY_TOKEN_BUDGET: process.env['AI_MONTHLY_TOKEN_BUDGET'],
       UPLOAD_DIR: process.env['UPLOAD_DIR'],
       MAX_UPLOAD_SIZE_MB: process.env['MAX_UPLOAD_SIZE_MB'],
     };

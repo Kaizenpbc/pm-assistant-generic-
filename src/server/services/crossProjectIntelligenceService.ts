@@ -224,7 +224,7 @@ export class CrossProjectIntelligenceService {
         temperature: 0.3,
       });
 
-      logAIUsage(this.fastify, {
+      logAIUsage({
         userId,
         feature: 'cross_project_intelligence',
         model: 'claude',
