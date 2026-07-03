@@ -27,6 +27,7 @@ import {
   Target,
   Users,
   DollarSign,
+  Bell,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -86,6 +87,7 @@ const navSections: NavSection[] = [
   {
     titleKey: 'section.workspace',
     items: [
+      { labelKey: 'nav.notifications', icon: Bell, path: '/notifications' },
       { labelKey: 'nav.goals', icon: Target, path: '/goals' },
       { labelKey: 'nav.timesheets', icon: Clock, path: '/timesheet' },
       { labelKey: 'nav.integrations', icon: Plug, path: '/integrations' },

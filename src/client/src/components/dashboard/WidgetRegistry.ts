@@ -42,3 +42,15 @@ export function loadWidgetIds(storageKey: string, widgets: WidgetDef[]): Set<str
 export function saveWidgetIds(storageKey: string, ids: Set<string>) {
   localStorage.setItem(storageKey, JSON.stringify([...ids]));
 }
+
+export function loadWidgetOrder(storageKey: string, widgets: WidgetDef[]): string[] {
+  try {
+    const stored = localStorage.getItem(storageKey + ':order');
+    if (stored) return JSON.parse(stored) as string[];
+  } catch { /* ignore */ }
+  return widgets.map(w => w.id);
+}
+
+export function saveWidgetOrder(storageKey: string, order: string[]) {
+  localStorage.setItem(storageKey + ':order', JSON.stringify(order));
+}

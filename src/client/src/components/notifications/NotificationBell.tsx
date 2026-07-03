@@ -388,7 +388,7 @@ export function NotificationBell() {
             <button
               onClick={() => {
                 setOpen(false);
-                // Navigate to alerts page if one exists; for now just close
+                navigate('/notifications');
               }}
               className="w-full text-center text-xs text-primary-600 hover:text-primary-800 font-medium transition-colors duration-150"
             >

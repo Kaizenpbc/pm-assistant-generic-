@@ -23,7 +23,8 @@
     "admin": "Administración",
     "help": "Ayuda",
     "resources": "Recursos",
-    "evm": "Panel EVM"
+    "evm": "Panel EVM",
+    "notifications": "Notificaciones"
   },
   "section": {
     "plan": "Planificar",

@@ -120,6 +120,7 @@ An agentic AI project management platform that combines the scheduling power of 
 ### 2.3 Custom Dashboards
 - Role-based dashboards (PM project list, Executive analytics)
 - Executive view: portfolio charts, KPI cards, status summaries
+- Widget drag-to-reorder: drag handle (grip icon) on hover, blue ring drop indicator, order persisted in localStorage (separate from visibility toggles)
 - Auto-refresh via WebSocket cache invalidation
 - **Benchmark:** Monday.com, Smartsheet
 
@@ -219,6 +220,8 @@ An agentic AI project management platform that combines the scheduling power of 
 
 ### 4.1 Notification System
 - In-app notification center with unread badge
+- Full-page Notifications Center (`/notifications`) with severity summary cards (Critical/High/Medium/Low), type and severity filters, full notification list with severity color bars, type icons, project names, and mark-read controls
+- Accessible from sidebar ("Notifications" under Workspace) and "View all alerts" in bell dropdown
 - Email alerts for assignments, deadlines, status changes
 - Configurable notification preferences per user
 - @mention notifications from comments
@@ -392,3 +395,6 @@ An agentic AI project management platform that combines the scheduling power of 
 | MS Project XML Export (MSPDI format with tasks, resources, assignments) | Done | Enhancement |
 | Resource Management Page (workload heatmap, histogram, capacity forecast) | Done | Enhancement |
 | EVM Dashboard Page (KPI cards, trend chart, forecasts, AI predictions) | Done | Enhancement |
+| Notifications Center Page (severity cards, filters, full list) | Done | Enhancement |
+| Dashboard Widget Drag-to-Reorder (grip handle, localStorage persistence) | Done | Enhancement |
+| Mobile-Responsive Gantt Touch Gestures (bar drag, progress drag, drag-to-create) | Done | Enhancement |

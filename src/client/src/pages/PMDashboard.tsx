@@ -13,7 +13,7 @@ import { TemplatePicker } from '../components/templates/TemplatePicker';
 import { ProjectTable, type ProjectRow } from '../components/dashboard/ProjectTable';
 import { CustomizeDropdown } from '../components/dashboard/CustomizeDropdown';
 import { WidgetGrid } from '../components/dashboard/WidgetGrid';
-import { PM_WIDGETS, loadWidgetIds, saveWidgetIds } from '../components/dashboard/WidgetRegistry';
+import { PM_WIDGETS, loadWidgetIds, saveWidgetIds, loadWidgetOrder, saveWidgetOrder } from '../components/dashboard/WidgetRegistry';
 import { RecentActivityWidget } from '../components/dashboard/widgets/RecentActivityWidget';
 import { ResourceUtilizationWidget } from '../components/dashboard/widgets/ResourceUtilizationWidget';
 import { BurndownMiniWidget } from '../components/dashboard/widgets/BurndownMiniWidget';
@@ -23,6 +23,7 @@ const STORAGE_KEY = 'dashboard-widgets:pm';
 export const PMDashboard: React.FC = () => {
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [enabledIds, setEnabledIds] = useState<Set<string>>(() => loadWidgetIds(STORAGE_KEY, PM_WIDGETS));
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => loadWidgetOrder(STORAGE_KEY, PM_WIDGETS));
 
   useEffect(() => {
     useUIStore.getState().setAIPanelContext({ type: 'dashboard' });
@@ -31,6 +32,10 @@ export const PMDashboard: React.FC = () => {
   useEffect(() => {
     saveWidgetIds(STORAGE_KEY, enabledIds);
   }, [enabledIds]);
+
+  useEffect(() => {
+    saveWidgetOrder(STORAGE_KEY, widgetOrder);
+  }, [widgetOrder]);
 
   const toggleWidget = useCallback((id: string) => {
     setEnabledIds(prev => {
@@ -159,6 +164,8 @@ export const PMDashboard: React.FC = () => {
       <WidgetGrid
         widgets={PM_WIDGETS}
         enabledIds={enabledIds}
+        widgetOrder={widgetOrder}
+        onReorder={setWidgetOrder}
         renderWidget={renderWidget}
       />
 

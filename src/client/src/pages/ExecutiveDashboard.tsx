@@ -12,7 +12,7 @@ import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
 import { ProjectTable } from '../components/dashboard/ProjectTable';
 import { CustomizeDropdown } from '../components/dashboard/CustomizeDropdown';
 import { WidgetGrid } from '../components/dashboard/WidgetGrid';
-import { EXEC_WIDGETS, loadWidgetIds, saveWidgetIds } from '../components/dashboard/WidgetRegistry';
+import { EXEC_WIDGETS, loadWidgetIds, saveWidgetIds, loadWidgetOrder, saveWidgetOrder } from '../components/dashboard/WidgetRegistry';
 import { RecentActivityWidget } from '../components/dashboard/widgets/RecentActivityWidget';
 import { ResourceUtilizationWidget } from '../components/dashboard/widgets/ResourceUtilizationWidget';
 import { BurndownMiniWidget } from '../components/dashboard/widgets/BurndownMiniWidget';
@@ -34,10 +34,15 @@ const STORAGE_KEY = 'dashboard-widgets:exec';
 
 export const ExecutiveDashboard: React.FC = () => {
   const [enabledIds, setEnabledIds] = useState<Set<string>>(() => loadWidgetIds(STORAGE_KEY, EXEC_WIDGETS));
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => loadWidgetOrder(STORAGE_KEY, EXEC_WIDGETS));
 
   useEffect(() => {
     useUIStore.getState().setAIPanelContext({ type: 'dashboard' });
   }, []);
+
+  useEffect(() => {
+    saveWidgetOrder(STORAGE_KEY, widgetOrder);
+  }, [widgetOrder]);
 
   useEffect(() => {
     saveWidgetIds(STORAGE_KEY, enabledIds);
@@ -131,6 +136,8 @@ export const ExecutiveDashboard: React.FC = () => {
       <WidgetGrid
         widgets={EXEC_WIDGETS}
         enabledIds={enabledIds}
+        widgetOrder={widgetOrder}
+        onReorder={setWidgetOrder}
         renderWidget={renderWidget}
       />
     </div>

@@ -23,7 +23,8 @@
     "admin": "Administration",
     "help": "Aide",
     "resources": "Ressources",
-    "evm": "Tableau EVM"
+    "evm": "Tableau EVM",
+    "notifications": "Notifications"
   },
   "section": {
     "plan": "Planifier",

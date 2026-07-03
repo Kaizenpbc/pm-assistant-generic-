@@ -980,11 +980,17 @@ export function GanttChart({
       }
       setProgressDrag(null);
     };
+    const onTouchMove = (e: TouchEvent) => { if (e.touches.length === 1) { e.preventDefault(); onMove(e.touches[0] as unknown as MouseEvent); } };
+    const onTouchEnd = () => onUp();
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
     return () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
     };
   }, [progressDrag, onTaskUpdate]);
 
@@ -1525,30 +1531,46 @@ export function GanttChart({
     setTimeout(() => { if (tl) tl.scrollLeft = 0; }, 0);
   }, [totalDays]);
 
-  const handleBarMouseDown = useCallback(
-    (e: React.MouseEvent, task: GanttTask) => {
+  const startBarDrag = useCallback(
+    (clientX: number, currentTarget: HTMLElement, task: GanttTask) => {
       if (!onTaskDragEnd) return;
-      e.stopPropagation();
-      e.preventDefault();
       const start = toDate(task.startDate);
       const end = toDate(task.endDate);
       if (!start || !end) return;
 
-      // Right 8px = resize, rest = move
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const localX = e.clientX - rect.left;
+      const rect = currentTarget.getBoundingClientRect();
+      const localX = clientX - rect.left;
       const mode = localX > rect.width - 8 ? 'resize' : 'move';
 
       setDrag({
         taskId: task.id,
         mode,
-        startX: e.clientX,
+        startX: clientX,
         origStartDate: start,
         origEndDate: end,
         dayDelta: 0,
       });
     },
     [onTaskDragEnd]
+  );
+
+  const handleBarMouseDown = useCallback(
+    (e: React.MouseEvent, task: GanttTask) => {
+      if (!onTaskDragEnd) return;
+      e.stopPropagation();
+      e.preventDefault();
+      startBarDrag(e.clientX, e.currentTarget as HTMLElement, task);
+    },
+    [onTaskDragEnd, startBarDrag]
+  );
+
+  const handleBarTouchStart = useCallback(
+    (e: React.TouchEvent, task: GanttTask) => {
+      if (!onTaskDragEnd || e.touches.length !== 1) return;
+      e.stopPropagation();
+      startBarDrag(e.touches[0].clientX, e.currentTarget as HTMLElement, task);
+    },
+    [onTaskDragEnd, startBarDrag]
   );
 
   // -----------------------------------------------------------------------
@@ -1569,6 +1591,21 @@ export function GanttChart({
     const y = e.clientY - rect.top + tl.scrollTop;
     if (y < HEADER_H) return; // clicked in header area
     const x = e.clientX - rect.left + tl.scrollLeft;
+    const rowIdx = Math.floor((y - HEADER_H) / ROW_H);
+    if (rowIdx < 0 || rowIdx >= rows.length) return;
+    setCreateDrag({ startX: x, currentX: x, rowIdx });
+  }, [onCreateTaskWithDates, drag, depDraw, progressDrag, rows.length]);
+
+  const handleTimelineTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!onCreateTaskWithDates || e.touches.length !== 1) return;
+    if (drag || depDraw || progressDrag) return;
+    const touch = e.touches[0];
+    const tl = timelineRef.current;
+    if (!tl) return;
+    const rect = tl.getBoundingClientRect();
+    const y = touch.clientY - rect.top + tl.scrollTop;
+    if (y < HEADER_H) return;
+    const x = touch.clientX - rect.left + tl.scrollLeft;
     const rowIdx = Math.floor((y - HEADER_H) / ROW_H);
     if (rowIdx < 0 || rowIdx >= rows.length) return;
     setCreateDrag({ startX: x, currentX: x, rowIdx });
@@ -1606,11 +1643,17 @@ export function GanttChart({
       setCreateDrag(null);
       onCreateTaskWithDates(startDate, endDate, parentTaskId);
     };
+    const onTouchMove = (e: TouchEvent) => { if (e.touches.length === 1) { e.preventDefault(); onMove(e.touches[0] as unknown as MouseEvent); } };
+    const onTouchEnd = () => onUp();
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
     return () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
     };
   }, [createDrag, onCreateTaskWithDates, dayPx, minDate, rows, parentTaskIds]);
 
@@ -1692,12 +1735,23 @@ export function GanttChart({
       }
     }
 
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      handleMouseMove(e.touches[0] as unknown as MouseEvent);
+    };
+    const handleTouchEnd = () => handleMouseUp();
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
     return () => {
       stopAutoScroll();
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [drag, onTaskDragEnd, dayPx, selectedIds, tasks]);
 
@@ -2737,7 +2791,7 @@ export function GanttChart({
           className="flex-1 overflow-x-auto overflow-y-auto"
           style={depDraw ? { cursor: 'crosshair' } : onCreateTaskWithDates && !drag && !progressDrag ? { cursor: 'crosshair' } : undefined}
         >
-          <div style={{ width: timelineWidth, position: 'relative' }} onMouseDown={handleTimelineMouseDown}>
+          <div style={{ width: timelineWidth, position: 'relative' }} onMouseDown={handleTimelineMouseDown} onTouchStart={handleTimelineTouchStart}>
             {/* Timeline header — two-tier timescale */}
             <div
               className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600"
@@ -2963,6 +3017,7 @@ export function GanttChart({
                     userSelect: isDragging ? 'none' : undefined,
                   }}
                   onMouseDown={canDrag ? (e) => handleBarMouseDown(e, task) : undefined}
+                  onTouchStart={canDrag ? (e) => handleBarTouchStart(e, task) : undefined}
                   onClick={handleBarClick}
                 >
                   {/* Background bar */}

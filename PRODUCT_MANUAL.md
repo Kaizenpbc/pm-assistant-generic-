@@ -558,6 +558,17 @@ The `NotificationService` delivers notifications to users with:
 - **WebSocket delivery**: real-time push via the `WebSocketService`
 - **Bulk mark-as-read**
 
+### Notifications Center Page
+
+A full-page notification center is available at `/notifications`, accessible from the sidebar ("Notifications" under Workspace) and from the "View all alerts" link in the notification bell dropdown. The page provides:
+
+- **Severity summary cards** at the top: clickable cards showing counts for Critical, High, Medium, and Low notifications. Clicking a card filters the list to that severity.
+- **Filter panel**: filter by notification type (Risk, Budget, Schedule, Resource, etc.) and severity level.
+- **Full notification list**: each entry shows a severity color bar, type icon, title, message, relative time ("2 hours ago"), type label, and project name.
+- **Mark as read**: mark individual notifications as read, or click "Mark all read" to clear all unread indicators.
+- **Data sources**: fetches both proactive alerts and persisted database notifications into a unified list.
+- Uses the same severity colors and type icons as the existing notification bell dropdown for visual consistency.
+
 ### Real-Time Presence
 
 When multiple users view the same project, avatar circles appear in the project header showing who else is currently viewing. Presence is ephemeral (in-memory on the server) and updates instantly via WebSocket. Avatars show user initials with a tooltip displaying the full username. The current user is filtered out. Up to 5 avatars are shown, with a "+N" overflow indicator for larger teams.
@@ -784,6 +795,10 @@ Both the PM Dashboard and Executive Dashboard support customizable widget layout
 
 Widgets render in a responsive CSS grid (1-3 columns depending on viewport). When all widgets are disabled, a "No widgets enabled" message is shown.
 
+### Widget Drag-to-Reorder
+
+Dashboard widgets can be reordered by dragging. A **drag handle** (grip icon) appears on hover at the left edge of each widget card. Drag a widget up or down to change its position in the layout — a **blue ring drop indicator** highlights the target position during the drag. The custom widget order persists in `localStorage` (separate key from widget visibility toggles) and is maintained independently for the PM Dashboard and Executive Dashboard. Drag-to-reorder works alongside the existing "Customize" dropdown for toggling widget visibility.
+
 ---
 
 ## 24. Mobile-Optimized Views
@@ -813,6 +828,17 @@ On mobile, the project Schedule tab automatically renders `TaskListMobile` inste
 ### Mobile Timesheet
 
 On mobile, the timesheet displays a card-per-day layout instead of the grid table. Each card shows the date, total hours, and a compact entry list. Week navigation is preserved.
+
+### Mobile-Responsive Gantt (Touch Gestures)
+
+Touch support is added to all Gantt chart drag interactions, enabling full use on tablets and touch-enabled laptops:
+
+- **Bar drag (move/resize)**: `touchstart` on a task bar initiates the drag, `touchmove` updates the bar position in real time, and `touchend` commits the date change. Works for both moving (whole bar) and resizing (right edge).
+- **Progress drag**: touch-drag the progress handle within a task bar to adjust the completion percentage.
+- **Drag-to-create**: touch-drag on an empty timeline area to create a new task with pre-filled dates, mirroring the mouse-based drag-to-create behavior.
+- Touch events use `touch.clientX` / `touch.clientY` to mirror existing mouse handler logic.
+- `preventDefault` is called on `touchmove` to prevent page scrolling while a drag operation is in progress.
+- Only single-finger gestures are recognized; multi-touch is ignored.
 
 ---
 

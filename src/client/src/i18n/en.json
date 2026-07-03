@@ -23,7 +23,8 @@
     "admin": "Admin",
     "help": "Help",
     "resources": "Resources",
-    "evm": "EVM Dashboard"
+    "evm": "EVM Dashboard",
+    "notifications": "Notifications"
   },
   "section": {
     "plan": "Plan",

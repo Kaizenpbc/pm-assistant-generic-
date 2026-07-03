@@ -97,7 +97,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Multi-dependency support: up to 20 predecessors per task (FS/SS/FF/SF + lag), stored in a `task_dependencies` junction table
 - MS Project-style predecessor notation (e.g. "3FS+2d,5SS,7") with health badges and inline editing in both Gantt and Table views
 - Recurring tasks (daily, weekly, biweekly, monthly) with auto-generation
-- Customizable dashboard widgets with per-user persistence
+- Customizable dashboard widgets with per-user persistence and drag-to-reorder (order persisted in localStorage)
 - Real-time presence indicators showing who is viewing a project
 
 ### Critical Path Method (CPM)
@@ -212,6 +212,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 ### Notifications
 - In-app notification center
+- Full-page Notifications Center (`/notifications`) with severity summary cards (Critical, High, Medium, Low), type/severity filters, and full notification list with mark-read controls
 - Real-time WebSocket push notifications
 - Configurable notification preferences
 - Email notifications for critical/high severity events
@@ -265,6 +266,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Card-based mobile task list with quick status cycling
 - Mobile-friendly timesheet with day-by-day card layout
 - Responsive schedule views (auto-switches to mobile on small screens)
+- Touch-gesture support for Gantt chart: bar drag (move/resize), progress drag, and drag-to-create via single-finger touch events
 
 ### Dark Mode
 - Global dark theme with Tailwind `dark:` classes throughout
