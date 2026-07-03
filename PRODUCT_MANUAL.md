@@ -854,6 +854,17 @@ Each predecessor in the list displays a colour-coded health dot indicating that 
 
 Health badges appear in the Table view Predecessor column, the Gantt left panel Pred column, and Gantt bar tooltips. Dependency arrows on the Gantt chart are drawn for each predecessor and colour-coded by health status (green, yellow, or red).
 
+### Interactive Dependency Drawing (Gantt)
+
+In the Gantt chart, dependencies can be created visually by dragging between task bars — matching the MS Project interaction model:
+
+1. **Hover over a task bar** to reveal two small connector dots at the left (start) and right (finish) edges.
+2. **Click and drag** from a connector dot toward another task bar. A dashed blue preview line follows the cursor.
+3. **Release** over the target task bar. The target edge (start or finish) is determined by which half of the bar the cursor lands on (left half = start, right half = finish).
+4. The dependency type is inferred from the source and target edges: finish→start = FS, start→start = SS, finish→finish = FF, start→finish = SF.
+
+Validation rules apply: no self-references, no duplicates, max 20 predecessors, and parent/summary tasks are excluded. The target row highlights in blue while dragging over it.
+
 ### Inline Predecessor Editing
 
 In Table view, the Predecessor column is inline-editable. Click a predecessor cell and type one or more predecessor entries separated by commas (e.g. `3`, `5SS`, `7FS+2d`, `3FS+2d,5SS,7`). The input is validated: invalid row numbers, self-references, duplicate entries, and malformed formats display a red error border with a message. Clearing the field removes all dependencies.

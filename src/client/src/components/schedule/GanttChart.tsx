@@ -921,6 +921,38 @@ export function GanttChart({
   }, [progressDrag, onTaskUpdate]);
 
   // -----------------------------------------------------------------------
+  // Dependency drawing state (click-drag from one bar to another)
+  // -----------------------------------------------------------------------
+  const [depDraw, setDepDraw] = useState<{
+    sourceTaskId: string;
+    sourceEdge: 'start' | 'finish';
+    sourceX: number;
+    sourceY: number;
+    currentX: number;
+    currentY: number;
+  } | null>(null);
+
+  /** Row index the cursor is hovering over during dep-draw */
+  const depDrawHoverIdx = depDraw
+    ? Math.floor((depDraw.currentY - HEADER_H) / ROW_H)
+    : -1;
+
+  const handleDepDrawMouseDown = useCallback(
+    (e: React.MouseEvent, task: GanttTask, edge: 'start' | 'finish') => {
+      if (!onTaskUpdate) return;
+      e.stopPropagation();
+      e.preventDefault();
+      const tl = timelineRef.current;
+      if (!tl) return;
+      const rect = tl.getBoundingClientRect();
+      const x = e.clientX - rect.left + tl.scrollLeft;
+      const y = e.clientY - rect.top + tl.scrollTop;
+      setDepDraw({ sourceTaskId: task.id, sourceEdge: edge, sourceX: x, sourceY: y, currentX: x, currentY: y });
+    },
+    [onTaskUpdate]
+  );
+
+  // -----------------------------------------------------------------------
   // Inline editing state & helpers
   // -----------------------------------------------------------------------
   type EditableField = 'name' | 'dependency' | 'startDate' | 'endDate' | 'duration' | 'estimatedDays' | 'progressPercentage' | 'priority' | 'assignedTo' | 'status';
@@ -1326,6 +1358,58 @@ export function GanttChart({
   }, [rows]);
 
   const timelineWidth = totalDays * dayPx;
+
+  // Dep-draw mouse listeners (placed after minDate/dayPx are available)
+  useEffect(() => {
+    if (!depDraw) return;
+    const tl = timelineRef.current;
+    const onMove = (e: MouseEvent) => {
+      if (!tl) return;
+      const rect = tl.getBoundingClientRect();
+      const x = e.clientX - rect.left + tl.scrollLeft;
+      const y = e.clientY - rect.top + tl.scrollTop;
+      setDepDraw(prev => prev ? { ...prev, currentX: x, currentY: y } : null);
+    };
+    const onUp = (e: MouseEvent) => {
+      if (!tl || !depDraw || !onTaskUpdate) { setDepDraw(null); return; }
+      const rect = tl.getBoundingClientRect();
+      const y = e.clientY - rect.top + tl.scrollTop;
+      const x = e.clientX - rect.left + tl.scrollLeft;
+      const targetIdx = Math.floor((y - HEADER_H) / ROW_H);
+      const targetRow = rows[targetIdx];
+      setDepDraw(null);
+      if (!targetRow) return;
+      const targetTask = targetRow.task;
+      if (targetTask.id === depDraw.sourceTaskId) return;
+      if (parentTaskIds.has(targetTask.id) || parentTaskIds.has(depDraw.sourceTaskId)) return;
+      const existing = targetTask.dependencies || [];
+      if (existing.some(d => d.dependencyId === depDraw.sourceTaskId)) return;
+      if (existing.length >= 20) return;
+      const tStart = toDate(targetTask.startDate);
+      const tEnd = toDate(targetTask.endDate);
+      let targetEdge: 'start' | 'finish' = 'start';
+      if (tStart && tEnd) {
+        const barLeft = daysBetween(minDate, tStart) * dayPx;
+        const barRight = barLeft + Math.max(daysBetween(tStart, tEnd) * dayPx, 8);
+        const barCenter = (barLeft + barRight) / 2;
+        targetEdge = x < barCenter ? 'start' : 'finish';
+      }
+      const typeMap: Record<string, string> = {
+        'finish-start': 'FS', 'start-start': 'SS',
+        'finish-finish': 'FF', 'start-finish': 'SF',
+      };
+      const depType = typeMap[`${depDraw.sourceEdge}-${targetEdge}`] || 'FS';
+      onTaskUpdate(targetTask.id, {
+        dependencies: [...existing, { dependencyId: depDraw.sourceTaskId, dependencyType: depType, lagDays: 0 }],
+      });
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [depDraw, onTaskUpdate, rows, parentTaskIds, minDate, dayPx]);
 
   // Scroll to today on mount
   useEffect(() => {
@@ -2440,6 +2524,7 @@ export function GanttChart({
         <div
           ref={timelineRef}
           className="flex-1 overflow-x-auto overflow-y-auto"
+          style={depDraw ? { cursor: 'crosshair' } : undefined}
         >
           <div style={{ width: timelineWidth, position: 'relative' }}>
             {/* Timeline header — two-tier timescale */}
@@ -2535,6 +2620,20 @@ export function GanttChart({
                 </div>
               );
             })}
+
+            {/* Dep-draw target row highlight */}
+            {depDraw && depDrawHoverIdx >= 0 && depDrawHoverIdx < rows.length && rows[depDrawHoverIdx].task.id !== depDraw.sourceTaskId && !parentTaskIds.has(rows[depDrawHoverIdx].task.id) && (
+              <div
+                className="absolute left-0 pointer-events-none z-10"
+                style={{
+                  top: HEADER_H + depDrawHoverIdx * ROW_H,
+                  width: timelineWidth,
+                  height: ROW_H,
+                  backgroundColor: 'rgba(59,130,246,0.08)',
+                  border: '1px dashed rgba(59,130,246,0.3)',
+                }}
+              />
+            )}
 
             {/* Task bars */}
             {rows.map(({ task }, idx) => {
@@ -2684,6 +2783,24 @@ export function GanttChart({
                     />
                   )}
 
+                  {/* Dependency connector dots */}
+                  {onTaskUpdate && !isParent && !task.isMilestone && (
+                    <>
+                      <div
+                        className={`absolute top-1/2 -translate-y-1/2 -left-[4px] w-[8px] h-[8px] rounded-full border-2 z-20 transition-opacity cursor-crosshair ${depDraw?.sourceTaskId === task.id ? 'opacity-100' : 'opacity-0 group-hover/bar:opacity-100'}`}
+                        style={{ backgroundColor: '#fff', borderColor: colors.fill }}
+                        onMouseDown={(e) => handleDepDrawMouseDown(e, task, 'start')}
+                        title="Drag to create dependency (Start)"
+                      />
+                      <div
+                        className={`absolute top-1/2 -translate-y-1/2 -right-[4px] w-[8px] h-[8px] rounded-full border-2 z-20 transition-opacity cursor-crosshair ${depDraw?.sourceTaskId === task.id ? 'opacity-100' : 'opacity-0 group-hover/bar:opacity-100'}`}
+                        style={{ backgroundColor: '#fff', borderColor: colors.fill }}
+                        onMouseDown={(e) => handleDepDrawMouseDown(e, task, 'finish')}
+                        title="Drag to create dependency (Finish)"
+                      />
+                    </>
+                  )}
+
                   {/* Tooltip on hover */}
                   <div className={`${isDragging ? 'invisible' : 'invisible group-hover/bar:visible'} absolute z-30 left-0 -top-16 bg-gray-900 text-white rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg pointer-events-none`}>
                     <div className="font-semibold">
@@ -2802,6 +2919,24 @@ export function GanttChart({
                   );
                 });
               })}
+              {/* Dep-draw preview line */}
+              {depDraw && (
+                <>
+                  <marker id="arrowhead-draw" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                    <polygon points="0 0, 6 2, 0 4" fill="#3b82f6" />
+                  </marker>
+                  <line
+                    x1={depDraw.sourceX}
+                    y1={depDraw.sourceY}
+                    x2={depDraw.currentX}
+                    y2={depDraw.currentY}
+                    stroke="#3b82f6"
+                    strokeWidth="2"
+                    strokeDasharray="6 3"
+                    markerEnd="url(#arrowhead-draw)"
+                  />
+                </>
+              )}
             </svg>
           </div>
         </div>

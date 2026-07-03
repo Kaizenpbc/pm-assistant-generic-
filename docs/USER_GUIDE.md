@@ -233,6 +233,7 @@ The default schedule view. Displays tasks as horizontal bars on a timeline:
 - **Predecessor column (Pred)** shows all predecessors as a comma-separated list in compact row-number format (e.g. "3FS+2d,5SS,7") with a colour-coded health dot: green (done), yellow (in progress), red (overdue). Click to edit inline using the same MS Project notation.
 - **Dependency arrows** are drawn for each predecessor individually, colour-coded by that predecessor's health: green for completed, yellow for in-progress, red for overdue.
 - **Drag-and-drop rescheduling**: Drag a bar to move the task to new dates. Drag the right edge to resize (change end date only). Changes automatically cascade through dependencies. The timeline **auto-scrolls** when you drag near the left or right edge of the viewport.
+- **Interactive dependency drawing**: Hover over a task bar to see connector dots at the left (start) and right (finish) edges. Drag from a dot to another task bar to create a dependency link. The dependency type (FS/SS/FF/SF) is determined by which edges you drag from and to. A dashed blue preview line and target row highlight guide you during the drag.
 - **Recurring task indicator**: Template tasks display a repeat icon on their bar.
 - **Milestones**: Tasks marked as milestones appear as diamonds instead of bars.
 - **PDF Export**: Click the **Print / Export PDF** button in the toolbar to open a print-optimised Gantt ready for saving as PDF.

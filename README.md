@@ -81,6 +81,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Full CRUD for projects, tasks, and schedules
 - Multiple views: Gantt chart, Kanban board, Calendar, Table (with MS Project-style column picker and saved views)
 - Gantt drag-and-drop rescheduling (move and resize task bars)
+- Gantt interactive dependency drawing: drag from connector dots on task bar edges to another task to create FS/SS/FF/SF links visually (MS Project-style)
 - Gantt inline grid editing: click any cell in the left panel to edit directly (name, dates, duration, %, priority, assignee, status, predecessors) with Tab navigation across cells and rows
 - Gantt column header sort (asc/desc/none, hierarchy-preserving), copy/paste cells (Ctrl+C/V), indent/outdent (Tab/Shift+Tab), bar progress drag
 - Gantt quick search (Ctrl+F) with type-ahead filtering, filter panel (status, priority, assignee, date range, progress), and saved views (columns, sort, zoom via localStorage)
