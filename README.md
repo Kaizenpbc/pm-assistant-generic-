@@ -114,6 +114,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - PV, EV, AC, SPI, CPI, EAC, ETC, VAC, TCPI metrics
 - S-curve visualization
 - Performance forecasting with trend analysis
+- Dedicated EVM Dashboard page (`/evm`) with KPI cards, forecast cards, CPI/SPI trend chart, early warnings, forecast comparison table, and AI predictions
 
 ### Resource Management
 - Resource pool with roles, capacity, and cost rates
@@ -121,6 +122,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Resource leveling algorithm
 - Resource optimization suggestions
 - Resource availability calendar (vacation, holiday, unavailable, reduced hours)
+- Dedicated Resource Management page (`/resources`) with workload heatmap, resource histogram, and capacity forecast tabs
 
 ### DAG Workflow Engine
 - Declarative directed acyclic graph workflows

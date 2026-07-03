@@ -128,6 +128,20 @@ The `EVMForecastService` extends basic EVM with AI-powered forecasting:
 
 Proactive alerts fire when CPI or SPI drop below configurable thresholds, enabling intervention before projects go off-track.
 
+### EVM Dashboard Page (`/evm`)
+
+A dedicated analytics page for earned value management, accessible from the sidebar under the **Analyze** section. Features:
+
+- **Project selector** dropdown to choose which project to analyze.
+- **Six KPI cards**: CPI, SPI, EV, PV, AC, BAC with color-coded values (green when healthy, red when critical).
+- **Four forecast cards**: EAC, ETC, VAC, TCPI with red warning borders when thresholds are exceeded.
+- **CPI/SPI Trend chart**: SVG line chart with blue CPI line, green SPI line, 1.0 baseline reference, and labeled axes.
+- **Early Warnings panel**: color-coded alert cards (critical = red, warning = amber, info = blue).
+- **Forecast Comparison table**: multiple forecasting methods with EAC values and BAC variance.
+- **AI Predictions section** (when `AI_ENABLED=true`): AI-adjusted EAC with confidence range, overrun probability, trend direction, narrative summary, and corrective actions with priority badges.
+
+Uses the existing `getEVMForecast()` API.
+
 ---
 
 ## 4. Resource Management
@@ -185,6 +199,19 @@ The calendar displays a color-coded month grid (red=vacation, blue=holiday, gray
 - `POST /api/v1/resources/:resourceId/availability`
 - `PUT /api/v1/resources/availability/:id`
 - `DELETE /api/v1/resources/availability/:id`
+
+### Resource Management Page (`/resources`)
+
+A dedicated analytics page accessible from the sidebar under the **Analyze** section. Features:
+
+- **Project selector** dropdown to choose which project to view.
+- **Summary cards**: Total Resources, Over-allocated count, Average Utilization.
+- **Three tabs**:
+  - **Workload Heatmap** — Table showing all resources with weekly utilization percentages as colored cells (green < 80%, blue 80–100%, amber 100–120%, red > 120%). Displays resource name, role, average utilization, and per-week cells.
+  - **Resource Histogram** — SVG bar chart per resource showing daily demand hours with an 8-hour capacity line. Red bars for over-allocated days. Includes an over-allocation summary with count and details.
+  - **Capacity Forecast** — 8-week bottleneck predictions table (resource, week, demand, capacity, severity) and AI-generated recommendations.
+
+Uses existing APIs: `getResourceWorkload()`, `getResourceHistogram()`, `getResourceForecast()`.
 
 ---
 

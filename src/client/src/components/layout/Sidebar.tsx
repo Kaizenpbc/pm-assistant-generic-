@@ -25,6 +25,8 @@ import {
   Bot,
   GitPullRequest,
   Target,
+  Users,
+  DollarSign,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -67,6 +69,8 @@ const navSections: NavSection[] = [
       { labelKey: 'nav.reports', icon: FileText, path: '/reports' },
       { labelKey: 'nav.reportBuilder', icon: FileBarChart, path: '/report-builder' },
       { labelKey: 'nav.simulation', icon: Dice5, path: '/monte-carlo' },
+      { labelKey: 'nav.resources', icon: Users, path: '/resources' },
+      { labelKey: 'nav.evm', icon: DollarSign, path: '/evm' },
     ],
   },
   {

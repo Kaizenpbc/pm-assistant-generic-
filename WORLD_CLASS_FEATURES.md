@@ -67,6 +67,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Over-allocation detection and warnings
 - Resource utilization percentage
 - Paginated list endpoint (`?limit=&offset=`, max 200, default 50)
+- Dedicated Resource Management page (`/resources`) with project selector, summary cards, and three tabs: Workload Heatmap (color-coded weekly utilization grid), Resource Histogram (SVG bar charts with 8h capacity line), Capacity Forecast (8-week bottleneck predictions + AI recommendations)
 - **Benchmark:** MS Project, Wrike, Asana
 
 ### 1.6a Gantt Overallocation Warnings & Minimap
@@ -202,6 +203,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Early warning for projects trending toward overrun
 - AI suggests corrective actions with estimated impact
 - Compare AI forecast vs traditional EAC formulas
+- Dedicated EVM Dashboard page (`/evm`) with 6 KPI cards, 4 forecast cards (with warning borders), CPI/SPI trend line chart, early warnings panel, forecast comparison table, and AI predictions section (confidence range, overrun probability, corrective actions with priority badges)
 
 ### 3.8 Agent Activity Log
 - Per-project decision log for all 4 agentic agents (Auto-Reschedule, Budget, Monte Carlo, Meeting)
@@ -388,3 +390,5 @@ An agentic AI project management platform that combines the scheduling power of 
 | Gantt Resource Overallocation Warnings (amber highlights on overlapping assignments) | Done | Innovation |
 | Gantt Minimap (200×80px overview panel with draggable viewport) | Done | Enhancement |
 | MS Project XML Export (MSPDI format with tasks, resources, assignments) | Done | Enhancement |
+| Resource Management Page (workload heatmap, histogram, capacity forecast) | Done | Enhancement |
+| EVM Dashboard Page (KPI cards, trend chart, forecasts, AI predictions) | Done | Enhancement |

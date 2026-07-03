@@ -21,7 +21,9 @@
     "account": "Compte",
     "settings": "Paramètres",
     "admin": "Administration",
-    "help": "Aide"
+    "help": "Aide",
+    "resources": "Ressources",
+    "evm": "Tableau EVM"
   },
   "section": {
     "plan": "Planifier",

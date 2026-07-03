@@ -45,6 +45,8 @@ const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m
 const AgentProposalsPage = lazy(() => import('./pages/AgentProposalsPage').then(m => ({ default: m.AgentProposalsPage })));
 const ChangeRequestsPage = lazy(() => import('./pages/ChangeRequestsPage').then(m => ({ default: m.ChangeRequestsPage })));
 const GoalsPage = lazy(() => import('./pages/GoalsPage').then(m => ({ default: m.GoalsPage })));
+const ResourceManagementPage = lazy(() => import('./pages/ResourceManagementPage').then(m => ({ default: m.ResourceManagementPage })));
+const EVMDashboardPage = lazy(() => import('./pages/EVMDashboardPage').then(m => ({ default: m.EVMDashboardPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 function PageLoader() {
@@ -120,6 +122,8 @@ function App() {
         <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
         <Route path="/change-requests" element={<PrivateRoute><ChangeRequestsPage /></PrivateRoute>} />
         <Route path="/goals" element={<PrivateRoute><GoalsPage /></PrivateRoute>} />
+        <Route path="/resources" element={<PrivateRoute><ResourceManagementPage /></PrivateRoute>} />
+        <Route path="/evm" element={<PrivateRoute><EVMDashboardPage /></PrivateRoute>} />
         <Route path="/agent" element={<PrivateRoute><AgentProposalsPage /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
 

@@ -21,7 +21,9 @@
     "account": "Account",
     "settings": "Settings",
     "admin": "Admin",
-    "help": "Help"
+    "help": "Help",
+    "resources": "Resources",
+    "evm": "EVM Dashboard"
   },
   "section": {
     "plan": "Plan",

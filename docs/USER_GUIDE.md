@@ -31,6 +31,8 @@ A comprehensive guide for using PM Assistant, an AI-powered enterprise project m
 23. [Dark Mode, Language, and Time Zone](#23-dark-mode-language-and-time-zone)
 24. [Goals / OKR Tracking](#24-goals--okr-tracking)
 25. [Bulk CSV Import](#25-bulk-csv-import)
+26. [Resource Management Page](#26-resource-management-page)
+27. [EVM Dashboard Page](#27-evm-dashboard-page)
 
 ---
 
@@ -78,6 +80,8 @@ The left sidebar provides access to all areas of the application:
 | Analytics      | Summary analytics and dashboards            |
 | Workflows      | DAG-based automation workflows              |
 | Intelligence   | Scenario modeling and cross-project analysis|
+| Resources      | Resource workload heatmap, histogram, and capacity forecast |
+| EVM            | Earned value KPIs, trend charts, forecasts, and AI predictions |
 | Simulation     | Monte Carlo schedule simulation             |
 | Meetings       | AI meeting intelligence                     |
 | Lessons        | Lessons learned knowledge base              |
@@ -1096,6 +1100,59 @@ You can import tasks into any schedule from a CSV or Excel file without entering
 **Duplicate detection:** If a task with the same name and start date already exists in the schedule, the row is skipped and reported as a duplicate.
 
 Accepted date formats: `YYYY-MM-DD` and `MM/DD/YYYY`. Unrecognised status or priority values default to `pending` and `medium` respectively.
+
+---
+
+## 26. Resource Management Page
+
+The Resource Management page (`/resources`) provides a centralized view of resource utilization and capacity. Access it from the sidebar under the **Analyze** section.
+
+1. Select a project from the **project selector** dropdown at the top.
+2. Review the **summary cards**: Total Resources, Over-allocated count, and Average Utilization.
+3. Switch between three tabs:
+
+### Workload Heatmap
+
+A table showing all resources with weekly utilization percentages rendered as colored cells:
+
+| Color | Utilization Range |
+|-------|-------------------|
+| Green | Below 80% |
+| Blue  | 80%–100% |
+| Amber | 100%–120% |
+| Red   | Above 120% |
+
+Each row displays the resource name, role, average utilization, and per-week cells.
+
+### Resource Histogram
+
+An SVG bar chart per resource showing daily demand hours alongside an 8-hour capacity line. Over-allocated days appear as red bars. Below the chart, an over-allocation summary lists the count and details of over-allocated days.
+
+### Capacity Forecast
+
+An 8-week bottleneck predictions table with columns for resource, week, demand, capacity, and severity. Below the table, AI-generated recommendations suggest actions to resolve upcoming bottlenecks.
+
+---
+
+## 27. EVM Dashboard Page
+
+The EVM Dashboard (`/evm`) provides a comprehensive earned value management view. Access it from the sidebar under the **Analyze** section.
+
+1. Select a project from the **project selector** dropdown.
+2. Review the **KPI cards**: CPI, SPI, EV, PV, AC, and BAC. Values are color-coded (green when healthy, red when critical).
+3. Review the **forecast cards**: EAC, ETC, VAC, and TCPI. Cards show red warning borders when thresholds are exceeded.
+4. The **CPI/SPI Trend chart** plots CPI (blue line) and SPI (green line) over time with a 1.0 baseline reference and labeled axes.
+5. The **Early Warnings** panel displays color-coded alerts:
+   - **Red** — Critical issues requiring immediate attention.
+   - **Amber** — Warnings to watch.
+   - **Blue** — Informational notices.
+6. The **Forecast Comparison** table shows multiple forecasting methods with their EAC values and variance from BAC.
+7. When AI is enabled, the **AI Predictions** section displays:
+   - AI-adjusted EAC with confidence range (low/high).
+   - Overrun probability percentage.
+   - Trend direction (improving, stable, or deteriorating).
+   - Narrative summary in plain language.
+   - Corrective actions with priority badges.
 
 ---
 
