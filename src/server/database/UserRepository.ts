@@ -102,7 +102,7 @@ export class UserRepository extends BaseRepository<User> {
         data.email,
         data.passwordHash,
         data.fullName,
-        data.role || 'member',
+        data.role || 'team_member',
         true,
         data.emailVerified ?? false,
         data.emailVerificationToken || null,

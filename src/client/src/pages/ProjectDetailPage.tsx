@@ -213,7 +213,7 @@ export function ProjectDetailPage() {
   const [showStatusReport, setShowStatusReport] = useState(false);
 
   const { user } = useAuthStore();
-  const canEditStatus = user?.role === 'admin' || user?.role === 'manager';
+  const canEditStatus = user?.role === 'admin' || user?.role === 'project_manager';
   const presenceViewers = usePresence(id);
   const otherViewers = presenceViewers.filter(v => v.userId !== user?.id);
 

@@ -20,7 +20,7 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
       request.user = {
         userId: keyInfo.userId,
         username: 'api-key',
-        role: keyInfo.scopes.includes('admin') ? 'admin' : 'member',
+        role: keyInfo.userRole,
       };
       request.apiKeyId = keyInfo.keyId;
       request.apiKeyScopes = keyInfo.scopes;

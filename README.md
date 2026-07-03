@@ -201,6 +201,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Circuit Breakers** -- Per-agent circuit breakers open after 3 consecutive failures, auto-retry after cooldown
 - **Degradation Handling** -- Graceful scope reduction when Claude API or database is unhealthy
 - **Feedback Loop** -- Users rate proposal outcomes; feedback improves future confidence scores
+- **Agent Memory Layer** -- Persistent memory across sessions: session, project, role, and reflection memory types with TTL expiry. Agents store reflections after each action (what was decided, why, outcome). Memory API: `GET/POST/DELETE /api/v1/agent/memory`
 - **Agent Proposals UI** -- Dedicated page (`/agent`) for managers/admins to review, approve/reject, execute, rollback, and rate agent proposals with full reasoning and action detail; "Load More" pagination for large proposal lists
 
 ### Reporting & Analytics
@@ -415,15 +416,15 @@ pm-assistant-generic/
 
 ## MCP Server
 
-The MCP (Model Context Protocol) server exposes 11 tools that allow Claude Desktop and Claude Web to interact with PM Assistant directly:
+The MCP (Model Context Protocol) server exposes 79 tools across 15 groups and 6 read-only resources. Tools are **role-filtered** — each user only sees tools their role permits.
 
-- `list-projects` / `get-project` — Project listing and details
-- `get-schedules` / `get-tasks` — Schedule and task data
-- `get-project-health` / `get-project-risks` / `get-project-budget` — AI-powered assessments
-- `get-analytics` — Portfolio-level analytics summary
-- `get-alerts` — Proactive alerts across all projects
-- `search` — Search projects and tasks by keyword
-- `get-portfolio` — Full portfolio overview
+**Tool Groups:** Projects, Schedules, Tasks, Sprints, Resources, Time Tracking, Approvals, Reports, AI Insights, Auto-Reschedule, Intake, Custom Fields, Integrations, Admin, Templates.
+
+**Resources:** `project://{id}/summary`, `project://{id}/tasks`, `project://{id}/risks`, `project://{id}/financials`, `project://{id}/schedule`.
+
+**Roles:** `admin`, `executive`, `project_manager`, `team_member`, `scrum_master`, `finance_officer` — see `mcp-server/src/permissions.ts` for the full permission matrix.
+
+**Auth:** OAuth 2.1 with PKCE (HTTP mode) or API key (STDIO mode). Role is resolved from the user's database record, not inferred from scopes.
 
 See `mcp-server/` for setup instructions and tool definitions.
 
@@ -449,7 +450,7 @@ npm run start                # Start compiled server (serves API + static)
 npm run db:migrate           # Run database migrations
 npm run db:seed              # Seed initial data
 
-# Testing (31 test files, 325 tests — agents, core services, policy engine)
+# Testing (42 test files, 440 tests — agents, core services, policy engine, permissions)
 npm run test                 # Run tests (Vitest)
 npm run test:unit            # Run unit tests once
 

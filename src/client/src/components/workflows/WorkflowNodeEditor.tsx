@@ -145,7 +145,7 @@ export function WorkflowNodeEditor({ nodeType, config, onChange }: NodeEditorPro
             <select value={config.approverRole || ''} onChange={e => set('approverRole', e.target.value || undefined)} className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5">
               <option value="">Any role</option>
               <option value="admin">Admin</option>
-              <option value="manager">Manager</option>
+              <option value="project_manager">Project Manager</option>
               <option value="lead">Lead</option>
             </select>
           </div>

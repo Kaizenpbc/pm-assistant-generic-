@@ -73,7 +73,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
 
         const result = await actionExecutor.execute(toolName, params, {
           userId: user.userId,
-          userRole: user.role || 'member',
+          userRole: user.role || 'team_member',
         });
 
         return result;

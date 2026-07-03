@@ -6,7 +6,7 @@ export interface User {
   username: string;
   email: string;
   fullName: string;
-  role: 'admin' | 'executive' | 'manager' | 'member';
+  role: 'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer';
   subscriptionTier?: 'free' | 'pro' | 'business';
   subscriptionStatus?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
 }

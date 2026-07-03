@@ -65,7 +65,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
             request.user = {
               userId: keyInfo.userId,
               username: 'api-key',
-              role: keyInfo.scopes.includes('admin') ? 'admin' : 'member',
+              role: keyInfo.userRole,
             };
           }
         }

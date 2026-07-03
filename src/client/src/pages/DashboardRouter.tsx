@@ -17,8 +17,8 @@ export function DashboardRouter() {
           <ExecutiveDashboard />
         </Suspense>
       );
-    case 'manager':
-    case 'member':
+    case 'project_manager':
+    case 'team_member':
     default:
       return <PMDashboard />;
   }

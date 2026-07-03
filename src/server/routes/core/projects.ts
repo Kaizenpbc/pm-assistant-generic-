@@ -119,7 +119,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       const user = request.user!;
       const { id } = request.params as { id: string };
       // Allow admins, managers, and the project creator
-      if (user.role !== 'admin' && user.role !== 'manager') {
+      if (user.role !== 'admin' && user.role !== 'project_manager') {
         const existing = await projectService.findById(id);
         if (!existing || existing.createdBy !== user.userId) {
           return reply.status(403).send({ error: 'Forbidden', message: 'Only admins, project managers, or the project creator can change project status' });

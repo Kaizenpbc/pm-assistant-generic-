@@ -311,7 +311,7 @@ export class AIChatService {
 
     const systemPrompt = promptTemplates.conversational.render({
       projectContext,
-      userRole: req.userRole || 'member',
+      userRole: req.userRole || 'team_member',
     });
 
     let history: Array<{ role: 'user' | 'assistant'; content: string }> = [];

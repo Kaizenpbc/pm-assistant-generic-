@@ -1,6 +1,7 @@
 import { z, ZodSchema } from 'zod';
 import { policyEngineService, type EvaluationContext } from './PolicyEngineService';
 import { auditLedgerService } from './AuditLedgerService';
+import { agentMemoryService } from './AgentMemoryService';
 
 export interface AgentCapability {
   id: string;
@@ -126,6 +127,20 @@ export class AgentRegistry {
 
     const durationMs = Date.now() - start;
     await this.audit(cap, context, true, undefined, durationMs);
+
+    // Store reflection (fire-and-forget)
+    agentMemoryService.storeReflection(
+      capabilityId,
+      context.projectId || null,
+      {
+        action: cap.capability,
+        decision: capabilityId,
+        reasoning: `Invoked by ${context.actorType}:${context.actorId} via ${context.source}`,
+        outcome: `Success in ${durationMs}ms`,
+        timestamp: new Date().toISOString(),
+      },
+    ).catch(() => {});
+
     return { success: true, output: outputResult.data, durationMs, capabilityId };
   }
 

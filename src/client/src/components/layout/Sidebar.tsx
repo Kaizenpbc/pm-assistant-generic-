@@ -43,7 +43,7 @@ interface NavItem {
   labelKey: string;
   icon: React.ElementType;
   path: string;
-  roles?: Array<'admin' | 'executive' | 'manager' | 'member'>;
+  roles?: Array<'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer'>;
 }
 
 interface NavSection {
@@ -81,7 +81,7 @@ const navSections: NavSection[] = [
       { labelKey: 'nav.meetings', icon: MessageSquare, path: '/meetings' },
       { labelKey: 'nav.lessons', icon: BookOpen, path: '/lessons' },
       { labelKey: 'nav.askAi', icon: Search, path: '/query' },
-      { labelKey: 'nav.agent', icon: Bot, path: '/agent', roles: ['admin', 'manager'] },
+      { labelKey: 'nav.agent', icon: Bot, path: '/agent', roles: ['admin', 'project_manager'] },
     ],
   },
   {
@@ -97,7 +97,7 @@ const navSections: NavSection[] = [
     titleKey: 'section.system',
     items: [
       { labelKey: 'nav.account', icon: CreditCard, path: '/account' },
-      { labelKey: 'nav.settings', icon: Settings, path: '/settings', roles: ['admin', 'manager'] },
+      { labelKey: 'nav.settings', icon: Settings, path: '/settings', roles: ['admin', 'project_manager'] },
       { labelKey: 'nav.admin', icon: ShieldCheck, path: '/admin', roles: ['admin'] },
       { labelKey: 'nav.help', icon: HelpCircle, path: '/help' },
     ],

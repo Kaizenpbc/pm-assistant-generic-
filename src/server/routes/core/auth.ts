@@ -146,7 +146,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         email,
         passwordHash,
         fullName,
-        role: 'member',
+        role: 'team_member',
         emailVerified: false,
         emailVerificationToken: verificationToken,
         emailVerificationExpires: verificationExpires,

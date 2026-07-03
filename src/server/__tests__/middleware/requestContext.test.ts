@@ -10,7 +10,7 @@ describe('requestContext', () => {
   it('sets and retrieves request context via hook', async () => {
     const mockRequest = {
       headers: { 'x-request-id': 'req-test-123' },
-      user: { userId: 'u1', username: 'test', role: 'member' as const },
+      user: { userId: 'u1', username: 'test', role: 'team_member' as const },
     } as any;
     const mockReply = {} as any;
 

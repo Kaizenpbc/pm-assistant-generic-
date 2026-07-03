@@ -20,35 +20,102 @@ import { registerCustomFieldTools } from './tools/custom-fields.js';
 import { registerIntegrationTools } from './tools/integrations.js';
 import { registerAdminTools } from './tools/admin.js';
 import { registerTemplateTools } from './tools/templates.js';
+import { type Role, isToolAllowed } from './permissions.js';
+import { registerResources } from './resources/index.js';
 
-function createMcpServer(): McpServer {
-  const server = new McpServer({
-    name: 'pm-assistant',
-    version: '2.2.0',
-  });
+export interface McpUserContext {
+  role: Role;
+  userId?: string;
+}
 
-  // Register all tool groups
-  registerProjectTools(server);
-  registerScheduleTools(server);
-  registerTaskTools(server);
-  registerSprintTools(server);
-  registerResourceTools(server);
-  registerTimeTrackingTools(server);
-  registerApprovalTools(server);
-  registerReportTools(server);
-  registerAIInsightTools(server);
-  registerAutoRescheduleTools(server);
-  registerIntakeTools(server);
-  registerCustomFieldTools(server);
-  registerIntegrationTools(server);
-  registerAdminTools(server);
-  registerTemplateTools(server);
+/**
+ * Wraps McpServer.tool() to only register tools the user's role permits.
+ * Returns a proxy that intercepts tool registration calls.
+ */
+function createRoleFilteredServer(server: McpServer, role: Role): McpServer {
+  const originalTool = server.tool.bind(server);
+
+  // Override the tool method to filter by role
+  server.tool = function filteredTool(name: string, ...rest: any[]) {
+    if (!isToolAllowed(name, role)) {
+      return; // Skip registration — tool won't appear in the tool list
+    }
+    return (originalTool as any)(name, ...rest);
+  } as any;
 
   return server;
 }
 
+function createMcpServer(userContext?: McpUserContext): McpServer {
+  const server = new McpServer({
+    name: 'pm-assistant',
+    version: '3.0.0',
+  });
+
+  // Apply role filtering if user context is provided
+  const registrationTarget = userContext
+    ? createRoleFilteredServer(server, userContext.role)
+    : server; // No filtering in stdio mode without context (backward compat)
+
+  // Register all tool groups (filtered by role)
+  registerProjectTools(registrationTarget);
+  registerScheduleTools(registrationTarget);
+  registerTaskTools(registrationTarget);
+  registerSprintTools(registrationTarget);
+  registerResourceTools(registrationTarget);
+  registerTimeTrackingTools(registrationTarget);
+  registerApprovalTools(registrationTarget);
+  registerReportTools(registrationTarget);
+  registerAIInsightTools(registrationTarget);
+  registerAutoRescheduleTools(registrationTarget);
+  registerIntakeTools(registrationTarget);
+  registerCustomFieldTools(registrationTarget);
+  registerIntegrationTools(registrationTarget);
+  registerAdminTools(registrationTarget);
+  registerTemplateTools(registrationTarget);
+
+  // Register MCP resources (role-filtered)
+  registerResources(server, userContext?.role);
+
+  return server;
+}
+
+async function resolveRoleFromApiKey(apiKey: string): Promise<Role> {
+  try {
+    const { query } = await import('./db.js');
+    const crypto = await import('node:crypto');
+    const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
+
+    interface KeyRow { user_role: string }
+    const rows = await query<KeyRow & import('mysql2/promise').RowDataPacket>(
+      `SELECT u.role AS user_role
+       FROM api_keys ak
+       JOIN users u ON u.id = ak.user_id
+       WHERE ak.key_hash = ? AND ak.is_active = 1 AND (ak.expires_at IS NULL OR ak.expires_at > NOW())`,
+      [keyHash],
+    );
+
+    if (rows.length > 0) {
+      return rows[0].user_role as Role;
+    }
+  } catch (err) {
+    console.error('[MCP] Failed to resolve role from API key:', err);
+  }
+  return 'team_member'; // fallback
+}
+
 async function startStdio() {
-  const server = createMcpServer();
+  // Resolve role from PM_API_KEY if available
+  const apiKey = process.env.PM_API_KEY || '';
+  let userContext: McpUserContext | undefined;
+
+  if (apiKey) {
+    const role = await resolveRoleFromApiKey(apiKey);
+    userContext = { role };
+    console.error(`[MCP STDIO] Resolved role: ${role}`);
+  }
+
+  const server = createMcpServer(userContext);
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
@@ -105,9 +172,9 @@ async function startHttp() {
       }
 
       // Validate credentials against users table
-      interface UserRow { id: string; username: string; password_hash: string }
+      interface UserRow { id: string; username: string; password_hash: string; role: string }
       const users = await query<UserRow & import('mysql2/promise').RowDataPacket>(
-        'SELECT id, username, password_hash FROM users WHERE username = ? AND is_active = 1',
+        'SELECT id, username, password_hash, role FROM users WHERE username = ? AND is_active = 1',
         [username],
       );
 
@@ -174,6 +241,24 @@ async function startHttp() {
   // Session management
   const sessions = new Map<string, { server: McpServer; transport: StreamableHTTPServerTransport }>();
 
+  // Helper: resolve user role from OAuth authInfo
+  async function resolveRoleFromAuth(authInfo: any): Promise<Role> {
+    const userId = authInfo?.extra?.userId;
+    if (!userId) return 'team_member';
+
+    try {
+      interface RoleRow { role: string }
+      const rows = await query<RoleRow & import('mysql2/promise').RowDataPacket>(
+        'SELECT role FROM users WHERE id = ?',
+        [userId],
+      );
+      if (rows.length > 0) return rows[0].role as Role;
+    } catch (err) {
+      console.error('[MCP] Failed to resolve role from auth:', err);
+    }
+    return 'team_member';
+  }
+
   // MCP endpoint with auth
   app.post('/mcp', bearerAuth, async (req, res) => {
     try {
@@ -185,8 +270,15 @@ async function startHttp() {
         return;
       }
 
-      // New session
-      const server = createMcpServer();
+      // New session — resolve role for this user
+      const authInfo = (req as any).auth;
+      const role = await resolveRoleFromAuth(authInfo);
+      const userContext: McpUserContext = {
+        role,
+        userId: authInfo?.extra?.userId,
+      };
+
+      const server = createMcpServer(userContext);
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
       });

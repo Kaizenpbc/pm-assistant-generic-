@@ -61,7 +61,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
           conversationId: body.conversationId,
           context: body.context,
           userId: user.userId,
-          userRole: user.role || 'member',
+          userRole: user.role || 'team_member',
         });
 
         return result;
@@ -121,7 +121,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
           conversationId: body.conversationId,
           context: body.context,
           userId: user.userId,
-          userRole: user.role || 'member',
+          userRole: user.role || 'team_member',
         });
 
         for await (const chunk of stream) {

@@ -14,7 +14,7 @@ const mockQuery = databaseService.query as ReturnType<typeof vi.fn>;
 const sampleRow = {
   id: 'u1', username: 'johndoe', email: 'john@example.com',
   password_hash: '$2b$10$hashedpassword', full_name: 'John Doe',
-  role: 'member', is_active: 1, email_verified: 1,
+  role: 'team_member', is_active: 1, email_verified: 1,
   email_verification_token: null, email_verification_expires: null,
   password_reset_token: null, password_reset_expires: null,
   stripe_customer_id: null, subscription_tier: 'free',
@@ -110,7 +110,7 @@ describe('UserService', () => {
       });
 
       expect(user.username).toBe('johndoe');
-      expect(user.role).toBe('member'); // default
+      expect(user.role).toBe('team_member'); // default
     });
 
     it('uses custom role when provided', async () => {

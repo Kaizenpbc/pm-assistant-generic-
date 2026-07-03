@@ -729,11 +729,27 @@ The `WebhookService` allows registering outbound webhook endpoints that fire on 
 - **Session management**: refresh token rotation
 - **OAuth 2.1**: PKCE-based authorization for MCP HTTP transport (per-user access from Claude Desktop/Web)
 
+### Roles
+
+Six user roles with hierarchical permissions:
+
+| Role | Scopes | Description |
+|------|--------|-------------|
+| `admin` | read, write, admin | Full system access |
+| `executive` | read | Portfolio oversight + approval authority |
+| `project_manager` | read, write | Full project lifecycle management |
+| `scrum_master` | read, write | Sprint and task management |
+| `team_member` | read | Task work + time logging |
+| `finance_officer` | read | Budget and financial visibility |
+
+MCP tools are filtered by role — agents only see tools their role permits (see `mcp-server/src/permissions.ts`).
+
 ### API Keys
 
 The `ApiKeyService` issues scoped API keys for programmatic access:
 
 - Scope-based permissions (read, write, admin)
+- **Role resolution**: API key auth resolves the user's actual database role (not inferred from scopes)
 - Key hashing (only prefix stored in plaintext for identification)
 - Expiration support
 - Revocation

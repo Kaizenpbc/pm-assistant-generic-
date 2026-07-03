@@ -1,0 +1,171 @@
+import { describe, it, expect } from 'vitest';
+import { isToolAllowed, getAllowedRoles, type Role } from '../../../../mcp-server/src/permissions';
+
+const ALL_ROLES: Role[] = ['admin', 'executive', 'project_manager', 'team_member', 'scrum_master', 'finance_officer'];
+
+describe('MCP Permission Matrix', () => {
+  describe('admin', () => {
+    it('can access all tools', () => {
+      const tools = [
+        'list-projects', 'create-project', 'delete-project',
+        'create-task', 'delete-task', 'create-sprint',
+        'trigger-agent', 'create-integration',
+        'log-time', 'act-on-approval',
+      ];
+      for (const tool of tools) {
+        expect(isToolAllowed(tool, 'admin')).toBe(true);
+      }
+    });
+  });
+
+  describe('team_member', () => {
+    it('can read all list/get tools', () => {
+      expect(isToolAllowed('list-projects', 'team_member')).toBe(true);
+      expect(isToolAllowed('get-project', 'team_member')).toBe(true);
+      expect(isToolAllowed('list-tasks', 'team_member')).toBe(true);
+      expect(isToolAllowed('get-sprint-board', 'team_member')).toBe(true);
+    });
+
+    it('can create/update tasks', () => {
+      expect(isToolAllowed('create-task', 'team_member')).toBe(true);
+      expect(isToolAllowed('update-task', 'team_member')).toBe(true);
+      expect(isToolAllowed('add-task-comment', 'team_member')).toBe(true);
+    });
+
+    it('cannot delete tasks', () => {
+      expect(isToolAllowed('delete-task', 'team_member')).toBe(false);
+    });
+
+    it('cannot manage sprints', () => {
+      expect(isToolAllowed('create-sprint', 'team_member')).toBe(false);
+      expect(isToolAllowed('start-sprint', 'team_member')).toBe(false);
+    });
+
+    it('cannot manage projects', () => {
+      expect(isToolAllowed('create-project', 'team_member')).toBe(false);
+      expect(isToolAllowed('delete-project', 'team_member')).toBe(false);
+    });
+
+    it('can log time', () => {
+      expect(isToolAllowed('log-time', 'team_member')).toBe(true);
+    });
+
+    it('cannot access admin tools', () => {
+      expect(isToolAllowed('trigger-agent', 'team_member')).toBe(false);
+      expect(isToolAllowed('create-integration', 'team_member')).toBe(false);
+    });
+  });
+
+  describe('scrum_master', () => {
+    it('can manage sprints', () => {
+      expect(isToolAllowed('create-sprint', 'scrum_master')).toBe(true);
+      expect(isToolAllowed('start-sprint', 'scrum_master')).toBe(true);
+      expect(isToolAllowed('complete-sprint', 'scrum_master')).toBe(true);
+      expect(isToolAllowed('add-task-to-sprint', 'scrum_master')).toBe(true);
+    });
+
+    it('can create/update/delete tasks', () => {
+      expect(isToolAllowed('create-task', 'scrum_master')).toBe(true);
+      expect(isToolAllowed('delete-task', 'scrum_master')).toBe(true);
+    });
+
+    it('cannot manage projects', () => {
+      expect(isToolAllowed('create-project', 'scrum_master')).toBe(false);
+      expect(isToolAllowed('delete-project', 'scrum_master')).toBe(false);
+    });
+
+    it('cannot access admin tools', () => {
+      expect(isToolAllowed('trigger-agent', 'scrum_master')).toBe(false);
+    });
+  });
+
+  describe('project_manager', () => {
+    it('can manage projects', () => {
+      expect(isToolAllowed('create-project', 'project_manager')).toBe(true);
+      expect(isToolAllowed('update-project', 'project_manager')).toBe(true);
+      expect(isToolAllowed('delete-project', 'project_manager')).toBe(true);
+    });
+
+    it('can manage sprints and tasks', () => {
+      expect(isToolAllowed('create-sprint', 'project_manager')).toBe(true);
+      expect(isToolAllowed('create-task', 'project_manager')).toBe(true);
+      expect(isToolAllowed('delete-task', 'project_manager')).toBe(true);
+    });
+
+    it('can manage schedules', () => {
+      expect(isToolAllowed('create-schedule', 'project_manager')).toBe(true);
+      expect(isToolAllowed('delete-schedule', 'project_manager')).toBe(true);
+    });
+
+    it('can act on approvals', () => {
+      expect(isToolAllowed('act-on-approval', 'project_manager')).toBe(true);
+      expect(isToolAllowed('accept-proposal', 'project_manager')).toBe(true);
+    });
+
+    it('can access budget/financial tools', () => {
+      expect(isToolAllowed('get-budget-forecast', 'project_manager')).toBe(true);
+      expect(isToolAllowed('get-evm-forecast', 'project_manager')).toBe(true);
+    });
+
+    it('cannot access admin tools', () => {
+      expect(isToolAllowed('trigger-agent', 'project_manager')).toBe(false);
+      expect(isToolAllowed('create-integration', 'project_manager')).toBe(false);
+    });
+  });
+
+  describe('finance_officer', () => {
+    it('can read all tools', () => {
+      expect(isToolAllowed('list-projects', 'finance_officer')).toBe(true);
+      expect(isToolAllowed('list-tasks', 'finance_officer')).toBe(true);
+    });
+
+    it('can access budget/financial tools', () => {
+      expect(isToolAllowed('get-budget-forecast', 'finance_officer')).toBe(true);
+      expect(isToolAllowed('get-evm-forecast', 'finance_officer')).toBe(true);
+    });
+
+    it('cannot write anything', () => {
+      expect(isToolAllowed('create-task', 'finance_officer')).toBe(false);
+      expect(isToolAllowed('create-project', 'finance_officer')).toBe(false);
+      expect(isToolAllowed('log-time', 'finance_officer')).toBe(false);
+    });
+  });
+
+  describe('executive', () => {
+    it('can read all tools', () => {
+      expect(isToolAllowed('list-projects', 'executive')).toBe(true);
+      expect(isToolAllowed('get-portfolio-overview', 'executive')).toBe(true);
+    });
+
+    it('can act on approvals', () => {
+      expect(isToolAllowed('act-on-approval', 'executive')).toBe(true);
+    });
+
+    it('cannot write tasks or projects', () => {
+      expect(isToolAllowed('create-task', 'executive')).toBe(false);
+      expect(isToolAllowed('create-project', 'executive')).toBe(false);
+    });
+  });
+
+  describe('getAllowedRoles', () => {
+    it('returns all roles for read tools', () => {
+      const roles = getAllowedRoles('list-projects');
+      expect(roles).toEqual(ALL_ROLES);
+    });
+
+    it('returns limited roles for admin tools', () => {
+      const roles = getAllowedRoles('trigger-agent');
+      expect(roles).toEqual(['admin']);
+    });
+  });
+
+  describe('unknown tools', () => {
+    it('denies unknown tools for non-admin', () => {
+      expect(isToolAllowed('nonexistent-tool', 'team_member')).toBe(false);
+    });
+
+    it('allows unknown tools for admin', () => {
+      expect(isToolAllowed('nonexistent-tool', 'admin')).toBe(true);
+    });
+  });
+});

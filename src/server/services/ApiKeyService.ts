@@ -55,12 +55,14 @@ export class ApiKeyService {
    */
   async validateKey(
     rawKey: string,
-  ): Promise<{ userId: string; keyId: string; scopes: string[]; rateLimit: number | null } | null> {
+  ): Promise<{ userId: string; keyId: string; scopes: string[]; rateLimit: number | null; userRole: string } | null> {
     const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
 
-    const rows = await databaseService.query<ApiKeyRow>(
-      `SELECT * FROM api_keys
-       WHERE key_hash = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW())`,
+    const rows = await databaseService.query<ApiKeyRow & { user_role?: string }>(
+      `SELECT ak.*, u.role AS user_role
+       FROM api_keys ak
+       LEFT JOIN users u ON u.id = ak.user_id
+       WHERE ak.key_hash = ? AND ak.is_active = 1 AND (ak.expires_at IS NULL OR ak.expires_at > NOW())`,
       [keyHash],
     );
 
@@ -78,6 +80,7 @@ export class ApiKeyService {
       keyId: row.id,
       scopes: JSON.parse(row.scopes),
       rateLimit: row.rate_limit,
+      userRole: row.user_role || 'team_member',
     };
   }
 
