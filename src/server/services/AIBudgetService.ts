@@ -1,5 +1,6 @@
 import { databaseService } from '../database/connection';
 import { config } from '../config';
+import { notificationService } from './NotificationService';
 
 export class AIBudgetExceededError extends Error {
   constructor(public used: number, public budget: number) {
@@ -57,6 +58,31 @@ class AIBudgetService {
     if (usage.totalTokens >= usage.budget) {
       throw new AIBudgetExceededError(usage.totalTokens, usage.budget);
     }
+
+    // Fire a one-time daily warning at 80% usage
+    if (usage.percentUsed >= 80 && usage.percentUsed < 100) {
+      this.sendBudgetWarning(userId, usage).catch(() => {});
+    }
+  }
+
+  private async sendBudgetWarning(userId: string, usage: MonthlyUsage): Promise<void> {
+    const today = new Date().toISOString().substring(0, 10);
+    const existing = await databaseService.query(
+      `SELECT id FROM notifications
+       WHERE user_id = ? AND type = 'ai_budget_warning' AND DATE(created_at) = ?
+       LIMIT 1`,
+      [userId, today],
+    );
+    if (existing.length > 0) return;
+
+    const daysLeft = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate();
+    await notificationService.create({
+      userId,
+      type: 'ai_budget_warning',
+      severity: 'high',
+      title: `AI Budget Warning: ${usage.percentUsed}% Used`,
+      message: `You have used ${usage.totalTokens.toLocaleString()} of ${usage.budget.toLocaleString()} tokens this month. ${usage.remaining.toLocaleString()} tokens remaining with ${daysLeft} days left.`,
+    });
   }
 
   private async getBudget(userId: string): Promise<number> {

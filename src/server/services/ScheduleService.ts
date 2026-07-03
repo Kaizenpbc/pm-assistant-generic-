@@ -432,27 +432,6 @@ export class ScheduleService {
   async createTask(data: CreateTaskData): Promise<Task> {
     const id = uuidv4();
 
-    // Determine sort_order based on afterTaskId
-    let sortOrder = 0;
-    if (data.afterTaskId) {
-      const afterTask = await this.findTaskById(data.afterTaskId);
-      if (afterTask) {
-        sortOrder = afterTask.sortOrder + 1;
-        // Shift all subsequent tasks in this schedule
-        await databaseService.query(
-          'UPDATE tasks SET sort_order = sort_order + 1 WHERE schedule_id = ? AND sort_order >= ?',
-          [data.scheduleId, sortOrder],
-        );
-      }
-    } else {
-      // Append to end: max sort_order + 1
-      const maxRows = await databaseService.query(
-        'SELECT COALESCE(MAX(sort_order), -1) AS max_order FROM tasks WHERE schedule_id = ?',
-        [data.scheduleId],
-      );
-      sortOrder = (maxRows[0]?.max_order ?? -1) + 1;
-    }
-
     // Normalize dependencies: merge legacy single dep into dependencies array
     let deps = data.dependencies || [];
     if (deps.length === 0 && data.dependency) {
@@ -473,52 +452,69 @@ export class ScheduleService {
     const legacyDepType = firstDep?.dependencyType || null;
     const legacyLag = firstDep?.lagDays ?? 0;
 
-    await databaseService.query(
-      `INSERT INTO tasks (id, schedule_id, name, description, status, priority, assigned_to,
-        due_date, estimated_days, estimated_duration_hours, actual_duration_hours,
-        start_date, end_date, progress_percentage, dependency, dependency_type,
-        risks, issues, comments, parent_task_id, is_milestone, dependency_lag_days, sort_order, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        data.scheduleId,
-        data.name,
-        data.description || null,
-        data.status || 'pending',
-        data.priority || 'medium',
-        data.assignedTo || null,
-        toDateStr(data.dueDate),
-        data.estimatedDays ?? null,
-        data.estimatedDurationHours ?? null,
-        data.actualDurationHours ?? null,
-        toDateStr(data.startDate),
-        toDateStr(data.endDate),
-        data.progressPercentage ?? 0,
-        legacyDepId,
-        legacyDepType,
-        data.risks || null,
-        data.issues || null,
-        data.comments || null,
-        data.parentTaskId || null,
-        data.isMilestone ? 1 : 0,
-        legacyLag,
-        sortOrder,
-        data.createdBy,
-      ],
-    );
+    await databaseService.transaction(async (conn) => {
+      const q = <T = any>(sql: string, params: any[] = []) => databaseService.queryOn<T>(conn, sql, params);
 
-    // Insert junction table rows
-    for (const dep of deps) {
-      const depId = uuidv4();
-      await databaseService.query(
-        `INSERT INTO task_dependencies (id, task_id, dependency_id, dependency_type, lag_days) VALUES (?, ?, ?, ?, ?)`,
-        [depId, id, dep.dependencyId, dep.dependencyType || 'FS', dep.lagDays ?? 0],
+      // Determine sort_order based on afterTaskId
+      let sortOrder = 0;
+      if (data.afterTaskId) {
+        const afterTask = await this.findTaskById(data.afterTaskId);
+        if (afterTask) {
+          sortOrder = afterTask.sortOrder + 1;
+          await q('UPDATE tasks SET sort_order = sort_order + 1 WHERE schedule_id = ? AND sort_order >= ?', [data.scheduleId, sortOrder]);
+        }
+      } else {
+        const maxRows = await q('SELECT COALESCE(MAX(sort_order), -1) AS max_order FROM tasks WHERE schedule_id = ?', [data.scheduleId]);
+        sortOrder = (maxRows[0]?.max_order ?? -1) + 1;
+      }
+
+      await q(
+        `INSERT INTO tasks (id, schedule_id, name, description, status, priority, assigned_to,
+          due_date, estimated_days, estimated_duration_hours, actual_duration_hours,
+          start_date, end_date, progress_percentage, dependency, dependency_type,
+          risks, issues, comments, parent_task_id, is_milestone, dependency_lag_days, sort_order, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          data.scheduleId,
+          data.name,
+          data.description || null,
+          data.status || 'pending',
+          data.priority || 'medium',
+          data.assignedTo || null,
+          toDateStr(data.dueDate),
+          data.estimatedDays ?? null,
+          data.estimatedDurationHours ?? null,
+          data.actualDurationHours ?? null,
+          toDateStr(data.startDate),
+          toDateStr(data.endDate),
+          data.progressPercentage ?? 0,
+          legacyDepId,
+          legacyDepType,
+          data.risks || null,
+          data.issues || null,
+          data.comments || null,
+          data.parentTaskId || null,
+          data.isMilestone ? 1 : 0,
+          legacyLag,
+          sortOrder,
+          data.createdBy,
+        ],
       );
-    }
+
+      // Insert junction table rows
+      for (const dep of deps) {
+        const depId = uuidv4();
+        await q(
+          `INSERT INTO task_dependencies (id, task_id, dependency_id, dependency_type, lag_days) VALUES (?, ?, ?, ?, ?)`,
+          [depId, id, dep.dependencyId, dep.dependencyType || 'FS', dep.lagDays ?? 0],
+        );
+      }
+    });
 
     const task = (await this.findTaskById(id))!;
 
-    // Look up projectId from schedule
+    // Fire-and-forget side effects AFTER transaction commit
     const schedule = await this.findById(data.scheduleId);
     auditLedgerService.append({
       actorId: data.createdBy,
@@ -531,7 +527,6 @@ export class ScheduleService {
       source: 'web',
     }).catch(() => {});
 
-    // Fire event-driven workflow triggers (non-blocking)
     dagWorkflowService.evaluateTaskChange(task, null, this).catch(err =>
       console.error('[Workflow] evaluateTaskChange error:', err)
     );
@@ -543,7 +538,7 @@ export class ScheduleService {
     const oldTask = await this.findTaskById(id);
     if (!oldTask) return null;
 
-    // Handle multi-dependency updates via junction table
+    // Validate dependencies before entering transaction
     if (data.dependencies !== undefined) {
       const deps = data.dependencies;
       if (deps.length > 20) {
@@ -552,45 +547,8 @@ export class ScheduleService {
       for (const dep of deps) {
         await this.validateDependency(id, dep.dependencyId, oldTask.scheduleId);
       }
-      // Replace strategy: delete all, re-insert
-      await databaseService.query('DELETE FROM task_dependencies WHERE task_id = ?', [id]);
-      for (const dep of deps) {
-        const depRowId = uuidv4();
-        await databaseService.query(
-          `INSERT INTO task_dependencies (id, task_id, dependency_id, dependency_type, lag_days) VALUES (?, ?, ?, ?, ?)`,
-          [depRowId, id, dep.dependencyId, dep.dependencyType || 'FS', dep.lagDays ?? 0],
-        );
-      }
-      // Sync legacy columns from first dep
-      const first = deps[0];
-      data.dependency = first?.dependencyId ?? (null as any);
-      data.dependencyType = first?.dependencyType ?? (null as any);
-      data.dependencyLagDays = first?.lagDays ?? 0;
-    } else if (data.dependency !== undefined) {
-      // Legacy single-dep update — sync to junction table
-      if (data.dependency) {
-        await this.validateDependency(id, data.dependency, oldTask.scheduleId);
-      }
-      await databaseService.query('DELETE FROM task_dependencies WHERE task_id = ?', [id]);
-      if (data.dependency) {
-        const depRowId = uuidv4();
-        await databaseService.query(
-          `INSERT INTO task_dependencies (id, task_id, dependency_id, dependency_type, lag_days) VALUES (?, ?, ?, ?, ?)`,
-          [depRowId, id, data.dependency, data.dependencyType || 'FS', data.dependencyLagDays ?? 0],
-        );
-      }
-    }
-
-    // Auto-log field changes as activity
-    const trackFields: (keyof Task)[] = ['status', 'priority', 'assignedTo', 'progressPercentage', 'startDate', 'endDate', 'name'];
-    for (const field of trackFields) {
-      if (field in data && data[field as keyof typeof data] !== undefined) {
-        const oldVal = String(oldTask[field] ?? '');
-        const newVal = String(data[field as keyof typeof data] ?? '');
-        if (oldVal !== newVal) {
-          await this.logActivity(id, '1', 'System', 'updated', field, oldVal, newVal);
-        }
-      }
+    } else if (data.dependency !== undefined && data.dependency) {
+      await this.validateDependency(id, data.dependency, oldTask.scheduleId);
     }
 
     const columnMap: Record<string, string> = {
@@ -620,27 +578,79 @@ export class ScheduleService {
       createdBy: 'created_by',
     };
 
-    const fields: string[] = [];
-    const values: any[] = [];
+    await databaseService.transaction(async (conn) => {
+      const q = <T = any>(sql: string, params: any[] = []) => databaseService.queryOn<T>(conn, sql, params);
 
-    for (const [key, column] of Object.entries(columnMap)) {
-      if (key in data) {
-        let val = (data as any)[key];
-        if (['startDate', 'endDate', 'dueDate'].includes(key) && val) {
-          val = toDateStr(val);
+      // Handle multi-dependency updates via junction table
+      if (data.dependencies !== undefined) {
+        const deps = data.dependencies;
+        // Replace strategy: delete all, re-insert
+        await q('DELETE FROM task_dependencies WHERE task_id = ?', [id]);
+        for (const dep of deps) {
+          const depRowId = uuidv4();
+          await q(
+            `INSERT INTO task_dependencies (id, task_id, dependency_id, dependency_type, lag_days) VALUES (?, ?, ?, ?, ?)`,
+            [depRowId, id, dep.dependencyId, dep.dependencyType || 'FS', dep.lagDays ?? 0],
+          );
         }
-        fields.push(`${column} = ?`);
-        values.push(val ?? null);
+        // Sync legacy columns from first dep
+        const first = deps[0];
+        data.dependency = first?.dependencyId ?? (null as any);
+        data.dependencyType = first?.dependencyType ?? (null as any);
+        data.dependencyLagDays = first?.lagDays ?? 0;
+      } else if (data.dependency !== undefined) {
+        // Legacy single-dep update — sync to junction table
+        await q('DELETE FROM task_dependencies WHERE task_id = ?', [id]);
+        if (data.dependency) {
+          const depRowId = uuidv4();
+          await q(
+            `INSERT INTO task_dependencies (id, task_id, dependency_id, dependency_type, lag_days) VALUES (?, ?, ?, ?, ?)`,
+            [depRowId, id, data.dependency, data.dependencyType || 'FS', data.dependencyLagDays ?? 0],
+          );
+        }
       }
-    }
 
-    if (fields.length === 0) return oldTask;
+      // Auto-log field changes as activity
+      const trackFields: (keyof Task)[] = ['status', 'priority', 'assignedTo', 'progressPercentage', 'startDate', 'endDate', 'name'];
+      for (const field of trackFields) {
+        if (field in data && data[field as keyof typeof data] !== undefined) {
+          const oldVal = String(oldTask[field] ?? '');
+          const newVal = String(data[field as keyof typeof data] ?? '');
+          if (oldVal !== newVal) {
+            await q(
+              `INSERT INTO task_activities (id, task_id, user_id, user_name, action, field, old_value, new_value)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [uuidv4(), id, '1', 'System', 'updated', field, oldVal, newVal],
+            );
+          }
+        }
+      }
 
-    values.push(id);
-    await databaseService.query(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`, values);
+      const fields: string[] = [];
+      const values: any[] = [];
+
+      for (const [key, column] of Object.entries(columnMap)) {
+        if (key in data) {
+          let val = (data as any)[key];
+          if (['startDate', 'endDate', 'dueDate'].includes(key) && val) {
+            val = toDateStr(val);
+          }
+          fields.push(`${column} = ?`);
+          values.push(val ?? null);
+        }
+      }
+
+      if (fields.length > 0) {
+        values.push(id);
+        await q(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`, values);
+      }
+    });
+
+    if (!Object.keys(data).some(k => k in columnMap)) return oldTask;
+
     const updated = (await this.findTaskById(id))!;
 
-    // Audit log
+    // Fire-and-forget side effects AFTER transaction commit
     const schedule = await this.findById(oldTask.scheduleId);
     auditLedgerService.append({
       actorId: data.createdBy || oldTask.createdBy,
@@ -653,7 +663,6 @@ export class ScheduleService {
       source: 'web',
     }).catch(() => {});
 
-    // Fire event-driven workflow triggers (non-blocking)
     dagWorkflowService.evaluateTaskChange(updated, oldTask, this).catch(err =>
       console.error('[Workflow] evaluateTaskChange error:', err)
     );
@@ -663,17 +672,26 @@ export class ScheduleService {
 
   async deleteTask(id: string): Promise<boolean> {
     const existing = await this.findTaskById(id);
-    const result: any = await databaseService.query('DELETE FROM tasks WHERE id = ?', [id]);
-    const deleted = (result.affectedRows ?? 0) > 0;
+
+    const deleted = await databaseService.transaction(async (conn) => {
+      const q = <T = any>(sql: string, params: any[] = []) => databaseService.queryOn<T>(conn, sql, params);
+
+      const result: any = await q('DELETE FROM tasks WHERE id = ?', [id]);
+      const wasDeleted = (result.affectedRows ?? 0) > 0;
+
+      if (wasDeleted) {
+        // Junction table rows are cascade-deleted automatically.
+        // Clear legacy denormalized columns on other tasks that referenced this one.
+        await q(
+          'UPDATE tasks SET dependency = NULL, dependency_type = NULL, dependency_lag_days = 0 WHERE dependency = ?',
+          [id],
+        );
+      }
+
+      return wasDeleted;
+    });
 
     if (deleted && existing) {
-      // Junction table rows are cascade-deleted automatically.
-      // Also clear legacy denormalized columns on other tasks that referenced this one.
-      await databaseService.query(
-        'UPDATE tasks SET dependency = NULL, dependency_type = NULL, dependency_lag_days = 0 WHERE dependency = ?',
-        [id],
-      );
-
       const schedule = await this.findById(existing.scheduleId);
       auditLedgerService.append({
         actorId: existing.createdBy,

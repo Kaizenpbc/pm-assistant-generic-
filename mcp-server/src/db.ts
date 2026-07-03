@@ -11,7 +11,9 @@ export function getPool(): Pool {
       database: process.env.DB_NAME || 'pm_assistant',
       waitForConnections: true,
       connectionLimit: 5,
-      queueLimit: 0,
+      connectTimeout: 5000,
+      idleTimeout: 30000,
+      queueLimit: 25,
     });
   }
   return pool;

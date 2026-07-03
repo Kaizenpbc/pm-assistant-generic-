@@ -43,7 +43,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 
 **Gaps:**
 - **Inconsistent data access pattern:** Only 3 entities have repositories. Remaining 53 services call `databaseService.query()` with inline SQL and hand-rolled rowMapper functions.
-- **No transaction boundaries:** `databaseService.transaction()` exists but is unused. Multi-table writes (e.g. project + schedule + tasks) are sequential queries without ACID guarantees.
+- ~~**No transaction boundaries:**~~ **Resolved (July 2026).** `databaseService.transaction()` + `queryOn()` now wraps 7 multi-table service methods.
 - **Zod validation coverage partial:** 23/63 routes use Zod schemas. Others rely on Swagger schema or ad-hoc parsing.
 - **Fire-and-forget side effects everywhere:** Audit logging, workflow triggers, WebSocket broadcasts, webhook dispatches are all `.catch(() => {})`. No visibility into failures or retry logic.
 - **Inconsistent error responses:** Some routes return `{ error, message }`, others `{ statusCode, error, message, timestamp, path }`.
@@ -51,7 +51,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 ### 2.2 Non-Functional Requirements
 
 - **Scalability:** Hard single-instance ceiling. In-memory rate limiter, metrics, agent circuit breakers, and in-process cron jobs mean horizontal scaling requires migrating to shared state (Redis).
-- **Performance:** DB pool fixed at 10 connections (hard-coded). No query timeouts or connection timeouts configured. EmbeddingService loads entire table into memory for similarity search (pending MariaDB 11.6 vector columns). Agent scheduler runs serially per project.
+- **Performance:** DB pool fixed at 10 connections with env-configurable timeouts (`connectTimeout`, `idleTimeout`, `queueLimit`). EmbeddingService loads entire table into memory for similarity search (pending MariaDB 11.6 vector columns). Agent scheduler runs serially per project.
 - **Availability:** DB failure leads to "offline mode" (startup succeeds but routes fail). No circuit breaker for user-facing AI routes (only agent workflows have circuit breakers via DegradationHandler).
 - **Maintainability:** 56+ service classes, most with inline SQL and hand-rolled mappers. Changing DB schema requires updating SQL strings across many files. Several "god-object" files are oversized and unmaintainable: `ReasoningEngine.ts` (~95 KB), `AgentSchedulerService.ts` (~49 KB), `DagWorkflowService.ts` (~38 KB), `LessonsLearnedService.ts` (~33 KB).
 - **Observability:** Good -- request ID propagated via AsyncLocalStorage, Winston logger includes requestId, MetricsService tracks request count/latency/AI tokens/DB queries, admin-only `/api/v1/metrics` endpoint. Missing: no distributed tracing, no log aggregation, no alerting on metrics.
@@ -109,12 +109,12 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 |------|----------|-------------|
 | ~~Duplicate migration numbers (002, 003)~~ | ~~High~~ | **Mitigated (July 2026).** Migration runner hardened with duplicate-number guard (known allowlist for historical 002/003), deterministic sort by (number, filename), CI test guard. |
 | ~~God-object service files (95 KB, 49 KB)~~ | ~~High~~ | **Mitigated (July 2026).** `ReasoningEngine.ts` split into `reasoning/` (types, schemas, prompts, generators) — 14 files, all <13 KB. `AgentSchedulerService.ts` split into `scheduling/` (cron, scan orchestrator, agent runners) — 5 files, all <16 KB. Both classes remain thin orchestrators with unchanged public APIs. `DagWorkflowService.ts` (38 KB) and `LessonsLearnedService.ts` (33 KB) noted as follow-ups. |
-| No transaction boundaries for multi-table writes | **High** | Project creation, task import, bulk updates are sequential queries without ACID guarantees. Partial failure leaves orphaned or inconsistent data. `databaseService.transaction()` exists but is unused. |
+| ~~No transaction boundaries for multi-table writes~~ | ~~High~~ | **Resolved (July 2026).** 7 multi-table methods now wrapped in `databaseService.transaction()` with `queryOn()` helper. |
 | Single-instance design with in-memory state | **High** | Rate limiter, metrics, circuit breakers, cron jobs all in-process. Horizontal scaling impossible without migrating to Redis. |
 | EmbeddingService full table scan | **High** | Loads all embeddings into memory for similarity search. Works for <1000 rows, breaks at scale. Pending MariaDB 11.6 upgrade. |
 | No AI circuit breaker for user-facing routes | **Medium** | Agent workflows have per-agent circuit breakers, but AI chat/reports/scheduling have no fallback. Claude 503/429 causes hard failures. |
 | Fire-and-forget side effects with no retry | **Medium** | Audit logs, webhooks, workflow triggers, WebSocket broadcasts all `.catch(() => {})`. Failures are silent. |
-| No query/connection timeouts | **Medium** | Slow queries can block the connection pool indefinitely. No statement timeout configured. |
+| ~~No query/connection timeouts~~ | ~~Medium~~ | **Resolved (July 2026).** Pool configured with `connectTimeout`, `idleTimeout`, `queueLimit` (env-configurable). |
 | Partial Zod validation coverage (23/63 routes) | **Medium** | Risk of missed validation, injection attacks, or malformed inputs causing crashes. |
 | Partial repository adoption (3/56+ entities) | **Medium** | Schema changes still require updating SQL strings across many service files. |
 | Agent scheduler serial execution | **Medium** | Scans one project at a time. For 1000 projects, scan could take minutes. |
@@ -133,9 +133,9 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 |---|----------------|-----------|--------|------------|
 | ~~1~~ | ~~Fix duplicate migration numbers + harden runner~~ | **Done (July 2026).** Migration runner hardened, CI test added. | ~~High~~ | ~~Low~~ |
 | ~~2~~ | ~~Break up god-object agent files~~ | **Done (July 2026).** ReasoningEngine → 14 files in `reasoning/`. AgentSchedulerService → 5 files in `scheduling/`. | ~~High~~ | ~~Medium~~ |
-| 3 | Add transaction boundaries for multi-table writes | Ensures ACID guarantees for project creation, task import, bulk updates | High | Low |
-| 4 | Add query/connection timeouts to DB pool | Prevents slow queries from blocking connection pool indefinitely | Medium | Low |
-| 5 | Add AI cost alerts (80% threshold warning) | Proactive notification before hard budget block | Medium | Low |
+| ~~3~~ | ~~Add transaction boundaries for multi-table writes~~ | **Done (July 2026).** `queryOn()` helper + `transaction()` wraps 7 multi-table methods (ScheduleService, SprintService, ApprovalWorkflowService, IntegrationService). | ~~High~~ | ~~Low~~ |
+| ~~4~~ | ~~Add query/connection timeouts to DB pool~~ | **Done (July 2026).** `connectTimeout: 5s`, `idleTimeout: 30s`, `queueLimit: 50` — env-configurable via `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT`, `DB_QUEUE_LIMIT`. | ~~Medium~~ | ~~Low~~ |
+| ~~5~~ | ~~Add AI cost alerts (80% threshold warning)~~ | **Done (July 2026).** `checkBudget()` fires daily deduped `ai_budget_warning` notification at 80% usage. | ~~Medium~~ | ~~Low~~ |
 | 6 | Add circuit breaker for user-facing AI routes | Fails fast on Claude outages, returns degraded response | High | Medium |
 | 7 | Extend Zod validation to remaining 40 routes | Consistent input validation, reduced injection risk | Medium | Medium |
 | 8 | Implement dead-letter queue for fire-and-forget side effects | Captures failed audit logs, webhooks for retry | Medium | Medium |
@@ -225,10 +225,10 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - ~~Fix duplicate migration numbers (002, 003) + harden runner.~~ Done. Known allowlist for 002/003, duplicate-number guard, CI test.
 - ~~Break up ReasoningEngine (95 KB) and AgentSchedulerService (49 KB).~~ Done. ReasoningEngine → `reasoning/` (14 files, all <13 KB). AgentSchedulerService → `scheduling/` (5 files, all <16 KB).
 
-**New: Now (quick wins)**
-- Add transaction boundaries for multi-table writes (Low difficulty, high impact)
-- Add query/connection timeouts to DB pool (Low difficulty, medium impact)
-- Add AI cost alerts at 80% threshold (Low difficulty, medium impact)
+**New: Now (quick wins)** — All done (July 2026)
+- ~~Add transaction boundaries for multi-table writes (Low difficulty, high impact)~~
+- ~~Add query/connection timeouts to DB pool (Low difficulty, medium impact)~~
+- ~~Add AI cost alerts at 80% threshold (Low difficulty, medium impact)~~
 
 **New: Next (medium-term)**
 - Add circuit breaker for user-facing AI routes (Medium difficulty, high impact)

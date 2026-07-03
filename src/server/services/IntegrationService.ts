@@ -155,8 +155,11 @@ export class IntegrationService {
   }
 
   async delete(id: string): Promise<void> {
-    await databaseService.query('DELETE FROM integration_sync_log WHERE integration_id = ?', [id]);
-    await databaseService.query('DELETE FROM integrations WHERE id = ?', [id]);
+    await databaseService.transaction(async (conn) => {
+      const q = (sql: string, params: any[] = []) => databaseService.queryOn(conn, sql, params);
+      await q('DELETE FROM integration_sync_log WHERE integration_id = ?', [id]);
+      await q('DELETE FROM integrations WHERE id = ?', [id]);
+    });
   }
 
   async testConnection(id: string): Promise<{ success: boolean; message: string }> {
@@ -205,15 +208,17 @@ export class IntegrationService {
         itemsSynced = await this.pushToProvider(row.provider, config);
       }
 
-      await databaseService.query(
-        `UPDATE integration_sync_log SET status = ?, items_synced = ?, completed_at = ? WHERE id = ?`,
-        ['success', itemsSynced, new Date().toISOString(), logId],
-      );
-
-      await databaseService.query(
-        `UPDATE integrations SET last_sync_at = ? WHERE id = ?`,
-        [new Date().toISOString(), id],
-      );
+      await databaseService.transaction(async (conn) => {
+        const q = (sql: string, params: any[] = []) => databaseService.queryOn(conn, sql, params);
+        await q(
+          `UPDATE integration_sync_log SET status = ?, items_synced = ?, completed_at = ? WHERE id = ?`,
+          ['success', itemsSynced, new Date().toISOString(), logId],
+        );
+        await q(
+          `UPDATE integrations SET last_sync_at = ? WHERE id = ?`,
+          [new Date().toISOString(), id],
+        );
+      });
 
       return { status: 'success', itemsSynced };
     } catch (error: any) {

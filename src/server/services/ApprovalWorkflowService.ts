@@ -273,38 +273,30 @@ export class ApprovalWorkflowService {
       }
     }
 
-    // Insert approval_action record
-    const actionId = uuidv4();
-    await databaseService.query(
-      `INSERT INTO approval_actions (id, change_request_id, step_order, action, comment, acted_by)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [actionId, crId, currentStep, action, comment || null, userId],
-    );
+    await databaseService.transaction(async (conn) => {
+      const q = (sql: string, params: any[] = []) => databaseService.queryOn(conn, sql, params);
 
-    // Update CR based on action
-    if (action === 'approved') {
-      if (currentStep < steps.length - 1) {
-        await databaseService.query(
-          `UPDATE change_requests SET current_step = ? WHERE id = ?`,
-          [currentStep + 1, crId],
-        );
-      } else {
-        await databaseService.query(
-          `UPDATE change_requests SET status = 'approved', current_step = ? WHERE id = ?`,
-          [currentStep, crId],
-        );
+      // Insert approval_action record
+      const actionId = uuidv4();
+      await q(
+        `INSERT INTO approval_actions (id, change_request_id, step_order, action, comment, acted_by)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [actionId, crId, currentStep, action, comment || null, userId],
+      );
+
+      // Update CR based on action
+      if (action === 'approved') {
+        if (currentStep < steps.length - 1) {
+          await q(`UPDATE change_requests SET current_step = ? WHERE id = ?`, [currentStep + 1, crId]);
+        } else {
+          await q(`UPDATE change_requests SET status = 'approved', current_step = ? WHERE id = ?`, [currentStep, crId]);
+        }
+      } else if (action === 'rejected') {
+        await q(`UPDATE change_requests SET status = 'rejected' WHERE id = ?`, [crId]);
+      } else if (action === 'returned') {
+        await q(`UPDATE change_requests SET status = 'draft', current_step = 0 WHERE id = ?`, [crId]);
       }
-    } else if (action === 'rejected') {
-      await databaseService.query(
-        `UPDATE change_requests SET status = 'rejected' WHERE id = ?`,
-        [crId],
-      );
-    } else if (action === 'returned') {
-      await databaseService.query(
-        `UPDATE change_requests SET status = 'draft', current_step = 0 WHERE id = ?`,
-        [crId],
-      );
-    }
+    });
 
     const rows = await databaseService.query<ChangeRequestRow>('SELECT * FROM change_requests WHERE id = ?', [crId]);
     const result = changeRequestRowToDTO(rows[0]);

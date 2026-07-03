@@ -10,10 +10,16 @@ vi.mock('../../config', () => ({
   },
 }));
 
+vi.mock('../../services/NotificationService', () => ({
+  notificationService: { create: vi.fn().mockResolvedValue({}) },
+}));
+
 import { aiBudgetService, AIBudgetExceededError } from '../../services/AIBudgetService';
 import { databaseService } from '../../database/connection';
+import { notificationService } from '../../services/NotificationService';
 
 const mockQuery = databaseService.query as ReturnType<typeof vi.fn>;
+const mockCreate = notificationService.create as ReturnType<typeof vi.fn>;
 
 describe('AIBudgetService', () => {
   beforeEach(() => {
@@ -173,6 +179,58 @@ describe('AIBudgetService', () => {
       mockQuery.mockResolvedValueOnce([{ ai_monthly_token_budget: 100000 }]);
 
       await expect(aiBudgetService.checkBudget('user-1')).resolves.toBeUndefined();
+    });
+
+    it('sends budget warning at 80% usage if no notification today', async () => {
+      // usage query: 80% of 500k = 400k
+      mockQuery.mockResolvedValueOnce([{
+        total_input: 250000, total_output: 150000, total_cost: 2.0, request_count: 50,
+      }]);
+      // budget query
+      mockQuery.mockResolvedValueOnce([{ ai_monthly_token_budget: null }]);
+      // notification dedup query: no existing notification
+      mockQuery.mockResolvedValueOnce([]);
+
+      await aiBudgetService.checkBudget('user-1');
+
+      // Allow fire-and-forget to settle
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
+        userId: 'user-1',
+        type: 'ai_budget_warning',
+        severity: 'high',
+      }));
+    });
+
+    it('does not send duplicate budget warning if one exists today', async () => {
+      // usage query: 90% of 500k = 450k
+      mockQuery.mockResolvedValueOnce([{
+        total_input: 300000, total_output: 150000, total_cost: 2.5, request_count: 60,
+      }]);
+      // budget query
+      mockQuery.mockResolvedValueOnce([{ ai_monthly_token_budget: null }]);
+      // notification dedup query: already exists
+      mockQuery.mockResolvedValueOnce([{ id: 'existing-notif' }]);
+
+      await aiBudgetService.checkBudget('user-1');
+
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(mockCreate).not.toHaveBeenCalled();
+    });
+
+    it('does not send warning below 80%', async () => {
+      mockQuery.mockResolvedValueOnce([{
+        total_input: 100000, total_output: 50000, total_cost: 0.5, request_count: 10,
+      }]);
+      mockQuery.mockResolvedValueOnce([{ ai_monthly_token_budget: null }]);
+
+      await aiBudgetService.checkBudget('user-1');
+
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(mockCreate).not.toHaveBeenCalled();
     });
   });
 });

@@ -9,6 +9,8 @@ export interface DatabaseConfig {
   database: string;
   waitForConnections: boolean;
   connectionLimit: number;
+  connectTimeout: number;
+  idleTimeout: number;
   queueLimit: number;
 }
 
@@ -30,7 +32,9 @@ class DatabaseService {
         database: config.DB_NAME,
         waitForConnections: true,
         connectionLimit: 10,
-        queueLimit: 0,
+        connectTimeout: config.DB_CONNECT_TIMEOUT,
+        idleTimeout: config.DB_IDLE_TIMEOUT,
+        queueLimit: config.DB_QUEUE_LIMIT,
       };
 
       this.pool = mysql.createPool({ ...dbConfig, dateStrings: true });
@@ -54,6 +58,11 @@ class DatabaseService {
       throw new Error('Database pool not initialized');
     }
     const [rows] = await this.pool.execute(sql, params);
+    return rows as T[];
+  }
+
+  public async queryOn<T = any>(connection: mysql.PoolConnection, sql: string, params: any[] = []): Promise<T[]> {
+    const [rows] = await connection.execute(sql, params);
     return rows as T[];
   }
 

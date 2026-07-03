@@ -179,8 +179,11 @@ export class SprintService {
   }
 
   async delete(id: string): Promise<void> {
-    await databaseService.query('DELETE FROM sprint_tasks WHERE sprint_id = ?', [id]);
-    await databaseService.query('DELETE FROM sprints WHERE id = ?', [id]);
+    await databaseService.transaction(async (conn) => {
+      const q = (sql: string, params: any[] = []) => databaseService.queryOn(conn, sql, params);
+      await q('DELETE FROM sprint_tasks WHERE sprint_id = ?', [id]);
+      await q('DELETE FROM sprints WHERE id = ?', [id]);
+    });
   }
 
   async addTask(sprintId: string, taskId: string, storyPoints?: number): Promise<SprintTask> {
