@@ -45,15 +45,15 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - **Inconsistent data access pattern:** Only 3 entities have repositories. Remaining 53 services call `databaseService.query()` with inline SQL and hand-rolled rowMapper functions.
 - ~~**No transaction boundaries:**~~ **Resolved (July 2026).** `databaseService.transaction()` + `queryOn()` now wraps 7 multi-table service methods.
 - **Zod validation coverage partial:** 23/63 routes use Zod schemas. Others rely on Swagger schema or ad-hoc parsing.
-- **Fire-and-forget side effects everywhere:** Audit logging, workflow triggers, WebSocket broadcasts, webhook dispatches are all `.catch(() => {})`. No visibility into failures or retry logic.
+- ~~**Fire-and-forget side effects everywhere:**~~ **Mitigated (July 2026).** `DeadLetterService` captures failed side effects (audit logs, webhooks) with retry support. All `.catch(() => {})` calls replaced with DLQ capture. Admin endpoints for monitoring (`/api/v1/admin/dead-letter`).
 - **Inconsistent error responses:** Some routes return `{ error, message }`, others `{ statusCode, error, message, timestamp, path }`.
 
 ### 2.2 Non-Functional Requirements
 
 - **Scalability:** Hard single-instance ceiling. In-memory rate limiter, metrics, agent circuit breakers, and in-process cron jobs mean horizontal scaling requires migrating to shared state (Redis).
-- **Performance:** DB pool fixed at 10 connections with env-configurable timeouts (`connectTimeout`, `idleTimeout`, `queueLimit`). EmbeddingService loads entire table into memory for similarity search (pending MariaDB 11.6 vector columns). Agent scheduler runs serially per project.
-- **Availability:** DB failure leads to "offline mode" (startup succeeds but routes fail). No circuit breaker for user-facing AI routes (only agent workflows have circuit breakers via DegradationHandler).
-- **Maintainability:** 56+ service classes, most with inline SQL and hand-rolled mappers. Changing DB schema requires updating SQL strings across many files. Several "god-object" files are oversized and unmaintainable: `ReasoningEngine.ts` (~95 KB), `AgentSchedulerService.ts` (~49 KB), `DagWorkflowService.ts` (~38 KB), `LessonsLearnedService.ts` (~33 KB).
+- **Performance:** DB pool fixed at 10 connections with env-configurable timeouts (`connectTimeout`, `idleTimeout`, `queueLimit`). EmbeddingService loads entire table into memory for similarity search (pending MariaDB 11.6 vector columns). ~~Agent scheduler runs serially per project.~~ **Resolved (July 2026).** `parallelLimit()` runs up to 3 projects concurrently.
+- **Availability:** DB failure leads to "offline mode" (startup succeeds but routes fail). ~~No circuit breaker for user-facing AI routes~~ **Resolved (July 2026).** `AICircuitBreaker` in `claudeService.ts` trips after 5 transient failures, 60s cooldown, returns 503.
+- **Maintainability:** 56+ service classes, most with inline SQL and hand-rolled mappers. Changing DB schema requires updating SQL strings across many files. ~~Several "god-object" files are oversized and unmaintainable~~ **Mitigated (July 2026).** All four oversized files split: `ReasoningEngine.ts` → `reasoning/` (14 files), `AgentSchedulerService.ts` → `scheduling/` (5 files), `DagWorkflowService.ts` → `dagWorkflow/` (4 files), `LessonsLearnedService.ts` → `lessonsLearned/` (5 files). Thin orchestrator classes remain with unchanged public APIs.
 - **Observability:** Good -- request ID propagated via AsyncLocalStorage, Winston logger includes requestId, MetricsService tracks request count/latency/AI tokens/DB queries, admin-only `/api/v1/metrics` endpoint. Daily-rotated JSON logs with admin query/download endpoints. Missing: no distributed tracing, no external alerting on metrics.
 
 ### 2.6 Database Migrations
@@ -71,7 +71,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - API key hashed with bcrypt; passwords via bcrypt
 
 **Gaps:**
-- JWT users have no scope enforcement (only API keys are scope-limited)
+- ~~JWT users have no scope enforcement~~ **Resolved (July 2026).** `requireScope()` now maps JWT roles to scopes: admin→all, manager/pm/scrum_master→read+write, member/executive/finance→read.
 - No PII masking in logs
 - File uploads: no MIME type validation or content inspection (only size limit)
 - No rate limit on verification email resends
@@ -88,7 +88,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - Usage tracked in MetricsService and persisted to `ai_usage_log` table
 
 **Gaps:**
-- No cost alerts (user gets hard-blocked at budget limit, no proactive warning)
+- ~~No cost alerts~~ **Resolved (July 2026).** 80% threshold warning with daily dedup via notifications table.
 - No fallback model if Claude fails (429, 503, timeout)
 - Token budget not enforced for all AI calls (some service-level calls don't pass userId)
 - No prompt injection mitigation (user inputs interpolated directly into prompts)
@@ -99,7 +99,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - **Manual deployment:** Build locally, SCP to server, restart via cloudlinux-selector. No CI/CD, no automated rollback.
 - **Migrations one-way:** No rollback runner, no dry-run mode.
 - **Cron jobs in-process:** 5 cron jobs (agent scan, overdue scan, recurrence, digest, reports). If Node process crashes, all stop.
-- **No log rotation configured in code:** Relies on OS/hosting.
+- ~~**No log rotation configured in code:**~~ **Resolved (July 2026).** Daily-rotated JSON logs via `winston-daily-rotate-file` (14d retention, 20MB max, gzip). Admin query/download endpoints.
 
 ---
 
@@ -108,16 +108,16 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | Risk | Severity | Description |
 |------|----------|-------------|
 | ~~Duplicate migration numbers (002, 003)~~ | ~~High~~ | **Mitigated (July 2026).** Migration runner hardened with duplicate-number guard (known allowlist for historical 002/003), deterministic sort by (number, filename), CI test guard. |
-| ~~God-object service files (95 KB, 49 KB)~~ | ~~High~~ | **Mitigated (July 2026).** `ReasoningEngine.ts` split into `reasoning/` (types, schemas, prompts, generators) — 14 files, all <13 KB. `AgentSchedulerService.ts` split into `scheduling/` (cron, scan orchestrator, agent runners) — 5 files, all <16 KB. Both classes remain thin orchestrators with unchanged public APIs. `DagWorkflowService.ts` (38 KB) and `LessonsLearnedService.ts` (33 KB) noted as follow-ups. |
+| ~~God-object service files (95 KB, 49 KB, 38 KB, 33 KB)~~ | ~~High~~ | **Resolved (July 2026).** All four oversized files split: `ReasoningEngine.ts` → `reasoning/` (14 files), `AgentSchedulerService.ts` → `scheduling/` (5 files), `DagWorkflowService.ts` → `dagWorkflow/` (4 files), `LessonsLearnedService.ts` → `lessonsLearned/` (5 files). All classes remain thin orchestrators with unchanged public APIs. |
 | ~~No transaction boundaries for multi-table writes~~ | ~~High~~ | **Resolved (July 2026).** 7 multi-table methods now wrapped in `databaseService.transaction()` with `queryOn()` helper. |
 | Single-instance design with in-memory state | **High** | Rate limiter, metrics, circuit breakers, cron jobs all in-process. Horizontal scaling impossible without migrating to Redis. |
 | EmbeddingService full table scan | **High** | Loads all embeddings into memory for similarity search. Works for <1000 rows, breaks at scale. Pending MariaDB 11.6 upgrade. |
-| No AI circuit breaker for user-facing routes | **Medium** | Agent workflows have per-agent circuit breakers, but AI chat/reports/scheduling have no fallback. Claude 503/429 causes hard failures. |
-| Fire-and-forget side effects with no retry | **Medium** | Audit logs, webhooks, workflow triggers, WebSocket broadcasts all `.catch(() => {})`. Failures are silent. |
+| ~~No AI circuit breaker for user-facing routes~~ | ~~Medium~~ | **Resolved (July 2026).** `AICircuitBreaker` in `claudeService.ts` — trips after 5 transient failures, 60s cooldown, returns 503. |
+| ~~Fire-and-forget side effects with no retry~~ | ~~Medium~~ | **Resolved (July 2026).** `DeadLetterService` captures failed side effects with retry. Admin monitoring endpoints added. |
 | ~~No query/connection timeouts~~ | ~~Medium~~ | **Resolved (July 2026).** Pool configured with `connectTimeout`, `idleTimeout`, `queueLimit` (env-configurable). |
-| Partial Zod validation coverage (23/63 routes) | **Medium** | Risk of missed validation, injection attacks, or malformed inputs causing crashes. |
+| Partial Zod validation coverage (23/63 routes) | **Medium** | Risk of missed validation, injection attacks, or malformed inputs causing crashes. (Future improvement — tracked as item 7.) |
 | Partial repository adoption (3/56+ entities) | **Medium** | Schema changes still require updating SQL strings across many service files. |
-| Agent scheduler serial execution | **Medium** | Scans one project at a time. For 1000 projects, scan could take minutes. |
+| ~~Agent scheduler serial execution~~ | ~~Medium~~ | **Resolved (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. |
 | ~~No rate limiting on auth endpoints~~ | ~~High~~ | **Mitigated (July 2026).** Per-IP rate limits on all auth and waitlist endpoints. |
 | ~~Waitlist admin key in query string~~ | ~~High~~ | **Mitigated (July 2026).** Moved to `X-Admin-Key` header. |
 | ~~No per-user AI budget~~ | ~~Medium~~ | **Mitigated (July 2026).** Per-user monthly token budget via AIBudgetService. |
@@ -138,14 +138,14 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | ~~5~~ | ~~Add AI cost alerts (80% threshold warning)~~ | **Done (July 2026).** `checkBudget()` fires daily deduped `ai_budget_warning` notification at 80% usage. | ~~Medium~~ | ~~Low~~ |
 | ~~6~~ | ~~Add circuit breaker for user-facing AI routes~~ | **Done (July 2026).** `AICircuitBreaker` in `claudeService.ts` — trips after 5 transient failures, 60s cooldown, returns 503 to clients. Exposed in `/agent/health` endpoint. | ~~High~~ | ~~Medium~~ |
 | 7 | Extend Zod validation to remaining 40 routes | Consistent input validation, reduced injection risk | Medium | Medium |
-| 8 | Implement dead-letter queue for fire-and-forget side effects | Captures failed audit logs, webhooks for retry | Medium | Medium |
+| ~~8~~ | ~~Implement dead-letter queue for fire-and-forget side effects~~ | **Done (July 2026).** `DeadLetterService` with `capture()`/`processRetries()`/`getStats()`. All `.catch(() => {})` in 5 services replaced with DLQ capture. Admin endpoints: `GET /api/v1/admin/dead-letter`, `GET /dead-letter/failed`. Migration `031_dead_letter_queue.sql`. | ~~Medium~~ | ~~Medium~~ |
 | ~~9~~ | ~~Parallelize agent scheduler execution~~ | **Done (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. Portfolio agents still run after all projects complete. | ~~Medium~~ | ~~Medium~~ |
 | ~~10~~ | ~~Add structured log export/aggregation~~ | **Done (July 2026).** Daily-rotated JSON logs (14d retention, 20MB max, gzip), admin endpoints: `GET /api/v1/admin/logs` (query by level/search/date), `/logs/files` (list), `/logs/download/:filename`. | ~~Low~~ | ~~Low~~ |
-| 11 | Migrate rate limiter and metrics to Redis | Enables horizontal scaling | High | High |
-| 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas | High | High |
-| 13 | Move cron jobs to external scheduler | Prevents duplicate execution in multi-instance | Medium | Medium |
-| 14 | Add scope enforcement for JWT users | Fine-grained permissions, least-privilege access | Low | Medium |
-| 15 | Break up DagWorkflowService (38 KB) and LessonsLearnedService (33 KB) | Follow-up to #2; same pattern, next tier of oversized files | Medium | Medium |
+| 11 | Migrate rate limiter and metrics to Redis | Enables horizontal scaling. **Blocked:** Redis not available on TMD Hosting shared plan. | High | High |
+| 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas. **Blocked:** Redis not available on TMD Hosting shared plan. | High | High |
+| 13 | Move cron jobs to external scheduler | Prevents duplicate execution in multi-instance. **Blocked:** No external job runner on TMD Hosting. | Medium | Medium |
+| ~~14~~ | ~~Add scope enforcement for JWT users~~ | **Done (July 2026).** `requireScope()` now maps JWT roles to scopes: admin→all, manager/pm/scrum_master→read+write, member/executive/finance→read. Unknown roles default to read-only. | ~~Low~~ | ~~Medium~~ |
+| ~~15~~ | ~~Break up DagWorkflowService (38 KB) and LessonsLearnedService (33 KB)~~ | **Done (July 2026).** `DagWorkflowService.ts` → `dagWorkflow/` (4 files: types, rowMappers, engine, templateResolver + index). `LessonsLearnedService.ts` → `lessonsLearned/` (5 files: prompts, seeder, extractor, patternDetector, mitigationAdvisor + index). Original files are thin re-export shims. | ~~Medium~~ | ~~Medium~~ |
 
 ---
 
@@ -230,18 +230,18 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - ~~Add query/connection timeouts to DB pool (Low difficulty, medium impact)~~
 - ~~Add AI cost alerts at 80% threshold (Low difficulty, medium impact)~~
 
-**New: Next (medium-term)**
-- Add circuit breaker for user-facing AI routes (Medium difficulty, high impact)
-- Extend Zod validation to remaining 40 routes (Medium difficulty, medium impact)
-- Implement dead-letter queue for fire-and-forget side effects (Medium difficulty, medium impact)
-- Parallelize agent scheduler execution (Medium difficulty, medium impact)
-- Break up DagWorkflowService (38 KB) and LessonsLearnedService (33 KB) — follow-up to P0-B
+**New: Next (medium-term)** — MOSTLY DONE (July 2026)
+- ~~Add circuit breaker for user-facing AI routes (Medium difficulty, high impact)~~ Done.
+- Extend Zod validation to remaining 40 routes (Medium difficulty, medium impact) — TODO.
+- ~~Implement dead-letter queue for fire-and-forget side effects (Medium difficulty, medium impact)~~ Done.
+- ~~Parallelize agent scheduler execution (Medium difficulty, medium impact)~~ Done.
+- ~~Break up DagWorkflowService (38 KB) and LessonsLearnedService (33 KB)~~ Done.
+- ~~Add scope enforcement for JWT users~~ Done.
 
-**New: Later (strategic)**
-- Migrate rate limiter and metrics to Redis (High difficulty, high impact)
-- Extend repository pattern to all core entities (High difficulty, high impact)
-- Move cron jobs to external scheduler (Medium difficulty, medium impact)
-- Add scope enforcement for JWT users (Medium difficulty, low impact)
+**New: Later (strategic)** — INFRASTRUCTURE-BLOCKED
+- Migrate rate limiter and metrics to Redis — **Blocked:** Redis not available on TMD Hosting shared plan.
+- Extend repository pattern to all core entities — **Blocked:** Depends on Redis for caching layer.
+- Move cron jobs to external scheduler — **Blocked:** No external job runner on TMD Hosting.
 
 ---
 

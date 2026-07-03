@@ -39,6 +39,7 @@ vi.mock('../../services/AgentRegistryService', () => ({
 }));
 
 import { dagWorkflowService, resolveTemplates } from '../../services/DagWorkflowService';
+import { matchesTrigger } from '../../services/dagWorkflow/engine';
 import type { Task } from '../../services/ScheduleService';
 
 function makeTask(overrides: Partial<Task> = {}): Task {
@@ -55,8 +56,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
   };
 }
 
-// Access the private matchesTrigger method for unit testing
-const service = dagWorkflowService as any;
+// Use the exported matchesTrigger function directly, plus service for integration tests
+const service = { matchesTrigger, evaluateTaskChange: dagWorkflowService.evaluateTaskChange.bind(dagWorkflowService) };
 
 describe('EventDrivenWorkflows', () => {
   beforeEach(() => {
@@ -178,7 +179,6 @@ describe('EventDrivenWorkflows', () => {
 
       expect(mockQuery).toHaveBeenCalledWith(
         'SELECT * FROM workflow_definitions WHERE is_enabled = 1',
-        [],
       );
     });
 

@@ -3,19 +3,33 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 type Scope = 'read' | 'write' | 'admin';
 
 /**
- * Middleware factory that enforces API key scopes on routes.
+ * Maps JWT user roles to equivalent scopes.
+ * admin  → read, write, admin
+ * manager → read, write
+ * member  → read
+ */
+const ROLE_SCOPES: Record<string, Scope[]> = {
+  admin: ['read', 'write', 'admin'],
+  executive: ['read'],
+  project_manager: ['read', 'write'],
+  scrum_master: ['read', 'write'],
+  team_member: ['read'],
+  finance_officer: ['read'],
+};
+
+/**
+ * Middleware factory that enforces scope-based access on routes.
  *
- * - JWT session users (no apiKeyScopes) bypass scope checks — they have
- *   full access governed by their role.
- * - API key users must have the required scope in their key's scopes array.
+ * - API key users: checked against key's explicit scopes array.
+ * - JWT session users: checked against role-derived scopes (admin > manager > member).
  * - 'admin' scope implies 'write', and 'write' implies 'read'.
  */
 export function requireScope(scope: Scope) {
   return async function scopeCheck(request: FastifyRequest, reply: FastifyReply) {
-    const scopes: string[] | undefined = request.apiKeyScopes;
-
-    // JWT session user — no scope restrictions
-    if (!scopes) return;
+    // Determine effective scopes: API key explicit scopes, or role-derived for JWT users
+    const scopes: string[] = request.apiKeyScopes
+      ?? ROLE_SCOPES[request.user?.role ?? '']
+      ?? ['read']; // fallback: read-only if role is unknown
 
     // Check scope hierarchy: admin > write > read
     let allowed = false;
@@ -32,9 +46,11 @@ export function requireScope(scope: Scope) {
     }
 
     if (!allowed) {
+      const source = request.apiKeyScopes ? 'API key' : 'role';
+      const scopeList = scopes.join(', ');
       return reply.status(403).send({
         error: 'Insufficient scope',
-        message: `This action requires the '${scope}' scope. Your API key has: [${scopes.join(', ')}]`,
+        message: `This action requires the '${scope}' scope. Your ${source} has: [${scopeList}]`,
       });
     }
   };
