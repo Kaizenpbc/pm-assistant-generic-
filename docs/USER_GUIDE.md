@@ -33,6 +33,8 @@ A comprehensive guide for using PM Assistant, an AI-powered enterprise project m
 25. [Bulk CSV Import](#25-bulk-csv-import)
 26. [Resource Management Page](#26-resource-management-page)
 27. [EVM Dashboard Page](#27-evm-dashboard-page)
+28. [Notifications Center Page](#28-notifications-center-page)
+29. [Dashboard Widget Drag-to-Reorder](#29-dashboard-widget-drag-to-reorder)
 
 ---
 
@@ -1154,6 +1156,50 @@ The EVM Dashboard (`/evm`) provides a comprehensive earned value management view
    - Trend direction (improving, stable, or deteriorating).
    - Narrative summary in plain language.
    - Corrective actions with priority badges.
+
+---
+
+## 28. Notifications Center Page
+
+The full-page Notifications Center is available at `/notifications`. Access it from the sidebar ("Notifications" under Workspace) or by clicking "View all alerts" in the notification bell dropdown.
+
+### Severity Summary Cards
+
+At the top of the page, four clickable cards show counts for **Critical**, **High**, **Medium**, and **Low** notifications. Click any card to filter the list to only that severity level.
+
+### Filtering
+
+Use the filter panel to narrow the notification list:
+
+- **Type** -- Filter by notification type: Risk, Budget, Schedule, Resource, and others.
+- **Severity** -- Filter by severity level (or click a summary card above).
+
+### Notification List
+
+Each notification entry displays:
+
+- A **severity color bar** on the left edge (red for critical, orange for high, yellow for medium, blue for low).
+- A **type icon** matching the notification category.
+- The **title** and **message** body.
+- **Time ago** (e.g., "2 hours ago").
+- **Type label** and **project name**.
+
+### Managing Notifications
+
+- Click the **mark read** button on any individual notification to dismiss it.
+- Click **"Mark all read"** at the top of the list to mark all notifications as read at once.
+
+---
+
+## 29. Dashboard Widget Drag-to-Reorder
+
+Both the PM Dashboard and Executive Dashboard support drag-to-reorder for widgets:
+
+1. **Hover** over a widget card to reveal the **drag handle** (grip icon) at the left edge.
+2. **Drag** the widget up or down to a new position. A **blue ring** highlights the target drop position.
+3. **Release** to drop the widget in its new position.
+
+Your custom widget order is saved in localStorage and persists across page reloads. The order is stored separately from widget visibility toggles set via the "Customize" dropdown, so both features work independently.
 
 ---
 
