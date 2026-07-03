@@ -53,8 +53,14 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - **Scalability:** Hard single-instance ceiling. In-memory rate limiter, metrics, agent circuit breakers, and in-process cron jobs mean horizontal scaling requires migrating to shared state (Redis).
 - **Performance:** DB pool fixed at 10 connections (hard-coded). No query timeouts or connection timeouts configured. EmbeddingService loads entire table into memory for similarity search (pending MariaDB 11.6 vector columns). Agent scheduler runs serially per project.
 - **Availability:** DB failure leads to "offline mode" (startup succeeds but routes fail). No circuit breaker for user-facing AI routes (only agent workflows have circuit breakers via DegradationHandler).
-- **Maintainability:** 56+ service classes, most with inline SQL and hand-rolled mappers. Changing DB schema requires updating SQL strings across many files.
+- **Maintainability:** 56+ service classes, most with inline SQL and hand-rolled mappers. Changing DB schema requires updating SQL strings across many files. Several "god-object" files are oversized and unmaintainable: `ReasoningEngine.ts` (~95 KB), `AgentSchedulerService.ts` (~49 KB), `DagWorkflowService.ts` (~38 KB), `LessonsLearnedService.ts` (~33 KB).
 - **Observability:** Good -- request ID propagated via AsyncLocalStorage, Winston logger includes requestId, MetricsService tracks request count/latency/AI tokens/DB queries, admin-only `/api/v1/metrics` endpoint. Missing: no distributed tracing, no log aggregation, no alerting on metrics.
+
+### 2.6 Database Migrations
+
+- **Duplicate migration numbers:** `002_auth_and_subscriptions.sql` and `002_seed_agent_policies.sql` share prefix `002`; `003_agent_autonomy.sql` and `003_notifications_and_proposals.sql` share prefix `003`. Apply order depends on filename string-sort, not intent. On a fresh DB, seed/data migrations can run before the tables they depend on.
+- **No duplicate-number guard:** `migrationRunner.ts` does not detect or reject duplicate numeric prefixes. Apply order is implicit (filesystem sort), not explicit.
+- **No rollback runner:** Migrations are one-way SQL files. No reverse migration generator, no dry-run mode.
 
 ### 2.3 Security & Compliance
 
@@ -102,6 +108,8 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 
 | Risk | Severity | Description |
 |------|----------|-------------|
+| Duplicate migration numbers (002, 003) | **High** | Two pairs of migration files share numeric prefixes. Apply order on fresh DB depends on filename string-sort, not intent. Seed/data migrations can run before the tables they depend on. Migration runner has no duplicate-number guard. |
+| God-object service files (95 KB, 49 KB) | **High** | `ReasoningEngine.ts` (95 KB) and `AgentSchedulerService.ts` (49 KB) are unmaintainable and untestable in isolation. Mix of prompts, parsing, orchestration, and state management in single files. `DagWorkflowService.ts` (38 KB) and `LessonsLearnedService.ts` (33 KB) are next tier. |
 | No transaction boundaries for multi-table writes | **High** | Project creation, task import, bulk updates are sequential queries without ACID guarantees. Partial failure leaves orphaned or inconsistent data. `databaseService.transaction()` exists but is unused. |
 | Single-instance design with in-memory state | **High** | Rate limiter, metrics, circuit breakers, cron jobs all in-process. Horizontal scaling impossible without migrating to Redis. |
 | EmbeddingService full table scan | **High** | Loads all embeddings into memory for similarity search. Works for <1000 rows, breaks at scale. Pending MariaDB 11.6 upgrade. |
@@ -124,18 +132,21 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 
 | # | Recommendation | Rationale | Impact | Difficulty |
 |---|----------------|-----------|--------|------------|
-| 1 | Add transaction boundaries for multi-table writes | Ensures ACID guarantees for project creation, task import, bulk updates | High | Low |
-| 2 | Add query/connection timeouts to DB pool | Prevents slow queries from blocking connection pool indefinitely | Medium | Low |
-| 3 | Add AI cost alerts (80% threshold warning) | Proactive notification before hard budget block | Medium | Low |
-| 4 | Add circuit breaker for user-facing AI routes | Fails fast on Claude outages, returns degraded response | High | Medium |
-| 5 | Extend Zod validation to remaining 40 routes | Consistent input validation, reduced injection risk | Medium | Medium |
-| 6 | Implement dead-letter queue for fire-and-forget side effects | Captures failed audit logs, webhooks for retry | Medium | Medium |
-| 7 | Parallelize agent scheduler execution | Reduces scan time from O(n) to O(n/parallelism) | Medium | Medium |
-| 8 | Add structured log export/aggregation | Enables search, alerting, long-term retention | Low | Low |
-| 9 | Migrate rate limiter and metrics to Redis | Enables horizontal scaling | High | High |
-| 10 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas | High | High |
-| 11 | Move cron jobs to external scheduler | Prevents duplicate execution in multi-instance | Medium | Medium |
-| 12 | Add scope enforcement for JWT users | Fine-grained permissions, least-privilege access | Low | Medium |
+| 1 | Fix duplicate migration numbers + harden runner | Duplicate prefixes (002, 003) cause non-deterministic apply order on fresh DB. Runner should detect duplicates and fail fast. Add CI test guard. | High | Low |
+| 2 | Break up god-object agent files | ReasoningEngine (95 KB) and AgentScheduler (49 KB) are unmaintainable. Extract prompts, parsing, strategies, and orchestration into per-concern modules (<15 KB each). Behavior-preserving refactor with characterization tests. | High | Medium |
+| 3 | Add transaction boundaries for multi-table writes | Ensures ACID guarantees for project creation, task import, bulk updates | High | Low |
+| 4 | Add query/connection timeouts to DB pool | Prevents slow queries from blocking connection pool indefinitely | Medium | Low |
+| 5 | Add AI cost alerts (80% threshold warning) | Proactive notification before hard budget block | Medium | Low |
+| 6 | Add circuit breaker for user-facing AI routes | Fails fast on Claude outages, returns degraded response | High | Medium |
+| 7 | Extend Zod validation to remaining 40 routes | Consistent input validation, reduced injection risk | Medium | Medium |
+| 8 | Implement dead-letter queue for fire-and-forget side effects | Captures failed audit logs, webhooks for retry | Medium | Medium |
+| 9 | Parallelize agent scheduler execution | Reduces scan time from O(n) to O(n/parallelism) | Medium | Medium |
+| 10 | Add structured log export/aggregation | Enables search, alerting, long-term retention | Low | Low |
+| 11 | Migrate rate limiter and metrics to Redis | Enables horizontal scaling | High | High |
+| 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas | High | High |
+| 13 | Move cron jobs to external scheduler | Prevents duplicate execution in multi-instance | Medium | Medium |
+| 14 | Add scope enforcement for JWT users | Fine-grained permissions, least-privilege access | Low | Medium |
+| 15 | Break up DagWorkflowService (38 KB) and LessonsLearnedService (33 KB) | Follow-up to #2; same pattern, next tier of oversized files | Medium | Medium |
 
 ---
 
@@ -211,6 +222,10 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - ~~Structured metrics and request ID tracing.~~ Done: MetricsService + AsyncLocalStorage.
 - Redis for rate limiting and agent lock -- TODO.
 
+**New: P0 (do first)**
+- Fix duplicate migration numbers (002, 003) + harden runner with duplicate-number guard + CI test (Low difficulty, high impact)
+- Break up ReasoningEngine (95 KB) and AgentSchedulerService (49 KB) into per-concern modules <15 KB each. Behavior-preserving refactor with characterization tests before moving code. (Medium difficulty, high impact)
+
 **New: Now (quick wins)**
 - Add transaction boundaries for multi-table writes (Low difficulty, high impact)
 - Add query/connection timeouts to DB pool (Low difficulty, medium impact)
@@ -221,6 +236,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - Extend Zod validation to remaining 40 routes (Medium difficulty, medium impact)
 - Implement dead-letter queue for fire-and-forget side effects (Medium difficulty, medium impact)
 - Parallelize agent scheduler execution (Medium difficulty, medium impact)
+- Break up DagWorkflowService (38 KB) and LessonsLearnedService (33 KB) — follow-up to P0-B
 
 **New: Later (strategic)**
 - Migrate rate limiter and metrics to Redis (High difficulty, high impact)
