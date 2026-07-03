@@ -117,11 +117,12 @@ function buildTree(goals: Goal[]): Goal[] {
 const GoalModal: React.FC<{
   initial?: GoalFormData;
   objectives: Goal[];
+  projects: Array<{ id: string; name: string }>;
   onClose: () => void;
   onSubmit: (data: GoalFormData) => void;
   isSubmitting: boolean;
   title: string;
-}> = ({ initial, objectives, onClose, onSubmit, isSubmitting, title }) => {
+}> = ({ initial, objectives, projects, onClose, onSubmit, isSubmitting, title }) => {
   const [form, setForm] = useState<GoalFormData>(initial || EMPTY_FORM);
   const update = (field: keyof GoalFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -214,8 +215,13 @@ const GoalModal: React.FC<{
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Project ID</label>
-            <input type="text" value={form.project_id} onChange={(e) => update('project_id', e.target.value)} className="input w-full dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600" placeholder="Optional" />
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Project</label>
+            <select value={form.project_id} onChange={(e) => update('project_id', e.target.value)} className="input w-full dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
+              <option value="">None (standalone goal)</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
           </div>
         </form>
 
@@ -312,6 +318,12 @@ export const GoalsPage: React.FC = () => {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
+
+  const { data: projectsData } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => apiService.getProjects(),
+  });
+  const projectsList: Array<{ id: string; name: string }> = projectsData?.projects || [];
 
   const filters: Record<string, string> = {};
   if (filterStatus) filters.status = filterStatus;
@@ -430,6 +442,7 @@ export const GoalsPage: React.FC = () => {
       {showModal && (
         <GoalModal
           objectives={objectives}
+          projects={projectsList}
           onClose={() => setShowModal(false)}
           onSubmit={(d) => createMutation.mutate(d)}
           isSubmitting={createMutation.isPending}
@@ -442,6 +455,7 @@ export const GoalsPage: React.FC = () => {
         <GoalModal
           initial={editFormData}
           objectives={objectives.filter((o) => o.id !== editingGoal.id)}
+          projects={projectsList}
           onClose={() => setEditingGoal(null)}
           onSubmit={(d) => updateMutation.mutate({ id: editingGoal.id, formData: d })}
           isSubmitting={updateMutation.isPending}

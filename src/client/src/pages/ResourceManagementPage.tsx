@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Users, AlertTriangle, ChevronDown, TrendingUp, Clock, BarChart3 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Users, AlertTriangle, ChevronDown, TrendingUp, Clock, BarChart3, Plus, Edit2, Trash2, X } from 'lucide-react';
 import { apiService } from '../services/api';
 
 // ---------------------------------------------------------------------------
@@ -44,6 +44,15 @@ interface ForecastData {
   recommendations: string[];
 }
 
+interface Resource {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  capacityHoursPerWeek?: number;
+  skills?: string[];
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -72,9 +81,16 @@ function formatWeek(dateStr: string): string {
 // ---------------------------------------------------------------------------
 
 export function ResourceManagementPage() {
+  const queryClient = useQueryClient();
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedScheduleId, setSelectedScheduleId] = useState('');
-  const [activeTab, setActiveTab] = useState<'workload' | 'histogram' | 'forecast'>('workload');
+  const [activeTab, setActiveTab] = useState<'team' | 'workload' | 'histogram' | 'forecast'>('team');
+  const [showResourceForm, setShowResourceForm] = useState(false);
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formRole, setFormRole] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formCapacity, setFormCapacity] = useState('40');
 
   // Queries
   const { data: projectsData } = useQuery({
@@ -111,6 +127,57 @@ export function ResourceManagementPage() {
   });
   const forecast: ForecastData | null = forecastData || null;
 
+  // Resource CRUD
+  const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
+    queryKey: ['resources'],
+    queryFn: () => apiService.getResources(),
+  });
+  const resources: Resource[] = resourcesData?.resources || [];
+
+  const createResourceMutation = useMutation({
+    mutationFn: (data: { name: string; role: string; email: string; capacityHoursPerWeek: number }) =>
+      apiService.createResource(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['resources'] }); resetForm(); },
+  });
+
+  const updateResourceMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { name: string; role: string; email: string; capacityHoursPerWeek: number } }) =>
+      apiService.updateResource(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['resources'] }); resetForm(); },
+  });
+
+  const deleteResourceMutation = useMutation({
+    mutationFn: (id: string) => apiService.deleteResource(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['resources'] }),
+  });
+
+  function resetForm() {
+    setShowResourceForm(false);
+    setEditingResource(null);
+    setFormName('');
+    setFormRole('');
+    setFormEmail('');
+    setFormCapacity('40');
+  }
+
+  function openEdit(r: Resource) {
+    setEditingResource(r);
+    setFormName(r.name);
+    setFormRole(r.role);
+    setFormEmail(r.email);
+    setFormCapacity(String(r.capacityHoursPerWeek || 40));
+    setShowResourceForm(true);
+  }
+
+  function handleSaveResource() {
+    const data = { name: formName, role: formRole, email: formEmail, capacityHoursPerWeek: parseInt(formCapacity) || 40 };
+    if (editingResource) {
+      updateResourceMutation.mutate({ id: editingResource.id, data });
+    } else {
+      createResourceMutation.mutate(data);
+    }
+  }
+
   // Derived stats
   const stats = useMemo(() => {
     if (!workload.length) return { total: 0, overAllocated: 0, avgUtil: 0 };
@@ -139,8 +206,123 @@ export function ResourceManagementPage() {
         </div>
       </div>
 
-      {/* Project & Schedule selectors */}
-      <div className="flex items-center gap-4 flex-wrap">
+      {/* Top-level tabs: Team vs Analytics */}
+      <div className="border-b border-gray-200 dark:border-gray-700">
+        <div className="flex gap-6">
+          {([
+            { key: 'team' as const, label: 'Team', icon: Users },
+            { key: 'workload' as const, label: 'Workload Heatmap', icon: BarChart3 },
+            { key: 'histogram' as const, label: 'Resource Histogram', icon: Clock },
+            { key: 'forecast' as const, label: 'Capacity Forecast', icon: TrendingUp },
+          ]).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-1.5 pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Team Tab */}
+      {activeTab === 'team' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">{resources.length} resources</p>
+            <button
+              onClick={() => { resetForm(); setShowResourceForm(true); }}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add Resource
+            </button>
+          </div>
+
+          {/* Inline form */}
+          {showResourceForm && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-primary-200 dark:border-primary-700 p-5 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white">{editingResource ? 'Edit Resource' : 'New Resource'}</h3>
+                <button onClick={resetForm} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Name</label>
+                  <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="input w-full text-sm dark:bg-gray-700 dark:text-gray-100" placeholder="Full name" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Role</label>
+                  <input type="text" value={formRole} onChange={(e) => setFormRole(e.target.value)} className="input w-full text-sm dark:bg-gray-700 dark:text-gray-100" placeholder="e.g. Developer" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Email</label>
+                  <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="input w-full text-sm dark:bg-gray-700 dark:text-gray-100" placeholder="email@example.com" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Hours/Week</label>
+                  <input type="number" value={formCapacity} onChange={(e) => setFormCapacity(e.target.value)} className="input w-full text-sm dark:bg-gray-700 dark:text-gray-100" min="1" max="80" />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSaveResource}
+                  disabled={!formName.trim() || !formRole.trim() || !formEmail.trim() || createResourceMutation.isPending || updateResourceMutation.isPending}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                >
+                  {(createResourceMutation.isPending || updateResourceMutation.isPending) ? 'Saving...' : editingResource ? 'Update' : 'Create'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Resource list */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {resourcesLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+              </div>
+            ) : resources.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p>No resources yet. Add your first team member.</p>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-700">
+                    <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Name</th>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Role</th>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Email</th>
+                    <th className="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Hours/Wk</th>
+                    <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resources.map(r => (
+                    <tr key={r.id} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750">
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{r.name}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.role}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.email}</td>
+                      <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{r.capacityHoursPerWeek || 40}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => deleteResourceMutation.mutate(r.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Project & Schedule selectors (for analytics tabs) */}
+      {activeTab !== 'team' && <div className="flex items-center gap-4 flex-wrap">
         <div className="relative">
           <select
             value={selectedProjectId}
@@ -164,16 +346,16 @@ export function ResourceManagementPage() {
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         )}
-      </div>
+      </div>}
 
-      {!selectedProjectId && (
+      {activeTab !== 'team' && !selectedProjectId && (
         <div className="text-center py-16 text-gray-400">
           <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
           <p className="text-lg font-medium">Select a project to view resource data</p>
         </div>
       )}
 
-      {selectedProjectId && (
+      {activeTab !== 'team' && selectedProjectId && (
         <>
           {/* Summary cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -205,26 +387,6 @@ export function ResourceManagementPage() {
                   <p className="text-xs text-gray-500">Avg Utilization</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Tab bar */}
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <div className="flex gap-6">
-              {([
-                { key: 'workload' as const, label: 'Workload Heatmap', icon: BarChart3 },
-                { key: 'histogram' as const, label: 'Resource Histogram', icon: Clock },
-                { key: 'forecast' as const, label: 'Capacity Forecast', icon: TrendingUp },
-              ]).map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-1.5 pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              ))}
             </div>
           </div>
 

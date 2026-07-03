@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Clock, BarChart3 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Clock, BarChart3, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { apiService } from '../services/api';
 import { TimesheetGrid } from '../components/timetracking/TimesheetGrid';
 import { ActualVsEstimatedChart } from '../components/timetracking/ActualVsEstimatedChart';
@@ -9,11 +9,19 @@ import { useBreakpoint } from '../hooks/useBreakpoint';
 type Tab = 'my-timesheet' | 'project-summary';
 
 export function TimesheetPage() {
+  const queryClient = useQueryClient();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
   const [tab, setTab] = useState<Tab>('my-timesheet');
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedScheduleId, setSelectedScheduleId] = useState('');
+  const [showLogForm, setShowLogForm] = useState(false);
+  const [logProjectId, setLogProjectId] = useState('');
+  const [logScheduleId, setLogScheduleId] = useState('');
+  const [logTaskId, setLogTaskId] = useState('');
+  const [logDate, setLogDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [logHours, setLogHours] = useState('');
+  const [logDescription, setLogDescription] = useState('');
 
   const { data: projectsData, isError: projectsError } = useQuery({
     queryKey: ['projects'],
@@ -34,6 +42,39 @@ export function TimesheetPage() {
     enabled: !!selectedScheduleId,
   });
 
+  // Log-time queries
+  const { data: logSchedulesData } = useQuery({
+    queryKey: ['schedules', logProjectId],
+    queryFn: () => apiService.getSchedules(logProjectId),
+    enabled: !!logProjectId,
+  });
+  const logSchedules: any[] = logSchedulesData?.schedules || [];
+
+  const { data: logTasksData } = useQuery({
+    queryKey: ['tasks', logScheduleId],
+    queryFn: () => apiService.getTasks(logScheduleId),
+    enabled: !!logScheduleId,
+  });
+  const logTasks: any[] = logTasksData?.tasks || [];
+
+  const logTimeMutation = useMutation({
+    mutationFn: () => apiService.createTimeEntry({
+      taskId: logTaskId,
+      scheduleId: logScheduleId,
+      projectId: logProjectId,
+      date: logDate,
+      hours: parseFloat(logHours),
+      description: logDescription || undefined,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['timesheet'] });
+      setShowLogForm(false);
+      setLogTaskId('');
+      setLogHours('');
+      setLogDescription('');
+    },
+  });
+
   if (projectsError) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -44,10 +85,91 @@ export function TimesheetPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">Timesheets</h1>
-        <p className="text-sm text-gray-500 mt-1">Track time and compare against estimates</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Timesheets</h1>
+          <p className="text-sm text-gray-500 mt-1">Track time and compare against estimates</p>
+        </div>
+        <button
+          onClick={() => setShowLogForm(v => !v)}
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" /> Log Time
+        </button>
       </div>
+
+      {/* Log Time Form */}
+      {showLogForm && (
+        <div className="bg-white rounded-xl border border-primary-200 p-5 space-y-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-900">Log Time Entry</h3>
+            <button onClick={() => setShowLogForm(false)} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+          </div>
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4'} gap-3`}>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Project</label>
+              <select
+                value={logProjectId}
+                onChange={(e) => { setLogProjectId(e.target.value); setLogScheduleId(''); setLogTaskId(''); }}
+                className="input w-full text-sm"
+              >
+                <option value="">Select project...</option>
+                {projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Schedule</label>
+              <select
+                value={logScheduleId}
+                onChange={(e) => { setLogScheduleId(e.target.value); setLogTaskId(''); }}
+                className="input w-full text-sm"
+                disabled={!logProjectId}
+              >
+                <option value="">Select schedule...</option>
+                {logSchedules.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Task</label>
+              <select
+                value={logTaskId}
+                onChange={(e) => setLogTaskId(e.target.value)}
+                className="input w-full text-sm"
+                disabled={!logScheduleId}
+              >
+                <option value="">Select task...</option>
+                {logTasks.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+              <input type="date" value={logDate} onChange={(e) => setLogDate(e.target.value)} className="input w-full text-sm" />
+            </div>
+          </div>
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} gap-3`}>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Hours</label>
+              <input type="number" step="0.25" min="0.25" max="24" value={logHours} onChange={(e) => setLogHours(e.target.value)} className="input w-full text-sm" placeholder="e.g. 2.5" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Description (optional)</label>
+              <input type="text" value={logDescription} onChange={(e) => setLogDescription(e.target.value)} className="input w-full text-sm" placeholder="What did you work on?" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={() => logTimeMutation.mutate()}
+              disabled={!logTaskId || !logDate || !logHours || parseFloat(logHours) <= 0 || logTimeMutation.isPending}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+            >
+              {logTimeMutation.isPending ? 'Saving...' : 'Save Entry'}
+            </button>
+          </div>
+          {logTimeMutation.isError && (
+            <p className="text-xs text-red-600">Failed to save time entry. Please try again.</p>
+          )}
+        </div>
+      )}
 
       {/* Tab navigation */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
@@ -166,13 +288,13 @@ function MobileTimesheetView() {
       {/* Week navigation */}
       <div className="flex items-center justify-between">
         <button onClick={() => navigateWeek(-1)} className="p-2 text-gray-500 hover:text-gray-700">
-          <Clock className="w-4 h-4" />
+          <ChevronLeft className="w-4 h-4" />
         </button>
         <span className="text-sm font-medium text-gray-700">
           Week of {new Date(weekStart + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>
         <button onClick={() => navigateWeek(1)} className="p-2 text-gray-500 hover:text-gray-700">
-          <Clock className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 

@@ -67,9 +67,20 @@ export const ExecutiveDashboard: React.FC = () => {
   const totalProjects = projects.length;
   const activeProjects = projects.filter((p) => p.status === 'active').length;
   const totalBudget = projects.reduce((sum, p) => sum + (p.budgetAllocated || 0), 0);
+
+  // On-track: active projects where budget spent <= allocated AND progress is reasonable
+  // relative to elapsed time (or has no end date / just started)
   const onTrackCount = projects.filter((p) => {
-    const progress = p.progressPercentage || 0;
-    return p.status === 'active' && progress >= 20;
+    if (p.status !== 'active') return false;
+    const budgetOk = !p.budgetAllocated || (p.budgetSpent || 0) <= p.budgetAllocated;
+    const now = Date.now();
+    const start = p.startDate ? new Date(p.startDate).getTime() : now;
+    const end = p.endDate ? new Date(p.endDate).getTime() : 0;
+    const elapsed = end > start ? (now - start) / (end - start) : 0;
+    const progress = (p.progressPercentage || 0) / 100;
+    // Schedule OK if no end date, not started yet, or progress within 20% of elapsed time
+    const scheduleOk = !end || elapsed <= 0 || progress >= elapsed - 0.2;
+    return budgetOk && scheduleOk;
   }).length;
   const onTrackPct = activeProjects > 0 ? Math.round((onTrackCount / activeProjects) * 100) : 0;
 

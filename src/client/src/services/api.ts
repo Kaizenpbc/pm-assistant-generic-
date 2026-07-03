@@ -572,6 +572,16 @@ class ApiService {
     return response.data;
   }
 
+  async updateResource(id: string, data: { name?: string; role?: string; email?: string; capacityHoursPerWeek?: number; skills?: string[] }) {
+    const response = await this.api.put(`/resources/${id}`, data);
+    return response.data;
+  }
+
+  async deleteResource(id: string) {
+    const response = await this.api.delete(`/resources/${id}`);
+    return response.data;
+  }
+
   async getResourceWorkload(projectId: string) {
     const response = await this.api.get(`/resources/workload/${projectId}`);
     return response.data;

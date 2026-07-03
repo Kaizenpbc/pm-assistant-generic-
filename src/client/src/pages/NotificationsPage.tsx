@@ -233,6 +233,7 @@ export function NotificationsPage() {
                 onClick={() => {
                   if (isClickable) {
                     dismissNotification(n.id);
+                    apiService.markNotificationRead(n.id).catch(() => {/* best effort */});
                     navigate(`/projects/${n.projectId}/schedule`);
                   }
                 }}
@@ -256,7 +257,11 @@ export function NotificationsPage() {
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold capitalize ${severityBadge[n.severity]}`}>{n.severity}</span>
                       {!n.read && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); dismissNotification(n.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dismissNotification(n.id);
+                            apiService.markNotificationRead(n.id).catch(() => {/* best effort */});
+                          }}
                           className="p-1 rounded text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
                           title="Mark as read"
                         >
