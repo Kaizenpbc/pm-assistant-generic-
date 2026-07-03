@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { getTimezones } from '../utils/dateFormat';
 import { useLocaleStore } from '../stores/localeStore';
 
@@ -393,6 +394,7 @@ const ApiKeysTab: React.FC = () => {
   const [newKeyScopes, setNewKeyScopes] = useState<string[]>(['read', 'write']);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['api-keys'],
@@ -529,7 +531,7 @@ const ApiKeysTab: React.FC = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => { if (confirm('Revoke this API key? Any agents using it will lose access.')) revokeMutation.mutate(key.id); }}
+                  onClick={() => setConfirmRevokeId(key.id)}
                   className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
                     key.isActive ? 'text-red-600 hover:bg-red-50 border border-red-200' : 'text-gray-400 cursor-not-allowed'
                   }`}
@@ -553,6 +555,17 @@ const ApiKeysTab: React.FC = () => {
         </div>
         <p className="text-xs text-gray-400 mt-3">Rate limit: 100 requests/minute per key. Headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset</p>
       </div>
+
+      {confirmRevokeId && (
+        <ConfirmModal
+          title="Revoke API Key"
+          message="Revoke this API key? Any agents using it will lose access."
+          confirmLabel="Revoke"
+          isPending={revokeMutation.isPending}
+          onConfirm={() => { revokeMutation.mutate(confirmRevokeId); setConfirmRevokeId(null); }}
+          onCancel={() => setConfirmRevokeId(null)}
+        />
+      )}
     </div>
   );
 };
@@ -570,6 +583,7 @@ const WebhooksTab: React.FC = () => {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [newUrl, setNewUrl] = useState('');
+  const [confirmDeleteWhId, setConfirmDeleteWhId] = useState<string | null>(null);
   const [newEvents, setNewEvents] = useState<string[]>([]);
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -717,7 +731,7 @@ const WebhooksTab: React.FC = () => {
                       <Send className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => { if (confirm('Delete this webhook?')) deleteMutation.mutate(wh.id); }}
+                      onClick={() => setConfirmDeleteWhId(wh.id)}
                       className="text-sm px-3 py-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -741,6 +755,17 @@ const WebhooksTab: React.FC = () => {
           <span className="text-blue-400">const</span> valid = signature === expected;
         </div>
       </div>
+
+      {confirmDeleteWhId && (
+        <ConfirmModal
+          title="Delete Webhook"
+          message="Delete this webhook? It will stop receiving events immediately."
+          confirmLabel="Delete"
+          isPending={deleteMutation.isPending}
+          onConfirm={() => { deleteMutation.mutate(confirmDeleteWhId); setConfirmDeleteWhId(null); }}
+          onCancel={() => setConfirmDeleteWhId(null)}
+        />
+      )}
     </div>
   );
 };

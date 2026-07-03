@@ -11,6 +11,8 @@ import {
   Database,
   RefreshCw,
   Brain,
+  Edit2,
+  Trash2,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { PatternCard } from '../components/lessons/PatternCard';
@@ -108,14 +110,16 @@ const AddLessonModal: React.FC<{
   onClose: () => void;
   onSubmit: (data: any) => void;
   isSubmitting: boolean;
-}> = ({ projects, onClose, onSubmit, isSubmitting }) => {
+  initial?: { title: string; description: string; category: string; impact: string; recommendation: string; projectId: string };
+  title?: string;
+}> = ({ projects, onClose, onSubmit, isSubmitting, initial, title: modalTitle }) => {
   const [form, setForm] = useState({
-    title: '',
-    description: '',
-    category: 'Other',
-    impact: 'neutral' as 'positive' | 'negative' | 'neutral',
-    recommendation: '',
-    projectId: '',
+    title: initial?.title || '',
+    description: initial?.description || '',
+    category: initial?.category || 'Other',
+    impact: (initial?.impact || 'neutral') as 'positive' | 'negative' | 'neutral',
+    recommendation: initial?.recommendation || '',
+    projectId: initial?.projectId || '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -135,7 +139,7 @@ const AddLessonModal: React.FC<{
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <Plus className="w-5 h-5 text-primary-500" />
-            Add Lesson Learned
+            {modalTitle || 'Add Lesson Learned'}
           </h2>
           <button
             onClick={onClose}
@@ -288,6 +292,8 @@ export const LessonsLearnedPage: React.FC = () => {
 
   // Modal state
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Extract lessons selector
   const [extractProjectId, setExtractProjectId] = useState('');
@@ -344,6 +350,22 @@ export const LessonsLearnedPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessons'] });
       setShowAddModal(false);
+    },
+  });
+
+  const updateLessonMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiService.updateLesson(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lessons'] });
+      setEditingLesson(null);
+    },
+  });
+
+  const deleteLessonMutation = useMutation({
+    mutationFn: (id: string) => apiService.deleteLesson(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lessons'] });
+      setConfirmDeleteId(null);
     },
   });
 
@@ -613,6 +635,8 @@ export const LessonsLearnedPage: React.FC = () => {
                     <span className="inline-block rounded-full bg-primary-50 text-primary-600 px-2 py-0.5 text-xs font-medium">
                       {lesson.category}
                     </span>
+                    <button onClick={() => setEditingLesson(lesson)} className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100" title="Edit"><Edit2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setConfirmDeleteId(lesson.id)} className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
                 <p className="text-sm text-gray-600 leading-relaxed mb-2">{lesson.description}</p>
@@ -643,6 +667,42 @@ export const LessonsLearnedPage: React.FC = () => {
           onSubmit={(data) => addLessonMutation.mutate(data)}
           isSubmitting={addLessonMutation.isPending}
         />
+      )}
+
+      {/* Edit Lesson Modal */}
+      {editingLesson && (
+        <AddLessonModal
+          projects={projects}
+          initial={{
+            title: editingLesson.title,
+            description: editingLesson.description,
+            category: editingLesson.category,
+            impact: editingLesson.impact,
+            recommendation: editingLesson.recommendation,
+            projectId: editingLesson.projectId || '',
+          }}
+          title="Edit Lesson"
+          onClose={() => setEditingLesson(null)}
+          onSubmit={(data) => updateLessonMutation.mutate({ id: editingLesson.id, data })}
+          isSubmitting={updateLessonMutation.isPending}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmDeleteId(null)} />
+          <div className="relative bg-white rounded-xl shadow-2xl p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Lesson</h3>
+            <p className="text-sm text-gray-600 mb-4">Are you sure you want to delete this lesson? This cannot be undone.</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+              <button onClick={() => deleteLessonMutation.mutate(confirmDeleteId)} disabled={deleteLessonMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50">
+                {deleteLessonMutation.isPending ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

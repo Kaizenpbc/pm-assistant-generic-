@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Target, Plus, ChevronDown, ChevronRight, Edit2, Trash2, X } from 'lucide-react';
 import { apiService } from '../services/api';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -316,6 +317,7 @@ export const GoalsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
 
@@ -374,9 +376,7 @@ export const GoalsPage: React.FC = () => {
   });
 
   const handleEdit = (goal: Goal) => setEditingGoal(goal);
-  const handleDelete = (id: string) => {
-    if (window.confirm('Delete this goal?')) deleteMutation.mutate(id);
-  };
+  const handleDelete = (id: string) => setConfirmDeleteId(id);
 
   const editFormData: GoalFormData | undefined = editingGoal
     ? {
@@ -447,6 +447,18 @@ export const GoalsPage: React.FC = () => {
           onSubmit={(d) => createMutation.mutate(d)}
           isSubmitting={createMutation.isPending}
           title="New Goal"
+        />
+      )}
+
+      {/* Delete Confirmation */}
+      {confirmDeleteId && (
+        <ConfirmModal
+          title="Delete Goal"
+          message="Are you sure you want to delete this goal? This cannot be undone."
+          confirmLabel="Delete"
+          isPending={deleteMutation.isPending}
+          onConfirm={() => { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null); }}
+          onCancel={() => setConfirmDeleteId(null)}
         />
       )}
 

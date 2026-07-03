@@ -147,4 +147,35 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: 'Failed to seed lessons' });
     }
   });
+
+  // PUT /:id — Update a lesson
+  fastify.put('/:id', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const data = request.body as { title?: string; description?: string; category?: string; impact?: string; recommendation?: string };
+      const updated = await lessonsLearnedService.updateLesson(id, data);
+      if (!updated) return reply.status(404).send({ error: 'Lesson not found' });
+      return { message: 'Lesson updated' };
+    } catch (err) {
+      fastify.log.error({ err }, 'Failed to update lesson');
+      return reply.status(500).send({ error: 'Failed to update lesson' });
+    }
+  });
+
+  // DELETE /:id — Delete a lesson
+  fastify.delete('/:id', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const deleted = await lessonsLearnedService.deleteLesson(id);
+      if (!deleted) return reply.status(404).send({ error: 'Lesson not found' });
+      return { message: 'Lesson deleted' };
+    } catch (err) {
+      fastify.log.error({ err }, 'Failed to delete lesson');
+      return reply.status(500).send({ error: 'Failed to delete lesson' });
+    }
+  });
 }

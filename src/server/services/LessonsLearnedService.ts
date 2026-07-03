@@ -834,6 +834,25 @@ export class LessonsLearnedService {
     );
     return rows.map(rowToLesson);
   }
+
+  async updateLesson(id: string, data: { title?: string; description?: string; category?: string; impact?: string; recommendation?: string }): Promise<boolean> {
+    const fields: string[] = [];
+    const values: any[] = [];
+    if (data.title !== undefined) { fields.push('title = ?'); values.push(data.title); }
+    if (data.description !== undefined) { fields.push('description = ?'); values.push(data.description); }
+    if (data.category !== undefined) { fields.push('category = ?'); values.push(data.category); }
+    if (data.impact !== undefined) { fields.push('impact = ?'); values.push(data.impact); }
+    if (data.recommendation !== undefined) { fields.push('recommendation = ?'); values.push(data.recommendation); }
+    if (fields.length === 0) return false;
+    values.push(id);
+    const result = await databaseService.query<any>(`UPDATE lessons_learned SET ${fields.join(', ')} WHERE id = ?`, values);
+    return (result as any).affectedRows > 0;
+  }
+
+  async deleteLesson(id: string): Promise<boolean> {
+    const result = await databaseService.query<any>('DELETE FROM lessons_learned WHERE id = ?', [id]);
+    return (result as any).affectedRows > 0;
+  }
 }
 
 export const lessonsLearnedService = new LessonsLearnedService();

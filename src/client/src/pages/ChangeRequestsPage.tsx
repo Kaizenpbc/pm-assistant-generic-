@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GitPullRequest, Plus, Settings2, Trash2 } from 'lucide-react';
 import { apiService } from '../services/api';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { ChangeRequestList } from '../components/approvals/ChangeRequestList';
 import { ChangeRequestForm } from '../components/approvals/ChangeRequestForm';
 import { ChangeRequestDetail } from '../components/approvals/ChangeRequestDetail';
@@ -17,6 +18,7 @@ export const ChangeRequestsPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedCRId, setSelectedCRId] = useState<string>('');
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | undefined>(undefined);
+  const [confirmDeleteWf, setConfirmDeleteWf] = useState<{ id: string; name: string } | null>(null);
 
   // Fetch projects for selector
   const { data: projectsData } = useQuery({
@@ -206,11 +208,7 @@ export const ChangeRequestsPage: React.FC = () => {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <button
-                              onClick={() => {
-                                if (confirm(`Delete workflow "${wf.name}"?`)) {
-                                  deleteWorkflowMutation.mutate(wf.id);
-                                }
-                              }}
+                              onClick={() => setConfirmDeleteWf({ id: wf.id, name: wf.name })}
                               className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                               title="Delete workflow"
                             >
@@ -235,6 +233,18 @@ export const ChangeRequestsPage: React.FC = () => {
             />
           )}
         </>
+      )}
+
+      {/* Delete Workflow Confirmation */}
+      {confirmDeleteWf && (
+        <ConfirmModal
+          title="Delete Workflow"
+          message={`Delete workflow "${confirmDeleteWf.name}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          isPending={deleteWorkflowMutation.isPending}
+          onConfirm={() => { deleteWorkflowMutation.mutate(confirmDeleteWf.id); setConfirmDeleteWf(null); }}
+          onCancel={() => setConfirmDeleteWf(null)}
+        />
       )}
     </div>
   );

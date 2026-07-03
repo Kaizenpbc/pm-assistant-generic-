@@ -863,6 +863,26 @@ class ApiService {
     return response.data;
   }
 
+  async updateLesson(id: string, data: { title?: string; description?: string; category?: string; impact?: string; recommendation?: string }) {
+    const response = await this.api.put(`/lessons-learned/${id}`, data);
+    return response.data;
+  }
+
+  async deleteLesson(id: string) {
+    const response = await this.api.delete(`/lessons-learned/${id}`);
+    return response.data;
+  }
+
+  async getLessons() {
+    const response = await this.api.get('/lessons-learned/knowledge-base');
+    return response.data;
+  }
+
+  async getPatterns() {
+    const response = await this.api.get('/lessons-learned/relevant');
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Natural Language Query
   // -------------------------------------------------------------------------

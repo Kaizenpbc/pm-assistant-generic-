@@ -10,6 +10,7 @@ import {
   History,
 } from 'lucide-react';
 import { apiService } from '../services/api';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { IntegrationConfigModal } from '../components/integrations/IntegrationConfigModal';
 import { SyncLogPanel } from '../components/integrations/SyncLogPanel';
 
@@ -95,6 +96,7 @@ export const IntegrationsPage: React.FC = () => {
   } | null>(null);
 
   const [syncLogId, setSyncLogId] = useState<string | null>(null);
+  const [confirmDisconnect, setConfirmDisconnect] = useState<{ id: string; name: string } | null>(null);
 
   // Fetch integrations
   const {
@@ -133,13 +135,7 @@ export const IntegrationsPage: React.FC = () => {
   });
 
   const handleDisconnect = (integrationId: string, providerName: string) => {
-    if (
-      window.confirm(
-        `Are you sure you want to disconnect ${providerName}? This will remove all integration settings.`
-      )
-    ) {
-      disconnectMutation.mutate(integrationId);
-    }
+    setConfirmDisconnect({ id: integrationId, name: providerName });
   };
 
   return (
@@ -305,6 +301,18 @@ export const IntegrationsPage: React.FC = () => {
         <SyncLogPanel
           integrationId={syncLogId}
           onClose={() => setSyncLogId(null)}
+        />
+      )}
+
+      {/* Disconnect Confirmation */}
+      {confirmDisconnect && (
+        <ConfirmModal
+          title="Disconnect Integration"
+          message={`Are you sure you want to disconnect ${confirmDisconnect.name}? This will remove all integration settings.`}
+          confirmLabel="Disconnect"
+          isPending={disconnectMutation.isPending}
+          onConfirm={() => { disconnectMutation.mutate(confirmDisconnect.id); setConfirmDisconnect(null); }}
+          onCancel={() => setConfirmDisconnect(null)}
         />
       )}
     </div>

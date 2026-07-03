@@ -9,6 +9,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { apiService } from '../services/api';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { ReportDesigner } from '../components/reports/ReportDesigner';
 import { ReportPreview } from '../components/reports/ReportPreview';
 import { ReportScheduleModal } from '../components/reports/ReportScheduleModal';
@@ -30,6 +31,7 @@ export const ReportBuilderPage: React.FC = () => {
   const [view, setView] = useState<View>('list');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
   const [scheduleTemplate, setScheduleTemplate] = useState<{ id: string; name: string } | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['reportTemplates'],
@@ -60,11 +62,7 @@ export const ReportBuilderPage: React.FC = () => {
     setView('preview');
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this report template?')) {
-      deleteMutation.mutate(id);
-    }
-  };
+  const handleDelete = (id: string) => setConfirmDeleteId(id);
 
   const handleDesignerClose = () => {
     setSelectedTemplateId(undefined);
@@ -222,6 +220,18 @@ export const ReportBuilderPage: React.FC = () => {
           templateId={scheduleTemplate.id}
           templateName={scheduleTemplate.name}
           onClose={() => setScheduleTemplate(null)}
+        />
+      )}
+
+      {/* Delete Confirmation */}
+      {confirmDeleteId && (
+        <ConfirmModal
+          title="Delete Report Template"
+          message="Are you sure you want to delete this report template?"
+          confirmLabel="Delete"
+          isPending={deleteMutation.isPending}
+          onConfirm={() => { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null); }}
+          onCancel={() => setConfirmDeleteId(null)}
         />
       )}
     </div>

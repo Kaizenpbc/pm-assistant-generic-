@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ClipboardList, Plus, FileText, Trash2, Eye } from 'lucide-react';
 import { apiService } from '../services/api';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { IntakeFormDesigner } from '../components/intake/IntakeFormDesigner';
 import { IntakeSubmissionForm } from '../components/intake/IntakeSubmissionForm';
 import { IntakeReviewPanel } from '../components/intake/IntakeReviewPanel';
@@ -32,6 +33,7 @@ export const IntakeFormsPage: React.FC = () => {
   const [selectedFormId, setSelectedFormId] = useState<string | undefined>(undefined);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [confirmDeleteFormId, setConfirmDeleteFormId] = useState<string | null>(null);
 
   // --- Forms tab queries ---
   const { data: formsData, isLoading: formsLoading } = useQuery({
@@ -229,11 +231,7 @@ export const IntakeFormsPage: React.FC = () => {
                       Edit
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm('Delete this form? This cannot be undone.')) {
-                          deleteFormMutation.mutate(form.id);
-                        }
-                      }}
+                      onClick={() => setConfirmDeleteFormId(form.id)}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors ml-auto"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -344,6 +342,18 @@ export const IntakeFormsPage: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Delete Form Confirmation */}
+      {confirmDeleteFormId && (
+        <ConfirmModal
+          title="Delete Form"
+          message="Delete this form? This cannot be undone."
+          confirmLabel="Delete"
+          isPending={deleteFormMutation.isPending}
+          onConfirm={() => { deleteFormMutation.mutate(confirmDeleteFormId); setConfirmDeleteFormId(null); }}
+          onCancel={() => setConfirmDeleteFormId(null)}
+        />
       )}
     </div>
   );
