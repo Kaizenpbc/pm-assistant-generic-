@@ -163,7 +163,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Role-based access control (admin, executive, manager, member) with project member roles
 - Append-only chained audit ledger with API search, filter, and pagination
 - Data encryption at rest and in transit
-- Per-user AI token budget enforcement (`AIBudgetService`) — monthly limits, custom per-user overrides, `GET /api/v1/ai/budget` usage endpoint, automatic enforcement before every AI call
+- Per-user AI token budget enforcement (`AIBudgetService`) — monthly limits, custom per-user overrides, `GET /api/v1/ai/budget` usage endpoint, automatic enforcement before every AI call, proactive 80% threshold warning notification (daily-deduped)
 - Zod validation on 24 route files covering all critical API inputs
 - **Benchmark:** Enterprise tools
 
@@ -432,3 +432,6 @@ An agentic AI project management platform that combines the scheduling power of 
 | Repository Layer (BaseRepository + ProjectRepository, UserRepository, ScheduleRepository — centralized SQL/row mapping, services keep business logic) | Done | Architecture |
 | Structured Metrics (MetricsService with request counts, latency p50/p95/p99, AI token usage, DB query counts; GET /api/v1/metrics admin endpoint) | Done | Observability |
 | Request Context Propagation (AsyncLocalStorage request ID through all async operations, Winston logger auto-includes requestId) | Done | Observability |
+| Transaction Boundaries (queryOn() helper + transaction() wraps 7 multi-table service methods for ACID guarantees) | Done | Reliability |
+| DB Pool Timeouts (connectTimeout: 5s, idleTimeout: 30s, queueLimit: 50 — env-configurable) | Done | Reliability |
+| AI Budget 80% Threshold Warning (proactive daily-deduped notification before hard block at 100%) | Done | Enhancement |
