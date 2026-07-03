@@ -139,8 +139,8 @@ export async function exportRoutes(fastify: FastifyInstance) {
         <Name>${xmlEscape(t.name)}</Name>
         <WBS>${t.wbs}</WBS>
         <OutlineLevel>${t.outlineLevel}</OutlineLevel>
-        <Start>${start}T08:00:00</Start>
-        <Finish>${finish}T17:00:00</Finish>
+        ${start ? `<Start>${start}T08:00:00</Start>` : '<Start />'}
+        ${finish ? `<Finish>${finish}T17:00:00</Finish>` : '<Finish />'}
         <Duration>${durationISO(durationDays)}</Duration>
         <Milestone>${t.isMilestone ? 1 : 0}</Milestone>
         <Summary>${t.isParent ? 1 : 0}</Summary>
