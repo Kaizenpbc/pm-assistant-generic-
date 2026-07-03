@@ -766,6 +766,7 @@ The `AIBudgetService` enforces per-user monthly AI token limits:
 - Per-user custom budgets via `users.ai_monthly_token_budget` column (overrides system default)
 - Budget checked before every AI call in `claudeService` — throws `AIBudgetExceededError` when exceeded
 - **80% threshold warning**: When usage reaches 80%, a daily-deduped `ai_budget_warning` notification is automatically created (severity: high) informing the user of tokens remaining and days left in the month
+- **Circuit breaker**: After 5 consecutive transient failures (rate limit, timeout, API overload), the AI circuit breaker opens and returns HTTP 503 immediately for 60 seconds instead of making doomed API calls. Recovers automatically after cooldown.
 - `GET /api/v1/ai/budget` returns current month's usage summary: `totalInputTokens`, `totalOutputTokens`, `totalTokens`, `totalCost`, `requestCount`, `budget`, `remaining`, `percentUsed`
 
 ### Security Middleware
@@ -1230,7 +1231,7 @@ All API routes are prefixed with `/api/v1/` and organized by domain:
 /api/v1/lessons-learned   Retrospective knowledge base
 /api/v1/learning          AI learning feedback
 /api/v1/exports           Data export
-/api/v1/agent             Agent scheduler (14 agents)
+/api/v1/agent             Agent scheduler (14 agents, parallel execution with concurrency 3)
 /api/v1/agent-log         Agent activity log
 /api/v1/agent/proposals   Agent proposal management
 /api/v1/agent/autonomy    Tier 3 autonomy configuration

@@ -54,6 +54,83 @@ const DEFAULT_PRICING = { input: 3.0, output: 15.0 };
 const REQUEST_TIMEOUT_MS = 30_000;
 
 // ---------------------------------------------------------------------------
+// Circuit Breaker for user-facing AI calls
+// ---------------------------------------------------------------------------
+
+const CB_MAX_FAILURES = 5;
+const CB_RESET_MS = 60_000; // 1 minute cooldown (fast recovery for user-facing)
+const CB_HALF_OPEN_MAX = 1; // allow 1 probe request in half-open state
+
+export class AICircuitBreakerError extends Error {
+  constructor(public retryAfterMs: number) {
+    super('AI service temporarily unavailable due to repeated failures. Please try again shortly.');
+    this.name = 'AICircuitBreakerError';
+  }
+}
+
+class AICircuitBreaker {
+  private state: 'closed' | 'open' | 'half_open' = 'closed';
+  private failures = 0;
+  private lastFailureAt = 0;
+  private halfOpenAttempts = 0;
+
+  assertClosed(): void {
+    if (this.state === 'closed') return;
+
+    if (this.state === 'open') {
+      const elapsed = Date.now() - this.lastFailureAt;
+      if (elapsed >= CB_RESET_MS) {
+        this.state = 'half_open';
+        this.halfOpenAttempts = 0;
+        return; // allow probe
+      }
+      throw new AICircuitBreakerError(CB_RESET_MS - elapsed);
+    }
+
+    // half_open — allow limited probes
+    if (this.halfOpenAttempts >= CB_HALF_OPEN_MAX) {
+      throw new AICircuitBreakerError(CB_RESET_MS);
+    }
+    this.halfOpenAttempts++;
+  }
+
+  recordSuccess(): void {
+    this.state = 'closed';
+    this.failures = 0;
+    this.halfOpenAttempts = 0;
+  }
+
+  recordFailure(): void {
+    this.failures++;
+    this.lastFailureAt = Date.now();
+
+    if (this.state === 'half_open') {
+      // half-open probe failed — reopen
+      this.state = 'open';
+      return;
+    }
+
+    if (this.failures >= CB_MAX_FAILURES) {
+      this.state = 'open';
+    }
+  }
+
+  isTransientError(error: unknown): boolean {
+    if (error instanceof Anthropic.APIError) {
+      // 429 (rate limit), 503 (overloaded), 529 (overloaded) are transient
+      return error.status === 429 || error.status === 503 || error.status === 529;
+    }
+    if (error instanceof Anthropic.APIConnectionTimeoutError) return true;
+    if (error instanceof Anthropic.APIConnectionError) return true;
+    return false;
+  }
+
+  getStatus(): { state: string; failures: number } {
+    return { state: this.state, failures: this.failures };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // PromptTemplate
 // ---------------------------------------------------------------------------
 
@@ -258,6 +335,7 @@ export class ClaudeService {
   private maxTokens: number;
   private temperature: number;
   private aiEnabled: boolean;
+  private circuitBreaker = new AICircuitBreaker();
   private stats: UsageStats = {
     totalRequests: 0,
     totalInputTokens: 0,
@@ -296,8 +374,13 @@ export class ClaudeService {
     return { ...this.stats };
   }
 
+  getCircuitBreakerStatus(): { state: string; failures: number } {
+    return this.circuitBreaker.getStatus();
+  }
+
   async complete(options: CompletionOptions): Promise<CompletionResult> {
     this.assertAvailable();
+    this.circuitBreaker.assertClosed();
     if (options.userId) await aiBudgetService.checkBudget(options.userId);
 
     const startMs = Date.now();
@@ -324,15 +407,20 @@ export class ClaudeService {
       };
 
       this.recordUsage(usage);
+      this.circuitBreaker.recordSuccess();
 
       return { content, usage, latencyMs, model: response.model };
     } catch (error: unknown) {
+      if (this.circuitBreaker.isTransientError(error)) {
+        this.circuitBreaker.recordFailure();
+      }
       throw this.wrapError(error, 'complete');
     }
   }
 
   async *stream(options: CompletionOptions): AsyncGenerator<StreamChunk> {
     this.assertAvailable();
+    this.circuitBreaker.assertClosed();
     if (options.userId) await aiBudgetService.checkBudget(options.userId);
 
     const effectiveMaxTokens = options.maxTokens ?? this.maxTokens;
@@ -384,10 +472,14 @@ export class ClaudeService {
       };
 
       this.recordUsage(finalUsage);
+      this.circuitBreaker.recordSuccess();
 
       yield { type: 'usage', usage: finalUsage };
       yield { type: 'done' };
     } catch (error: unknown) {
+      if (this.circuitBreaker.isTransientError(error)) {
+        this.circuitBreaker.recordFailure();
+      }
       throw this.wrapError(error, 'stream');
     }
   }
@@ -455,6 +547,7 @@ export class ClaudeService {
     stopReason: string;
   }> {
     this.assertAvailable();
+    this.circuitBreaker.assertClosed();
 
     const startMs = Date.now();
     const effectiveMaxTokens = options.maxTokens ?? this.maxTokens;
@@ -480,6 +573,7 @@ export class ClaudeService {
       };
 
       this.recordUsage(usage);
+      this.circuitBreaker.recordSuccess();
 
       return {
         content: response.content,
@@ -489,6 +583,9 @@ export class ClaudeService {
         stopReason: response.stop_reason ?? 'end_turn',
       };
     } catch (error: unknown) {
+      if (this.circuitBreaker.isTransientError(error)) {
+        this.circuitBreaker.recordFailure();
+      }
       throw this.wrapError(error, 'completeWithTools');
     }
   }
@@ -504,6 +601,7 @@ export class ClaudeService {
     totalLatencyMs: number;
   }> {
     this.assertAvailable();
+    this.circuitBreaker.assertClosed();
     if (options.userId) await aiBudgetService.checkBudget(options.userId);
 
     const maxIter = options.maxIterations ?? 5;

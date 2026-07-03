@@ -28,6 +28,28 @@ import {
   runRiskEscalationAgent,
 } from './portfolioAgentRunners';
 
+// ---------------------------------------------------------------------------
+// Concurrency limiter — runs async functions with bounded parallelism
+// ---------------------------------------------------------------------------
+
+async function parallelLimit<T>(tasks: (() => Promise<T>)[], concurrency: number): Promise<T[]> {
+  const results: T[] = [];
+  let idx = 0;
+
+  async function worker() {
+    while (idx < tasks.length) {
+      const i = idx++;
+      results[i] = await tasks[i]();
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
+const PROJECT_CONCURRENCY = 3;
+
 export interface ScanStats {
   projectsScanned: number;
   schedulesScanned: number;
@@ -81,8 +103,10 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
 
   console.log(`[Agent] Found ${projects.length} active/planning projects`);
 
-  for (const project of projects) {
-    stats.projectsScanned++;
+  // Process projects in parallel (bounded concurrency)
+  const projectTasks = projects.map((project) => async () => {
+    const pStats = emptyStats();
+    pStats.projectsScanned = 1;
 
     projectAgentFlags.set(project.id, {
       name: project.name,
@@ -94,7 +118,7 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
 
     // --- Agent 1: Auto-Reschedule ---
     for (const schedule of schedules) {
-      stats.schedulesScanned++;
+      pStats.schedulesScanned++;
 
       try {
         const ctx = { actorId: 'system' as const, actorType: 'system' as const, source: 'system' as const, projectId: project.id };
@@ -105,7 +129,7 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
         }
 
         const { delays: significant, proposal } = result.output;
-        stats.delaysDetected += significant.length;
+        pStats.delaysDetected += significant.length;
 
         if (significant.length === 0) {
           await activityLog.log({
@@ -122,7 +146,7 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
           `[Agent] ${project.name} / ${schedule.name}: ${significant.length} significant delay(s)`,
         );
 
-        stats.proposalsGenerated++;
+        pStats.proposalsGenerated++;
 
         const pFlags = projectAgentFlags.get(project.id);
         if (pFlags) {
@@ -147,7 +171,7 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
           linkType: 'proposal',
           linkId: proposal.id,
         });
-        stats.notificationsSent++;
+        pStats.notificationsSent++;
 
         await activityLog.log({
           projectId: project.id,
@@ -174,176 +198,145 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
     // --- Agent 2: Budget Burn-Rate ---
     try {
       const budgetAlerts = await runBudgetBurnRateAgent(project, activityLog);
-      stats.budgetAlertsCreated += budgetAlerts;
+      pStats.budgetAlertsCreated += budgetAlerts;
       if (budgetAlerts > 0) {
         const pFlags = projectAgentFlags.get(project.id);
         if (pFlags) { pFlags.flags.budgetOverrun = true; pFlags.details.budgetBurnRate = 'Budget alert triggered'; }
       }
     } catch (error) {
       console.error(`[Agent:Budget] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'budget',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'budget', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
 
     // --- Agent 3: Monte Carlo Confidence ---
     try {
       const mcAlerts = await runMonteCarloConfidenceAgent(project, schedules, activityLog);
-      stats.mcAlertsCreated += mcAlerts;
+      pStats.mcAlertsCreated += mcAlerts;
     } catch (error) {
       console.error(`[Agent:MonteCarlo] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'monte_carlo',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'monte_carlo', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
 
     // --- Agent 4: Meeting Follow-Up ---
     try {
       const meetingAlerts = await runMeetingFollowUpAgent(project, activityLog);
-      stats.meetingAlertsCreated += meetingAlerts;
+      pStats.meetingAlertsCreated += meetingAlerts;
       if (meetingAlerts > 0) {
         const pFlags = projectAgentFlags.get(project.id);
         if (pFlags) { pFlags.flags.meetingOverdue = true; pFlags.details.meetingOverdue = `${meetingAlerts} meeting alert(s)`; }
       }
     } catch (error) {
       console.error(`[Agent:Meeting] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'meeting',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'meeting', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
 
     // --- Agent 5: Scope Creep Detection ---
     try {
       const scopeAlerts = await runScopeCreepAgent(project, activityLog);
-      stats.scopeCreepAlertsCreated += scopeAlerts;
+      pStats.scopeCreepAlertsCreated += scopeAlerts;
       if (scopeAlerts > 0) {
         const pFlags = projectAgentFlags.get(project.id);
         if (pFlags) { pFlags.flags.scopeCreep = true; pFlags.details.scopeCreep = 'Scope creep detected'; }
       }
     } catch (error) {
       console.error(`[Agent:ScopeCreep] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'scope_creep',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'scope_creep', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
 
     // --- Agent 6: Budget Intelligence ---
     try {
       const budgetProposals = await runBudgetIntelligenceAgent(project, activityLog);
-      stats.budgetProposalsCreated += budgetProposals;
+      pStats.budgetProposalsCreated += budgetProposals;
       if (budgetProposals > 0) {
         const pFlags = projectAgentFlags.get(project.id);
         if (pFlags) { pFlags.flags.budgetOverrun = true; pFlags.details.budgetIntelligence = 'Budget intelligence proposal created'; }
       }
     } catch (error) {
       console.error(`[Agent:BudgetIntelligence] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'budget_intelligence',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'budget_intelligence', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
 
     // --- Agent 7: Resource Optimization ---
     try {
       const resourceProposals = await runResourceOptimizationAgent(project, activityLog);
-      stats.resourceProposalsCreated += resourceProposals;
+      pStats.resourceProposalsCreated += resourceProposals;
       if (resourceProposals > 0) {
         const pFlags = projectAgentFlags.get(project.id);
         if (pFlags) { pFlags.flags.resourceBottleneck = true; pFlags.details.resourceOptimization = 'Resource optimization proposal created'; }
       }
     } catch (error) {
       console.error(`[Agent:ResourceOptimization] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'resource_optimization',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'resource_optimization', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
 
     // --- Agent 10: Stakeholder Communication ---
     try {
       const stakeholderReports = await runStakeholderCommunicationAgent(project, activityLog);
-      stats.stakeholderReportsCreated += stakeholderReports;
+      pStats.stakeholderReportsCreated += stakeholderReports;
     } catch (error) {
       console.error(`[Agent:StakeholderCommunication] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'stakeholder_communication',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'stakeholder_communication', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
 
     // --- Agent 11: Project Hygiene ---
     try {
       const hygieneAlerts = await runProjectHygieneAgent(project, activityLog);
-      stats.hygieneAlertsCreated += hygieneAlerts;
+      pStats.hygieneAlertsCreated += hygieneAlerts;
     } catch (error) {
       console.error(`[Agent:ProjectHygiene] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'project_hygiene',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'project_hygiene', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
 
     // --- Agent 12: Dependency Risk ---
     try {
       const dependencyAlerts = await runDependencyRiskAgent(project, activityLog);
-      stats.dependencyRiskAlertsCreated += dependencyAlerts;
+      pStats.dependencyRiskAlertsCreated += dependencyAlerts;
     } catch (error) {
       console.error(`[Agent:DependencyRisk] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'dependency_risk',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'dependency_risk', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
 
     // --- Agent 13: Lessons Learned ---
     try {
       const lessons = await runLessonsLearnedAgent(project, activityLog);
-      stats.lessonsExtracted += lessons;
+      pStats.lessonsExtracted += lessons;
     } catch (error) {
       console.error(`[Agent:LessonsLearned] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'lessons_learned',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'lessons_learned', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
 
     // --- Agent 14: Predictive Alerting ---
     try {
       const predictiveAlerts = await runPredictiveAlertingAgent(project, activityLog);
-      stats.predictiveAlertsCreated += predictiveAlerts;
+      pStats.predictiveAlertsCreated += predictiveAlerts;
     } catch (error) {
       console.error(`[Agent:PredictiveAlerting] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({
-        projectId: project.id,
-        agentName: 'predictive_alerting',
-        result: 'error',
-        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      }).catch(() => {});
+      await activityLog.log({ projectId: project.id, agentName: 'predictive_alerting', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
+
+    return pStats;
+  });
+
+  const projectResults = await parallelLimit(projectTasks, PROJECT_CONCURRENCY);
+
+  // Merge per-project stats into aggregate
+  for (const pStats of projectResults) {
+    stats.projectsScanned += pStats.projectsScanned;
+    stats.schedulesScanned += pStats.schedulesScanned;
+    stats.delaysDetected += pStats.delaysDetected;
+    stats.proposalsGenerated += pStats.proposalsGenerated;
+    stats.notificationsSent += pStats.notificationsSent;
+    stats.budgetAlertsCreated += pStats.budgetAlertsCreated;
+    stats.mcAlertsCreated += pStats.mcAlertsCreated;
+    stats.meetingAlertsCreated += pStats.meetingAlertsCreated;
+    stats.scopeCreepAlertsCreated += pStats.scopeCreepAlertsCreated;
+    stats.budgetProposalsCreated += pStats.budgetProposalsCreated;
+    stats.resourceProposalsCreated += pStats.resourceProposalsCreated;
+    stats.stakeholderReportsCreated += pStats.stakeholderReportsCreated;
+    stats.hygieneAlertsCreated += pStats.hygieneAlertsCreated;
+    stats.dependencyRiskAlertsCreated += pStats.dependencyRiskAlertsCreated;
+    stats.lessonsExtracted += pStats.lessonsExtracted;
+    stats.predictiveAlertsCreated += pStats.predictiveAlertsCreated;
   }
 
   // --- Agent 8: Cross-Project Intelligence (portfolio-level) ---

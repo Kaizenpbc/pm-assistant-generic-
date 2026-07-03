@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { AIChatService } from '../../services/aiChatService';
+import { AICircuitBreakerError } from '../../services/claudeService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 
@@ -65,6 +66,13 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
         return result;
       } catch (error) {
+        if (error instanceof AICircuitBreakerError) {
+          return reply.code(503).send({
+            error: 'AI service temporarily unavailable',
+            message: error.message,
+            retryAfterMs: error.retryAfterMs,
+          });
+        }
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Chat message failed');
         return reply.code(500).send({
           error: 'Failed to process message',
@@ -123,6 +131,13 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
         reply.raw.end();
       } catch (error) {
+        if (error instanceof AICircuitBreakerError && !reply.raw.headersSent) {
+          return reply.code(503).send({
+            error: 'AI service temporarily unavailable',
+            message: error.message,
+            retryAfterMs: error.retryAfterMs,
+          });
+        }
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Chat stream failed');
 
         if (!reply.raw.headersSent) {

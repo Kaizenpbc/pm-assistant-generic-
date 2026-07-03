@@ -136,10 +136,10 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | ~~3~~ | ~~Add transaction boundaries for multi-table writes~~ | **Done (July 2026).** `queryOn()` helper + `transaction()` wraps 7 multi-table methods (ScheduleService, SprintService, ApprovalWorkflowService, IntegrationService). | ~~High~~ | ~~Low~~ |
 | ~~4~~ | ~~Add query/connection timeouts to DB pool~~ | **Done (July 2026).** `connectTimeout: 5s`, `idleTimeout: 30s`, `queueLimit: 50` — env-configurable via `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT`, `DB_QUEUE_LIMIT`. | ~~Medium~~ | ~~Low~~ |
 | ~~5~~ | ~~Add AI cost alerts (80% threshold warning)~~ | **Done (July 2026).** `checkBudget()` fires daily deduped `ai_budget_warning` notification at 80% usage. | ~~Medium~~ | ~~Low~~ |
-| 6 | Add circuit breaker for user-facing AI routes | Fails fast on Claude outages, returns degraded response | High | Medium |
+| ~~6~~ | ~~Add circuit breaker for user-facing AI routes~~ | **Done (July 2026).** `AICircuitBreaker` in `claudeService.ts` — trips after 5 transient failures, 60s cooldown, returns 503 to clients. Exposed in `/agent/health` endpoint. | ~~High~~ | ~~Medium~~ |
 | 7 | Extend Zod validation to remaining 40 routes | Consistent input validation, reduced injection risk | Medium | Medium |
 | 8 | Implement dead-letter queue for fire-and-forget side effects | Captures failed audit logs, webhooks for retry | Medium | Medium |
-| 9 | Parallelize agent scheduler execution | Reduces scan time from O(n) to O(n/parallelism) | Medium | Medium |
+| ~~9~~ | ~~Parallelize agent scheduler execution~~ | **Done (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. Portfolio agents still run after all projects complete. | ~~Medium~~ | ~~Medium~~ |
 | 10 | Add structured log export/aggregation | Enables search, alerting, long-term retention | Low | Low |
 | 11 | Migrate rate limiter and metrics to Redis | Enables horizontal scaling | High | High |
 | 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas | High | High |

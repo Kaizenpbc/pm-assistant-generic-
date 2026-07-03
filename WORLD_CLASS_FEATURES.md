@@ -435,3 +435,5 @@ An agentic AI project management platform that combines the scheduling power of 
 | Transaction Boundaries (queryOn() helper + transaction() wraps 7 multi-table service methods for ACID guarantees) | Done | Reliability |
 | DB Pool Timeouts (connectTimeout: 5s, idleTimeout: 30s, queueLimit: 50 — env-configurable) | Done | Reliability |
 | AI Budget 80% Threshold Warning (proactive daily-deduped notification before hard block at 100%) | Done | Enhancement |
+| AI Circuit Breaker (trips after 5 transient failures, 60s cooldown, returns 503 instantly, auto-recovers) | Done | Reliability |
+| Parallel Agent Scheduler (projects processed concurrently with bounded parallelism of 3, ~3x scan speedup) | Done | Performance |

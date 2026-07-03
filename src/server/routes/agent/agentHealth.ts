@@ -28,6 +28,7 @@ export async function agentHealthRoutes(fastify: FastifyInstance) {
         ? 'healthy'
         : 'degraded',
       claudeApiStatus: healthStatus.claudeAvailable ? 'available' : 'unavailable',
+      userFacingCircuitBreaker: claudeService.getCircuitBreakerStatus(),
       databaseStatus: {
         healthy: healthStatus.databaseHealthy,
         latencyMs: healthStatus.databaseLatencyMs,
