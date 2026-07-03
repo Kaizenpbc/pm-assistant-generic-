@@ -202,11 +202,12 @@ The calendar displays a color-coded month grid (red=vacation, blue=holiday, gray
 
 ### Resource Management Page (`/resources`)
 
-A dedicated analytics page accessible from the sidebar under the **Analyze** section. Features:
+A dedicated page accessible from the sidebar under the **Analyze** section. Features:
 
 - **Project selector** dropdown to choose which project to view.
 - **Summary cards**: Total Resources, Over-allocated count, Average Utilization.
-- **Three tabs**:
+- **Four tabs**:
+  - **Team** — Full table of all resources with create, edit, and delete capabilities. Managers can add new resources, update roles/capacity/cost rates, and remove resources directly from this tab.
   - **Workload Heatmap** — Table showing all resources with weekly utilization percentages as colored cells (green < 80%, blue 80–100%, amber 100–120%, red > 120%). Displays resource name, role, average utilization, and per-week cells.
   - **Resource Histogram** — SVG bar chart per resource showing daily demand hours with an 8-hour capacity line. Red bars for over-allocated days. Includes an over-allocation summary with count and details.
   - **Capacity Forecast** — 8-week bottleneck predictions table (resource, week, demand, capacity, severity) and AI-generated recommendations.
@@ -337,7 +338,7 @@ The `TimeEntryService` records individual time logs:
 
 ### Timesheets
 
-Aggregated time entry views per user per week, suitable for approval workflows and payroll integration.
+Aggregated time entry views per user per week, suitable for approval workflows and payroll integration. The Timesheet page includes a **"Log Time"** button that opens an inline form with project, schedule, and task dropdowns plus date, hours, and description fields, allowing time entries to be created directly from the timesheet without navigating away. Mobile week navigation icons are also displayed correctly on small screens.
 
 ### Actual vs. Estimated
 
@@ -542,6 +543,7 @@ The `AnalyticsSummaryService` computes portfolio-level KPIs:
 - Budget utilization across portfolio
 - Resource allocation summary
 - Schedule performance overview
+- **On Track percentage** — displayed on the Executive Dashboard; calculated using actual schedule variance (SPI) and budget variance (CPI/budget ratio) rather than a progress threshold heuristic, so the metric accurately reflects project health
 
 ---
 
@@ -565,7 +567,7 @@ A full-page notification center is available at `/notifications`, accessible fro
 - **Severity summary cards** at the top: clickable cards showing counts for Critical, High, Medium, and Low notifications. Clicking a card filters the list to that severity.
 - **Filter panel**: filter by notification type (Risk, Budget, Schedule, Resource, etc.) and severity level.
 - **Full notification list**: each entry shows a severity color bar, type icon, title, message, relative time ("2 hours ago"), type label, and project name.
-- **Mark as read**: mark individual notifications as read, or click "Mark all read" to clear all unread indicators.
+- **Mark as read**: mark individual notifications as read (calls `apiService.markNotificationRead` so read state persists across page refreshes), or click "Mark all read" to clear all unread indicators at once.
 - **Data sources**: fetches both proactive alerts and persisted database notifications into a unified list.
 - Uses the same severity colors and type icons as the existing notification bell dropdown for visual consistency.
 
@@ -1084,7 +1086,7 @@ The Goals module provides Objectives and Key Results (OKR) tracking alongside tr
 - **Objectives** — High-level goals with a title, description, owner, and time period.
 - **Key Results** — Measurable outcomes nested under an objective, each with a numeric target, current value, and unit.
 - **Progress** — Automatically calculated from key result completion percentages.
-- **Project linking** — OKRs can be associated with one or more projects to show how project work contributes to strategic goals.
+- **Project linking** — OKRs can be associated with a project using a searchable project dropdown in the goal modal (replaces the previous free-text Project ID field), preventing invalid IDs and improving discoverability.
 
 **API endpoints:** `GET/POST /api/v1/goals`, `GET/PUT/DELETE /api/v1/goals/:id`.
 

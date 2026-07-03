@@ -122,7 +122,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Resource leveling algorithm
 - Resource optimization suggestions
 - Resource availability calendar (vacation, holiday, unavailable, reduced hours)
-- Dedicated Resource Management page (`/resources`) with workload heatmap, resource histogram, and capacity forecast tabs
+- Dedicated Resource Management page (`/resources`) with a **Team** tab (full resource table with create, edit, and delete) plus workload heatmap, resource histogram, and capacity forecast analytics tabs
 
 ### DAG Workflow Engine
 - Declarative directed acyclic graph workflows
@@ -151,7 +151,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 ### Time Tracking & Timesheets
 - Per-task time entry logging
-- Weekly timesheet views
+- Weekly timesheet views with inline "Log Time" form (project/schedule/task dropdowns, date, hours, description) for creating entries without leaving the page
 - Actual vs. estimated comparison
 
 ### Custom Fields
@@ -213,6 +213,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 ### Notifications
 - In-app notification center
 - Full-page Notifications Center (`/notifications`) with severity summary cards (Critical, High, Medium, Low), type/severity filters, and full notification list with mark-read controls
+- Individual mark-as-read calls the server API so read state persists across page refreshes
 - Real-time WebSocket push notifications
 - Configurable notification preferences
 - Email notifications for critical/high severity events
@@ -314,7 +315,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 ### Goals / OKR Tracking
 - Objectives and Key Results with progress tracking and nested hierarchy
-- OKRs can be linked to projects for portfolio alignment
+- OKRs can be linked to projects via a project dropdown (replaces the previous free-text Project ID input) for portfolio alignment
 
 ### Time Zone Support
 - Per-user timezone preference; all dates displayed in the user's local timezone

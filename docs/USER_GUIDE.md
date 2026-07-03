@@ -58,7 +58,7 @@ A comprehensive guide for using PM Assistant, an AI-powered enterprise project m
 
 The dashboard you see depends on your role:
 
-- **Executives and Admins** see the **Executive Overview** -- a portfolio-level summary with total projects, active count, budget utilization, on-track percentage, and an AI-generated summary banner.
+- **Executives and Admins** see the **Executive Overview** -- a portfolio-level summary with total projects, active count, budget utilization, on-track percentage, and an AI-generated summary banner. The **on-track percentage** is calculated from actual schedule variance (SPI) and budget variance, giving an accurate health signal rather than a simple progress threshold.
 - **Managers and Members** see the **PM Dashboard** -- a project-centric view with your assigned projects, prediction cards, and quick-access links.
 
 Both dashboards display:
@@ -600,6 +600,17 @@ When the sprint period ends:
    - Add optional notes for each entry.
 5. The system tracks total hours per task and per day.
 
+### Logging Time from the Timesheet Page
+
+Click the **"Log Time"** button at the top of the Timesheet page to open an inline form without leaving the page:
+
+1. Select a **Project** from the dropdown.
+2. Select a **Schedule** (filtered to the chosen project).
+3. Select a **Task** (filtered to the chosen schedule).
+4. Set the **Date** and enter the number of **Hours**.
+5. Add an optional **Description**.
+6. Click **Save** to create the time entry. The weekly grid refreshes automatically.
+
 ### Project Summary
 
 Switch to the **Project Summary** tab to see:
@@ -1085,7 +1096,7 @@ The **Goals** page (sidebar link) lets teams track strategic Objectives and Key 
 
 ### Linking to Projects
 
-In the objective detail panel, use **Link Project** to associate one or more projects. This surfaces the objective on the project overview so teams can see how their work maps to strategic goals.
+In the goal modal, use the **Project** dropdown to associate the goal with a project. The dropdown lists all available projects by name, replacing the previous free-text Project ID field. This surfaces the goal on the project overview so teams can see how their work maps to strategic goals.
 
 ---
 
@@ -1108,11 +1119,19 @@ Accepted date formats: `YYYY-MM-DD` and `MM/DD/YYYY`. Unrecognised status or pri
 
 ## 26. Resource Management Page
 
-The Resource Management page (`/resources`) provides a centralized view of resource utilization and capacity. Access it from the sidebar under the **Analyze** section.
+The Resource Management page (`/resources`) provides a centralized view of resource utilization and capacity, as well as team management. Access it from the sidebar under the **Analyze** section.
 
 1. Select a project from the **project selector** dropdown at the top.
 2. Review the **summary cards**: Total Resources, Over-allocated count, and Average Utilization.
-3. Switch between three tabs:
+3. Switch between four tabs:
+
+### Team
+
+A table listing all resources with columns for name, role, capacity, and cost rate. From this tab you can:
+
+- Click **"Add Resource"** to create a new team member (fill in name, role, capacity hours/day, and hourly rate).
+- Click the **edit** icon on any row to update a resource's details inline.
+- Click the **delete** icon to remove a resource (with confirmation).
 
 ### Workload Heatmap
 
@@ -1186,7 +1205,7 @@ Each notification entry displays:
 
 ### Managing Notifications
 
-- Click the **mark read** button on any individual notification to dismiss it.
+- Click the **mark read** button on any individual notification to dismiss it. The read state is saved to the server so it persists across page refreshes and sessions.
 - Click **"Mark all read"** at the top of the list to mark all notifications as read at once.
 
 ---

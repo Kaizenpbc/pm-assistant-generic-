@@ -67,7 +67,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Over-allocation detection and warnings
 - Resource utilization percentage
 - Paginated list endpoint (`?limit=&offset=`, max 200, default 50)
-- Dedicated Resource Management page (`/resources`) with project selector, summary cards, and three tabs: Workload Heatmap (color-coded weekly utilization grid), Resource Histogram (SVG bar charts with 8h capacity line), Capacity Forecast (8-week bottleneck predictions + AI recommendations)
+- Dedicated Resource Management page (`/resources`) with project selector, summary cards, and four tabs: Team (full resource table with create/edit/delete CRUD), Workload Heatmap (color-coded weekly utilization grid), Resource Histogram (SVG bar charts with 8h capacity line), Capacity Forecast (8-week bottleneck predictions + AI recommendations)
 - **Benchmark:** MS Project, Wrike, Asana
 
 ### 1.6a Gantt Overallocation Warnings & Minimap
@@ -120,6 +120,7 @@ An agentic AI project management platform that combines the scheduling power of 
 ### 2.3 Custom Dashboards
 - Role-based dashboards (PM project list, Executive analytics)
 - Executive view: portfolio charts, KPI cards, status summaries
+- **On Track percentage** uses actual schedule variance (SPI) and budget variance instead of a progress-threshold heuristic, accurately reflecting project health
 - Widget drag-to-reorder: drag handle (grip icon) on hover, blue ring drop indicator, order persisted in localStorage (separate from visibility toggles)
 - Auto-refresh via WebSocket cache invalidation
 - **Benchmark:** Monday.com, Smartsheet
@@ -221,6 +222,7 @@ An agentic AI project management platform that combines the scheduling power of 
 ### 4.1 Notification System
 - In-app notification center with unread badge
 - Full-page Notifications Center (`/notifications`) with severity summary cards (Critical/High/Medium/Low), type and severity filters, full notification list with severity color bars, type icons, project names, and mark-read controls
+- Individual mark-as-read persists to the server via API so read state survives page refreshes
 - Accessible from sidebar ("Notifications" under Workspace) and "View all alerts" in bell dropdown
 - Email alerts for assignments, deadlines, status changes
 - Configurable notification preferences per user
@@ -236,7 +238,7 @@ An agentic AI project management platform that combines the scheduling power of 
 
 ### 4.3 Time Tracking & Timesheets
 - Log hours against tasks
-- Weekly timesheet view per resource
+- Weekly timesheet view per resource with inline **"Log Time"** form (project/schedule/task dropdowns, date, hours, description) — create entries without leaving the page
 - Actual vs estimated hours comparison
 - Time-based cost calculations
 - **Benchmark:** MS Project, Wrike, Smartsheet
@@ -398,3 +400,8 @@ An agentic AI project management platform that combines the scheduling power of 
 | Notifications Center Page (severity cards, filters, full list) | Done | Enhancement |
 | Dashboard Widget Drag-to-Reorder (grip handle, localStorage persistence) | Done | Enhancement |
 | Mobile-Responsive Gantt Touch Gestures (bar drag, progress drag, drag-to-create) | Done | Enhancement |
+| Resource Management Team Tab (create/edit/delete resources from /resources page) | Done | Enhancement |
+| Timesheet Inline Log Time Form (project/schedule/task dropdowns, date, hours, description) | Done | Enhancement |
+| Notification Mark-as-Read Persistence (individual read state saved to server API) | Done | Bug Fix |
+| Executive Dashboard On Track Metric (uses schedule/budget variance, not progress heuristic) | Done | Bug Fix |
+| Goals Project Dropdown (replaces free-text Project ID input with searchable dropdown) | Done | Bug Fix |
