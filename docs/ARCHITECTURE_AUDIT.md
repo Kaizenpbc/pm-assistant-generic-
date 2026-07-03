@@ -54,7 +54,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - **Performance:** DB pool fixed at 10 connections with env-configurable timeouts (`connectTimeout`, `idleTimeout`, `queueLimit`). EmbeddingService loads entire table into memory for similarity search (pending MariaDB 11.6 vector columns). Agent scheduler runs serially per project.
 - **Availability:** DB failure leads to "offline mode" (startup succeeds but routes fail). No circuit breaker for user-facing AI routes (only agent workflows have circuit breakers via DegradationHandler).
 - **Maintainability:** 56+ service classes, most with inline SQL and hand-rolled mappers. Changing DB schema requires updating SQL strings across many files. Several "god-object" files are oversized and unmaintainable: `ReasoningEngine.ts` (~95 KB), `AgentSchedulerService.ts` (~49 KB), `DagWorkflowService.ts` (~38 KB), `LessonsLearnedService.ts` (~33 KB).
-- **Observability:** Good -- request ID propagated via AsyncLocalStorage, Winston logger includes requestId, MetricsService tracks request count/latency/AI tokens/DB queries, admin-only `/api/v1/metrics` endpoint. Missing: no distributed tracing, no log aggregation, no alerting on metrics.
+- **Observability:** Good -- request ID propagated via AsyncLocalStorage, Winston logger includes requestId, MetricsService tracks request count/latency/AI tokens/DB queries, admin-only `/api/v1/metrics` endpoint. Daily-rotated JSON logs with admin query/download endpoints. Missing: no distributed tracing, no external alerting on metrics.
 
 ### 2.6 Database Migrations
 
@@ -140,7 +140,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | 7 | Extend Zod validation to remaining 40 routes | Consistent input validation, reduced injection risk | Medium | Medium |
 | 8 | Implement dead-letter queue for fire-and-forget side effects | Captures failed audit logs, webhooks for retry | Medium | Medium |
 | ~~9~~ | ~~Parallelize agent scheduler execution~~ | **Done (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. Portfolio agents still run after all projects complete. | ~~Medium~~ | ~~Medium~~ |
-| 10 | Add structured log export/aggregation | Enables search, alerting, long-term retention | Low | Low |
+| ~~10~~ | ~~Add structured log export/aggregation~~ | **Done (July 2026).** Daily-rotated JSON logs (14d retention, 20MB max, gzip), admin endpoints: `GET /api/v1/admin/logs` (query by level/search/date), `/logs/files` (list), `/logs/download/:filename`. | ~~Low~~ | ~~Low~~ |
 | 11 | Migrate rate limiter and metrics to Redis | Enables horizontal scaling | High | High |
 | 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas | High | High |
 | 13 | Move cron jobs to external scheduler | Prevents duplicate execution in multi-instance | Medium | Medium |

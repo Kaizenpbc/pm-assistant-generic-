@@ -1,4 +1,5 @@
 import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
 import { getRequestId } from '../middleware/requestContext';
 
 const addRequestId = winston.format((info) => {
@@ -7,6 +8,36 @@ const addRequestId = winston.format((info) => {
     info.requestId = requestId;
   }
   return info;
+});
+
+// Rotating file transport — keeps 14 days, max 20MB per file
+const rotateTransport = new DailyRotateFile({
+  filename: 'logs/app-%DATE%.log',
+  datePattern: 'YYYY-MM-DD',
+  maxSize: '20m',
+  maxFiles: '14d',
+  zippedArchive: true,
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    addRequestId(),
+    winston.format.json(),
+  ),
+});
+
+const errorRotateTransport = new DailyRotateFile({
+  filename: 'logs/error-%DATE%.log',
+  datePattern: 'YYYY-MM-DD',
+  level: 'error',
+  maxSize: '20m',
+  maxFiles: '30d',
+  zippedArchive: true,
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    addRequestId(),
+    winston.format.json(),
+  ),
 });
 
 const logger = winston.createLogger({
@@ -19,8 +50,8 @@ const logger = winston.createLogger({
   ),
   defaultMeta: { service: 'pm-assistant-generic' },
   transports: [
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' }),
+    rotateTransport,
+    errorRotateTransport,
   ],
 });
 
