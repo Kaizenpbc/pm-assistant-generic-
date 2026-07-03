@@ -955,7 +955,31 @@ Saved views are stored in **localStorage** with a `gantt:` prefix to keep them s
 
 ---
 
-## 33. Goals / OKR Tracking
+## 33. Gantt Row Striping, Resource Avatars & Drag-to-Create
+
+Three visual and interaction enhancements to the Gantt chart:
+
+### Row Striping
+
+Alternating row backgrounds (every other row) in both the left task panel and the timeline provide visual separation for improved readability. The stripe uses a subtle `bg-gray-50/60` with `dark:bg-gray-800/30` for dark mode support. Active task highlights, hover states, and row drag indicators all override the stripe color.
+
+### Resource Avatars
+
+Task bars display a small 18px circle at the right edge showing the assignee's initials. The background colour is deterministic — each name hashes to one of 10 palette colours, so the same person always gets the same colour across all tasks. Avatars appear on non-parent, non-milestone bars wider than 40px. The bar label text automatically adds right padding when an avatar is present to prevent overlap. Hover over the avatar to see the full assignee name in a tooltip.
+
+### Drag-to-Create
+
+Click and drag on an empty area of the Gantt timeline to create a new task with pre-filled dates. While dragging, a dashed blue preview rectangle shows the selected date range. On mouse-up, the Add Task form opens with start/end dates computed from the drag span. Parent task detection is automatic:
+
+- Dragging on a **parent task row** creates a child of that parent.
+- Dragging on a **child task row** creates a sibling (same parent).
+- Dragging on a **top-level task row** creates a new top-level task.
+
+A minimum drag width of half a day (`0.5 × dayPx`) prevents accidental task creation. The crosshair cursor indicates that drag-to-create is available. Bar cursors (grab/grabbing) override the crosshair on hover.
+
+---
+
+## 34. Goals / OKR Tracking
 
 The Goals module provides Objectives and Key Results (OKR) tracking alongside traditional project scheduling.
 
@@ -968,13 +992,13 @@ The Goals module provides Objectives and Key Results (OKR) tracking alongside tr
 
 ---
 
-## 33. Time Zone Support
+## 35. Time Zone Support
 
 Each user can set a preferred timezone in **Settings → Preferences** (stored via `PUT /api/v1/users/me/preferences`). All date and time values rendered in the UI are converted to the user's timezone using the stored IANA timezone string (e.g., `America/Toronto`). Server timestamps remain in UTC; conversion happens client-side. When no preference is set the browser's local timezone is used as a fallback.
 
 ---
 
-## 34. Multi-Language (i18n)
+## 36. Multi-Language (i18n)
 
 The frontend supports **English (en)**, **French (fr)**, and **Spanish (es)**. The active locale is managed by `localeStore` (Zustand, persisted in localStorage) and consumed via the `useTranslation()` hook. All user-facing strings are keyed through the translation map; switching locale applies immediately without a page reload. The locale can be changed from **Settings → Language**.
 

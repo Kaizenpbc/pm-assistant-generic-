@@ -88,6 +88,9 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Gantt multi-select bars: click/Ctrl+click/Shift+click bars to select, blue highlight + box-shadow, bulk drag-move all selected bars together
 - Gantt zoom-to-fit: auto-selects zoom level to fit all tasks in the viewport
 - Gantt float/slack visualization: hatched yellow extensions on non-critical bars showing available float days (requires critical path enabled)
+- Gantt row striping: alternating row backgrounds in both left panel and timeline for improved readability (dark mode aware)
+- Gantt resource avatars: assignee initials circles on task bars with deterministic color palette
+- Gantt drag-to-create: click-drag on empty timeline area to create a task with pre-filled start/end dates and auto-detected parent
 - Task hierarchy with summary task auto-calculation
 - Multi-dependency support: up to 20 predecessors per task (FS/SS/FF/SF + lag), stored in a `task_dependencies` junction table
 - MS Project-style predecessor notation (e.g. "3FS+2d,5SS,7") with health badges and inline editing in both Gantt and Table views

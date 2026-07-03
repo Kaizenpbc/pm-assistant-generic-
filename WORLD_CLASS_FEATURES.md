@@ -372,3 +372,6 @@ An agentic AI project management platform that combines the scheduling power of 
 | Goals / OKR Tracking | Done | Enhancement |
 | Time Zone Support | Done | Enhancement |
 | Multi-Language / i18n (EN/FR/ES) | Done | Enhancement |
+| Gantt Row Striping (alternating backgrounds, dark mode) | Done | Enhancement |
+| Gantt Resource Avatars (initials circles on bars) | Done | Enhancement |
+| Gantt Drag-to-Create (click-drag timeline to create task) | Done | Innovation |
