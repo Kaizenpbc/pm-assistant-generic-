@@ -120,6 +120,23 @@ const barColors: Record<string, { bg: string; fill: string; text: string }> = {
   cancelled: { bg: '#fee2e2', fill: '#ef4444', text: '#991b1b' },
 };
 
+const AVATAR_PALETTE = [
+  '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+  '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
+];
+
+function avatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
+
+function avatarInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
 const statusLabels: Record<string, string> = {
   completed: 'Complete',
   in_progress: 'In Progress',
@@ -326,6 +343,7 @@ export function GanttChart({
   redoDescription,
   onUndo,
   onRedo,
+  onCreateTaskWithDates,
 }: {
   tasks: GanttTask[];
   scheduleName?: string;
@@ -366,6 +384,8 @@ export function GanttChart({
   redoDescription?: string;
   onUndo?: () => void;
   onRedo?: () => void;
+  /** Called when user drags on empty timeline area to create a task with pre-filled dates */
+  onCreateTaskWithDates?: (startDate: string, endDate: string, parentTaskId?: string) => void;
 }) {
   const criticalSet = useMemo(() => new Set(criticalPathTaskIds || []), [criticalPathTaskIds]);
   const baselineMap = useMemo(() => {
@@ -885,6 +905,11 @@ export function GanttChart({
     taskId: string; barWidth: number; barLeft: number;
     origPct: number; currentPct: number;
   } | null>(null);
+
+  // -----------------------------------------------------------------------
+  // Drag-to-create state
+  // -----------------------------------------------------------------------
+  const [createDrag, setCreateDrag] = useState<{ startX: number; currentX: number; rowIdx: number } | null>(null);
 
   const handleProgressMouseDown = useCallback((e: React.MouseEvent, task: GanttTask, barWidth: number, barLeft: number) => {
     if (!onTaskUpdate) return;
@@ -1476,6 +1501,69 @@ export function GanttChart({
     },
     [onTaskDragEnd]
   );
+
+  // -----------------------------------------------------------------------
+  // Drag-to-create handler
+  // -----------------------------------------------------------------------
+  const handleTimelineMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!onCreateTaskWithDates) return;
+    if (drag || depDraw || progressDrag) return;
+    // Don't trigger if clicking on a bar element
+    let el = e.target as HTMLElement | null;
+    while (el && el !== e.currentTarget) {
+      if (el.classList.contains('group/bar')) return;
+      el = el.parentElement;
+    }
+    const tl = timelineRef.current;
+    if (!tl) return;
+    const rect = tl.getBoundingClientRect();
+    const y = e.clientY - rect.top + tl.scrollTop;
+    if (y < HEADER_H) return; // clicked in header area
+    const x = e.clientX - rect.left + tl.scrollLeft;
+    const rowIdx = Math.floor((y - HEADER_H) / ROW_H);
+    if (rowIdx < 0 || rowIdx >= rows.length) return;
+    setCreateDrag({ startX: x, currentX: x, rowIdx });
+  }, [onCreateTaskWithDates, drag, depDraw, progressDrag, rows.length]);
+
+  useEffect(() => {
+    if (!createDrag) return;
+    const tl = timelineRef.current;
+    const onMove = (e: MouseEvent) => {
+      if (!tl) return;
+      const rect = tl.getBoundingClientRect();
+      const x = e.clientX - rect.left + tl.scrollLeft;
+      setCreateDrag(prev => prev ? { ...prev, currentX: x } : null);
+    };
+    const onUp = () => {
+      if (!createDrag || !onCreateTaskWithDates) { setCreateDrag(null); return; }
+      const dragWidth = Math.abs(createDrag.currentX - createDrag.startX);
+      if (dragWidth < dayPx * 0.5) { setCreateDrag(null); return; } // too small
+      const leftPx = Math.min(createDrag.startX, createDrag.currentX);
+      const rightPx = Math.max(createDrag.startX, createDrag.currentX);
+      const fmt = (d: Date) => d.toISOString().split('T')[0];
+      const startDate = fmt(new Date(minDate.getTime() + (leftPx / dayPx) * DAY_MS));
+      const endDate = fmt(new Date(minDate.getTime() + (rightPx / dayPx) * DAY_MS));
+      // Determine parentTaskId from the clicked row
+      const row = rows[createDrag.rowIdx];
+      let parentTaskId: string | undefined;
+      if (row) {
+        const isParent = parentTaskIds.has(row.task.id);
+        if (isParent) {
+          parentTaskId = row.task.id;
+        } else if (row.task.parentTaskId) {
+          parentTaskId = row.task.parentTaskId;
+        }
+      }
+      setCreateDrag(null);
+      onCreateTaskWithDates(startDate, endDate, parentTaskId);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [createDrag, onCreateTaskWithDates, dayPx, minDate, rows, parentTaskIds]);
 
   // Auto-scroll state for bar drag
   const autoScrollRef = useRef<number | null>(null);
@@ -2184,7 +2272,7 @@ export function GanttChart({
             return (
               <div
                 key={task.id}
-                className={`flex items-center border-b border-gray-100 hover:bg-blue-50/40 transition-colors group cursor-pointer ${activeTaskId === task.id ? 'bg-primary-50 ring-1 ring-inset ring-primary-200' : ''} ${rowDrag?.targetIdx === rowIdx && rowDrag?.taskId !== task.id && rowDrag?.parentTaskId === (task.parentTaskId || null) ? 'border-t-2 border-t-blue-500' : ''} ${rowDrag?.taskId === task.id ? 'opacity-40' : ''}`}
+                className={`flex items-center border-b border-gray-100 hover:bg-blue-50/40 transition-colors group cursor-pointer ${rowIdx % 2 === 1 ? 'bg-gray-50/60 dark:bg-gray-800/30' : ''} ${activeTaskId === task.id ? 'bg-primary-50 ring-1 ring-inset ring-primary-200' : ''} ${rowDrag?.targetIdx === rowIdx && rowDrag?.taskId !== task.id && rowDrag?.parentTaskId === (task.parentTaskId || null) ? 'border-t-2 border-t-blue-500' : ''} ${rowDrag?.taskId === task.id ? 'opacity-40' : ''}`}
                 style={{ height: ROW_H }}
                 onClick={() => {
                   if (editingCell) return;
@@ -2573,9 +2661,9 @@ export function GanttChart({
         <div
           ref={timelineRef}
           className="flex-1 overflow-x-auto overflow-y-auto"
-          style={depDraw ? { cursor: 'crosshair' } : undefined}
+          style={depDraw ? { cursor: 'crosshair' } : onCreateTaskWithDates && !drag && !progressDrag ? { cursor: 'crosshair' } : undefined}
         >
-          <div style={{ width: timelineWidth, position: 'relative' }}>
+          <div style={{ width: timelineWidth, position: 'relative' }} onMouseDown={handleTimelineMouseDown}>
             {/* Timeline header — two-tier timescale */}
             <div
               className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600"
@@ -2620,6 +2708,21 @@ export function GanttChart({
                 />
               ))}
             </div>
+
+            {/* Row stripes (alternating background for readability) */}
+            {rows.map((_, idx) =>
+              idx % 2 === 1 ? (
+                <div
+                  key={`stripe-${idx}`}
+                  className="absolute left-0 bg-gray-50/60 dark:bg-gray-800/30 pointer-events-none"
+                  style={{
+                    top: HEADER_H + idx * ROW_H,
+                    width: timelineWidth,
+                    height: ROW_H,
+                  }}
+                />
+              ) : null
+            )}
 
             {/* Today line */}
             {todayOffset !== null && (
@@ -2683,6 +2786,26 @@ export function GanttChart({
                 }}
               />
             )}
+
+            {/* Drag-to-create preview rectangle */}
+            {createDrag && (() => {
+              const left = Math.min(createDrag.startX, createDrag.currentX);
+              const w = Math.abs(createDrag.currentX - createDrag.startX);
+              return (
+                <div
+                  className="absolute pointer-events-none z-20"
+                  style={{
+                    left,
+                    top: HEADER_H + createDrag.rowIdx * ROW_H + 4,
+                    width: w,
+                    height: ROW_H - 8,
+                    border: '2px dashed #3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.12)',
+                    borderRadius: 4,
+                  }}
+                />
+              );
+            })()}
 
             {/* Task bars */}
             {rows.map(({ task }, idx) => {
@@ -2825,6 +2948,7 @@ export function GanttChart({
                   {width > 60 && (
                     <div
                       className="absolute inset-0 flex items-center px-1.5 z-10"
+                      style={task.assignedTo && !isParent && width > 60 ? { paddingRight: 22 } : undefined}
                     >
                       <span
                         className="text-xs font-medium truncate"
@@ -2832,6 +2956,26 @@ export function GanttChart({
                       >
                         {task.name}
                       </span>
+                    </div>
+                  )}
+
+                  {/* Resource avatar */}
+                  {task.assignedTo && !isParent && width > 40 && (
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 rounded-full flex items-center justify-center pointer-events-none z-10"
+                      style={{
+                        right: 2,
+                        width: 18,
+                        height: 18,
+                        backgroundColor: avatarColor(task.assignedTo),
+                        fontSize: 9,
+                        fontWeight: 700,
+                        color: '#fff',
+                        lineHeight: 1,
+                      }}
+                      title={task.assignedTo}
+                    >
+                      {avatarInitials(task.assignedTo)}
                     </div>
                   )}
 

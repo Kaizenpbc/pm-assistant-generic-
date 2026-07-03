@@ -54,6 +54,10 @@ interface TaskFormModalProps {
   projectId?: string;
   /** ID of the currently active/selected task (used to pre-fill parent in create mode) */
   activeTaskId?: string | null;
+  /** Pre-fill start date in create mode (from drag-to-create) */
+  initialStartDate?: string;
+  /** Pre-fill end date in create mode (from drag-to-create) */
+  initialEndDate?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,6 +87,8 @@ export function TaskFormModal({
   scheduleId,
   projectId,
   activeTaskId,
+  initialStartDate,
+  initialEndDate,
 }: TaskFormModalProps) {
   const isEdit = !!task;
 
@@ -92,8 +98,8 @@ export function TaskFormModal({
     status: 'pending',
     priority: 'medium',
     assignedTo: '',
-    startDate: '',
-    endDate: '',
+    startDate: initialStartDate || '',
+    endDate: initialEndDate || '',
     progressPercentage: 0,
     dependency: '',
     parentTaskId: '',

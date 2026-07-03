@@ -798,6 +798,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [createTaskDates, setCreateTaskDates] = useState<{ startDate: string; endDate: string; parentTaskId?: string } | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showCriticalPath, setShowCriticalPath] = useState(false);
   const columnState = useColumnState(schedule.id);
@@ -1131,6 +1132,10 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           onTaskClick={(task) => setEditingTask(task)}
           activeTaskId={activeTaskId}
           onAddTask={() => setShowAddForm(true)}
+          onCreateTaskWithDates={(startDate, endDate, parentTaskId) => {
+            setCreateTaskDates({ startDate, endDate, parentTaskId });
+            setShowAddForm(true);
+          }}
           onDeleteTask={(taskId) => deleteMutation.mutate(taskId)}
           columnState={columnState}
           onTaskDragEnd={handleTaskDragEndWithUndo}
@@ -1313,7 +1318,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           allTasks={tasks}
           scheduleId={schedule.id}
           projectId={projectId}
-          activeTaskId={activeTaskId}
+          activeTaskId={createTaskDates?.parentTaskId || activeTaskId}
+          initialStartDate={createTaskDates?.startDate}
+          initialEndDate={createTaskDates?.endDate}
           onSave={(data) => {
             // Determine afterTaskId based on active task context
             const activeTask = activeTaskId ? tasks.find(t => t.id === activeTaskId) : null;
@@ -1329,7 +1336,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
             }
             createMutation.mutate({ ...data, afterTaskId });
           }}
-          onClose={() => setShowAddForm(false)}
+          onClose={() => { setShowAddForm(false); setCreateTaskDates(null); }}
           isSaving={createMutation.isPending}
         />
       )}
