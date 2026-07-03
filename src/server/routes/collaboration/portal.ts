@@ -1,7 +1,28 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { portalService } from '../../services/PortalService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const portalCommentSchema = z.object({
+  entityType: z.string().min(1),
+  entityId: z.string().min(1),
+  authorName: z.string().min(1).max(200),
+  content: z.string().min(1).max(5000),
+});
+
+const createLinkSchema = z.object({
+  permissions: z.any(),
+  label: z.string().max(200).optional(),
+  expiresAt: z.string().optional(),
+});
+
+const updateLinkSchema = z.object({
+  permissions: z.any().optional(),
+  label: z.string().max(200).optional(),
+  expiresAt: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
+});
 
 export async function portalRoutes(fastify: FastifyInstance) {
   // ── Public routes (token-based access) ──────────────────────────────
@@ -43,12 +64,11 @@ export async function portalRoutes(fastify: FastifyInstance) {
       const link = await portalService.validateToken(token);
       if (!link) return reply.status(404).send({ error: 'Invalid or expired portal link' });
 
-      const { entityType, entityId, authorName, content } = request.body as {
-        entityType: string; entityId: string; authorName: string; content: string;
-      };
+      const { entityType, entityId, authorName, content } = portalCommentSchema.parse(request.body);
       const comment = await portalService.addComment(link.id, link.projectId, entityType, entityId, authorName, content);
       return { comment };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Add portal comment error:', error);
       return reply.status(500).send({ error: 'Failed to add comment' });
     }
@@ -63,12 +83,11 @@ export async function portalRoutes(fastify: FastifyInstance) {
     try {
       const user = request.user!;
       const { projectId } = request.params as { projectId: string };
-      const { permissions, label, expiresAt } = request.body as {
-        permissions: any; label?: string; expiresAt?: string;
-      };
+      const { permissions, label, expiresAt } = createLinkSchema.parse(request.body);
       const link = await portalService.createLink(projectId, permissions, user.userId, label, expiresAt);
       return { link };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Create portal link error:', error);
       return reply.status(500).send({ error: 'Failed to create portal link' });
     }
@@ -94,10 +113,11 @@ export async function portalRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const body = request.body as any;
+      const body = updateLinkSchema.parse(request.body);
       const link = await portalService.updateLink(id, body);
       return { link };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Update portal link error:', error);
       return reply.status(500).send({ error: 'Failed to update portal link' });
     }

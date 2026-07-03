@@ -1,7 +1,23 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { integrationService } from '../../services/IntegrationService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const createIntegrationSchema = z.object({
+  provider: z.string().min(1),
+  config: z.record(z.string(), z.any()),
+  projectId: z.string().optional(),
+});
+
+const updateIntegrationSchema = z.object({
+  config: z.record(z.string(), z.any()).optional(),
+  isActive: z.boolean().optional(),
+});
+
+const syncIntegrationSchema = z.object({
+  direction: z.enum(['push', 'pull']),
+});
 
 export async function integrationRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -10,12 +26,11 @@ export async function integrationRoutes(fastify: FastifyInstance) {
   fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
-      const { provider, config, projectId } = request.body as {
-        provider: string; config: any; projectId?: string;
-      };
+      const { provider, config, projectId } = createIntegrationSchema.parse(request.body);
       const integration = await integrationService.create(user.userId, provider, config, projectId);
       return { integration };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Create integration error:', error);
       return reply.status(500).send({ error: 'Failed to create integration' });
     }
@@ -49,10 +64,11 @@ export async function integrationRoutes(fastify: FastifyInstance) {
   fastify.put('/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const body = request.body as any;
+      const body = updateIntegrationSchema.parse(request.body);
       const integration = await integrationService.update(id, body);
       return { integration };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Update integration error:', error);
       return reply.status(500).send({ error: 'Failed to update integration' });
     }
@@ -86,10 +102,11 @@ export async function integrationRoutes(fastify: FastifyInstance) {
   fastify.post('/:id/sync', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const { direction } = request.body as { direction: 'push' | 'pull' };
+      const { direction } = syncIntegrationSchema.parse(request.body);
       const result = await integrationService.sync(id, direction);
       return { result };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Sync integration error:', error);
       return reply.status(500).send({ error: 'Failed to sync integration' });
     }

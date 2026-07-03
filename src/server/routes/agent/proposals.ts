@@ -5,6 +5,19 @@ import { requireScope } from '../../middleware/requireScope';
 import { actionProposalService } from '../../services/agents/ActionProposalService';
 import { actionExecutor } from '../../services/agents/ActionExecutor';
 
+const approveSchema = z.object({
+  comment: z.string().max(2000).optional(),
+}).optional().default({});
+
+const rejectSchema = z.object({
+  reason: z.string().max(2000).optional(),
+}).optional().default({});
+
+const feedbackSchema = z.object({
+  outcome: z.enum(['effective', 'partially_effective', 'ineffective', 'made_worse', 'rolled_back']),
+  comment: z.string().max(2000).optional(),
+});
+
 export async function proposalRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
@@ -42,20 +55,25 @@ export async function proposalRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('write')],
     schema: { description: 'Approve an agent proposal', tags: ['agent'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const body = request.body as { comment?: string } | undefined;
-    const userId = request.user!.userId;
+    try {
+      const { id } = request.params as { id: string };
+      const body = approveSchema.parse(request.body);
+      const userId = request.user!.userId;
 
-    const proposal = await actionProposalService.getById(id);
-    if (!proposal) {
-      return reply.status(404).send({ error: 'Not found', message: 'Proposal not found' });
-    }
-    if (proposal.status !== 'pending') {
-      return reply.status(400).send({ error: 'Bad request', message: `Proposal is '${proposal.status}', cannot approve` });
-    }
+      const proposal = await actionProposalService.getById(id);
+      if (!proposal) {
+        return reply.status(404).send({ error: 'Not found', message: 'Proposal not found' });
+      }
+      if (proposal.status !== 'pending') {
+        return reply.status(400).send({ error: 'Bad request', message: `Proposal is '${proposal.status}', cannot approve` });
+      }
 
-    const review = await actionProposalService.addReview(id, userId, 'approved', body?.comment);
-    return { review, message: 'Proposal approved' };
+      const review = await actionProposalService.addReview(id, userId, 'approved', body?.comment);
+      return { review, message: 'Proposal approved' };
+    } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
+      throw error;
+    }
   });
 
   // Reject proposal
@@ -63,20 +81,25 @@ export async function proposalRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('write')],
     schema: { description: 'Reject an agent proposal', tags: ['agent'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const body = request.body as { reason?: string } | undefined;
-    const userId = request.user!.userId;
+    try {
+      const { id } = request.params as { id: string };
+      const body = rejectSchema.parse(request.body);
+      const userId = request.user!.userId;
 
-    const proposal = await actionProposalService.getById(id);
-    if (!proposal) {
-      return reply.status(404).send({ error: 'Not found', message: 'Proposal not found' });
-    }
-    if (proposal.status !== 'pending') {
-      return reply.status(400).send({ error: 'Bad request', message: `Proposal is '${proposal.status}', cannot reject` });
-    }
+      const proposal = await actionProposalService.getById(id);
+      if (!proposal) {
+        return reply.status(404).send({ error: 'Not found', message: 'Proposal not found' });
+      }
+      if (proposal.status !== 'pending') {
+        return reply.status(400).send({ error: 'Bad request', message: `Proposal is '${proposal.status}', cannot reject` });
+      }
 
-    const review = await actionProposalService.addReview(id, userId, 'rejected', body?.reason);
-    return { review, message: 'Proposal rejected' };
+      const review = await actionProposalService.addReview(id, userId, 'rejected', body?.reason);
+      return { review, message: 'Proposal rejected' };
+    } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
+      throw error;
+    }
   });
 
   // Execute approved proposal
@@ -124,16 +147,16 @@ export async function proposalRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('write')],
     schema: { description: 'Submit feedback on an executed agent proposal', tags: ['agent'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const body = request.body as { outcome: string; comment?: string };
-    const userId = request.user!.userId;
+    try {
+      const { id } = request.params as { id: string };
+      const body = feedbackSchema.parse(request.body);
+      const userId = request.user!.userId;
 
-    const validOutcomes = ['effective', 'partially_effective', 'ineffective', 'made_worse', 'rolled_back'];
-    if (!validOutcomes.includes(body.outcome)) {
-      return reply.status(400).send({ error: 'Bad request', message: `Invalid outcome. Must be one of: ${validOutcomes.join(', ')}` });
+      await actionProposalService.submitFeedback(id, userId, body.outcome, body.comment);
+      return { message: 'Feedback submitted' };
+    } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
+      throw error;
     }
-
-    await actionProposalService.submitFeedback(id, userId, body.outcome, body.comment);
-    return { message: 'Feedback submitted' };
   });
 }

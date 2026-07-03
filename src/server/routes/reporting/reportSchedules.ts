@@ -1,7 +1,20 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { reportScheduleService } from '../../services/ReportScheduleService';
+
+const createScheduleSchema = z.object({
+  templateId: z.string().min(1),
+  frequency: z.enum(['daily', 'weekly', 'monthly']),
+  dayOfWeek: z.number().int().min(0).max(6).optional(),
+  dayOfMonth: z.number().int().min(1).max(31).optional(),
+  timeOfDay: z.string().optional(),
+  recipients: z.array(z.string().min(1)).min(1),
+  isActive: z.boolean().optional(),
+});
+
+const updateScheduleSchema = createScheduleSchema.partial();
 
 export async function reportScheduleRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -10,26 +23,16 @@ export async function reportScheduleRoutes(fastify: FastifyInstance) {
   fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
-      const body = request.body as any;
-      const { templateId, frequency, dayOfWeek, dayOfMonth, timeOfDay, recipients, isActive } = body;
-
-      if (!templateId || !frequency || !recipients || recipients.length === 0) {
-        return reply.status(400).send({ error: 'templateId, frequency, and recipients are required' });
-      }
+      const body = createScheduleSchema.parse(request.body);
 
       const schedule = await reportScheduleService.create({
-        templateId,
+        ...body,
         createdBy: userId,
-        frequency,
-        dayOfWeek,
-        dayOfMonth,
-        timeOfDay,
-        recipients,
-        isActive,
       });
 
       return reply.status(201).send({ schedule });
     } catch (error: any) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Create report schedule error:', error);
       return reply.status(500).send({ error: error.message || 'Internal server error' });
     }
@@ -76,11 +79,12 @@ export async function reportScheduleRoutes(fastify: FastifyInstance) {
   fastify.put('/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const body = request.body as any;
+      const body = updateScheduleSchema.parse(request.body);
       const schedule = await reportScheduleService.update(id, body);
       if (!schedule) return reply.status(404).send({ error: 'Schedule not found' });
       return { schedule };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Update report schedule error:', error);
       return reply.status(500).send({ error: 'Internal server error' });
     }

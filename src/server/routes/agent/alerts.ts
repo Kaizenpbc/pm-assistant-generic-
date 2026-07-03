@@ -1,10 +1,16 @@
 // C:\Users\gerog\Documents\pm-assistant-generic\src\server\routes\alerts.ts
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { proactiveAlertService } from '../../services/proactiveAlertService';
 import { AIActionExecutor } from '../../services/aiActionExecutor';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const executeActionSchema = z.object({
+  toolName: z.string().min(1),
+  params: z.record(z.string(), z.any()),
+});
 
 export async function alertRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -68,7 +74,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { toolName, params } = request.body as any;
+        const { toolName, params } = executeActionSchema.parse(request.body);
         const user = request.user!;
 
         const result = await actionExecutor.execute(toolName, params, {
@@ -78,6 +84,7 @@ export async function alertRoutes(fastify: FastifyInstance) {
 
         return result;
       } catch (error) {
+        if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Validation error', details: error.issues });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Alert action execution failed');
         return reply.code(500).send({
           error: 'Failed to execute action',

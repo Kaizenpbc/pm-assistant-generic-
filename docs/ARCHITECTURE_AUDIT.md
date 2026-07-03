@@ -44,7 +44,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 **Gaps:**
 - **Inconsistent data access pattern:** Only 3 entities have repositories. Remaining 53 services call `databaseService.query()` with inline SQL and hand-rolled rowMapper functions.
 - ~~**No transaction boundaries:**~~ **Resolved (July 2026).** `databaseService.transaction()` + `queryOn()` now wraps 7 multi-table service methods.
-- **Zod validation coverage partial:** 23/63 routes use Zod schemas. Others rely on Swagger schema or ad-hoc parsing.
+- ~~**Zod validation coverage partial:**~~ **Resolved (July 2026).** All POST/PUT/PATCH routes now use Zod schemas for request body validation. Coverage extended from 23 to 37+ route files.
 - ~~**Fire-and-forget side effects everywhere:**~~ **Mitigated (July 2026).** `DeadLetterService` captures failed side effects (audit logs, webhooks) with retry support. All `.catch(() => {})` calls replaced with DLQ capture. Admin endpoints for monitoring (`/api/v1/admin/dead-letter`).
 - **Inconsistent error responses:** Some routes return `{ error, message }`, others `{ statusCode, error, message, timestamp, path }`.
 
@@ -115,7 +115,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | ~~No AI circuit breaker for user-facing routes~~ | ~~Medium~~ | **Resolved (July 2026).** `AICircuitBreaker` in `claudeService.ts` — trips after 5 transient failures, 60s cooldown, returns 503. |
 | ~~Fire-and-forget side effects with no retry~~ | ~~Medium~~ | **Resolved (July 2026).** `DeadLetterService` captures failed side effects with retry. Admin monitoring endpoints added. |
 | ~~No query/connection timeouts~~ | ~~Medium~~ | **Resolved (July 2026).** Pool configured with `connectTimeout`, `idleTimeout`, `queueLimit` (env-configurable). |
-| Partial Zod validation coverage (23/63 routes) | **Medium** | Risk of missed validation, injection attacks, or malformed inputs causing crashes. (Future improvement — tracked as item 7.) |
+| ~~Partial Zod validation coverage (23/63 routes)~~ | ~~**Medium**~~ | ~~Resolved July 2026 — all POST/PUT/PATCH routes now use Zod schemas.~~ |
 | Partial repository adoption (3/56+ entities) | **Medium** | Schema changes still require updating SQL strings across many service files. |
 | ~~Agent scheduler serial execution~~ | ~~Medium~~ | **Resolved (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. |
 | ~~No rate limiting on auth endpoints~~ | ~~High~~ | **Mitigated (July 2026).** Per-IP rate limits on all auth and waitlist endpoints. |
@@ -137,7 +137,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | ~~4~~ | ~~Add query/connection timeouts to DB pool~~ | **Done (July 2026).** `connectTimeout: 5s`, `idleTimeout: 30s`, `queueLimit: 50` — env-configurable via `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT`, `DB_QUEUE_LIMIT`. | ~~Medium~~ | ~~Low~~ |
 | ~~5~~ | ~~Add AI cost alerts (80% threshold warning)~~ | **Done (July 2026).** `checkBudget()` fires daily deduped `ai_budget_warning` notification at 80% usage. | ~~Medium~~ | ~~Low~~ |
 | ~~6~~ | ~~Add circuit breaker for user-facing AI routes~~ | **Done (July 2026).** `AICircuitBreaker` in `claudeService.ts` — trips after 5 transient failures, 60s cooldown, returns 503 to clients. Exposed in `/agent/health` endpoint. | ~~High~~ | ~~Medium~~ |
-| 7 | Extend Zod validation to remaining 40 routes | Consistent input validation, reduced injection risk | Medium | Medium |
+| ~~7~~ | ~~Extend Zod validation to remaining 40 routes~~ | ~~Consistent input validation, reduced injection risk~~ | ~~Medium~~ | ~~Medium~~ |
 | ~~8~~ | ~~Implement dead-letter queue for fire-and-forget side effects~~ | **Done (July 2026).** `DeadLetterService` with `capture()`/`processRetries()`/`getStats()`. All `.catch(() => {})` in 5 services replaced with DLQ capture. Admin endpoints: `GET /api/v1/admin/dead-letter`, `GET /dead-letter/failed`. Migration `031_dead_letter_queue.sql`. | ~~Medium~~ | ~~Medium~~ |
 | ~~9~~ | ~~Parallelize agent scheduler execution~~ | **Done (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. Portfolio agents still run after all projects complete. | ~~Medium~~ | ~~Medium~~ |
 | ~~10~~ | ~~Add structured log export/aggregation~~ | **Done (July 2026).** Daily-rotated JSON logs (14d retention, 20MB max, gzip), admin endpoints: `GET /api/v1/admin/logs` (query by level/search/date), `/logs/files` (list), `/logs/download/:filename`. | ~~Low~~ | ~~Low~~ |
@@ -232,7 +232,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 
 **New: Next (medium-term)** — MOSTLY DONE (July 2026)
 - ~~Add circuit breaker for user-facing AI routes (Medium difficulty, high impact)~~ Done.
-- Extend Zod validation to remaining 40 routes (Medium difficulty, medium impact) — TODO.
+- ~~Extend Zod validation to remaining 40 routes (Medium difficulty, medium impact)~~ — **Done (July 2026).** All POST/PUT/PATCH routes now use Zod schemas. 14 route files updated.
 - ~~Implement dead-letter queue for fire-and-forget side effects (Medium difficulty, medium impact)~~ Done.
 - ~~Parallelize agent scheduler execution (Medium difficulty, medium impact)~~ Done.
 - ~~Break up DagWorkflowService (38 KB) and LessonsLearnedService (33 KB)~~ Done.

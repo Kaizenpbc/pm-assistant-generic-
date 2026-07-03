@@ -1,7 +1,41 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { approvalWorkflowService } from '../../services/ApprovalWorkflowService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const workflowStepSchema = z.object({
+  name: z.string().min(1),
+  approverRole: z.string().min(1),
+  order: z.number().int().min(0),
+});
+
+const createWorkflowSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  entityType: z.string().min(1),
+  steps: z.array(workflowStepSchema).min(1),
+  isActive: z.boolean().optional(),
+});
+
+const updateWorkflowSchema = createWorkflowSchema.partial();
+
+const createChangeRequestSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(5000).optional(),
+  category: z.string().min(1),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']),
+  impactSummary: z.string().max(2000).optional(),
+});
+
+const submitForApprovalSchema = z.object({
+  workflowId: z.string().min(1),
+});
+
+const actOnStepSchema = z.object({
+  action: z.string().min(1),
+  comment: z.string().max(2000).optional(),
+});
 
 export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -11,10 +45,11 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
     try {
       const user = request.user!;
       const { projectId } = request.params as { projectId: string };
-      const body = request.body as any;
+      const body = createWorkflowSchema.parse(request.body);
       const workflow = await approvalWorkflowService.createWorkflow(projectId, { ...body, createdBy: user.userId });
       return { workflow };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Create workflow error:', error);
       return reply.status(500).send({ error: 'Failed to create workflow' });
     }
@@ -36,10 +71,11 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
   fastify.put('/workflows/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const body = request.body as any;
+      const body = updateWorkflowSchema.parse(request.body);
       const workflow = await approvalWorkflowService.updateWorkflow(id, body);
       return { workflow };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Update workflow error:', error);
       return reply.status(500).send({ error: 'Failed to update workflow' });
     }
@@ -62,10 +98,11 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
     try {
       const user = request.user!;
       const { projectId } = request.params as { projectId: string };
-      const body = request.body as any;
+      const body = createChangeRequestSchema.parse(request.body);
       const changeRequest = await approvalWorkflowService.createChangeRequest(projectId, { ...body, requestedBy: user.userId });
       return { changeRequest };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Create change request error:', error);
       return reply.status(500).send({ error: 'Failed to create change request' });
     }
@@ -100,10 +137,11 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
   fastify.post('/change-requests/:id/submit', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const { workflowId } = request.body as { workflowId: string };
+      const { workflowId } = submitForApprovalSchema.parse(request.body);
       const result = await approvalWorkflowService.submitForApproval(id, workflowId);
       return { result };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Submit for approval error:', error);
       return reply.status(500).send({ error: 'Failed to submit for approval' });
     }
@@ -114,10 +152,11 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
     try {
       const user = request.user!;
       const { id } = request.params as { id: string };
-      const { action, comment } = request.body as { action: string; comment?: string };
+      const { action, comment } = actOnStepSchema.parse(request.body);
       const result = await approvalWorkflowService.actOnStep(id, user.userId, action, comment);
       return { result };
     } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('Act on step error:', error);
       return reply.status(500).send({ error: 'Failed to process action' });
     }

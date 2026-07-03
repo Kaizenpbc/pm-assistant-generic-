@@ -1,8 +1,16 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { autonomyService } from '../../services/agents/AutonomyService';
 import type { RiskLevel } from '../../services/agents/ActionProposalService';
+
+const autonomyActionSchema = z.object({
+  action: z.enum(['promote', 'demote']),
+  projectId: z.string().optional(),
+  minConfidenceThreshold: z.number().min(0).max(100).optional(),
+  maxRiskLevel: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+});
 
 export async function autonomyRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -32,26 +40,24 @@ export async function autonomyRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('admin')],
     schema: { description: 'Promote or demote agent autonomy tier', tags: ['agent'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const { agentId } = request.params as { agentId: string };
-    const body = request.body as {
-      action: 'promote' | 'demote';
-      projectId?: string;
-      minConfidenceThreshold?: number;
-      maxRiskLevel?: RiskLevel;
-    };
-    const userId = (request as any).user?.userId;
+    try {
+      const { agentId } = request.params as { agentId: string };
+      const body = autonomyActionSchema.parse(request.body);
+      const userId = (request as any).user?.userId;
 
-    if (body.action === 'promote') {
-      const config = await autonomyService.promote(agentId, body.projectId ?? null, userId, {
-        minConfidenceThreshold: body.minConfidenceThreshold,
-        maxRiskLevel: body.maxRiskLevel,
-      });
-      return { config, message: `Agent ${agentId} promoted to Tier 3` };
-    } else if (body.action === 'demote') {
-      await autonomyService.demote(agentId, body.projectId ?? null, userId);
-      return { message: `Agent ${agentId} demoted to Tier 2` };
+      if (body.action === 'promote') {
+        const config = await autonomyService.promote(agentId, body.projectId ?? null, userId, {
+          minConfidenceThreshold: body.minConfidenceThreshold,
+          maxRiskLevel: body.maxRiskLevel as RiskLevel,
+        });
+        return { config, message: `Agent ${agentId} promoted to Tier 3` };
+      } else {
+        await autonomyService.demote(agentId, body.projectId ?? null, userId);
+        return { message: `Agent ${agentId} demoted to Tier 2` };
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
+      throw error;
     }
-
-    return reply.status(400).send({ error: 'Invalid action', message: 'Use "promote" or "demote"' });
   });
 }

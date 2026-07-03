@@ -1,8 +1,14 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { parse as csvParse } from 'csv-parse/sync';
 import { scheduleService } from '../../services/ScheduleService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const importCsvSchema = z.object({
+  csv: z.string().min(1).max(5 * 1024 * 1024),
+  columnMap: z.record(z.string(), z.string()).optional(),
+});
 
 const MAX_BULK = 100;
 
@@ -71,16 +77,7 @@ export async function importRoutes(fastify: FastifyInstance) {
   fastify.post('/:scheduleId/import', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
-      const { csv, columnMap } = request.body as { csv: string; columnMap?: Record<string, string> };
-
-      if (!csv || typeof csv !== 'string') {
-        return reply.status(400).send({ error: 'csv field is required and must be a string' });
-      }
-
-      // CSV size limit (5MB server-side defense in depth)
-      if (csv.length > 5 * 1024 * 1024) {
-        return reply.status(400).send({ error: 'CSV data too large. Maximum is 5MB.' });
-      }
+      const { csv, columnMap } = importCsvSchema.parse(request.body);
 
       // Schedule existence check
       const schedule = await scheduleService.findById(scheduleId);
@@ -206,6 +203,7 @@ export async function importRoutes(fastify: FastifyInstance) {
         total: records.length,
       };
     } catch (error: any) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       console.error('CSV import error:', error);
       return reply.status(500).send({ error: 'Failed to import CSV' });
     }

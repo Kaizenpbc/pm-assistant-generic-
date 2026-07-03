@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { AIReportService, ReportType } from '../../services/aiReportService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
@@ -9,6 +10,11 @@ const VALID_REPORT_TYPES: ReportType[] = [
   'budget-forecast',
   'resource-utilization',
 ];
+
+const generateReportSchema = z.object({
+  reportType: z.enum(['weekly-status', 'risk-assessment', 'budget-forecast', 'resource-utilization']),
+  projectId: z.string().optional(),
+});
 
 export async function aiReportRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -35,14 +41,8 @@ export async function aiReportRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = request.body as any;
+        const body = generateReportSchema.parse(request.body);
         const user = request.user!;
-
-        if (!VALID_REPORT_TYPES.includes(body.reportType)) {
-          return reply.code(400).send({
-            error: `Invalid report type. Must be one of: ${VALID_REPORT_TYPES.join(', ')}`,
-          });
-        }
 
         const report = await reportService.generateReport(
           body.reportType,
@@ -52,6 +52,7 @@ export async function aiReportRoutes(fastify: FastifyInstance) {
 
         return report;
       } catch (error) {
+        if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Validation error', details: error.issues });
         fastify.log.error(
           { err: error instanceof Error ? error : new Error(String(error)) },
           'Report generation failed',

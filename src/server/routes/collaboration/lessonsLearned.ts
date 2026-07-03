@@ -1,7 +1,38 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { lessonsLearnedService } from '../../services/LessonsLearnedService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const mitigationsSchema = z.object({
+  riskDescription: z.string().min(1),
+  projectType: z.string().min(1),
+});
+
+const addLessonSchema = z.object({
+  projectId: z.string().min(1),
+  projectName: z.string().default(''),
+  projectType: z.string().default('other'),
+  category: z.enum(['schedule', 'budget', 'quality', 'stakeholder', 'risk', 'communication', 'resource', 'technical']).default('quality'),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  impact: z.enum(['positive', 'negative', 'neutral']).default('neutral'),
+  recommendation: z.string().min(1),
+  confidence: z.number().min(0).max(100).optional(),
+});
+
+const similarSchema = z.object({
+  query: z.string().min(1),
+  topK: z.number().int().positive().optional(),
+});
+
+const updateLessonSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
+  category: z.string().min(1).optional(),
+  impact: z.string().min(1).optional(),
+  recommendation: z.string().min(1).optional(),
+});
 
 export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -87,14 +118,12 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { riskDescription, projectType } = request.body as { riskDescription: string; projectType: string };
-      if (!riskDescription || !projectType) {
-        return reply.status(400).send({ error: 'riskDescription and projectType are required' });
-      }
+      const { riskDescription, projectType } = mitigationsSchema.parse(request.body);
       const userId = request.user!.userId;
       const suggestions = await lessonsLearnedService.suggestMitigations(riskDescription, projectType, userId);
       return reply.send({ suggestions });
     } catch (err) {
+      if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
       fastify.log.error({ err }, 'Failed to suggest mitigations');
       return reply.status(500).send({ error: 'Failed to suggest mitigations' });
     }
@@ -105,33 +134,11 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const body = request.body as {
-        projectId: string;
-        projectName: string;
-        projectType: string;
-        category: string;
-        title: string;
-        description: string;
-        impact: string;
-        recommendation: string;
-        confidence?: number;
-      };
-      if (!body.projectId || !body.title || !body.description || !body.recommendation) {
-        return reply.status(400).send({ error: 'projectId, title, description, and recommendation are required' });
-      }
-      const lesson = await lessonsLearnedService.addLesson({
-        projectId: body.projectId,
-        projectName: body.projectName || '',
-        projectType: body.projectType || 'other',
-        category: (body.category as any) || 'quality',
-        title: body.title,
-        description: body.description,
-        impact: (body.impact as any) || 'neutral',
-        recommendation: body.recommendation,
-        confidence: body.confidence,
-      });
+      const body = addLessonSchema.parse(request.body);
+      const lesson = await lessonsLearnedService.addLesson(body);
       return reply.status(201).send({ lesson });
     } catch (err) {
+      if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
       fastify.log.error({ err }, 'Failed to add lesson');
       return reply.status(500).send({ error: 'Failed to add lesson' });
     }
@@ -142,13 +149,11 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('read')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { query, topK } = request.body as { query: string; topK?: number };
-      if (!query) {
-        return reply.status(400).send({ error: 'query is required' });
-      }
+      const { query, topK } = similarSchema.parse(request.body);
       const lessons = await lessonsLearnedService.findSimilarLessons(query, topK);
       return reply.send({ lessons });
     } catch (err) {
+      if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
       fastify.log.error({ err }, 'Failed to find similar lessons');
       return reply.status(500).send({ error: 'Failed to find similar lessons' });
     }
@@ -173,11 +178,12 @@ export async function lessonsLearnedRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const data = request.body as { title?: string; description?: string; category?: string; impact?: string; recommendation?: string };
+      const data = updateLessonSchema.parse(request.body);
       const updated = await lessonsLearnedService.updateLesson(id, data);
       if (!updated) return reply.status(404).send({ error: 'Lesson not found' });
       return { message: 'Lesson updated' };
     } catch (err) {
+      if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
       fastify.log.error({ err }, 'Failed to update lesson');
       return reply.status(500).send({ error: 'Failed to update lesson' });
     }

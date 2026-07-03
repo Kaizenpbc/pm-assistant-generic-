@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { ClaudeTaskBreakdownService } from '../../services/aiTaskBreakdownClaude';
 import {
   suggestDependenciesClaude,
@@ -7,6 +8,23 @@ import {
 } from '../../services/aiSchedulingClaude';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+
+const analyzeProjectSchema = z.object({
+  projectDescription: z.string().min(1),
+  projectType: z.string().min(1).optional(),
+  projectId: z.string().optional(),
+});
+
+const suggestDependenciesSchema = z.object({
+  tasks: z.array(z.any()).min(1),
+  projectContext: z.string().optional(),
+});
+
+const optimizeScheduleSchema = z.object({
+  scheduleId: z.string().min(1),
+  optimizationGoals: z.array(z.string()).optional(),
+  constraints: z.record(z.string(), z.any()).optional(),
+});
 
 export async function aiSchedulingRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -22,7 +40,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { projectDescription, projectType, projectId } = request.body as any;
+        const { projectDescription, projectType, projectId } = analyzeProjectSchema.parse(request.body);
         const user = request.user!;
 
         const { analysis, aiPowered } = await claudeBreakdown.analyzeProject(
@@ -35,6 +53,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
         const insights = generateInsights(analysis);
         return { analysis, insights, aiPowered };
       } catch (error) {
+        if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Validation error', details: error.issues });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Error in AI project analysis');
         return reply.code(500).send({ error: 'Failed to analyze project' });
       }
@@ -50,7 +69,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { tasks, projectContext } = request.body as any;
+        const { tasks, projectContext } = suggestDependenciesSchema.parse(request.body);
         const user = request.user!;
 
         const { dependencies, aiPowered } = await suggestDependenciesClaude(
@@ -62,6 +81,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
         return { dependencies, aiPowered };
       } catch (error) {
+        if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Validation error', details: error.issues });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Error in AI dependency suggestion');
         return reply.code(500).send({ error: 'Failed to suggest dependencies' });
       }
@@ -77,7 +97,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { scheduleId, optimizationGoals, constraints } = request.body as any;
+        const { scheduleId, optimizationGoals, constraints } = optimizeScheduleSchema.parse(request.body);
         const user = request.user!;
 
         const { optimizedSchedule, aiPowered } = await optimizeScheduleClaude(
@@ -90,6 +110,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
 
         return { optimizedSchedule, aiPowered };
       } catch (error) {
+        if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Validation error', details: error.issues });
         fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Error in AI schedule optimization');
         return reply.code(500).send({ error: 'Failed to optimize schedule' });
       }
