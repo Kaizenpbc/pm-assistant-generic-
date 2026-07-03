@@ -15,8 +15,10 @@ import { toCamelCaseKeys } from './utils/caseConverter';
 import { auditService } from './services/auditService';
 import { databaseService } from './database/connection';
 import { securityMiddleware, securityValidationMiddleware } from './middleware/securityMiddleware';
+import { requestContextHook } from './middleware/requestContext';
 import { rateLimiter } from './middleware/rateLimiter';
 import { apiKeyService } from './services/ApiKeyService';
+import { metricsService } from './services/MetricsService';
 
 export async function registerPlugins(fastify: FastifyInstance) {
   await fastify.register(websocket);
@@ -26,6 +28,18 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.addHook('onRequest', requestLogger);
   fastify.addHook('onRequest', securityMiddleware);
   fastify.addHook('preHandler', securityValidationMiddleware);
+  // Request context must run after securityValidationMiddleware (which sets x-request-id)
+  fastify.addHook('preHandler', requestContextHook);
+
+  if (config.METRICS_ENABLED) {
+    fastify.addHook('onRequest', async () => { metricsService.incrementActiveRequests(); });
+    fastify.addHook('onResponse', async (request, reply) => {
+      metricsService.decrementActiveRequests();
+      const durationMs = Math.round(reply.elapsedTime || 0);
+      metricsService.recordRequest(request.method, request.url, reply.statusCode, durationMs);
+    });
+  }
+
   fastify.addHook('onResponse', responseLogger);
 
   // Normalize DB snake_case keys to camelCase in JSON API responses only

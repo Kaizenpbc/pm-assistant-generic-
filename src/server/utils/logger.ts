@@ -1,10 +1,20 @@
 import winston from 'winston';
+import { getRequestId } from '../middleware/requestContext';
+
+const addRequestId = winston.format((info) => {
+  const requestId = getRequestId();
+  if (requestId) {
+    info.requestId = requestId;
+  }
+  return info;
+});
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
+    addRequestId(),
     winston.format.json()
   ),
   defaultMeta: { service: 'pm-assistant-generic' },

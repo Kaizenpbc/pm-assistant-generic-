@@ -180,7 +180,8 @@ describe('UserService', () => {
       const users = await service.list();
       expect(users).toHaveLength(1);
       expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('LIMIT 1000'),
+        expect.stringContaining('LIMIT ?'),
+        [1000],
       );
     });
   });

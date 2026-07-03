@@ -134,10 +134,10 @@ Target state: same process layout, but with explicit rate limiting on all public
 - ~~Add optional per-user AI token/cost budget and check it in `claudeService`.~~ Done: migration 030 creates `ai_usage_log` table + `users.ai_monthly_token_budget` column. `AIBudgetService` checks monthly usage. `claudeService.complete/stream/completeToolLoop` enforce budget when `userId` provided. `GET /api/v1/ai/budget` returns usage. Fixed `aiUsageLogger` to use `databaseService`.
 - ~~Add Zod validation for all request bodies and critical query params.~~ Done: Added Zod schemas to 9 route files (users, bulk, sprints, timeEntries, aiChat, apiKeys, webhooks, intakeForms, goals). Coverage now 24/61 route files (39%).
 
-**Later (strategic)**  
-- Introduce a small repository layer for 2–3 core entities (e.g. projects, users) and move SQL there; keep services as orchestrators.  
-- If multi-instance is required: introduce Redis (or similar) for rate limiting and for agent/scheduler locking; move rate limiter and optional job state there.  
-- Add structured metrics (e.g. request count, latency histogram, AI token usage) and optional tracing (e.g. request ID through logs and services).
+**Later (strategic)**
+- ~~Introduce a small repository layer for 2–3 core entities (e.g. projects, users) and move SQL there; keep services as orchestrators.~~ Done (July 2026): `BaseRepository` + `ProjectRepository`, `UserRepository`, `ScheduleRepository`. Services delegate data access to repositories and keep business logic (audit logging, policy checks, workflow triggers).
+- If multi-instance is required: introduce Redis (or similar) for rate limiting and for agent/scheduler locking; move rate limiter and optional job state there.
+- ~~Add structured metrics (e.g. request count, latency histogram, AI token usage) and optional tracing (e.g. request ID through logs and services).~~ Done (July 2026): `MetricsService` (in-memory counters, latency percentiles, AI token usage, DB query count). `AsyncLocalStorage`-based request context propagates request ID through all async operations. Winston logger includes `requestId` in all log entries. `GET /api/v1/metrics` (admin-only) returns metrics snapshot.
 
 ---
 

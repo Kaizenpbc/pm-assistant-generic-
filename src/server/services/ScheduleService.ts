@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
+import { scheduleRepository } from '../database/ScheduleRepository';
 import { auditLedgerService } from './AuditLedgerService';
 import { dagWorkflowService } from './DagWorkflowService';
 
@@ -284,75 +285,29 @@ export class ScheduleService {
   }
 
   async findByProjectId(projectId: string): Promise<Schedule[]> {
-    const rows = await databaseService.query(
-      'SELECT * FROM schedules WHERE project_id = ? ORDER BY created_at DESC',
-      [projectId],
-    );
-    return rows.map(rowToSchedule);
+    return scheduleRepository.findByProjectId(projectId);
   }
 
   async findById(id: string): Promise<Schedule | null> {
-    const rows = await databaseService.query('SELECT * FROM schedules WHERE id = ?', [id]);
-    return rows.length > 0 ? rowToSchedule(rows[0]) : null;
+    return scheduleRepository.findById(id);
   }
 
   async create(data: CreateScheduleData): Promise<Schedule> {
-    const id = uuidv4();
-    await databaseService.query(
-      `INSERT INTO schedules (id, project_id, name, description, start_date, end_date, status, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        data.projectId,
-        data.name,
-        data.description || null,
-        toDateStr(data.startDate),
-        toDateStr(data.endDate),
-        'active',
-        data.createdBy,
-      ],
-    );
-    return (await this.findById(id))!;
+    return scheduleRepository.create(data);
   }
 
   async update(id: string, data: Partial<Omit<Schedule, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>>): Promise<Schedule | null> {
     const existing = await this.findById(id);
     if (!existing) return null;
 
-    const columnMap: Record<string, string> = {
-      name: 'name',
-      description: 'description',
-      startDate: 'start_date',
-      endDate: 'end_date',
-      status: 'status',
-      createdBy: 'created_by',
-    };
-
-    const fields: string[] = [];
-    const values: any[] = [];
-
-    for (const [key, column] of Object.entries(columnMap)) {
-      if (key in data) {
-        let val = (data as any)[key];
-        if ((key === 'startDate' || key === 'endDate') && val) {
-          val = toDateStr(val);
-        }
-        fields.push(`${column} = ?`);
-        values.push(val ?? null);
-      }
-    }
-
-    if (fields.length === 0) return existing;
-
-    values.push(id);
-    await databaseService.query(`UPDATE schedules SET ${fields.join(', ')} WHERE id = ?`, values);
-    return (await this.findById(id))!;
+    const updated = await scheduleRepository.update(id, data as Record<string, any>);
+    if (!updated) return existing; // no fields to update
+    return updated;
   }
 
   async delete(id: string): Promise<boolean> {
     // Tasks are ON DELETE CASCADE in the schema
-    const result: any = await databaseService.query('DELETE FROM schedules WHERE id = ?', [id]);
-    return (result.affectedRows ?? 0) > 0;
+    return scheduleRepository.deleteById(id);
   }
 
   // -------------------------------------------------------------------------
@@ -360,13 +315,7 @@ export class ScheduleService {
   // -------------------------------------------------------------------------
 
   async findByProjectIds(projectIds: string[]): Promise<Schedule[]> {
-    if (projectIds.length === 0) return [];
-    const placeholders = projectIds.map(() => '?').join(', ');
-    const rows = await databaseService.query(
-      `SELECT * FROM schedules WHERE project_id IN (${placeholders}) ORDER BY created_at DESC`,
-      projectIds,
-    );
-    return rows.map(rowToSchedule);
+    return scheduleRepository.findByProjectIds(projectIds);
   }
 
   async findTasksByScheduleIds(scheduleIds: string[]): Promise<Task[]> {

@@ -1163,7 +1163,10 @@ The frontend supports **English (en)**, **French (fr)**, and **Spanish (es)**. T
 - **AI**: Anthropic Claude SDK (gated by `AI_ENABLED` env var)
 - **Real-time**: WebSocket service for live notifications
 - **Email**: Configurable email service for password reset and notifications
+- **Repository layer**: `BaseRepository` + entity-specific repositories (`ProjectRepository`, `UserRepository`, `ScheduleRepository`) centralize SQL queries and row mapping. Services delegate data access to repositories and keep business logic (audit logging, policy checks, workflow triggers).
 - **Service layer**: Stateless services use module-level singletons to avoid redundant instantiation and preserve in-memory caches (e.g., EmbeddingService). Internal queries include safety `LIMIT 1000` on unbounded SELECTs; public list endpoints use proper pagination with `PaginatedResponse<T>`.
+- **Structured metrics**: `MetricsService` collects in-memory request counts, latency percentiles (p50/p95/p99), error rates, AI token usage, and DB query counts. Admin endpoint: `GET /api/v1/metrics`.
+- **Request context**: `AsyncLocalStorage`-based request ID propagation through all async operations. Winston logger automatically includes `requestId` in every log entry.
 - **AI Budget**: Per-user monthly token budget enforcement via `AIBudgetService`
 
 ### Frontend
@@ -1233,6 +1236,7 @@ All API routes are prefixed with `/api/v1/` and organized by domain:
 /api/v1/project-members   Project membership
 /api/v1/ai/budget         AI token budget usage (per-user)
 /api/v1/rag               Semantic search (RAG)
+/api/v1/metrics           Application metrics (admin-only)
 /api/v1/ws                WebSocket connections
 /mcp                      MCP HTTP transport proxy
 ```

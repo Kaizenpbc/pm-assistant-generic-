@@ -370,6 +370,9 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 - **Frontend** is a Vite-built React SPA served as static files by LiteSpeed.
 - **Backend** is a Fastify app running under Passenger, handling all `/api/v1/` routes.
+- **Repository layer** (`BaseRepository` + entity repos) centralizes SQL and row mapping for core entities; services keep business logic.
+- **Structured metrics** via `MetricsService` (request counts, latency percentiles, AI token usage). Admin endpoint: `GET /api/v1/metrics`.
+- **Request context** propagated via `AsyncLocalStorage` — request ID included in all log entries.
 - **WebSocket** connections are managed by `@fastify/websocket` for real-time updates.
 - **MCP Server** runs as a separate process, exposing PM tools via the Model Context Protocol.
 
@@ -384,8 +387,8 @@ pm-assistant-generic/
 │   │   ├── routes/              # 50+ route modules (8 domain subdirectories)
 │   │   ├── services/            # Business logic & AI services
 │   │   │   └── agents/          # Agentic pipeline (reasoning, proposals, execution)
-│   │   ├── middleware/          # Auth, rate limiting, policies
-│   │   ├── database/            # Migrations, seeds, connection pool
+│   │   ├── middleware/          # Auth, rate limiting, policies, request context
+│   │   ├── database/            # Repositories, migrations, connection pool
 │   │   └── config.ts            # Environment-based configuration
 │   ├── client/                  # React frontend (Vite)
 │   │   ├── src/

@@ -93,7 +93,8 @@ describe('ProjectService', () => {
       const projects = await service.findAll();
       expect(projects).toHaveLength(1);
       expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('LIMIT 1000'),
+        expect.stringContaining('LIMIT ?'),
+        [1000],
       );
     });
   });
