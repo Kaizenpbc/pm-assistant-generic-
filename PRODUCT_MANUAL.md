@@ -785,6 +785,16 @@ The `AIBudgetService` enforces per-user monthly AI token limits:
 - **Circuit breaker**: After 5 consecutive transient failures (rate limit, timeout, API overload), the AI circuit breaker opens and returns HTTP 503 immediately for 60 seconds instead of making doomed API calls. Recovers automatically after cooldown.
 - `GET /api/v1/ai/budget` returns current month's usage summary: `totalInputTokens`, `totalOutputTokens`, `totalTokens`, `totalCost`, `requestCount`, `budget`, `remaining`, `percentUsed`
 
+### Prompt Injection Mitigation
+
+Defense-in-depth protection against prompt injection in AI-powered features. User-supplied data (project names, descriptions, task names, meeting notes) is sanitized before interpolation into system prompts:
+
+- **Input sanitization** (`sanitizeForPrompt()`): Strips template markers (`{{`, `}}`), common injection phrases (`SYSTEM:`, `ignore previous instructions`, `Human:`/`Assistant:`, etc.), and truncates excessively long inputs (default 50,000 chars)
+- **Structural delimiters**: `PromptTemplate.render()` wraps all interpolated values in `<user-data field="...">` XML tags, establishing a clear boundary between instructions and data
+- **Defense preamble**: `buildSystemPrompt()` prepends an instruction telling the model to treat `<user-data>` content strictly as data to analyze, never as instructions to follow
+- **Coverage**: Applied to all template-rendered prompts (task breakdown, risk assessment, project insights, reports, meeting notes, conversational), context builder output (project names, descriptions), and quality agent prompts (scope, hygiene, lessons)
+- **Chat messages**: User chat input is sent as the Anthropic `user` role message (not interpolated into system prompts), which is the architecturally correct position for untrusted input
+
 ### Security Middleware
 
 - Content Security Policy (CSP) via Helmet
