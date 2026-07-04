@@ -513,9 +513,16 @@ The `whatIfScenarioService` allows users to model hypothetical changes (adding r
 
 The `crossProjectIntelligenceService` analyzes patterns across the entire portfolio to surface systemic risks, resource conflicts, and optimization opportunities.
 
-### AI Chat
+### Mjuzi Chat
 
-The `aiChatService` provides a conversational interface where users can ask open-ended questions about their projects and receive AI-generated responses grounded in actual project data. The chat panel supports **voice input** (browser Speech Recognition): users can click the mic, speak their message, and the transcript is sent as a normal chat message. Optional **text-to-speech** (“Speak replies”) reads the assistant’s replies aloud when enabled.
+**Mjuzi** is the AI project assistant, available as a slide-out chat panel on every page. The `aiChatService` provides a conversational interface where users can ask open-ended questions about their projects and receive AI-generated responses grounded in actual project data.
+
+**Key features:**
+- **Persistent conversations** — chat history is stored in the database (`chat_conversations` + `chat_messages` tables) and survives server restarts. Users can browse, switch between, and resume past conversations from the history panel.
+- **Agent memory integration** — Mjuzi injects recent agent scan findings (via `InterAgentQueryService`), prior conversation context, and its own project-specific memories into the system prompt, enabling more informed and contextual responses.
+- **Action memory** — when Mjuzi executes tools (create task, update project, etc.), it stores a memory of the action via `AgentMemoryService` for future reference.
+- **Voice input** (browser Speech Recognition): users can click the mic, speak their message, and the transcript is sent as a normal chat message. Optional **text-to-speech** (“Speak replies”) reads the assistant’s replies aloud when enabled.
+- **Conversation history UI** — History button and New Conversation button in the chat panel header. Click any past conversation to reload it.
 
 ### AI Reports
 
@@ -1332,7 +1339,7 @@ All API routes are prefixed with `/api/v1/` and organized by domain:
 /api/v1/auto-reschedule   Auto-reschedule proposals
 /api/v1/nl-query          Natural language queries
 /api/v1/ai-scheduling     AI task breakdown and scheduling
-/api/v1/ai-chat           Conversational AI interface
+/api/v1/ai-chat           Mjuzi conversational AI (persistent)
 /api/v1/task-prioritization  AI task ranking
 /api/v1/meeting-intelligence Meeting transcript analysis
 /api/v1/lessons-learned   Retrospective knowledge base

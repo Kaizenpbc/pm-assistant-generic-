@@ -36,27 +36,31 @@ Key architectural components:
 
 ---
 
-## 1. AI Chat
+## 1. Mjuzi Chat
 
 **Service:** `AIChatService` (`aiChatService.ts`)
-**Endpoint:** `POST /api/ai/chat` (streaming via SSE)
+**Repository:** `ChatRepository` (`database/ChatRepository.ts`)
+**Endpoints:** `POST /api/v1/ai-chat/message` (non-streaming with tools), `POST /api/v1/ai-chat/stream` (SSE streaming)
 
-A persistent, context-aware conversational assistant available throughout the application.
+Mjuzi is the persistent, context-aware conversational AI assistant available throughout the application.
 
 **Capabilities:**
-- Streaming responses delivered via Server-Sent Events (typewriter effect)
+- Non-streaming mode with full agentic tool use, or streaming responses via Server-Sent Events (typewriter effect)
 - Context-aware: knows which page and project the user is viewing (`dashboard`, `project`, `schedule`, `reports`, `general`)
 - Agentic tool use: Claude can call tools to create tasks, update projects, assign resources, and more -- all gated by the policy engine
-- Conversation history maintained per user with database persistence
+- **Database-backed persistence:** conversations and messages stored in `chat_conversations` and `chat_messages` tables via `ChatRepository`. Survives server restarts.
+- **Agent memory integration:** injects `InterAgentQueryService` scan findings, prior conversation count, and Mjuzi's own project memories (`agentMemoryService.recall('mjuzi-chat', ...)`) into the system prompt
+- **Action memory:** after tool use, stores a summary via `agentMemoryService.store()` for future reference
 - Action results embedded in responses (e.g., "I created task X" with confirmation)
-- Conversation continues across page navigation
+- Conversation history UI: browse, switch, and resume past conversations
+- Conversation continues across page navigation and browser refreshes
 
 **Tool-use flow:**
 1. User sends a message with optional context (project ID, page type)
-2. AIChatService builds project context via AIContextBuilder
+2. AIChatService builds project context via AIContextBuilder, enriched with agent insights and Mjuzi memories
 3. Claude receives the message with tool definitions from `aiToolDefinitions.ts`
 4. If Claude invokes a tool, AIActionExecutor runs the action with policy checks and audit logging
-5. Results stream back to the client via SSE
+5. Response returned to client; conversation and messages persisted to database
 
 ---
 
