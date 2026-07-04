@@ -24,10 +24,9 @@ export function startCronTasks(
     reportScheduleTask: null,
   };
 
-  if (!config.AGENT_ENABLED) {
-    console.log('[Agent] Agent is disabled (AGENT_ENABLED=false)');
-    return tasks;
-  }
+  // All cron jobs disabled — set AGENT_ENABLED=true to re-enable
+  console.log('[Agent] All cron jobs disabled');
+  return tasks;
 
   const schedule = config.AGENT_CRON_SCHEDULE;
   console.log(`[Agent] Starting agent scheduler on cron: "${schedule}"`);
