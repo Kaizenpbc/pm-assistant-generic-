@@ -340,6 +340,34 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - English, French, and Spanish translations
 - Locale selection in user settings; active locale managed via `localeStore` and `useTranslation` hook
 
+### Accessibility + Adaptive UI
+- User-configurable accessibility preferences (high contrast, font size 12-24px, reduced motion, text simplification level)
+- Server-persisted preferences via `accessibility_preferences` JSON column (migration 034)
+- CSS custom properties applied via AccessibilityProvider React context
+- Settings page "Accessibility" tab with toggles and sliders
+- AI text simplification (mild/strong) via Claude-powered rewriting
+- Flesch-Kincaid reading level analysis (algorithmic, no LLM required)
+- ReadingLevelBadge component for visual reading difficulty indicators
+
+### Role-Specific Dashboards
+- ScrumMasterDashboard: active sprints overview, velocity chart, blocked task count
+- FinanceDashboard: budget overview cards, project budget table with variance, cost status
+- DashboardRouter routes `scrum_master` and `finance_officer` roles to their dedicated dashboards
+- Role-specific widget registries for dashboard customization
+
+### Multi-Agent Collaboration
+- Memory context helper: agents access past reflections and cross-agent insights during reasoning
+- InterAgentQueryService: agents query other agents' latest scan results
+- InsightAssemblyService: combines multi-agent outputs into unified project health narratives
+- Scan orchestrator stores per-project results in `agent_memory` table (24h TTL)
+- Scope and budget analysis generators enriched with historical memory context
+
+### Intelligent Dashboard Narratives
+- NarrativeService: role-aware plain-language project/portfolio summaries via Claude
+- `GET /api/v1/narratives/project/:id` and `GET /api/v1/narratives/portfolio` endpoints
+- AISummaryBanner enhanced with AI narrative section (toggleable via accessibility settings)
+- Fallback text when AI is unavailable
+
 ---
 
 ## Architecture

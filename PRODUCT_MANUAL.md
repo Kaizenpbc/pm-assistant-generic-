@@ -1180,6 +1180,87 @@ The frontend supports **English (en)**, **French (fr)**, and **Spanish (es)**. T
 
 ---
 
+## 40. Accessibility + Adaptive UI
+
+### Accessibility Preferences
+Users can configure accessibility settings from **Settings → Accessibility**:
+- **High Contrast**: Increases border widths and color contrast for improved readability
+- **Font Size** (12–24px): Adjusts the base font size across the entire application via CSS custom property `--app-font-size`
+- **Reduced Motion**: Disables all CSS animations and transitions
+- **Text Simplification** (off/mild/strong): AI-powered simplification of narratives and reports
+- **AI Narration**: Toggle dashboard narrative summaries on/off
+
+Preferences are stored server-side in the `accessibility_preferences` JSON column (migration 034) and cached in localStorage. The `AccessibilityProvider` React context applies CSS classes (`high-contrast`, `reduce-motion`) to the document root.
+
+### API Endpoints
+- `GET /api/v1/users/me/accessibility` — get current preferences
+- `PUT /api/v1/users/me/accessibility` — update preferences
+- `POST /api/v1/accessibility/simplify` — simplify text (body: `{ text, level }`)
+- `POST /api/v1/accessibility/reading-level` — analyze reading level (returns Flesch-Kincaid score, grade, and level)
+
+### Reading Level Analysis
+Pure algorithmic Flesch-Kincaid readability scoring (no LLM required). Returns:
+- **score** (0–100): Higher = easier to read
+- **grade**: Estimated US school grade level
+- **level**: easy (60+), moderate (30–59), advanced (<30)
+
+---
+
+## 41. Role-Specific Dashboards
+
+Each of the 6 user roles receives a tailored dashboard view:
+- **admin / executive** → ExecutiveDashboard (portfolio overview, all projects)
+- **project_manager / team_member** → PMDashboard (project table, quick stats, activity)
+- **scrum_master** → ScrumMasterDashboard (active sprints, velocity, blocked items)
+- **finance_officer** → FinanceDashboard (budget overview, cost variance, project budget table)
+
+The `DashboardRouter` component checks `user.role` and lazy-loads the appropriate dashboard. Each role has its own widget registry (`SCRUM_MASTER_WIDGETS`, `FINANCE_WIDGETS`) with role-appropriate defaults.
+
+---
+
+## 42. Multi-Agent Collaboration
+
+### Memory Context for Reasoning
+ReasoningEngine generators (scope analysis, budget analysis) now inject historical context into Claude prompts:
+- Past reflections from the same agent for the same project
+- Cross-agent insights (what other agents found in recent scans)
+
+This is provided by `getMemoryContext(agentId, projectId)` which queries the `agent_memory` table.
+
+### Inter-Agent Query Service
+Agents can query other agents' conclusions via `InterAgentQueryService`:
+- `getLatestInsight(agentId, projectId)` — specific agent's latest finding
+- `getInsightsByProject(projectId)` — all agents' findings for a project
+
+### Scan Result Storage
+The scan orchestrator stores each project's aggregate scan results in `agent_memory` (type='project', key='latest_scan', TTL=24h) after processing. Portfolio-level agents can then access per-project findings.
+
+### Insight Assembly
+`InsightAssemblyService` combines multiple agents' outputs into a unified health assessment:
+- Overall health classification (healthy/warning/critical)
+- Per-agent findings with severity levels
+- Summary text for narratives
+
+---
+
+## 43. Intelligent Dashboard Narratives
+
+### NarrativeService
+Generates plain-language summaries tailored to the user's role:
+- **finance_officer** focus: budget utilization, cost variances, financial risks
+- **scrum_master** focus: sprint progress, velocity trends, blockers
+- **executive** focus: high-level status, strategic risks, portfolio health
+- **project_manager** focus: schedule adherence, task completion, immediate risks
+
+### API Endpoints
+- `GET /api/v1/narratives/project/:projectId` — project-level narrative (role from auth context)
+- `GET /api/v1/narratives/portfolio` — portfolio-level summary
+
+### Dashboard Integration
+The `AISummaryBanner` component shows a narrative section (when enabled via accessibility preferences) with a refresh button. Falls back to static text when AI is unavailable.
+
+---
+
 ## Technical Architecture
 
 ### Backend
