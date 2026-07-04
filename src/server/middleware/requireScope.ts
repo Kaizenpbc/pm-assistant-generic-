@@ -15,6 +15,13 @@ const ROLE_SCOPES: Record<string, Scope[]> = {
   scrum_master: ['read', 'write'],
   team_member: ['read'],
   finance_officer: ['read'],
+  risk_manager: ['read', 'write'],
+  pmo: ['read', 'write'],
+  ba: ['read', 'write'],
+  qa: ['read', 'write'],
+  tester: ['read'],
+  devops: ['read', 'write'],
+  claude_sme: ['read'],
 };
 
 /**

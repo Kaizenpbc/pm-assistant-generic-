@@ -6,7 +6,7 @@ export interface User {
   email: string;
   passwordHash: string;
   fullName: string;
-  role: 'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer';
+  role: 'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer' | 'risk_manager' | 'pmo' | 'ba' | 'qa' | 'tester' | 'devops' | 'claude_sme';
   isActive: boolean;
   emailVerified: boolean;
   emailVerificationToken: string | null;
@@ -32,7 +32,7 @@ export interface CreateUserData {
   email: string;
   passwordHash: string;
   fullName: string;
-  role?: 'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer';
+  role?: 'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer' | 'risk_manager' | 'pmo' | 'ba' | 'qa' | 'tester' | 'devops' | 'claude_sme';
   emailVerified?: boolean;
   emailVerificationToken?: string;
   emailVerificationExpires?: Date;

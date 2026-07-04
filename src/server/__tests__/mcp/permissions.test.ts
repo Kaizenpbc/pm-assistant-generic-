@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { isToolAllowed, getAllowedRoles, type Role } from '../../../../mcp-server/src/permissions';
 
-const ALL_ROLES: Role[] = ['admin', 'executive', 'project_manager', 'team_member', 'scrum_master', 'finance_officer'];
+const ALL_ROLES: Role[] = [
+  'admin', 'executive', 'project_manager', 'team_member', 'scrum_master', 'finance_officer',
+  'risk_manager', 'pmo', 'ba', 'qa', 'tester', 'devops', 'claude_sme',
+];
 
 describe('MCP Permission Matrix', () => {
   describe('admin', () => {
@@ -144,6 +147,100 @@ describe('MCP Permission Matrix', () => {
     it('cannot write tasks or projects', () => {
       expect(isToolAllowed('create-task', 'executive')).toBe(false);
       expect(isToolAllowed('create-project', 'executive')).toBe(false);
+    });
+  });
+
+  describe('risk_manager', () => {
+    it('can read all tools', () => {
+      expect(isToolAllowed('list-projects', 'risk_manager')).toBe(true);
+      expect(isToolAllowed('get-project-risks', 'risk_manager')).toBe(true);
+    });
+
+    it('can create/update tasks and act on approvals', () => {
+      expect(isToolAllowed('create-task', 'risk_manager')).toBe(true);
+      expect(isToolAllowed('act-on-approval', 'risk_manager')).toBe(true);
+    });
+
+    it('can access budget/financial tools', () => {
+      expect(isToolAllowed('get-budget-forecast', 'risk_manager')).toBe(true);
+    });
+
+    it('cannot manage projects or sprints', () => {
+      expect(isToolAllowed('create-project', 'risk_manager')).toBe(false);
+      expect(isToolAllowed('create-sprint', 'risk_manager')).toBe(false);
+    });
+  });
+
+  describe('pmo', () => {
+    it('has near-PM access', () => {
+      expect(isToolAllowed('create-project', 'pmo')).toBe(true);
+      expect(isToolAllowed('create-schedule', 'pmo')).toBe(true);
+      expect(isToolAllowed('create-sprint', 'pmo')).toBe(true);
+      expect(isToolAllowed('delete-task', 'pmo')).toBe(true);
+      expect(isToolAllowed('act-on-approval', 'pmo')).toBe(true);
+      expect(isToolAllowed('get-budget-forecast', 'pmo')).toBe(true);
+    });
+
+    it('cannot access admin tools', () => {
+      expect(isToolAllowed('trigger-agent', 'pmo')).toBe(false);
+    });
+  });
+
+  describe('ba', () => {
+    it('can read and create tasks', () => {
+      expect(isToolAllowed('list-projects', 'ba')).toBe(true);
+      expect(isToolAllowed('create-task', 'ba')).toBe(true);
+      expect(isToolAllowed('log-time', 'ba')).toBe(true);
+    });
+
+    it('can manage custom fields', () => {
+      expect(isToolAllowed('create-custom-field', 'ba')).toBe(true);
+    });
+
+    it('cannot manage projects or sprints', () => {
+      expect(isToolAllowed('create-project', 'ba')).toBe(false);
+      expect(isToolAllowed('create-sprint', 'ba')).toBe(false);
+    });
+  });
+
+  describe('qa and tester', () => {
+    it('qa can create tasks and log time', () => {
+      expect(isToolAllowed('create-task', 'qa')).toBe(true);
+      expect(isToolAllowed('log-time', 'qa')).toBe(true);
+    });
+
+    it('tester can create tasks and log time', () => {
+      expect(isToolAllowed('create-task', 'tester')).toBe(true);
+      expect(isToolAllowed('log-time', 'tester')).toBe(true);
+    });
+
+    it('neither can manage projects', () => {
+      expect(isToolAllowed('create-project', 'qa')).toBe(false);
+      expect(isToolAllowed('create-project', 'tester')).toBe(false);
+    });
+  });
+
+  describe('devops', () => {
+    it('can create tasks and log time', () => {
+      expect(isToolAllowed('create-task', 'devops')).toBe(true);
+      expect(isToolAllowed('log-time', 'devops')).toBe(true);
+    });
+
+    it('cannot manage projects', () => {
+      expect(isToolAllowed('create-project', 'devops')).toBe(false);
+    });
+  });
+
+  describe('claude_sme', () => {
+    it('can read all tools and financial tools', () => {
+      expect(isToolAllowed('list-projects', 'claude_sme')).toBe(true);
+      expect(isToolAllowed('get-budget-forecast', 'claude_sme')).toBe(true);
+    });
+
+    it('cannot write anything', () => {
+      expect(isToolAllowed('create-task', 'claude_sme')).toBe(false);
+      expect(isToolAllowed('create-project', 'claude_sme')).toBe(false);
+      expect(isToolAllowed('log-time', 'claude_sme')).toBe(false);
     });
   });
 

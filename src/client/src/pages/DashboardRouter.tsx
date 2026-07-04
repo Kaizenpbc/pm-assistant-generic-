@@ -20,6 +20,7 @@ export function DashboardRouter() {
   switch (user.role) {
     case 'admin':
     case 'executive':
+    case 'pmo':
       return (
         <DashboardSuspense>
           <ExecutiveDashboard />
@@ -38,6 +39,12 @@ export function DashboardRouter() {
         </DashboardSuspense>
       );
     case 'project_manager':
+    case 'risk_manager':
+    case 'ba':
+    case 'qa':
+    case 'tester':
+    case 'devops':
+    case 'claude_sme':
     case 'team_member':
     default:
       return <PMDashboard />;
