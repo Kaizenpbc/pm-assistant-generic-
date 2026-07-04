@@ -1,3 +1,6 @@
+import { v4 as uuidv4 } from 'uuid';
+import { databaseService } from '../database/connection';
+
 export type ProjectRole = 'owner' | 'manager' | 'editor' | 'viewer';
 
 export interface ProjectMember {
@@ -17,57 +20,76 @@ const ROLE_HIERARCHY: Record<ProjectRole, number> = {
   viewer: 1,
 };
 
+function rowToMember(row: any): ProjectMember {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    userId: row.user_id,
+    userName: row.user_name,
+    email: row.email,
+    role: row.role,
+    addedAt: String(row.added_at),
+  };
+}
+
 export class ProjectMemberService {
-  private static members: ProjectMember[] = [
-    // User '1' is owner of all 3 projects
-    { id: 'pm-1', projectId: '1', userId: '1', userName: 'Admin User', email: 'admin@example.com', role: 'owner', addedAt: new Date().toISOString() },
-    { id: 'pm-2', projectId: '2', userId: '1', userName: 'Admin User', email: 'admin@example.com', role: 'owner', addedAt: new Date().toISOString() },
-    { id: 'pm-3', projectId: '3', userId: '1', userName: 'Admin User', email: 'admin@example.com', role: 'owner', addedAt: new Date().toISOString() },
-    // Sample team members
-    { id: 'pm-4', projectId: '1', userId: '2', userName: 'Sarah Chen', email: 'sarah.chen@example.com', role: 'manager', addedAt: new Date().toISOString() },
-    { id: 'pm-5', projectId: '1', userId: '3', userName: 'Mike Johnson', email: 'mike.j@example.com', role: 'editor', addedAt: new Date().toISOString() },
-    { id: 'pm-6', projectId: '1', userId: '4', userName: 'Emily Davis', email: 'emily.d@example.com', role: 'viewer', addedAt: new Date().toISOString() },
-    { id: 'pm-7', projectId: '2', userId: '5', userName: 'Tom Wilson', email: 'tom.w@example.com', role: 'editor', addedAt: new Date().toISOString() },
-    { id: 'pm-8', projectId: '3', userId: '6', userName: 'Lisa Park', email: 'lisa.p@example.com', role: 'manager', addedAt: new Date().toISOString() },
-    { id: 'pm-9', projectId: '3', userId: '7', userName: 'James Brown', email: 'james.b@example.com', role: 'editor', addedAt: new Date().toISOString() },
-  ];
-
-  findByProjectId(projectId: string): ProjectMember[] {
-    return ProjectMemberService.members.filter(m => m.projectId === projectId);
+  async findByProjectId(projectId: string): Promise<ProjectMember[]> {
+    const rows = await databaseService.query(
+      'SELECT * FROM project_members WHERE project_id = ? ORDER BY added_at',
+      [projectId],
+    );
+    return rows.map(rowToMember);
   }
 
-  findByUserId(userId: string): ProjectMember[] {
-    return ProjectMemberService.members.filter(m => m.userId === userId);
+  async findByUserId(userId: string): Promise<ProjectMember[]> {
+    const rows = await databaseService.query(
+      'SELECT * FROM project_members WHERE user_id = ? ORDER BY added_at',
+      [userId],
+    );
+    return rows.map(rowToMember);
   }
 
-  findMembership(projectId: string, userId: string): ProjectMember | undefined {
-    return ProjectMemberService.members.find(m => m.projectId === projectId && m.userId === userId);
+  async findMembership(projectId: string, userId: string): Promise<ProjectMember | undefined> {
+    const rows = await databaseService.query(
+      'SELECT * FROM project_members WHERE project_id = ? AND user_id = ?',
+      [projectId, userId],
+    );
+    return rows.length > 0 ? rowToMember(rows[0]) : undefined;
   }
 
-  hasAccess(projectId: string, userId: string): boolean {
-    // Admin bypass
-    if (userId === '1') return true;
-    return !!this.findMembership(projectId, userId);
+  async hasAccess(projectId: string, userId: string): Promise<boolean> {
+    const rows = await databaseService.query(
+      'SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ? LIMIT 1',
+      [projectId, userId],
+    );
+    return rows.length > 0;
   }
 
-  hasRole(projectId: string, userId: string, minRole: ProjectRole): boolean {
-    // Admin bypass
-    if (userId === '1') return true;
-    const membership = this.findMembership(projectId, userId);
+  async hasRole(projectId: string, userId: string, minRole: ProjectRole): Promise<boolean> {
+    const membership = await this.findMembership(projectId, userId);
     if (!membership) return false;
     return ROLE_HIERARCHY[membership.role] >= ROLE_HIERARCHY[minRole];
   }
 
-  addMember(projectId: string, data: { userId: string; userName: string; email: string; role: ProjectRole }): ProjectMember {
+  async addMember(projectId: string, data: { userId: string; userName: string; email: string; role: ProjectRole }): Promise<ProjectMember> {
     // Check if already a member
-    const existing = this.findMembership(projectId, data.userId);
+    const existing = await this.findMembership(projectId, data.userId);
     if (existing) {
-      existing.role = data.role;
-      return existing;
+      await databaseService.query(
+        'UPDATE project_members SET role = ? WHERE id = ?',
+        [data.role, existing.id],
+      );
+      return { ...existing, role: data.role };
     }
 
-    const member: ProjectMember = {
-      id: `pm-${Math.random().toString(36).substr(2, 9)}`,
+    const id = uuidv4();
+    await databaseService.query(
+      'INSERT INTO project_members (id, project_id, user_id, user_name, email, role) VALUES (?, ?, ?, ?, ?, ?)',
+      [id, projectId, data.userId, data.userName, data.email, data.role],
+    );
+
+    return {
+      id,
       projectId,
       userId: data.userId,
       userName: data.userName,
@@ -75,28 +97,59 @@ export class ProjectMemberService {
       role: data.role,
       addedAt: new Date().toISOString(),
     };
-    ProjectMemberService.members.push(member);
-    return member;
   }
 
-  updateRole(memberId: string, role: ProjectRole): ProjectMember | null {
-    const member = ProjectMemberService.members.find(m => m.id === memberId);
-    if (!member) return null;
-    member.role = role;
-    return member;
+  async updateRole(memberId: string, role: ProjectRole): Promise<ProjectMember | null> {
+    const rows = await databaseService.query(
+      'SELECT * FROM project_members WHERE id = ?',
+      [memberId],
+    );
+    if (rows.length === 0) return null;
+
+    await databaseService.query(
+      'UPDATE project_members SET role = ? WHERE id = ?',
+      [role, memberId],
+    );
+
+    return rowToMember({ ...rows[0], role });
   }
 
-  removeMember(memberId: string): boolean {
-    const idx = ProjectMemberService.members.findIndex(m => m.id === memberId);
-    if (idx === -1) return false;
+  async removeMember(memberId: string): Promise<boolean> {
+    const rows = await databaseService.query(
+      'SELECT * FROM project_members WHERE id = ?',
+      [memberId],
+    );
+    if (rows.length === 0) return false;
+
+    const member = rowToMember(rows[0]);
+
     // Don't allow removing last owner
-    const member = ProjectMemberService.members[idx];
     if (member.role === 'owner') {
-      const owners = ProjectMemberService.members.filter(m => m.projectId === member.projectId && m.role === 'owner');
-      if (owners.length <= 1) return false;
+      const owners = await databaseService.query(
+        'SELECT COUNT(*) as cnt FROM project_members WHERE project_id = ? AND role = ?',
+        [member.projectId, 'owner'],
+      );
+      if (Number(owners[0]?.cnt) <= 1) return false;
     }
-    ProjectMemberService.members.splice(idx, 1);
-    return true;
+
+    const result: any = await databaseService.query(
+      'DELETE FROM project_members WHERE id = ?',
+      [memberId],
+    );
+    return result.affectedRows > 0;
+  }
+
+  /**
+   * Look up a user by email and return their id, full_name, and email.
+   * Used by the add-member flow to resolve email → real user.
+   */
+  async findUserByEmail(email: string): Promise<{ id: string; fullName: string; email: string } | null> {
+    const rows = await databaseService.query(
+      'SELECT id, full_name, email FROM users WHERE email = ? LIMIT 1',
+      [email],
+    );
+    if (rows.length === 0) return null;
+    return { id: rows[0].id, fullName: rows[0].full_name, email: rows[0].email };
   }
 }
 

@@ -2505,7 +2505,7 @@ function TeamTab() {
   const [newMember, setNewMember] = useState({ userName: '', email: '', role: 'editor' });
 
   const addMemberMutation = useMutation({
-    mutationFn: (data: { userId: string; userName: string; email: string; role: string }) =>
+    mutationFn: (data: { userId?: string; userName: string; email: string; role: string }) =>
       apiService.addProjectMember(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectMembers', id] });
@@ -2534,7 +2534,6 @@ function TeamTab() {
   const handleAddMember = () => {
     if (!newMember.userName.trim() || !newMember.email.trim()) return;
     addMemberMutation.mutate({
-      userId: `user-${Math.random().toString(36).substr(2, 6)}`,
       userName: newMember.userName,
       email: newMember.email,
       role: newMember.role,
