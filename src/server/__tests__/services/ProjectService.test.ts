@@ -63,12 +63,12 @@ describe('ProjectService', () => {
       expect(project).toBeNull();
     });
 
-    it('filters by userId when provided', async () => {
+    it('filters by userId when provided (checks created_by or project_members)', async () => {
       mockQuery.mockResolvedValueOnce([sampleRow]);
       await service.findById('p1', 'u1');
       expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('AND created_by = ?'),
-        ['p1', 'u1'],
+        expect.stringContaining('project_members'),
+        ['u1', 'p1', 'u1'],
       );
     });
   });

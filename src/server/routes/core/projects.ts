@@ -37,9 +37,12 @@ export async function projectRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get all projects', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = request.user!.userId;
+      const user = request.user!;
       const { limit, offset } = parsePagination(request.query as Record<string, unknown>);
-      const { rows, total } = await projectService.findByUserIdPaginated(userId, limit, offset);
+      const globalRoles = ['admin', 'executive', 'pmo'];
+      const { rows, total } = globalRoles.includes(user.role)
+        ? await projectService.findAllPaginated(limit, offset)
+        : await projectService.findByUserIdPaginated(user.userId, limit, offset);
       const page = Math.floor(offset / limit) + 1;
       return paginate(rows.map(toProjectDTO), total, page, limit);
     } catch (error) {
@@ -54,8 +57,11 @@ export async function projectRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const userId = request.user!.userId;
-      const project = await projectService.findById(id, userId);
+      const user = request.user!;
+      const globalRoles = ['admin', 'executive', 'pmo'];
+      const project = globalRoles.includes(user.role)
+        ? await projectService.findById(id)
+        : await projectService.findById(id, user.userId);
       if (!project) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
       }

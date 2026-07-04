@@ -59,6 +59,10 @@ export class ProjectService {
     return projectRepository.findByUserIdPaginated(userId, limit, offset);
   }
 
+  async findAllPaginated(limit: number, offset: number): Promise<{ rows: Project[]; total: number }> {
+    return projectRepository.findAllPaginated(limit, offset);
+  }
+
   async findAll(): Promise<Project[]> {
     return projectRepository.findAll();
   }

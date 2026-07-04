@@ -37,12 +37,12 @@ describe('ProjectRepository', () => {
     expect(project!.budgetAllocated).toBe(10000);
   });
 
-  it('findByIdForUser adds created_by filter', async () => {
+  it('findByIdForUser joins project_members and filters by created_by or membership', async () => {
     mockQuery.mockResolvedValueOnce([sampleRow]);
     await repo.findByIdForUser('p1', 'u1');
     expect(mockQuery).toHaveBeenCalledWith(
-      expect.stringContaining('created_by = ?'),
-      ['p1', 'u1'],
+      expect.stringContaining('project_members'),
+      ['u1', 'p1', 'u1'],
     );
   });
 
@@ -52,13 +52,17 @@ describe('ProjectRepository', () => {
     expect(projects).toHaveLength(1);
   });
 
-  it('findByUserIdPaginated returns rows and total', async () => {
+  it('findByUserIdPaginated returns rows and total with membership join', async () => {
     mockQuery
-      .mockResolvedValueOnce([{ cnt: 1 }])
+      .mockResolvedValueOnce([{ count: 1 }])
       .mockResolvedValueOnce([sampleRow]);
     const result = await repo.findByUserIdPaginated('u1', 10, 0);
     expect(result.total).toBe(1);
     expect(result.rows).toHaveLength(1);
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('project_members'),
+      expect.arrayContaining(['u1']),
+    );
   });
 
   it('create inserts and returns project', async () => {

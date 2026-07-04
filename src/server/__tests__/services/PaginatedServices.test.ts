@@ -53,7 +53,7 @@ describe('Paginated Service Methods', () => {
     it('returns paginated results with total count', async () => {
       const service = new ProjectService();
       mockQuery
-        .mockResolvedValueOnce([{ cnt: 15 }])  // COUNT query
+        .mockResolvedValueOnce([{ count: 15 }])  // COUNT query
         .mockResolvedValueOnce([sampleProjectRow, { ...sampleProjectRow, id: 'p2', name: 'Project 2' }]); // SELECT query
 
       const result = await service.findByUserIdPaginated('u1', 2, 0);
@@ -67,7 +67,7 @@ describe('Paginated Service Methods', () => {
     it('passes correct LIMIT and OFFSET to SQL', async () => {
       const service = new ProjectService();
       mockQuery
-        .mockResolvedValueOnce([{ cnt: 100 }])
+        .mockResolvedValueOnce([{ count: 100 }])
         .mockResolvedValueOnce([]);
 
       await service.findByUserIdPaginated('u1', 10, 20);
@@ -75,14 +75,14 @@ describe('Paginated Service Methods', () => {
       // Second call is the SELECT with LIMIT/OFFSET
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('LIMIT ? OFFSET ?'),
-        ['u1', 10, 20],
+        expect.arrayContaining(['u1', 10, 20]),
       );
     });
 
     it('returns empty rows with correct total when offset beyond data', async () => {
       const service = new ProjectService();
       mockQuery
-        .mockResolvedValueOnce([{ cnt: 5 }])
+        .mockResolvedValueOnce([{ count: 5 }])
         .mockResolvedValueOnce([]);
 
       const result = await service.findByUserIdPaginated('u1', 10, 100);
@@ -91,10 +91,10 @@ describe('Paginated Service Methods', () => {
       expect(result.rows).toHaveLength(0);
     });
 
-    it('runs COUNT and SELECT in parallel', async () => {
+    it('runs COUNT and SELECT queries', async () => {
       const service = new ProjectService();
       mockQuery
-        .mockResolvedValueOnce([{ cnt: 0 }])
+        .mockResolvedValueOnce([{ count: 0 }])
         .mockResolvedValueOnce([]);
 
       await service.findByUserIdPaginated('u1', 50, 0);
@@ -102,8 +102,8 @@ describe('Paginated Service Methods', () => {
       // Both queries should have been called
       expect(mockQuery).toHaveBeenCalledTimes(2);
       expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('COUNT(*)'),
-        ['u1'],
+        expect.stringContaining('COUNT(DISTINCT'),
+        expect.arrayContaining(['u1']),
       );
     });
   });
