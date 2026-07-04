@@ -52,7 +52,17 @@ const READ_TOOLS = new Set([
 
 // Budget/financial insight tools: PM, finance, executive, pmo, admin
 const FINANCE_TOOLS = new Set([
-  'get-budget-forecast', 'get-evm-forecast',
+  'get-budget-forecast', 'get-evm-forecast', 'get-spend-to-date', 'get-burn-rate',
+]);
+
+// Risk analysis tools: PM, risk_manager, pmo, ba, admin
+const RISK_ANALYSIS_TOOLS = new Set([
+  'suggest-risk-mitigations',
+]);
+
+// Meeting analysis tools: PM, scrum_master, pmo, ba, admin
+const MEETING_TOOLS = new Set([
+  'get-meeting-summary',
 ]);
 
 // Task write tools: team_member, scrum_master, project_manager, ba, qa, devops, admin
@@ -129,6 +139,8 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
   project_manager: (tool) =>
     READ_TOOLS.has(tool) ||
     FINANCE_TOOLS.has(tool) ||
+    RISK_ANALYSIS_TOOLS.has(tool) ||
+    MEETING_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TASK_DELETE_TOOLS.has(tool) ||
     SPRINT_WRITE_TOOLS.has(tool) ||
@@ -144,6 +156,7 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
 
   scrum_master: (tool) =>
     READ_TOOLS.has(tool) ||
+    MEETING_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TASK_DELETE_TOOLS.has(tool) ||
     SPRINT_WRITE_TOOLS.has(tool) ||
@@ -163,6 +176,7 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
   risk_manager: (tool) =>
     READ_TOOLS.has(tool) ||
     FINANCE_TOOLS.has(tool) ||
+    RISK_ANALYSIS_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     APPROVAL_WRITE_TOOLS.has(tool) ||
     INTAKE_SUBMIT_TOOLS.has(tool),
@@ -170,6 +184,8 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
   pmo: (tool) =>
     READ_TOOLS.has(tool) ||
     FINANCE_TOOLS.has(tool) ||
+    RISK_ANALYSIS_TOOLS.has(tool) ||
+    MEETING_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TASK_DELETE_TOOLS.has(tool) ||
     SPRINT_WRITE_TOOLS.has(tool) ||
@@ -185,6 +201,8 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
 
   ba: (tool) =>
     READ_TOOLS.has(tool) ||
+    RISK_ANALYSIS_TOOLS.has(tool) ||
+    MEETING_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TIME_TOOLS.has(tool) ||
     INTAKE_SUBMIT_TOOLS.has(tool) ||

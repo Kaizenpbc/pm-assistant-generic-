@@ -55,4 +55,31 @@ export function registerAIInsightTools(server: McpServer) {
   }, async ({ projectId }, extra) =>
     jsonResult(await getApiClientFromExtra(extra).get(`/evm-forecast/${projectId}`))
   );
+
+  server.tool('get-spend-to-date', 'Get cumulative project spending: actual cost, earned value, planned value, and budget variance', {
+    projectId: z.string().describe('Project ID'),
+  }, async ({ projectId }, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).get(`/predictions/project/${projectId}/budget`))
+  );
+
+  server.tool('get-burn-rate', 'Get project burn rate (daily and monthly spending rate) with EVM cost performance metrics', {
+    projectId: z.string().describe('Project ID'),
+  }, async ({ projectId }, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).get(`/evm-forecast/${projectId}`))
+  );
+
+  server.tool('suggest-risk-mitigations', 'Suggest risk mitigation strategies based on historical lessons learned and AI analysis', {
+    riskDescription: z.string().describe('Description of the risk to mitigate'),
+    projectType: z.string().describe('Type of project (e.g. "construction", "software", "infrastructure")'),
+  }, async ({ riskDescription, projectType }, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).post('/lessons-learned/mitigations', { riskDescription, projectType }))
+  );
+
+  server.tool('get-meeting-summary', 'Analyze a meeting transcript to extract summary, action items, decisions, and task suggestions', {
+    transcript: z.string().describe('Full meeting transcript text'),
+    projectId: z.string().describe('Project ID to associate the analysis with'),
+    scheduleId: z.string().optional().describe('Schedule ID for task creation context'),
+  }, async ({ transcript, projectId, scheduleId }, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).post('/meeting-intelligence/analyze', { transcript, projectId, scheduleId }))
+  );
 }

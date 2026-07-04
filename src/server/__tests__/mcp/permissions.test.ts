@@ -53,6 +53,11 @@ describe('MCP Permission Matrix', () => {
       expect(isToolAllowed('log-time', 'team_member')).toBe(true);
     });
 
+    it('cannot access risk mitigations or meeting tools', () => {
+      expect(isToolAllowed('suggest-risk-mitigations', 'team_member')).toBe(false);
+      expect(isToolAllowed('get-meeting-summary', 'team_member')).toBe(false);
+    });
+
     it('cannot access admin tools', () => {
       expect(isToolAllowed('trigger-agent', 'team_member')).toBe(false);
       expect(isToolAllowed('create-integration', 'team_member')).toBe(false);
@@ -70,6 +75,10 @@ describe('MCP Permission Matrix', () => {
     it('can create/update/delete tasks', () => {
       expect(isToolAllowed('create-task', 'scrum_master')).toBe(true);
       expect(isToolAllowed('delete-task', 'scrum_master')).toBe(true);
+    });
+
+    it('can analyze meeting transcripts', () => {
+      expect(isToolAllowed('get-meeting-summary', 'scrum_master')).toBe(true);
     });
 
     it('cannot manage projects', () => {
@@ -108,6 +117,13 @@ describe('MCP Permission Matrix', () => {
     it('can access budget/financial tools', () => {
       expect(isToolAllowed('get-budget-forecast', 'project_manager')).toBe(true);
       expect(isToolAllowed('get-evm-forecast', 'project_manager')).toBe(true);
+      expect(isToolAllowed('get-spend-to-date', 'project_manager')).toBe(true);
+      expect(isToolAllowed('get-burn-rate', 'project_manager')).toBe(true);
+    });
+
+    it('can access risk and meeting tools', () => {
+      expect(isToolAllowed('suggest-risk-mitigations', 'project_manager')).toBe(true);
+      expect(isToolAllowed('get-meeting-summary', 'project_manager')).toBe(true);
     });
 
     it('cannot access admin tools', () => {
@@ -125,6 +141,8 @@ describe('MCP Permission Matrix', () => {
     it('can access budget/financial tools', () => {
       expect(isToolAllowed('get-budget-forecast', 'finance_officer')).toBe(true);
       expect(isToolAllowed('get-evm-forecast', 'finance_officer')).toBe(true);
+      expect(isToolAllowed('get-spend-to-date', 'finance_officer')).toBe(true);
+      expect(isToolAllowed('get-burn-rate', 'finance_officer')).toBe(true);
     });
 
     it('cannot write anything', () => {
@@ -163,6 +181,12 @@ describe('MCP Permission Matrix', () => {
 
     it('can access budget/financial tools', () => {
       expect(isToolAllowed('get-budget-forecast', 'risk_manager')).toBe(true);
+      expect(isToolAllowed('get-spend-to-date', 'risk_manager')).toBe(true);
+      expect(isToolAllowed('get-burn-rate', 'risk_manager')).toBe(true);
+    });
+
+    it('can suggest risk mitigations', () => {
+      expect(isToolAllowed('suggest-risk-mitigations', 'risk_manager')).toBe(true);
     });
 
     it('cannot manage projects or sprints', () => {
@@ -179,6 +203,8 @@ describe('MCP Permission Matrix', () => {
       expect(isToolAllowed('delete-task', 'pmo')).toBe(true);
       expect(isToolAllowed('act-on-approval', 'pmo')).toBe(true);
       expect(isToolAllowed('get-budget-forecast', 'pmo')).toBe(true);
+      expect(isToolAllowed('suggest-risk-mitigations', 'pmo')).toBe(true);
+      expect(isToolAllowed('get-meeting-summary', 'pmo')).toBe(true);
     });
 
     it('cannot access admin tools', () => {
@@ -195,6 +221,11 @@ describe('MCP Permission Matrix', () => {
 
     it('can manage custom fields', () => {
       expect(isToolAllowed('create-custom-field', 'ba')).toBe(true);
+    });
+
+    it('can access risk mitigations and meeting summaries', () => {
+      expect(isToolAllowed('suggest-risk-mitigations', 'ba')).toBe(true);
+      expect(isToolAllowed('get-meeting-summary', 'ba')).toBe(true);
     });
 
     it('cannot manage projects or sprints', () => {
