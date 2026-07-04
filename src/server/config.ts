@@ -61,8 +61,10 @@ const configSchema = z.object({
   RAG_TOP_K: z.coerce.number().min(1).max(50).default(5),
   RAG_SIMILARITY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.3),
 
-  // AI Budget
+  // AI Budget & Pricing (per million tokens for the configured AI_MODEL)
   AI_MONTHLY_TOKEN_BUDGET: z.coerce.number().min(0).default(500000),
+  AI_PRICING_INPUT: z.coerce.number().min(0).default(3.0),
+  AI_PRICING_OUTPUT: z.coerce.number().min(0).default(15.0),
 
   // Metrics
   METRICS_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true || val === undefined, z.boolean().default(true)),

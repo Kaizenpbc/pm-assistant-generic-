@@ -44,15 +44,6 @@ interface UsageStats {
   estimatedCost: number;
 }
 
-// Pricing per million tokens
-const PRICING: Record<string, { input: number; output: number }> = {
-  'claude-sonnet-4-5-20250929': { input: 3.0, output: 15.0 },
-  'claude-sonnet-4-20250514': { input: 3.0, output: 15.0 },
-  'claude-haiku-4-20250414': { input: 0.80, output: 4.0 },
-  'claude-opus-4-20250514': { input: 15.0, output: 75.0 },
-};
-
-const DEFAULT_PRICING = { input: 3.0, output: 15.0 };
 const REQUEST_TIMEOUT_MS = 30_000;
 
 // ---------------------------------------------------------------------------
@@ -814,9 +805,8 @@ export class ClaudeService {
     this.stats.totalInputTokens += usage.inputTokens;
     this.stats.totalOutputTokens += usage.outputTokens;
 
-    const pricing = PRICING[this.model] ?? DEFAULT_PRICING;
-    const inputCost = (usage.inputTokens / 1_000_000) * pricing.input;
-    const outputCost = (usage.outputTokens / 1_000_000) * pricing.output;
+    const inputCost = (usage.inputTokens / 1_000_000) * config.AI_PRICING_INPUT;
+    const outputCost = (usage.outputTokens / 1_000_000) * config.AI_PRICING_OUTPUT;
     this.stats.estimatedCost += inputCost + outputCost;
   }
 
