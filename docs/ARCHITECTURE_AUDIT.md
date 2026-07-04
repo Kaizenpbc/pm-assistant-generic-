@@ -46,7 +46,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - ~~**No transaction boundaries:**~~ **Resolved (July 2026).** `databaseService.transaction()` + `queryOn()` now wraps 7 multi-table service methods.
 - ~~**Zod validation coverage partial:**~~ **Resolved (July 2026).** All POST/PUT/PATCH routes now use Zod schemas for request body validation. Coverage extended from 23 to 37+ route files.
 - ~~**Fire-and-forget side effects everywhere:**~~ **Mitigated (July 2026).** `DeadLetterService` captures failed side effects (audit logs, webhooks) with retry support. All `.catch(() => {})` calls replaced with DLQ capture. Admin endpoints for monitoring (`/api/v1/admin/dead-letter`).
-- **Inconsistent error responses:** Some routes return `{ error, message }`, others `{ statusCode, error, message, timestamp, path }`.
+- ~~**Inconsistent error responses:** Some routes return `{ error, message }`, others `{ statusCode, error, message, timestamp, path }`.~~ **Resolved (July 2026).** Central `onSend` hook in `plugins.ts` normalizes all API error responses (status >= 400) to standard format: `{ statusCode, error, message, timestamp, path }` with optional `details`, `retryAfter`, `retryAfterMs`.
 
 ### 2.2 Non-Functional Requirements
 

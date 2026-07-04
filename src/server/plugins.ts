@@ -20,6 +20,15 @@ import { rateLimiter } from './middleware/rateLimiter';
 import { apiKeyService } from './services/ApiKeyService';
 import { metricsService } from './services/MetricsService';
 
+// Standard HTTP status text for error response normalization
+const HTTP_STATUS_TEXT: Record<number, string> = {
+  400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden', 404: 'Not Found',
+  405: 'Method Not Allowed', 409: 'Conflict', 413: 'Payload Too Large',
+  422: 'Unprocessable Entity', 429: 'Too Many Requests',
+  500: 'Internal Server Error', 502: 'Bad Gateway',
+  503: 'Service Unavailable', 504: 'Gateway Timeout',
+};
+
 export async function registerPlugins(fastify: FastifyInstance) {
   await fastify.register(websocket);
   await fastify.register(rawBody, { field: 'rawBody', global: false, runFirst: true });
@@ -48,6 +57,37 @@ export async function registerPlugins(fastify: FastifyInstance) {
       return toCamelCaseKeys(payload);
     }
     return payload;
+  });
+
+  // Normalize all API error responses to a standard format:
+  // { statusCode, error, message, timestamp, path, ...extras }
+  fastify.addHook('onSend', async (request, reply, payload) => {
+    if (reply.statusCode < 400 || !request.url.startsWith('/api/')) return payload;
+    if (typeof payload !== 'string') return payload;
+
+    let body: Record<string, unknown>;
+    try { body = JSON.parse(payload); } catch { return payload; }
+
+    // Already normalized (has all required fields from global error handler or not-found handler)
+    if (body.statusCode && body.error && body.message && body.timestamp && body.path) return payload;
+
+    const statusCode = reply.statusCode;
+    const statusText = HTTP_STATUS_TEXT[statusCode] || 'Error';
+
+    const normalized: Record<string, unknown> = {
+      statusCode,
+      error: typeof body.error === 'string' ? body.error : statusText,
+      message: typeof body.message === 'string' ? body.message : (typeof body.error === 'string' ? body.error : statusText),
+      timestamp: new Date().toISOString(),
+      path: request.url,
+    };
+
+    // Preserve optional fields from route-level responses
+    if (body.details !== undefined) normalized.details = body.details;
+    if (body.retryAfter !== undefined) normalized.retryAfter = body.retryAfter;
+    if (body.retryAfterMs !== undefined) normalized.retryAfterMs = body.retryAfterMs;
+
+    return JSON.stringify(normalized);
   });
 
   // Global API key resolution — sets apiKeyId on request for all API routes (even those without authMiddleware)
