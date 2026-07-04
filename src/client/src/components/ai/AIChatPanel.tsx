@@ -10,8 +10,11 @@ import {
   XCircle,
   Mic,
   MicOff,
+  History,
+  Plus,
+  MessageSquare,
 } from 'lucide-react';
-import { useAIChatStore, dashboardQuickActions, projectQuickActions, type QuickAction } from '../../stores/aiChatStore';
+import { useAIChatStore, dashboardQuickActions, projectQuickActions, type QuickAction, type ConversationSummary } from '../../stores/aiChatStore';
 import { AIChatContext } from './AIChatContext';
 import { QuickActions } from './QuickActions';
 import { useVoice } from '../../hooks/useVoice';
@@ -22,9 +25,13 @@ interface AIChatPanelProps {
 }
 
 export function AIChatPanel({ context }: AIChatPanelProps) {
-  const { messages, isLoading, error, addMessage, clearChat, sendMessage } = useAIChatStore();
+  const {
+    messages, isLoading, error, addMessage, clearChat, sendMessage,
+    conversations, conversationsLoaded, loadConversations, loadConversation,
+  } = useAIChatStore();
   const [input, setInput] = useState('');
   const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const lastSpokenMessageIdRef = useRef<string | null>(null);
@@ -32,6 +39,13 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
   const { isSupported: voiceSupported, isListening, startListening, stopListening, speak } = useVoice();
 
   const quickActions = context.type === 'project' ? projectQuickActions : dashboardQuickActions;
+
+  // Load conversations on first open
+  useEffect(() => {
+    if (!conversationsLoaded) {
+      loadConversations();
+    }
+  }, [conversationsLoaded, loadConversations]);
 
   // Speak assistant replies when TTS is enabled and a new assistant message is finalized
   useEffect(() => {
@@ -105,10 +119,92 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
     });
   }
 
+  function handleSelectConversation(conv: ConversationSummary) {
+    loadConversation(conv.id);
+    setShowHistory(false);
+  }
+
+  function handleNewConversation() {
+    clearChat();
+    setShowHistory(false);
+  }
+
+  function formatDate(dateStr: string) {
+    try {
+      const d = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return d.toLocaleDateString();
+    } catch {
+      return '';
+    }
+  }
+
   return (
     <div className="flex h-full flex-col">
-      {/* Context Bar */}
-      <AIChatContext context={context} />
+      {/* Context Bar + History Toggle */}
+      <div className="flex items-center justify-between border-b border-gray-100 px-2 py-1">
+        <div className="flex-1">
+          <AIChatContext context={context} />
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleNewConversation}
+            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            title="New conversation"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => {
+              setShowHistory(!showHistory);
+              if (!conversationsLoaded) loadConversations();
+            }}
+            className={`rounded-md p-1.5 ${showHistory ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+            title="Conversation history"
+          >
+            <History className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Conversation History Dropdown */}
+      {showHistory && (
+        <div className="max-h-60 overflow-y-auto border-b border-gray-200 bg-gray-50">
+          {conversations.length === 0 ? (
+            <div className="px-4 py-3 text-center text-xs text-gray-400">
+              No past conversations
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {conversations.map(conv => (
+                <button
+                  key={conv.id}
+                  onClick={() => handleSelectConversation(conv)}
+                  className="flex w-full items-start gap-2 px-4 py-2.5 text-left hover:bg-gray-100"
+                >
+                  <MessageSquare className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-medium text-gray-700">
+                      {conv.title}
+                    </div>
+                    <div className="text-[10px] text-gray-400">
+                      {formatDate(conv.updatedAt)}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div
@@ -260,7 +356,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about your projects..."
+            placeholder="Ask Mjuzi about your projects..."
             rows={1}
             className="flex-1 resize-none rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             style={{ maxHeight: '120px' }}
@@ -293,7 +389,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
             Speak replies
           </label>
           <span className="text-xs text-gray-400">
-            AI can make mistakes. Verify important information.
+            Mjuzi can make mistakes. Verify important information.
           </span>
         </div>
       </div>

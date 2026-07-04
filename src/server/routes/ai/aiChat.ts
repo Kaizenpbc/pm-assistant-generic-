@@ -189,7 +189,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
 
   // DELETE /conversations/:id
   fastify.delete('/conversations/:id', {
-    preHandler: [requireScope('admin')],
+    preHandler: [requireScope('write')],
     schema: { description: 'Delete a conversation', tags: ['ai-chat'] },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {

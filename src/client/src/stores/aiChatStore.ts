@@ -29,11 +29,23 @@ export interface QuickAction {
   prompt: string;
 }
 
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  contextType: string;
+  projectId?: string;
+  tokenCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AIChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   conversationId: string | null;
   error: string | null;
+  conversations: ConversationSummary[];
+  conversationsLoaded: boolean;
 
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
   updateLastAssistantMessage: (content: string) => void;
@@ -46,6 +58,8 @@ interface AIChatState {
     userMessage: string,
     context?: { type: string; projectId?: string },
   ) => Promise<void>;
+  loadConversations: () => Promise<void>;
+  loadConversation: (id: string) => Promise<void>;
 }
 
 let messageIdCounter = 0;
@@ -53,7 +67,7 @@ let messageIdCounter = 0;
 const WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
-  content: 'Hello! I\'m your AI Project Management Assistant. I can help you analyze projects, identify risks, optimize schedules, and answer questions about your portfolio. What would you like to know?',
+  content: "Hi! I'm Mjuzi, your AI project assistant. I remember our past conversations and can help you manage projects, analyze risks, and take action. What can I help with?",
   timestamp: new Date().toISOString(),
 };
 
@@ -62,6 +76,8 @@ export const useAIChatStore = create<AIChatState>()((set, get) => ({
   isLoading: false,
   conversationId: null,
   error: null,
+  conversations: [],
+  conversationsLoaded: false,
 
   addMessage: (message) => set((state) => {
     const id = `msg-${Date.now()}-${++messageIdCounter}`;
@@ -133,6 +149,9 @@ export const useAIChatStore = create<AIChatState>()((set, get) => ({
         setConversationId(result.conversationId);
       }
 
+      // Refresh conversation list in background
+      get().loadConversations().catch(() => {});
+
       setLoading(false);
     } catch (error) {
       updateLastAssistantMessage(
@@ -146,6 +165,38 @@ export const useAIChatStore = create<AIChatState>()((set, get) => ({
       }));
 
       setError(error instanceof Error ? error.message : 'Unknown error');
+    }
+  },
+
+  loadConversations: async () => {
+    try {
+      const data = await apiService.getConversations();
+      set({ conversations: data.conversations || [], conversationsLoaded: true });
+    } catch {
+      // Non-critical
+    }
+  },
+
+  loadConversation: async (id: string) => {
+    try {
+      const data = await apiService.getConversation(id);
+      if (data.conversation) {
+        const conv = data.conversation;
+        const messages: ChatMessage[] = (conv.messages || []).map((m: any, idx: number) => ({
+          id: m.id || `loaded-${idx}`,
+          role: m.role,
+          content: m.content,
+          timestamp: m.createdAt || m.created_at || new Date().toISOString(),
+          actions: m.actions,
+        }));
+        set({
+          messages: messages.length > 0 ? messages : [WELCOME_MESSAGE],
+          conversationId: conv.id,
+          error: null,
+        });
+      }
+    } catch {
+      set({ error: 'Failed to load conversation' });
     }
   },
 }));
