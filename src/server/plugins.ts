@@ -235,7 +235,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.setErrorHandler(async (err: unknown, request, reply) => {
     const error = err instanceof Error ? err : new Error(String(err));
     const statusCode = (error as { statusCode?: number }).statusCode ?? 500;
-    console.error('Global error handler:', error);
+    console.error('Global error handler:', error.name, error.message);
 
     auditService.logSystemEvent(request, 'error', {
       error: error.message, url: request.url, method: request.method

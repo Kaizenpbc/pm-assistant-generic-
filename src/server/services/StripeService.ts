@@ -24,7 +24,7 @@ export class StripeService {
 
   async createCustomer(email: string, name: string, userId: string): Promise<string | null> {
     if (!this.isConfigured) {
-      console.log(`[StripeService] Would create customer for ${email}`);
+      console.log(`[StripeService] Would create customer for [email_redacted]`);
       return null;
     }
 
