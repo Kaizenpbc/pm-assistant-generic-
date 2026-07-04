@@ -1,8 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../../database/connection';
+import { workflowRepository } from '../../database/WorkflowRepository';
 import { Task, ScheduleService } from '../ScheduleService';
 import { WorkflowNode, WorkflowEdge, DefinitionWithGraph } from './types';
-import { parseJson } from './rowMappers';
 import { resolveTemplates } from './templateResolver';
 
 // ── Trigger matching ──────────────────────────────────────────────────────
@@ -171,18 +170,10 @@ export async function executeWorkflowEngine(
   const execId = uuidv4();
   const context = task ? { taskId: task.id, taskName: task.name, status: task.status, progress: task.progressPercentage } : {};
 
-  await databaseService.query(
-    `INSERT INTO workflow_executions (id, workflow_id, trigger_node_id, entity_type, entity_id, status, context)
-     VALUES (?, ?, ?, ?, ?, 'running', ?)`,
-    [execId, def.id, triggerNode.id, task ? 'task' : 'unknown', task?.id ?? '', JSON.stringify(context)],
-  );
+  await workflowRepository.insertExecution(execId, def.id, triggerNode.id, task ? 'task' : 'unknown', task?.id ?? '', context);
 
   const triggerExecId = uuidv4();
-  await databaseService.query(
-    `INSERT INTO workflow_node_executions (id, execution_id, node_id, status, started_at, completed_at)
-     VALUES (?, ?, ?, 'completed', NOW(), NOW())`,
-    [triggerExecId, execId, triggerNode.id],
-  );
+  await workflowRepository.insertNodeExecution(triggerExecId, execId, triggerNode.id, 'completed');
 
   const adjacency = buildAdjacencyList(def);
   const visited = new Set<string>([triggerNode.id]);
@@ -212,10 +203,7 @@ export async function advanceExecution(
   for (const edge of outEdges) {
     if (visited.has(edge.targetNodeId)) {
       console.error(`[DagWorkflow] Cycle detected: ${edge.targetNodeId}`);
-      await databaseService.query(
-        `UPDATE workflow_executions SET status = 'failed', error_message = 'Cycle detected', completed_at = NOW() WHERE id = ?`,
-        [execId],
-      );
+      await workflowRepository.updateExecutionStatus(execId, 'failed', 'Cycle detected');
       return;
     }
 
@@ -243,10 +231,9 @@ async function executeNode(
   nodeOutputs: Record<string, any>,
 ): Promise<void> {
   const nodeExecId = uuidv4();
-  await databaseService.query(
-    `INSERT INTO workflow_node_executions (id, execution_id, node_id, status, input_data, started_at)
-     VALUES (?, ?, ?, 'running', ?, NOW())`,
-    [nodeExecId, execId, node.id, task ? JSON.stringify({ taskId: task.id }) : null],
+  await workflowRepository.insertNodeExecution(
+    nodeExecId, execId, node.id, 'running',
+    task ? JSON.stringify({ taskId: task.id }) : null,
   );
 
   try {
@@ -255,10 +242,7 @@ async function executeNode(
         const condResult = evaluateCondition(node.config, task);
         const condOutput = { result: condResult };
         nodeOutputs[node.id] = condOutput;
-        await databaseService.query(
-          `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
-          [JSON.stringify(condOutput), nodeExecId],
-        );
+        await workflowRepository.updateNodeExecutionCompleted(nodeExecId, JSON.stringify(condOutput));
         await persistNodeOutputs(execId, nodeOutputs);
         const outEdges = adjacency.get(node.id) || [];
         for (const edge of outEdges) {
@@ -278,10 +262,7 @@ async function executeNode(
         const resolvedConfig = resolveTemplates(node.config, nodeOutputs, task);
         const output = await executeAction(resolvedConfig, task, scheduleService);
         nodeOutputs[node.id] = output;
-        await databaseService.query(
-          `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
-          [JSON.stringify(output), nodeExecId],
-        );
+        await workflowRepository.updateNodeExecutionCompleted(nodeExecId, JSON.stringify(output));
         break;
       }
 
@@ -304,10 +285,7 @@ async function executeNode(
           if (result.success) {
             const agentOutput = { agentOutput: result.output, durationMs: result.durationMs };
             nodeOutputs[node.id] = agentOutput;
-            await databaseService.query(
-              `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
-              [JSON.stringify(agentOutput), nodeExecId],
-            );
+            await workflowRepository.updateNodeExecutionCompleted(nodeExecId, JSON.stringify(agentOutput));
             lastError = undefined;
             break;
           }
@@ -318,44 +296,23 @@ async function executeNode(
       }
 
       case 'approval': {
-        await databaseService.query(
-          `UPDATE workflow_node_executions SET status = 'waiting' WHERE id = ?`,
-          [nodeExecId],
-        );
-        await databaseService.query(
-          `UPDATE workflow_executions SET status = 'waiting' WHERE id = ?`,
-          [execId],
-        );
+        await workflowRepository.updateNodeExecutionWaiting(nodeExecId);
+        await workflowRepository.updateExecutionStatus(execId, 'waiting');
         return;
       }
 
       case 'delay': {
-        await databaseService.query(
-          `UPDATE workflow_node_executions SET status = 'waiting' WHERE id = ?`,
-          [nodeExecId],
-        );
-        await databaseService.query(
-          `UPDATE workflow_executions SET status = 'waiting' WHERE id = ?`,
-          [execId],
-        );
+        await workflowRepository.updateNodeExecutionWaiting(nodeExecId);
+        await workflowRepository.updateExecutionStatus(execId, 'waiting');
         return;
       }
 
       default:
-        await databaseService.query(
-          `UPDATE workflow_node_executions SET status = 'skipped', completed_at = NOW() WHERE id = ?`,
-          [nodeExecId],
-        );
+        await workflowRepository.updateNodeExecutionSkipped(nodeExecId);
     }
   } catch (err: any) {
-    await databaseService.query(
-      `UPDATE workflow_node_executions SET status = 'failed', error_message = ?, completed_at = NOW() WHERE id = ?`,
-      [err.message || 'Unknown error', nodeExecId],
-    );
-    await databaseService.query(
-      `UPDATE workflow_executions SET status = 'failed', error_message = ?, completed_at = NOW() WHERE id = ?`,
-      [err.message || 'Unknown error', execId],
-    );
+    await workflowRepository.updateNodeExecutionFailed(nodeExecId, err.message || 'Unknown error');
+    await workflowRepository.updateExecutionStatus(execId, 'failed', err.message || 'Unknown error');
     return;
   }
 
@@ -364,27 +321,17 @@ async function executeNode(
 }
 
 async function persistNodeOutputs(execId: string, nodeOutputs: Record<string, any>): Promise<void> {
-  const rows = await databaseService.query('SELECT context FROM workflow_executions WHERE id = ?', [execId]);
-  const existing = rows.length > 0 ? parseJson(rows[0].context) : {};
-  await databaseService.query(
-    `UPDATE workflow_executions SET context = ? WHERE id = ?`,
-    [JSON.stringify({ ...existing, nodeOutputs }), execId],
-  );
+  const existing = await workflowRepository.getExecutionContext(execId);
+  await workflowRepository.updateExecutionContext(execId, { ...existing, nodeOutputs });
 }
 
 async function checkCompletion(execId: string): Promise<void> {
-  const nodeExecs = await databaseService.query(
-    `SELECT status FROM workflow_node_executions WHERE execution_id = ?`,
-    [execId],
-  );
+  const nodeExecs = await workflowRepository.getNodeExecutionStatuses(execId);
   const allDone = nodeExecs.every((ne: any) =>
     ne.status === 'completed' || ne.status === 'failed' || ne.status === 'skipped',
   );
   if (allDone) {
     const anyFailed = nodeExecs.some((ne: any) => ne.status === 'failed');
-    await databaseService.query(
-      `UPDATE workflow_executions SET status = ?, completed_at = NOW() WHERE id = ? AND status = 'running'`,
-      [anyFailed ? 'failed' : 'completed', execId],
-    );
+    await workflowRepository.completeExecution(execId, anyFailed ? 'failed' : 'completed');
   }
 }
