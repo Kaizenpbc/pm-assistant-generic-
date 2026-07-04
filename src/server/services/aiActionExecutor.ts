@@ -5,6 +5,7 @@ import { scheduleService, type CreateTaskData, type Task, DependencyValidationEr
 import { userService } from './UserService';
 import { auditLedgerService } from './AuditLedgerService';
 import { policyEngineService } from './PolicyEngineService';
+import { deadLetterService } from './DeadLetterService';
 
 export interface ActionResult {
   success: boolean;
@@ -47,7 +48,7 @@ export class AIActionExecutor {
           entityId: input.taskId || input.projectId || input.scheduleId || 'unknown',
           payload: { input, result: blocked, policyBlock: policyResult.matchedPolicies },
           source: 'api',
-        }).catch(() => {});
+        }).catch(err => deadLetterService.capture('audit.append', { action: `ai.action.${toolName}`, entityId: input.taskId || input.projectId }, err));
         return blocked;
       }
 
@@ -85,7 +86,7 @@ export class AIActionExecutor {
         projectId: input.projectId || result.data?.projectId || null,
         payload: { input, result: { success: result.success, summary: result.summary, data: result.data } },
         source: 'api',
-      }).catch(() => {});
+      }).catch(err => deadLetterService.capture('audit.append', { action: `ai.action.${toolName}`, entityId: input.taskId || input.projectId }, err));
 
       return result;
     } catch (error) {

@@ -1,6 +1,7 @@
 import { databaseService } from '../database/connection';
 import { config } from '../config';
 import { notificationService } from './NotificationService';
+import { deadLetterService } from './DeadLetterService';
 
 export class AIBudgetExceededError extends Error {
   constructor(public used: number, public budget: number) {
@@ -61,7 +62,7 @@ class AIBudgetService {
 
     // Fire a one-time daily warning at 80% usage
     if (usage.percentUsed >= 80 && usage.percentUsed < 100) {
-      this.sendBudgetWarning(userId, usage).catch(() => {});
+      this.sendBudgetWarning(userId, usage).catch(err => deadLetterService.capture('ai.budget.warning', { userId }, err));
     }
   }
 

@@ -190,7 +190,8 @@
       "Bash(ssh kaizenmo@69.72.136.201 \"tail -5 /home/kaizenmo/mcp-server.log && echo ''---'' && ps aux | grep index.js | grep -v grep\")",
       "Bash(ssh kaizenmo@69.72.136.201 \"echo '''' > /home/kaizenmo/mcp.ca/stderr.log && cloudlinux-selector restart --json --interpreter nodejs --domain mcp.kpbc.ca --app-root mcp.ca\")",
       "Bash(ssh kaizenmo@69.72.136.201 \"echo ''connected'' && echo '''' > /home/kaizenmo/mcp.ca/stderr.log\")",
-      "Bash(find /c/Users/gerog/documents/pm-assistant-generic/src/client/src -type f \\\\\\(-name *quick* -o -name *shortcut* -o -name *action* \\\\\\))"
+      "Bash(find /c/Users/gerog/documents/pm-assistant-generic/src/client/src -type f \\\\\\(-name *quick* -o -name *shortcut* -o -name *action* \\\\\\))",
+      "Bash(tar -czf /tmp/server-deploy.tar.gz -C dist server)"
     ]
   },
   "enableAllProjectMcpServers": true,

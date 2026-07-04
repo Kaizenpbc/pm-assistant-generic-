@@ -3,6 +3,7 @@ import { policyEngineService, type EvaluationContext } from './PolicyEngineServi
 import { auditLedgerService } from './AuditLedgerService';
 import { agentMemoryService } from './AgentMemoryService';
 import { agentRepository } from '../database/AgentRepository';
+import { deadLetterService } from './DeadLetterService';
 
 export interface AgentCapability {
   id: string;
@@ -150,7 +151,7 @@ export class AgentRegistry {
         outcome: `Success in ${durationMs}ms`,
         timestamp: new Date().toISOString(),
       },
-    ).catch(() => {});
+    ).catch(err => deadLetterService.capture('agent.reflection', { capabilityId, projectId: context.projectId }, err));
 
     return { success: true, output: outputResult.data, durationMs, capabilityId };
   }

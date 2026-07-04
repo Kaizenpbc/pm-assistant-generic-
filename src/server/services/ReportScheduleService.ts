@@ -1,71 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../database/connection';
+import { reportScheduleRepository, ReportSchedule } from '../database/ReportScheduleRepository';
 import { reportBuilderService } from './ReportBuilderService';
 import { emailService } from './EmailService';
 
-export interface ReportSchedule {
-  id: string;
-  templateId: string;
-  createdBy: string;
-  frequency: 'daily' | 'weekly' | 'monthly';
-  dayOfWeek: number | null;
-  dayOfMonth: number | null;
-  timeOfDay: string;
-  recipients: string[];
-  format: 'csv';
-  isActive: boolean;
-  nextRunAt: string;
-  lastRunAt: string | null;
-  lastRunStatus: string | null;
-  lastRunError: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ReportScheduleRow {
-  id: string;
-  template_id: string;
-  created_by: string;
-  frequency: 'daily' | 'weekly' | 'monthly';
-  day_of_week: number | null;
-  day_of_month: number | null;
-  time_of_day: string;
-  recipients: string;
-  format: 'csv';
-  is_active: boolean | number;
-  next_run_at: string;
-  last_run_at: string | null;
-  last_run_status: string | null;
-  last_run_error: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-function rowToDTO(row: ReportScheduleRow): ReportSchedule {
-  let recipients: string[] = [];
-  try {
-    recipients = typeof row.recipients === 'string' ? JSON.parse(row.recipients) : row.recipients;
-  } catch { recipients = []; }
-
-  return {
-    id: row.id,
-    templateId: row.template_id,
-    createdBy: row.created_by,
-    frequency: row.frequency,
-    dayOfWeek: row.day_of_week,
-    dayOfMonth: row.day_of_month,
-    timeOfDay: row.time_of_day,
-    recipients,
-    format: row.format,
-    isActive: !!row.is_active,
-    nextRunAt: row.next_run_at,
-    lastRunAt: row.last_run_at,
-    lastRunStatus: row.last_run_status,
-    lastRunError: row.last_run_error,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
+export type { ReportSchedule } from '../database/ReportScheduleRepository';
 
 export class ReportScheduleService {
   async create(data: {
@@ -82,48 +20,25 @@ export class ReportScheduleService {
     const timeOfDay = data.timeOfDay || '08:00';
     const nextRunAt = this.computeNextRun(data.frequency, data.dayOfWeek ?? null, data.dayOfMonth ?? null, timeOfDay);
 
-    await databaseService.query(
-      `INSERT INTO report_schedules (id, template_id, created_by, frequency, day_of_week, day_of_month, time_of_day, recipients, is_active, next_run_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        data.templateId,
-        data.createdBy,
-        data.frequency,
-        data.dayOfWeek ?? null,
-        data.dayOfMonth ?? null,
-        timeOfDay,
-        JSON.stringify(data.recipients),
-        data.isActive !== false,
-        nextRunAt,
-      ],
+    await reportScheduleRepository.insert(
+      id, data.templateId, data.createdBy, data.frequency,
+      data.dayOfWeek ?? null, data.dayOfMonth ?? null, timeOfDay,
+      data.recipients, data.isActive !== false, nextRunAt,
     );
 
-    return (await this.getById(id))!;
+    return (await reportScheduleRepository.findById(id))!;
   }
 
   async getById(id: string): Promise<ReportSchedule | null> {
-    const rows = await databaseService.query<ReportScheduleRow>(
-      'SELECT * FROM report_schedules WHERE id = ?',
-      [id],
-    );
-    return rows.length > 0 ? rowToDTO(rows[0]) : null;
+    return reportScheduleRepository.findById(id);
   }
 
   async listByUser(userId: string): Promise<ReportSchedule[]> {
-    const rows = await databaseService.query<ReportScheduleRow>(
-      'SELECT * FROM report_schedules WHERE created_by = ? ORDER BY created_at DESC',
-      [userId],
-    );
-    return rows.map(rowToDTO);
+    return reportScheduleRepository.findByUser(userId);
   }
 
   async getByTemplateId(templateId: string): Promise<ReportSchedule[]> {
-    const rows = await databaseService.query<ReportScheduleRow>(
-      'SELECT * FROM report_schedules WHERE template_id = ?',
-      [templateId],
-    );
-    return rows.map(rowToDTO);
+    return reportScheduleRepository.findByTemplate(templateId);
   }
 
   async update(id: string, data: Partial<{
@@ -144,7 +59,6 @@ export class ReportScheduleService {
     if (data.recipients !== undefined) { fields.push('recipients = ?'); values.push(JSON.stringify(data.recipients)); }
     if (data.isActive !== undefined) { fields.push('is_active = ?'); values.push(data.isActive); }
 
-    // Recompute next_run_at if schedule changed
     if (data.frequency !== undefined || data.dayOfWeek !== undefined || data.dayOfMonth !== undefined || data.timeOfDay !== undefined) {
       const current = await this.getById(id);
       if (current) {
@@ -160,26 +74,17 @@ export class ReportScheduleService {
 
     if (fields.length === 0) return this.getById(id);
 
-    values.push(id);
-    await databaseService.query(
-      `UPDATE report_schedules SET ${fields.join(', ')} WHERE id = ?`,
-      values,
-    );
-
+    await reportScheduleRepository.updateFields(id, fields, values);
     return this.getById(id);
   }
 
   async delete(id: string): Promise<void> {
-    await databaseService.query('DELETE FROM report_schedules WHERE id = ?', [id]);
+    await reportScheduleRepository.deleteById(id);
   }
 
   async getDueSchedules(): Promise<ReportSchedule[]> {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const rows = await databaseService.query<ReportScheduleRow>(
-      'SELECT * FROM report_schedules WHERE is_active = TRUE AND next_run_at <= ?',
-      [now],
-    );
-    return rows.map(rowToDTO);
+    return reportScheduleRepository.findDue(now);
   }
 
   async executeDueSchedules(): Promise<number> {
@@ -188,7 +93,6 @@ export class ReportScheduleService {
 
     for (const schedule of dueSchedules) {
       try {
-        // Generate report
         const template = await reportBuilderService.getTemplateById(schedule.templateId);
         if (!template) {
           await this.updateRunStatus(schedule.id, 'error', 'Template not found');
@@ -197,29 +101,21 @@ export class ReportScheduleService {
 
         const { data: csvContent } = await reportBuilderService.exportReport(schedule.templateId, 'csv');
 
-        // Send email
         await emailService.sendReportEmail(
           schedule.recipients,
           template.name,
           csvContent as string,
         );
 
-        // Update status
         const nextRun = this.computeNextRun(
-          schedule.frequency,
-          schedule.dayOfWeek,
-          schedule.dayOfMonth,
-          schedule.timeOfDay,
+          schedule.frequency, schedule.dayOfWeek, schedule.dayOfMonth, schedule.timeOfDay,
         );
         await this.updateRunStatus(schedule.id, 'success', null, nextRun);
         executed++;
       } catch (err: any) {
         console.error(`[ReportScheduleService] Failed to execute schedule ${schedule.id}:`, err);
         const nextRun = this.computeNextRun(
-          schedule.frequency,
-          schedule.dayOfWeek,
-          schedule.dayOfMonth,
-          schedule.timeOfDay,
+          schedule.frequency, schedule.dayOfWeek, schedule.dayOfMonth, schedule.timeOfDay,
         );
         await this.updateRunStatus(schedule.id, 'error', err.message || 'Unknown error', nextRun);
       }
@@ -234,17 +130,7 @@ export class ReportScheduleService {
 
   private async updateRunStatus(id: string, status: string, error: string | null, nextRunAt?: string): Promise<void> {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    if (nextRunAt) {
-      await databaseService.query(
-        `UPDATE report_schedules SET last_run_at = ?, last_run_status = ?, last_run_error = ?, next_run_at = ? WHERE id = ?`,
-        [now, status, error, nextRunAt, id],
-      );
-    } else {
-      await databaseService.query(
-        `UPDATE report_schedules SET last_run_at = ?, last_run_status = ?, last_run_error = ? WHERE id = ?`,
-        [now, status, error, id],
-      );
-    }
+    await reportScheduleRepository.updateRunStatus(id, now, status, error, nextRunAt);
   }
 
   computeNextRun(
@@ -261,7 +147,7 @@ export class ReportScheduleService {
     if (frequency === 'daily') {
       if (next <= now) next.setDate(next.getDate() + 1);
     } else if (frequency === 'weekly') {
-      const targetDay = dayOfWeek ?? 1; // default Monday
+      const targetDay = dayOfWeek ?? 1;
       const currentDay = next.getDay();
       let daysUntil = targetDay - currentDay;
       if (daysUntil < 0 || (daysUntil === 0 && next <= now)) {
