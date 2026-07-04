@@ -16,6 +16,7 @@ import { EXEC_WIDGETS, loadWidgetIds, saveWidgetIds, loadWidgetOrder, saveWidget
 import { RecentActivityWidget } from '../components/dashboard/widgets/RecentActivityWidget';
 import { ResourceUtilizationWidget } from '../components/dashboard/widgets/ResourceUtilizationWidget';
 import { BurndownMiniWidget } from '../components/dashboard/widgets/BurndownMiniWidget';
+import { AgentProposalsWidget } from '../components/dashboard/widgets/AgentProposalsWidget';
 
 interface Project {
   id: string;
@@ -121,6 +122,8 @@ export const ExecutiveDashboard: React.FC = () => {
         return <ResourceUtilizationWidget />;
       case 'burndown':
         return <BurndownMiniWidget />;
+      case 'agent-proposals':
+        return <AgentProposalsWidget agentIds={['cross-project-intelligence-v1', 'risk-escalation-v1', 'stakeholder-communication-v1']} />;
       default:
         return null;
     }

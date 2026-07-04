@@ -17,6 +17,7 @@ import { PM_WIDGETS, loadWidgetIds, saveWidgetIds, loadWidgetOrder, saveWidgetOr
 import { RecentActivityWidget } from '../components/dashboard/widgets/RecentActivityWidget';
 import { ResourceUtilizationWidget } from '../components/dashboard/widgets/ResourceUtilizationWidget';
 import { BurndownMiniWidget } from '../components/dashboard/widgets/BurndownMiniWidget';
+import { AgentProposalsWidget } from '../components/dashboard/widgets/AgentProposalsWidget';
 
 const STORAGE_KEY = 'dashboard-widgets:pm';
 
@@ -129,6 +130,8 @@ export const PMDashboard: React.FC = () => {
         return <ResourceUtilizationWidget />;
       case 'burndown':
         return <BurndownMiniWidget />;
+      case 'agent-proposals':
+        return <AgentProposalsWidget agentIds={['auto-reschedule-v1', 'schedule-recovery-v1', 'scope-creep-detection-v1', 'resource-optimization-v1', 'dependency-risk-v1']} />;
       default:
         return null;
     }

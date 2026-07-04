@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Activity, Zap, AlertTriangle, BarChart3 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { AISummaryBanner } from '../../components/dashboard/AISummaryBanner';
+import { AgentProposalsWidget } from '../../components/dashboard/widgets/AgentProposalsWidget';
 
 export function ScrumMasterDashboard() {
   // Fetch projects first, then sprints for each project
@@ -123,6 +124,9 @@ export function ScrumMasterDashboard() {
           </div>
         )}
       </div>
+
+      {/* Agent Proposals */}
+      <AgentProposalsWidget agentIds={['auto-reschedule-v1', 'scope-creep-detection-v1']} />
 
       {/* Velocity Trend */}
       {velocity?.history && velocity.history.length > 0 && (
