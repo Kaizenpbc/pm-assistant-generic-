@@ -141,7 +141,7 @@ export function ReportDesigner({ templateId, onClose, onSaved }: ReportDesignerP
     queryFn: () => apiService.getProjects(),
   });
 
-  const projects = projectsData?.projects || projectsData || [];
+  const projects = projectsData?.data || projectsData?.projects || projectsData || [];
 
   // Populate form when editing
   useEffect(() => {

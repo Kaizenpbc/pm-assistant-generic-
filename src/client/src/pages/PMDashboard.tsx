@@ -51,7 +51,7 @@ export const PMDashboard: React.FC = () => {
     queryFn: () => apiService.getProjects(),
   });
 
-  const projects: ProjectRow[] = projectsData?.projects || [];
+  const projects: ProjectRow[] = projectsData?.data || projectsData?.projects || [];
 
   if (isLoading) {
     return (

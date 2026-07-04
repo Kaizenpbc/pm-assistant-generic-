@@ -27,7 +27,7 @@ export function TimesheetPage() {
     queryKey: ['projects'],
     queryFn: () => apiService.getProjects(),
   });
-  const projects: any[] = projectsData?.projects || [];
+  const projects: any[] = projectsData?.data || projectsData?.projects || [];
 
   const { data: schedulesData } = useQuery({
     queryKey: ['schedules', selectedProjectId],

@@ -8,7 +8,7 @@ export function BurndownMiniWidget() {
     queryFn: () => apiService.getProjects(),
   });
 
-  const projects = (projectsData?.projects || []) as any[];
+  const projects = (projectsData?.data || projectsData?.projects || []) as any[];
 
   if (isLoading) {
     return (

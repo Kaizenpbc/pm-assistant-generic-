@@ -11,7 +11,7 @@ export function ScrumMasterDashboard() {
     staleTime: 60000,
   });
 
-  const projectIds: string[] = (projectsData?.projects || []).map((p: any) => p.id);
+  const projectIds: string[] = (projectsData?.data || projectsData?.projects || []).map((p: any) => p.id);
 
   const { data: sprintsData, isLoading: sprintsLoading } = useQuery({
     queryKey: ['all-sprints', projectIds],

@@ -62,7 +62,7 @@ export const ExecutiveDashboard: React.FC = () => {
     queryFn: () => apiService.getProjects(),
   });
 
-  const projects: Project[] = projectsData?.projects || [];
+  const projects: Project[] = projectsData?.data || projectsData?.projects || [];
 
   const totalProjects = projects.length;
   const activeProjects = projects.filter((p) => p.status === 'active').length;

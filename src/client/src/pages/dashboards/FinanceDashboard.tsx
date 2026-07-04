@@ -16,7 +16,7 @@ export function FinanceDashboard() {
     staleTime: 60000,
   });
 
-  const projects = projectsData?.projects || [];
+  const projects = projectsData?.data || projectsData?.projects || [];
   // Compute budget stats from projects
   const budgetStats = projects.reduce((acc: any, p: any) => {
     const allocated = p.budgetAllocated || 0;

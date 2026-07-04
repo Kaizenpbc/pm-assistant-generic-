@@ -425,7 +425,7 @@ export const AnalyticsPage: React.FC = () => {
     queryFn: () => apiService.getPortfolio(),
   });
 
-  const projects: Project[] = projectsData?.projects || [];
+  const projects: Project[] = projectsData?.data || projectsData?.projects || [];
   const portfolioItems: PortfolioItem[] = portfolioData?.portfolioItems || [];
 
   // ---- KPI Calculations ----

@@ -95,7 +95,7 @@ export function EVMDashboardPage() {
     queryKey: ['projects'],
     queryFn: () => apiService.getProjects(),
   });
-  const projects: Project[] = projectsData?.projects || [];
+  const projects: Project[] = projectsData?.data || projectsData?.projects || [];
 
   const { data: evmData, isLoading } = useQuery({
     queryKey: ['evm', selectedProjectId],
