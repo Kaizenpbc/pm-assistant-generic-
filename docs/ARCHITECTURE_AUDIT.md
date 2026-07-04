@@ -23,7 +23,7 @@
 - **Security:** Helmet CSP, CORS allowlist, per-IP/per-key rate limiting (in-memory), Zod validation on 23/63 routes
 - **AI:** Claude SDK with per-user monthly token budgets, structured prompts, tool loop support, streaming
 - **Observability:** Winston logger with request ID propagation via AsyncLocalStorage, MetricsService for counters/latency percentiles, response logging with duration
-- **Data Access:** 8 BaseRepository subclasses (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration) + ~48 services with inline SQL
+- **Data Access:** 15 BaseRepository subclasses (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField) + ~41 services with inline SQL
 
 **Deployment Model:**
 Single-instance design. No Redis, no load balancer, no container orchestration. LiteSpeed serves static assets; Passenger proxies `/api/*` and `/mcp` to the Node process.
@@ -42,7 +42,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - Pagination enforced on major list endpoints (projects, schedules, tasks, templates, sprints) via `paginationSchema` (limit 1-200, default 50)
 
 **Gaps:**
-- **Inconsistent data access pattern:** ~~Only 3 entities have repositories.~~ **Partially resolved (July 2026).** 8 entities now have repositories (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration). Remaining ~48 services still call `databaseService.query()` with inline SQL.
+- **Inconsistent data access pattern:** ~~Only 3 entities have repositories.~~ **Partially resolved (July 2026).** 15 entities now have repositories (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField). Remaining ~41 services still call `databaseService.query()` with inline SQL.
 - ~~**No transaction boundaries:**~~ **Resolved (July 2026).** `databaseService.transaction()` + `queryOn()` now wraps 7 multi-table service methods.
 - ~~**Zod validation coverage partial:**~~ **Resolved (July 2026).** All POST/PUT/PATCH routes now use Zod schemas for request body validation. Coverage extended from 23 to 37+ route files.
 - ~~**Fire-and-forget side effects everywhere:**~~ **Mitigated (July 2026).** `DeadLetterService` captures failed side effects (audit logs, webhooks) with retry support. All `.catch(() => {})` calls replaced with DLQ capture. Admin endpoints for monitoring (`/api/v1/admin/dead-letter`).
@@ -59,7 +59,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 ### 2.6 Database Migrations
 
 - **~~Duplicate migration numbers:~~** **Mitigated (July 2026).** Known historical duplicates (002, 003) preserved in an allowlist. `migrationRunner.ts` now detects and fails fast on any NEW duplicate numeric prefixes. Apply order is deterministic: (number, then filename). CI test guards against future duplicates.
-- **No rollback runner:** Migrations are one-way SQL files. No reverse migration generator, no dry-run mode.
+- ~~**No rollback runner:**~~ **Resolved (July 2026).** `.down.sql` rollback files for all 37 migrations. CLI via `migrateCli.ts` supports `rollback [N]`, `rollback --dry-run`, `list` (shows applied/pending status + rollback availability).
 
 ### 2.3 Security & Compliance
 
@@ -96,7 +96,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 
 ### 2.5 Cost & Operational Complexity
 
-- **Manual deployment:** Build locally, SCP to server, restart via cloudlinux-selector. No CI/CD, no automated rollback.
+- ~~**Manual deployment:** Build locally, SCP to server, restart via cloudlinux-selector. No CI/CD, no automated rollback.~~ **Resolved (July 2026).** GitHub Actions CI/CD pipeline: test (tsc + vitest) → build → SCP deploy → cloudlinux-selector restart. Runs on push to master and PRs. Manual SCP still available as fallback.
 - ~~**Migrations one-way:** No rollback runner, no dry-run mode.~~ **Resolved (July 2026).** `migrationRunner.ts` now supports `rollbackMigrations(count, dryRun)`, `dryRunMigrations()`, and `listMigrations()`. CLI via `migrateCli.ts` with `run`, `rollback [N]`, `list`, and `--dry-run` flags. Rollback reads `.down.sql` files and removes entries from `_migrations` table in reverse order.
 - **Cron jobs in-process:** 5 cron jobs (agent scan, overdue scan, recurrence, digest, reports). If Node process crashes, all stop.
 - ~~**No log rotation configured in code:**~~ **Resolved (July 2026).** Daily-rotated JSON logs via `winston-daily-rotate-file` (14d retention, 20MB max, gzip). Admin query/download endpoints.
@@ -116,7 +116,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | ~~Fire-and-forget side effects with no retry~~ | ~~Medium~~ | **Resolved (July 2026).** `DeadLetterService` captures failed side effects with retry. Admin monitoring endpoints added. |
 | ~~No query/connection timeouts~~ | ~~Medium~~ | **Resolved (July 2026).** Pool configured with `connectTimeout`, `idleTimeout`, `queueLimit` (env-configurable). |
 | ~~Partial Zod validation coverage (23/63 routes)~~ | ~~**Medium**~~ | ~~Resolved July 2026 — all POST/PUT/PATCH routes now use Zod schemas.~~ |
-| Partial repository adoption (8/56+ entities) | **Medium** | 8 core entities covered. Schema changes for remaining ~48 services still require updating SQL strings across service files. |
+| Partial repository adoption (15/56+ entities) | **Low** | 15 entities covered (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField). Remaining ~41 services have inline SQL. |
 | ~~Agent scheduler serial execution~~ | ~~Medium~~ | **Resolved (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. |
 | ~~No rate limiting on auth endpoints~~ | ~~High~~ | **Mitigated (July 2026).** Per-IP rate limits on all auth and waitlist endpoints. |
 | ~~Waitlist admin key in query string~~ | ~~High~~ | **Mitigated (July 2026).** Moved to `X-Admin-Key` header. |
@@ -142,7 +142,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | ~~9~~ | ~~Parallelize agent scheduler execution~~ | **Done (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. Portfolio agents still run after all projects complete. | ~~Medium~~ | ~~Medium~~ |
 | ~~10~~ | ~~Add structured log export/aggregation~~ | **Done (July 2026).** Daily-rotated JSON logs (14d retention, 20MB max, gzip), admin endpoints: `GET /api/v1/admin/logs` (query by level/search/date), `/logs/files` (list), `/logs/download/:filename`. | ~~Low~~ | ~~Low~~ |
 | 11 | Migrate rate limiter and metrics to Redis | Enables horizontal scaling. **Blocked:** Redis not available on TMD Hosting shared plan. | High | High |
-| 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas. **Partially done (July 2026).** 8 entities covered (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration). Caching layer blocked on Redis. See `docs/TODO_INFRASTRUCTURE.md`. | High | High |
+| 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas. **Partially done (July 2026).** 15 entities covered (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField). Caching layer blocked on Redis. See `docs/TODO_INFRASTRUCTURE.md`. | High | High |
 | 13 | Move cron jobs to external scheduler | Prevents duplicate execution in multi-instance. **Blocked:** No external job runner on TMD Hosting. | Medium | Medium |
 | ~~14~~ | ~~Add scope enforcement for JWT users~~ | **Done (July 2026).** `requireScope()` now maps JWT roles to scopes: admin→all, manager/pm/scrum_master→read+write, member/executive/finance→read. Unknown roles default to read-only. | ~~Low~~ | ~~Medium~~ |
 | ~~15~~ | ~~Break up DagWorkflowService (38 KB) and LessonsLearnedService (33 KB)~~ | **Done (July 2026).** `DagWorkflowService.ts` → `dagWorkflow/` (4 files: types, rowMappers, engine, templateResolver + index). `LessonsLearnedService.ts` → `lessonsLearned/` (5 files: prompts, seeder, extractor, patternDetector, mitigationAdvisor + index). Original files are thin re-export shims. | ~~Medium~~ | ~~Medium~~ |
@@ -217,7 +217,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - ~~Zod validation expansion.~~ Done (23/63 routes, 39%).
 
 **Later (strategic)** -- PARTIALLY DONE (July 2026)
-- ~~Repository layer for core entities.~~ Done: 8 entities (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration).
+- ~~Repository layer for core entities.~~ Done: 15 entities (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField).
 - ~~Structured metrics and request ID tracing.~~ Done: MetricsService + AsyncLocalStorage.
 - Redis for rate limiting and agent lock -- TODO.
 
@@ -240,7 +240,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 
 **New: Later (strategic)** — INFRASTRUCTURE-BLOCKED
 - Migrate rate limiter and metrics to Redis — **Blocked:** Redis not available on TMD Hosting shared plan.
-- Extend repository pattern to all core entities — **Partially done (July 2026).** 8 entities covered. Caching layer blocked on Redis. See `docs/TODO_INFRASTRUCTURE.md`.
+- Extend repository pattern to all core entities — **Partially done (July 2026).** 15 entities covered. Caching layer blocked on Redis. See `docs/TODO_INFRASTRUCTURE.md`.
 - Move cron jobs to external scheduler — **Blocked:** No external job runner on TMD Hosting.
 
 ---
