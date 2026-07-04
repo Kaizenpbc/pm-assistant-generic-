@@ -66,6 +66,27 @@ Rollback files use convention `NNN_name.down.sql` alongside `NNN_name.sql`. Forw
 
 ---
 
+## Item 16: Dashboard Enhancements (UI)
+
+**These items came from the dashboard wireframe discussion (July 2026). Not infrastructure-blocked — just scoped out of current sprint.**
+
+### 16a: AI Next Best Actions Widget
+Prescriptive action cards (3-5 per dashboard) with inline action buttons (e.g., "Approve budget CR for Project X", "Reassign overdue task"). Different from AgentProposalsWidget — these are opinionated recommendations, not raw proposals.
+
+### 16b: Health Trends Sparklines Widget
+3-column sparkline charts showing project health scores over time. **Requires backend work:**
+- New `project_health_snapshots` table (project_id, score, date, captured_by cron)
+- Daily cron job to snapshot health scores from predictions API
+- New API endpoint: `GET /api/v1/projects/:id/health-history`
+
+### 16c: Activity Feed + AI Summary Sidebar
+Enhance `RecentActivityWidget` to 2-column layout: left = activity feed (existing), right = AI-generated summary of recent activity patterns.
+
+### 16d: Dashboard Footer
+Minor — version info, quick links, last refresh timestamp.
+
+---
+
 ## Unblocking Path
 
 1. Request Redis addon from TMD Hosting, or
