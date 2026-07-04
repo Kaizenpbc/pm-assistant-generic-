@@ -9,6 +9,8 @@ export interface WidgetDef {
 export const PM_WIDGETS: WidgetDef[] = [
   { id: 'ai-summary', label: 'AI Summary', group: 'Insights', defaultOn: true },
   { id: 'stats', label: 'Quick Stats', group: 'Overview', defaultOn: true },
+  { id: 'priorities', label: "Today's Priorities", group: 'Overview', defaultOn: true },
+  { id: 'quick-actions', label: 'Quick Actions', group: 'Overview', defaultOn: true },
   { id: 'projects', label: 'Project Table', group: 'Overview', defaultOn: true },
   { id: 'activity', label: 'Recent Activity', group: 'Insights', defaultOn: false },
   { id: 'utilization', label: 'Resource Utilization', group: 'Resources', defaultOn: false },
@@ -19,6 +21,8 @@ export const PM_WIDGETS: WidgetDef[] = [
 export const EXEC_WIDGETS: WidgetDef[] = [
   { id: 'ai-summary', label: 'AI Summary', group: 'Insights', defaultOn: true },
   { id: 'stats', label: 'Portfolio Stats', group: 'Overview', defaultOn: true },
+  { id: 'priorities', label: "Today's Priorities", group: 'Overview', defaultOn: true },
+  { id: 'quick-actions', label: 'Quick Actions', group: 'Overview', defaultOn: false },
   { id: 'projects', label: 'All Projects', group: 'Overview', defaultOn: true },
   { id: 'activity', label: 'Recent Activity', group: 'Insights', defaultOn: false },
   { id: 'utilization', label: 'Resource Utilization', group: 'Resources', defaultOn: false },
@@ -49,6 +53,7 @@ export const FINANCE_WIDGETS: WidgetDef[] = [
 export const RISK_WIDGETS: WidgetDef[] = [
   { id: 'ai-summary', label: 'AI Summary', group: 'Insights', defaultOn: true },
   { id: 'stats', label: 'Risk Stats', group: 'Overview', defaultOn: true },
+  { id: 'priorities', label: "Today's Priorities", group: 'Overview', defaultOn: false },
   { id: 'risk-table', label: 'Risk Summary', group: 'Overview', defaultOn: true },
   { id: 'agent-proposals', label: 'Risk Agent Insights', group: 'Agents', defaultOn: true },
 ];

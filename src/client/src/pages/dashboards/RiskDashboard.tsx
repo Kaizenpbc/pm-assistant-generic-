@@ -7,6 +7,7 @@ import { CustomizeDropdown } from '../../components/dashboard/CustomizeDropdown'
 import { WidgetGrid } from '../../components/dashboard/WidgetGrid';
 import { RISK_WIDGETS, loadWidgetIds, saveWidgetIds, loadWidgetOrder, saveWidgetOrder } from '../../components/dashboard/WidgetRegistry';
 import { AgentProposalsWidget } from '../../components/dashboard/widgets/AgentProposalsWidget';
+import { PrioritiesStripWidget } from '../../components/dashboard/widgets/PrioritiesStripWidget';
 
 const STORAGE_KEY = 'dashboard-widgets:risk';
 
@@ -69,6 +70,8 @@ export function RiskDashboard() {
             <StatsCard label="Active Projects" value={String(activeProjects.length)} icon={FolderKanban} color="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400" />
           </div>
         );
+      case 'priorities':
+        return <PrioritiesStripWidget />;
       case 'agent-proposals':
         return <AgentProposalsWidget agentIds={riskAgentIds} />;
       case 'risk-table':

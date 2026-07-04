@@ -3,8 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   FolderKanban,
   Plus,
-  TrendingUp,
-  Clock,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
@@ -18,6 +16,9 @@ import { RecentActivityWidget } from '../components/dashboard/widgets/RecentActi
 import { ResourceUtilizationWidget } from '../components/dashboard/widgets/ResourceUtilizationWidget';
 import { BurndownMiniWidget } from '../components/dashboard/widgets/BurndownMiniWidget';
 import { AgentProposalsWidget } from '../components/dashboard/widgets/AgentProposalsWidget';
+import { PortfolioKPIBar } from '../components/dashboard/widgets/PortfolioKPIBar';
+import { PrioritiesStripWidget } from '../components/dashboard/widgets/PrioritiesStripWidget';
+import { QuickActionsWidget } from '../components/dashboard/widgets/QuickActionsWidget';
 
 const STORAGE_KEY = 'dashboard-widgets:pm';
 
@@ -93,35 +94,11 @@ export const PMDashboard: React.FC = () => {
       case 'ai-summary':
         return <AISummaryBanner />;
       case 'stats':
-        return (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="card">
-              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
-                <FolderKanban className="w-4 h-4" />
-                <span>Total</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{projects.length}</p>
-            </div>
-            <div className="card">
-              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
-                <TrendingUp className="w-4 h-4" />
-                <span>Active</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {projects.filter((p) => p.status === 'active').length}
-              </p>
-            </div>
-            <div className="card">
-              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
-                <Clock className="w-4 h-4" />
-                <span>Planning</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {projects.filter((p) => p.status === 'planning').length}
-              </p>
-            </div>
-          </div>
-        );
+        return <PortfolioKPIBar />;
+      case 'priorities':
+        return <PrioritiesStripWidget />;
+      case 'quick-actions':
+        return <QuickActionsWidget />;
       case 'projects':
         return <ProjectTable projects={projects} />;
       case 'activity':
