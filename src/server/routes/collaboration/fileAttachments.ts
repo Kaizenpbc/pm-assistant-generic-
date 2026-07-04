@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { fileAttachmentService } from '../../services/FileAttachmentService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { validateMimeType } from '../../utils/mimeValidator';
 
 export async function fileAttachmentRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -15,6 +16,12 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
       if (!file) return reply.status(400).send({ error: 'No file uploaded' });
 
       const buffer = await file.toBuffer();
+
+      const mimeCheck = validateMimeType(file.mimetype, buffer);
+      if (!mimeCheck.valid) {
+        return reply.status(415).send({ error: 'Unsupported file type', message: mimeCheck.error });
+      }
+
       const attachment = await fileAttachmentService.upload(
         entityType, entityId, user.userId,
         file.filename, file.mimetype, buffer,
@@ -69,6 +76,12 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
       if (!file) return reply.status(400).send({ error: 'No file uploaded' });
 
       const buffer = await file.toBuffer();
+
+      const mimeCheck = validateMimeType(file.mimetype, buffer);
+      if (!mimeCheck.valid) {
+        return reply.status(415).send({ error: 'Unsupported file type', message: mimeCheck.error });
+      }
+
       const attachment = await fileAttachmentService.uploadNewVersion(
         id, user.userId, file.filename, file.mimetype, buffer,
       );

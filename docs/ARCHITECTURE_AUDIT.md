@@ -73,7 +73,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 **Gaps:**
 - ~~JWT users have no scope enforcement~~ **Resolved (July 2026).** `requireScope()` now maps JWT roles to scopes: admin→all, manager/pm/scrum_master→read+write, member/executive/finance→read.
 - ~~No PII masking in logs~~ **Resolved (July 2026).** Winston `piiMask` format masks emails, JWTs, API keys, and password fields in all file-logged output. Direct `console.*` calls in EmailService, DigestService, StripeService, auth routes, and global error handler updated to avoid logging PII.
-- File uploads: no MIME type validation or content inspection (only size limit)
+- ~~File uploads: no MIME type validation or content inspection (only size limit)~~ **Resolved (July 2026).** `validateMimeType()` in `mimeValidator.ts` enforces an allowlist of safe MIME types and verifies file content via magic bytes inspection. Applied to both upload and version-upload endpoints in `fileAttachments.ts`. Returns HTTP 415 for disallowed or mismatched types.
 - No rate limit on verification email resends
 - CORS allows localhost (any port) in development
 
