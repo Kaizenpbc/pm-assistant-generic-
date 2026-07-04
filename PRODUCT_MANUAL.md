@@ -829,10 +829,14 @@ A standalone Model Context Protocol (MCP) server (`mcp-server/server.ts`) enable
 | `get-project-health` | AI health score for a project |
 | `get-project-risks` | AI risk assessment for a project |
 | `get-project-budget` | AI budget forecast for a project |
+| `get-spend-to-date` | Cumulative project spending with earned value and variance |
+| `get-burn-rate` | Daily/monthly spending rate with EVM cost metrics |
 | `get-analytics` | Portfolio-level analytics summary |
 | `get-alerts` | Proactive alerts across all projects |
 | `search` | Search projects and tasks by keyword |
 | `get-portfolio` | Full portfolio overview |
+| `suggest-risk-mitigations` | AI risk mitigation suggestions from historical lessons |
+| `get-meeting-summary` | Extract summary, actions, and decisions from meeting transcript |
 
 ### MCP Proxy
 

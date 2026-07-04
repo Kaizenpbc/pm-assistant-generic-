@@ -160,8 +160,8 @@ An agentic AI project management platform that combines the scheduling power of 
 - **Benchmark:** Primavera P6, Smartsheet, Monday.com — **exceeds** with budget KPI cards and per-project health cards alongside the Gantt timeline
 
 ### 2.7 Advanced Security
-- Role-based access control (admin, executive, project_manager, team_member, scrum_master, finance_officer) with project member roles (owner, manager, editor, viewer)
-- MCP tool permission matrix: 79 tools filtered by user role at registration time (agents only see permitted tools)
+- Role-based access control (13 roles: admin, executive, project_manager, team_member, scrum_master, finance_officer, risk_manager, pmo, ba, qa, tester, devops, claude_sme) with project member roles (owner, manager, editor, viewer)
+- MCP tool permission matrix: 83 tools filtered by user role at registration time (agents only see permitted tools)
 - Append-only chained audit ledger with API search, filter, and pagination
 - Data encryption at rest and in transit
 - Per-user AI token budget enforcement (`AIBudgetService`) — monthly limits, custom per-user overrides, `GET /api/v1/ai/budget` usage endpoint, automatic enforcement before every AI call, proactive 80% threshold warning notification (daily-deduped)
