@@ -44,14 +44,31 @@ Admins can manage all aspects of the platform. Managers operate within projects 
 - **Projects > New Project** -- set name, description, start/end dates, and budget.
 - Assign a project manager (must have `manager` role).
 - Optionally apply a **project template** to pre-populate tasks and milestones.
+- The creator is **automatically added as project owner** in the project members list.
 
 ### Managing Members
 - Add or remove members from a project's **Team** tab.
-- Set per-project roles: project manager, contributor, viewer.
+- Set per-project roles: **owner**, **manager**, **editor**, **viewer**.
+
+### Project-Level Access Control
+
+Project membership is enforced on all project-scoped API routes. Only members of a project can access its data. Non-members receive a `404 Not Found` response (to prevent information leakage).
+
+| Project Role | Read | Write (tasks, comments, time) | Admin (delete, manage members) |
+|---|---|---|---|
+| **owner** | Yes | Yes | Yes |
+| **manager** | Yes | Yes | No |
+| **editor** | Yes | Yes (tasks, comments, time only) | No |
+| **viewer** | Yes | No | No |
+| **Non-member** | 404 | 404 | 404 |
+
+**Global role bypasses:** Users with the `admin` or `pmo` global role can access all projects without membership. Users with the `executive` role have read-only access to all projects.
+
+> **Important:** Project roles (owner/manager/editor/viewer) are separate from global user roles (admin/executive/project_manager/team_member/etc.). A user needs both: a global role with sufficient scope *and* a project role with sufficient access.
 
 ### Archive and Delete
 - **Archive** removes the project from active views but preserves all data.
-- **Delete** permanently removes the project (requires admin role; audit entry created).
+- **Delete** permanently removes the project (requires admin role + project owner; audit entry created).
 
 ---
 

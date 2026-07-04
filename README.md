@@ -31,7 +31,7 @@ A full-featured, production-grade project management SaaS application combining 
 | **Frontend** | React 18 + Vite + Tailwind CSS + Zustand |
 | **Database** | MySQL / MariaDB |
 | **AI** | Anthropic Claude SDK (optional, via `AI_ENABLED` env var) |
-| **Auth** | JWT (access + refresh tokens) with HttpOnly cookies; OAuth 2.1 with PKCE for MCP transport |
+| **Auth** | JWT (access + refresh tokens) with HttpOnly cookies; OAuth 2.1 with PKCE for MCP; project-level membership enforcement |
 | **Real-time** | WebSocket + Server-Sent Events (SSE) |
 | **Billing** | Stripe |
 | **Validation** | Zod |

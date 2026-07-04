@@ -16,7 +16,7 @@ Full CRUD lifecycle for projects with the following attributes:
 - **Priority levels**: low, medium, high, urgent
 - **Budget management**: allocated budget, spent budget, budget variance
 - **Date management**: start date, end date, auto-calculated duration
-- **Team assignment**: project members with role-based access
+- **Team assignment**: project members with role-based access (owner, manager, editor, viewer). Only members can access a project; non-members get 404. Creator is auto-added as owner. Admin/pmo bypass membership; executive gets read-only bypass.
 
 ### Schedules
 

@@ -431,6 +431,90 @@ curl -s -b cookies.txt -X POST \
 
 ---
 
+## 5c. Testing Project-Level Access Control
+
+The `requireProjectAccess` middleware enforces project membership on all project-scoped routes. These tests require two authenticated sessions: one for a project member and one for a non-member.
+
+### Setup: Create two sessions
+
+```bash
+# Login as admin (has global bypass)
+curl -s -c admin-cookies.txt -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}' \
+  https://pm.kpbc.ca/api/v1/auth/login
+
+# Login as a regular user (team_member role)
+curl -s -c member-cookies.txt -H 'Content-Type: application/json' \
+  -d '{"username":"testuser","password":"password"}' \
+  https://pm.kpbc.ca/api/v1/auth/login
+```
+
+### Test: Non-member gets 404
+
+```bash
+# As a non-member, accessing a project should return 404
+curl -s -b member-cookies.txt \
+  https://pm.kpbc.ca/api/v1/projects/$PROJECT_ID | jq .
+# Expected: {"error":"Not found","message":"The requested resource was not found"}
+```
+
+### Test: Admin bypasses membership check
+
+```bash
+# Admin can access any project without being a member
+curl -s -b admin-cookies.txt \
+  https://pm.kpbc.ca/api/v1/projects/$PROJECT_ID | jq .
+# Expected: 200 with project data
+```
+
+### Test: Viewer cannot create tasks (403)
+
+```bash
+# Add testuser as viewer first (via admin)
+curl -s -b admin-cookies.txt -H 'Content-Type: application/json' \
+  -d '{"email":"testuser@example.com","role":"viewer"}' \
+  https://pm.kpbc.ca/api/v1/project-members/$PROJECT_ID
+
+# Now testuser can read but not write
+curl -s -b member-cookies.txt \
+  https://pm.kpbc.ca/api/v1/schedules/project/$PROJECT_ID | jq .
+# Expected: 200 (read allowed)
+
+curl -s -b member-cookies.txt -H 'Content-Type: application/json' \
+  -d '{"name":"Test task","status":"pending"}' \
+  https://pm.kpbc.ca/api/v1/schedules/$SCHEDULE_ID/tasks | jq .
+# Expected: {"error":"Insufficient project role","message":"This action requires the 'editor' project role. You have: 'viewer'"}
+```
+
+### Test: Project creator is auto-added as owner
+
+```bash
+# Create a new project as the regular user
+curl -s -b member-cookies.txt -H 'Content-Type: application/json' \
+  -d '{"name":"Access Test Project"}' \
+  https://pm.kpbc.ca/api/v1/projects | jq .
+# Save the project ID
+
+# Verify the creator can access it (they're auto-added as owner)
+curl -s -b member-cookies.txt \
+  https://pm.kpbc.ca/api/v1/projects/$NEW_PROJECT_ID | jq .
+# Expected: 200 with project data
+```
+
+### Unit tests
+
+36 unit tests cover the middleware in `src/server/__tests__/middleware/requireProjectAccess.test.ts`:
+- Project ID extraction from params, scheduleId lookup, body, and route matching
+- Global role bypasses (admin, pmo, executive)
+- Membership enforcement (404 for non-members, 403 for insufficient role)
+- Full 4×4 role hierarchy matrix (viewer/editor/manager/owner)
+
+```bash
+npx vitest run src/server/__tests__/middleware/requireProjectAccess.test.ts
+```
+
+---
+
 ## 6. Database Verification
 
 The database is MariaDB hosted on TMD Hosting. There is no local database instance. All database verification is done via SSH.
