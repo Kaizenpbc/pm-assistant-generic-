@@ -1,5 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../database/connection';
+import { integrationRepository, parseConfig } from '../database/IntegrationRepository';
 import { jiraAdapter } from './integrations/JiraAdapter';
 import { githubAdapter } from './integrations/GitHubAdapter';
 import { slackAdapter } from './integrations/SlackAdapter';
@@ -28,75 +27,6 @@ export interface IntegrationSyncLog {
   completedAt: string | null;
 }
 
-interface IntegrationRow {
-  id: string;
-  project_id: string | null;
-  user_id: string;
-  provider: string;
-  config: string;
-  is_active: boolean | number;
-  last_sync_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface SyncLogRow {
-  id: string;
-  integration_id: string;
-  direction: string;
-  status: string;
-  items_synced: number;
-  error_message: string | null;
-  started_at: string;
-  completed_at: string | null;
-}
-
-const SENSITIVE_FIELDS = ['apiToken', 'token', 'apiKey', 'webhookUrl', 'password', 'secret'];
-
-function maskConfig(config: Record<string, any>): Record<string, any> {
-  const masked = { ...config };
-  for (const key of SENSITIVE_FIELDS) {
-    if (masked[key] && typeof masked[key] === 'string') {
-      masked[key] = masked[key].slice(0, 4) + '****';
-    }
-  }
-  return masked;
-}
-
-function parseConfig(raw: string | Record<string, any>): Record<string, any> {
-  if (typeof raw === 'string') {
-    try { return JSON.parse(raw); } catch (e) { console.warn('IntegrationService: malformed config JSON, returning {}', e); return {}; }
-  }
-  return raw || {};
-}
-
-function rowToDTO(row: IntegrationRow): Integration {
-  return {
-    id: row.id,
-    projectId: row.project_id,
-    userId: row.user_id,
-    provider: row.provider,
-    config: maskConfig(parseConfig(row.config)),
-    isActive: !!row.is_active,
-    lastSyncAt: row.last_sync_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-function syncLogRowToDTO(row: SyncLogRow): IntegrationSyncLog {
-  return {
-    id: row.id,
-    integrationId: row.integration_id,
-    direction: row.direction,
-    status: row.status,
-    itemsSynced: Number(row.items_synced),
-    errorMessage: row.error_message,
-    startedAt: row.started_at,
-    completedAt: row.completed_at,
-  };
-}
-
 export class IntegrationService {
   async create(
     userId: string,
@@ -104,66 +34,31 @@ export class IntegrationService {
     config: Record<string, any>,
     projectId?: string,
   ): Promise<Integration> {
-    const id = uuidv4();
-    await databaseService.query(
-      `INSERT INTO integrations (id, project_id, user_id, provider, config, is_active)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, projectId || null, userId, provider, JSON.stringify(config), true],
-    );
-    const rows = await databaseService.query<IntegrationRow>('SELECT * FROM integrations WHERE id = ?', [id]);
-    return rowToDTO(rows[0]);
+    return integrationRepository.create(userId, provider, config, projectId);
   }
 
   async getByUser(userId: string): Promise<Integration[]> {
-    const rows = await databaseService.query<IntegrationRow>(
-      'SELECT * FROM integrations WHERE user_id = ? ORDER BY created_at DESC',
-      [userId],
-    );
-    return rows.map(rowToDTO);
+    return integrationRepository.findByUser(userId);
   }
 
   async getByProject(projectId: string): Promise<Integration[]> {
-    const rows = await databaseService.query<IntegrationRow>(
-      'SELECT * FROM integrations WHERE project_id = ? ORDER BY created_at DESC',
-      [projectId],
-    );
-    return rows.map(rowToDTO);
+    return integrationRepository.findByProject(projectId);
   }
 
   async getById(id: string): Promise<Integration | null> {
-    const rows = await databaseService.query<IntegrationRow>('SELECT * FROM integrations WHERE id = ?', [id]);
-    if (rows.length === 0) return null;
-    return rowToDTO(rows[0]);
-  }
-
-  private async getRawById(id: string): Promise<IntegrationRow | null> {
-    const rows = await databaseService.query<IntegrationRow>('SELECT * FROM integrations WHERE id = ?', [id]);
-    return rows.length > 0 ? rows[0] : null;
+    return integrationRepository.findById(id);
   }
 
   async update(id: string, data: { config?: Record<string, any>; isActive?: boolean }): Promise<Integration> {
-    const sets: string[] = [];
-    const params: any[] = [];
-    if (data.config !== undefined) { sets.push('config = ?'); params.push(JSON.stringify(data.config)); }
-    if (data.isActive !== undefined) { sets.push('is_active = ?'); params.push(data.isActive); }
-    if (sets.length > 0) {
-      params.push(id);
-      await databaseService.query(`UPDATE integrations SET ${sets.join(', ')} WHERE id = ?`, params);
-    }
-    const rows = await databaseService.query<IntegrationRow>('SELECT * FROM integrations WHERE id = ?', [id]);
-    return rowToDTO(rows[0]);
+    return integrationRepository.updateIntegration(id, data);
   }
 
   async delete(id: string): Promise<void> {
-    await databaseService.transaction(async (conn) => {
-      const q = (sql: string, params: any[] = []) => databaseService.queryOn(conn, sql, params);
-      await q('DELETE FROM integration_sync_log WHERE integration_id = ?', [id]);
-      await q('DELETE FROM integrations WHERE id = ?', [id]);
-    });
+    return integrationRepository.deleteIntegration(id);
   }
 
   async testConnection(id: string): Promise<{ success: boolean; message: string }> {
-    const row = await this.getRawById(id);
+    const row = await integrationRepository.findRawById(id);
     if (!row) return { success: false, message: 'Integration not found' };
 
     const config = parseConfig(row.config);
@@ -186,18 +81,11 @@ export class IntegrationService {
     id: string,
     direction: 'pull' | 'push',
   ): Promise<{ status: string; itemsSynced: number; errorMessage?: string }> {
-    const row = await this.getRawById(id);
+    const row = await integrationRepository.findRawById(id);
     if (!row) throw new Error('Integration not found');
 
     const config = parseConfig(row.config);
-    const logId = uuidv4();
-    const startedAt = new Date().toISOString();
-
-    await databaseService.query(
-      `INSERT INTO integration_sync_log (id, integration_id, direction, status, items_synced, started_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [logId, id, direction, 'running', 0, startedAt],
-    );
+    const logId = await integrationRepository.createSyncLog(id, direction);
 
     try {
       let itemsSynced = 0;
@@ -208,25 +96,12 @@ export class IntegrationService {
         itemsSynced = await this.pushToProvider(row.provider, config);
       }
 
-      await databaseService.transaction(async (conn) => {
-        const q = (sql: string, params: any[] = []) => databaseService.queryOn(conn, sql, params);
-        await q(
-          `UPDATE integration_sync_log SET status = ?, items_synced = ?, completed_at = ? WHERE id = ?`,
-          ['success', itemsSynced, new Date().toISOString(), logId],
-        );
-        await q(
-          `UPDATE integrations SET last_sync_at = ? WHERE id = ?`,
-          [new Date().toISOString(), id],
-        );
-      });
+      await integrationRepository.completeSyncTransaction(logId, id, itemsSynced);
 
       return { status: 'success', itemsSynced };
     } catch (error: any) {
       const errorMessage = error.message || 'Sync failed';
-      await databaseService.query(
-        `UPDATE integration_sync_log SET status = ?, error_message = ?, completed_at = ? WHERE id = ?`,
-        ['failed', errorMessage, new Date().toISOString(), logId],
-      );
+      await integrationRepository.completeSyncLog(logId, 'failed', 0, errorMessage);
       return { status: 'failed', itemsSynced: 0, errorMessage };
     }
   }
@@ -253,7 +128,6 @@ export class IntegrationService {
   }
 
   private async pushToProvider(provider: string, config: Record<string, any>): Promise<number> {
-    // In a real implementation, tasks would be fetched from the project
     const tasks: any[] = [];
 
     switch (provider) {
@@ -277,11 +151,7 @@ export class IntegrationService {
   }
 
   async getSyncLog(integrationId: string): Promise<IntegrationSyncLog[]> {
-    const rows = await databaseService.query<SyncLogRow>(
-      'SELECT * FROM integration_sync_log WHERE integration_id = ? ORDER BY started_at DESC',
-      [integrationId],
-    );
-    return rows.map(syncLogRowToDTO);
+    return integrationRepository.findSyncLog(integrationId);
   }
 }
 

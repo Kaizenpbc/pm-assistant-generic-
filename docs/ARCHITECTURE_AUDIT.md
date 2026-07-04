@@ -18,12 +18,12 @@
 - **Static file serving** in production via `@fastify/static` + SPA fallback
 
 **Architecture Pattern:**
-- **Layering:** Routes -> Services -> Repositories (3 repos) / Direct DB -> MySQL
+- **Layering:** Routes -> Services -> Repositories (8 repos) / Direct DB -> MySQL
 - **Auth:** JWT (HttpOnly cookies) + API keys (Bearer tokens) with scopes
 - **Security:** Helmet CSP, CORS allowlist, per-IP/per-key rate limiting (in-memory), Zod validation on 23/63 routes
 - **AI:** Claude SDK with per-user monthly token budgets, structured prompts, tool loop support, streaming
 - **Observability:** Winston logger with request ID propagation via AsyncLocalStorage, MetricsService for counters/latency percentiles, response logging with duration
-- **Data Access:** 3 BaseRepository subclasses (Project, User, Schedule) + 53 services with inline SQL
+- **Data Access:** 8 BaseRepository subclasses (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration) + ~48 services with inline SQL
 
 **Deployment Model:**
 Single-instance design. No Redis, no load balancer, no container orchestration. LiteSpeed serves static assets; Passenger proxies `/api/*` and `/mcp` to the Node process.
@@ -42,7 +42,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - Pagination enforced on major list endpoints (projects, schedules, tasks, templates, sprints) via `paginationSchema` (limit 1-200, default 50)
 
 **Gaps:**
-- **Inconsistent data access pattern:** Only 3 entities have repositories. Remaining 53 services call `databaseService.query()` with inline SQL and hand-rolled rowMapper functions.
+- **Inconsistent data access pattern:** ~~Only 3 entities have repositories.~~ **Partially resolved (July 2026).** 8 entities now have repositories (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration). Remaining ~48 services still call `databaseService.query()` with inline SQL.
 - ~~**No transaction boundaries:**~~ **Resolved (July 2026).** `databaseService.transaction()` + `queryOn()` now wraps 7 multi-table service methods.
 - ~~**Zod validation coverage partial:**~~ **Resolved (July 2026).** All POST/PUT/PATCH routes now use Zod schemas for request body validation. Coverage extended from 23 to 37+ route files.
 - ~~**Fire-and-forget side effects everywhere:**~~ **Mitigated (July 2026).** `DeadLetterService` captures failed side effects (audit logs, webhooks) with retry support. All `.catch(() => {})` calls replaced with DLQ capture. Admin endpoints for monitoring (`/api/v1/admin/dead-letter`).
@@ -53,7 +53,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - **Scalability:** Hard single-instance ceiling. In-memory rate limiter, metrics, agent circuit breakers, and in-process cron jobs mean horizontal scaling requires migrating to shared state (Redis).
 - **Performance:** DB pool fixed at 10 connections with env-configurable timeouts (`connectTimeout`, `idleTimeout`, `queueLimit`). EmbeddingService loads entire table into memory for similarity search (pending MariaDB 11.6 vector columns). ~~Agent scheduler runs serially per project.~~ **Resolved (July 2026).** `parallelLimit()` runs up to 3 projects concurrently.
 - **Availability:** DB failure leads to "offline mode" (startup succeeds but routes fail). ~~No circuit breaker for user-facing AI routes~~ **Resolved (July 2026).** `AICircuitBreaker` in `claudeService.ts` trips after 5 transient failures, 60s cooldown, returns 503.
-- **Maintainability:** 56+ service classes, most with inline SQL and hand-rolled mappers. Changing DB schema requires updating SQL strings across many files. ~~Several "god-object" files are oversized and unmaintainable~~ **Mitigated (July 2026).** All four oversized files split: `ReasoningEngine.ts` → `reasoning/` (14 files), `AgentSchedulerService.ts` → `scheduling/` (5 files), `DagWorkflowService.ts` → `dagWorkflow/` (4 files), `LessonsLearnedService.ts` → `lessonsLearned/` (5 files). Thin orchestrator classes remain with unchanged public APIs.
+- **Maintainability:** 56+ service classes. 8 core entities have dedicated repositories; remaining ~48 services have inline SQL and hand-rolled mappers. Changing DB schema for non-repository entities requires updating SQL strings across service files. ~~Several "god-object" files are oversized and unmaintainable~~ **Mitigated (July 2026).** All four oversized files split: `ReasoningEngine.ts` → `reasoning/` (14 files), `AgentSchedulerService.ts` → `scheduling/` (5 files), `DagWorkflowService.ts` → `dagWorkflow/` (4 files), `LessonsLearnedService.ts` → `lessonsLearned/` (5 files). Thin orchestrator classes remain with unchanged public APIs.
 - **Observability:** Good -- request ID propagated via AsyncLocalStorage, Winston logger includes requestId, MetricsService tracks request count/latency/AI tokens/DB queries, admin-only `/api/v1/metrics` endpoint. Daily-rotated JSON logs with admin query/download endpoints. Missing: no distributed tracing, no external alerting on metrics.
 
 ### 2.6 Database Migrations
@@ -116,12 +116,12 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | ~~Fire-and-forget side effects with no retry~~ | ~~Medium~~ | **Resolved (July 2026).** `DeadLetterService` captures failed side effects with retry. Admin monitoring endpoints added. |
 | ~~No query/connection timeouts~~ | ~~Medium~~ | **Resolved (July 2026).** Pool configured with `connectTimeout`, `idleTimeout`, `queueLimit` (env-configurable). |
 | ~~Partial Zod validation coverage (23/63 routes)~~ | ~~**Medium**~~ | ~~Resolved July 2026 — all POST/PUT/PATCH routes now use Zod schemas.~~ |
-| Partial repository adoption (3/56+ entities) | **Medium** | Schema changes still require updating SQL strings across many service files. |
+| Partial repository adoption (8/56+ entities) | **Medium** | 8 core entities covered. Schema changes for remaining ~48 services still require updating SQL strings across service files. |
 | ~~Agent scheduler serial execution~~ | ~~Medium~~ | **Resolved (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. |
 | ~~No rate limiting on auth endpoints~~ | ~~High~~ | **Mitigated (July 2026).** Per-IP rate limits on all auth and waitlist endpoints. |
 | ~~Waitlist admin key in query string~~ | ~~High~~ | **Mitigated (July 2026).** Moved to `X-Admin-Key` header. |
 | ~~No per-user AI budget~~ | ~~Medium~~ | **Mitigated (July 2026).** Per-user monthly token budget via AIBudgetService. |
-| ~~Services own all SQL~~ | ~~Medium~~ | **Partially mitigated (July 2026).** Repository layer for 3 core entities. 53 services still have inline SQL. |
+| ~~Services own all SQL~~ | ~~Medium~~ | **Partially mitigated (July 2026).** Repository layer for 8 core entities (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration). ~48 services still have inline SQL. |
 | ~~Unbounded list endpoints~~ | ~~Medium~~ | **Mitigated (July 2026).** Pagination on major list endpoints. |
 | ~~No structured metrics/tracing~~ | ~~Low~~ | **Mitigated (July 2026).** MetricsService + AsyncLocalStorage request context + requestId in logs. |
 
@@ -142,7 +142,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | ~~9~~ | ~~Parallelize agent scheduler execution~~ | **Done (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. Portfolio agents still run after all projects complete. | ~~Medium~~ | ~~Medium~~ |
 | ~~10~~ | ~~Add structured log export/aggregation~~ | **Done (July 2026).** Daily-rotated JSON logs (14d retention, 20MB max, gzip), admin endpoints: `GET /api/v1/admin/logs` (query by level/search/date), `/logs/files` (list), `/logs/download/:filename`. | ~~Low~~ | ~~Low~~ |
 | 11 | Migrate rate limiter and metrics to Redis | Enables horizontal scaling. **Blocked:** Redis not available on TMD Hosting shared plan. | High | High |
-| 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas. **Blocked:** Redis not available on TMD Hosting shared plan. | High | High |
+| 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas. **Partially done (July 2026).** 8 entities covered (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration). Caching layer blocked on Redis. See `docs/TODO_INFRASTRUCTURE.md`. | High | High |
 | 13 | Move cron jobs to external scheduler | Prevents duplicate execution in multi-instance. **Blocked:** No external job runner on TMD Hosting. | Medium | Medium |
 | ~~14~~ | ~~Add scope enforcement for JWT users~~ | **Done (July 2026).** `requireScope()` now maps JWT roles to scopes: admin→all, manager/pm/scrum_master→read+write, member/executive/finance→read. Unknown roles default to read-only. | ~~Low~~ | ~~Medium~~ |
 | ~~15~~ | ~~Break up DagWorkflowService (38 KB) and LessonsLearnedService (33 KB)~~ | **Done (July 2026).** `DagWorkflowService.ts` → `dagWorkflow/` (4 files: types, rowMappers, engine, templateResolver + index). `LessonsLearnedService.ts` → `lessonsLearned/` (5 files: prompts, seeder, extractor, patternDetector, mitigationAdvisor + index). Original files are thin re-export shims. | ~~Medium~~ | ~~Medium~~ |
@@ -217,7 +217,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - ~~Zod validation expansion.~~ Done (23/63 routes, 39%).
 
 **Later (strategic)** -- PARTIALLY DONE (July 2026)
-- ~~Repository layer for core entities.~~ Done: 3 entities (Project, User, Schedule).
+- ~~Repository layer for core entities.~~ Done: 8 entities (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration).
 - ~~Structured metrics and request ID tracing.~~ Done: MetricsService + AsyncLocalStorage.
 - Redis for rate limiting and agent lock -- TODO.
 
@@ -240,7 +240,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 
 **New: Later (strategic)** — INFRASTRUCTURE-BLOCKED
 - Migrate rate limiter and metrics to Redis — **Blocked:** Redis not available on TMD Hosting shared plan.
-- Extend repository pattern to all core entities — **Blocked:** Depends on Redis for caching layer.
+- Extend repository pattern to all core entities — **Partially done (July 2026).** 8 entities covered. Caching layer blocked on Redis. See `docs/TODO_INFRASTRUCTURE.md`.
 - Move cron jobs to external scheduler — **Blocked:** No external job runner on TMD Hosting.
 
 ---

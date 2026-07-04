@@ -1,5 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../database/connection';
+import { resourceRepository } from '../database/ResourceRepository';
 import { scheduleService } from './ScheduleService';
 import { auditLedgerService } from './AuditLedgerService';
 import { resourceAvailabilityService } from './ResourceAvailabilityService';
@@ -41,117 +40,36 @@ export interface ResourceWorkload {
   isOverAllocated: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Row mappers
-// ---------------------------------------------------------------------------
-
-function rowToResource(row: any): Resource {
-  let skills: string[] = [];
-  if (row.skills) {
-    try {
-      skills = typeof row.skills === 'string' ? JSON.parse(row.skills) : row.skills;
-    } catch { skills = []; }
-  }
-  return {
-    id: row.id,
-    name: row.name,
-    role: row.role,
-    email: row.email,
-    capacityHoursPerWeek: Number(row.capacity_hours_per_week),
-    skills,
-    isActive: Boolean(row.is_active),
-  };
-}
-
-function rowToAssignment(row: any): ResourceAssignment {
-  return {
-    id: row.id,
-    resourceId: row.resource_id,
-    taskId: row.task_id,
-    scheduleId: row.schedule_id,
-    hoursPerWeek: Number(row.hours_per_week),
-    startDate: String(row.start_date),
-    endDate: String(row.end_date),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Service
-// ---------------------------------------------------------------------------
-
 export class ResourceService {
   // --- Resource CRUD ---
 
   async findAllResources(): Promise<Resource[]> {
-    const rows = await databaseService.query('SELECT * FROM resources ORDER BY name LIMIT 1000');
-    return rows.map(rowToResource);
+    return resourceRepository.findAllOrdered();
   }
 
   async findAllResourcesPaginated(
     limit = 50,
     offset = 0,
   ): Promise<{ resources: Resource[]; total: number }> {
-    const [[{ cnt }], rows] = await Promise.all([
-      databaseService.query<{ cnt: number }>('SELECT COUNT(*) AS cnt FROM resources'),
-      databaseService.query('SELECT * FROM resources ORDER BY name LIMIT ? OFFSET ?', [limit, offset]),
-    ]);
-    return { resources: rows.map(rowToResource), total: Number(cnt) };
+    return resourceRepository.findAllPaginated(limit, offset);
   }
 
   async findResourceById(id: string): Promise<Resource | null> {
-    const rows = await databaseService.query('SELECT * FROM resources WHERE id = ?', [id]);
-    return rows.length > 0 ? rowToResource(rows[0]) : null;
+    return resourceRepository.findById(id);
   }
 
   async createResource(data: Omit<Resource, 'id'>): Promise<Resource> {
-    const id = uuidv4();
-    await databaseService.query(
-      `INSERT INTO resources (id, name, role, email, capacity_hours_per_week, skills, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        data.name,
-        data.role,
-        data.email,
-        data.capacityHoursPerWeek,
-        JSON.stringify(data.skills || []),
-        data.isActive ? 1 : 0,
-      ],
-    );
-    return (await this.findResourceById(id))!;
+    return resourceRepository.create(data);
   }
 
   async updateResource(id: string, data: Partial<Omit<Resource, 'id'>>): Promise<Resource | null> {
-    const existing = await this.findResourceById(id);
+    const existing = await resourceRepository.findById(id);
     if (!existing) return null;
 
-    const columnMap: Record<string, string> = {
-      name: 'name',
-      role: 'role',
-      email: 'email',
-      capacityHoursPerWeek: 'capacity_hours_per_week',
-      skills: 'skills',
-      isActive: 'is_active',
-    };
+    const changed = await resourceRepository.updateResource(id, data);
+    if (!changed) return existing;
 
-    const fields: string[] = [];
-    const values: any[] = [];
-
-    for (const [key, column] of Object.entries(columnMap)) {
-      if (key in data) {
-        let val = (data as any)[key];
-        if (key === 'skills') val = JSON.stringify(val || []);
-        if (key === 'isActive') val = val ? 1 : 0;
-        fields.push(`${column} = ?`);
-        values.push(val);
-      }
-    }
-
-    if (fields.length === 0) return existing;
-
-    values.push(id);
-    await databaseService.query(`UPDATE resources SET ${fields.join(', ')} WHERE id = ?`, values);
-    const updated = (await this.findResourceById(id))!;
+    const updated = (await resourceRepository.findById(id))!;
 
     auditLedgerService.append({
       actorId: 'system',
@@ -167,45 +85,28 @@ export class ResourceService {
   }
 
   async deleteResource(id: string): Promise<boolean> {
-    // resource_assignments has ON DELETE CASCADE
-    const result: any = await databaseService.query('DELETE FROM resources WHERE id = ?', [id]);
-    return (result.affectedRows ?? 0) > 0;
+    return resourceRepository.deleteResource(id);
   }
 
   // --- Assignment CRUD ---
 
   async findAssignmentsBySchedule(scheduleId: string): Promise<ResourceAssignment[]> {
-    const rows = await databaseService.query(
-      'SELECT * FROM resource_assignments WHERE schedule_id = ?',
-      [scheduleId],
-    );
-    return rows.map(rowToAssignment);
+    return resourceRepository.findAssignmentsBySchedule(scheduleId);
   }
 
   async findAssignmentsByResource(resourceId: string): Promise<ResourceAssignment[]> {
-    const rows = await databaseService.query(
-      'SELECT * FROM resource_assignments WHERE resource_id = ?',
-      [resourceId],
-    );
-    return rows.map(rowToAssignment);
+    return resourceRepository.findAssignmentsByResource(resourceId);
   }
 
   async createAssignment(data: Omit<ResourceAssignment, 'id'>): Promise<ResourceAssignment> {
-    const id = uuidv4();
-    await databaseService.query(
-      `INSERT INTO resource_assignments (id, resource_id, task_id, schedule_id, hours_per_week, start_date, end_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.resourceId, data.taskId, data.scheduleId, data.hoursPerWeek, data.startDate, data.endDate],
-    );
-    const rows = await databaseService.query('SELECT * FROM resource_assignments WHERE id = ?', [id]);
-    const assignment = rowToAssignment(rows[0]);
+    const assignment = await resourceRepository.createAssignment(data);
 
     auditLedgerService.append({
       actorId: 'system',
       actorType: 'system',
       action: 'resource.assign',
       entityType: 'resource_assignment',
-      entityId: id,
+      entityId: assignment.id,
       payload: { after: assignment },
       source: 'web',
     }).catch(err => deadLetterService.capture('audit.append', {}, err));
@@ -214,8 +115,7 @@ export class ResourceService {
   }
 
   async deleteAssignment(id: string): Promise<boolean> {
-    const result: any = await databaseService.query('DELETE FROM resource_assignments WHERE id = ?', [id]);
-    return (result.affectedRows ?? 0) > 0;
+    return resourceRepository.deleteAssignment(id);
   }
 
   // --- Workload computation ---
@@ -226,15 +126,8 @@ export class ResourceService {
 
     if (scheduleIds.length === 0) return [];
 
-    // Get all assignments for this project's schedules
-    const placeholders = scheduleIds.map(() => '?').join(',');
-    const assignmentRows = await databaseService.query(
-      `SELECT * FROM resource_assignments WHERE schedule_id IN (${placeholders})`,
-      scheduleIds,
-    );
-    const projectAssignments = assignmentRows.map(rowToAssignment);
+    const projectAssignments = await resourceRepository.findAssignmentsByScheduleIds(scheduleIds);
 
-    // Determine date range
     const DAY_MS = 86_400_000;
     const WEEK_MS = 7 * DAY_MS;
     let minDate = Infinity;
@@ -251,7 +144,6 @@ export class ResourceService {
       maxDate = now + 12 * WEEK_MS;
     }
 
-    // Snap to week start (Monday)
     const startWeek = new Date(minDate);
     startWeek.setDate(startWeek.getDate() - ((startWeek.getDay() + 6) % 7));
 
@@ -264,13 +156,12 @@ export class ResourceService {
       weeks.push(new Date(last.getTime() + WEEK_MS));
     }
 
-    // Get unique resources involved
     const involvedResourceIds = [...new Set(projectAssignments.map((a) => a.resourceId))];
 
     const workloads: ResourceWorkload[] = [];
 
     for (const resId of involvedResourceIds) {
-      const resource = await this.findResourceById(resId);
+      const resource = await resourceRepository.findById(resId);
       if (!resource) continue;
 
       const resAssignments = projectAssignments.filter((a) => a.resourceId === resId);
@@ -291,7 +182,6 @@ export class ResourceService {
           }
         }
 
-        // Use effective capacity accounting for availability blocks
         const capacity = await resourceAvailabilityService.getEffectiveCapacity(resId, weekStart, baseCapacity);
         const utilization = capacity > 0 ? Math.round((allocated / capacity) * 100) : 0;
         if (utilization > 100) isOverAllocated = true;
