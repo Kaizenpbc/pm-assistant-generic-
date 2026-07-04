@@ -40,17 +40,16 @@ These architecture audit items are blocked by infrastructure constraints on TMD 
 
 ---
 
-## Item 14: Migration Rollback Runner
+## ~~Item 14: Migration Rollback Runner~~ — DONE (July 2026)
 
-**Current state:** Migrations are one-way SQL files (`NNN_descriptive_name.sql`). No reverse migration generator, no dry-run mode. Rollback requires manually writing and running reverse SQL via SSH.
+**Implemented:** `migrationRunner.ts` now exports `rollbackMigrations(count, dryRun)`, `dryRunMigrations()`, and `listMigrations()`. CLI via `migrateCli.ts`:
+- `run` — apply pending migrations (existing behavior)
+- `run --dry-run` — preview pending migrations without executing
+- `rollback [N]` — rollback last N migrations using `.down.sql` files
+- `rollback --dry-run` — preview what would be rolled back
+- `list` — show all migrations with applied/pending status and rollback availability
 
-**What's needed:**
-- Reverse migration files (e.g., `NNN_descriptive_name.down.sql`) alongside forward migrations
-- A `rollback` command that reads the `_migrations` table and applies the corresponding `.down.sql`
-- `--dry-run` mode that shows what would be rolled back without executing
-- Guard against rolling back migrations that have dependent forward migrations applied after them
-
-**Priority:** Medium — manual rollback works but is error-prone under pressure.
+Rollback files use convention `NNN_name.down.sql` alongside `NNN_name.sql`. Forward runner excludes `.down.sql` files.
 
 ---
 

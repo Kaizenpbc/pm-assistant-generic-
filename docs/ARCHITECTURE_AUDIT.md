@@ -97,7 +97,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 ### 2.5 Cost & Operational Complexity
 
 - **Manual deployment:** Build locally, SCP to server, restart via cloudlinux-selector. No CI/CD, no automated rollback.
-- **Migrations one-way:** No rollback runner, no dry-run mode.
+- ~~**Migrations one-way:** No rollback runner, no dry-run mode.~~ **Resolved (July 2026).** `migrationRunner.ts` now supports `rollbackMigrations(count, dryRun)`, `dryRunMigrations()`, and `listMigrations()`. CLI via `migrateCli.ts` with `run`, `rollback [N]`, `list`, and `--dry-run` flags. Rollback reads `.down.sql` files and removes entries from `_migrations` table in reverse order.
 - **Cron jobs in-process:** 5 cron jobs (agent scan, overdue scan, recurrence, digest, reports). If Node process crashes, all stop.
 - ~~**No log rotation configured in code:**~~ **Resolved (July 2026).** Daily-rotated JSON logs via `winston-daily-rotate-file` (14d retention, 20MB max, gzip). Admin query/download endpoints.
 
