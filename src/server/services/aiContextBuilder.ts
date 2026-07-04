@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { ProjectService } from './ProjectService';
 import { ScheduleService } from './ScheduleService';
+import { sanitizeForPrompt } from '../utils/promptSanitizer';
 
 export interface ProjectContext {
   project: {
@@ -167,10 +168,10 @@ export class AIContextBuilder {
   }
 
   toPromptString(ctx: ProjectContext): string {
-    let s = `Project: ${ctx.project.name}\n`;
+    let s = `Project: ${sanitizeForPrompt(ctx.project.name)}\n`;
     s += `Type: ${ctx.project.projectType}\n`;
     s += `Status: ${ctx.project.status} | Priority: ${ctx.project.priority}\n`;
-    if (ctx.project.description) s += `Description: ${ctx.project.description}\n`;
+    if (ctx.project.description) s += `Description: ${sanitizeForPrompt(ctx.project.description)}\n`;
     if (ctx.project.budgetAllocated) s += `Budget: $${ctx.project.budgetAllocated.toLocaleString()} allocated, $${(ctx.project.budgetSpent || 0).toLocaleString()} spent\n`;
     if (ctx.project.completionPercentage !== undefined) s += `Completion: ${ctx.project.completionPercentage}%\n`;
     if (ctx.project.location) s += `Location: ${ctx.project.location}\n`;
@@ -200,7 +201,7 @@ export class AIContextBuilder {
     s += `By Priority: ${Object.entries(ctx.summary.byPriority).map(([k, v]) => `${k}=${v}`).join(', ')}\n\n`;
 
     for (const p of ctx.projects) {
-      s += `- ${p.name} [${p.status}] type=${p.projectType} priority=${p.priority}`;
+      s += `- ${sanitizeForPrompt(p.name)} [${p.status}] type=${p.projectType} priority=${p.priority}`;
       if (p.budgetAllocated) s += ` budget=$${p.budgetAllocated.toLocaleString()}`;
       if (p.completionPercentage !== undefined) s += ` completion=${p.completionPercentage}%`;
       s += '\n';

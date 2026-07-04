@@ -91,7 +91,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - ~~No cost alerts~~ **Resolved (July 2026).** 80% threshold warning with daily dedup via notifications table.
 - No fallback model if Claude fails (429, 503, timeout)
 - Token budget not enforced for all AI calls (some service-level calls don't pass userId)
-- No prompt injection mitigation (user inputs interpolated directly into prompts)
+- ~~No prompt injection mitigation (user inputs interpolated directly into prompts)~~ **Mitigated (July 2026).** `sanitizeForPrompt()` strips injection patterns, `PromptTemplate.render()` wraps values in `<user-data>` delimiters, `buildSystemPrompt()` prepends defense preamble. Applied to claudeService, aiContextBuilder, and qualityPrompts.
 - Pricing table hardcoded in claudeService
 
 ### 2.5 Cost & Operational Complexity

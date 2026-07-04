@@ -1,6 +1,7 @@
 import type { Project } from '../../../ProjectService';
 import type { Task } from '../../../ScheduleService';
 import type { ScopeAnalysisInput, HygieneAnalysisInput, LessonsExtractionInput } from '../types';
+import { sanitizeForPrompt } from '../../../../utils/promptSanitizer';
 
 // ---------------------------------------------------------------------------
 // Scope Analysis Prompts
@@ -33,11 +34,11 @@ export function buildScopePrompt(
   const recentTasks = tasks
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 20)
-    .map(t => ({ id: t.id, name: t.name, status: t.status, estimatedDays: t.estimatedDays, createdAt: t.createdAt }));
+    .map(t => ({ id: t.id, name: sanitizeForPrompt(t.name), status: t.status, estimatedDays: t.estimatedDays, createdAt: t.createdAt }));
 
   return `## Project Context
 
-**Project**: ${project.name} (${project.status})
+**Project**: ${sanitizeForPrompt(project.name)} (${project.status})
 
 ## Scope Creep Indicators
 
@@ -91,25 +92,25 @@ export function buildHygienePrompt(
 ): string {
   const staleSection = indicators.staleTasks.length > 0
     ? `\n## Stale Tasks (not updated in 14+ days)\n\n${indicators.staleTasks.slice(0, 10).map(t =>
-        `- **${t.taskName}** (${t.status}): ${t.daysSinceUpdate} days since last update`
+        `- **${sanitizeForPrompt(t.taskName)}** (${t.status}): ${t.daysSinceUpdate} days since last update`
       ).join('\n')}`
     : '';
 
   const missingDatesSection = indicators.missingDateTasks.length > 0
     ? `\n## Tasks Missing Dates\n\n${indicators.missingDateTasks.slice(0, 10).map(t =>
-        `- **${t.taskName}**`
+        `- **${sanitizeForPrompt(t.taskName)}**`
       ).join('\n')}`
     : '';
 
   const unassignedSection = indicators.unassignedTasks.length > 0
     ? `\n## Unassigned Tasks\n\n${indicators.unassignedTasks.slice(0, 10).map(t =>
-        `- **${t.taskName}**`
+        `- **${sanitizeForPrompt(t.taskName)}**`
       ).join('\n')}`
     : '';
 
   const missingEstSection = indicators.missingEstimateTasks.length > 0
     ? `\n## Tasks Missing Estimates\n\n${indicators.missingEstimateTasks.slice(0, 10).map(t =>
-        `- **${t.taskName}**`
+        `- **${sanitizeForPrompt(t.taskName)}**`
       ).join('\n')}`
     : '';
 
@@ -121,13 +122,13 @@ export function buildHygienePrompt(
 
   const zeroProgressSection = indicators.zeroProgressTasks.length > 0
     ? `\n## Zero-Progress Tasks (in_progress but 0% for 7+ days)\n\n${indicators.zeroProgressTasks.slice(0, 10).map(t =>
-        `- **${t.taskName}**: ${t.daysSinceUpdate} days since update`
+        `- **${sanitizeForPrompt(t.taskName)}**: ${t.daysSinceUpdate} days since update`
       ).join('\n')}`
     : '';
 
   return `## Project Context
 
-**Project**: ${project.name} (${project.status})
+**Project**: ${sanitizeForPrompt(project.name)} (${project.status})
 
 ## Hygiene Summary
 
@@ -172,7 +173,7 @@ Lesson categories should be: scheduling, budgeting, resource_management, risk_ma
 export function buildLessonsPrompt(pd: LessonsExtractionInput['projectData']): string {
   return `## Project Data
 
-**Project**: ${pd.projectName} (${pd.status})
+**Project**: ${sanitizeForPrompt(pd.projectName)} (${pd.status})
 **Completion Rate**: ${pd.completionRate}%
 **Total Tasks**: ${pd.totalTasks} (${pd.completedTasks} completed, ${pd.overdueTasks} overdue)
 **Duration**: ${pd.durationDays} days
