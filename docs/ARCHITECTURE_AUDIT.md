@@ -90,7 +90,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 **Gaps:**
 - ~~No cost alerts~~ **Resolved (July 2026).** 80% threshold warning with daily dedup via notifications table.
 - No fallback model if Claude fails (429, 503, timeout)
-- Token budget not enforced for all AI calls (some service-level calls don't pass userId)
+- ~~Token budget not enforced for all AI calls (some service-level calls don't pass userId)~~ **Resolved (July 2026).** `claudeService` now auto-resolves `userId` from `AsyncLocalStorage` request context when not explicitly provided. All user-triggered AI calls (36 call sites across 15 services) are now budget-enforced without code changes. System-triggered calls (cron/agents) with no request context correctly skip budget checks.
 - ~~No prompt injection mitigation (user inputs interpolated directly into prompts)~~ **Mitigated (July 2026).** `sanitizeForPrompt()` strips injection patterns, `PromptTemplate.render()` wraps values in `<user-data>` delimiters, `buildSystemPrompt()` prepends defense preamble. Applied to claudeService, aiContextBuilder, and qualityPrompts.
 - Pricing table hardcoded in claudeService
 

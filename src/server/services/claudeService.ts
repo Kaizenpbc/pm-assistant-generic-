@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { config } from '../config';
 import { aiBudgetService, AIBudgetExceededError } from './AIBudgetService';
 import { sanitizeForPrompt } from '../utils/promptSanitizer';
+import { getRequestContext } from '../middleware/requestContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -385,7 +386,8 @@ export class ClaudeService {
   async complete(options: CompletionOptions): Promise<CompletionResult> {
     this.assertAvailable();
     this.circuitBreaker.assertClosed();
-    if (options.userId) await aiBudgetService.checkBudget(options.userId);
+    const budgetUserId = this.resolveUserId(options);
+    if (budgetUserId) await aiBudgetService.checkBudget(budgetUserId);
 
     const startMs = Date.now();
     const effectiveMaxTokens = options.maxTokens ?? this.maxTokens;
@@ -425,7 +427,8 @@ export class ClaudeService {
   async *stream(options: CompletionOptions): AsyncGenerator<StreamChunk> {
     this.assertAvailable();
     this.circuitBreaker.assertClosed();
-    if (options.userId) await aiBudgetService.checkBudget(options.userId);
+    const budgetUserId = this.resolveUserId(options);
+    if (budgetUserId) await aiBudgetService.checkBudget(budgetUserId);
 
     const effectiveMaxTokens = options.maxTokens ?? this.maxTokens;
     const effectiveTemperature = options.temperature ?? this.temperature;
@@ -606,7 +609,8 @@ export class ClaudeService {
   }> {
     this.assertAvailable();
     this.circuitBreaker.assertClosed();
-    if (options.userId) await aiBudgetService.checkBudget(options.userId);
+    const budgetUserId = this.resolveUserId(options);
+    if (budgetUserId) await aiBudgetService.checkBudget(budgetUserId);
 
     const maxIter = options.maxIterations ?? 5;
     const toolResults: Array<{ toolName: string; result: string }> = [];
@@ -695,6 +699,14 @@ export class ClaudeService {
       (block): block is Anthropic.TextBlock => block.type === 'text',
     );
     return { finalText: textBlocks.map(b => b.text).join(''), toolResults, totalUsage, totalLatencyMs };
+  }
+
+  /**
+   * Resolve userId from explicit option or AsyncLocalStorage request context.
+   * Returns undefined for system-triggered calls (cron jobs, agents) with no request context.
+   */
+  private resolveUserId(options: { userId?: string }): string | undefined {
+    return options.userId ?? getRequestContext()?.userId;
   }
 
   private assertAvailable(): void {
