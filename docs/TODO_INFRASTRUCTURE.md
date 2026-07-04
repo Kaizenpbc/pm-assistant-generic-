@@ -40,6 +40,33 @@ These architecture audit items are blocked by infrastructure constraints on TMD 
 
 ---
 
+## Item 14: Migration Rollback Runner
+
+**Current state:** Migrations are one-way SQL files (`NNN_descriptive_name.sql`). No reverse migration generator, no dry-run mode. Rollback requires manually writing and running reverse SQL via SSH.
+
+**What's needed:**
+- Reverse migration files (e.g., `NNN_descriptive_name.down.sql`) alongside forward migrations
+- A `rollback` command that reads the `_migrations` table and applies the corresponding `.down.sql`
+- `--dry-run` mode that shows what would be rolled back without executing
+- Guard against rolling back migrations that have dependent forward migrations applied after them
+
+**Priority:** Medium — manual rollback works but is error-prone under pressure.
+
+---
+
+## Item 15: External Alerting / Distributed Tracing
+
+**Current state:** Good local observability (Winston logs with requestId, MetricsService with counters/latency percentiles, admin `/api/v1/metrics` endpoint). No external alerting when metrics cross thresholds, no distributed tracing.
+
+**What's needed:**
+- Webhook or email alerts when error rate spikes, AI budget nears limit, or circuit breaker opens
+- Optional integration with external monitoring (e.g., Sentry, Datadog, or simple webhook to Slack/email)
+- Trace IDs propagated to external services for correlation
+
+**Priority:** Low — current logging and metrics are sufficient for single-instance deployment. Becomes important if scaling or if uptime SLAs tighten.
+
+---
+
 ## Unblocking Path
 
 1. Request Redis addon from TMD Hosting, or
