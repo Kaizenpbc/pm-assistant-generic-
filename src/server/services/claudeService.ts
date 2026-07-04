@@ -328,6 +328,8 @@ User's role: {{userRole}}`,
 export class ClaudeService {
   private client: Anthropic | null = null;
   private model: string;
+  private fallbackModel: string;
+  private fallbackEnabled: boolean;
   private maxTokens: number;
   private temperature: number;
   private aiEnabled: boolean;
@@ -341,6 +343,8 @@ export class ClaudeService {
 
   constructor() {
     this.model = config.AI_MODEL;
+    this.fallbackModel = config.AI_FALLBACK_MODEL;
+    this.fallbackEnabled = config.AI_FALLBACK_ENABLED;
     this.maxTokens = config.AI_MAX_TOKENS;
     this.temperature = config.AI_TEMPERATURE;
     this.aiEnabled = config.AI_ENABLED;
@@ -408,6 +412,38 @@ export class ClaudeService {
 
       return { content, usage, latencyMs, model: response.model };
     } catch (error: unknown) {
+      // Fallback: retry once with fallback model on transient errors
+      if (this.fallbackEnabled && this.circuitBreaker.isTransientError(error)) {
+        console.warn(`[ClaudeService] Primary model failed (${(error as any)?.status ?? 'timeout'}), retrying with fallback model ${this.fallbackModel}`);
+        try {
+          const fallbackResponse = await this.client!.messages.create({
+            model: this.fallbackModel,
+            max_tokens: effectiveMaxTokens,
+            temperature: effectiveTemperature,
+            system: systemPrompt,
+            messages,
+            stream: false,
+          });
+
+          const latencyMs = Date.now() - startMs;
+          const content = this.extractTextContent(fallbackResponse);
+          const usage: TokenUsage = {
+            inputTokens: fallbackResponse.usage.input_tokens,
+            outputTokens: fallbackResponse.usage.output_tokens,
+          };
+
+          this.recordUsage(usage);
+          this.circuitBreaker.recordSuccess();
+
+          return { content, usage, latencyMs, model: fallbackResponse.model };
+        } catch (fallbackError: unknown) {
+          if (this.circuitBreaker.isTransientError(fallbackError)) {
+            this.circuitBreaker.recordFailure();
+          }
+          throw this.wrapError(fallbackError, 'complete(fallback)');
+        }
+      }
+
       if (this.circuitBreaker.isTransientError(error)) {
         this.circuitBreaker.recordFailure();
       }
