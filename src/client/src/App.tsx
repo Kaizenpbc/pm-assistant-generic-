@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import AppLayout from './components/layout/AppLayout';
 
 // Eagerly loaded (part of initial bundle — needed immediately)
@@ -83,6 +84,7 @@ function App() {
   }
 
   return (
+    <AccessibilityProvider>
     <Router>
       <ErrorBoundary>
       <Suspense fallback={<PageLoader />}>
@@ -135,6 +137,7 @@ function App() {
       </Suspense>
       </ErrorBoundary>
     </Router>
+    </AccessibilityProvider>
   );
 }
 

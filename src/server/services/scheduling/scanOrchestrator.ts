@@ -7,6 +7,7 @@ import { scheduleService } from '../ScheduleService';
 import { AgentActivityLogService } from '../AgentActivityLogService';
 import { webhookService } from '../WebhookService';
 import { killSwitchService } from '../agents/KillSwitchService';
+import { agentMemoryService } from '../AgentMemoryService';
 import { ProjectAgentResults } from '../agents/RiskEscalationAgent';
 import {
   runBudgetBurnRateAgent,
@@ -81,6 +82,17 @@ function emptyStats(): ScanStats {
     hygieneAlertsCreated: 0, dependencyRiskAlertsCreated: 0, lessonsExtracted: 0,
     predictiveAlertsCreated: 0,
   };
+}
+
+async function storeScanResult(agentId: string, projectId: string, result: Record<string, unknown>): Promise<void> {
+  try {
+    await agentMemoryService.store(agentId, 'project', projectId, 'latest_scan', {
+      ...result,
+      scannedAt: new Date().toISOString(),
+    }, 86400); // TTL: 24 hours
+  } catch {
+    // Fire-and-forget — don't let memory storage fail the scan
+  }
 }
 
 export async function runScanImpl(activityLog: AgentActivityLogService): Promise<ScanStats> {
@@ -313,6 +325,21 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
       console.error(`[Agent:PredictiveAlerting] Error for project ${project.id} (${project.name}):`, error);
       await activityLog.log({ projectId: project.id, agentName: 'predictive_alerting', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
     }
+
+    // Store aggregate scan results for inter-agent collaboration
+    const pFlags = projectAgentFlags.get(project.id);
+    storeScanResult('scan_orchestrator', project.id, {
+      summary: 'per_project_scan',
+      flags: pFlags?.flags || {},
+      details: pFlags?.details || {},
+      stats: {
+        delays: pStats.delaysDetected,
+        budgetAlerts: pStats.budgetAlertsCreated,
+        scopeCreep: pStats.scopeCreepAlertsCreated,
+        hygieneAlerts: pStats.hygieneAlertsCreated,
+        predictiveAlerts: pStats.predictiveAlertsCreated,
+      },
+    });
 
     return pStats;
   });

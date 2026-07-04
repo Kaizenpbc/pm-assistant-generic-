@@ -1,0 +1,114 @@
+import { claudeService } from './claudeService';
+import { projectService } from './ProjectService';
+import { scheduleService } from './ScheduleService';
+import { insightAssemblyService } from './agents/InsightAssemblyService';
+import { sanitizeForPrompt } from '../utils/promptSanitizer';
+
+type UserRole = 'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer';
+
+export class NarrativeService {
+  async generateProjectNarrative(projectId: string, role: UserRole): Promise<string> {
+    const project = await projectService.findById(projectId);
+    if (!project) return 'Project not found.';
+
+    if (!claudeService.isAvailable()) {
+      return this.generateFallbackProjectNarrative(project, role);
+    }
+
+    const insights = await insightAssemblyService.assembleForProject(projectId);
+    const schedules = await scheduleService.findByProjectId(projectId);
+    let totalTasks = 0;
+    let completedTasks = 0;
+    for (const s of schedules) {
+      const tasks = await scheduleService.findTasksByScheduleId(s.id);
+      totalTasks += tasks.length;
+      completedTasks += tasks.filter(t => t.status === 'completed').length;
+    }
+
+    const roleFocus = this.getRoleFocus(role);
+    const projectName = sanitizeForPrompt(project.name);
+
+    const prompt = `Generate a brief (2-3 sentence) plain-language summary of project "${projectName}" for a ${role.replace('_', ' ')}.
+
+Project status: ${project.status}
+Tasks: ${completedTasks}/${totalTasks} complete
+Budget: $${project.budgetSpent || 0} of $${project.budgetAllocated || 0} spent
+Health: ${insights.overallHealth}
+Agent findings: ${insights.agentFindings.map(f => `${f.agent}: ${f.finding}`).join('; ') || 'None'}
+
+Focus on: ${roleFocus}
+Write in plain language, no markdown. Be concise and actionable.`;
+
+    try {
+      const result = await claudeService.complete({
+        systemPrompt: 'You are a project intelligence assistant. Generate brief, role-appropriate narrative summaries. No markdown formatting.',
+        userMessage: prompt,
+        maxTokens: 300,
+        temperature: 0.4,
+      });
+      return result.content.trim();
+    } catch {
+      return this.generateFallbackProjectNarrative(project, role);
+    }
+  }
+
+  async generatePortfolioNarrative(role: UserRole): Promise<string> {
+    const allProjects = await projectService.findAll();
+    const activeProjects = allProjects.filter(p => p.status === 'active' || p.status === 'planning');
+
+    if (!claudeService.isAvailable()) {
+      return this.generateFallbackPortfolioNarrative(activeProjects, role);
+    }
+
+    const roleFocus = this.getRoleFocus(role);
+    const projectSummaries = activeProjects.slice(0, 10).map(p => {
+      const pctSpent = p.budgetAllocated ? Math.round(((p.budgetSpent || 0) / p.budgetAllocated) * 100) : 0;
+      return `- ${sanitizeForPrompt(p.name)}: status=${p.status}, budget ${pctSpent}% spent`;
+    }).join('\n');
+
+    const prompt = `Generate a brief (2-3 sentence) portfolio summary for a ${role.replace('_', ' ')}.
+
+Active projects (${activeProjects.length}):
+${projectSummaries}
+
+Focus on: ${roleFocus}
+Write in plain language, no markdown. Be concise and actionable.`;
+
+    try {
+      const result = await claudeService.complete({
+        systemPrompt: 'You are a project intelligence assistant. Generate brief, role-appropriate portfolio summaries. No markdown formatting.',
+        userMessage: prompt,
+        maxTokens: 300,
+        temperature: 0.4,
+      });
+      return result.content.trim();
+    } catch {
+      return this.generateFallbackPortfolioNarrative(activeProjects, role);
+    }
+  }
+
+  private getRoleFocus(role: UserRole): string {
+    switch (role) {
+      case 'finance_officer': return 'budget utilization, cost variances, and financial risks';
+      case 'scrum_master': return 'sprint progress, velocity trends, and team blockers';
+      case 'executive': return 'high-level status, strategic risks, and portfolio health';
+      case 'admin': return 'system health, resource allocation, and cross-project dependencies';
+      case 'project_manager': return 'schedule adherence, task completion, and immediate risks';
+      case 'team_member': return 'upcoming deadlines, assigned work, and blockers';
+      default: return 'overall project health and key action items';
+    }
+  }
+
+  private generateFallbackProjectNarrative(project: any, role: UserRole): string {
+    const budgetPct = project.budgetAllocated
+      ? Math.round(((project.budgetSpent || 0) / project.budgetAllocated) * 100)
+      : 0;
+    return `${project.name} is currently ${project.status}. Budget utilization is at ${budgetPct}%.`;
+  }
+
+  private generateFallbackPortfolioNarrative(projects: any[], role: UserRole): string {
+    return `You have ${projects.length} active project(s) in your portfolio.`;
+  }
+}
+
+export const narrativeService = new NarrativeService();

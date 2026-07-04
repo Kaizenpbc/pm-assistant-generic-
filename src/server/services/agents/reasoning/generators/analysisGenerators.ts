@@ -3,6 +3,7 @@ import { scheduleService, Task } from '../../../ScheduleService';
 import { projectService } from '../../../ProjectService';
 import { agentCostTracker } from '../../AgentCostTracker';
 import { confidenceCalculator } from '../../ConfidenceCalculator';
+import { getMemoryContext, formatMemoryContextForPrompt } from '../../memoryContext';
 import { stripJsonFences, mapSuggestedActions } from '../helpers';
 import {
   ScopeAnalysisResponseSchema, ScopeAnalysisResponse,
@@ -69,7 +70,10 @@ export async function generateScopeAnalysisImpl(input: ScopeAnalysisInput): Prom
     return null;
   }
 
-  const prompt = buildScopePrompt(ctx.project, input.indicators, ctx.allTasks);
+  const memoryCtx = await getMemoryContext('scope-creep-detection-v1', input.projectId);
+  const memoryPrompt = formatMemoryContextForPrompt(memoryCtx);
+  const prompt = buildScopePrompt(ctx.project, input.indicators, ctx.allTasks)
+    + (memoryPrompt ? `\n\n${memoryPrompt}` : '');
   let result: CompletionResult;
   try {
     result = await claudeService.complete({
@@ -137,7 +141,10 @@ export async function generateBudgetAnalysisImpl(input: BudgetAnalysisInput): Pr
     return null;
   }
 
-  const prompt = buildBudgetPrompt(ctx.project, input.indicators, ctx.allTasks);
+  const budgetMemoryCtx = await getMemoryContext('budget-intelligence-v1', input.projectId);
+  const budgetMemoryPrompt = formatMemoryContextForPrompt(budgetMemoryCtx);
+  const prompt = buildBudgetPrompt(ctx.project, input.indicators, ctx.allTasks)
+    + (budgetMemoryPrompt ? `\n\n${budgetMemoryPrompt}` : '');
   let result: CompletionResult;
   try {
     result = await claudeService.complete({

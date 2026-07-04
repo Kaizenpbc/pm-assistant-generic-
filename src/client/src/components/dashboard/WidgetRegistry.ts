@@ -24,6 +24,24 @@ export const EXEC_WIDGETS: WidgetDef[] = [
   { id: 'burndown', label: 'Burndown Chart', group: 'Charts', defaultOn: false },
 ];
 
+export const SCRUM_MASTER_WIDGETS: WidgetDef[] = [
+  { id: 'ai-summary', label: 'AI Summary', group: 'Insights', defaultOn: true },
+  { id: 'sprints', label: 'Active Sprints', group: 'Agile', defaultOn: true },
+  { id: 'velocity', label: 'Velocity Chart', group: 'Agile', defaultOn: true },
+  { id: 'burndown', label: 'Sprint Burndown', group: 'Charts', defaultOn: true },
+  { id: 'blocked', label: 'Blocked Tasks', group: 'Agile', defaultOn: true },
+  { id: 'capacity', label: 'Team Capacity', group: 'Resources', defaultOn: false },
+];
+
+export const FINANCE_WIDGETS: WidgetDef[] = [
+  { id: 'ai-summary', label: 'AI Summary', group: 'Insights', defaultOn: true },
+  { id: 'budget-overview', label: 'Budget Overview', group: 'Finance', defaultOn: true },
+  { id: 'evm-metrics', label: 'EVM Metrics', group: 'Finance', defaultOn: true },
+  { id: 'cost-variance', label: 'Cost Variance', group: 'Finance', defaultOn: true },
+  { id: 'budget-alerts', label: 'Budget Alerts', group: 'Finance', defaultOn: true },
+  { id: 'forecast', label: 'Budget Forecast', group: 'Finance', defaultOn: false },
+];
+
 export function getDefaultWidgetIds(widgets: WidgetDef[]): string[] {
   return widgets.filter(w => w.defaultOn).map(w => w.id);
 }

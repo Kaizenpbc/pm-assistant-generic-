@@ -1958,6 +1958,48 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  // -------------------------------------------------------------------------
+  // Accessibility Preferences
+  // -------------------------------------------------------------------------
+
+  async getAccessibilityPreferences() {
+    const response = await this.api.get('/users/me/accessibility');
+    return response.data;
+  }
+
+  async updateAccessibilityPreferences(prefs: Record<string, unknown>) {
+    const response = await this.api.put('/users/me/accessibility', prefs);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Narratives
+  // -------------------------------------------------------------------------
+
+  async getProjectNarrative(projectId: string) {
+    const response = await this.api.get(`/narratives/project/${projectId}`);
+    return response.data;
+  }
+
+  async getPortfolioNarrative() {
+    const response = await this.api.get('/narratives/portfolio');
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Text Simplification & Reading Level
+  // -------------------------------------------------------------------------
+
+  async simplifyText(text: string, level: 'mild' | 'strong') {
+    const response = await this.api.post('/accessibility/simplify', { text, level });
+    return response.data;
+  }
+
+  async analyzeReadingLevel(text: string) {
+    const response = await this.api.post('/accessibility/reading-level', { text });
+    return response.data;
+  }
+
 }
 
 export const apiService = new ApiService();

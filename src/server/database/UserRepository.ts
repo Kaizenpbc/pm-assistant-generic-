@@ -125,6 +125,24 @@ export class UserRepository extends BaseRepository<User> {
   async list(limit = 1000): Promise<User[]> {
     return this.findAll(limit);
   }
+
+  async getAccessibilityPrefs(userId: string): Promise<Record<string, unknown> | null> {
+    const rows = await this.queryRaw(
+      'SELECT accessibility_preferences FROM users WHERE id = ?',
+      [userId],
+    );
+    if (rows.length === 0) return null;
+    const raw = rows[0].accessibility_preferences;
+    if (!raw) return null;
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  }
+
+  async updateAccessibilityPrefs(userId: string, prefs: Record<string, unknown>): Promise<void> {
+    await this.queryRaw(
+      'UPDATE users SET accessibility_preferences = ?, updated_at = NOW() WHERE id = ?',
+      [JSON.stringify(prefs), userId],
+    );
+  }
 }
 
 export const userRepository = new UserRepository();

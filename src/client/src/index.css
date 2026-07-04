@@ -4,9 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --app-font-size: 16px;
+}
+
 @layer base {
   html {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-size: var(--app-font-size);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -115,6 +120,44 @@
   --color-sidebar-text-active: #ffffff;
 }
 
+
+/* High contrast mode */
+.high-contrast {
+  --tw-text-opacity: 1;
+}
+.high-contrast body {
+  color: #000;
+  background: #fff;
+}
+.high-contrast .card,
+.high-contrast .rounded-xl {
+  border-width: 2px;
+  border-color: #000;
+}
+.high-contrast .dark body {
+  color: #fff;
+  background: #000;
+}
+.high-contrast .dark .card,
+.high-contrast .dark .rounded-xl {
+  border-color: #fff;
+}
+.high-contrast button:focus,
+.high-contrast a:focus {
+  outline: 3px solid #000;
+  outline-offset: 2px;
+}
+.high-contrast .dark button:focus,
+.high-contrast .dark a:focus {
+  outline-color: #fff;
+}
+
+/* Reduced motion (user preference via toggle) */
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
 
 @media (prefers-reduced-motion: reduce) {
   * {

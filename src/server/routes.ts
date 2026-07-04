@@ -32,6 +32,8 @@ import { learningRoutes } from './routes/ai/learning';
 import { intelligenceRoutes } from './routes/ai/intelligence';
 import { ragRoutes } from './routes/ai/rag';
 import { aiBudgetRoutes } from './routes/ai/aiBudget';
+import { narrativeRoutes } from './routes/ai/narratives';
+import { accessibilityRoutes } from './routes/ai/accessibility';
 
 // Resources
 import { resourceRoutes } from './routes/resources/resources';
@@ -117,6 +119,8 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(intelligenceRoutes, { prefix: '/api/v1/intelligence' });
   await fastify.register(ragRoutes, { prefix: '/api/v1/rag' });
   await fastify.register(aiBudgetRoutes, { prefix: '/api/v1/ai/budget' });
+  await fastify.register(narrativeRoutes, { prefix: '/api/v1/narratives' });
+  await fastify.register(accessibilityRoutes, { prefix: '/api/v1/accessibility' });
 
   // Resources
   await fastify.register(resourceRoutes, { prefix: '/api/v1/resources' });

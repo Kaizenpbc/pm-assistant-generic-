@@ -79,6 +79,14 @@ export class UserService {
   async list(): Promise<User[]> {
     return userRepository.list();
   }
+
+  async getAccessibilityPrefs(userId: string): Promise<Record<string, unknown> | null> {
+    return userRepository.getAccessibilityPrefs(userId);
+  }
+
+  async updateAccessibilityPrefs(userId: string, prefs: Record<string, unknown>): Promise<void> {
+    await userRepository.updateAccessibilityPrefs(userId, prefs);
+  }
 }
 
 export const userService = new UserService();

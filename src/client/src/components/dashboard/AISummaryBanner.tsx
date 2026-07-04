@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Shield, DollarSign, TrendingUp } from 'lucide-react';
+import { Shield, DollarSign, TrendingUp, RefreshCw, MessageSquare } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { useAccessibility } from '../../contexts/AccessibilityContext';
 
 function SkeletonBanner() {
   return (
@@ -52,10 +53,18 @@ function getStatusDot(score: number): string {
 }
 
 export function AISummaryBanner() {
+  const { prefs } = useAccessibility();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboard-predictions'],
     queryFn: () => apiService.getDashboardPredictions(),
     staleTime: 60000,
+  });
+
+  const { data: narrativeData, isLoading: narrativeLoading, refetch: refetchNarrative } = useQuery({
+    queryKey: ['portfolio-narrative'],
+    queryFn: () => apiService.getPortfolioNarrative(),
+    staleTime: 120000,
+    enabled: prefs.narrationEnabled,
   });
 
   if (isLoading) {
@@ -193,6 +202,32 @@ export function AISummaryBanner() {
               ))}
             </ul>
           )}
+        </div>
+      )}
+
+      {/* AI Narrative (when enabled) */}
+      {prefs.narrationEnabled && (
+        <div className="mt-4 border-t border-gray-100 pt-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <MessageSquare className="h-3.5 w-3.5 text-primary-400" />
+              <p className="text-xs font-medium text-primary-600">AI Narrative</p>
+            </div>
+            <button
+              onClick={() => refetchNarrative()}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              title="Refresh narrative"
+            >
+              <RefreshCw className={`h-3 w-3 ${narrativeLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          {narrativeLoading ? (
+            <div className="h-4 w-3/4 bg-gray-100 rounded animate-pulse" />
+          ) : narrativeData?.narrative ? (
+            <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+              {narrativeData.narrative}
+            </p>
+          ) : null}
         </div>
       )}
     </div>

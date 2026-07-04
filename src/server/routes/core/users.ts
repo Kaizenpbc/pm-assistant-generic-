@@ -9,6 +9,14 @@ const notificationPrefsSchema = z.object({
   digestFrequency: z.enum(['none', 'daily', 'weekly']).optional(),
 });
 
+const accessibilityPrefsSchema = z.object({
+  highContrast: z.boolean().optional(),
+  fontSize: z.number().min(12).max(32).optional(),
+  reducedMotion: z.boolean().optional(),
+  simplificationLevel: z.enum(['off', 'mild', 'strong']).optional(),
+  narrationEnabled: z.boolean().optional(),
+});
+
 const userPrefsSchema = z.object({
   timezone: z.string().max(100).optional(),
   locale: z.string().max(10).optional(),
@@ -94,6 +102,36 @@ export async function userRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       console.error('Update user preferences error:', error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // Accessibility preferences
+  fastify.get('/me/accessibility', {
+    preHandler: [requireScope('read')],
+    schema: { description: 'Get accessibility preferences', tags: ['users'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = request.user!.userId;
+      const prefs = await userService.getAccessibilityPrefs(userId);
+      return { preferences: prefs };
+    } catch (error) {
+      console.error('Get accessibility preferences error:', error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  fastify.put('/me/accessibility', {
+    preHandler: [requireScope('read')],
+    schema: { description: 'Update accessibility preferences', tags: ['users'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = request.user!.userId;
+      const parsed = accessibilityPrefsSchema.parse(request.body);
+      await userService.updateAccessibilityPrefs(userId, parsed);
+      return { preferences: parsed };
+    } catch (error) {
+      console.error('Update accessibility preferences error:', error);
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
