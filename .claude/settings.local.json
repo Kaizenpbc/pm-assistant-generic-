@@ -179,7 +179,10 @@
       "Bash(export TMPF=\"$TEMP/login.json\")",
       "Bash(export COOKIEF=\"$TEMP/pm_cookies.txt\")",
       "Bash(export COOKIEF=\"$TEMP/pm_cookies2.txt\")",
-      "Bash(export COOKIEF=\"$TEMP/pm_cookies3.txt\")"
+      "Bash(export COOKIEF=\"$TEMP/pm_cookies3.txt\")",
+      "Bash(git checkout:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(node -e \"console.log\\(require\\(''zod/package.json''\\).version\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,
