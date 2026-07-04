@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { resourceService } from '../../services/ResourceService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 
 const createResourceSchema = z.object({
   name: z.string().min(1),
@@ -97,7 +98,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // GET /resources/workload/:projectId
-  fastify.get('/workload/:projectId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, _reply: FastifyReply) => {
+  fastify.get('/workload/:projectId', { preHandler: [requireScope('read'), requireProjectAccess('viewer')] }, async (request: FastifyRequest, _reply: FastifyReply) => {
     const { projectId } = request.params as { projectId: string };
     const workload = await resourceService.computeWorkload(projectId);
     return { workload };

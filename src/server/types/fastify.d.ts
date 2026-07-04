@@ -1,5 +1,6 @@
 import 'fastify';
 import { ServiceContainer } from '../container';
+import { ProjectMember } from '../database/ProjectMemberRepository';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -12,6 +13,7 @@ declare module 'fastify' {
     apiKeyScopes?: string[];
     apiKeyRateLimit?: number | null;
     rawBody?: Buffer;
+    projectMembership?: ProjectMember;
   }
 
   interface FastifyInstance {

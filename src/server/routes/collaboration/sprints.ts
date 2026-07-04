@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { sprintService } from '../../services/SprintService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import { paginate } from '../../dto/responses';
 import { parsePagination } from '../../schemas/paginationSchema';
 
@@ -22,7 +23,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // POST / — create sprint
-  fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/', { preHandler: [requireScope('write'), requireProjectAccess('editor')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       const body = createSprintSchema.parse(request.body);
@@ -36,7 +37,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
   });
 
   // GET /project/:projectId — list sprints by project
-  fastify.get('/project/:projectId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/project/:projectId', { preHandler: [requireScope('read'), requireProjectAccess('viewer')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
       const { limit, offset } = parsePagination(request.query as Record<string, unknown>);
@@ -161,7 +162,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
   });
 
   // GET /velocity/:projectId — velocity history
-  fastify.get('/velocity/:projectId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/velocity/:projectId', { preHandler: [requireScope('read'), requireProjectAccess('viewer')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
       const velocity = await sprintService.getVelocityHistory(projectId);

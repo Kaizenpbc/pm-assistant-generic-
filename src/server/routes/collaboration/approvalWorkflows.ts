@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { approvalWorkflowService } from '../../services/ApprovalWorkflowService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 
 const workflowStepSchema = z.object({
   name: z.string().min(1),
@@ -41,7 +42,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // POST /workflows/:projectId — create workflow
-  fastify.post('/workflows/:projectId', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/workflows/:projectId', { preHandler: [requireScope('write'), requireProjectAccess('editor')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       const { projectId } = request.params as { projectId: string };
@@ -56,7 +57,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
   });
 
   // GET /workflows/:projectId — list workflows
-  fastify.get('/workflows/:projectId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/workflows/:projectId', { preHandler: [requireScope('read'), requireProjectAccess('viewer')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
       const workflows = await approvalWorkflowService.getWorkflows(projectId);
@@ -94,7 +95,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
   });
 
   // POST /change-requests/:projectId — create change request
-  fastify.post('/change-requests/:projectId', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/change-requests/:projectId', { preHandler: [requireScope('write'), requireProjectAccess('editor')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       const { projectId } = request.params as { projectId: string };
@@ -109,7 +110,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
   });
 
   // GET /change-requests/:projectId — list change requests
-  fastify.get('/change-requests/:projectId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/change-requests/:projectId', { preHandler: [requireScope('read'), requireProjectAccess('viewer')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
       const { status } = request.query as { status?: string };

@@ -8,6 +8,7 @@ import { WebSocketService } from '../../services/WebSocketService';
 import { webhookService } from '../../services/WebhookService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import { notificationService } from '../../services/NotificationService';
 import { userService } from '../../services/UserService';
 import { paginate } from '../../dto/responses';
@@ -61,7 +62,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   // dagWorkflowService is a singleton — no instantiation needed
 
   fastify.get('/project/:projectId', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Get schedules for a project', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -75,8 +76,8 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/', {
-    preHandler: [requireScope('write')],
-    schema: { description: 'Create a schedule', tags: ['schedules'] },
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
+    schema: { description: 'Create a schedule (projectId in body)', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
@@ -93,7 +94,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/:scheduleId', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('manager')],
     schema: { description: 'Update a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -113,7 +114,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId', {
-    preHandler: [requireScope('admin')],
+    preHandler: [requireScope('admin'), requireProjectAccess('manager')],
     schema: { description: 'Delete a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -128,7 +129,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:scheduleId/tasks', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Get tasks for a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -144,7 +145,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/:scheduleId/tasks', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
     schema: { description: 'Create a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -172,7 +173,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/:scheduleId/tasks/:taskId', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
     schema: { description: 'Update a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -222,7 +223,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId/tasks/:taskId', {
-    preHandler: [requireScope('admin')],
+    preHandler: [requireScope('admin'), requireProjectAccess('manager')],
     schema: { description: 'Delete a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -244,7 +245,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   // -------------------------------------------------------------------------
 
   fastify.get('/:scheduleId/critical-path', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Get critical path analysis', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -262,7 +263,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   // -------------------------------------------------------------------------
 
   fastify.get('/:scheduleId/baselines', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Get baselines for a schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -276,7 +277,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:scheduleId/baselines/:baselineId/compare', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Compare baseline vs current schedule', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -291,7 +292,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId/baselines/:baselineId', {
-    preHandler: [requireScope('admin')],
+    preHandler: [requireScope('admin'), requireProjectAccess('manager')],
     schema: { description: 'Delete a baseline', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -306,7 +307,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/:scheduleId/baselines', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
     schema: { description: 'Create a baseline snapshot', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -330,7 +331,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   // -------------------------------------------------------------------------
 
   fastify.get('/:scheduleId/tasks/:taskId/comments', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Get comments for a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -344,7 +345,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/:scheduleId/tasks/:taskId/comments', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
     schema: { description: 'Add a comment to a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -391,7 +392,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:scheduleId/tasks/:taskId/comments/:commentId', {
-    preHandler: [requireScope('admin')],
+    preHandler: [requireScope('admin'), requireProjectAccess('manager')],
     schema: { description: 'Delete a comment', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -406,7 +407,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:scheduleId/tasks/:taskId/activity', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Get activity feed for a task', tags: ['schedules'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

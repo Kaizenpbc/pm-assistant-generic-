@@ -1,4 +1,6 @@
 import { projectRepository } from '../database/ProjectRepository';
+import { projectMemberService } from './ProjectMemberService';
+import { userService } from './UserService';
 import { auditLedgerService } from './AuditLedgerService';
 import { policyEngineService } from './PolicyEngineService';
 import { dagWorkflowService } from './DagWorkflowService';
@@ -90,6 +92,21 @@ export class ProjectService {
       payload: { after: project },
       source: 'web',
     }).catch(err => deadLetterService.capture('audit.append', {}, err));
+
+    // Auto-add creator as project owner (fire-and-forget)
+    (async () => {
+      try {
+        const creator = await userService.findById(data.userId);
+        await projectMemberService.addMember(project.id, {
+          userId: data.userId,
+          userName: creator?.fullName || creator?.username || 'Unknown',
+          email: creator?.email || '',
+          role: 'owner',
+        });
+      } catch (err) {
+        deadLetterService.capture('project.auto-add-owner', { projectId: project.id, userId: data.userId }, err as Error);
+      }
+    })();
 
     return project;
   }
