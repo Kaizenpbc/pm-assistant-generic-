@@ -2,6 +2,7 @@ import { z, ZodSchema } from 'zod';
 import { policyEngineService, type EvaluationContext } from './PolicyEngineService';
 import { auditLedgerService } from './AuditLedgerService';
 import { agentMemoryService } from './AgentMemoryService';
+import { agentRepository } from '../database/AgentRepository';
 
 export interface AgentCapability {
   id: string;
@@ -71,6 +72,16 @@ export class AgentRegistry {
     const cap = this.capabilities.get(capabilityId);
     if (!cap) {
       return { success: false, error: `Unknown capability: ${capabilityId}`, durationMs: 0, capabilityId };
+    }
+
+    // 0. Check if agent is enabled in the database
+    try {
+      const agentRecord = await agentRepository.findById(capabilityId);
+      if (agentRecord && !agentRecord.isEnabled) {
+        return { success: false, error: `Agent "${capabilityId}" is disabled`, durationMs: 0, capabilityId };
+      }
+    } catch {
+      // DB unavailable — proceed (code-registered agents still work)
     }
 
     const start = Date.now();
