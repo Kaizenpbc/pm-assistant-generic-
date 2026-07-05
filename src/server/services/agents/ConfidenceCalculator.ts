@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../../database/connection';
+import logger from '../../utils/logger';
 
 export interface ConfidenceFactors {
   dataQuality: number;         // 0-100
@@ -155,7 +156,7 @@ export class ConfidenceCalculator {
         ],
       );
     } catch (err) {
-      console.error('[ConfidenceCalculator] Failed to log confidence:', err);
+      logger.error('[ConfidenceCalculator] Failed to log confidence:', err);
     }
   }
 }

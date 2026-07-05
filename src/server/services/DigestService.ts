@@ -1,6 +1,6 @@
 import { databaseService } from '../database/connection';
 import { emailService } from './EmailService';
-import { maskPii } from '../utils/logger';
+import logger, { maskPii } from '../utils/logger';
 
 interface DigestUser {
   id: string;
@@ -43,12 +43,12 @@ export class DigestService {
         await this.updateLastSent(user.id, now);
         sentCount++;
       } catch (err) {
-        console.error(`[DigestService] Failed to send digest to ${maskPii(user.email)}:`, err instanceof Error ? err.message : err);
+        logger.error(`[DigestService] Failed to send digest to ${maskPii(user.email)}:`, err instanceof Error ? err.message : err);
       }
     }
 
     if (sentCount > 0) {
-      console.log(`[DigestService] Sent ${sentCount} digest email(s)`);
+      logger.info(`[DigestService] Sent ${sentCount} digest email(s)`);
     }
 
     return sentCount;

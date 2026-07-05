@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { config } from '../config';
 import { aiBudgetService, AIBudgetExceededError } from './AIBudgetService';
 import { sanitizeForPrompt } from '../utils/promptSanitizer';
+import logger from '../utils/logger';
 import { getRequestContext } from '../middleware/requestContext';
 
 // ---------------------------------------------------------------------------
@@ -351,7 +352,7 @@ export class ClaudeService {
 
     if (this.aiEnabled) {
       if (!config.ANTHROPIC_API_KEY) {
-        console.warn(
+        logger.warn(
           '[ClaudeService] AI_ENABLED is true but ANTHROPIC_API_KEY is not configured. ' +
             'AI features will be unavailable until a valid API key is provided.',
         );
@@ -414,7 +415,7 @@ export class ClaudeService {
     } catch (error: unknown) {
       // Fallback: retry once with fallback model on transient errors
       if (this.fallbackEnabled && this.circuitBreaker.isTransientError(error)) {
-        console.warn(`[ClaudeService] Primary model failed (${(error as any)?.status ?? 'timeout'}), retrying with fallback model ${this.fallbackModel}`);
+        logger.warn(`[ClaudeService] Primary model failed (${(error as any)?.status ?? 'timeout'}), retrying with fallback model ${this.fallbackModel}`);
         try {
           const fallbackResponse = await this.client!.messages.create({
             model: this.fallbackModel,

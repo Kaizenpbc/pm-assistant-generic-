@@ -3,6 +3,7 @@ import { projectService } from '../../../ProjectService';
 import { agentCostTracker } from '../../AgentCostTracker';
 import { confidenceCalculator } from '../../ConfidenceCalculator';
 import { stripJsonFences, mapSuggestedActions } from '../helpers';
+import logger from '../../../../utils/logger';
 import {
   HygieneAnalysisResponseSchema, HygieneAnalysisResponse,
   LessonsExtractionResponseSchema, LessonsExtractionResponse,
@@ -48,7 +49,7 @@ export async function generateHygieneAnalysisImpl(input: HygieneAnalysisInput): 
   );
 
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping hygiene analysis');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping hygiene analysis');
     return null;
   }
 
@@ -63,7 +64,7 @@ export async function generateHygieneAnalysisImpl(input: HygieneAnalysisInput): 
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for hygiene analysis:', err);
+    logger.error('[ReasoningEngine] Claude call failed for hygiene analysis:', err);
     return null;
   }
 
@@ -84,7 +85,7 @@ export async function generateHygieneAnalysisImpl(input: HygieneAnalysisInput): 
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = HygieneAnalysisResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse hygiene analysis response:', err);
+    logger.error('[ReasoningEngine] Failed to parse hygiene analysis response:', err);
     return null;
   }
 
@@ -125,7 +126,7 @@ export async function generateLessonsExtractionImpl(input: LessonsExtractionInpu
   );
 
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping lessons extraction');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping lessons extraction');
     return null;
   }
 
@@ -140,7 +141,7 @@ export async function generateLessonsExtractionImpl(input: LessonsExtractionInpu
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for lessons extraction:', err);
+    logger.error('[ReasoningEngine] Claude call failed for lessons extraction:', err);
     return null;
   }
 
@@ -161,7 +162,7 @@ export async function generateLessonsExtractionImpl(input: LessonsExtractionInpu
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = LessonsExtractionResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse lessons extraction response:', err);
+    logger.error('[ReasoningEngine] Failed to parse lessons extraction response:', err);
     return null;
   }
 
@@ -201,7 +202,7 @@ export async function generatePredictiveAlertImpl(input: PredictiveAlertInput): 
   );
 
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping predictive alert');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping predictive alert');
     return null;
   }
 
@@ -216,7 +217,7 @@ export async function generatePredictiveAlertImpl(input: PredictiveAlertInput): 
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for predictive alert:', err);
+    logger.error('[ReasoningEngine] Claude call failed for predictive alert:', err);
     return null;
   }
 
@@ -237,7 +238,7 @@ export async function generatePredictiveAlertImpl(input: PredictiveAlertInput): 
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = PredictiveAlertResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse predictive alert response:', err);
+    logger.error('[ReasoningEngine] Failed to parse predictive alert response:', err);
     return null;
   }
 
@@ -280,7 +281,7 @@ export async function generateStakeholderReportImpl(input: StakeholderReportInpu
   );
 
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping stakeholder report');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping stakeholder report');
     return null;
   }
 
@@ -295,7 +296,7 @@ export async function generateStakeholderReportImpl(input: StakeholderReportInpu
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for stakeholder report:', err);
+    logger.error('[ReasoningEngine] Claude call failed for stakeholder report:', err);
     return null;
   }
 
@@ -316,7 +317,7 @@ export async function generateStakeholderReportImpl(input: StakeholderReportInpu
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = StakeholderReportResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse stakeholder report response:', err);
+    logger.error('[ReasoningEngine] Failed to parse stakeholder report response:', err);
     return null;
   }
 

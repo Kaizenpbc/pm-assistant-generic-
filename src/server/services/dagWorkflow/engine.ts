@@ -3,6 +3,7 @@ import { workflowRepository } from '../../database/WorkflowRepository';
 import { Task, ScheduleService } from '../ScheduleService';
 import { WorkflowNode, WorkflowEdge, DefinitionWithGraph } from './types';
 import { resolveTemplates } from './templateResolver';
+import logger from '../../utils/logger';
 
 // ── Trigger matching ──────────────────────────────────────────────────────
 
@@ -117,7 +118,7 @@ export async function executeAction(
       return { action: 'log_activity', message: config.message };
     }
     case 'send_notification': {
-      console.log(`[Workflow Notification] ${config.message || 'Notification'} - Task: ${task?.name || 'N/A'}`);
+      logger.info(`[Workflow Notification] ${config.message || 'Notification'} - Task: ${task?.name || 'N/A'}`);
       try {
         const { notificationService } = await import('../NotificationService');
         const schedule = task ? await scheduleService.findById(task.scheduleId) : null;
@@ -141,7 +142,7 @@ export async function executeAction(
           }
         }
       } catch (err) {
-        console.error('[Workflow] send_notification error:', err);
+        logger.error('[Workflow] send_notification error:', err);
       }
       return { action: 'send_notification', message: config.message, notified: false };
     }
@@ -202,7 +203,7 @@ export async function advanceExecution(
 
   for (const edge of outEdges) {
     if (visited.has(edge.targetNodeId)) {
-      console.error(`[DagWorkflow] Cycle detected: ${edge.targetNodeId}`);
+      logger.error(`[DagWorkflow] Cycle detected: ${edge.targetNodeId}`);
       await workflowRepository.updateExecutionStatus(execId, 'failed', 'Cycle detected');
       return;
     }

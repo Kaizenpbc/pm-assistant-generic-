@@ -3,6 +3,7 @@ import { policyEngineService, type EvaluationContext } from './PolicyEngineServi
 import { auditLedgerService } from './AuditLedgerService';
 import { agentMemoryService } from './AgentMemoryService';
 import { agentRepository } from '../database/AgentRepository';
+import logger from '../utils/logger';
 import { deadLetterService } from './DeadLetterService';
 
 export interface AgentCapability {
@@ -40,7 +41,7 @@ export class AgentRegistry {
       throw new Error(`Agent capability "${cap.id}" is already registered`);
     }
     this.capabilities.set(cap.id, cap);
-    console.log(`[AgentRegistry] Registered: ${cap.id} (${cap.capability})`);
+    logger.info(`[AgentRegistry] Registered: ${cap.id} (${cap.capability})`);
   }
 
   unregister(id: string): void {

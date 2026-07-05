@@ -2,6 +2,7 @@ import { actionProposalService, Proposal, ProposalAction } from './ActionProposa
 import { scheduleService } from '../ScheduleService';
 import { auditLedgerService } from '../AuditLedgerService';
 import { notificationService } from '../NotificationService';
+import logger from '../../utils/logger';
 
 export interface ExecutionResult {
   success: boolean;
@@ -66,7 +67,7 @@ export class ActionExecutor {
         failError = err instanceof Error ? err.message : String(err);
         await actionProposalService.updateActionStatus(action.id, 'failed', failError);
 
-        console.error(`[ActionExecutor] Action ${action.id} failed:`, failError);
+        logger.error(`[ActionExecutor] Action ${action.id} failed:`, failError);
         break;
       }
     }
@@ -255,7 +256,7 @@ export class ActionExecutor {
           source: 'system',
         });
       } catch (err) {
-        console.error(`[ActionExecutor] Rollback failed for action ${action.id}:`, err);
+        logger.error(`[ActionExecutor] Rollback failed for action ${action.id}:`, err);
         // Continue rolling back remaining actions
       }
     }
@@ -280,7 +281,7 @@ export class ActionExecutor {
         // Notifications can't be unsent — skip rollback
         break;
       default:
-        console.warn(`[ActionExecutor] No rollback handler for action type: ${action.actionType}`);
+        logger.warn(`[ActionExecutor] No rollback handler for action type: ${action.actionType}`);
     }
   }
 

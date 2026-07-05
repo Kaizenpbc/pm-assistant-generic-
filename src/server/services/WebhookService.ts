@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { webhookRepository, Webhook } from '../database/WebhookRepository';
+import logger from '../utils/logger';
 
 export type { Webhook } from '../database/WebhookRepository';
 
@@ -51,14 +52,14 @@ export class WebhookService {
     try {
       hooks = await webhookRepository.findActiveByUser(userId);
     } catch (error) {
-      console.error('Webhook dispatch: failed to query webhooks:', error);
+      logger.error('Webhook dispatch: failed to query webhooks:', error);
       return;
     }
 
     const matching = hooks.filter(h => h.events.includes(event));
     for (const webhook of matching) {
       this.deliverWebhook(webhook, event, payload).catch(err => {
-        console.error(`Webhook delivery failed for ${webhook.id}:`, err);
+        logger.error(`Webhook delivery failed for ${webhook.id}:`, err);
       });
     }
   }
@@ -85,7 +86,7 @@ export class WebhookService {
       await webhookRepository.recordSuccess(webhook.id, response.status);
     } catch (error: any) {
       clearTimeout(timeoutId);
-      console.error(`Webhook delivery error for ${webhook.id}:`, error.message || error);
+      logger.error(`Webhook delivery error for ${webhook.id}:`, error.message || error);
       const newFailureCount = webhook.failureCount + 1;
       await webhookRepository.recordFailure(webhook.id, newFailureCount, newFailureCount >= 5);
     }
@@ -95,7 +96,7 @@ export class WebhookService {
     const webhook = await webhookRepository.findByUserAndId(userId, webhookId);
     if (!webhook) return false;
     this.deliverWebhook(webhook, 'webhook.test', { message: 'Test ping' }).catch(err => {
-      console.error(`Test webhook delivery failed for ${webhook.id}:`, err);
+      logger.error(`Test webhook delivery failed for ${webhook.id}:`, err);
     });
     return true;
   }

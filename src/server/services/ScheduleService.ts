@@ -3,6 +3,7 @@ import { databaseService } from '../database/connection';
 import { scheduleRepository } from '../database/ScheduleRepository';
 import { auditLedgerService } from './AuditLedgerService';
 import { dagWorkflowService } from './DagWorkflowService';
+import logger from '../utils/logger';
 import { deadLetterService } from './DeadLetterService';
 
 export interface Schedule {
@@ -529,7 +530,7 @@ export class ScheduleService {
     }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     dagWorkflowService.evaluateTaskChange(task, null, this).catch(err =>
-      console.error('[Workflow] evaluateTaskChange error:', err)
+      logger.error('[Workflow] evaluateTaskChange error:', err)
     );
 
     return task;
@@ -665,7 +666,7 @@ export class ScheduleService {
     }).catch(err => deadLetterService.capture('audit.append', {}, err));
 
     dagWorkflowService.evaluateTaskChange(updated, oldTask, this).catch(err =>
-      console.error('[Workflow] evaluateTaskChange error:', err)
+      logger.error('[Workflow] evaluateTaskChange error:', err)
     );
 
     return updated;

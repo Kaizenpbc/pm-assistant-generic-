@@ -2,6 +2,7 @@ import { claudeService } from './claudeService';
 import { scheduleService, Task } from './ScheduleService';
 import { resourceService, Resource } from './ResourceService';
 import { config } from '../config';
+import logger from '../utils/logger';
 import { databaseService } from '../database/connection';
 import { ragService } from './RagService';
 import {
@@ -67,7 +68,7 @@ export class MeetingIntelligenceService {
 
     // Fire-and-forget RAG indexing
     ragService.indexMeeting(analysis).catch((err) => {
-      console.error(`[RAG] Failed to index meeting ${analysis.id}:`, (err as Error).message);
+      logger.error(`[RAG] Failed to index meeting ${analysis.id}:`, (err as Error).message);
     });
   }
 

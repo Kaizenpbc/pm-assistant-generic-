@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../../database/connection';
 import type { RiskLevel } from './ActionProposalService';
+import logger from '../../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -237,7 +238,7 @@ export class AutonomyService {
       [id, agentId, projectId, minConfidence, maxRisk, adminUserId],
     );
 
-    console.log(`[Autonomy] Agent ${agentId} promoted to Tier 3 by ${adminUserId} (project: ${projectId ?? 'global'}, minConfidence: ${minConfidence}, maxRisk: ${maxRisk})`);
+    logger.info(`[Autonomy] Agent ${agentId} promoted to Tier 3 by ${adminUserId} (project: ${projectId ?? 'global'}, minConfidence: ${minConfidence}, maxRisk: ${maxRisk})`);
 
     return {
       id,
@@ -259,7 +260,7 @@ export class AutonomyService {
       projectId ? [agentId, projectId] : [agentId],
     );
 
-    console.log(`[Autonomy] Agent ${agentId} demoted to Tier 2 by ${adminUserId} (project: ${projectId ?? 'global'})`);
+    logger.info(`[Autonomy] Agent ${agentId} demoted to Tier 2 by ${adminUserId} (project: ${projectId ?? 'global'})`);
   }
 
   async listConfigs(): Promise<AutonomyConfig[]> {

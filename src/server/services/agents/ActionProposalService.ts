@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../../database/connection';
 import { autonomyService } from './AutonomyService';
+import logger from '../../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -236,7 +237,7 @@ export class ActionProposalService {
 
     // Tier 3 auto-execute: if agent is promoted, execute immediately
     this.tryAutoExecute(proposal).catch(err =>
-      console.error(`[ActionProposalService] Auto-execute check failed for ${id}:`, err)
+      logger.error(`[ActionProposalService] Auto-execute check failed for ${id}:`, err)
     );
 
     return proposal;
@@ -264,9 +265,9 @@ export class ActionProposalService {
     // Execute
     try {
       await actionExecutor.execute(proposal.id);
-      console.log(`[Autonomy] Auto-executed proposal ${proposal.id} (agent: ${proposal.agentId}, confidence: ${proposal.confidenceScore}%)`);
+      logger.info(`[Autonomy] Auto-executed proposal ${proposal.id} (agent: ${proposal.agentId}, confidence: ${proposal.confidenceScore}%)`);
     } catch (err) {
-      console.error(`[Autonomy] Auto-execution failed for proposal ${proposal.id}:`, err);
+      logger.error(`[Autonomy] Auto-execution failed for proposal ${proposal.id}:`, err);
     }
   }
 

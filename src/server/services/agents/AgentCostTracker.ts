@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../../database/connection';
 import { config } from '../../config';
+import logger from '../../utils/logger';
 
 export interface CostEntry {
   agentId: string;
@@ -54,7 +55,7 @@ export class AgentCostTracker {
         ],
       );
     } catch (err) {
-      console.error('[AgentCostTracker] Failed to record cost entry:', err);
+      logger.error('[AgentCostTracker] Failed to record cost entry:', err);
     }
   }
 

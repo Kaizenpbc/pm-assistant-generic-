@@ -1,5 +1,6 @@
 import { databaseService } from '../../database/connection';
 import { actionProposalService, ProposalStatus } from './ActionProposalService';
+import logger from '../../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -85,7 +86,7 @@ export class ConflictResolver {
     }
 
     if (invalidated > 0) {
-      console.log(`[ConflictResolver] Invalidated ${invalidated} proposal(s) targeting ${entityType}:${entityId}`);
+      logger.info(`[ConflictResolver] Invalidated ${invalidated} proposal(s) targeting ${entityType}:${entityId}`);
     }
 
     return invalidated;
@@ -123,7 +124,7 @@ export class ConflictResolver {
       const check = await this.checkStaleness(proposal.id);
       if (check.isStale) {
         await actionProposalService.updateStatus(proposal.id, 'expired');
-        console.log(`[ConflictResolver] Expired stale proposal ${proposal.id}: ${check.reason}`);
+        logger.info(`[ConflictResolver] Expired stale proposal ${proposal.id}: ${check.reason}`);
         expired++;
       }
     }

@@ -3,6 +3,7 @@ import { agentRegistry } from '../AgentRegistryService';
 import { notificationService } from '../NotificationService';
 import { AgentActivityLogService } from '../AgentActivityLogService';
 import type { Project } from '../ProjectService';
+import logger from '../../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Agent 2 — Budget Burn-Rate
@@ -72,7 +73,7 @@ export async function runBudgetBurnRateAgent(
     linkType: 'evm',
   });
 
-  console.log(`[Agent:Budget] Alert created for "${project.name}": ${problems.join('; ')}`);
+  logger.info(`[Agent:Budget] Alert created for "${project.name}": ${problems.join('; ')}`);
 
   await activityLog.log({
     projectId: project.id,
@@ -102,7 +103,7 @@ export async function runMonteCarloConfidenceAgent(
     const ctx = { actorId: 'system' as const, actorType: 'system' as const, source: 'system' as const, projectId: project.id };
     const invocationResult = await agentRegistry.invoke('monte-carlo-v1', { scheduleId: schedule.id }, ctx);
     if (!invocationResult.success) {
-      console.error(`[Agent:MonteCarlo] Invocation failed for schedule ${schedule.id}: ${invocationResult.error}`);
+      logger.error(`[Agent:MonteCarlo] Invocation failed for schedule ${schedule.id}: ${invocationResult.error}`);
       continue;
     }
     const result = invocationResult.output.result;
@@ -137,7 +138,7 @@ export async function runMonteCarloConfidenceAgent(
         linkType: 'schedule',
       });
 
-      console.log(`[Agent:MonteCarlo] Alert for "${schedule.name}": P${confidenceLevel} +${daysOver}d`);
+      logger.info(`[Agent:MonteCarlo] Alert for "${schedule.name}": P${confidenceLevel} +${daysOver}d`);
       alertCount++;
 
       await activityLog.log({
@@ -226,7 +227,7 @@ export async function runMeetingFollowUpAgent(
       linkId: analysis.id,
     });
 
-    console.log(`[Agent:Meeting] Alert for "${project.name}": ${problems.join('; ')}`);
+    logger.info(`[Agent:Meeting] Alert for "${project.name}": ${problems.join('; ')}`);
     alertCount++;
 
     await activityLog.log({
@@ -274,7 +275,7 @@ export async function runScopeCreepAgent(
     return 0;
   }
 
-  console.log(`[Agent:ScopeCreep] Alert created for "${project.name}"`);
+  logger.info(`[Agent:ScopeCreep] Alert created for "${project.name}"`);
 
   await activityLog.log({
     projectId: project.id,

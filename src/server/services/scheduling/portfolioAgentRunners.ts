@@ -2,6 +2,7 @@ import { AgentActivityLogService } from '../AgentActivityLogService';
 import { crossProjectIntelligenceAgent } from '../agents/CrossProjectIntelligenceAgent';
 import { riskEscalationAgent, ProjectAgentResults } from '../agents/RiskEscalationAgent';
 import type { Project } from '../ProjectService';
+import logger from '../../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Agent 8 — Cross-Project Intelligence (portfolio-level)
@@ -38,7 +39,7 @@ export async function runCrossProjectIntelligenceAgent(
     return 0;
   }
 
-  console.log(`[Agent:CrossProjectIntelligence] Portfolio proposal created (${result.indicators?.atRiskProjects.length} at-risk, ${result.indicators?.budgetDeficitProjects.length} budget deficit)`);
+  logger.info(`[Agent:CrossProjectIntelligence] Portfolio proposal created (${result.indicators?.atRiskProjects.length} at-risk, ${result.indicators?.budgetDeficitProjects.length} budget deficit)`);
 
   await activityLog.log({
     projectId: 'portfolio',
@@ -101,7 +102,7 @@ export async function runRiskEscalationAgent(
     return 0;
   }
 
-  console.log(`[Agent:RiskEscalation] Escalation proposal created (${result.indicators?.compoundRiskProjects.length} compound risk project(s))`);
+  logger.info(`[Agent:RiskEscalation] Escalation proposal created (${result.indicators?.compoundRiskProjects.length} compound risk project(s))`);
 
   await activityLog.log({
     projectId: 'portfolio',

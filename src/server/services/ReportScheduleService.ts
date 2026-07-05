@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { reportScheduleRepository, ReportSchedule } from '../database/ReportScheduleRepository';
 import { reportBuilderService } from './ReportBuilderService';
 import { emailService } from './EmailService';
+import logger from '../utils/logger';
 
 export type { ReportSchedule } from '../database/ReportScheduleRepository';
 
@@ -113,7 +114,7 @@ export class ReportScheduleService {
         await this.updateRunStatus(schedule.id, 'success', null, nextRun);
         executed++;
       } catch (err: any) {
-        console.error(`[ReportScheduleService] Failed to execute schedule ${schedule.id}:`, err);
+        logger.error(`[ReportScheduleService] Failed to execute schedule ${schedule.id}:`, err);
         const nextRun = this.computeNextRun(
           schedule.frequency, schedule.dayOfWeek, schedule.dayOfMonth, schedule.timeOfDay,
         );
@@ -122,7 +123,7 @@ export class ReportScheduleService {
     }
 
     if (executed > 0) {
-      console.log(`[ReportScheduleService] Executed ${executed} scheduled report(s)`);
+      logger.info(`[ReportScheduleService] Executed ${executed} scheduled report(s)`);
     }
 
     return executed;

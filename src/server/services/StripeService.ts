@@ -3,6 +3,7 @@ import { config } from '../config';
 import { UserService } from './UserService';
 import { databaseService } from '../database/connection';
 import { v4 as uuidv4 } from 'uuid';
+import logger from '../utils/logger';
 
 export class StripeService {
   private stripe: Stripe | null = null;
@@ -24,7 +25,7 @@ export class StripeService {
 
   async createCustomer(email: string, name: string, userId: string): Promise<string | null> {
     if (!this.isConfigured) {
-      console.log(`[StripeService] Would create customer for [email_redacted]`);
+      logger.info(`[StripeService] Would create customer for [email_redacted]`);
       return null;
     }
 
@@ -86,7 +87,7 @@ export class StripeService {
         break;
       }
       default:
-        console.log(`[StripeService] Unhandled event type: ${event.type}`);
+        logger.info(`[StripeService] Unhandled event type: ${event.type}`);
     }
   }
 
@@ -120,7 +121,7 @@ export class StripeService {
     const customerId = subscription.customer as string;
     const user = await this.userService.findByStripeCustomerId(customerId);
     if (!user) {
-      console.error(`[StripeService] No user found for Stripe customer ${customerId}`);
+      logger.error(`[StripeService] No user found for Stripe customer ${customerId}`);
       return;
     }
 

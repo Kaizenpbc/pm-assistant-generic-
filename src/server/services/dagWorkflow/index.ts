@@ -2,6 +2,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { workflowRepository } from '../../database/WorkflowRepository';
 import { Task, ScheduleService, scheduleService } from '../ScheduleService';
 import { auditLedgerService } from '../AuditLedgerService';
+import { deadLetterService } from '../DeadLetterService';
+import logger from '../../utils/logger';
 import {
   WorkflowDefinition, WorkflowNode, WorkflowExecution,
   DefinitionWithGraph, ExecutionWithNodes, NodeType,
@@ -174,7 +176,7 @@ class DagWorkflowService {
         }
       }
     } catch (err) {
-      console.error('[DagWorkflow] evaluateTaskChange error:', err);
+      logger.error('[DagWorkflow] evaluateTaskChange error:', err);
     }
   }
 
@@ -213,7 +215,7 @@ class DagWorkflowService {
         }
       }
     } catch (err) {
-      console.error('[DagWorkflow] evaluateProjectChange error:', err);
+      logger.error('[DagWorkflow] evaluateProjectChange error:', err);
     }
   }
 
@@ -302,7 +304,7 @@ class DagWorkflowService {
         status: exec?.status ?? 'unknown',
       },
       source: 'system',
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('audit.workflow_trigger', { workflowId: def.id, entityId: task?.id }, err));
 
     return exec!;
   }
