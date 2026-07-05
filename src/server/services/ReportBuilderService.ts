@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
+import { reportTemplateRepository, ReportTemplateRow } from '../database/ReportTemplateRepository';
 import { auditLedgerService } from './AuditLedgerService';
 import { policyEngineService } from './PolicyEngineService';
 
@@ -40,17 +41,6 @@ export interface GeneratedReport {
   sections: ReportSection[];
 }
 
-interface ReportTemplateRow {
-  id: string;
-  user_id: string;
-  name: string;
-  description: string | null;
-  config: string;
-  is_shared: boolean | number;
-  created_at: string;
-  updated_at: string;
-}
-
 function rowToDTO(row: ReportTemplateRow): ReportTemplate {
   let config: ReportConfig = { sections: [] };
   if (row.config) {
@@ -76,27 +66,20 @@ class ReportBuilderService {
     isShared?: boolean;
   }): Promise<ReportTemplate> {
     const id = uuidv4();
-    await databaseService.query(
-      `INSERT INTO report_templates (id, user_id, name, description, config, is_shared)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, userId, data.name, data.description || null, JSON.stringify(data.config), data.isShared || false],
-    );
-    const rows = await databaseService.query<ReportTemplateRow>('SELECT * FROM report_templates WHERE id = ?', [id]);
-    return rowToDTO(rows[0]);
+    await reportTemplateRepository.insert(id, userId, data.name, data.description || null, JSON.stringify(data.config), data.isShared || false);
+    const row = await reportTemplateRepository.findById(id);
+    return rowToDTO(row!);
   }
 
   async getTemplates(userId: string): Promise<ReportTemplate[]> {
-    const rows = await databaseService.query<ReportTemplateRow>(
-      'SELECT * FROM report_templates WHERE user_id = ? OR is_shared = TRUE ORDER BY updated_at DESC',
-      [userId],
-    );
+    const rows = await reportTemplateRepository.findByUserOrShared(userId);
     return rows.map(rowToDTO);
   }
 
   async getTemplateById(id: string): Promise<ReportTemplate | null> {
-    const rows = await databaseService.query<ReportTemplateRow>('SELECT * FROM report_templates WHERE id = ?', [id]);
-    if (rows.length === 0) return null;
-    return rowToDTO(rows[0]);
+    const row = await reportTemplateRepository.findById(id);
+    if (!row) return null;
+    return rowToDTO(row);
   }
 
   async updateTemplate(id: string, data: {
@@ -112,15 +95,14 @@ class ReportBuilderService {
     if (data.config !== undefined) { sets.push('config = ?'); params.push(JSON.stringify(data.config)); }
     if (data.isShared !== undefined) { sets.push('is_shared = ?'); params.push(data.isShared); }
     if (sets.length > 0) {
-      params.push(id);
-      await databaseService.query(`UPDATE report_templates SET ${sets.join(', ')} WHERE id = ?`, params);
+      await reportTemplateRepository.update(id, sets, params);
     }
-    const rows = await databaseService.query<ReportTemplateRow>('SELECT * FROM report_templates WHERE id = ?', [id]);
-    return rowToDTO(rows[0]);
+    const row = await reportTemplateRepository.findById(id);
+    return rowToDTO(row!);
   }
 
   async deleteTemplate(id: string): Promise<void> {
-    await databaseService.query('DELETE FROM report_templates WHERE id = ?', [id]);
+    await reportTemplateRepository.delete(id);
   }
 
   async generateReport(templateId: string, params?: {

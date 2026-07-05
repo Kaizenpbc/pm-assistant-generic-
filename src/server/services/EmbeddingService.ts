@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'crypto';
 import { config } from '../config';
-import { databaseService } from '../database/connection';
+import { embeddingRepository } from '../database/EmbeddingRepository';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -82,10 +82,7 @@ export class EmbeddingService {
     const contentHash = createHash('sha256').update(text).digest('hex');
 
     // Check for existing embedding with same content hash
-    const existing = await databaseService.query<EmbeddingRow>(
-      'SELECT id, content_hash FROM embeddings WHERE document_type = ? AND document_id = ?',
-      [documentType, documentId],
-    );
+    const existing = await embeddingRepository.findByDocument(documentType, documentId);
 
     if (existing.length > 0 && existing[0].content_hash === contentHash) {
       return { id: existing[0].id, skipped: true };
@@ -94,19 +91,14 @@ export class EmbeddingService {
     const vector = await this.embed(text);
     const id = existing.length > 0 ? existing[0].id : randomUUID();
 
-    await databaseService.query(
-      `INSERT INTO embeddings (id, document_type, document_id, content_hash, embedding, model, dimensions)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE content_hash = VALUES(content_hash), embedding = VALUES(embedding), model = VALUES(model), dimensions = VALUES(dimensions)`,
-      [
-        id,
-        documentType,
-        documentId,
-        contentHash,
-        JSON.stringify(vector),
-        config.EMBEDDING_MODEL,
-        config.EMBEDDING_DIMENSIONS,
-      ],
+    await embeddingRepository.upsert(
+      id,
+      documentType,
+      documentId,
+      contentHash,
+      JSON.stringify(vector),
+      config.EMBEDDING_MODEL,
+      config.EMBEDDING_DIMENSIONS,
     );
 
     this.clearCache();
@@ -134,14 +126,7 @@ export class EmbeddingService {
 
     if (!entries) {
       // Cache miss — load from DB and parse JSON
-      let sql = 'SELECT document_type, document_id, embedding FROM embeddings';
-      const params: any[] = [];
-      if (documentType) {
-        sql += ' WHERE document_type = ?';
-        params.push(documentType);
-      }
-
-      const rows = await databaseService.query<Pick<EmbeddingRow, 'document_type' | 'document_id' | 'embedding'>>(sql, params);
+      const rows = await embeddingRepository.findAll(documentType);
 
       entries = rows.map(row => ({
         vector: typeof row.embedding === 'string' ? JSON.parse(row.embedding) : row.embedding,
@@ -176,10 +161,7 @@ export class EmbeddingService {
   // -------------------------------------------------------------------------
 
   async deleteEmbedding(documentType: 'lesson' | 'meeting', documentId: string): Promise<void> {
-    await databaseService.query(
-      'DELETE FROM embeddings WHERE document_type = ? AND document_id = ?',
-      [documentType, documentId],
-    );
+    await embeddingRepository.delete(documentType, documentId);
     this.clearCache();
   }
 

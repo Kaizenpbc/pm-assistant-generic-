@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import { config } from '../config';
 import { UserService } from './UserService';
-import { databaseService } from '../database/connection';
+import { subscriptionRepository } from '../database/SubscriptionRepository';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
 
@@ -101,12 +101,7 @@ export class StripeService {
     const user = await this.userService.findById(userId);
     if (!user) throw new Error('User not found');
 
-    const rows = await databaseService.query(
-      'SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1',
-      [userId]
-    );
-
-    const sub = rows[0];
+    const sub = await subscriptionRepository.findLatestByUser(userId);
     const isAdmin = user.role === 'admin';
     return {
       tier: isAdmin ? 'pro' : user.subscriptionTier,
@@ -156,46 +151,32 @@ export class StripeService {
     });
 
     // Upsert subscription record
-    const existing = await databaseService.query(
-      'SELECT id FROM subscriptions WHERE stripe_subscription_id = ?',
-      [subscription.id]
-    );
+    const existing = await subscriptionRepository.findByStripeId(subscription.id);
 
-    if (existing.length > 0) {
-      await databaseService.query(
-        `UPDATE subscriptions SET
-          status = ?, current_period_start = ?, current_period_end = ?,
-          cancel_at_period_end = ?, canceled_at = ?, trial_start = ?, trial_end = ?
-         WHERE stripe_subscription_id = ?`,
-        [
-          subscription.status,
-          new Date(periodStart * 1000),
-          new Date(periodEnd * 1000),
-          subscription.cancel_at_period_end,
-          subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-          subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-          subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-          subscription.id,
-        ]
+    if (existing) {
+      await subscriptionRepository.update(
+        subscription.id,
+        subscription.status,
+        new Date(periodStart * 1000),
+        new Date(periodEnd * 1000),
+        subscription.cancel_at_period_end,
+        subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+        subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+        subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
       );
     } else {
-      await databaseService.query(
-        `INSERT INTO subscriptions (id, user_id, stripe_subscription_id, stripe_price_id, status,
-          current_period_start, current_period_end, cancel_at_period_end, canceled_at, trial_start, trial_end)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          uuidv4(),
-          user.id,
-          subscription.id,
-          priceId || '',
-          subscription.status,
-          new Date(periodStart * 1000),
-          new Date(periodEnd * 1000),
-          subscription.cancel_at_period_end,
-          subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-          subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-          subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-        ]
+      await subscriptionRepository.insert(
+        uuidv4(),
+        user.id,
+        subscription.id,
+        priceId || '',
+        subscription.status,
+        new Date(periodStart * 1000),
+        new Date(periodEnd * 1000),
+        subscription.cancel_at_period_end,
+        subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+        subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+        subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
       );
     }
   }
@@ -210,10 +191,7 @@ export class StripeService {
       subscriptionStatus: 'canceled',
     });
 
-    await databaseService.query(
-      `UPDATE subscriptions SET status = 'canceled', canceled_at = NOW() WHERE stripe_subscription_id = ?`,
-      [subscription.id]
-    );
+    await subscriptionRepository.markCanceled(subscription.id);
   }
 }
 

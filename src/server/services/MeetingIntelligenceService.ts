@@ -3,7 +3,7 @@ import { scheduleService, Task } from './ScheduleService';
 import { resourceService, Resource } from './ResourceService';
 import { config } from '../config';
 import logger from '../utils/logger';
-import { databaseService } from '../database/connection';
+import { meetingAnalysisRepository } from '../database/MeetingAnalysisRepository';
 import { ragService } from './RagService';
 import {
   MeetingAnalysis,
@@ -47,23 +47,18 @@ export class MeetingIntelligenceService {
   // -------------------------------------------------------------------------
 
   private async persistAnalysis(analysis: MeetingAnalysis): Promise<void> {
-    await databaseService.query(
-      `INSERT INTO meeting_analyses (id, project_id, schedule_id, transcript, summary, action_items, decisions, risks, task_updates, applied_items, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE summary = VALUES(summary), action_items = VALUES(action_items), decisions = VALUES(decisions), risks = VALUES(risks), task_updates = VALUES(task_updates), applied_items = VALUES(applied_items)`,
-      [
-        analysis.id,
-        analysis.projectId,
-        analysis.scheduleId,
-        analysis.transcript,
-        analysis.summary,
-        JSON.stringify(analysis.actionItems),
-        JSON.stringify(analysis.decisions),
-        JSON.stringify(analysis.risks),
-        JSON.stringify(analysis.taskUpdates),
-        JSON.stringify(analysis.appliedItems),
-        analysis.createdAt,
-      ],
+    await meetingAnalysisRepository.upsert(
+      analysis.id,
+      analysis.projectId,
+      analysis.scheduleId,
+      analysis.transcript,
+      analysis.summary,
+      JSON.stringify(analysis.actionItems),
+      JSON.stringify(analysis.decisions),
+      JSON.stringify(analysis.risks),
+      JSON.stringify(analysis.taskUpdates),
+      JSON.stringify(analysis.appliedItems),
+      analysis.createdAt,
     );
 
     // Fire-and-forget RAG indexing
@@ -307,9 +302,9 @@ Analyze this meeting transcript and extract all actionable information.`;
     }
 
     // Persist updated appliedItems back to DB
-    await databaseService.query(
-      'UPDATE meeting_analyses SET applied_items = ? WHERE id = ?',
-      [JSON.stringify(analysis.appliedItems), analysisId],
+    await meetingAnalysisRepository.updateAppliedItems(
+      analysisId,
+      JSON.stringify(analysis.appliedItems),
     );
 
     return { applied, errors };
@@ -320,12 +315,9 @@ Analyze this meeting transcript and extract all actionable information.`;
   // -------------------------------------------------------------------------
 
   async getAnalysis(id: string): Promise<MeetingAnalysis | null> {
-    const rows = await databaseService.query<any>(
-      'SELECT * FROM meeting_analyses WHERE id = ?',
-      [id],
-    );
-    if (rows.length === 0) return null;
-    return rowToMeetingAnalysis(rows[0]);
+    const row = await meetingAnalysisRepository.findById(id);
+    if (!row) return null;
+    return rowToMeetingAnalysis(row);
   }
 
   getProjectHistory(projectId: string): Promise<MeetingAnalysis[]> {
@@ -333,10 +325,7 @@ Analyze this meeting transcript and extract all actionable information.`;
   }
 
   async getProjectHistoryAsync(projectId: string): Promise<MeetingAnalysis[]> {
-    const rows = await databaseService.query<any>(
-      'SELECT * FROM meeting_analyses WHERE project_id = ? ORDER BY created_at DESC',
-      [projectId],
-    );
+    const rows = await meetingAnalysisRepository.findByProject(projectId);
     return rows.map(rowToMeetingAnalysis);
   }
 

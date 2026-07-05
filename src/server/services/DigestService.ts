@@ -1,15 +1,6 @@
-import { databaseService } from '../database/connection';
+import { digestRepository, DigestUserRow } from '../database/DigestRepository';
 import { emailService } from './EmailService';
 import logger, { maskPii } from '../utils/logger';
-
-interface DigestUser {
-  id: string;
-  username: string;
-  email: string;
-  full_name: string;
-  digest_frequency: 'daily' | 'weekly';
-  digest_last_sent_at: string | null;
-}
 
 export class DigestService {
   async sendPendingDigests(): Promise<number> {
@@ -17,14 +8,7 @@ export class DigestService {
     const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday
 
     // Find users with digests enabled and due
-    const users = await databaseService.query<DigestUser>(
-      `SELECT id, username, email, full_name, digest_frequency, digest_last_sent_at
-       FROM users
-       WHERE digest_frequency != 'none'
-         AND email_verified = TRUE
-         AND email_notifications_enabled = TRUE
-         AND is_active = TRUE`,
-    );
+    const users = await digestRepository.findEligibleUsers();
 
     let sentCount = 0;
 
@@ -54,7 +38,7 @@ export class DigestService {
     return sentCount;
   }
 
-  private isDue(user: DigestUser, now: Date, dayOfWeek: number): boolean {
+  private isDue(user: DigestUserRow, now: Date, dayOfWeek: number): boolean {
     const lastSent = user.digest_last_sent_at ? new Date(user.digest_last_sent_at) : null;
     const hoursSinceLastSent = lastSent
       ? (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60)
@@ -71,47 +55,31 @@ export class DigestService {
     return false;
   }
 
-  private async buildDigest(user: DigestUser) {
+  private async buildDigest(user: DigestUserRow) {
     const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
       .toISOString().replace('T', ' ').substring(0, 19);
 
     // Overdue tasks assigned to user
-    const overdueTasks = await databaseService.query<{ name: string; end_date: string }>(
-      `SELECT name, end_date FROM tasks
-       WHERE assigned_to = ? AND end_date < ? AND status NOT IN ('completed', 'cancelled')
-       ORDER BY end_date ASC LIMIT 20`,
-      [user.username, nowStr],
-    );
+    const overdueTasks = await digestRepository.findOverdueTasks(user.username, nowStr);
 
     // Upcoming deadlines (next 3 days)
-    const upcomingDeadlines = await databaseService.query<{ name: string; end_date: string }>(
-      `SELECT name, end_date FROM tasks
-       WHERE assigned_to = ? AND end_date >= ? AND end_date <= ? AND status NOT IN ('completed', 'cancelled')
-       ORDER BY end_date ASC LIMIT 20`,
-      [user.username, nowStr, threeDaysFromNow],
-    );
+    const upcomingDeadlines = await digestRepository.findUpcomingDeadlines(user.username, nowStr, threeDaysFromNow);
 
     // Unread notification count
-    const countRows = await databaseService.query<{ cnt: number }>(
-      `SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = FALSE`,
-      [user.id],
-    );
+    const unreadCount = await digestRepository.countUnreadNotifications(user.id);
 
     return {
       overdueTasks: overdueTasks.map(t => ({ name: t.name, dueDate: t.end_date?.substring(0, 10) || '' })),
       upcomingDeadlines: upcomingDeadlines.map(t => ({ name: t.name, dueDate: t.end_date?.substring(0, 10) || '' })),
-      unreadCount: countRows[0]?.cnt ?? 0,
+      unreadCount,
       recentChanges: 0,
     };
   }
 
   private async updateLastSent(userId: string, now: Date): Promise<void> {
     const nowStr = now.toISOString().replace('T', ' ').substring(0, 19);
-    await databaseService.query(
-      `UPDATE users SET digest_last_sent_at = ? WHERE id = ?`,
-      [nowStr, userId],
-    );
+    await digestRepository.updateLastSent(userId, nowStr);
   }
 }
 

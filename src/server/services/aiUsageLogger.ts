@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { databaseService } from '../database/connection';
+import { aiUsageLogRepository } from '../database/AIUsageLogRepository';
 import { TokenUsage } from './claudeService';
 import logger from '../utils/logger';
 
@@ -36,22 +36,18 @@ export function logAIUsage(entry: AIUsageEntry): void {
   const costEstimate = calculateCost(entry.model, entry.usage);
 
   // Fire-and-forget — don't await, don't block the response
-  databaseService.query(
-    `INSERT INTO ai_usage_log (id, user_id, feature, model, input_tokens, output_tokens, cost_estimate, latency_ms, success, error_message, request_context)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      entry.userId || null,
-      entry.feature,
-      entry.model,
-      entry.usage.inputTokens,
-      entry.usage.outputTokens,
-      costEstimate,
-      entry.latencyMs,
-      entry.success,
-      entry.errorMessage || null,
-      entry.requestContext ? JSON.stringify(entry.requestContext) : null,
-    ],
+  aiUsageLogRepository.insert(
+    id,
+    entry.userId || null,
+    entry.feature,
+    entry.model,
+    entry.usage.inputTokens,
+    entry.usage.outputTokens,
+    costEstimate,
+    entry.latencyMs,
+    entry.success,
+    entry.errorMessage || null,
+    entry.requestContext ? JSON.stringify(entry.requestContext) : null,
   ).catch((err: Error) => {
     logger.warn('Failed to log AI usage (non-critical):', err.message);
   });

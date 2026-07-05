@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
-import { databaseService } from '../database/connection';
+import { fileAttachmentRepository, FileAttachmentRow } from '../database/FileAttachmentRepository';
 import { config } from '../config';
 
 export interface FileAttachment {
@@ -17,21 +17,6 @@ export interface FileAttachment {
   version: number;
   parentId: string | null;
   createdAt: string;
-}
-
-interface FileAttachmentRow {
-  id: string;
-  entity_type: string;
-  entity_id: string;
-  uploaded_by: string;
-  file_name: string;
-  original_name: string;
-  mime_type: string;
-  file_size: number;
-  file_path: string;
-  version: number;
-  parent_id: string | null;
-  created_at: string;
 }
 
 function rowToDTO(row: FileAttachmentRow): FileAttachment {
@@ -78,33 +63,20 @@ export class FileAttachmentService {
     const filePath = path.join(dir, storedName);
     fs.writeFileSync(filePath, buffer);
 
-    await databaseService.query(
-      `INSERT INTO file_attachments (id, entity_type, entity_id, uploaded_by, file_name, original_name, mime_type, file_size, file_path, version)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-      [id, entityType, entityId, uploadedBy, storedName, originalName, mimeType, buffer.length, filePath],
-    );
+    await fileAttachmentRepository.insert(id, entityType, entityId, uploadedBy, storedName, originalName, mimeType, buffer.length, filePath, 1, null);
 
-    const rows = await databaseService.query<FileAttachmentRow>(
-      'SELECT * FROM file_attachments WHERE id = ?',
-      [id],
-    );
-    return rowToDTO(rows[0]);
+    const row = await fileAttachmentRepository.findById(id);
+    return rowToDTO(row!);
   }
 
   async getByEntity(entityType: string, entityId: string): Promise<FileAttachment[]> {
-    const rows = await databaseService.query<FileAttachmentRow>(
-      'SELECT * FROM file_attachments WHERE entity_type = ? AND entity_id = ? AND parent_id IS NULL ORDER BY created_at DESC',
-      [entityType, entityId],
-    );
+    const rows = await fileAttachmentRepository.findByEntity(entityType, entityId);
     return rows.map(rowToDTO);
   }
 
   async getById(id: string): Promise<FileAttachment | null> {
-    const rows = await databaseService.query<FileAttachmentRow>(
-      'SELECT * FROM file_attachments WHERE id = ?',
-      [id],
-    );
-    return rows.length > 0 ? rowToDTO(rows[0]) : null;
+    const row = await fileAttachmentRepository.findById(id);
+    return row ? rowToDTO(row) : null;
   }
 
   async delete(id: string): Promise<void> {
@@ -113,16 +85,13 @@ export class FileAttachmentService {
       fs.unlinkSync(attachment.filePath);
     }
     // Also delete all versions
-    const versions = await databaseService.query<FileAttachmentRow>(
-      'SELECT * FROM file_attachments WHERE parent_id = ?',
-      [id],
-    );
+    const versions = await fileAttachmentRepository.findVersions(id);
     for (const v of versions) {
       if (fs.existsSync(v.file_path)) {
         fs.unlinkSync(v.file_path);
       }
     }
-    await databaseService.query('DELETE FROM file_attachments WHERE id = ? OR parent_id = ?', [id, id]);
+    await fileAttachmentRepository.deleteWithVersions(id);
   }
 
   async uploadNewVersion(
@@ -137,11 +106,8 @@ export class FileAttachmentService {
 
     // Get max version for this file lineage
     const rootId = parent.parentId || parent.id;
-    const rows = await databaseService.query<{ maxVer: number }>(
-      'SELECT MAX(version) as maxVer FROM file_attachments WHERE id = ? OR parent_id = ?',
-      [rootId, rootId],
-    );
-    const nextVersion = (rows[0]?.maxVer || 1) + 1;
+    const maxVer = await fileAttachmentRepository.getMaxVersion(rootId);
+    const nextVersion = maxVer + 1;
 
     const id = uuidv4();
     const ext = path.extname(originalName);
@@ -151,17 +117,10 @@ export class FileAttachmentService {
     const filePath = path.join(dir, storedName);
     fs.writeFileSync(filePath, buffer);
 
-    await databaseService.query(
-      `INSERT INTO file_attachments (id, entity_type, entity_id, uploaded_by, file_name, original_name, mime_type, file_size, file_path, version, parent_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, parent.entityType, parent.entityId, uploadedBy, storedName, originalName, mimeType, buffer.length, filePath, nextVersion, rootId],
-    );
+    await fileAttachmentRepository.insert(id, parent.entityType, parent.entityId, uploadedBy, storedName, originalName, mimeType, buffer.length, filePath, nextVersion, rootId);
 
-    const result = await databaseService.query<FileAttachmentRow>(
-      'SELECT * FROM file_attachments WHERE id = ?',
-      [id],
-    );
-    return rowToDTO(result[0]);
+    const result = await fileAttachmentRepository.findById(id);
+    return rowToDTO(result!);
   }
 
   async getVersionHistory(id: string): Promise<FileAttachment[]> {
@@ -169,10 +128,7 @@ export class FileAttachmentService {
     if (!attachment) return [];
     const rootId = attachment.parentId || attachment.id;
 
-    const rows = await databaseService.query<FileAttachmentRow>(
-      'SELECT * FROM file_attachments WHERE id = ? OR parent_id = ? ORDER BY version DESC',
-      [rootId, rootId],
-    );
+    const rows = await fileAttachmentRepository.findVersionHistory(rootId);
     return rows.map(rowToDTO);
   }
 }

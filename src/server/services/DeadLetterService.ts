@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../database/connection';
+import { deadLetterRepository } from '../database/DeadLetterRepository';
 
 interface DeadLetterEntry {
   id: string;
@@ -23,11 +23,8 @@ class DeadLetterService {
     const id = uuidv4();
     const nextRetryAt = new Date(Date.now() + 5 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
 
-    databaseService.query(
-      `INSERT INTO dead_letter_queue (id, operation, payload, error_message, next_retry_at)
-       VALUES (?, ?, ?, ?, ?)`,
-      [id, operation, JSON.stringify(payload), errorMessage, nextRetryAt],
-    ).catch((dbErr) => {
+    deadLetterRepository.insert(id, operation, JSON.stringify(payload), errorMessage, nextRetryAt)
+    .catch((dbErr) => {
       // Last resort: log to console if we can't even write to DLQ
       console.error('[DeadLetter] Failed to capture:', operation, errorMessage, dbErr);
     });
@@ -40,38 +37,26 @@ class DeadLetterService {
    */
   async processRetries(executor: (operation: string, payload: any) => Promise<void>): Promise<number> {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const entries = await databaseService.query<any>(
-      `SELECT * FROM dead_letter_queue
-       WHERE status IN ('pending', 'retrying') AND next_retry_at <= ?
-       ORDER BY created_at ASC LIMIT 50`,
-      [now],
-    );
+    const entries = await deadLetterRepository.findDueForRetry(now);
 
     let processed = 0;
     for (const entry of entries) {
       try {
         await executor(entry.operation, JSON.parse(entry.payload));
         // Success — mark resolved
-        await databaseService.query(
-          `UPDATE dead_letter_queue SET status = 'resolved', resolved_at = NOW() WHERE id = ?`,
-          [entry.id],
-        );
+        await deadLetterRepository.markResolved(entry.id);
         processed++;
       } catch (retryErr) {
         const attempts = entry.attempts + 1;
         if (attempts >= entry.max_attempts) {
-          await databaseService.query(
-            `UPDATE dead_letter_queue SET status = 'failed', attempts = ? WHERE id = ?`,
-            [attempts, entry.id],
-          );
+          await deadLetterRepository.markFailed(entry.id, attempts);
         } else {
           // Exponential backoff: 5min, 25min, 125min...
           const delayMs = Math.pow(5, attempts) * 60 * 1000;
           const nextRetry = new Date(Date.now() + delayMs).toISOString().replace('T', ' ').substring(0, 19);
-          await databaseService.query(
-            `UPDATE dead_letter_queue SET status = 'retrying', attempts = ?, next_retry_at = ?,
-             error_message = ? WHERE id = ?`,
-            [attempts, nextRetry, retryErr instanceof Error ? retryErr.message : String(retryErr), entry.id],
+          await deadLetterRepository.markRetrying(
+            entry.id, attempts, nextRetry,
+            retryErr instanceof Error ? retryErr.message : String(retryErr),
           );
         }
         processed++;
@@ -85,15 +70,7 @@ class DeadLetterService {
    * Get DLQ stats for monitoring.
    */
   async getStats(): Promise<{ pending: number; retrying: number; failed: number; resolved24h: number }> {
-    const rows = await databaseService.query<any>(
-      `SELECT
-         SUM(status = 'pending') AS pending,
-         SUM(status = 'retrying') AS retrying,
-         SUM(status = 'failed') AS failed,
-         SUM(status = 'resolved' AND resolved_at >= NOW() - INTERVAL 24 HOUR) AS resolved24h
-       FROM dead_letter_queue`,
-    );
-    const row = rows[0] || {};
+    const row = await deadLetterRepository.getStats();
     return {
       pending: Number(row.pending || 0),
       retrying: Number(row.retrying || 0),
@@ -106,10 +83,7 @@ class DeadLetterService {
    * List failed entries for admin review.
    */
   async listFailed(limit = 50): Promise<DeadLetterEntry[]> {
-    const rows = await databaseService.query<any>(
-      `SELECT * FROM dead_letter_queue WHERE status = 'failed' ORDER BY created_at DESC LIMIT ?`,
-      [limit],
-    );
+    const rows = await deadLetterRepository.findFailed(limit);
     return rows.map((r: any) => ({
       id: r.id,
       operation: r.operation,

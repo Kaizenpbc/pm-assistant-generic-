@@ -1,4 +1,4 @@
-import { databaseService } from '../database/connection';
+import { analyticsSummaryRepository } from '../database/AnalyticsSummaryRepository';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,44 +27,6 @@ export interface AnalyticsSummary {
     tasksCompletedByWeek: Array<{ week: string; count: number }>;
   };
   generatedAt: string;
-}
-
-// ---------------------------------------------------------------------------
-// Row helpers (snake_case DB rows)
-// ---------------------------------------------------------------------------
-
-interface ProjectRow {
-  id: string;
-  name: string;
-  status: string;
-  budget_allocated: number | null;
-  budget_spent: number | null;
-  start_date: string | Date | null;
-  end_date: string | Date | null;
-  progress: number | null;
-}
-
-interface StatusCountRow {
-  status: string;
-  cnt: number;
-}
-
-interface TaskStatusRow {
-  status: string;
-  cnt: number;
-}
-
-interface OverdueRow {
-  overdue_count: number;
-}
-
-interface CompletedRecentRow {
-  completed_count: number;
-}
-
-interface WeekRow {
-  week_label: string;
-  cnt: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -100,15 +62,7 @@ class AnalyticsSummaryService {
     projectParams: any[],
   ): Promise<AnalyticsSummary> {
     // 1. Fetch matching projects
-    const projects = await databaseService.query<ProjectRow>(
-      `SELECT id, name, status,
-              COALESCE(budget_allocated, 0) AS budget_allocated,
-              COALESCE(budget_spent, 0)     AS budget_spent,
-              start_date, end_date, 0 AS progress
-       FROM projects p
-       WHERE ${projectCondition}`,
-      projectParams,
-    );
+    const projects = await analyticsSummaryRepository.findProjects(projectCondition, projectParams);
 
     // 2. Portfolio stats
     const byStatus: Record<string, number> = {};
@@ -178,62 +132,21 @@ class AnalyticsSummaryService {
     let weeklyTrends: Array<{ week: string; count: number }> = [];
 
     if (projectIds.length > 0) {
-      const placeholders = projectIds.map(() => '?').join(',');
-
       // Tasks by status
-      const taskStatusRows = await databaseService.query<TaskStatusRow>(
-        `SELECT st.status, COUNT(*) AS cnt
-         FROM tasks st
-         JOIN schedules s ON s.id = st.schedule_id
-         WHERE s.project_id IN (${placeholders})
-         GROUP BY st.status`,
-        [...projectIds],
-      );
+      const taskStatusRows = await analyticsSummaryRepository.getTaskStatusCounts(projectIds);
       for (const row of taskStatusRows) {
         tasksByStatus[row.status] = Number(row.cnt);
         totalTasks += Number(row.cnt);
       }
 
       // Overdue tasks
-      const overdueRows = await databaseService.query<OverdueRow>(
-        `SELECT COUNT(*) AS overdue_count
-         FROM tasks st
-         JOIN schedules s ON s.id = st.schedule_id
-         WHERE s.project_id IN (${placeholders})
-           AND st.status NOT IN ('completed','done','cancelled')
-           AND st.end_date < NOW()`,
-        [...projectIds],
-      );
-      overdueCount = Number(overdueRows[0]?.overdue_count) || 0;
+      overdueCount = await analyticsSummaryRepository.getOverdueCount(projectIds);
 
       // Completed in last 30 days
-      const completedRows = await databaseService.query<CompletedRecentRow>(
-        `SELECT COUNT(*) AS completed_count
-         FROM tasks st
-         JOIN schedules s ON s.id = st.schedule_id
-         WHERE s.project_id IN (${placeholders})
-           AND st.status IN ('completed','done')
-           AND st.updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`,
-        [...projectIds],
-      );
-      completedLast30 = Number(completedRows[0]?.completed_count) || 0;
+      completedLast30 = await analyticsSummaryRepository.getCompletedLast30Days(projectIds);
 
       // Trends: tasks completed by week (last 12 weeks)
-      const weekRows = await databaseService.query<WeekRow>(
-        `SELECT DATE_FORMAT(
-                  DATE_SUB(st.updated_at, INTERVAL (WEEKDAY(st.updated_at)) DAY),
-                  '%Y-%m-%d'
-                ) AS week_label,
-                COUNT(*) AS cnt
-         FROM tasks st
-         JOIN schedules s ON s.id = st.schedule_id
-         WHERE s.project_id IN (${placeholders})
-           AND st.status IN ('completed','done')
-           AND st.updated_at >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
-         GROUP BY week_label
-         ORDER BY week_label`,
-        [...projectIds],
-      );
+      const weekRows = await analyticsSummaryRepository.getWeeklyCompletionTrends(projectIds);
       weeklyTrends = weekRows.map((r) => ({
         week: r.week_label,
         count: Number(r.cnt),

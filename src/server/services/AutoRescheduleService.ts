@@ -2,7 +2,7 @@ import { ScheduleService, Task } from './ScheduleService';
 import { CriticalPathService } from './CriticalPathService';
 import { claudeService } from './claudeService';
 import { config } from '../config';
-import { databaseService } from '../database/connection';
+import { rescheduleProposalRepository, RescheduleProposalRow } from '../database/RescheduleProposalRepository';
 import { v4 as uuidv4 } from 'uuid';
 import { auditLedgerService } from './AuditLedgerService';
 import { deadLetterService } from './DeadLetterService';
@@ -21,17 +21,7 @@ function toDateStr(d: Date): string {
   return d.toISOString().split('T')[0];
 }
 
-interface ProposalRow {
-  id: string;
-  schedule_id: string;
-  status: string;
-  proposal_data: string;
-  source: string;
-  feedback: string | null;
-  created_at: string;
-}
-
-function rowToProposal(row: ProposalRow): RescheduleProposal {
+function rowToProposal(row: RescheduleProposalRow): RescheduleProposal {
   const data = JSON.parse(row.proposal_data);
   return {
     id: row.id,
@@ -327,11 +317,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
     // Persist to DB
     const proposalData = JSON.stringify({ delayedTasks, proposedChanges, rationale, estimatedImpact });
     try {
-      await databaseService.query(
-        `INSERT INTO reschedule_proposals (id, schedule_id, status, proposal_data, source, created_at)
-         VALUES (?, ?, 'pending', ?, ?, ?)`,
-        [proposalId, scheduleId, proposalData, source, now.replace('T', ' ').substring(0, 19)],
-      );
+      await rescheduleProposalRepository.insert(proposalId, scheduleId, proposalData, source, now.replace('T', ' ').substring(0, 19));
     } catch {
       // Table may not exist yet — log and continue with in-memory behavior
       logger.warn('[AutoReschedule] Could not persist proposal to DB');
@@ -396,10 +382,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
     }
 
     try {
-      await databaseService.query(
-        `UPDATE reschedule_proposals SET status = 'accepted' WHERE id = ?`,
-        [proposalId],
-      );
+      await rescheduleProposalRepository.updateStatus(proposalId, 'accepted');
     } catch {
       logger.warn('[AutoReschedule] Could not update proposal status in DB');
     }
@@ -416,10 +399,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
     if (!proposal || proposal.status !== 'pending') return false;
 
     try {
-      await databaseService.query(
-        `UPDATE reschedule_proposals SET status = 'rejected', feedback = ? WHERE id = ?`,
-        [feedback || null, proposalId],
-      );
+      await rescheduleProposalRepository.updateStatus(proposalId, 'rejected', feedback);
     } catch {
       logger.warn('[AutoReschedule] Could not update proposal status in DB');
     }
@@ -444,10 +424,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
     });
 
     try {
-      await databaseService.query(
-        `UPDATE reschedule_proposals SET status = 'modified', proposal_data = ? WHERE id = ?`,
-        [proposalData, proposalId],
-      );
+      await rescheduleProposalRepository.updateProposalData(proposalId, 'modified', proposalData);
     } catch {
       logger.warn('[AutoReschedule] Could not update proposal in DB');
     }
@@ -461,10 +438,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
 
   async getProposals(scheduleId: string): Promise<RescheduleProposal[]> {
     try {
-      const rows = await databaseService.query<ProposalRow>(
-        `SELECT * FROM reschedule_proposals WHERE schedule_id = ? ORDER BY created_at DESC`,
-        [scheduleId],
-      );
+      const rows = await rescheduleProposalRepository.findBySchedule(scheduleId);
       return rows.map(rowToProposal);
     } catch {
       logger.warn('[AutoReschedule] Could not read proposals from DB');
@@ -474,12 +448,9 @@ Please propose date changes to reschedule affected tasks with minimal disruption
 
   private async getProposalById(proposalId: string): Promise<RescheduleProposal | null> {
     try {
-      const rows = await databaseService.query<ProposalRow>(
-        `SELECT * FROM reschedule_proposals WHERE id = ?`,
-        [proposalId],
-      );
-      if (rows.length === 0) return null;
-      return rowToProposal(rows[0]);
+      const row = await rescheduleProposalRepository.findById(proposalId);
+      if (!row) return null;
+      return rowToProposal(row);
     } catch {
       logger.warn('[AutoReschedule] Could not read proposal from DB');
       return null;
