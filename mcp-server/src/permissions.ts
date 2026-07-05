@@ -36,8 +36,8 @@ const READ_TOOLS = new Set([
   'run-monte-carlo', 'get-evm-forecast',
   // approvals (read)
   'list-change-requests',
-  // auto-reschedule (read)
-  'detect-delays', 'list-proposals',
+  // auto-reschedule & agent proposals (read)
+  'detect-delays', 'list-proposals', 'get-proposal',
   // custom fields (read)
   'list-custom-fields',
   // intake (read)
