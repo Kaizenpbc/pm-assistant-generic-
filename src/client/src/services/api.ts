@@ -1112,8 +1112,8 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
   // Agent
   // -------------------------------------------------------------------------
 
-  async triggerAgentScan() {
-    const response = await this.api.post('/agent/trigger');
+  async triggerAgentScan(projectId?: string) {
+    const response = await this.api.post('/agent/trigger', projectId ? { projectId } : {});
     return response.data;
   }
 

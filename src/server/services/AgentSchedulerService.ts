@@ -24,8 +24,8 @@ export class AgentSchedulerService {
     stopCronTasks(this.cronTasks);
   }
 
-  async runScan(): Promise<ScanStats> {
-    return runScanImpl(this.activityLog);
+  async runScan(projectId?: string): Promise<ScanStats> {
+    return runScanImpl(this.activityLog, projectId);
   }
 
   async runOverdueScan(): Promise<number> {

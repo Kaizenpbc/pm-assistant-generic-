@@ -97,8 +97,8 @@ async function storeScanResult(agentId: string, projectId: string, result: Recor
   }
 }
 
-export async function runScanImpl(activityLog: AgentActivityLogService): Promise<ScanStats> {
-  logger.info('[Agent] Starting scan...');
+export async function runScanImpl(activityLog: AgentActivityLogService, projectId?: string): Promise<ScanStats> {
+  logger.info(`[Agent] Starting scan...${projectId ? ` (project: ${projectId})` : ''}`);
 
   const ksStatus = killSwitchService.getStatus();
   if (!ksStatus.globalEnabled) {
@@ -110,10 +110,16 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
   const projectAgentFlags = new Map<string, { name: string; flags: ProjectAgentResults['agentFlags']; details: Record<string, string> }>();
   const thresholdDays = config.AGENT_DELAY_THRESHOLD_DAYS;
 
-  const allProjects = await projectService.findAll();
-  const projects = allProjects.filter(
-    (p) => p.status === 'active' || p.status === 'planning',
-  );
+  let projects: Awaited<ReturnType<typeof projectService.findAll>>;
+  if (projectId) {
+    const project = await projectService.findById(projectId);
+    projects = project ? [project] : [];
+  } else {
+    const allProjects = await projectService.findAll();
+    projects = allProjects.filter(
+      (p) => p.status === 'active' || p.status === 'planning',
+    );
+  }
 
   logger.info(`[Agent] Found ${projects.length} active/planning projects`);
 
@@ -368,32 +374,35 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
     stats.predictiveAlertsCreated += pStats.predictiveAlertsCreated;
   }
 
-  // --- Agent 8: Cross-Project Intelligence (portfolio-level) ---
-  try {
-    const portfolioProposals = await runCrossProjectIntelligenceAgent(projects, activityLog);
-    stats.portfolioProposalsCreated += portfolioProposals;
-  } catch (error) {
-    logger.error('[Agent:CrossProjectIntelligence] Error:', error);
-    await activityLog.log({
-      projectId: 'portfolio',
-      agentName: 'cross_project_intelligence',
-      result: 'error',
-      summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-    }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
-  }
+  // --- Portfolio-level agents (skip for single-project scans) ---
+  if (!projectId) {
+    // --- Agent 8: Cross-Project Intelligence (portfolio-level) ---
+    try {
+      const portfolioProposals = await runCrossProjectIntelligenceAgent(projects, activityLog);
+      stats.portfolioProposalsCreated += portfolioProposals;
+    } catch (error) {
+      logger.error('[Agent:CrossProjectIntelligence] Error:', error);
+      await activityLog.log({
+        projectId: 'portfolio',
+        agentName: 'cross_project_intelligence',
+        result: 'error',
+        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+      }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
+    }
 
-  // --- Agent 9: Risk Escalation (runs last) ---
-  try {
-    const riskEscalations = await runRiskEscalationAgent(projects, projectAgentFlags, activityLog);
-    stats.riskEscalationsCreated += riskEscalations;
-  } catch (error) {
-    logger.error('[Agent:RiskEscalation] Error:', error);
-    await activityLog.log({
-      projectId: 'portfolio',
-      agentName: 'risk_escalation',
-      result: 'error',
-      summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-    }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
+    // --- Agent 9: Risk Escalation (runs last) ---
+    try {
+      const riskEscalations = await runRiskEscalationAgent(projects, projectAgentFlags, activityLog);
+      stats.riskEscalationsCreated += riskEscalations;
+    } catch (error) {
+      logger.error('[Agent:RiskEscalation] Error:', error);
+      await activityLog.log({
+        projectId: 'portfolio',
+        agentName: 'risk_escalation',
+        result: 'error',
+        summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
+      }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
+    }
   }
 
   logger.info('[Agent] Scan complete:', stats);

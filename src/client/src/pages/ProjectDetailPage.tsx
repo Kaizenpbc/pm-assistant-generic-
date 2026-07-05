@@ -2769,6 +2769,17 @@ function AgentActivityTab({ projectId }: { projectId: string }) {
   const [agentFilter, setAgentFilter] = useState<string>('');
   const [page, setPage] = useState(0);
   const limit = 25;
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  const canTriggerScan = user?.role === 'admin' || user?.role === 'project_manager' || user?.role === 'pmo';
+
+  const scanMutation = useMutation({
+    mutationFn: () => apiService.triggerAgentScan(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agentActivityLog', projectId] });
+    },
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['agentActivityLog', projectId, agentFilter, page],
@@ -2784,17 +2795,35 @@ function AgentActivityTab({ projectId }: { projectId: string }) {
     <div className="mt-6 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Agent Activity Log</h3>
-        <select
-          value={agentFilter}
-          onChange={(e) => { setAgentFilter(e.target.value); setPage(0); }}
-          className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
-        >
-          <option value="">All Agents</option>
-          <option value="auto_reschedule">Auto-Reschedule</option>
-          <option value="budget">Budget</option>
-          <option value="monte_carlo">Monte Carlo</option>
-          <option value="meeting">Meeting</option>
-        </select>
+        <div className="flex items-center gap-3">
+          {canTriggerScan && (
+            <button
+              onClick={() => scanMutation.mutate()}
+              disabled={scanMutation.isPending}
+              className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Play className="h-3.5 w-3.5" />
+              {scanMutation.isPending ? 'Running...' : 'Run AI Analysis'}
+            </button>
+          )}
+          {scanMutation.isError && (
+            <span className="text-xs text-red-600">Scan failed</span>
+          )}
+          {scanMutation.isSuccess && !scanMutation.isPending && (
+            <span className="text-xs text-green-600">Scan complete</span>
+          )}
+          <select
+            value={agentFilter}
+            onChange={(e) => { setAgentFilter(e.target.value); setPage(0); }}
+            className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
+          >
+            <option value="">All Agents</option>
+            <option value="auto_reschedule">Auto-Reschedule</option>
+            <option value="budget">Budget</option>
+            <option value="monte_carlo">Monte Carlo</option>
+            <option value="meeting">Meeting</option>
+          </select>
+        </div>
       </div>
 
       {isLoading ? (

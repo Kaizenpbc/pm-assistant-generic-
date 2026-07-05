@@ -4,6 +4,8 @@ import { agentScheduler } from '../../services/AgentSchedulerService';
 import { agentRepository } from '../../database/AgentRepository';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
+import logger from '../../utils/logger';
 
 const updateAgentSchema = z.object({
   isEnabled: z.boolean().optional(),
@@ -56,15 +58,30 @@ export async function agentRoutes(fastify: FastifyInstance) {
   });
 
   // POST /trigger — manually trigger an agent scan
+  // With projectId: requires write scope + project manager access
+  // Without projectId: requires admin scope (full portfolio scan)
   fastify.post('/trigger', {
-    preHandler: [requireScope('admin')],
-    schema: { description: 'Manually trigger an agent auto-reschedule scan', tags: ['agent'] },
-  }, async (_request: FastifyRequest, reply: FastifyReply) => {
+    schema: { description: 'Manually trigger an agent scan (optionally scoped to a project)', tags: ['agent'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const body = z.object({ projectId: z.string().optional() }).parse(request.body ?? {});
+
+    if (body.projectId) {
+      // Per-project scan: write scope + project manager access
+      await requireScope('write')(request, reply);
+      if (reply.sent) return;
+      await requireProjectAccess('manager')(request, reply);
+      if (reply.sent) return;
+    } else {
+      // Full portfolio scan: admin only
+      await requireScope('admin')(request, reply);
+      if (reply.sent) return;
+    }
+
     try {
-      const stats = await agentScheduler.runScan();
+      const stats = await agentScheduler.runScan(body.projectId);
       return { message: 'Agent scan completed', stats };
     } catch (error) {
-      console.error('Agent trigger error:', error);
+      logger.error('Agent trigger error:', error);
       return reply.status(500).send({ error: 'Agent scan failed' });
     }
   });
