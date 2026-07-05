@@ -18,12 +18,12 @@
 - **Static file serving** in production via `@fastify/static` + SPA fallback
 
 **Architecture Pattern:**
-- **Layering:** Routes -> Services -> Repositories (16 repos) / Direct DB -> MySQL
+- **Layering:** Routes -> Services -> Repositories (22 repos) / Direct DB -> MySQL
 - **Auth:** JWT (HttpOnly cookies) + API keys (Bearer tokens) with scopes
 - **Security:** Helmet CSP, CORS allowlist, per-IP/per-key rate limiting (in-memory), Zod validation on 23/63 routes
 - **AI:** Claude SDK with per-user monthly token budgets, structured prompts, tool loop support, streaming
 - **Observability:** Winston logger with request ID propagation via AsyncLocalStorage, MetricsService for counters/latency percentiles, response logging with duration
-- **Data Access:** 19 repositories (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField, Workflow, Portal, ReportSchedule, TimeEntry) + ~37 services with inline SQL
+- **Data Access:** 22 repositories (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField, Workflow, Portal, ReportSchedule, TimeEntry, Notification, Policy, AuditLedger) + ~34 services with inline SQL
 
 **Deployment Model:**
 Single-instance design. No Redis, no load balancer, no container orchestration. LiteSpeed serves static assets; Passenger proxies `/api/*` and `/mcp` to the Node process.
@@ -42,7 +42,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - Pagination enforced on major list endpoints (projects, schedules, tasks, templates, sprints) via `paginationSchema` (limit 1-200, default 50)
 
 **Gaps:**
-- **Inconsistent data access pattern:** ~~Only 3 entities have repositories.~~ **Partially resolved (July 2026).** 19 entities now have repositories (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField, Workflow, Portal, ReportSchedule, TimeEntry). Remaining ~37 services still call `databaseService.query()` with inline SQL.
+- **Inconsistent data access pattern:** ~~Only 3 entities have repositories.~~ **Partially resolved (July 2026).** 22 entities now have repositories (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField, Workflow, Portal, ReportSchedule, TimeEntry, Notification, Policy, AuditLedger). Remaining ~34 services still call `databaseService.query()` with inline SQL.
 - ~~**No transaction boundaries:**~~ **Resolved (July 2026).** `databaseService.transaction()` + `queryOn()` now wraps 7 multi-table service methods.
 - ~~**Zod validation coverage partial:**~~ **Resolved (July 2026).** All POST/PUT/PATCH routes now use Zod schemas for request body validation. Coverage extended from 23 to 37+ route files.
 - ~~**Fire-and-forget side effects everywhere:**~~ **Mitigated (July 2026).** `DeadLetterService` captures failed side effects (audit logs, webhooks) with retry support. All `.catch(() => {})` calls replaced with DLQ capture. Admin endpoints for monitoring (`/api/v1/admin/dead-letter`).
@@ -72,7 +72,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 
 **Gaps:**
 - ~~JWT users have no scope enforcement~~ **Resolved (July 2026).** `requireScope()` now maps JWT roles to scopes: admin→all, manager/pm/scrum_master→read+write, member/executive/finance→read.
-- ~~No PII masking in logs~~ **Resolved (July 2026).** Winston `piiMask` format masks emails, JWTs, API keys, and password fields in all file-logged output. Direct `console.*` calls in EmailService, DigestService, StripeService, auth routes, and global error handler updated to avoid logging PII.
+- ~~No PII masking in logs~~ **Resolved (July 2026).** Winston `piiMask` format masks emails, JWTs, API keys, and password fields in all file-logged output. 132 `console.*` calls migrated to Winston logger across 37 service files (July 2026). Only 2 intentional console calls remain: ApiKeyService (non-critical), DeadLetterService (last-resort handler).
 - ~~File uploads: no MIME type validation or content inspection (only size limit)~~ **Resolved (July 2026).** `validateMimeType()` in `mimeValidator.ts` enforces an allowlist of safe MIME types and verifies file content via magic bytes inspection. Applied to both upload and version-upload endpoints in `fileAttachments.ts`. Returns HTTP 415 for disallowed or mismatched types.
 - ~~No rate limit on verification email resends~~ **Resolved (July 2026).** `POST /api/v1/auth/resend-verification` with dual rate limits: 3 requests per 15 min per IP + 1 per 5 min per email address. Returns generic 200 response to prevent email enumeration.
 - CORS allows localhost (any port) in development
@@ -116,7 +116,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | ~~Fire-and-forget side effects with no retry~~ | ~~Medium~~ | **Resolved (July 2026).** `DeadLetterService` captures failed side effects with retry. Admin monitoring endpoints added. |
 | ~~No query/connection timeouts~~ | ~~Medium~~ | **Resolved (July 2026).** Pool configured with `connectTimeout`, `idleTimeout`, `queueLimit` (env-configurable). |
 | ~~Partial Zod validation coverage (23/63 routes)~~ | ~~**Medium**~~ | ~~Resolved July 2026 — all POST/PUT/PATCH routes now use Zod schemas.~~ |
-| Partial repository adoption (16/56+ entities) | **Low** | 19 entities covered (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField, Workflow, Portal, ReportSchedule, TimeEntry). Remaining ~37 services have inline SQL. |
+| Partial repository adoption (22/56+ entities) | **Low** | 22 entities covered (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField, Workflow, Portal, ReportSchedule, TimeEntry). Remaining ~34 services have inline SQL. |
 | ~~Agent scheduler serial execution~~ | ~~Medium~~ | **Resolved (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. |
 | ~~No rate limiting on auth endpoints~~ | ~~High~~ | **Mitigated (July 2026).** Per-IP rate limits on all auth and waitlist endpoints. |
 | ~~Waitlist admin key in query string~~ | ~~High~~ | **Mitigated (July 2026).** Moved to `X-Admin-Key` header. |
@@ -142,7 +142,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 | ~~9~~ | ~~Parallelize agent scheduler execution~~ | **Done (July 2026).** `parallelLimit()` runs up to 3 projects concurrently in `scanOrchestrator.ts`. Portfolio agents still run after all projects complete. | ~~Medium~~ | ~~Medium~~ |
 | ~~10~~ | ~~Add structured log export/aggregation~~ | **Done (July 2026).** Daily-rotated JSON logs (14d retention, 20MB max, gzip), admin endpoints: `GET /api/v1/admin/logs` (query by level/search/date), `/logs/files` (list), `/logs/download/:filename`. | ~~Low~~ | ~~Low~~ |
 | 11 | Migrate rate limiter and metrics to Redis | Enables horizontal scaling. **Blocked:** Redis not available on TMD Hosting shared plan. | High | High |
-| 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas. **Partially done (July 2026).** 19 entities covered (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField, Workflow, Portal, ReportSchedule, TimeEntry). Caching layer blocked on Redis. See `docs/TODO_INFRASTRUCTURE.md`. | High | High |
+| 12 | Extend repository pattern to all core entities | Centralizes SQL, enables caching/read replicas. **Partially done (July 2026).** 22 entities covered (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField, Workflow, Portal, ReportSchedule, TimeEntry). Caching layer blocked on Redis. See `docs/TODO_INFRASTRUCTURE.md`. | High | High |
 | 13 | Move cron jobs to external scheduler | Prevents duplicate execution in multi-instance. **Blocked:** No external job runner on TMD Hosting. | Medium | Medium |
 | ~~14~~ | ~~Add scope enforcement for JWT users~~ | **Done (July 2026).** `requireScope()` now maps JWT roles to scopes: admin→all, manager/pm/scrum_master→read+write, member/executive/finance→read. Unknown roles default to read-only. | ~~Low~~ | ~~Medium~~ |
 | ~~15~~ | ~~Break up DagWorkflowService (38 KB) and LessonsLearnedService (33 KB)~~ | **Done (July 2026).** `DagWorkflowService.ts` → `dagWorkflow/` (4 files: types, rowMappers, engine, templateResolver + index). `LessonsLearnedService.ts` → `lessonsLearned/` (5 files: prompts, seeder, extractor, patternDetector, mitigationAdvisor + index). Original files are thin re-export shims. | ~~Medium~~ | ~~Medium~~ |
@@ -217,7 +217,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 - ~~Zod validation expansion.~~ Done (23/63 routes, 39%).
 
 **Later (strategic)** -- PARTIALLY DONE (July 2026)
-- ~~Repository layer for core entities.~~ Done: 19 entities (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField, Workflow, Portal, ReportSchedule, TimeEntry).
+- ~~Repository layer for core entities.~~ Done: 22 entities (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration, Chat, Agent, ProjectMember, Goal, Webhook, ResourceAvailability, CustomField, Workflow, Portal, ReportSchedule, TimeEntry, Notification, Policy, AuditLedger).
 - ~~Structured metrics and request ID tracing.~~ Done: MetricsService + AsyncLocalStorage.
 - Redis for rate limiting and agent lock -- TODO.
 
@@ -240,7 +240,7 @@ Single-instance design. No Redis, no load balancer, no container orchestration. 
 
 **New: Later (strategic)** — INFRASTRUCTURE-BLOCKED
 - Migrate rate limiter and metrics to Redis — **Blocked:** Redis not available on TMD Hosting shared plan.
-- Extend repository pattern to all core entities — **Partially done (July 2026).** 19 entities covered. Caching layer blocked on Redis. See `docs/TODO_INFRASTRUCTURE.md`.
+- Extend repository pattern to all core entities — **Partially done (July 2026).** 22 entities covered. Caching layer blocked on Redis. See `docs/TODO_INFRASTRUCTURE.md`.
 - Move cron jobs to external scheduler — **Blocked:** No external job runner on TMD Hosting.
 
 ---
