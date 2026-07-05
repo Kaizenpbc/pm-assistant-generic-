@@ -5,6 +5,8 @@ import { config } from '../config';
 import { databaseService } from '../database/connection';
 import { v4 as uuidv4 } from 'uuid';
 import { auditLedgerService } from './AuditLedgerService';
+import { deadLetterService } from './DeadLetterService';
+import logger from '../utils/logger';
 import {
   DelayedTask,
   ProposedChange,
@@ -332,7 +334,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
       );
     } catch {
       // Table may not exist yet — log and continue with in-memory behavior
-      console.warn('[AutoReschedule] Could not persist proposal to DB');
+      logger.warn('[AutoReschedule] Could not persist proposal to DB');
     }
 
     // Log activity
@@ -390,7 +392,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
           reason: change.reason,
         },
         source: 'system',
-      }).catch(() => {});
+      }).catch(err => deadLetterService.capture('audit.reschedule', { proposalId, taskId: change.taskId }, err));
     }
 
     try {
@@ -399,7 +401,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
         [proposalId],
       );
     } catch {
-      console.warn('[AutoReschedule] Could not update proposal status in DB');
+      logger.warn('[AutoReschedule] Could not update proposal status in DB');
     }
 
     return true;
@@ -419,7 +421,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
         [feedback || null, proposalId],
       );
     } catch {
-      console.warn('[AutoReschedule] Could not update proposal status in DB');
+      logger.warn('[AutoReschedule] Could not update proposal status in DB');
     }
 
     return true;
@@ -447,7 +449,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
         [proposalData, proposalId],
       );
     } catch {
-      console.warn('[AutoReschedule] Could not update proposal in DB');
+      logger.warn('[AutoReschedule] Could not update proposal in DB');
     }
 
     return true;
@@ -465,7 +467,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
       );
       return rows.map(rowToProposal);
     } catch {
-      console.warn('[AutoReschedule] Could not read proposals from DB');
+      logger.warn('[AutoReschedule] Could not read proposals from DB');
       return [];
     }
   }
@@ -479,7 +481,7 @@ Please propose date changes to reschedule affected tasks with minimal disruption
       if (rows.length === 0) return null;
       return rowToProposal(rows[0]);
     } catch {
-      console.warn('[AutoReschedule] Could not read proposal from DB');
+      logger.warn('[AutoReschedule] Could not read proposal from DB');
       return null;
     }
   }

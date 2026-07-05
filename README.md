@@ -31,7 +31,7 @@ A full-featured, production-grade project management SaaS application combining 
 | **Frontend** | React 18 + Vite + Tailwind CSS + Zustand |
 | **Database** | MySQL / MariaDB |
 | **AI** | Anthropic Claude SDK (optional, via `AI_ENABLED` env var) |
-| **Auth** | JWT (access + refresh tokens) with HttpOnly cookies; OAuth 2.1 with PKCE for MCP transport |
+| **Auth** | JWT (access + refresh tokens) with HttpOnly cookies; OAuth 2.1 with PKCE for MCP; project-level membership enforcement |
 | **Real-time** | WebSocket + Server-Sent Events (SSE) |
 | **Billing** | Stripe |
 | **Validation** | Zod |
@@ -444,13 +444,13 @@ pm-assistant-generic/
 
 ## MCP Server
 
-The MCP (Model Context Protocol) server exposes 79 tools across 15 groups and 6 read-only resources. Tools are **role-filtered** — each user only sees tools their role permits.
+The MCP (Model Context Protocol) server exposes 83 tools across 15 groups and 6 read-only resources. Tools are **role-filtered** — each user only sees tools their role permits.
 
-**Tool Groups:** Projects, Schedules, Tasks, Sprints, Resources, Time Tracking, Approvals, Reports, AI Insights, Auto-Reschedule, Intake, Custom Fields, Integrations, Admin, Templates.
+**Tool Groups:** Projects, Schedules, Tasks, Sprints, Resources, Time Tracking, Approvals, Reports, AI Insights (health, risks, budget, spend-to-date, burn rate, EVM, Monte Carlo, risk mitigations, meeting summaries), Auto-Reschedule, Intake, Custom Fields, Integrations, Admin, Templates.
 
 **Resources:** `project://{id}/summary`, `project://{id}/tasks`, `project://{id}/risks`, `project://{id}/financials`, `project://{id}/schedule`.
 
-**Roles:** `admin`, `executive`, `project_manager`, `team_member`, `scrum_master`, `finance_officer` — see `mcp-server/src/permissions.ts` for the full permission matrix.
+**Roles:** `admin`, `executive`, `project_manager`, `team_member`, `scrum_master`, `finance_officer`, `risk_manager`, `pmo`, `ba`, `qa`, `tester`, `devops`, `claude_sme` — see `mcp-server/src/permissions.ts` for the full permission matrix.
 
 **Auth:** OAuth 2.1 with PKCE (HTTP mode) or API key (STDIO mode). Role is resolved from the user's database record, not inferred from scopes.
 
@@ -567,7 +567,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Auto-Reschedule | `/api/v1/auto-reschedule` | AI reschedule proposals |
 | NL Query | `/api/v1/nl-query` | Natural language queries |
 | AI Scheduling | `/api/v1/ai-scheduling` | AI task breakdown |
-| AI Chat | `/api/v1/ai-chat` | Conversational AI |
+| Mjuzi Chat | `/api/v1/ai-chat` | Persistent conversational AI assistant |
 | Task Prioritization | `/api/v1/task-prioritization` | AI task ranking |
 | Meeting Intelligence | `/api/v1/meeting-intelligence` | Transcript analysis |
 | Lessons Learned | `/api/v1/lessons-learned` | Retrospective knowledge base |

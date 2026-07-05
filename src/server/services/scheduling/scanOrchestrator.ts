@@ -8,7 +8,9 @@ import { AgentActivityLogService } from '../AgentActivityLogService';
 import { webhookService } from '../WebhookService';
 import { killSwitchService } from '../agents/KillSwitchService';
 import { agentMemoryService } from '../AgentMemoryService';
+import { deadLetterService } from '../DeadLetterService';
 import { ProjectAgentResults } from '../agents/RiskEscalationAgent';
+import logger from '../../utils/logger';
 import {
   runBudgetBurnRateAgent,
   runMonteCarloConfidenceAgent,
@@ -96,11 +98,11 @@ async function storeScanResult(agentId: string, projectId: string, result: Recor
 }
 
 export async function runScanImpl(activityLog: AgentActivityLogService): Promise<ScanStats> {
-  console.log('[Agent] Starting scan...');
+  logger.info('[Agent] Starting scan...');
 
   const ksStatus = killSwitchService.getStatus();
   if (!ksStatus.globalEnabled) {
-    console.log('[Agent] Scan aborted — global kill switch is active');
+    logger.info('[Agent] Scan aborted — global kill switch is active');
     return emptyStats();
   }
 
@@ -113,7 +115,7 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
     (p) => p.status === 'active' || p.status === 'planning',
   );
 
-  console.log(`[Agent] Found ${projects.length} active/planning projects`);
+  logger.info(`[Agent] Found ${projects.length} active/planning projects`);
 
   // Process projects in parallel (bounded concurrency)
   const projectTasks = projects.map((project) => async () => {
@@ -154,7 +156,7 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
           continue;
         }
 
-        console.log(
+        logger.info(
           `[Agent] ${project.name} / ${schedule.name}: ${significant.length} significant delay(s)`,
         );
 
@@ -193,7 +195,7 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
           details: { scheduleId: schedule.id, scheduleName: schedule.name, significantDelays: significant.length, proposedChanges: proposal.proposedChanges.length, daysImpact: proposal.estimatedImpact.daysChange },
         });
       } catch (error) {
-        console.error(
+        logger.error(
           `[Agent] Error processing schedule ${schedule.id} (${schedule.name}):`,
           error,
         );
@@ -203,7 +205,7 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
           result: 'error',
           summary: `Error processing schedule "${schedule.name}": ${error instanceof Error ? error.message : String(error)}`,
           details: { scheduleId: schedule.id, scheduleName: schedule.name },
-        }).catch(() => {});
+        }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
       }
     }
 
@@ -216,8 +218,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
         if (pFlags) { pFlags.flags.budgetOverrun = true; pFlags.details.budgetBurnRate = 'Budget alert triggered'; }
       }
     } catch (error) {
-      console.error(`[Agent:Budget] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'budget', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:Budget] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'budget', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // --- Agent 3: Monte Carlo Confidence ---
@@ -225,8 +227,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
       const mcAlerts = await runMonteCarloConfidenceAgent(project, schedules, activityLog);
       pStats.mcAlertsCreated += mcAlerts;
     } catch (error) {
-      console.error(`[Agent:MonteCarlo] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'monte_carlo', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:MonteCarlo] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'monte_carlo', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // --- Agent 4: Meeting Follow-Up ---
@@ -238,8 +240,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
         if (pFlags) { pFlags.flags.meetingOverdue = true; pFlags.details.meetingOverdue = `${meetingAlerts} meeting alert(s)`; }
       }
     } catch (error) {
-      console.error(`[Agent:Meeting] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'meeting', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:Meeting] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'meeting', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // --- Agent 5: Scope Creep Detection ---
@@ -251,8 +253,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
         if (pFlags) { pFlags.flags.scopeCreep = true; pFlags.details.scopeCreep = 'Scope creep detected'; }
       }
     } catch (error) {
-      console.error(`[Agent:ScopeCreep] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'scope_creep', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:ScopeCreep] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'scope_creep', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // --- Agent 6: Budget Intelligence ---
@@ -264,8 +266,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
         if (pFlags) { pFlags.flags.budgetOverrun = true; pFlags.details.budgetIntelligence = 'Budget intelligence proposal created'; }
       }
     } catch (error) {
-      console.error(`[Agent:BudgetIntelligence] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'budget_intelligence', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:BudgetIntelligence] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'budget_intelligence', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // --- Agent 7: Resource Optimization ---
@@ -277,8 +279,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
         if (pFlags) { pFlags.flags.resourceBottleneck = true; pFlags.details.resourceOptimization = 'Resource optimization proposal created'; }
       }
     } catch (error) {
-      console.error(`[Agent:ResourceOptimization] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'resource_optimization', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:ResourceOptimization] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'resource_optimization', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // --- Agent 10: Stakeholder Communication ---
@@ -286,8 +288,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
       const stakeholderReports = await runStakeholderCommunicationAgent(project, activityLog);
       pStats.stakeholderReportsCreated += stakeholderReports;
     } catch (error) {
-      console.error(`[Agent:StakeholderCommunication] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'stakeholder_communication', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:StakeholderCommunication] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'stakeholder_communication', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // --- Agent 11: Project Hygiene ---
@@ -295,8 +297,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
       const hygieneAlerts = await runProjectHygieneAgent(project, activityLog);
       pStats.hygieneAlertsCreated += hygieneAlerts;
     } catch (error) {
-      console.error(`[Agent:ProjectHygiene] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'project_hygiene', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:ProjectHygiene] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'project_hygiene', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // --- Agent 12: Dependency Risk ---
@@ -304,8 +306,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
       const dependencyAlerts = await runDependencyRiskAgent(project, activityLog);
       pStats.dependencyRiskAlertsCreated += dependencyAlerts;
     } catch (error) {
-      console.error(`[Agent:DependencyRisk] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'dependency_risk', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:DependencyRisk] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'dependency_risk', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // --- Agent 13: Lessons Learned ---
@@ -313,8 +315,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
       const lessons = await runLessonsLearnedAgent(project, activityLog);
       pStats.lessonsExtracted += lessons;
     } catch (error) {
-      console.error(`[Agent:LessonsLearned] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'lessons_learned', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:LessonsLearned] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'lessons_learned', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // --- Agent 14: Predictive Alerting ---
@@ -322,8 +324,8 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
       const predictiveAlerts = await runPredictiveAlertingAgent(project, activityLog);
       pStats.predictiveAlertsCreated += predictiveAlerts;
     } catch (error) {
-      console.error(`[Agent:PredictiveAlerting] Error for project ${project.id} (${project.name}):`, error);
-      await activityLog.log({ projectId: project.id, agentName: 'predictive_alerting', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(() => {});
+      logger.error(`[Agent:PredictiveAlerting] Error for project ${project.id} (${project.name}):`, error);
+      await activityLog.log({ projectId: project.id, agentName: 'predictive_alerting', result: 'error', summary: `Error: ${error instanceof Error ? error.message : String(error)}` }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
     }
 
     // Store aggregate scan results for inter-agent collaboration
@@ -371,13 +373,13 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
     const portfolioProposals = await runCrossProjectIntelligenceAgent(projects, activityLog);
     stats.portfolioProposalsCreated += portfolioProposals;
   } catch (error) {
-    console.error('[Agent:CrossProjectIntelligence] Error:', error);
+    logger.error('[Agent:CrossProjectIntelligence] Error:', error);
     await activityLog.log({
       projectId: 'portfolio',
       agentName: 'cross_project_intelligence',
       result: 'error',
       summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
   }
 
   // --- Agent 9: Risk Escalation (runs last) ---
@@ -385,16 +387,16 @@ export async function runScanImpl(activityLog: AgentActivityLogService): Promise
     const riskEscalations = await runRiskEscalationAgent(projects, projectAgentFlags, activityLog);
     stats.riskEscalationsCreated += riskEscalations;
   } catch (error) {
-    console.error('[Agent:RiskEscalation] Error:', error);
+    logger.error('[Agent:RiskEscalation] Error:', error);
     await activityLog.log({
       projectId: 'portfolio',
       agentName: 'risk_escalation',
       result: 'error',
       summary: `Error: ${error instanceof Error ? error.message : String(error)}`,
-    }).catch(() => {});
+    }).catch(err => deadLetterService.capture('agent.activity_log', {}, err));
   }
 
-  console.log('[Agent] Scan complete:', stats);
+  logger.info('[Agent] Scan complete:', stats);
   webhookService.dispatch('agent.scan_completed', { stats }, undefined);
   return stats;
 }

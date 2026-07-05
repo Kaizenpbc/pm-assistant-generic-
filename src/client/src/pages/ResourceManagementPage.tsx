@@ -97,7 +97,7 @@ export function ResourceManagementPage() {
     queryKey: ['projects'],
     queryFn: () => apiService.getProjects(),
   });
-  const projects: Project[] = projectsData?.projects || [];
+  const projects: Project[] = projectsData?.data || projectsData?.projects || [];
 
   const { data: schedulesData } = useQuery({
     queryKey: ['schedules', selectedProjectId],

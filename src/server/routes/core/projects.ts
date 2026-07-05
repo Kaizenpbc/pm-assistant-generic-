@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { projectService } from '../../services/ProjectService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import { webhookService } from '../../services/WebhookService';
 import { toProjectDTO, paginate } from '../../dto/responses';
 import { parsePagination } from '../../schemas/paginationSchema';
@@ -37,9 +38,12 @@ export async function projectRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get all projects', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = request.user!.userId;
+      const user = request.user!;
       const { limit, offset } = parsePagination(request.query as Record<string, unknown>);
-      const { rows, total } = await projectService.findByUserIdPaginated(userId, limit, offset);
+      const globalRoles = ['admin', 'executive', 'pmo'];
+      const { rows, total } = globalRoles.includes(user.role)
+        ? await projectService.findAllPaginated(limit, offset)
+        : await projectService.findByUserIdPaginated(user.userId, limit, offset);
       const page = Math.floor(offset / limit) + 1;
       return paginate(rows.map(toProjectDTO), total, page, limit);
     } catch (error) {
@@ -49,15 +53,14 @@ export async function projectRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/:id', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Get project by ID', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const userId = request.user!.userId;
-      const project = await projectService.findById(id, userId);
+      const project = await projectService.findById(id);
       if (!project) {
-        return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
+        return reply.status(404).send({ error: 'Not found', message: 'The requested resource was not found' });
       }
       return { project: toProjectDTO(project) };
     } catch (error) {
@@ -88,7 +91,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/:id', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('manager')],
     schema: { description: 'Update a project', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -112,19 +115,12 @@ export async function projectRoutes(fastify: FastifyInstance) {
   });
 
   fastify.patch('/:id/status', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('manager')],
     schema: { description: 'Update project status', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       const { id } = request.params as { id: string };
-      // Allow admins, managers, and the project creator
-      if (user.role !== 'admin' && user.role !== 'project_manager') {
-        const existing = await projectService.findById(id);
-        if (!existing || existing.createdBy !== user.userId) {
-          return reply.status(403).send({ error: 'Forbidden', message: 'Only admins, project managers, or the project creator can change project status' });
-        }
-      }
       const { status } = statusUpdateSchema.parse(request.body);
       const project = await projectService.update(id, { status }, user.userId);
       if (!project) {
@@ -139,7 +135,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/:id', {
-    preHandler: [requireScope('admin')],
+    preHandler: [requireScope('admin'), requireProjectAccess('owner')],
     schema: { description: 'Delete a project', tags: ['projects'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

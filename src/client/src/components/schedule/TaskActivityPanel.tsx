@@ -70,13 +70,13 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
   const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  const { data: commentsData } = useQuery({
+  const { data: commentsData, isError: isCommentsError } = useQuery({
     queryKey: ['taskComments', scheduleId, taskId],
     queryFn: () => apiService.getTaskComments(scheduleId, taskId),
     enabled: tab === 'comments',
   });
 
-  const { data: activityData } = useQuery({
+  const { data: activityData, isError: isActivityError } = useQuery({
     queryKey: ['taskActivity', scheduleId, taskId],
     queryFn: () => apiService.getTaskActivity(scheduleId, taskId),
     enabled: tab === 'activity',
@@ -244,9 +244,26 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
             </button>
           </form>
 
+          {/* Mutation errors */}
+          {addCommentMutation.isError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700 mb-2">
+              Failed to post comment. Please try again.
+            </div>
+          )}
+          {deleteCommentMutation.isError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700 mb-2">
+              Failed to delete comment. Please try again.
+            </div>
+          )}
+
           {/* Comment list */}
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {comments.length === 0 && (
+            {isCommentsError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                Failed to load comments. Please try again.
+              </div>
+            )}
+            {!isCommentsError && comments.length === 0 && (
               <p className="text-xs text-gray-400 text-center py-4">No comments yet</p>
             )}
             {comments.map((comment: any) => (
@@ -289,7 +306,12 @@ export function TaskActivityPanel({ scheduleId, taskId }: TaskActivityPanelProps
       {/* Activity Tab */}
       {tab === 'activity' && (
         <div className="space-y-2 max-h-48 overflow-y-auto">
-          {activities.length === 0 && (
+          {isActivityError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              Failed to load activity. Please try again.
+            </div>
+          )}
+          {!isActivityError && activities.length === 0 && (
             <p className="text-xs text-gray-400 text-center py-4">No activity recorded</p>
           )}
           {activities.map((entry: any) => (

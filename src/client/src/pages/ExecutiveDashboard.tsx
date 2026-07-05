@@ -1,11 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  FolderKanban,
-  TrendingUp,
-  DollarSign,
-  CheckCircle,
-} from 'lucide-react';
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
 import { AISummaryBanner } from '../components/dashboard/AISummaryBanner';
@@ -16,6 +10,10 @@ import { EXEC_WIDGETS, loadWidgetIds, saveWidgetIds, loadWidgetOrder, saveWidget
 import { RecentActivityWidget } from '../components/dashboard/widgets/RecentActivityWidget';
 import { ResourceUtilizationWidget } from '../components/dashboard/widgets/ResourceUtilizationWidget';
 import { BurndownMiniWidget } from '../components/dashboard/widgets/BurndownMiniWidget';
+import { AgentProposalsWidget } from '../components/dashboard/widgets/AgentProposalsWidget';
+import { PortfolioKPIBar } from '../components/dashboard/widgets/PortfolioKPIBar';
+import { PrioritiesStripWidget } from '../components/dashboard/widgets/PrioritiesStripWidget';
+import { QuickActionsWidget } from '../components/dashboard/widgets/QuickActionsWidget';
 
 interface Project {
   id: string;
@@ -62,27 +60,9 @@ export const ExecutiveDashboard: React.FC = () => {
     queryFn: () => apiService.getProjects(),
   });
 
-  const projects: Project[] = projectsData?.projects || [];
+  const projects: Project[] = projectsData?.data || projectsData?.projects || [];
 
   const totalProjects = projects.length;
-  const activeProjects = projects.filter((p) => p.status === 'active').length;
-  const totalBudget = projects.reduce((sum, p) => sum + (p.budgetAllocated || 0), 0);
-
-  // On-track: active projects where budget spent <= allocated AND progress is reasonable
-  // relative to elapsed time (or has no end date / just started)
-  const onTrackCount = projects.filter((p) => {
-    if (p.status !== 'active') return false;
-    const budgetOk = !p.budgetAllocated || (p.budgetSpent || 0) <= p.budgetAllocated;
-    const now = Date.now();
-    const start = p.startDate ? new Date(p.startDate).getTime() : now;
-    const end = p.endDate ? new Date(p.endDate).getTime() : 0;
-    const elapsed = end > start ? (now - start) / (end - start) : 0;
-    const progress = (p.progressPercentage || 0) / 100;
-    // Schedule OK if no end date, not started yet, or progress within 20% of elapsed time
-    const scheduleOk = !end || elapsed <= 0 || progress >= elapsed - 0.2;
-    return budgetOk && scheduleOk;
-  }).length;
-  const onTrackPct = activeProjects > 0 ? Math.round((onTrackCount / activeProjects) * 100) : 0;
 
   if (isLoading) {
     return (
@@ -97,14 +77,11 @@ export const ExecutiveDashboard: React.FC = () => {
       case 'ai-summary':
         return <AISummaryBanner />;
       case 'stats':
-        return (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatsCard label="Total Projects" value={String(totalProjects)} icon={FolderKanban} color="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" />
-            <StatsCard label="Active" value={String(activeProjects)} icon={TrendingUp} color="bg-green-50 text-green-600" />
-            <StatsCard label="Total Budget" value={`$${(totalBudget / 1000).toFixed(0)}K`} icon={DollarSign} color="bg-blue-50 text-blue-600" />
-            <StatsCard label="On Track" value={`${onTrackPct}%`} icon={CheckCircle} color="bg-emerald-50 text-emerald-600" />
-          </div>
-        );
+        return <PortfolioKPIBar />;
+      case 'priorities':
+        return <PrioritiesStripWidget />;
+      case 'quick-actions':
+        return <QuickActionsWidget />;
       case 'projects':
         return (
           <div>
@@ -121,6 +98,8 @@ export const ExecutiveDashboard: React.FC = () => {
         return <ResourceUtilizationWidget />;
       case 'burndown':
         return <BurndownMiniWidget />;
+      case 'agent-proposals':
+        return <AgentProposalsWidget agentIds={['cross-project-intelligence-v1', 'risk-escalation-v1', 'stakeholder-communication-v1']} />;
       default:
         return null;
     }
@@ -155,26 +134,3 @@ export const ExecutiveDashboard: React.FC = () => {
   );
 };
 
-function StatsCard({
-  label,
-  value,
-  icon: Icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  color: string;
-}) {
-  return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-      <div className="flex items-center gap-2">
-        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
-          <Icon className="h-4 w-4" />
-        </div>
-        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</span>
-      </div>
-      <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-    </div>
-  );
-}

@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { config } from '../config';
-import { maskPii } from '../utils/logger';
+import logger, { maskPii } from '../utils/logger';
 
 export class EmailService {
   private resend: Resend | null = null;
@@ -21,10 +21,10 @@ export class EmailService {
 
   async sendVerificationEmail(to: string, token: string): Promise<void> {
     if (!this.isConfigured) {
-      console.warn(`[EmailService] RESEND_API_KEY not set — skipping verification email to ${maskPii(to)}`);
+      logger.warn(`[EmailService] RESEND_API_KEY not set — skipping verification email to ${maskPii(to)}`);
       return;
     }
-    console.log(`[EmailService] Sending verification email to ${maskPii(to)}`);
+    logger.info(`[EmailService] Sending verification email to ${maskPii(to)}`);
 
     const verifyUrl = `${config.APP_URL}/verify-email?token=${token}`;
 
@@ -60,10 +60,10 @@ export class EmailService {
 
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
     if (!this.isConfigured) {
-      console.warn(`[EmailService] RESEND_API_KEY not set — skipping password reset email to ${maskPii(to)}`);
+      logger.warn(`[EmailService] RESEND_API_KEY not set — skipping password reset email to ${maskPii(to)}`);
       return;
     }
-    console.log(`[EmailService] Sending password reset email to ${maskPii(to)}`);
+    logger.info(`[EmailService] Sending password reset email to ${maskPii(to)}`);
 
     const resetUrl = `${config.APP_URL}/reset-password?token=${token}`;
 
@@ -115,7 +115,7 @@ export class EmailService {
 
   async sendNotificationEmail(to: string, subject: string, title: string, message: string, ctaUrl?: string, ctaLabel?: string): Promise<void> {
     if (!this.isConfigured) {
-      console.log(`[EmailService] Notification email would be sent to ${maskPii(to)}: ${subject}`);
+      logger.info(`[EmailService] Notification email would be sent to ${maskPii(to)}: ${subject}`);
       return;
     }
 
@@ -145,7 +145,7 @@ export class EmailService {
     recentChanges: number;
   }): Promise<void> {
     if (!this.isConfigured) {
-      console.log(`[EmailService] Digest email would be sent to ${maskPii(to)}`);
+      logger.info(`[EmailService] Digest email would be sent to ${maskPii(to)}`);
       return;
     }
 
@@ -189,7 +189,7 @@ export class EmailService {
 
   async sendReportEmail(recipients: string[], reportName: string, csvContent: string): Promise<void> {
     if (!this.isConfigured) {
-      console.log(`[EmailService] Report email would be sent to ${recipients.map(r => maskPii(r)).join(', ')}: ${reportName}`);
+      logger.info(`[EmailService] Report email would be sent to ${recipients.map(r => maskPii(r)).join(', ')}: ${reportName}`);
       return;
     }
 
@@ -220,7 +220,7 @@ export class EmailService {
 
   async sendWelcomeEmail(to: string, name: string): Promise<void> {
     if (!this.isConfigured) {
-      console.log(`[EmailService] Welcome email would be sent to ${maskPii(to)}`);
+      logger.info(`[EmailService] Welcome email would be sent to ${maskPii(to)}`);
       return;
     }
 

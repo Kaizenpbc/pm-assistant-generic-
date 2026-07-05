@@ -5,9 +5,14 @@
  * Uses a category-based approach for maintainability.
  */
 
-export type Role = 'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer';
+export type Role =
+  | 'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer'
+  | 'risk_manager' | 'pmo' | 'ba' | 'qa' | 'tester' | 'devops' | 'claude_sme';
 
-const ALL_ROLES: readonly Role[] = ['admin', 'executive', 'project_manager', 'team_member', 'scrum_master', 'finance_officer'];
+const ALL_ROLES: readonly Role[] = [
+  'admin', 'executive', 'project_manager', 'team_member', 'scrum_master', 'finance_officer',
+  'risk_manager', 'pmo', 'ba', 'qa', 'tester', 'devops', 'claude_sme',
+];
 
 // Read-only tools: all roles can access
 const READ_TOOLS = new Set([
@@ -31,8 +36,8 @@ const READ_TOOLS = new Set([
   'run-monte-carlo', 'get-evm-forecast',
   // approvals (read)
   'list-change-requests',
-  // auto-reschedule (read)
-  'detect-delays', 'list-proposals',
+  // auto-reschedule & agent proposals (read)
+  'detect-delays', 'list-proposals', 'get-proposal',
   // custom fields (read)
   'list-custom-fields',
   // intake (read)
@@ -45,59 +50,69 @@ const READ_TOOLS = new Set([
   'list-templates', 'list-workflows',
 ]);
 
-// Budget/financial insight tools: PM, finance, executive, admin
+// Budget/financial insight tools: PM, finance, executive, pmo, admin
 const FINANCE_TOOLS = new Set([
-  'get-budget-forecast', 'get-evm-forecast',
+  'get-budget-forecast', 'get-evm-forecast', 'get-spend-to-date', 'get-burn-rate',
 ]);
 
-// Task write tools: team_member, scrum_master, project_manager, admin
+// Risk analysis tools: PM, risk_manager, pmo, ba, admin
+const RISK_ANALYSIS_TOOLS = new Set([
+  'suggest-risk-mitigations',
+]);
+
+// Meeting analysis tools: PM, scrum_master, pmo, ba, admin
+const MEETING_TOOLS = new Set([
+  'get-meeting-summary',
+]);
+
+// Task write tools: team_member, scrum_master, project_manager, ba, qa, devops, admin
 const TASK_WRITE_TOOLS = new Set([
   'create-task', 'update-task', 'bulk-create-tasks', 'bulk-update-tasks', 'bulk-status-update',
   'add-task-comment',
 ]);
 
-// Task delete: scrum_master, project_manager, admin
+// Task delete: scrum_master, project_manager, pmo, admin
 const TASK_DELETE_TOOLS = new Set([
   'delete-task',
 ]);
 
-// Sprint management: scrum_master, project_manager, admin
+// Sprint management: scrum_master, project_manager, pmo, admin
 const SPRINT_WRITE_TOOLS = new Set([
   'create-sprint', 'update-sprint', 'add-task-to-sprint', 'remove-task-from-sprint',
   'start-sprint', 'complete-sprint',
 ]);
 
-// Schedule write: project_manager, admin
+// Schedule write: project_manager, pmo, admin
 const SCHEDULE_WRITE_TOOLS = new Set([
   'create-schedule', 'update-schedule', 'delete-schedule',
 ]);
 
-// Project write: project_manager, admin
+// Project write: project_manager, pmo, admin
 const PROJECT_WRITE_TOOLS = new Set([
   'create-project', 'update-project', 'delete-project',
 ]);
 
-// Resource management: project_manager, admin
+// Resource management: project_manager, pmo, admin
 const RESOURCE_WRITE_TOOLS = new Set([
   'create-resource', 'update-resource', 'delete-resource',
 ]);
 
-// Approval actions: project_manager, executive, admin
+// Approval actions: project_manager, executive, pmo, admin
 const APPROVAL_WRITE_TOOLS = new Set([
   'create-change-request', 'submit-for-approval', 'act-on-approval',
   'propose-reschedule', 'accept-proposal', 'reject-proposal',
 ]);
 
-// Time logging: team_member, scrum_master, project_manager, admin
+// Time logging: team_member, scrum_master, project_manager, ba, qa, tester, devops, admin
 const TIME_TOOLS = new Set([
   'log-time',
 ]);
 
-// Intake submission: all roles; review: project_manager, admin
+// Intake submission: all roles; review: project_manager, pmo, admin
 const INTAKE_SUBMIT_TOOLS = new Set(['submit-intake-form']);
 const INTAKE_REVIEW_TOOLS = new Set(['review-submission']);
 
-// Custom field write: project_manager, admin
+// Custom field write: project_manager, pmo, admin
 const CUSTOM_FIELD_WRITE_TOOLS = new Set([
   'create-custom-field', 'set-custom-field-values',
 ]);
@@ -107,7 +122,7 @@ const ADMIN_ONLY_TOOLS = new Set([
   'create-integration', 'sync-integration', 'trigger-agent',
 ]);
 
-// Template/workflow management: project_manager, admin
+// Template/workflow management: project_manager, pmo, admin
 const TEMPLATE_WRITE_TOOLS = new Set([
   'apply-template', 'create-workflow',
 ]);
@@ -124,6 +139,8 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
   project_manager: (tool) =>
     READ_TOOLS.has(tool) ||
     FINANCE_TOOLS.has(tool) ||
+    RISK_ANALYSIS_TOOLS.has(tool) ||
+    MEETING_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TASK_DELETE_TOOLS.has(tool) ||
     SPRINT_WRITE_TOOLS.has(tool) ||
@@ -139,6 +156,7 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
 
   scrum_master: (tool) =>
     READ_TOOLS.has(tool) ||
+    MEETING_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TASK_DELETE_TOOLS.has(tool) ||
     SPRINT_WRITE_TOOLS.has(tool) ||
@@ -152,6 +170,63 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     INTAKE_SUBMIT_TOOLS.has(tool),
 
   finance_officer: (tool) =>
+    READ_TOOLS.has(tool) ||
+    FINANCE_TOOLS.has(tool),
+
+  risk_manager: (tool) =>
+    READ_TOOLS.has(tool) ||
+    FINANCE_TOOLS.has(tool) ||
+    RISK_ANALYSIS_TOOLS.has(tool) ||
+    TASK_WRITE_TOOLS.has(tool) ||
+    APPROVAL_WRITE_TOOLS.has(tool) ||
+    INTAKE_SUBMIT_TOOLS.has(tool),
+
+  pmo: (tool) =>
+    READ_TOOLS.has(tool) ||
+    FINANCE_TOOLS.has(tool) ||
+    RISK_ANALYSIS_TOOLS.has(tool) ||
+    MEETING_TOOLS.has(tool) ||
+    TASK_WRITE_TOOLS.has(tool) ||
+    TASK_DELETE_TOOLS.has(tool) ||
+    SPRINT_WRITE_TOOLS.has(tool) ||
+    SCHEDULE_WRITE_TOOLS.has(tool) ||
+    PROJECT_WRITE_TOOLS.has(tool) ||
+    RESOURCE_WRITE_TOOLS.has(tool) ||
+    APPROVAL_WRITE_TOOLS.has(tool) ||
+    TIME_TOOLS.has(tool) ||
+    INTAKE_SUBMIT_TOOLS.has(tool) ||
+    INTAKE_REVIEW_TOOLS.has(tool) ||
+    CUSTOM_FIELD_WRITE_TOOLS.has(tool) ||
+    TEMPLATE_WRITE_TOOLS.has(tool),
+
+  ba: (tool) =>
+    READ_TOOLS.has(tool) ||
+    RISK_ANALYSIS_TOOLS.has(tool) ||
+    MEETING_TOOLS.has(tool) ||
+    TASK_WRITE_TOOLS.has(tool) ||
+    TIME_TOOLS.has(tool) ||
+    INTAKE_SUBMIT_TOOLS.has(tool) ||
+    CUSTOM_FIELD_WRITE_TOOLS.has(tool),
+
+  qa: (tool) =>
+    READ_TOOLS.has(tool) ||
+    TASK_WRITE_TOOLS.has(tool) ||
+    TIME_TOOLS.has(tool) ||
+    INTAKE_SUBMIT_TOOLS.has(tool),
+
+  tester: (tool) =>
+    READ_TOOLS.has(tool) ||
+    TASK_WRITE_TOOLS.has(tool) ||
+    TIME_TOOLS.has(tool) ||
+    INTAKE_SUBMIT_TOOLS.has(tool),
+
+  devops: (tool) =>
+    READ_TOOLS.has(tool) ||
+    TASK_WRITE_TOOLS.has(tool) ||
+    TIME_TOOLS.has(tool) ||
+    INTAKE_SUBMIT_TOOLS.has(tool),
+
+  claude_sme: (tool) =>
     READ_TOOLS.has(tool) ||
     FINANCE_TOOLS.has(tool),
 };

@@ -67,8 +67,8 @@ export function registerResources(server: McpServer, role?: Role) {
     },
   );
 
-  // Project risks — PM, Executive, Admin
-  if (!role || role === 'admin' || role === 'executive' || role === 'project_manager') {
+  // Project risks — PM, Executive, Risk Manager, PMO, Admin
+  if (!role || role === 'admin' || role === 'executive' || role === 'project_manager' || role === 'risk_manager' || role === 'pmo') {
     server.resource(
       'project-risks',
       'project://{projectId}/risks',
@@ -98,8 +98,8 @@ export function registerResources(server: McpServer, role?: Role) {
     );
   }
 
-  // Project financials — Finance, PM, Executive, Admin
-  if (!role || role === 'admin' || role === 'executive' || role === 'project_manager' || role === 'finance_officer') {
+  // Project financials — Finance, PM, Executive, PMO, Admin
+  if (!role || role === 'admin' || role === 'executive' || role === 'project_manager' || role === 'finance_officer' || role === 'pmo') {
     server.resource(
       'project-financials',
       'project://{projectId}/financials',
@@ -129,8 +129,8 @@ export function registerResources(server: McpServer, role?: Role) {
     );
   }
 
-  // Project schedule — PM, Scrum Master, Admin
-  if (!role || role === 'admin' || role === 'project_manager' || role === 'scrum_master') {
+  // Project schedule — PM, Scrum Master, PMO, DevOps, Admin
+  if (!role || role === 'admin' || role === 'project_manager' || role === 'scrum_master' || role === 'pmo' || role === 'devops') {
     server.resource(
       'project-schedule',
       'project://{projectId}/schedule',

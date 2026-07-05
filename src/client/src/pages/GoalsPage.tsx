@@ -325,7 +325,7 @@ export const GoalsPage: React.FC = () => {
     queryKey: ['projects'],
     queryFn: () => apiService.getProjects(),
   });
-  const projectsList: Array<{ id: string; name: string }> = projectsData?.projects || [];
+  const projectsList: Array<{ id: string; name: string }> = projectsData?.data || projectsData?.projects || [];
 
   const filters: Record<string, string> = {};
   if (filterStatus) filters.status = filterStatus;

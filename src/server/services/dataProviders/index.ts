@@ -9,6 +9,7 @@
 // =============================================================================
 
 import { config } from '../../config';
+import logger from '../../utils/logger';
 import {
   WeatherProvider,
   WeatherForecast,
@@ -61,10 +62,10 @@ export class DataProviderManager {
       case 'openweathermap': {
         const provider = new OpenWeatherMapProvider();
         if (provider.isConfigured()) {
-          console.log(`[DataProviderManager] Weather provider: ${provider.name}`);
+          logger.info(`[DataProviderManager] Weather provider: ${provider.name}`);
           return provider;
         }
-        console.warn(
+        logger.warn(
           `[DataProviderManager] OpenWeatherMap selected but WEATHER_API_KEY is not set. Falling back to mock provider.`
         );
         return new MockWeatherProvider();
@@ -73,10 +74,10 @@ export class DataProviderManager {
       case 'weatherapi': {
         const provider = new WeatherAPIProvider();
         if (provider.isConfigured()) {
-          console.log(`[DataProviderManager] Weather provider: ${provider.name}`);
+          logger.info(`[DataProviderManager] Weather provider: ${provider.name}`);
           return provider;
         }
-        console.warn(
+        logger.warn(
           `[DataProviderManager] WeatherAPI selected but WEATHER_API_KEY is not set. Falling back to mock provider.`
         );
         return new MockWeatherProvider();
@@ -84,7 +85,7 @@ export class DataProviderManager {
 
       case 'accuweather': {
         // AccuWeather provider not yet implemented; fall back to mock
-        console.warn(
+        logger.warn(
           `[DataProviderManager] AccuWeather provider is not yet implemented. Falling back to mock provider.`
         );
         return new MockWeatherProvider();
@@ -93,7 +94,7 @@ export class DataProviderManager {
       case 'mock':
       default: {
         const provider = new MockWeatherProvider();
-        console.log(`[DataProviderManager] Weather provider: ${provider.name}`);
+        logger.info(`[DataProviderManager] Weather provider: ${provider.name}`);
         return provider;
       }
     }
@@ -153,11 +154,11 @@ export class DataProviderManager {
       return forecast;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`[DataProviderManager] Weather fetch failed: ${errorMessage}`);
+      logger.error(`[DataProviderManager] Weather fetch failed: ${errorMessage}`);
 
       // If the active provider is not already the mock, fall back to mock
       if (!(this.weatherProvider instanceof MockWeatherProvider)) {
-        console.warn(
+        logger.warn(
           `[DataProviderManager] Falling back to mock weather provider for this request.`
         );
         try {
@@ -197,7 +198,7 @@ export class DataProviderManager {
     this.cache.clear();
     this.cacheHits = 0;
     this.cacheMisses = 0;
-    console.log('[DataProviderManager] Cache cleared.');
+    logger.info('[DataProviderManager] Cache cleared.');
   }
 
   /**
@@ -234,7 +235,7 @@ export class DataProviderManager {
       }
     }
     if (pruned > 0) {
-      console.log(`[DataProviderManager] Pruned ${pruned} expired cache entries.`);
+      logger.info(`[DataProviderManager] Pruned ${pruned} expired cache entries.`);
     }
     return pruned;
   }

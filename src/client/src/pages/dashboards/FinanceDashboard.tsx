@@ -1,9 +1,31 @@
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DollarSign, TrendingUp, AlertTriangle, PieChart } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { AISummaryBanner } from '../../components/dashboard/AISummaryBanner';
+import { CustomizeDropdown } from '../../components/dashboard/CustomizeDropdown';
+import { WidgetGrid } from '../../components/dashboard/WidgetGrid';
+import { FINANCE_WIDGETS, loadWidgetIds, saveWidgetIds, loadWidgetOrder, saveWidgetOrder } from '../../components/dashboard/WidgetRegistry';
+import { AgentProposalsWidget } from '../../components/dashboard/widgets/AgentProposalsWidget';
+
+const STORAGE_KEY = 'dashboard-widgets:finance';
 
 export function FinanceDashboard() {
+  const [enabledIds, setEnabledIds] = useState<Set<string>>(() => loadWidgetIds(STORAGE_KEY, FINANCE_WIDGETS));
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => loadWidgetOrder(STORAGE_KEY, FINANCE_WIDGETS));
+
+  useEffect(() => { saveWidgetIds(STORAGE_KEY, enabledIds); }, [enabledIds]);
+  useEffect(() => { saveWidgetOrder(STORAGE_KEY, widgetOrder); }, [widgetOrder]);
+
+  const toggleWidget = useCallback((id: string) => {
+    setEnabledIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
   const { isLoading } = useQuery({
     queryKey: ['analytics-summary'],
     queryFn: () => apiService.getAnalyticsSummary(),
@@ -16,8 +38,7 @@ export function FinanceDashboard() {
     staleTime: 60000,
   });
 
-  const projects = projectsData?.projects || [];
-  // Compute budget stats from projects
+  const projects = projectsData?.data || projectsData?.projects || [];
   const budgetStats = projects.reduce((acc: any, p: any) => {
     const allocated = p.budgetAllocated || 0;
     const spent = p.budgetSpent || 0;
@@ -32,77 +53,106 @@ export function FinanceDashboard() {
     ? Math.round((budgetStats.totalSpent / budgetStats.totalAllocated) * 100)
     : 0;
 
+  const renderWidget = (id: string) => {
+    switch (id) {
+      case 'ai-summary':
+        return <AISummaryBanner />;
+      case 'budget-overview':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/30">
+                  <DollarSign className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Budget</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                    ${(budgetStats.totalAllocated / 1000).toFixed(0)}k
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Spent</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                    ${(budgetStats.totalSpent / 1000).toFixed(0)}k
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30">
+                  <PieChart className="w-5 h-5 text-primary-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Utilization</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{utilizationPct}%</p>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/30">
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Over Budget</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{budgetStats.overBudget}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'evm-metrics':
+      case 'cost-variance':
+      case 'budget-alerts':
+      case 'forecast':
+        return null; // Placeholder — existing finance widgets not yet implemented
+      case 'agent-proposals':
+        return <AgentProposalsWidget agentIds={['budget-forecast-v1', 'budget-intelligence-v1']} />;
+      default:
+        return null;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Finance Dashboard</h1>
+        <CustomizeDropdown
+          widgets={FINANCE_WIDGETS}
+          enabledIds={enabledIds}
+          onToggle={toggleWidget}
+        />
       </div>
 
-      <AISummaryBanner />
+      <WidgetGrid
+        widgets={FINANCE_WIDGETS}
+        enabledIds={enabledIds}
+        widgetOrder={widgetOrder}
+        onReorder={setWidgetOrder}
+        renderWidget={renderWidget}
+      />
 
-      {/* Budget Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="card">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/30">
-              <DollarSign className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Budget</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
-                ${(budgetStats.totalAllocated / 1000).toFixed(0)}k
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Spent</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
-                ${(budgetStats.totalSpent / 1000).toFixed(0)}k
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30">
-              <PieChart className="w-5 h-5 text-primary-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Utilization</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{utilizationPct}%</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/30">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Over Budget</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{budgetStats.overBudget}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Project Budget Table */}
+      {/* Project Budget Table — always visible */}
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Project Budgets</h2>
-        {isLoading ? (
-          <div className="animate-pulse space-y-3">
-            {[1, 2, 3].map(i => <div key={i} className="h-10 bg-gray-100 dark:bg-gray-700 rounded" />)}
-          </div>
-        ) : projects.length === 0 ? (
+        {projects.length === 0 ? (
           <p className="text-sm text-gray-500">No projects found</p>
         ) : (
           <div className="overflow-x-auto">

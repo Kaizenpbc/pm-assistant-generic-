@@ -2,6 +2,7 @@ import { databaseService } from '../database/connection';
 import { embeddingService as embeddingServiceSingleton, EmbeddingService, type SimilarityResult } from './EmbeddingService';
 import type { LessonLearned } from '../schemas/lessonsLearnedSchemas';
 import type { MeetingAnalysis } from '../schemas/meetingSchemas';
+import logger from '../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,7 +47,7 @@ export class RagService {
     try {
       await this.embeddingService.upsertEmbedding('lesson', lesson.id, text);
     } catch (err) {
-      console.error(`Failed to index lesson ${lesson.id}:`, err);
+      logger.error(`Failed to index lesson ${lesson.id}:`, err);
     }
   }
 
@@ -61,7 +62,7 @@ export class RagService {
     try {
       await this.embeddingService.upsertEmbedding('meeting', analysis.id, text);
     } catch (err) {
-      console.error(`Failed to index meeting ${analysis.id}:`, err);
+      logger.error(`Failed to index meeting ${analysis.id}:`, err);
     }
   }
 

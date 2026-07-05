@@ -332,7 +332,7 @@ export const LessonsLearnedPage: React.FC = () => {
     queryFn: () => (apiService as any).getPatterns(),
   });
 
-  const projects: Project[] = projectsData?.projects || [];
+  const projects: Project[] = projectsData?.data || projectsData?.projects || [];
   const allLessons: Lesson[] = allLessonsAccum;
   const patterns: Pattern[] = patternsData?.patterns || [];
 

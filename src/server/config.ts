@@ -27,6 +27,8 @@ const configSchema = z.object({
   AI_TEMPERATURE: z.coerce.number().min(0).max(1).default(0.3),
   AI_MAX_TOKENS: z.coerce.number().min(100).max(8192).default(4096),
   AI_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
+  AI_FALLBACK_MODEL: z.string().default('claude-haiku-4-5-20251001'),
+  AI_FALLBACK_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
 
   // Email Configuration (Resend)
   RESEND_API_KEY: z.string().optional().default(''),
@@ -61,8 +63,10 @@ const configSchema = z.object({
   RAG_TOP_K: z.coerce.number().min(1).max(50).default(5),
   RAG_SIMILARITY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.3),
 
-  // AI Budget
+  // AI Budget & Pricing (per million tokens for the configured AI_MODEL)
   AI_MONTHLY_TOKEN_BUDGET: z.coerce.number().min(0).default(500000),
+  AI_PRICING_INPUT: z.coerce.number().min(0).default(3.0),
+  AI_PRICING_OUTPUT: z.coerce.number().min(0).default(15.0),
 
   // Metrics
   METRICS_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true || val === undefined, z.boolean().default(true)),
@@ -107,6 +111,8 @@ export function validateConfiguration() {
       AI_TEMPERATURE: process.env['AI_TEMPERATURE'],
       AI_MAX_TOKENS: process.env['AI_MAX_TOKENS'],
       AI_ENABLED: process.env['AI_ENABLED'],
+      AI_FALLBACK_MODEL: process.env['AI_FALLBACK_MODEL'],
+      AI_FALLBACK_ENABLED: process.env['AI_FALLBACK_ENABLED'],
       RESEND_API_KEY: process.env['RESEND_API_KEY'],
       RESEND_FROM_EMAIL: process.env['RESEND_FROM_EMAIL'],
       APP_URL: process.env['APP_URL'],

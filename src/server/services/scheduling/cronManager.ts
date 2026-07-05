@@ -3,6 +3,7 @@ import { config } from '../../config';
 import { scheduleService } from '../ScheduleService';
 import { dagWorkflowService } from '../DagWorkflowService';
 import { databaseService } from '../../database/connection';
+import logger from '../../utils/logger';
 
 export interface CronTasks {
   task: cron.ScheduledTask | null;
@@ -24,69 +25,68 @@ export function startCronTasks(
     reportScheduleTask: null,
   };
 
-  if (!config.AGENT_ENABLED) {
-    console.log('[Agent] Agent is disabled (AGENT_ENABLED=false)');
-    return tasks;
-  }
+  // All cron jobs disabled — set AGENT_ENABLED=true to re-enable
+  logger.info('[Agent] All cron jobs disabled');
+  return tasks;
 
   const schedule = config.AGENT_CRON_SCHEDULE;
-  console.log(`[Agent] Starting agent scheduler on cron: "${schedule}"`);
+  logger.info(`[Agent] Starting agent scheduler on cron: "${schedule}"`);
 
   tasks.task = cron.schedule(schedule, async () => {
-    console.log(`[Agent] Cron triggered at ${new Date().toISOString()}`);
+    logger.info(`[Agent] Cron triggered at ${new Date().toISOString()}`);
     try {
       await runScan();
     } catch (error) {
-      console.error('[Agent] Scan failed:', error);
+      logger.error('[Agent] Scan failed:', error);
     }
   });
 
   // Overdue-task scanner — runs more frequently to trigger date_passed workflows
   const overdueMinutes = config.AGENT_OVERDUE_SCAN_MINUTES;
   const overdueCron = `*/${overdueMinutes} * * * *`;
-  console.log(`[Agent] Starting overdue-task scanner on cron: "${overdueCron}"`);
+  logger.info(`[Agent] Starting overdue-task scanner on cron: "${overdueCron}"`);
 
   tasks.overdueTask = cron.schedule(overdueCron, async () => {
     try {
       await runOverdueScan();
     } catch (error) {
-      console.error('[Agent] Overdue scan failed:', error);
+      logger.error('[Agent] Overdue scan failed:', error);
     }
   });
 
   // Recurring task generator — runs daily at 02:00
-  console.log('[Agent] Starting recurring task generator (daily at 02:00)');
+  logger.info('[Agent] Starting recurring task generator (daily at 02:00)');
   tasks.recurrenceTask = cron.schedule('0 2 * * *', async () => {
     try {
       const { recurrenceService } = await import('../RecurrenceService');
       const count = await recurrenceService.generateInstances(14);
       if (count > 0) {
-        console.log(`[Agent] Generated ${count} recurring task instance(s)`);
+        logger.info(`[Agent] Generated ${count} recurring task instance(s)`);
       }
     } catch (error) {
-      console.error('[Agent] Recurrence generation failed:', error);
+      logger.error('[Agent] Recurrence generation failed:', error);
     }
   });
 
   // Email digest — runs daily at 07:00
-  console.log('[Agent] Starting digest email sender (daily at 07:00)');
+  logger.info('[Agent] Starting digest email sender (daily at 07:00)');
   tasks.digestTask = cron.schedule('0 7 * * *', async () => {
     try {
       const { digestService } = await import('../DigestService');
       await digestService.sendPendingDigests();
     } catch (error) {
-      console.error('[Agent] Digest send failed:', error);
+      logger.error('[Agent] Digest send failed:', error);
     }
   });
 
   // Scheduled report delivery — runs every 15 minutes
-  console.log('[Agent] Starting report schedule executor (every 15 min)');
+  logger.info('[Agent] Starting report schedule executor (every 15 min)');
   tasks.reportScheduleTask = cron.schedule('*/15 * * * *', async () => {
     try {
       const { reportScheduleService } = await import('../ReportScheduleService');
       await reportScheduleService.executeDueSchedules();
     } catch (error) {
-      console.error('[Agent] Report schedule execution failed:', error);
+      logger.error('[Agent] Report schedule execution failed:', error);
     }
   });
 
@@ -99,7 +99,7 @@ export function stopCronTasks(tasks: CronTasks): void {
   if (tasks.recurrenceTask) { tasks.recurrenceTask.stop(); tasks.recurrenceTask = null; }
   if (tasks.digestTask) { tasks.digestTask.stop(); tasks.digestTask = null; }
   if (tasks.reportScheduleTask) { tasks.reportScheduleTask.stop(); tasks.reportScheduleTask = null; }
-  console.log('[Agent] Stopped agent scheduler');
+  logger.info('[Agent] Stopped agent scheduler');
 }
 
 export async function runOverdueScanImpl(flaggedOverdue: Set<string>): Promise<number> {
@@ -124,13 +124,13 @@ export async function runOverdueScanImpl(flaggedOverdue: Set<string>): Promise<n
 
     // Fire date_passed triggers via workflow engine
     dagWorkflowService.evaluateTaskChange(task, task, scheduleService).catch(err =>
-      console.error('[Agent] Overdue workflow trigger error:', err)
+      logger.error('[Agent] Overdue workflow trigger error:', err)
     );
     triggered++;
   }
 
   if (triggered > 0) {
-    console.log(`[Agent] Overdue scan: triggered workflows for ${triggered} newly-overdue task(s)`);
+    logger.info(`[Agent] Overdue scan: triggered workflows for ${triggered} newly-overdue task(s)`);
   }
   return triggered;
 }

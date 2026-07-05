@@ -5,6 +5,9 @@ import { AIContextBuilder } from './aiContextBuilder';
 import { logAIUsage } from './aiUsageLogger';
 import { AI_TOOLS, MUTATING_TOOLS } from './aiToolDefinitions';
 import { AIActionExecutor, type ActionResult } from './aiActionExecutor';
+import { chatRepository, type ChatConversation, type ChatMessage } from '../database/ChatRepository';
+import { agentMemoryService } from './AgentMemoryService';
+import { InterAgentQueryService } from './agents/InterAgentQueryService';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,26 +25,6 @@ export interface ChatRequest {
   enableTools?: boolean;
 }
 
-interface StoredMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-  actions?: ActionResult[];
-}
-
-interface StoredConversation {
-  id: string;
-  userId: string;
-  projectId?: string;
-  contextType: string;
-  title: string;
-  messages: StoredMessage[];
-  tokenCount: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // ---------------------------------------------------------------------------
 // AIChatService
 // ---------------------------------------------------------------------------
@@ -50,7 +33,7 @@ export class AIChatService {
   private fastify: FastifyInstance;
   private contextBuilder: AIContextBuilder;
   private actionExecutor: AIActionExecutor;
-  private static conversations: Map<string, StoredConversation> = new Map();
+  private interAgentQueryService = new InterAgentQueryService();
 
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
@@ -100,10 +83,11 @@ export class AIChatService {
           },
         });
 
-        const conversationId = this.persistConversation(
+        const tokenCount = result.totalUsage.inputTokens + result.totalUsage.outputTokens;
+        const conversationId = await this.persistConversation(
           req,
           result.finalText,
-          result.totalUsage.inputTokens + result.totalUsage.outputTokens,
+          tokenCount,
           allActions.length > 0 ? allActions : undefined,
         );
 
@@ -136,7 +120,7 @@ export class AIChatService {
           temperature: 0.5,
         });
 
-        const conversationId = this.persistConversation(req, result.content, result.usage.inputTokens + result.usage.outputTokens);
+        const conversationId = await this.persistConversation(req, result.content, result.usage.inputTokens + result.usage.outputTokens);
 
         logAIUsage({
           userId: req.userId,
@@ -206,7 +190,7 @@ export class AIChatService {
           fullReply += chunk.content ?? '';
           yield chunk;
         } else if (chunk.type === 'usage') {
-          conversationId = this.persistConversation(
+          conversationId = await this.persistConversation(
             req,
             fullReply,
             (chunk.usage?.inputTokens ?? 0) + (chunk.usage?.outputTokens ?? 0),
@@ -249,38 +233,22 @@ export class AIChatService {
   }
 
   // -----------------------------------------------------------------------
-  // Conversation CRUD (in-memory)
+  // Conversation CRUD (database-backed)
   // -----------------------------------------------------------------------
 
-  async getConversations(userId: string): Promise<any[]> {
-    const convos: any[] = [];
-    for (const conv of AIChatService.conversations.values()) {
-      if (conv.userId === userId && conv.isActive) {
-        convos.push({
-          id: conv.id,
-          title: conv.title,
-          contextType: conv.contextType,
-          projectId: conv.projectId,
-          tokenCount: conv.tokenCount,
-          createdAt: conv.createdAt,
-          updatedAt: conv.updatedAt,
-        });
-      }
-    }
-    return convos.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 50);
+  async getConversations(userId: string): Promise<Omit<ChatConversation, 'isActive'>[]> {
+    return chatRepository.findByUserId(userId);
   }
 
-  async getConversation(conversationId: string, userId: string): Promise<any | null> {
-    const conv = AIChatService.conversations.get(conversationId);
-    if (!conv || conv.userId !== userId || !conv.isActive) return null;
-    return { ...conv };
+  async getConversation(conversationId: string, userId: string): Promise<(ChatConversation & { messages: ChatMessage[] }) | null> {
+    const conv = await chatRepository.findByIdForUser(conversationId, userId);
+    if (!conv) return null;
+    const messages = await chatRepository.getAllMessages(conversationId);
+    return { ...conv, messages };
   }
 
   async deleteConversation(conversationId: string, userId: string): Promise<boolean> {
-    const conv = AIChatService.conversations.get(conversationId);
-    if (!conv || conv.userId !== userId) return false;
-    conv.isActive = false;
-    return true;
+    return chatRepository.softDelete(conversationId, userId);
   }
 
   // -----------------------------------------------------------------------
@@ -292,12 +260,45 @@ export class AIChatService {
     history: Array<{ role: 'user' | 'assistant'; content: string }>;
   }> {
     let projectContext = 'No specific project context.';
+    let agentInsightsContext = '';
+
     if (req.context?.projectId) {
       try {
         const ctx = await this.contextBuilder.buildProjectContext(req.context.projectId);
         projectContext = this.contextBuilder.toPromptString(ctx);
       } catch {
         projectContext = `Project ID: ${req.context.projectId} (context unavailable)`;
+      }
+
+      // Fetch agent insights for this project (fire-and-forget safe)
+      try {
+        const [insights, priorConvos, mjuziMemories] = await Promise.all([
+          this.interAgentQueryService.getInsightsByProject(req.context.projectId),
+          chatRepository.findByProjectId(req.context.projectId, req.userId),
+          agentMemoryService.recall('mjuzi-chat', 'project', req.context.projectId),
+        ]);
+
+        const parts: string[] = [];
+
+        if (insights.length > 0) {
+          const insightLines = insights.map(i => `- ${i.agentId}: ${JSON.stringify(i.value)}`).join('\n');
+          parts.push(`Recent agent scan findings for this project:\n${insightLines}`);
+        }
+
+        if (priorConvos.length > 0) {
+          parts.push(`You have had ${priorConvos.length} prior conversation(s) about this project.`);
+        }
+
+        if (mjuziMemories.length > 0) {
+          const memLines = mjuziMemories.slice(0, 5).map(m => `- ${m.keyName}: ${JSON.stringify(m.value)}`).join('\n');
+          parts.push(`Your prior notes about this project:\n${memLines}`);
+        }
+
+        if (parts.length > 0) {
+          agentInsightsContext = '\n\n' + parts.join('\n\n');
+        }
+      } catch {
+        // Non-critical — continue without agent context
       }
     } else {
       // Always load portfolio context when no specific project is selected
@@ -310,58 +311,82 @@ export class AIChatService {
     }
 
     const systemPrompt = promptTemplates.conversational.render({
-      projectContext,
+      projectContext: projectContext + agentInsightsContext,
       userRole: req.userRole || 'team_member',
     });
 
     let history: Array<{ role: 'user' | 'assistant'; content: string }> = [];
     if (req.conversationId) {
-      const conv = await this.getConversation(req.conversationId, req.userId);
-      if (conv?.messages) {
-        const stored: StoredMessage[] = conv.messages;
-        history = stored.slice(-20).map((m: StoredMessage) => ({ role: m.role, content: m.content }));
+      try {
+        const messages = await chatRepository.getMessages(req.conversationId, 20);
+        // Verify ownership by checking conversation exists for user
+        const conv = await chatRepository.findByIdForUser(req.conversationId, req.userId);
+        if (conv) {
+          history = messages.map(m => ({ role: m.role, content: m.content }));
+        }
+      } catch {
+        // Continue without history
       }
     }
 
     return { systemPrompt, history };
   }
 
-  private persistConversation(
+  private async persistConversation(
     req: ChatRequest,
     assistantReply: string,
     tokenCount: number,
     actions?: ActionResult[],
-  ): string {
-    const now = new Date().toISOString();
-    const userMsg: StoredMessage = { role: 'user', content: req.message, timestamp: now };
-    const assistantMsg: StoredMessage = { role: 'assistant', content: assistantReply, timestamp: now, actions };
+  ): Promise<string> {
+    try {
+      if (req.conversationId) {
+        // Verify ownership
+        const conv = await chatRepository.findByIdForUser(req.conversationId, req.userId);
+        if (conv) {
+          await chatRepository.addMessage(req.conversationId, { role: 'user', content: req.message });
+          await chatRepository.addMessage(req.conversationId, { role: 'assistant', content: assistantReply, actions });
+          await chatRepository.updateTokenCount(req.conversationId, tokenCount);
 
-    if (req.conversationId && AIChatService.conversations.has(req.conversationId)) {
-      const conv = AIChatService.conversations.get(req.conversationId)!;
-      if (conv.userId === req.userId) {
-        conv.messages.push(userMsg, assistantMsg);
-        conv.tokenCount += tokenCount;
-        conv.updatedAt = now;
-        return req.conversationId;
+          // Store agent memory if actions were taken
+          this.storeActionMemory(req, actions);
+
+          return req.conversationId;
+        }
       }
+
+      // Create new conversation
+      const title = req.message.slice(0, 100) + (req.message.length > 100 ? '...' : '');
+      const conv = await chatRepository.createConversation({
+        userId: req.userId,
+        projectId: req.context?.projectId,
+        contextType: req.context?.type || 'general',
+        title,
+      });
+
+      await chatRepository.addMessage(conv.id, { role: 'user', content: req.message });
+      await chatRepository.addMessage(conv.id, { role: 'assistant', content: assistantReply, actions });
+      await chatRepository.updateTokenCount(conv.id, tokenCount);
+
+      // Store agent memory if actions were taken
+      this.storeActionMemory(req, actions);
+
+      return conv.id;
+    } catch (error) {
+      this.fastify.log.error({ err: error instanceof Error ? error : new Error(String(error)) }, 'Failed to persist conversation');
+      return req.conversationId || randomUUID();
     }
+  }
 
-    const id = randomUUID();
-    const title = req.message.slice(0, 100) + (req.message.length > 100 ? '...' : '');
+  private storeActionMemory(req: ChatRequest, actions?: ActionResult[]): void {
+    if (!actions || actions.length === 0 || !req.context?.projectId) return;
 
-    AIChatService.conversations.set(id, {
-      id,
-      userId: req.userId,
-      projectId: req.context?.projectId,
-      contextType: req.context?.type || 'general',
-      title,
-      messages: [userMsg, assistantMsg],
-      tokenCount,
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    return id;
+    const summary = actions.map(a => `${a.toolName}: ${a.summary}`).join('; ');
+    agentMemoryService.store(
+      'mjuzi-chat',
+      'project',
+      req.context.projectId,
+      `action-${Date.now()}`,
+      { userMessage: req.message.slice(0, 200), actions: summary },
+    ).catch(() => { /* fire-and-forget */ });
   }
 }

@@ -1,5 +1,6 @@
 import { databaseService } from '../../database/connection';
 import { ragService } from '../RagService';
+import logger from '../../utils/logger';
 import {
   type LessonLearned,
   type Pattern,
@@ -47,7 +48,7 @@ export class LessonsLearnedService {
     );
 
     ragService.indexLesson(lesson).catch((err) => {
-      console.error(`[RAG] Failed to index lesson ${lesson.id}:`, (err as Error).message);
+      logger.error(`[RAG] Failed to index lesson ${lesson.id}:`, (err as Error).message);
     });
   }
 

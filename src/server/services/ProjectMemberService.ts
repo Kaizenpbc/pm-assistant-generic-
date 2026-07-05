@@ -1,14 +1,7 @@
-export type ProjectRole = 'owner' | 'manager' | 'editor' | 'viewer';
+import { projectMemberRepository, ProjectMember } from '../database/ProjectMemberRepository';
 
-export interface ProjectMember {
-  id: string;
-  projectId: string;
-  userId: string;
-  userName: string;
-  email: string;
-  role: ProjectRole;
-  addedAt: string;
-}
+export type { ProjectMember } from '../database/ProjectMemberRepository';
+export type ProjectRole = 'owner' | 'manager' | 'editor' | 'viewer';
 
 const ROLE_HIERARCHY: Record<ProjectRole, number> = {
   owner: 4,
@@ -18,85 +11,58 @@ const ROLE_HIERARCHY: Record<ProjectRole, number> = {
 };
 
 export class ProjectMemberService {
-  private static members: ProjectMember[] = [
-    // User '1' is owner of all 3 projects
-    { id: 'pm-1', projectId: '1', userId: '1', userName: 'Admin User', email: 'admin@example.com', role: 'owner', addedAt: new Date().toISOString() },
-    { id: 'pm-2', projectId: '2', userId: '1', userName: 'Admin User', email: 'admin@example.com', role: 'owner', addedAt: new Date().toISOString() },
-    { id: 'pm-3', projectId: '3', userId: '1', userName: 'Admin User', email: 'admin@example.com', role: 'owner', addedAt: new Date().toISOString() },
-    // Sample team members
-    { id: 'pm-4', projectId: '1', userId: '2', userName: 'Sarah Chen', email: 'sarah.chen@example.com', role: 'manager', addedAt: new Date().toISOString() },
-    { id: 'pm-5', projectId: '1', userId: '3', userName: 'Mike Johnson', email: 'mike.j@example.com', role: 'editor', addedAt: new Date().toISOString() },
-    { id: 'pm-6', projectId: '1', userId: '4', userName: 'Emily Davis', email: 'emily.d@example.com', role: 'viewer', addedAt: new Date().toISOString() },
-    { id: 'pm-7', projectId: '2', userId: '5', userName: 'Tom Wilson', email: 'tom.w@example.com', role: 'editor', addedAt: new Date().toISOString() },
-    { id: 'pm-8', projectId: '3', userId: '6', userName: 'Lisa Park', email: 'lisa.p@example.com', role: 'manager', addedAt: new Date().toISOString() },
-    { id: 'pm-9', projectId: '3', userId: '7', userName: 'James Brown', email: 'james.b@example.com', role: 'editor', addedAt: new Date().toISOString() },
-  ];
-
-  findByProjectId(projectId: string): ProjectMember[] {
-    return ProjectMemberService.members.filter(m => m.projectId === projectId);
+  async findByProjectId(projectId: string): Promise<ProjectMember[]> {
+    return projectMemberRepository.findByProjectId(projectId);
   }
 
-  findByUserId(userId: string): ProjectMember[] {
-    return ProjectMemberService.members.filter(m => m.userId === userId);
+  async findByUserId(userId: string): Promise<ProjectMember[]> {
+    return projectMemberRepository.findByUserId(userId);
   }
 
-  findMembership(projectId: string, userId: string): ProjectMember | undefined {
-    return ProjectMemberService.members.find(m => m.projectId === projectId && m.userId === userId);
+  async findMembership(projectId: string, userId: string): Promise<ProjectMember | undefined> {
+    return projectMemberRepository.findMembership(projectId, userId);
   }
 
-  hasAccess(projectId: string, userId: string): boolean {
-    // Admin bypass
-    if (userId === '1') return true;
-    return !!this.findMembership(projectId, userId);
+  async hasAccess(projectId: string, userId: string): Promise<boolean> {
+    return projectMemberRepository.hasAccess(projectId, userId);
   }
 
-  hasRole(projectId: string, userId: string, minRole: ProjectRole): boolean {
-    // Admin bypass
-    if (userId === '1') return true;
-    const membership = this.findMembership(projectId, userId);
+  async hasRole(projectId: string, userId: string, minRole: ProjectRole): Promise<boolean> {
+    const membership = await this.findMembership(projectId, userId);
     if (!membership) return false;
     return ROLE_HIERARCHY[membership.role] >= ROLE_HIERARCHY[minRole];
   }
 
-  addMember(projectId: string, data: { userId: string; userName: string; email: string; role: ProjectRole }): ProjectMember {
-    // Check if already a member
-    const existing = this.findMembership(projectId, data.userId);
+  async addMember(projectId: string, data: { userId: string; userName: string; email: string; role: ProjectRole }): Promise<ProjectMember> {
+    const existing = await this.findMembership(projectId, data.userId);
     if (existing) {
-      existing.role = data.role;
-      return existing;
+      await projectMemberRepository.updateRole(existing.id, data.role);
+      return { ...existing, role: data.role };
     }
-
-    const member: ProjectMember = {
-      id: `pm-${Math.random().toString(36).substr(2, 9)}`,
-      projectId,
-      userId: data.userId,
-      userName: data.userName,
-      email: data.email,
-      role: data.role,
-      addedAt: new Date().toISOString(),
-    };
-    ProjectMemberService.members.push(member);
-    return member;
+    return projectMemberRepository.insert(projectId, data);
   }
 
-  updateRole(memberId: string, role: ProjectRole): ProjectMember | null {
-    const member = ProjectMemberService.members.find(m => m.id === memberId);
+  async updateRole(memberId: string, role: ProjectRole): Promise<ProjectMember | null> {
+    const member = await projectMemberRepository.findById(memberId);
     if (!member) return null;
-    member.role = role;
-    return member;
+    await projectMemberRepository.updateRole(memberId, role);
+    return { ...member, role };
   }
 
-  removeMember(memberId: string): boolean {
-    const idx = ProjectMemberService.members.findIndex(m => m.id === memberId);
-    if (idx === -1) return false;
-    // Don't allow removing last owner
-    const member = ProjectMemberService.members[idx];
+  async removeMember(memberId: string): Promise<boolean> {
+    const member = await projectMemberRepository.findById(memberId);
+    if (!member) return false;
+
     if (member.role === 'owner') {
-      const owners = ProjectMemberService.members.filter(m => m.projectId === member.projectId && m.role === 'owner');
-      if (owners.length <= 1) return false;
+      const ownerCount = await projectMemberRepository.countOwners(member.projectId);
+      if (ownerCount <= 1) return false;
     }
-    ProjectMemberService.members.splice(idx, 1);
-    return true;
+
+    return projectMemberRepository.deleteMember(memberId);
+  }
+
+  async findUserByEmail(email: string): Promise<{ id: string; fullName: string; email: string } | null> {
+    return projectMemberRepository.findUserByEmail(email);
   }
 }
 

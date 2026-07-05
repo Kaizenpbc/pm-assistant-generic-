@@ -729,19 +729,27 @@ PM Assistant integrates AI capabilities throughout the platform (requires AI to 
 3. The AI returns a written answer, often accompanied by auto-generated charts (bar, line, pie, or doughnut).
 4. **Suggested follow-ups** appear below the answer for deeper exploration.
 
-### AI Chat Panel
+### Mjuzi Chat Panel
 
-A persistent chat panel accessible from any page:
+**Mjuzi** is your AI project assistant, available as a persistent slide-out chat panel from any page:
 
 - Click the AI chat icon to open the side panel.
 - Ask questions about the current context (project, schedule, task).
-- The AI is aware of the page you are on and can provide contextual answers.
+- Mjuzi is aware of the page you are on and can provide contextual answers.
 - Includes **Quick Actions** for common operations.
+
+**Conversation history**
+
+- Your conversations are saved and persist across sessions (even after server restarts).
+- Click the **History** button (clock icon) in the chat header to browse past conversations.
+- Click any conversation to reload it and continue where you left off.
+- Click the **+** button to start a new conversation.
+- Mjuzi remembers past interactions about a project and incorporates agent scan findings for richer, more informed responses.
 
 **Voice input and spoken replies**
 
 - **Speak your message:** If your browser supports it, a **microphone** button appears next to the chat input. Click it, speak your question (e.g. “What projects are in trouble?” or “What’s my portfolio spend to date?”), and your words are sent as a normal chat message. Click the mic again to stop listening.
-- **Speak replies:** Check **Speak replies** below the input to have the AI’s answers read aloud when each reply is complete. Uncheck to turn this off. The welcome message is never spoken.
+- **Speak replies:** Check **Speak replies** below the input to have Mjuzi’s answers read aloud when each reply is complete. Uncheck to turn this off. The welcome message is never spoken.
 - Voice uses the same AI chat as typing: you can say anything you could type and get the same smart, contextual answer.
 
 ### AI Task Breakdown

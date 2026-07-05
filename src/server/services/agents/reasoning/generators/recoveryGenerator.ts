@@ -8,6 +8,7 @@ import { confidenceCalculator, DataQualityInput } from '../../ConfidenceCalculat
 import { stripJsonFences } from '../helpers';
 import { RecoveryResponseSchema, RecoveryResponse } from '../zodSchemas';
 import { getRecoverySystemPrompt, buildRecoveryPrompt } from '../prompts';
+import logger from '../../../../utils/logger';
 import type { ReasoningInput, RecoveryPlan, DelayContext } from '../types';
 
 const criticalPathService = new CriticalPathService();
@@ -41,7 +42,7 @@ async function assembleContext(input: ReasoningInput): Promise<ScheduleContext |
 
     return { project, schedule, tasks, criticalPath, workload };
   } catch (err) {
-    console.error('[ReasoningEngine] Context assembly failed:', err);
+    logger.error('[ReasoningEngine] Context assembly failed:', err);
     return null;
   }
 }
@@ -78,7 +79,7 @@ export async function generateRecoveryPlanImpl(input: ReasoningInput): Promise<R
 
   // 4. Check Claude availability
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping recovery plan');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping recovery plan');
     return null;
   }
 
@@ -94,7 +95,7 @@ export async function generateRecoveryPlanImpl(input: ReasoningInput): Promise<R
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for recovery plan:', err);
+    logger.error('[ReasoningEngine] Claude call failed for recovery plan:', err);
     return null;
   }
 
@@ -121,7 +122,7 @@ export async function generateRecoveryPlanImpl(input: ReasoningInput): Promise<R
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = RecoveryResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse recovery plan response:', err);
+    logger.error('[ReasoningEngine] Failed to parse recovery plan response:', err);
     return null;
   }
 

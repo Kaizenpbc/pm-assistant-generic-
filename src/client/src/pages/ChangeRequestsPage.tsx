@@ -25,7 +25,7 @@ export const ChangeRequestsPage: React.FC = () => {
     queryKey: ['projects'],
     queryFn: () => apiService.getProjects(),
   });
-  const projects: any[] = projectsData?.projects || [];
+  const projects: any[] = projectsData?.data || projectsData?.projects || [];
 
   // Auto-select first project
   React.useEffect(() => {

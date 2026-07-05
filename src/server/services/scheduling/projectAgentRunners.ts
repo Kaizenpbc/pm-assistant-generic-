@@ -7,6 +7,7 @@ import { dependencyRiskAgent } from '../agents/DependencyRiskAgent';
 import { lessonsLearnedAgent } from '../agents/LessonsLearnedAgent';
 import { predictiveAlertingAgent } from '../agents/PredictiveAlertingAgent';
 import type { Project } from '../ProjectService';
+import logger from '../../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Agent 6 — Budget Intelligence
@@ -44,7 +45,7 @@ export async function runBudgetIntelligenceAgent(
     return 0;
   }
 
-  console.log(`[Agent:BudgetIntelligence] Proposal created for "${project.name}"`);
+  logger.info(`[Agent:BudgetIntelligence] Proposal created for "${project.name}"`);
 
   await activityLog.log({
     projectId: project.id,
@@ -83,7 +84,7 @@ export async function runResourceOptimizationAgent(
     return 0;
   }
 
-  console.log(`[Agent:ResourceOptimization] Proposal created for "${project.name}"`);
+  logger.info(`[Agent:ResourceOptimization] Proposal created for "${project.name}"`);
 
   await activityLog.log({
     projectId: project.id,
@@ -122,7 +123,7 @@ export async function runStakeholderCommunicationAgent(
     return 0;
   }
 
-  console.log(`[Agent:StakeholderCommunication] Report created for "${project.name}" — status: ${result.analysis?.overallStatus}`);
+  logger.info(`[Agent:StakeholderCommunication] Report created for "${project.name}" — status: ${result.analysis?.overallStatus}`);
 
   await activityLog.log({
     projectId: project.id,
@@ -161,7 +162,7 @@ export async function runProjectHygieneAgent(
     return 0;
   }
 
-  console.log(`[Agent:ProjectHygiene] Proposal created for "${project.name}"`);
+  logger.info(`[Agent:ProjectHygiene] Proposal created for "${project.name}"`);
 
   await activityLog.log({
     projectId: project.id,
@@ -200,7 +201,7 @@ export async function runDependencyRiskAgent(
     return 0;
   }
 
-  console.log(`[Agent:DependencyRisk] Proposal created for "${project.name}"`);
+  logger.info(`[Agent:DependencyRisk] Proposal created for "${project.name}"`);
 
   await activityLog.log({
     projectId: project.id,
@@ -238,7 +239,7 @@ export async function runLessonsLearnedAgent(
     return 0;
   }
 
-  console.log(`[Agent:LessonsLearned] ${result.lessonsExtracted} lesson(s) extracted for "${project.name}"`);
+  logger.info(`[Agent:LessonsLearned] ${result.lessonsExtracted} lesson(s) extracted for "${project.name}"`);
 
   await activityLog.log({
     projectId: project.id,
@@ -277,7 +278,7 @@ export async function runPredictiveAlertingAgent(
     return 0;
   }
 
-  console.log(`[Agent:PredictiveAlerting] Warning created for "${project.name}" — severity: ${result.analysis?.severity}`);
+  logger.info(`[Agent:PredictiveAlerting] Warning created for "${project.name}" — severity: ${result.analysis?.severity}`);
 
   await activityLog.log({
     projectId: project.id,

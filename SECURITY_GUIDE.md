@@ -90,6 +90,58 @@ fastify.post('/projects', { preHandler: [authMiddleware, requireScope('write')] 
 
 ---
 
+## 4b. Project-Level Access Control
+
+The `requireProjectAccess` middleware (`src/server/middleware/requireProjectAccess.ts`) enforces **project-scoped** access. While `requireScope` controls *what actions* a user can perform globally, `requireProjectAccess` controls *which projects* a user can access and at what level.
+
+### Two-Layer Authorization
+
+Every project-scoped route runs both middlewares in sequence:
+
+```typescript
+fastify.get('/:scheduleId/tasks', {
+  preHandler: [requireScope('read'), requireProjectAccess('viewer')],
+}, handler);
+```
+
+1. **`requireScope`** — Can this user role perform read/write/admin actions at all?
+2. **`requireProjectAccess`** — Is this user a member of this specific project with sufficient project role?
+
+### Project Role Hierarchy
+
+```
+owner  >  manager  >  editor  >  viewer
+```
+
+| Project Role | Read | Write (tasks, comments, time) | Admin (delete, manage members) |
+|---|---|---|---|
+| **owner** | Yes | Yes | Yes |
+| **manager** | Yes | Yes | No |
+| **editor** | Yes | Yes (tasks, comments, time only) | No |
+| **viewer** | Yes | No | No |
+| **Non-member** | No | No | No |
+
+### Global Role Bypasses
+
+| Global User Role | Bypass Behavior |
+|---|---|
+| `admin`, `pmo` | Full access to all projects (no membership required) |
+| `executive` | Read-only access to all projects (write/admin denied) |
+| All other roles | Must be a project member with sufficient project role |
+
+### Security Design
+
+- **404 for non-members** — prevents information leakage. An attacker cannot distinguish "project exists but I have no access" from "project does not exist."
+- **403 for insufficient role** — returned only to confirmed members who lack the required project role.
+- **Project ID extraction** — the middleware resolves the project from `params.projectId`, `params.scheduleId` (via DB lookup), `params.id` (on `/api/v1/projects` routes), or `request.body.projectId`.
+- **Auto-owner on creation** — when a project is created, the creator is automatically added as `owner` in `project_members`.
+
+### Protected Routes
+
+The middleware is applied to all project-scoped routes across schedules, sprints, approval workflows, resources, and project CRUD endpoints. Routes without a project context (e.g., `GET /projects` list) are not affected — the middleware skips when no projectId can be extracted.
+
+---
+
 ## 5. Password Security
 
 - Passwords are hashed with **bcrypt** before storage (`UserService.ts`).
@@ -334,6 +386,7 @@ curl -X POST -H "Authorization: Bearer kpm_read_only_key" \
 |---|---|
 | `src/server/plugins.ts` | Helmet, CORS, cookie, rate limiting, API key resolution |
 | `src/server/middleware/requireScope.ts` | Scope-based authorization middleware |
+| `src/server/middleware/requireProjectAccess.ts` | Project-level membership + role enforcement |
 | `src/server/middleware/securityMiddleware.ts` | Request-level security checks |
 | `src/server/middleware/rateLimiter.ts` | In-memory rate limiter |
 | `src/server/routes/auth.ts` | Login, logout, refresh, password reset |

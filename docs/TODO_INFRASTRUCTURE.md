@@ -40,6 +40,53 @@ These architecture audit items are blocked by infrastructure constraints on TMD 
 
 ---
 
+## ~~Item 14: Migration Rollback Runner~~ — DONE (July 2026)
+
+**Implemented:** `migrationRunner.ts` now exports `rollbackMigrations(count, dryRun)`, `dryRunMigrations()`, and `listMigrations()`. CLI via `migrateCli.ts`:
+- `run` — apply pending migrations (existing behavior)
+- `run --dry-run` — preview pending migrations without executing
+- `rollback [N]` — rollback last N migrations using `.down.sql` files
+- `rollback --dry-run` — preview what would be rolled back
+- `list` — show all migrations with applied/pending status and rollback availability
+
+Rollback files use convention `NNN_name.down.sql` alongside `NNN_name.sql`. Forward runner excludes `.down.sql` files.
+
+---
+
+## Item 15: External Alerting / Distributed Tracing
+
+**Current state:** Good local observability (Winston logs with requestId, MetricsService with counters/latency percentiles, admin `/api/v1/metrics` endpoint). No external alerting when metrics cross thresholds, no distributed tracing.
+
+**What's needed:**
+- Webhook or email alerts when error rate spikes, AI budget nears limit, or circuit breaker opens
+- Optional integration with external monitoring (e.g., Sentry, Datadog, or simple webhook to Slack/email)
+- Trace IDs propagated to external services for correlation
+
+**Priority:** Low — current logging and metrics are sufficient for single-instance deployment. Becomes important if scaling or if uptime SLAs tighten.
+
+---
+
+## Item 16: Dashboard Enhancements (UI)
+
+**These items came from the dashboard wireframe discussion (July 2026). Not infrastructure-blocked — just scoped out of current sprint.**
+
+### 16a: AI Next Best Actions Widget
+Prescriptive action cards (3-5 per dashboard) with inline action buttons (e.g., "Approve budget CR for Project X", "Reassign overdue task"). Different from AgentProposalsWidget — these are opinionated recommendations, not raw proposals.
+
+### 16b: Health Trends Sparklines Widget
+3-column sparkline charts showing project health scores over time. **Requires backend work:**
+- New `project_health_snapshots` table (project_id, score, date, captured_by cron)
+- Daily cron job to snapshot health scores from predictions API
+- New API endpoint: `GET /api/v1/projects/:id/health-history`
+
+### 16c: Activity Feed + AI Summary Sidebar
+Enhance `RecentActivityWidget` to 2-column layout: left = activity feed (existing), right = AI-generated summary of recent activity patterns.
+
+### 16d: Dashboard Footer
+Minor — version info, quick links, last refresh timestamp.
+
+---
+
 ## Unblocking Path
 
 1. Request Redis addon from TMD Hosting, or

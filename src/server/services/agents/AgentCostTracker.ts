@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../../database/connection';
+import { agentCostRepository } from '../../database/AgentCostRepository';
 import { config } from '../../config';
+import logger from '../../utils/logger';
 
 export interface CostEntry {
   agentId: string;
@@ -37,38 +38,19 @@ export class AgentCostTracker {
 
   async record(entry: CostEntry): Promise<void> {
     try {
-      await databaseService.query(
-        `INSERT INTO agent_cost_ledger (id, agent_id, project_id, scan_id, input_tokens, output_tokens, total_tokens, estimated_cost_usd, model, latency_ms, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [
-          uuidv4(),
-          entry.agentId,
-          entry.projectId ?? null,
-          entry.scanId ?? null,
-          entry.inputTokens,
-          entry.outputTokens,
-          entry.totalTokens,
-          entry.estimatedCostUsd,
-          entry.model ?? null,
-          entry.latencyMs ?? null,
-        ],
+      await agentCostRepository.insert(
+        uuidv4(), entry.agentId, entry.projectId ?? null, entry.scanId ?? null,
+        entry.inputTokens, entry.outputTokens, entry.totalTokens,
+        entry.estimatedCostUsd, entry.model ?? null, entry.latencyMs ?? null,
       );
     } catch (err) {
-      console.error('[AgentCostTracker] Failed to record cost entry:', err);
+      logger.error('[AgentCostTracker] Failed to record cost entry:', err);
     }
   }
 
   async getDailyCost(date?: string): Promise<CostSummary> {
     const d = date ?? new Date().toISOString().split('T')[0];
-    const rows = await databaseService.query<{ total_tokens: number; total_cost: number; cnt: number }>(
-      `SELECT COALESCE(SUM(total_tokens), 0) AS total_tokens,
-              COALESCE(SUM(estimated_cost_usd), 0) AS total_cost,
-              COUNT(*) AS cnt
-       FROM agent_cost_ledger
-       WHERE DATE(created_at) = ?`,
-      [d],
-    );
-    const row = rows[0];
+    const row = await agentCostRepository.getDailySummary(d);
     return {
       totalTokens: Number(row?.total_tokens ?? 0),
       estimatedCostUsd: Number(row?.total_cost ?? 0),
@@ -78,15 +60,7 @@ export class AgentCostTracker {
 
   async getProjectDailyCost(projectId: string, date?: string): Promise<CostSummary> {
     const d = date ?? new Date().toISOString().split('T')[0];
-    const rows = await databaseService.query<{ total_tokens: number; total_cost: number; cnt: number }>(
-      `SELECT COALESCE(SUM(total_tokens), 0) AS total_tokens,
-              COALESCE(SUM(estimated_cost_usd), 0) AS total_cost,
-              COUNT(*) AS cnt
-       FROM agent_cost_ledger
-       WHERE project_id = ? AND DATE(created_at) = ?`,
-      [projectId, d],
-    );
-    const row = rows[0];
+    const row = await agentCostRepository.getProjectDailySummary(projectId, d);
     return {
       totalTokens: Number(row?.total_tokens ?? 0),
       estimatedCostUsd: Number(row?.total_cost ?? 0),
@@ -118,14 +92,7 @@ export class AgentCostTracker {
   }
 
   async getCostsByAgent(since?: string, until?: string): Promise<Array<{ agentId: string; totalTokens: number; estimatedCostUsd: number; invocations: number }>> {
-    let sql = `SELECT agent_id, SUM(total_tokens) AS total_tokens, SUM(estimated_cost_usd) AS total_cost, COUNT(*) AS invocations
-               FROM agent_cost_ledger WHERE 1=1`;
-    const params: unknown[] = [];
-    if (since) { sql += ' AND created_at >= ?'; params.push(since); }
-    if (until) { sql += ' AND created_at <= ?'; params.push(until); }
-    sql += ' GROUP BY agent_id ORDER BY total_cost DESC';
-
-    const rows = await databaseService.query<{ agent_id: string; total_tokens: number; total_cost: number; invocations: number }>(sql, params);
+    const rows = await agentCostRepository.getCostsByAgent(since, until);
     return rows.map(r => ({
       agentId: r.agent_id,
       totalTokens: Number(r.total_tokens),

@@ -182,7 +182,16 @@
       "Bash(export COOKIEF=\"$TEMP/pm_cookies3.txt\")",
       "Bash(git checkout:*)",
       "Bash(git cherry-pick:*)",
-      "Bash(node -e \"console.log\\(require\\(''zod/package.json''\\).version\\)\")"
+      "Bash(node -e \"console.log\\(require\\(''zod/package.json''\\).version\\)\")",
+      "Bash(git log:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzMzlhMGI5NS0xMmI1LTExZjEtODk4NC1iYzI0MTE2NzRmZmYiLCJ1c2VybmFtZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzgzMTMyNzQzLCJleHAiOjE3ODMxMzM2NDN9.EwnYA2eRgk3r8a_sRAKDpHsUB5EVVOPwhJ-hc1Zx3zI\")",
+      "mcp__pm-assistant__natural-language-query",
+      "mcp__pm-assistant__list-resources",
+      "Bash(ssh kaizenmo@69.72.136.201 \"tail -5 /home/kaizenmo/mcp-server.log && echo ''---'' && ps aux | grep index.js | grep -v grep\")",
+      "Bash(ssh kaizenmo@69.72.136.201 \"echo '''' > /home/kaizenmo/mcp.ca/stderr.log && cloudlinux-selector restart --json --interpreter nodejs --domain mcp.kpbc.ca --app-root mcp.ca\")",
+      "Bash(ssh kaizenmo@69.72.136.201 \"echo ''connected'' && echo '''' > /home/kaizenmo/mcp.ca/stderr.log\")",
+      "Bash(find /c/Users/gerog/documents/pm-assistant-generic/src/client/src -type f \\\\\\(-name *quick* -o -name *shortcut* -o -name *action* \\\\\\))",
+      "Bash(tar -czf /tmp/server-deploy.tar.gz -C dist server)"
     ]
   },
   "enableAllProjectMcpServers": true,

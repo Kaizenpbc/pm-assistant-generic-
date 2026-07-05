@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { config } from '../config';
 import { aiBudgetService, AIBudgetExceededError } from './AIBudgetService';
 import { sanitizeForPrompt } from '../utils/promptSanitizer';
+import logger from '../utils/logger';
+import { getRequestContext } from '../middleware/requestContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,15 +45,6 @@ interface UsageStats {
   estimatedCost: number;
 }
 
-// Pricing per million tokens
-const PRICING: Record<string, { input: number; output: number }> = {
-  'claude-sonnet-4-5-20250929': { input: 3.0, output: 15.0 },
-  'claude-sonnet-4-20250514': { input: 3.0, output: 15.0 },
-  'claude-haiku-4-20250414': { input: 0.80, output: 4.0 },
-  'claude-opus-4-20250514': { input: 15.0, output: 75.0 },
-};
-
-const DEFAULT_PRICING = { input: 3.0, output: 15.0 };
 const REQUEST_TIMEOUT_MS = 30_000;
 
 // ---------------------------------------------------------------------------
@@ -301,7 +294,7 @@ Respond in valid JSON matching the requested schema. Be thorough but concise.`,
   ),
 
   conversational: new PromptTemplate(
-    `You are a knowledgeable and professional AI project management assistant. Your name is Kovarti PM Assistant.
+    `You are Mjuzi, a warm, knowledgeable, and proactive AI project management assistant. You remember past interactions and offer relevant insights.
 
 Context:
 - You help project managers, team leads, and executives manage projects across diverse industries.
@@ -311,6 +304,7 @@ Context:
 - When the user asks you to do something (create a task, update status, etc.), use your tools to execute the action — don't just describe what you would do.
 - Before making destructive changes (deleting tasks/projects), confirm with the user first by explaining what you intend to do.
 - For read-only queries (listing projects, checking status), use the appropriate lookup tools to get current data.
+- When agent scan findings or prior notes are provided in the project context, proactively reference them to give richer, more informed answers.
 
 Guidelines for your responses:
 - Be professional, clear, and concise.
@@ -335,6 +329,8 @@ User's role: {{userRole}}`,
 export class ClaudeService {
   private client: Anthropic | null = null;
   private model: string;
+  private fallbackModel: string;
+  private fallbackEnabled: boolean;
   private maxTokens: number;
   private temperature: number;
   private aiEnabled: boolean;
@@ -348,13 +344,15 @@ export class ClaudeService {
 
   constructor() {
     this.model = config.AI_MODEL;
+    this.fallbackModel = config.AI_FALLBACK_MODEL;
+    this.fallbackEnabled = config.AI_FALLBACK_ENABLED;
     this.maxTokens = config.AI_MAX_TOKENS;
     this.temperature = config.AI_TEMPERATURE;
     this.aiEnabled = config.AI_ENABLED;
 
     if (this.aiEnabled) {
       if (!config.ANTHROPIC_API_KEY) {
-        console.warn(
+        logger.warn(
           '[ClaudeService] AI_ENABLED is true but ANTHROPIC_API_KEY is not configured. ' +
             'AI features will be unavailable until a valid API key is provided.',
         );
@@ -384,7 +382,8 @@ export class ClaudeService {
   async complete(options: CompletionOptions): Promise<CompletionResult> {
     this.assertAvailable();
     this.circuitBreaker.assertClosed();
-    if (options.userId) await aiBudgetService.checkBudget(options.userId);
+    const budgetUserId = this.resolveUserId(options);
+    if (budgetUserId) await aiBudgetService.checkBudget(budgetUserId);
 
     const startMs = Date.now();
     const effectiveMaxTokens = options.maxTokens ?? this.maxTokens;
@@ -414,6 +413,38 @@ export class ClaudeService {
 
       return { content, usage, latencyMs, model: response.model };
     } catch (error: unknown) {
+      // Fallback: retry once with fallback model on transient errors
+      if (this.fallbackEnabled && this.circuitBreaker.isTransientError(error)) {
+        logger.warn(`[ClaudeService] Primary model failed (${(error as any)?.status ?? 'timeout'}), retrying with fallback model ${this.fallbackModel}`);
+        try {
+          const fallbackResponse = await this.client!.messages.create({
+            model: this.fallbackModel,
+            max_tokens: effectiveMaxTokens,
+            temperature: effectiveTemperature,
+            system: systemPrompt,
+            messages,
+            stream: false,
+          });
+
+          const latencyMs = Date.now() - startMs;
+          const content = this.extractTextContent(fallbackResponse);
+          const usage: TokenUsage = {
+            inputTokens: fallbackResponse.usage.input_tokens,
+            outputTokens: fallbackResponse.usage.output_tokens,
+          };
+
+          this.recordUsage(usage);
+          this.circuitBreaker.recordSuccess();
+
+          return { content, usage, latencyMs, model: fallbackResponse.model };
+        } catch (fallbackError: unknown) {
+          if (this.circuitBreaker.isTransientError(fallbackError)) {
+            this.circuitBreaker.recordFailure();
+          }
+          throw this.wrapError(fallbackError, 'complete(fallback)');
+        }
+      }
+
       if (this.circuitBreaker.isTransientError(error)) {
         this.circuitBreaker.recordFailure();
       }
@@ -424,7 +455,8 @@ export class ClaudeService {
   async *stream(options: CompletionOptions): AsyncGenerator<StreamChunk> {
     this.assertAvailable();
     this.circuitBreaker.assertClosed();
-    if (options.userId) await aiBudgetService.checkBudget(options.userId);
+    const budgetUserId = this.resolveUserId(options);
+    if (budgetUserId) await aiBudgetService.checkBudget(budgetUserId);
 
     const effectiveMaxTokens = options.maxTokens ?? this.maxTokens;
     const effectiveTemperature = options.temperature ?? this.temperature;
@@ -605,7 +637,8 @@ export class ClaudeService {
   }> {
     this.assertAvailable();
     this.circuitBreaker.assertClosed();
-    if (options.userId) await aiBudgetService.checkBudget(options.userId);
+    const budgetUserId = this.resolveUserId(options);
+    if (budgetUserId) await aiBudgetService.checkBudget(budgetUserId);
 
     const maxIter = options.maxIterations ?? 5;
     const toolResults: Array<{ toolName: string; result: string }> = [];
@@ -694,6 +727,14 @@ export class ClaudeService {
       (block): block is Anthropic.TextBlock => block.type === 'text',
     );
     return { finalText: textBlocks.map(b => b.text).join(''), toolResults, totalUsage, totalLatencyMs };
+  }
+
+  /**
+   * Resolve userId from explicit option or AsyncLocalStorage request context.
+   * Returns undefined for system-triggered calls (cron jobs, agents) with no request context.
+   */
+  private resolveUserId(options: { userId?: string }): string | undefined {
+    return options.userId ?? getRequestContext()?.userId;
   }
 
   private assertAvailable(): void {
@@ -801,9 +842,8 @@ export class ClaudeService {
     this.stats.totalInputTokens += usage.inputTokens;
     this.stats.totalOutputTokens += usage.outputTokens;
 
-    const pricing = PRICING[this.model] ?? DEFAULT_PRICING;
-    const inputCost = (usage.inputTokens / 1_000_000) * pricing.input;
-    const outputCost = (usage.outputTokens / 1_000_000) * pricing.output;
+    const inputCost = (usage.inputTokens / 1_000_000) * config.AI_PRICING_INPUT;
+    const outputCost = (usage.outputTokens / 1_000_000) * config.AI_PRICING_OUTPUT;
     this.stats.estimatedCost += inputCost + outputCost;
   }
 

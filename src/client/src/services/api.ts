@@ -477,7 +477,7 @@ class ApiService {
     return response.data;
   }
 
-  async addProjectMember(projectId: string, data: { userId: string; userName: string; email: string; role: string }) {
+  async addProjectMember(projectId: string, data: { userId?: string; userName: string; email: string; role: string }) {
     const response = await this.api.post(`/projects/${projectId}/members`, data);
     return response.data;
   }

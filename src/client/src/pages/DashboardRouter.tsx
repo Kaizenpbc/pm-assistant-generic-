@@ -5,6 +5,7 @@ import { PMDashboard } from './PMDashboard';
 const ExecutiveDashboard = lazy(() => import('./ExecutiveDashboard').then(m => ({ default: m.ExecutiveDashboard })));
 const ScrumMasterDashboard = lazy(() => import('./dashboards/ScrumMasterDashboard').then(m => ({ default: m.ScrumMasterDashboard })));
 const FinanceDashboard = lazy(() => import('./dashboards/FinanceDashboard').then(m => ({ default: m.FinanceDashboard })));
+const RiskDashboard = lazy(() => import('./dashboards/RiskDashboard').then(m => ({ default: m.RiskDashboard })));
 
 const DashboardSuspense = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" /></div>}>
@@ -20,6 +21,7 @@ export function DashboardRouter() {
   switch (user.role) {
     case 'admin':
     case 'executive':
+    case 'pmo':
       return (
         <DashboardSuspense>
           <ExecutiveDashboard />
@@ -37,7 +39,18 @@ export function DashboardRouter() {
           <FinanceDashboard />
         </DashboardSuspense>
       );
+    case 'risk_manager':
+      return (
+        <DashboardSuspense>
+          <RiskDashboard />
+        </DashboardSuspense>
+      );
     case 'project_manager':
+    case 'ba':
+    case 'qa':
+    case 'tester':
+    case 'devops':
+    case 'claude_sme':
     case 'team_member':
     default:
       return <PMDashboard />;

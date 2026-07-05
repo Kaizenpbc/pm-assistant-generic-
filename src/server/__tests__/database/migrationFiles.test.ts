@@ -18,7 +18,7 @@ const MIGRATIONS_DIR = path.join(__dirname, '..', '..', 'database', 'migrations'
 const KNOWN_DUPLICATE_PREFIXES = new Set([2, 3]);
 
 describe('Migration file integrity', () => {
-  const files = fs.readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const files = fs.readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql') && !f.endsWith('.down.sql'));
 
   it('all migration files have numeric prefixes', () => {
     for (const file of files) {

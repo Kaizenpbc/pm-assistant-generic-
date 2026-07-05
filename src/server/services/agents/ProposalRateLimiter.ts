@@ -1,5 +1,6 @@
 import { databaseService } from '../../database/connection';
 import { AgentActivityLogService } from '../AgentActivityLogService';
+import { deadLetterService } from '../DeadLetterService';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -74,7 +75,7 @@ export class ProposalRateLimiter {
           result: 'skipped',
           summary: `Rate limited: ${reason}`,
           details: { rule: rule.windowLabel, scope: rule.scope, count, limit: rule.limit },
-        }).catch(() => {});
+        }).catch(err => deadLetterService.capture('agent.activity_log', { agentId }, err));
 
         return {
           allowed: false,

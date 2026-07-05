@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { databaseService } from '../database/connection';
 import { TokenUsage } from './claudeService';
+import logger from '../utils/logger';
 
 export interface AIUsageEntry {
   userId?: string;
@@ -52,6 +53,6 @@ export function logAIUsage(entry: AIUsageEntry): void {
       entry.requestContext ? JSON.stringify(entry.requestContext) : null,
     ],
   ).catch((err: Error) => {
-    console.warn('Failed to log AI usage (non-critical):', err.message);
+    logger.warn('Failed to log AI usage (non-critical):', err.message);
   });
 }

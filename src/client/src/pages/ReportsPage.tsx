@@ -163,7 +163,7 @@ export const ReportsPage: React.FC = () => {
   });
 
   const reports: Report[] = historyData?.reports || [];
-  const projects: Project[] = projectsData?.projects || [];
+  const projects: Project[] = projectsData?.data || projectsData?.projects || [];
 
   // ---- Mutation ----
 

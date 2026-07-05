@@ -1,4 +1,5 @@
 import { auditLedgerService } from '../AuditLedgerService';
+import logger from '../../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,7 +59,7 @@ export class KillSwitchService {
       source: 'api',
     });
 
-    console.log(`[KillSwitch] Global kill switch ${action}d by ${userId}`);
+    logger.info(`[KillSwitch] Global kill switch ${action}d by ${userId}`);
   }
 
   async setAgentDisabled(agentId: string, disabled: boolean, userId: string): Promise<void> {
@@ -78,7 +79,7 @@ export class KillSwitchService {
       source: 'api',
     });
 
-    console.log(`[KillSwitch] Agent ${agentId} ${disabled ? 'disabled' : 'enabled'} by ${userId}`);
+    logger.info(`[KillSwitch] Agent ${agentId} ${disabled ? 'disabled' : 'enabled'} by ${userId}`);
   }
 
   async setProjectDisabled(projectId: string, disabled: boolean, userId: string): Promise<void> {
@@ -98,7 +99,7 @@ export class KillSwitchService {
       source: 'api',
     });
 
-    console.log(`[KillSwitch] Project ${projectId} ${disabled ? 'disabled' : 'enabled'} by ${userId}`);
+    logger.info(`[KillSwitch] Project ${projectId} ${disabled ? 'disabled' : 'enabled'} by ${userId}`);
   }
 
   getStatus(): KillSwitchStatus {

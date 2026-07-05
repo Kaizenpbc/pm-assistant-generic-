@@ -5,7 +5,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 
 const addMemberSchema = z.object({
-  userId: z.string().min(1),
+  userId: z.string().optional(),
   userName: z.string().min(1),
   email: z.string().email(),
   role: z.enum(['owner', 'manager', 'editor', 'viewer']),
@@ -25,10 +25,10 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const members = projectMemberService.findByProjectId(projectId);
+      const members = await projectMemberService.findByProjectId(projectId);
       return { members };
     } catch (error) {
-      console.error('Get members error:', error);
+      console.error('Get members error:', error instanceof Error ? error.message : error);
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -41,10 +41,28 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
     try {
       const { projectId } = request.params as { projectId: string };
       const data = addMemberSchema.parse(request.body);
-      const member = projectMemberService.addMember(projectId, data);
+
+      // Resolve userId from email if not provided
+      let userId = data.userId;
+      let userName = data.userName;
+      if (!userId) {
+        const user = await projectMemberService.findUserByEmail(data.email);
+        if (!user) {
+          return reply.status(404).send({ error: 'User not found', message: `No registered user with email ${data.email}` });
+        }
+        userId = user.id;
+        userName = user.fullName;
+      }
+
+      const member = await projectMemberService.addMember(projectId, {
+        userId,
+        userName,
+        email: data.email,
+        role: data.role,
+      });
       return reply.status(201).send({ member });
     } catch (error) {
-      console.error('Add member error:', error);
+      console.error('Add member error:', error instanceof Error ? error.message : error);
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -57,11 +75,11 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
     try {
       const { memberId } = request.params as { memberId: string };
       const data = updateRoleSchema.parse(request.body);
-      const member = projectMemberService.updateRole(memberId, data.role);
+      const member = await projectMemberService.updateRole(memberId, data.role);
       if (!member) return reply.status(404).send({ error: 'Member not found' });
       return { member };
     } catch (error) {
-      console.error('Update member error:', error);
+      console.error('Update member error:', error instanceof Error ? error.message : error);
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -73,11 +91,11 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { memberId } = request.params as { memberId: string };
-      const removed = projectMemberService.removeMember(memberId);
+      const removed = await projectMemberService.removeMember(memberId);
       if (!removed) return reply.status(400).send({ error: 'Cannot remove member (may be last owner)' });
       return { message: 'Member removed' };
     } catch (error) {
-      console.error('Remove member error:', error);
+      console.error('Remove member error:', error instanceof Error ? error.message : error);
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

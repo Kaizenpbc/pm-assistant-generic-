@@ -132,7 +132,7 @@ async function startHttp() {
 
   const provider = new PmOAuthProvider();
 
-  const baseUrl = process.env.PM_BASE_URL || 'https://pm.kpbc.ca';
+  const baseUrl = process.env.PM_BASE_URL || 'https://mcp.kpbc.ca';
   const issuerUrl = new URL(baseUrl);
   const resourceServerUrl = new URL('/mcp', baseUrl);
 
@@ -157,6 +157,12 @@ async function startHttp() {
   // Request logging
   app.use((req, _res, next) => {
     console.error(`[MCP HTTP] ${req.method} ${req.url} from ${req.headers.origin || 'no-origin'}`);
+    console.error(`[MCP HTTP] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+    if (req.url.includes('/authorize') || req.url.includes('/register') || req.url.includes('/token') || req.url.includes('/mcp')) {
+      console.error(`[MCP HTTP] Headers: ${JSON.stringify(req.headers)}`);
+      console.error(`[MCP HTTP] Query: ${JSON.stringify(req.query)}`);
+      if (req.body) console.error(`[MCP HTTP] Body: ${JSON.stringify(req.body)}`);
+    }
     next();
   });
 
@@ -323,7 +329,7 @@ async function startHttp() {
     res.status(400).json({ error: 'Invalid or missing session ID' });
   });
 
-  const port = parseInt(process.env.PM_PORT || '3100', 10);
+  const port = parseInt(process.env.PORT || process.env.PM_PORT || '3100', 10);
   app.listen(port, () => {
     console.error(`PM Assistant MCP server (HTTP+OAuth) listening on http://localhost:${port}`);
     console.error(`  MCP endpoint: /mcp`);
@@ -333,7 +339,8 @@ async function startHttp() {
 }
 
 async function main() {
-  const transport = process.env.PM_TRANSPORT || 'stdio';
+  // Default to HTTP when PORT is set (Passenger) or PM_TRANSPORT is explicit
+  const transport = process.env.PM_TRANSPORT || (process.env.PORT ? 'http' : 'stdio');
 
   if (transport === 'http') {
     await startHttp();

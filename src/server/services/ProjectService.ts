@@ -1,6 +1,9 @@
 import { projectRepository } from '../database/ProjectRepository';
+import { projectMemberService } from './ProjectMemberService';
+import { userService } from './UserService';
 import { auditLedgerService } from './AuditLedgerService';
 import { policyEngineService } from './PolicyEngineService';
+import logger from '../utils/logger';
 import { dagWorkflowService } from './DagWorkflowService';
 import { deadLetterService } from './DeadLetterService';
 
@@ -59,6 +62,10 @@ export class ProjectService {
     return projectRepository.findByUserIdPaginated(userId, limit, offset);
   }
 
+  async findAllPaginated(limit: number, offset: number): Promise<{ rows: Project[]; total: number }> {
+    return projectRepository.findAllPaginated(limit, offset);
+  }
+
   async findAll(): Promise<Project[]> {
     return projectRepository.findAll();
   }
@@ -86,6 +93,21 @@ export class ProjectService {
       payload: { after: project },
       source: 'web',
     }).catch(err => deadLetterService.capture('audit.append', {}, err));
+
+    // Auto-add creator as project owner (fire-and-forget)
+    (async () => {
+      try {
+        const creator = await userService.findById(data.userId);
+        await projectMemberService.addMember(project.id, {
+          userId: data.userId,
+          userName: creator?.fullName || creator?.username || 'Unknown',
+          email: creator?.email || '',
+          role: 'owner',
+        });
+      } catch (err) {
+        deadLetterService.capture('project.auto-add-owner', { projectId: project.id, userId: data.userId }, err as Error);
+      }
+    })();
 
     return project;
   }
@@ -128,12 +150,12 @@ export class ProjectService {
       const utilization = budgetAllocated > 0 ? (updated.budgetSpent / budgetAllocated) * 100 : 0;
       dagWorkflowService.evaluateProjectChange(id, 'budget_update', {
         budgetAllocated, budgetSpent: updated.budgetSpent, utilization,
-      }).catch(err => console.error('[Workflow] evaluateProjectChange error:', err));
+      }).catch(err => logger.error('[Workflow] evaluateProjectChange error:', err));
     }
     if ('status' in data && data.status !== existing.status) {
       dagWorkflowService.evaluateProjectChange(id, 'project_status_change', {
         oldStatus: existing.status, newStatus: updated.status,
-      }).catch(err => console.error('[Workflow] evaluateProjectChange error:', err));
+      }).catch(err => logger.error('[Workflow] evaluateProjectChange error:', err));
     }
 
     return updated;

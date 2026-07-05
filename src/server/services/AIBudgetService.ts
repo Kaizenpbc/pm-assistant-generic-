@@ -1,6 +1,7 @@
-import { databaseService } from '../database/connection';
+import { aiBudgetRepository } from '../database/AIBudgetRepository';
 import { config } from '../config';
 import { notificationService } from './NotificationService';
+import { deadLetterService } from './DeadLetterService';
 
 export class AIBudgetExceededError extends Error {
   constructor(public used: number, public budget: number) {
@@ -22,19 +23,7 @@ export interface MonthlyUsage {
 
 class AIBudgetService {
   async getMonthlyUsage(userId: string): Promise<MonthlyUsage> {
-    const rows = await databaseService.query(
-      `SELECT
-         COALESCE(SUM(input_tokens), 0) AS total_input,
-         COALESCE(SUM(output_tokens), 0) AS total_output,
-         COALESCE(SUM(cost_estimate), 0) AS total_cost,
-         COUNT(*) AS request_count
-       FROM ai_usage_log
-       WHERE user_id = ?
-         AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')`,
-      [userId],
-    );
-
-    const row = rows[0];
+    const row = await aiBudgetRepository.getMonthlyUsage(userId);
     const totalInput = Number(row.total_input);
     const totalOutput = Number(row.total_output);
     const totalTokens = totalInput + totalOutput;
@@ -61,19 +50,14 @@ class AIBudgetService {
 
     // Fire a one-time daily warning at 80% usage
     if (usage.percentUsed >= 80 && usage.percentUsed < 100) {
-      this.sendBudgetWarning(userId, usage).catch(() => {});
+      this.sendBudgetWarning(userId, usage).catch(err => deadLetterService.capture('ai.budget.warning', { userId }, err));
     }
   }
 
   private async sendBudgetWarning(userId: string, usage: MonthlyUsage): Promise<void> {
     const today = new Date().toISOString().substring(0, 10);
-    const existing = await databaseService.query(
-      `SELECT id FROM notifications
-       WHERE user_id = ? AND type = 'ai_budget_warning' AND DATE(created_at) = ?
-       LIMIT 1`,
-      [userId, today],
-    );
-    if (existing.length > 0) return;
+    const alreadySent = await aiBudgetRepository.findBudgetWarningToday(userId, today);
+    if (alreadySent) return;
 
     const daysLeft = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate();
     await notificationService.create({
@@ -86,14 +70,8 @@ class AIBudgetService {
   }
 
   private async getBudget(userId: string): Promise<number> {
-    const rows = await databaseService.query(
-      'SELECT ai_monthly_token_budget FROM users WHERE id = ?',
-      [userId],
-    );
-    if (rows.length > 0 && rows[0].ai_monthly_token_budget != null) {
-      return Number(rows[0].ai_monthly_token_budget);
-    }
-    return config.AI_MONTHLY_TOKEN_BUDGET;
+    const userBudget = await aiBudgetRepository.getUserBudget(userId);
+    return userBudget ?? config.AI_MONTHLY_TOKEN_BUDGET;
   }
 }
 

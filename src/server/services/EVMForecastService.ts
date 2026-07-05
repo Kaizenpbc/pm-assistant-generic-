@@ -2,6 +2,7 @@ import { claudeService, PromptTemplate } from './claudeService';
 import { sCurveService, SCurveDataPoint } from './SCurveService';
 import { projectService, Project } from './ProjectService';
 import { config } from '../config';
+import logger from '../utils/logger';
 import {
   EVMForecastAIResponseSchema,
   type EVMForecastResult,
@@ -120,7 +121,7 @@ export class EVMForecastService {
         }
       } catch (err) {
         // AI failure is non-critical — continue with traditional forecasts
-        console.warn('[EVMForecastService] AI prediction failed, using traditional only:', err);
+        logger.warn('[EVMForecastService] AI prediction failed, using traditional only:', err);
       }
     }
 

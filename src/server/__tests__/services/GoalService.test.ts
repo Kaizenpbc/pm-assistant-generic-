@@ -135,7 +135,8 @@ describe('GoalService', () => {
     });
 
     it('returns existing when no fields to update', async () => {
-      mockQuery.mockResolvedValueOnce([sampleRow]);
+      mockQuery.mockResolvedValueOnce([sampleRow]); // findById in service
+      mockQuery.mockResolvedValueOnce([sampleRow]); // findById in repository (no-op update)
       const updated = await service.update('g1', {});
       expect(updated!.name).toBe('Increase Revenue');
     });

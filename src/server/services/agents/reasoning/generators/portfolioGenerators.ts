@@ -2,6 +2,7 @@ import { claudeService, CompletionResult } from '../../../claudeService';
 import { agentCostTracker } from '../../AgentCostTracker';
 import { confidenceCalculator } from '../../ConfidenceCalculator';
 import { stripJsonFences, mapSuggestedActions } from '../helpers';
+import logger from '../../../../utils/logger';
 import {
   PortfolioAnalysisResponseSchema, PortfolioAnalysisResponse,
   RiskEscalationResponseSchema, RiskEscalationResponse,
@@ -40,7 +41,7 @@ export async function generatePortfolioAnalysisImpl(input: PortfolioAnalysisInpu
   );
 
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping portfolio analysis');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping portfolio analysis');
     return null;
   }
 
@@ -55,7 +56,7 @@ export async function generatePortfolioAnalysisImpl(input: PortfolioAnalysisInpu
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for portfolio analysis:', err);
+    logger.error('[ReasoningEngine] Claude call failed for portfolio analysis:', err);
     return null;
   }
 
@@ -76,7 +77,7 @@ export async function generatePortfolioAnalysisImpl(input: PortfolioAnalysisInpu
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = PortfolioAnalysisResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse portfolio analysis response:', err);
+    logger.error('[ReasoningEngine] Failed to parse portfolio analysis response:', err);
     return null;
   }
 
@@ -120,7 +121,7 @@ export async function generateRiskEscalationImpl(input: RiskEscalationInput): Pr
   );
 
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping risk escalation');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping risk escalation');
     return null;
   }
 
@@ -135,7 +136,7 @@ export async function generateRiskEscalationImpl(input: RiskEscalationInput): Pr
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for risk escalation:', err);
+    logger.error('[ReasoningEngine] Claude call failed for risk escalation:', err);
     return null;
   }
 
@@ -156,7 +157,7 @@ export async function generateRiskEscalationImpl(input: RiskEscalationInput): Pr
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = RiskEscalationResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse risk escalation response:', err);
+    logger.error('[ReasoningEngine] Failed to parse risk escalation response:', err);
     return null;
   }
 

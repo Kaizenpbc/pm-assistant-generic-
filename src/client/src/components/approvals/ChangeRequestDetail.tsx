@@ -69,7 +69,7 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
   const currentStep = data?.currentStep;
 
   // Fetch available workflows for submission
-  const { data: workflowsData } = useQuery({
+  const { data: workflowsData, isError: isWorkflowsError } = useQuery({
     queryKey: ['approval-workflows', cr?.projectId],
     queryFn: () => apiService.getApprovalWorkflows(cr!.projectId),
     enabled: showWorkflowSelect && !!cr?.projectId,
@@ -272,6 +272,11 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
           {canSubmit && showWorkflowSelect && (
             <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
               <label className="block text-sm font-medium text-gray-700">Select Approval Workflow</label>
+              {isWorkflowsError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  Failed to load workflows. Please try again.
+                </div>
+              )}
               <select
                 value={selectedWorkflowId}
                 onChange={(e) => setSelectedWorkflowId(e.target.value)}

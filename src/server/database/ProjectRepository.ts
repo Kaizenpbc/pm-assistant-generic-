@@ -57,22 +57,46 @@ export class ProjectRepository extends BaseRepository<Project> {
 
   async findByIdForUser(id: string, userId: string): Promise<Project | null> {
     const rows = await this.queryRaw(
-      'SELECT * FROM projects WHERE id = ? AND created_by = ?',
-      [id, userId],
+      `SELECT DISTINCT p.* FROM projects p
+       LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = ?
+       WHERE p.id = ? AND (p.created_by = ? OR pm.user_id IS NOT NULL)`,
+      [userId, id, userId],
     );
     return rows.length > 0 ? rowToProject(rows[0]) : null;
   }
 
+  async findAllPaginated(limit: number, offset: number): Promise<{ rows: Project[]; total: number }> {
+    return this.queryPaginated('1=1', [], 'created_at DESC', limit, offset);
+  }
+
   async findByUserId(userId: string): Promise<Project[]> {
     const rows = await this.queryRaw(
-      'SELECT * FROM projects WHERE created_by = ? ORDER BY created_at DESC',
-      [userId],
+      `SELECT DISTINCT p.* FROM projects p
+       LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = ?
+       WHERE p.created_by = ? OR pm.user_id IS NOT NULL
+       ORDER BY p.created_at DESC`,
+      [userId, userId],
     );
     return this.mapRows(rows);
   }
 
   async findByUserIdPaginated(userId: string, limit: number, offset: number): Promise<{ rows: Project[]; total: number }> {
-    return this.queryPaginated('created_by = ?', [userId], 'created_at DESC', limit, offset);
+    const countRows = await this.queryRaw(
+      `SELECT COUNT(DISTINCT p.id) as count FROM projects p
+       LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = ?
+       WHERE p.created_by = ? OR pm.user_id IS NOT NULL`,
+      [userId, userId],
+    );
+    const total = Number(countRows[0]?.count ?? 0);
+    const rows = await this.queryRaw(
+      `SELECT DISTINCT p.* FROM projects p
+       LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = ?
+       WHERE p.created_by = ? OR pm.user_id IS NOT NULL
+       ORDER BY p.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [userId, userId, limit, offset],
+    );
+    return { rows: this.mapRows(rows), total };
   }
 
   async create(data: CreateProjectData): Promise<Project> {

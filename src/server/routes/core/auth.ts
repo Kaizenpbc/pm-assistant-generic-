@@ -209,6 +209,45 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Resend verification email — strict rate limit to prevent email spam
+  fastify.post('/resend-verification', {
+    schema: { description: 'Resend verification email', tags: ['auth'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const ip = request.ip || 'unknown';
+      // Strict rate limit: 3 resends per 15 minutes per IP
+      const rl = rateLimiter.check(`auth:resend:${ip}`, 3, 15 * 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many resend attempts. Please try again later.' });
+      }
+
+      const { email } = forgotPasswordSchema.parse(request.body); // reuse: { email: z.string().email() }
+
+      // Always return 200 to prevent email enumeration
+      const user = await userService.findByEmail(email);
+      if (user && !user.emailVerified) {
+        // Per-email rate limit: 1 resend per 5 minutes per email address
+        const emailRl = rateLimiter.check(`auth:resend:email:${email}`, 1, 5 * 60_000);
+        if (emailRl.allowed) {
+          const verificationToken = crypto.randomUUID();
+          const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+          await userService.update(user.id, {
+            emailVerificationToken: verificationToken,
+            emailVerificationExpires: verificationExpires,
+          });
+
+          await emailService.sendVerificationEmail(email, verificationToken);
+        }
+      }
+
+      return { message: 'If an unverified account with that email exists, a new verification link has been sent.' };
+    } catch (error) {
+      console.error('Resend verification error:', error instanceof Error ? error.message : 'unknown');
+      return reply.status(500).send({ error: 'Internal server error', message: 'Failed to resend verification email' });
+    }
+  });
+
   fastify.post('/forgot-password', {
     schema: { description: 'Request password reset', tags: ['auth'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {

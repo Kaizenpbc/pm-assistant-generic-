@@ -1,9 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../../database/connection';
+import { workflowRepository } from '../../database/WorkflowRepository';
 import { Task, ScheduleService } from '../ScheduleService';
 import { WorkflowNode, WorkflowEdge, DefinitionWithGraph } from './types';
-import { parseJson } from './rowMappers';
 import { resolveTemplates } from './templateResolver';
+import logger from '../../utils/logger';
 
 // ── Trigger matching ──────────────────────────────────────────────────────
 
@@ -49,7 +49,9 @@ export function matchesTrigger(config: Record<string, any>, task: Task, oldTask:
     }
     case 'budget_threshold':
     case 'project_status_change':
-      return false;
+    case 'proposal_created':
+    case 'proposal_executed':
+      return false; // handled by evaluateProposalEvent / evaluateProjectChange
     case 'manual':
       return true;
     default:
@@ -118,7 +120,7 @@ export async function executeAction(
       return { action: 'log_activity', message: config.message };
     }
     case 'send_notification': {
-      console.log(`[Workflow Notification] ${config.message || 'Notification'} - Task: ${task?.name || 'N/A'}`);
+      logger.info(`[Workflow Notification] ${config.message || 'Notification'} - Task: ${task?.name || 'N/A'}`);
       try {
         const { notificationService } = await import('../NotificationService');
         const schedule = task ? await scheduleService.findById(task.scheduleId) : null;
@@ -142,7 +144,7 @@ export async function executeAction(
           }
         }
       } catch (err) {
-        console.error('[Workflow] send_notification error:', err);
+        logger.error('[Workflow] send_notification error:', err);
       }
       return { action: 'send_notification', message: config.message, notified: false };
     }
@@ -154,6 +156,15 @@ export async function executeAction(
         projectId: config.projectId,
       });
       return { action: 'invoke_agent', capabilityId: config.capabilityId, success: result.success, output: result.output };
+    }
+    case 'auto_approve_proposal': {
+      const proposalId = config.proposalId as string;
+      if (!proposalId) return { action: 'auto_approve_proposal', skipped: true, reason: 'no proposalId' };
+      const { actionProposalService } = await import('../agents/ActionProposalService');
+      const { actionExecutor } = await import('../agents/ActionExecutor');
+      await actionProposalService.updateStatus(proposalId, 'approved', { reviewedBy: 'system' });
+      const result = await actionExecutor.execute(proposalId);
+      return { action: 'auto_approve_proposal', proposalId, ...result };
     }
     default:
       return { action: actionType, skipped: true };
@@ -167,28 +178,23 @@ export async function executeWorkflowEngine(
   triggerNode: WorkflowNode,
   task: Task | null,
   scheduleService: ScheduleService,
+  triggerContext?: Record<string, any>,
 ): Promise<string> {
   const execId = uuidv4();
-  const context = task ? { taskId: task.id, taskName: task.name, status: task.status, progress: task.progressPercentage } : {};
+  const context = task
+    ? { taskId: task.id, taskName: task.name, status: task.status, progress: task.progressPercentage }
+    : triggerContext ?? {};
 
-  await databaseService.query(
-    `INSERT INTO workflow_executions (id, workflow_id, trigger_node_id, entity_type, entity_id, status, context)
-     VALUES (?, ?, ?, ?, ?, 'running', ?)`,
-    [execId, def.id, triggerNode.id, task ? 'task' : 'unknown', task?.id ?? '', JSON.stringify(context)],
-  );
+  await workflowRepository.insertExecution(execId, def.id, triggerNode.id, task ? 'task' : (triggerContext?.entityType ?? 'unknown'), task?.id ?? (triggerContext?.entityId ?? ''), context);
 
   const triggerExecId = uuidv4();
-  await databaseService.query(
-    `INSERT INTO workflow_node_executions (id, execution_id, node_id, status, started_at, completed_at)
-     VALUES (?, ?, ?, 'completed', NOW(), NOW())`,
-    [triggerExecId, execId, triggerNode.id],
-  );
+  await workflowRepository.insertNodeExecution(triggerExecId, execId, triggerNode.id, 'completed');
 
   const adjacency = buildAdjacencyList(def);
   const visited = new Set<string>([triggerNode.id]);
   const nodeOutputs: Record<string, any> = {};
 
-  await advanceExecution(execId, triggerNode.id, def, adjacency, visited, task, scheduleService, nodeOutputs);
+  await advanceExecution(execId, triggerNode.id, def, adjacency, visited, task, scheduleService, nodeOutputs, triggerContext);
 
   return execId;
 }
@@ -202,6 +208,7 @@ export async function advanceExecution(
   task: Task | null,
   scheduleService: ScheduleService,
   nodeOutputs: Record<string, any>,
+  triggerContext?: Record<string, any>,
 ): Promise<void> {
   const outEdges = adjacency.get(fromNodeId) || [];
   if (outEdges.length === 0) {
@@ -211,11 +218,8 @@ export async function advanceExecution(
 
   for (const edge of outEdges) {
     if (visited.has(edge.targetNodeId)) {
-      console.error(`[DagWorkflow] Cycle detected: ${edge.targetNodeId}`);
-      await databaseService.query(
-        `UPDATE workflow_executions SET status = 'failed', error_message = 'Cycle detected', completed_at = NOW() WHERE id = ?`,
-        [execId],
-      );
+      logger.error(`[DagWorkflow] Cycle detected: ${edge.targetNodeId}`);
+      await workflowRepository.updateExecutionStatus(execId, 'failed', 'Cycle detected');
       return;
     }
 
@@ -228,7 +232,7 @@ export async function advanceExecution(
     if (!targetNode) continue;
 
     visited.add(edge.targetNodeId);
-    await executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService, nodeOutputs);
+    await executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService, nodeOutputs, triggerContext);
   }
 }
 
@@ -241,12 +245,12 @@ async function executeNode(
   task: Task | null,
   scheduleService: ScheduleService,
   nodeOutputs: Record<string, any>,
+  triggerContext?: Record<string, any>,
 ): Promise<void> {
   const nodeExecId = uuidv4();
-  await databaseService.query(
-    `INSERT INTO workflow_node_executions (id, execution_id, node_id, status, input_data, started_at)
-     VALUES (?, ?, ?, 'running', ?, NOW())`,
-    [nodeExecId, execId, node.id, task ? JSON.stringify({ taskId: task.id }) : null],
+  await workflowRepository.insertNodeExecution(
+    nodeExecId, execId, node.id, 'running',
+    task ? JSON.stringify({ taskId: task.id }) : null,
   );
 
   try {
@@ -255,10 +259,7 @@ async function executeNode(
         const condResult = evaluateCondition(node.config, task);
         const condOutput = { result: condResult };
         nodeOutputs[node.id] = condOutput;
-        await databaseService.query(
-          `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
-          [JSON.stringify(condOutput), nodeExecId],
-        );
+        await workflowRepository.updateNodeExecutionCompleted(nodeExecId, JSON.stringify(condOutput));
         await persistNodeOutputs(execId, nodeOutputs);
         const outEdges = adjacency.get(node.id) || [];
         for (const edge of outEdges) {
@@ -269,19 +270,16 @@ async function executeNode(
           const targetNode = def.nodes.find(n => n.id === edge.targetNodeId);
           if (!targetNode) continue;
           visited.add(edge.targetNodeId);
-          await executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService, nodeOutputs);
+          await executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService, nodeOutputs, triggerContext);
         }
         return;
       }
 
       case 'action': {
-        const resolvedConfig = resolveTemplates(node.config, nodeOutputs, task);
+        const resolvedConfig = resolveTemplates(node.config, nodeOutputs, task, triggerContext);
         const output = await executeAction(resolvedConfig, task, scheduleService);
         nodeOutputs[node.id] = output;
-        await databaseService.query(
-          `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
-          [JSON.stringify(output), nodeExecId],
-        );
+        await workflowRepository.updateNodeExecutionCompleted(nodeExecId, JSON.stringify(output));
         break;
       }
 
@@ -296,7 +294,7 @@ async function executeNode(
           if (attempt > 0) {
             await new Promise(r => setTimeout(r, backoffMs * attempt));
           }
-          const resolvedInput = resolveTemplates(node.config.input ?? {}, nodeOutputs, task);
+          const resolvedInput = resolveTemplates(node.config.input ?? {}, nodeOutputs, task, triggerContext);
           const result = await agentRegistry.invoke(capabilityId, resolvedInput, {
             actorId: 'system', actorType: 'system', source: 'system',
             projectId: node.config.projectId as string | undefined,
@@ -304,10 +302,7 @@ async function executeNode(
           if (result.success) {
             const agentOutput = { agentOutput: result.output, durationMs: result.durationMs };
             nodeOutputs[node.id] = agentOutput;
-            await databaseService.query(
-              `UPDATE workflow_node_executions SET status = 'completed', output_data = ?, completed_at = NOW() WHERE id = ?`,
-              [JSON.stringify(agentOutput), nodeExecId],
-            );
+            await workflowRepository.updateNodeExecutionCompleted(nodeExecId, JSON.stringify(agentOutput));
             lastError = undefined;
             break;
           }
@@ -318,73 +313,42 @@ async function executeNode(
       }
 
       case 'approval': {
-        await databaseService.query(
-          `UPDATE workflow_node_executions SET status = 'waiting' WHERE id = ?`,
-          [nodeExecId],
-        );
-        await databaseService.query(
-          `UPDATE workflow_executions SET status = 'waiting' WHERE id = ?`,
-          [execId],
-        );
+        await workflowRepository.updateNodeExecutionWaiting(nodeExecId);
+        await workflowRepository.updateExecutionStatus(execId, 'waiting');
         return;
       }
 
       case 'delay': {
-        await databaseService.query(
-          `UPDATE workflow_node_executions SET status = 'waiting' WHERE id = ?`,
-          [nodeExecId],
-        );
-        await databaseService.query(
-          `UPDATE workflow_executions SET status = 'waiting' WHERE id = ?`,
-          [execId],
-        );
+        await workflowRepository.updateNodeExecutionWaiting(nodeExecId);
+        await workflowRepository.updateExecutionStatus(execId, 'waiting');
         return;
       }
 
       default:
-        await databaseService.query(
-          `UPDATE workflow_node_executions SET status = 'skipped', completed_at = NOW() WHERE id = ?`,
-          [nodeExecId],
-        );
+        await workflowRepository.updateNodeExecutionSkipped(nodeExecId);
     }
   } catch (err: any) {
-    await databaseService.query(
-      `UPDATE workflow_node_executions SET status = 'failed', error_message = ?, completed_at = NOW() WHERE id = ?`,
-      [err.message || 'Unknown error', nodeExecId],
-    );
-    await databaseService.query(
-      `UPDATE workflow_executions SET status = 'failed', error_message = ?, completed_at = NOW() WHERE id = ?`,
-      [err.message || 'Unknown error', execId],
-    );
+    await workflowRepository.updateNodeExecutionFailed(nodeExecId, err.message || 'Unknown error');
+    await workflowRepository.updateExecutionStatus(execId, 'failed', err.message || 'Unknown error');
     return;
   }
 
   await persistNodeOutputs(execId, nodeOutputs);
-  await advanceExecution(execId, node.id, def, adjacency, visited, task, scheduleService, nodeOutputs);
+  await advanceExecution(execId, node.id, def, adjacency, visited, task, scheduleService, nodeOutputs, triggerContext);
 }
 
 async function persistNodeOutputs(execId: string, nodeOutputs: Record<string, any>): Promise<void> {
-  const rows = await databaseService.query('SELECT context FROM workflow_executions WHERE id = ?', [execId]);
-  const existing = rows.length > 0 ? parseJson(rows[0].context) : {};
-  await databaseService.query(
-    `UPDATE workflow_executions SET context = ? WHERE id = ?`,
-    [JSON.stringify({ ...existing, nodeOutputs }), execId],
-  );
+  const existing = await workflowRepository.getExecutionContext(execId);
+  await workflowRepository.updateExecutionContext(execId, { ...existing, nodeOutputs });
 }
 
 async function checkCompletion(execId: string): Promise<void> {
-  const nodeExecs = await databaseService.query(
-    `SELECT status FROM workflow_node_executions WHERE execution_id = ?`,
-    [execId],
-  );
+  const nodeExecs = await workflowRepository.getNodeExecutionStatuses(execId);
   const allDone = nodeExecs.every((ne: any) =>
     ne.status === 'completed' || ne.status === 'failed' || ne.status === 'skipped',
   );
   if (allDone) {
     const anyFailed = nodeExecs.some((ne: any) => ne.status === 'failed');
-    await databaseService.query(
-      `UPDATE workflow_executions SET status = ?, completed_at = NOW() WHERE id = ? AND status = 'running'`,
-      [anyFailed ? 'failed' : 'completed', execId],
-    );
+    await workflowRepository.completeExecution(execId, anyFailed ? 'failed' : 'completed');
   }
 }

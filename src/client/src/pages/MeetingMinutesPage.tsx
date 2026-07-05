@@ -83,7 +83,7 @@ export const MeetingMinutesPage: React.FC = () => {
     enabled: !!selectedProjectId,
   });
 
-  const projects: Project[] = projectsData?.projects || [];
+  const projects: Project[] = projectsData?.data || projectsData?.projects || [];
   const schedules: Schedule[] = schedulesData?.schedules || [];
   const history: HistoryEntry[] = historyData?.history || historyData?.analyses || [];
 

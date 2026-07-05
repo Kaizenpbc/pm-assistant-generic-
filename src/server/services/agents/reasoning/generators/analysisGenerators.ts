@@ -5,6 +5,7 @@ import { agentCostTracker } from '../../AgentCostTracker';
 import { confidenceCalculator } from '../../ConfidenceCalculator';
 import { getMemoryContext, formatMemoryContextForPrompt } from '../../memoryContext';
 import { stripJsonFences, mapSuggestedActions } from '../helpers';
+import logger from '../../../../utils/logger';
 import {
   ScopeAnalysisResponseSchema, ScopeAnalysisResponse,
   BudgetAnalysisResponseSchema, BudgetAnalysisResponse,
@@ -66,7 +67,7 @@ export async function generateScopeAnalysisImpl(input: ScopeAnalysisInput): Prom
   const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy('scope-creep-detection-v1', input.projectId);
 
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping scope analysis');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping scope analysis');
     return null;
   }
 
@@ -84,7 +85,7 @@ export async function generateScopeAnalysisImpl(input: ScopeAnalysisInput): Prom
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for scope analysis:', err);
+    logger.error('[ReasoningEngine] Claude call failed for scope analysis:', err);
     return null;
   }
 
@@ -105,7 +106,7 @@ export async function generateScopeAnalysisImpl(input: ScopeAnalysisInput): Prom
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = ScopeAnalysisResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse scope analysis response:', err);
+    logger.error('[ReasoningEngine] Failed to parse scope analysis response:', err);
     return null;
   }
 
@@ -137,7 +138,7 @@ export async function generateBudgetAnalysisImpl(input: BudgetAnalysisInput): Pr
   const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy('budget-intelligence-v1', input.projectId);
 
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping budget analysis');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping budget analysis');
     return null;
   }
 
@@ -155,7 +156,7 @@ export async function generateBudgetAnalysisImpl(input: BudgetAnalysisInput): Pr
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for budget analysis:', err);
+    logger.error('[ReasoningEngine] Claude call failed for budget analysis:', err);
     return null;
   }
 
@@ -176,7 +177,7 @@ export async function generateBudgetAnalysisImpl(input: BudgetAnalysisInput): Pr
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = BudgetAnalysisResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse budget analysis response:', err);
+    logger.error('[ReasoningEngine] Failed to parse budget analysis response:', err);
     return null;
   }
 
@@ -208,7 +209,7 @@ export async function generateResourceAnalysisImpl(input: ResourceAnalysisInput)
   const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy('resource-optimization-v1', input.projectId);
 
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping resource analysis');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping resource analysis');
     return null;
   }
 
@@ -223,7 +224,7 @@ export async function generateResourceAnalysisImpl(input: ResourceAnalysisInput)
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for resource analysis:', err);
+    logger.error('[ReasoningEngine] Claude call failed for resource analysis:', err);
     return null;
   }
 
@@ -244,7 +245,7 @@ export async function generateResourceAnalysisImpl(input: ResourceAnalysisInput)
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = ResourceAnalysisResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse resource analysis response:', err);
+    logger.error('[ReasoningEngine] Failed to parse resource analysis response:', err);
     return null;
   }
 
@@ -285,7 +286,7 @@ export async function generateDependencyAnalysisImpl(input: DependencyAnalysisIn
   const historicalAccuracy = await confidenceCalculator.computeHistoricalAccuracy('dependency-risk-v1', input.projectId);
 
   if (!claudeService.isAvailable()) {
-    console.warn('[ReasoningEngine] Claude API unavailable — skipping dependency analysis');
+    logger.warn('[ReasoningEngine] Claude API unavailable — skipping dependency analysis');
     return null;
   }
 
@@ -300,7 +301,7 @@ export async function generateDependencyAnalysisImpl(input: DependencyAnalysisIn
       temperature: 0.3,
     });
   } catch (err) {
-    console.error('[ReasoningEngine] Claude call failed for dependency analysis:', err);
+    logger.error('[ReasoningEngine] Claude call failed for dependency analysis:', err);
     return null;
   }
 
@@ -321,7 +322,7 @@ export async function generateDependencyAnalysisImpl(input: DependencyAnalysisIn
     const raw = JSON.parse(stripJsonFences(result.content));
     parsed = DependencyAnalysisResponseSchema.parse(raw);
   } catch (err) {
-    console.error('[ReasoningEngine] Failed to parse dependency analysis response:', err);
+    logger.error('[ReasoningEngine] Failed to parse dependency analysis response:', err);
     return null;
   }
 
