@@ -31,10 +31,14 @@ const dotColor = {
   gray: 'bg-gray-400',
 };
 
-export function PortfolioKPIBar() {
+interface PortfolioKPIBarProps {
+  scope?: 'portfolio';
+}
+
+export function PortfolioKPIBar({ scope }: PortfolioKPIBarProps = {}) {
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
-    queryKey: ['analytics-summary'],
-    queryFn: () => apiService.getAnalyticsSummary(),
+    queryKey: ['analytics-summary', scope],
+    queryFn: () => apiService.getAnalyticsSummary(scope),
     staleTime: 120_000,
   });
 

@@ -59,6 +59,7 @@ import { reportBuilderRoutes } from './routes/reporting/reportBuilder';
 import { analyticsSummaryRoutes } from './routes/reporting/analyticsSummary';
 import { portfolioRoutes } from './routes/reporting/portfolio';
 import { reportScheduleRoutes } from './routes/reporting/reportSchedules';
+import { dashboardDataRoutes } from './routes/reporting/dashboardData';
 
 // Agent
 import { agentRoutes } from './routes/agent/agent';
@@ -146,6 +147,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(analyticsSummaryRoutes, { prefix: '/api/v1/analytics' });
   await fastify.register(portfolioRoutes, { prefix: '/api/v1/portfolio' });
   await fastify.register(reportScheduleRoutes, { prefix: '/api/v1/report-schedules' });
+  await fastify.register(dashboardDataRoutes, { prefix: '/api/v1/dashboard' });
 
   // Agent
   await fastify.register(agentRoutes, { prefix: '/api/v1/agent' });

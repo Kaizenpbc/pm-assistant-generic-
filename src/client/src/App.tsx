@@ -24,7 +24,7 @@ const UserGuidePublicPage = lazy(() => import('./pages/UserGuidePublicPage').the
 const WaitlistAdminPage = lazy(() => import('./pages/WaitlistAdminPage').then(m => ({ default: m.WaitlistAdminPage })));
 const PortalViewPage = lazy(() => import('./pages/PortalViewPage'));
 const DashboardRouter = lazy(() => import('./pages/DashboardRouter').then(m => ({ default: m.DashboardRouter })));
-const PMDashboard = lazy(() => import('./pages/PMDashboard').then(m => ({ default: m.PMDashboard })));
+const UnifiedDashboard = lazy(() => import('./pages/UnifiedDashboard').then(m => ({ default: m.UnifiedDashboard })));
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage').then(m => ({ default: m.ProjectDetailPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
 const ScenarioModelingPage = lazy(() => import('./pages/ScenarioModelingPage').then(m => ({ default: m.ScenarioModelingPage })));
@@ -105,7 +105,7 @@ function App() {
 
         {/* Protected routes */}
         <Route path="/dashboard" element={<PrivateRoute><DashboardRouter /></PrivateRoute>} />
-        <Route path="/projects" element={<PrivateRoute><PMDashboard /></PrivateRoute>} />
+        <Route path="/projects" element={<PrivateRoute><UnifiedDashboard /></PrivateRoute>} />
         <Route path="/project/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
         <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
         <Route path="/scenarios" element={<PrivateRoute><ScenarioModelingPage /></PrivateRoute>} />

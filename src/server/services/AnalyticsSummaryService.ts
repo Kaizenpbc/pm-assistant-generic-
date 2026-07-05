@@ -45,6 +45,13 @@ class AnalyticsSummaryService {
   }
 
   // -----------------------------------------------------------------------
+  // Full portfolio summary across all projects (no user filter)
+  // -----------------------------------------------------------------------
+  async getSummaryAll(): Promise<AnalyticsSummary> {
+    return this.buildSummary('1=1', []);
+  }
+
+  // -----------------------------------------------------------------------
   // Single-project summary
   // -----------------------------------------------------------------------
   async getProjectSummary(projectId: string): Promise<AnalyticsSummary> {

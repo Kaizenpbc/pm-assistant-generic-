@@ -14,11 +14,19 @@ vi.mock('../../services/ScheduleService', () => ({
   },
 }));
 
+vi.mock('../../services/ProjectService', () => ({
+  projectService: {
+    findById: vi.fn(),
+  },
+}));
+
 import { projectMemberService } from '../../services/ProjectMemberService';
 import { scheduleService } from '../../services/ScheduleService';
+import { projectService } from '../../services/ProjectService';
 
 const mockFindMembership = projectMemberService.findMembership as ReturnType<typeof vi.fn>;
 const mockScheduleFindById = (scheduleService as any).findById as ReturnType<typeof vi.fn>;
+const mockProjectFindById = (projectService as any).findById as ReturnType<typeof vi.fn>;
 
 function makeRequest(overrides: any = {}) {
   return {
@@ -52,6 +60,8 @@ function makeMembership(role: string, overrides: any = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: project not found (non-creator) — ensures 404 for non-members
+  mockProjectFindById.mockResolvedValue(null);
 });
 
 describe('requireProjectAccess', () => {
@@ -240,6 +250,18 @@ describe('requireProjectAccess', () => {
 
       expect(reply.status).toHaveBeenCalledWith(404);
       expect(reply.body.error).toBe('Not found');
+    });
+
+    it('grants owner access to project creator without membership row', async () => {
+      const handler = requireProjectAccess('editor');
+      const req = makeRequest({ params: { projectId: 'proj1' } });
+      const reply = makeReply();
+      mockFindMembership.mockResolvedValue(undefined);
+      mockProjectFindById.mockResolvedValue({ id: 'proj1', createdBy: 'u1' });
+
+      await handler(req, reply);
+
+      expect(reply.status).not.toHaveBeenCalled();
     });
 
     it('allows member with exact required role', async () => {

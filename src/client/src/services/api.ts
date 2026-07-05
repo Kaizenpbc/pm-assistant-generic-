@@ -139,8 +139,9 @@ class ApiService {
   // Project endpoints
   // -------------------------------------------------------------------------
 
-  async getProjects() {
-    const response = await this.api.get('/projects');
+  async getProjects(scope?: 'portfolio') {
+    const params = scope ? `?scope=${scope}` : '';
+    const response = await this.api.get(`/projects${params}`);
     return response.data;
   }
 
@@ -1737,8 +1738,33 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
   // Analytics Summary
   // -------------------------------------------------------------------------
 
-  async getAnalyticsSummary() {
-    const response = await this.api.get('/analytics/summary');
+  async getAnalyticsSummary(scope?: 'portfolio') {
+    const params = scope ? `?scope=${scope}` : '';
+    const response = await this.api.get(`/analytics/summary${params}`);
+    return response.data;
+  }
+
+  async getDashboardOverdueTasks(scope?: 'portfolio') {
+    const params = scope ? `?scope=${scope}` : '';
+    const response = await this.api.get(`/dashboard/overdue-tasks${params}`);
+    return response.data;
+  }
+
+  async getDashboardIssuesTrend(scope?: 'portfolio', weeks?: number) {
+    const qp = new URLSearchParams();
+    if (scope) qp.set('scope', scope);
+    if (weeks) qp.set('weeks', String(weeks));
+    const qs = qp.toString();
+    const response = await this.api.get(`/dashboard/issues-trend${qs ? `?${qs}` : ''}`);
+    return response.data;
+  }
+
+  async getDashboardMilestones(scope?: 'portfolio', limit?: number) {
+    const qp = new URLSearchParams();
+    if (scope) qp.set('scope', scope);
+    if (limit) qp.set('limit', String(limit));
+    const qs = qp.toString();
+    const response = await this.api.get(`/dashboard/milestones${qs ? `?${qs}` : ''}`);
     return response.data;
   }
 

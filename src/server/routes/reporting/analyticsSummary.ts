@@ -11,7 +11,13 @@ export async function analyticsSummaryRoutes(fastify: FastifyInstance) {
       const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
-      const summary = await analyticsSummaryService.getSummary(user.userId);
+      const { scope } = request.query as { scope?: string };
+      const globalRoles = ['admin', 'executive', 'pmo'];
+      const isGlobal = globalRoles.includes(user.role) || scope === 'portfolio';
+
+      const summary = isGlobal
+        ? await analyticsSummaryService.getSummaryAll()
+        : await analyticsSummaryService.getSummary(user.userId);
       return { summary };
     } catch (error) {
       console.error('Get analytics summary error:', error);

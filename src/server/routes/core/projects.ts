@@ -40,8 +40,9 @@ export async function projectRoutes(fastify: FastifyInstance) {
     try {
       const user = request.user!;
       const { limit, offset } = parsePagination(request.query as Record<string, unknown>);
+      const { scope } = request.query as { scope?: string };
       const globalRoles = ['admin', 'executive', 'pmo'];
-      const { rows, total } = globalRoles.includes(user.role)
+      const { rows, total } = (globalRoles.includes(user.role) || scope === 'portfolio')
         ? await projectService.findAllPaginated(limit, offset)
         : await projectService.findByUserIdPaginated(user.userId, limit, offset);
       const page = Math.floor(offset / limit) + 1;

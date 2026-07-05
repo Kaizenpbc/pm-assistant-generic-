@@ -16,10 +16,12 @@ export interface ProjectRow {
   budgetSpent?: number;
   startDate?: string;
   endDate?: string;
+  healthScore?: number;
 }
 
 type SortKey =
   | 'name'
+  | 'healthScore'
   | 'status'
   | 'priority'
   | 'projectType'
@@ -130,6 +132,10 @@ export function ProjectTable({ projects }: Props) {
         valA = a.name.toLowerCase();
         valB = b.name.toLowerCase();
         break;
+      case 'healthScore':
+        valA = a.healthScore ?? -1;
+        valB = b.healthScore ?? -1;
+        break;
       case 'status':
         valA = statusOrder[a.status] ?? 99;
         valB = statusOrder[b.status] ?? 99;
@@ -206,6 +212,7 @@ export function ProjectTable({ projects }: Props) {
         <thead className="bg-gray-50 dark:bg-gray-900">
           <tr>
             <Th label="Name" sortable="name" />
+            <Th label="Health" sortable="healthScore" />
             <Th label="Status" sortable="status" />
             <Th label="Priority" sortable="priority" col="hidden sm:table-cell" />
             <Th label="Type" sortable="projectType" col="hidden sm:table-cell" />
@@ -237,6 +244,18 @@ export function ProjectTable({ projects }: Props) {
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 truncate block">
                     {project.name}
                   </span>
+                </td>
+
+                {/* Health Score */}
+                <td className="px-3 py-3 whitespace-nowrap">
+                  {project.healthScore != null ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className={`h-2.5 w-2.5 rounded-full ${project.healthScore >= 75 ? 'bg-green-500' : project.healthScore >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{project.healthScore}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-300">--</span>
+                  )}
                 </td>
 
                 {/* Status */}

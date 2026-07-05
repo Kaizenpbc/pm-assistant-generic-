@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { projectMemberService, ProjectRole } from '../services/ProjectMemberService';
 import { scheduleService } from '../services/ScheduleService';
+import { projectService } from '../services/ProjectService';
 
 const ROLE_HIERARCHY: Record<ProjectRole, number> = {
   owner: 4,
@@ -72,7 +73,15 @@ export function requireProjectAccess(minRole: ProjectRole = 'viewer') {
       });
     }
 
-    const membership = await projectMemberService.findMembership(projectId, user.userId);
+    const foundMembership = await projectMemberService.findMembership(projectId, user.userId);
+    const membership = foundMembership ?? await (async () => {
+      const project = await projectService.findById(projectId);
+      if (project && project.createdBy === user.userId) {
+        return { projectId, userId: user.userId, role: 'owner' as ProjectRole } as Awaited<ReturnType<typeof projectMemberService.findMembership>>;
+      }
+      return null;
+    })();
+
     if (!membership) {
       return reply.status(404).send({
         error: 'Not found',
