@@ -97,7 +97,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Multi-dependency support: up to 20 predecessors per task (FS/SS/FF/SF + lag), stored in a `task_dependencies` junction table
 - MS Project-style predecessor notation (e.g. "3FS+2d,5SS,7") with health badges and inline editing in both Gantt and Table views
 - Recurring tasks (daily, weekly, biweekly, monthly) with auto-generation
-- Customizable dashboard widgets with per-user persistence and drag-to-reorder (order persisted in localStorage)
+- Unified customizable dashboard with scope toggle (My Projects / All Projects), KPI tiles, issues trend chart, milestones, budget watch, and widget visibility persistence
 - Real-time presence indicators showing who is viewing a project
 
 ### Critical Path Method (CPM)
@@ -349,11 +349,12 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Flesch-Kincaid reading level analysis (algorithmic, no LLM required)
 - ReadingLevelBadge component for visual reading difficulty indicators
 
-### Role-Specific Dashboards
-- ScrumMasterDashboard: active sprints overview, velocity chart, blocked task count
-- FinanceDashboard: budget overview cards, project budget table with variance, cost status
-- DashboardRouter routes `scrum_master` and `finance_officer` roles to their dedicated dashboards
-- Role-specific widget registries for dashboard customization
+### Unified Dashboard
+- Single customizable dashboard replaces 5 role-based dashboards (Executive, PM, ScrumMaster, Finance, Risk)
+- Scope toggle: "My Projects" vs "All Projects" (appears when user has fewer projects than portfolio total)
+- 9 togglable widget sections: KPI tiles, Portfolio Intelligence, Projects table (with health score column), Issues Created vs Resolved chart, Milestones, Budget Watch, Recent Activity, Next Best Actions, Health Trends
+- 3 new backend endpoints: `GET /api/v1/dashboard/overdue-tasks`, `issues-trend`, `milestones` with scope filtering
+- `?scope=portfolio` support on `/projects` and `/analytics/summary` for cross-role portfolio views
 
 ### Multi-Agent Collaboration
 - Memory context helper: agents access past reflections and cross-agent insights during reasoning

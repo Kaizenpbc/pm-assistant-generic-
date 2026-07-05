@@ -56,18 +56,21 @@ A comprehensive guide for using PM Assistant, an AI-powered enterprise project m
 
 ### Dashboard Overview
 
-The dashboard you see depends on your role:
+All users see a single **Unified Dashboard** with customizable widgets:
 
-- **Executives and Admins** see the **Executive Overview** -- a portfolio-level summary with total projects, active count, budget utilization, on-track percentage, and an AI-generated summary banner. The **on-track percentage** is calculated from actual schedule variance (SPI) and budget variance, giving an accurate health signal rather than a simple progress threshold.
-- **Managers and Members** see the **PM Dashboard** -- a project-centric view with your assigned projects, prediction cards, and quick-access links.
+- **KPI Tiles** -- 6 tiles showing Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, and Budget Utilization.
+- **Portfolio Intelligence** -- AI-generated health score, risk summary, budget status, and key insights.
+- **Projects Table** -- Sortable table with health score, status, priority, progress, budget, and end date. Click any row to open the project.
+- **Issues Trend** -- Chart showing issues created vs resolved per week.
+- **Milestones** -- Upcoming milestones with days-until badges.
+- **Budget Watch** -- Top 5 projects by budget spend percentage.
+- **Recent Activity** -- Latest notifications.
+- **Next Best Actions** -- AI-suggested actions.
+- **Health Trends** -- Sparkline health history per project.
 
-Both dashboards display:
+**Scope toggle**: If you have fewer projects than the full portfolio, a **My Projects / All Projects** toggle appears. Switching scope updates all widgets.
 
-- **Summary cards** -- Total projects, active projects, budget, and on-track metrics.
-- **Project list** -- Each project card shows status, priority, progress bar, and budget. Click a card to open the project or click **View Schedule** to jump directly to the schedule.
-- **AI Summary Banner** -- An AI-generated daily digest of portfolio health (when AI is enabled).
-
-Click the **gear icon** next to the dashboard title to customize which widgets are visible. Toggle widgets on/off — your selections are saved automatically and persist across sessions. Available widgets include Recent Activity, Resource Utilization, and Project Burndown progress bars.
+Click **Customize** next to the dashboard title to toggle widget sections on/off. Your selections are saved automatically and persist across sessions.
 
 ### Sidebar Navigation
 
@@ -778,11 +781,7 @@ The Task Prioritization Panel analyzes your backlog and suggests an optimal task
 
 ### AI Summary Banner
 
-On the Executive Dashboard, an AI-generated banner provides a daily portfolio health summary, highlighting projects that need attention.
-
-### Prediction Cards
-
-The dashboard displays AI-generated prediction cards forecasting project outcomes, risk levels, and recommended actions.
+On the dashboard, the **Portfolio Intelligence** banner provides an AI-generated portfolio health summary, risk breakdown, budget status, and key insights. An optional AI narrative section (toggleable via accessibility settings) provides a plain-language summary tailored to your context.
 
 ### Auto-Reschedule
 
@@ -1243,15 +1242,15 @@ Each notification entry displays:
 
 ---
 
-## 29. Dashboard Widget Drag-to-Reorder
+## 29. Dashboard Widget Customization
 
-Both the PM Dashboard and Executive Dashboard support drag-to-reorder for widgets:
+The unified dashboard supports toggling widget sections on/off via the **Customize** dropdown:
 
-1. **Hover** over a widget card to reveal the **drag handle** (grip icon) at the left edge.
-2. **Drag** the widget up or down to a new position. A **blue ring** highlights the target drop position.
-3. **Release** to drop the widget in its new position.
+1. Click **Customize** in the dashboard header.
+2. Check or uncheck widget sections to show or hide them.
+3. Your selections are saved automatically in localStorage and persist across sessions.
 
-Your custom widget order is saved in localStorage and persists across page reloads. The order is stored separately from widget visibility toggles set via the "Customize" dropdown, so both features work independently.
+Available sections: KPI Tiles, Portfolio Intelligence, Projects Table, Issues Trend, Milestones, Budget Watch, Recent Activity, Next Best Actions, Health Trends.
 
 ---
 

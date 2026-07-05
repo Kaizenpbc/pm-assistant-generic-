@@ -567,7 +567,7 @@ The `AnalyticsSummaryService` computes portfolio-level KPIs:
 - Budget utilization across portfolio
 - Resource allocation summary
 - Schedule performance overview
-- **On Track percentage** — displayed on the Executive Dashboard; calculated using actual schedule variance (SPI) and budget variance (CPI/budget ratio) rather than a progress threshold heuristic, so the metric accurately reflects project health
+- **On Track percentage** — displayed on the dashboard; calculated using actual schedule variance (SPI) and budget variance (CPI/budget ratio) rather than a progress threshold heuristic, so the metric accurately reflects project health
 
 ### Portfolio Dashboard
 
@@ -858,33 +858,38 @@ The `StripeService` manages subscription billing:
 
 ---
 
-## 23. Customizable Dashboard Widgets
+## 23. Unified Dashboard
 
-Both the PM Dashboard and Executive Dashboard support customizable widget layouts. Users can toggle individual widgets on/off via a gear icon dropdown. Selections persist in `localStorage`.
+All users see a single unified dashboard (`UnifiedDashboard.tsx`) instead of the previous 5 role-based dashboards. The dashboard is customizable per-user via a **Customize** dropdown that toggles widget sections on/off, with selections persisted in `localStorage`.
 
-**PM Dashboard widgets:**
-- Stats overview (project/task counts)
-- AI Summary Banner
-- Active Projects table
-- Recent Activity feed
-- Resource Utilization overview
-- Project Burndown progress bars
+### Scope Toggle
 
-**Executive Dashboard widgets:**
-- Portfolio stats
-- Budget overview
-- Resource summary
-- AI Summary Banner
-- Active Projects table
-- Recent Activity feed
-- Resource Utilization overview
-- Project Burndown progress bars
+When a user's own projects are a subset of the full portfolio (e.g., a `team_member` vs an `admin`), a **My Projects / All Projects** toggle appears in the header. Switching scope updates KPI tiles, the projects table, issues trend chart, milestones, and budget watch. The selected scope persists in `localStorage`.
 
-Widgets render in a responsive CSS grid (1-3 columns depending on viewport). When all widgets are disabled, a "No widgets enabled" message is shown.
+### Widget Sections
 
-### Widget Drag-to-Reorder
+| Widget | Description |
+|---|---|
+| **KPI Tiles** | 6 tiles: Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, Budget Utilization |
+| **Portfolio Intelligence** | AI-generated health score, risk summary, budget status, key insights, and optional AI narrative |
+| **Projects Table** | Sortable table with health score column (colored dot + numeric), status, priority, progress, budget, end date |
+| **Issues Trend** | SVG line chart showing issues created vs resolved per week (8-week window), with net change badge |
+| **Milestones** | Upcoming milestones with project name, date, and days-until badge (green/red) |
+| **Budget Watch** | Top 5 projects by spend percentage with progress bars |
+| **Recent Activity** | Latest notifications feed |
+| **Next Best Actions** | AI-suggested next actions |
+| **Health Trends** | Sparkline health history per project |
 
-Dashboard widgets can be reordered by dragging. A **drag handle** (grip icon) appears on hover at the left edge of each widget card. Drag a widget up or down to change its position in the layout — a **blue ring drop indicator** highlights the target position during the drag. The custom widget order persists in `localStorage` (separate key from widget visibility toggles) and is maintained independently for the PM Dashboard and Executive Dashboard. Drag-to-reorder works alongside the existing "Customize" dropdown for toggling widget visibility.
+### Backend Endpoints
+
+Three new endpoints under `GET /api/v1/dashboard/`:
+- **`/overdue-tasks`** — Tasks past due date, ordered by overdue days (limit 50)
+- **`/issues-trend`** — Created vs resolved task counts per week bucket (fills empty weeks with zeros)
+- **`/milestones`** — Upcoming milestones within 7 days past to future
+
+All three support `?scope=portfolio` to bypass user filtering. Global roles (`admin`, `executive`, `pmo`) see all projects by default.
+
+Additionally, `GET /api/v1/projects` and `GET /api/v1/analytics/summary` now accept `?scope=portfolio` to return unfiltered results regardless of user role.
 
 ---
 
@@ -1217,15 +1222,13 @@ Pure algorithmic Flesch-Kincaid readability scoring (no LLM required). Returns:
 
 ---
 
-## 41. Role-Specific Dashboards
+## 41. Unified Dashboard
 
-Each of the 6 user roles receives a tailored dashboard view:
-- **admin / executive** → ExecutiveDashboard (portfolio overview, all projects)
-- **project_manager / team_member** → PMDashboard (project table, quick stats, activity)
-- **scrum_master** → ScrumMasterDashboard (active sprints, velocity, blocked items)
-- **finance_officer** → FinanceDashboard (budget overview, cost variance, project budget table)
+All user roles now see the same unified, customizable dashboard. The previous 5 role-based dashboards (Executive, PM, ScrumMaster, Finance, Risk) have been replaced.
 
-The `DashboardRouter` component checks `user.role` and lazy-loads the appropriate dashboard. Each role has its own widget registry (`SCRUM_MASTER_WIDGETS`, `FINANCE_WIDGETS`) with role-appropriate defaults.
+The `DashboardRouter` component renders `UnifiedDashboard` for all roles. Users who own fewer projects than the full portfolio see a **scope toggle** (My Projects / All Projects). Widget visibility is controlled via the **Customize** dropdown and persisted per-user in `localStorage`.
+
+See [Section 23](#23-unified-dashboard) for full widget and endpoint details.
 
 ---
 
