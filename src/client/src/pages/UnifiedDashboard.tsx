@@ -13,6 +13,8 @@ import { IssuesCreatedVsResolvedChart } from '../components/dashboard/widgets/Is
 import { MilestonesWidget } from '../components/dashboard/widgets/MilestonesWidget';
 import { BudgetWatchWidget } from '../components/dashboard/widgets/BudgetWatchWidget';
 import { RecentActivityWidget } from '../components/dashboard/widgets/RecentActivityWidget';
+import { NextBestActionsWidget } from '../components/dashboard/widgets/NextBestActionsWidget';
+import { HealthTrendsWidget } from '../components/dashboard/widgets/HealthTrendsWidget';
 
 const STORAGE_KEY = 'dashboard-widgets:unified';
 const SCOPE_KEY = 'dashboard:scope';
@@ -158,6 +160,12 @@ export function UnifiedDashboard() {
           {show('activity') && <RecentActivityWidget />}
         </div>
       )}
+
+      {/* Next Best Actions */}
+      {show('next-actions') && <NextBestActionsWidget />}
+
+      {/* Health Trends Sparklines */}
+      {show('health-trends') && <HealthTrendsWidget projects={activeProjects} />}
 
       <TemplatePicker
         isOpen={showTemplatePicker}

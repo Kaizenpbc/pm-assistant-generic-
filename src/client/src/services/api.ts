@@ -2026,6 +2026,15 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  // -------------------------------------------------------------------------
+  // Health History
+  // -------------------------------------------------------------------------
+
+  async getHealthHistory(projectId: string, days = 30) {
+    const response = await this.api.get(`/predictions/project/${projectId}/health/history?days=${days}`);
+    return response.data;
+  }
+
 }
 
 export const apiService = new ApiService();

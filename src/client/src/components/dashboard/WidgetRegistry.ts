@@ -14,6 +14,8 @@ export const UNIFIED_WIDGETS: WidgetDef[] = [
   { id: 'milestones', label: 'Milestones', group: 'Details', defaultOn: true },
   { id: 'budget', label: 'Budget Watch', group: 'Details', defaultOn: true },
   { id: 'activity', label: 'Recent Activity', group: 'Details', defaultOn: true },
+  { id: 'next-actions', label: 'Next Best Actions', group: 'Overview', defaultOn: true },
+  { id: 'health-trends', label: 'Health Trends', group: 'Charts', defaultOn: true },
 ];
 
 export function getDefaultWidgetIds(widgets: WidgetDef[]): string[] {

@@ -6,6 +6,7 @@ import { baselineService } from '../../services/BaselineService';
 import { databaseService } from '../../database/connection';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { runHealthSnapshot } from '../../services/scheduling/healthSnapshotJob';
 
 export async function predictionRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -177,6 +178,43 @@ export async function predictionRoutes(fastify: FastifyInstance) {
     } catch (err) {
       fastify.log.error({ err }, 'Task slip prediction failed');
       return reply.status(500).send({ error: 'Failed to predict task slips' });
+    }
+  });
+
+  // GET /project/:projectId/health/history — Health score history for sparklines
+  fastify.get('/project/:projectId/health/history', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { projectId } = request.params as { projectId: string };
+      const { days } = request.query as { days?: string };
+      const limit = Math.min(parseInt(days || '30', 10) || 30, 90);
+      const rows = await databaseService.query(
+        `SELECT health_score AS healthScore, risk_level AS riskLevel,
+                schedule_health AS scheduleHealth, budget_health AS budgetHealth,
+                risk_health AS riskHealth, recorded_at AS recordedAt
+         FROM project_health_history
+         WHERE project_id = ? AND recorded_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+         ORDER BY recorded_at ASC`,
+        [projectId, limit]
+      );
+      return reply.send({ data: rows });
+    } catch (err) {
+      fastify.log.error({ err }, 'Health history query failed');
+      return reply.send({ data: [] });
+    }
+  });
+
+  // POST /health/snapshot — Manual trigger for health snapshot (admin only)
+  fastify.post('/health/snapshot', {
+    preHandler: [requireScope('admin')],
+  }, async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const count = await runHealthSnapshot();
+      return reply.send({ message: `Recorded health scores for ${count} projects` });
+    } catch (err) {
+      fastify.log.error({ err }, 'Manual health snapshot failed');
+      return reply.status(500).send({ error: 'Failed to run health snapshot' });
     }
   });
 }

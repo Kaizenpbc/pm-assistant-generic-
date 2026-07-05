@@ -11,6 +11,7 @@ export interface CronTasks {
   recurrenceTask: cron.ScheduledTask | null;
   digestTask: cron.ScheduledTask | null;
   reportScheduleTask: cron.ScheduledTask | null;
+  healthSnapshotTask: cron.ScheduledTask | null;
 }
 
 export function startCronTasks(
@@ -23,6 +24,7 @@ export function startCronTasks(
     recurrenceTask: null,
     digestTask: null,
     reportScheduleTask: null,
+    healthSnapshotTask: null,
   };
 
   // All cron jobs disabled — set AGENT_ENABLED=true to re-enable
@@ -90,6 +92,17 @@ export function startCronTasks(
     }
   });
 
+  // Health snapshot — records daily health scores for sparkline trends
+  logger.info('[Agent] Starting health snapshot recorder (daily at 03:00)');
+  tasks.healthSnapshotTask = cron.schedule('0 3 * * *', async () => {
+    try {
+      const { runHealthSnapshot } = await import('./healthSnapshotJob');
+      await runHealthSnapshot();
+    } catch (error) {
+      logger.error('[Agent] Health snapshot failed:', error);
+    }
+  });
+
   return tasks;
 }
 
@@ -99,6 +112,7 @@ export function stopCronTasks(tasks: CronTasks): void {
   if (tasks.recurrenceTask) { tasks.recurrenceTask.stop(); tasks.recurrenceTask = null; }
   if (tasks.digestTask) { tasks.digestTask.stop(); tasks.digestTask = null; }
   if (tasks.reportScheduleTask) { tasks.reportScheduleTask.stop(); tasks.reportScheduleTask = null; }
+  if (tasks.healthSnapshotTask) { tasks.healthSnapshotTask.stop(); tasks.healthSnapshotTask = null; }
   logger.info('[Agent] Stopped agent scheduler');
 }
 
