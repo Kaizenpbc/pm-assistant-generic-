@@ -26,10 +26,10 @@ const typeBadgeStyles: Record<string, { bg: string; text: string; label: string 
 };
 
 function getConfidenceColor(confidence: number): string {
-  if (confidence >= 80) return '#22c55e'; // green-500
-  if (confidence >= 60) return '#eab308'; // yellow-500
-  if (confidence >= 40) return '#f97316'; // orange-500
-  return '#ef4444'; // red-500
+  if (confidence >= 80) return 'bg-green-500';
+  if (confidence >= 60) return 'bg-yellow-500';
+  if (confidence >= 40) return 'bg-orange-500';
+  return 'bg-red-500';
 }
 
 // ---------------------------------------------------------------------------
@@ -98,10 +98,9 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
                 <span className="text-xs text-gray-400">Confidence</span>
                 <div className="relative w-20 h-1.5 rounded-full bg-gray-200 overflow-hidden">
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full transition-all"
+                    className={`absolute inset-y-0 left-0 rounded-full transition-all ${confColor}`}
                     style={{
                       width: `${Math.min(suggestion.confidence, 100)}%`,
-                      backgroundColor: confColor,
                     }}
                   />
                 </div>

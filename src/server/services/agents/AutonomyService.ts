@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../../database/connection';
+import { autonomyRepository } from '../../database/AutonomyRepository';
 import type { RiskLevel } from './ActionProposalService';
 import logger from '../../utils/logger';
 
@@ -44,30 +44,15 @@ export class AutonomyService {
 
   async getAutonomyTier(agentId: string, projectId?: string): Promise<number> {
     try {
-      // Check project-specific config first
       if (projectId) {
-        const rows = await databaseService.query<any>(
-          `SELECT autonomy_tier FROM agent_autonomy_config
-           WHERE agent_id = ? AND project_id = ? AND disabled_at IS NULL
-           LIMIT 1`,
-          [agentId, projectId],
-        );
-        if (rows.length > 0) return Number(rows[0].autonomy_tier);
+        const tier = await autonomyRepository.findTierByAgentAndProject(agentId, projectId);
+        if (tier !== null) return tier;
       }
-
-      // Check global config (project_id IS NULL)
-      const globalRows = await databaseService.query<any>(
-        `SELECT autonomy_tier FROM agent_autonomy_config
-         WHERE agent_id = ? AND project_id IS NULL AND disabled_at IS NULL
-         LIMIT 1`,
-        [agentId],
-      );
-      if (globalRows.length > 0) return Number(globalRows[0].autonomy_tier);
+      const globalTier = await autonomyRepository.findTierByAgentGlobal(agentId);
+      if (globalTier !== null) return globalTier;
     } catch {
       // Table may not exist yet
     }
-
-    // Default: Tier 2 (propose only)
     return 2;
   }
 
@@ -78,25 +63,9 @@ export class AutonomyService {
     riskLevel: RiskLevel,
   ): Promise<boolean> {
     try {
-      // Check project-specific, then global
-      let config: any = null;
-
-      const projectRows = await databaseService.query<any>(
-        `SELECT * FROM agent_autonomy_config
-         WHERE agent_id = ? AND project_id = ? AND disabled_at IS NULL
-         LIMIT 1`,
-        [agentId, projectId],
-      );
-      if (projectRows.length > 0) {
-        config = projectRows[0];
-      } else {
-        const globalRows = await databaseService.query<any>(
-          `SELECT * FROM agent_autonomy_config
-           WHERE agent_id = ? AND project_id IS NULL AND disabled_at IS NULL
-           LIMIT 1`,
-          [agentId],
-        );
-        if (globalRows.length > 0) config = globalRows[0];
+      let config = await autonomyRepository.findConfigByAgentAndProject(agentId, projectId);
+      if (!config) {
+        config = await autonomyRepository.findConfigByAgentGlobal(agentId);
       }
 
       if (!config) return false;
@@ -125,12 +94,7 @@ export class AutonomyService {
     let daysSinceFirstProposal = 0;
 
     try {
-      const statusRows = await databaseService.query<{ status: string; cnt: number }>(
-        `SELECT status, COUNT(*) AS cnt FROM agent_proposals
-         WHERE agent_id = ? ${projectFilter}
-         GROUP BY status`,
-        params,
-      );
+      const statusRows = await autonomyRepository.findStatusCounts(agentId, projectFilter, params);
 
       for (const row of statusRows) {
         const cnt = Number(row.cnt);
@@ -141,14 +105,10 @@ export class AutonomyService {
         if (row.status === 'rolled_back') rolledBackProposals += cnt;
       }
 
-      const dateRows = await databaseService.query<{ first_date: string }>(
-        `SELECT MIN(created_at) AS first_date FROM agent_proposals
-         WHERE agent_id = ? ${projectFilter}`,
-        params,
-      );
-      if (dateRows.length > 0 && dateRows[0].first_date) {
+      const firstDate = await autonomyRepository.findFirstProposalDate(agentId, projectFilter, params);
+      if (firstDate) {
         daysSinceFirstProposal = Math.floor(
-          (Date.now() - new Date(dateRows[0].first_date).getTime()) / 86400000,
+          (Date.now() - new Date(firstDate).getTime()) / 86400000,
         );
       }
     } catch {
@@ -225,18 +185,8 @@ export class AutonomyService {
     const minConfidence = options?.minConfidenceThreshold ?? 80;
     const maxRisk = options?.maxRiskLevel ?? 'low';
 
-    // Upsert: disable existing, then insert new
-    await databaseService.query(
-      `UPDATE agent_autonomy_config SET disabled_at = NOW()
-       WHERE agent_id = ? AND ${projectId ? 'project_id = ?' : 'project_id IS NULL'} AND disabled_at IS NULL`,
-      projectId ? [agentId, projectId] : [agentId],
-    );
-
-    await databaseService.query(
-      `INSERT INTO agent_autonomy_config (id, agent_id, project_id, autonomy_tier, min_confidence_threshold, max_risk_level, enabled_by)
-       VALUES (?, ?, ?, 3, ?, ?, ?)`,
-      [id, agentId, projectId, minConfidence, maxRisk, adminUserId],
-    );
+    await autonomyRepository.disableExisting(agentId, projectId);
+    await autonomyRepository.insert(id, agentId, projectId, minConfidence, maxRisk, adminUserId);
 
     logger.info(`[Autonomy] Agent ${agentId} promoted to Tier 3 by ${adminUserId} (project: ${projectId ?? 'global'}, minConfidence: ${minConfidence}, maxRisk: ${maxRisk})`);
 
@@ -254,20 +204,13 @@ export class AutonomyService {
   }
 
   async demote(agentId: string, projectId: string | null, adminUserId: string): Promise<void> {
-    await databaseService.query(
-      `UPDATE agent_autonomy_config SET disabled_at = NOW()
-       WHERE agent_id = ? AND ${projectId ? 'project_id = ?' : 'project_id IS NULL'} AND disabled_at IS NULL`,
-      projectId ? [agentId, projectId] : [agentId],
-    );
-
+    await autonomyRepository.disableExisting(agentId, projectId);
     logger.info(`[Autonomy] Agent ${agentId} demoted to Tier 2 by ${adminUserId} (project: ${projectId ?? 'global'})`);
   }
 
   async listConfigs(): Promise<AutonomyConfig[]> {
     try {
-      const rows = await databaseService.query<any>(
-        `SELECT * FROM agent_autonomy_config WHERE disabled_at IS NULL ORDER BY enabled_at DESC`,
-      );
+      const rows = await autonomyRepository.findActiveConfigs();
       return rows.map(this.mapRow);
     } catch {
       return [];

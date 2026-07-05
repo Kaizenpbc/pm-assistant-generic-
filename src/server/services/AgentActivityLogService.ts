@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../database/connection';
+import { agentActivityLogRepository, AgentActivityLogRow } from '../database/AgentActivityLogRepository';
 
 export type AgentName = string;
 export type AgentResult = 'alert_created' | 'skipped' | 'error';
@@ -10,16 +10,6 @@ export interface LogEntryInput {
   result: AgentResult;
   summary: string;
   details?: Record<string, unknown>;
-}
-
-interface AgentActivityLogRow {
-  id: string;
-  project_id: string;
-  agent_name: string;
-  result: string;
-  summary: string;
-  details: string | null;
-  created_at: string;
 }
 
 export interface AgentActivityLogDTO {
@@ -57,18 +47,9 @@ export class AgentActivityLogService {
     const id = uuidv4();
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-    await databaseService.query(
-      `INSERT INTO agent_activity_log (id, project_id, agent_name, result, summary, details, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        entry.projectId,
-        entry.agentName,
-        entry.result,
-        entry.summary,
-        entry.details ? JSON.stringify(entry.details) : null,
-        now,
-      ],
+    await agentActivityLogRepository.insert(
+      id, entry.projectId, entry.agentName, entry.result,
+      entry.summary, entry.details ? JSON.stringify(entry.details) : null, now,
     );
   }
 
@@ -83,16 +64,8 @@ export class AgentActivityLogService {
       : 'WHERE project_id = ?';
     const params: unknown[] = agentName ? [projectId, agentName] : [projectId];
 
-    const countRows = await databaseService.query<{ cnt: number }>(
-      `SELECT COUNT(*) as cnt FROM agent_activity_log ${whereClause}`,
-      params,
-    );
-    const total = countRows[0]?.cnt ?? 0;
-
-    const rows = await databaseService.query<AgentActivityLogRow>(
-      `SELECT * FROM agent_activity_log ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      [...params, limit, offset],
-    );
+    const total = await agentActivityLogRepository.count(whereClause, params);
+    const rows = await agentActivityLogRepository.findPaginated(whereClause, params, limit, offset);
 
     return { entries: rows.map(rowToDTO), total };
   }

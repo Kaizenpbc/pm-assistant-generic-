@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../../database/connection';
+import { confidenceLogRepository } from '../../database/ConfidenceLogRepository';
 import logger from '../../utils/logger';
 
 export interface ConfidenceFactors {
@@ -91,19 +91,7 @@ export class ConfidenceCalculator {
    */
   async computeHistoricalAccuracy(agentId: string, projectId: string): Promise<number> {
     try {
-      const rows = await databaseService.query<{
-        outcome: string;
-        cnt: number;
-      }>(
-        `SELECT f.outcome, COUNT(*) AS cnt
-         FROM agent_feedback f
-         JOIN agent_proposals p ON p.id = f.proposal_id
-         WHERE p.agent_id = ? AND p.project_id = ?
-         GROUP BY f.outcome
-         ORDER BY f.created_at DESC
-         LIMIT 20`,
-        [agentId, projectId],
-      );
+      const rows = await confidenceLogRepository.findFeedbackOutcomes(agentId, projectId);
 
       if (rows.length === 0) return 50; // No history — neutral default
 
@@ -140,20 +128,11 @@ export class ConfidenceCalculator {
     proposalId?: string,
   ): Promise<void> {
     try {
-      await databaseService.query(
-        `INSERT INTO agent_confidence_log (id, proposal_id, agent_id, project_id, confidence_score, data_quality_score, historical_accuracy_score, model_certainty_score, factors, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [
-          uuidv4(),
-          proposalId ?? null,
-          agentId,
-          projectId,
-          result.score,
-          result.factors.dataQuality,
-          result.factors.historicalAccuracy,
-          result.factors.modelCertainty,
-          JSON.stringify(result.factors),
-        ],
+      await confidenceLogRepository.insert(
+        uuidv4(), proposalId ?? null, agentId, projectId,
+        result.score, result.factors.dataQuality,
+        result.factors.historicalAccuracy, result.factors.modelCertainty,
+        JSON.stringify(result.factors),
       );
     } catch (err) {
       logger.error('[ConfidenceCalculator] Failed to log confidence:', err);

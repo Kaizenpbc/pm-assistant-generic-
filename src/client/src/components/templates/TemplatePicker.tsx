@@ -90,13 +90,13 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
 
-  const { data: templatesData } = useQuery({
+  const { data: templatesData, isError: isTemplatesError } = useQuery({
     queryKey: ['templates', selectedCategory],
     queryFn: () => apiService.getTemplates(selectedCategory || undefined),
     enabled: !!selectedCategory,
   });
 
-  const { data: templateDetail } = useQuery({
+  const { data: templateDetail, isError: isTemplateDetailError } = useQuery({
     queryKey: ['template', selectedTemplateId],
     queryFn: () => apiService.getTemplate(selectedTemplateId!),
     enabled: !!selectedTemplateId,
@@ -333,7 +333,11 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
               >
                 &larr; Back to categories
               </button>
-              {templates.length === 0 ? (
+              {isTemplatesError ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  Failed to load templates. Please try again.
+                </div>
+              ) : templates.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-sm text-gray-500">No templates found for this category.</p>
                 </div>
@@ -349,6 +353,13 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Template detail error */}
+          {(step === 'preview' || step === 'customize') && isTemplateDetailError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              Failed to load template details. Please try again.
             </div>
           )}
 

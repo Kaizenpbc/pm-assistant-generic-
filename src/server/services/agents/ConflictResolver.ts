@@ -1,4 +1,5 @@
 import { databaseService } from '../../database/connection';
+import { actionProposalRepository } from '../../database/ActionProposalRepository';
 import { actionProposalService, ProposalStatus } from './ActionProposalService';
 import logger from '../../utils/logger';
 
@@ -71,17 +72,11 @@ export class ConflictResolver {
    * typically called when a human edits that entity directly.
    */
   async invalidateConflictingProposals(entityType: string, entityId: string): Promise<number> {
-    const rows = await databaseService.query<{ proposal_id: string }>(
-      `SELECT DISTINCT a.proposal_id
-       FROM agent_proposal_actions a
-       JOIN agent_proposals p ON p.id = a.proposal_id
-       WHERE a.target_entity_type = ? AND a.target_entity_id = ? AND p.status = 'pending'`,
-      [entityType, entityId],
-    );
+    const proposalIds = await actionProposalRepository.findConflictingProposalIds(entityType, entityId);
 
     let invalidated = 0;
-    for (const row of rows) {
-      await actionProposalService.updateStatus(row.proposal_id, 'expired');
+    for (const id of proposalIds) {
+      await actionProposalService.updateStatus(id, 'expired');
       invalidated++;
     }
 
@@ -97,17 +92,10 @@ export class ConflictResolver {
    * Prevents two agents from proposing conflicting changes in a single scan.
    */
   async checkEntityConflict(agentId: string, targetEntityId: string): Promise<EntityConflictCheck> {
-    const rows = await databaseService.query<{ id: string; agent_id: string }>(
-      `SELECT p.id, p.agent_id
-       FROM agent_proposals p
-       JOIN agent_proposal_actions a ON a.proposal_id = p.id
-       WHERE a.target_entity_id = ? AND p.status = 'pending' AND p.agent_id != ?
-       LIMIT 1`,
-      [targetEntityId, agentId],
-    );
+    const row = await actionProposalRepository.findEntityConflict(targetEntityId, agentId);
 
-    if (rows.length > 0) {
-      return { hasConflict: true, conflictingProposalId: rows[0].id };
+    if (row) {
+      return { hasConflict: true, conflictingProposalId: row.id };
     }
 
     return { hasConflict: false };
