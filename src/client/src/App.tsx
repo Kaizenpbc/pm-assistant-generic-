@@ -49,6 +49,7 @@ const GoalsPage = lazy(() => import('./pages/GoalsPage').then(m => ({ default: m
 const ResourceManagementPage = lazy(() => import('./pages/ResourceManagementPage').then(m => ({ default: m.ResourceManagementPage })));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const EVMDashboardPage = lazy(() => import('./pages/EVMDashboardPage').then(m => ({ default: m.EVMDashboardPage })));
+const KPIDrillInPage = lazy(() => import('./pages/KPIDrillInPage').then(m => ({ default: m.KPIDrillInPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 function PageLoader() {
@@ -128,6 +129,7 @@ function App() {
         <Route path="/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
         <Route path="/resources" element={<PrivateRoute><ResourceManagementPage /></PrivateRoute>} />
         <Route path="/evm" element={<PrivateRoute><EVMDashboardPage /></PrivateRoute>} />
+        <Route path="/kpi/:type" element={<PrivateRoute><KPIDrillInPage /></PrivateRoute>} />
         <Route path="/agent" element={<PrivateRoute><AgentProposalsPage /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
 

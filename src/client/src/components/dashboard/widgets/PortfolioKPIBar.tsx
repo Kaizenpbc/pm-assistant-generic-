@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
   HeartPulse,
   Clock,
@@ -15,6 +16,7 @@ interface KPITile {
   value: string;
   icon: React.ElementType;
   color: 'green' | 'yellow' | 'red' | 'gray';
+  href: string;
 }
 
 const colorMap = {
@@ -36,6 +38,7 @@ interface PortfolioKPIBarProps {
 }
 
 export function PortfolioKPIBar({ scope }: PortfolioKPIBarProps = {}) {
+  const navigate = useNavigate();
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ['analytics-summary', scope],
     queryFn: () => apiService.getAnalyticsSummary(scope),
@@ -63,7 +66,8 @@ export function PortfolioKPIBar({ scope }: PortfolioKPIBarProps = {}) {
       {tiles.map((tile) => (
         <div
           key={tile.label}
-          className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4"
+          onClick={() => navigate(tile.href)}
+          className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center gap-2 mb-2">
             <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${colorMap[tile.color]}`}>
@@ -114,12 +118,12 @@ function buildTiles(analytics: any, predictions: any): KPITile[] {
   const utilColor = utilization > 95 ? 'red' : utilization >= 80 ? 'yellow' : 'green';
 
   return [
-    { label: 'Portfolio Health', value: `${avgHealth}%`, icon: HeartPulse, color: healthColor },
-    { label: 'Overdue Tasks', value: String(overdue), icon: Clock, color: overdueColor },
-    { label: 'Open Risks', value: String(openRisks), icon: ShieldAlert, color: riskColor },
-    { label: 'At-Risk Projects', value: String(atRisk), icon: AlertTriangle, color: atRiskColor },
-    { label: 'Budget Variance', value: varianceStr, icon: DollarSign, color: varianceColor },
-    { label: 'Budget Utilization', value: `${Math.round(utilization)}%`, icon: TrendingUp, color: utilColor },
+    { label: 'Portfolio Health', value: `${avgHealth}%`, icon: HeartPulse, color: healthColor, href: '/kpi/health' },
+    { label: 'Overdue Tasks', value: String(overdue), icon: Clock, color: overdueColor, href: '/kpi/overdue' },
+    { label: 'Open Risks', value: String(openRisks), icon: ShieldAlert, color: riskColor, href: '/kpi/risks' },
+    { label: 'At-Risk Projects', value: String(atRisk), icon: AlertTriangle, color: atRiskColor, href: '/kpi/at-risk' },
+    { label: 'Budget Variance', value: varianceStr, icon: DollarSign, color: varianceColor, href: '/kpi/budget-variance' },
+    { label: 'Budget Utilization', value: `${Math.round(utilization)}%`, icon: TrendingUp, color: utilColor, href: '/kpi/budget-utilization' },
   ];
 }
 
