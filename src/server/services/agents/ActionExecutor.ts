@@ -147,6 +147,18 @@ export class ActionExecutor {
       linkId: proposalId,
     });
 
+    // Fire proposal_executed workflow trigger (fire-and-forget)
+    import('../DagWorkflowService').then(({ dagWorkflowService }) =>
+      dagWorkflowService.evaluateProposalEvent('proposal_executed', {
+        proposalId,
+        projectId: proposal.projectId,
+        agentId: proposal.agentId,
+        confidenceScore: proposal.confidenceScore,
+        riskLevel: proposal.riskLevel,
+        title: proposal.title,
+      })
+    ).catch(err => logger.error(`[ActionExecutor] Workflow trigger failed for ${proposalId}:`, err));
+
     return {
       success: true,
       actionsExecuted: executedActions.length,

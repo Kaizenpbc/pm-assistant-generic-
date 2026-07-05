@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { databaseService } from '../../database/connection';
+import { actionProposalRepository, ProposalRow, ActionRow } from '../../database/ActionProposalRepository';
 import { autonomyService } from './AutonomyService';
 import logger from '../../utils/logger';
 
@@ -90,30 +90,6 @@ export interface ProposalReview {
 // Row mapping
 // ---------------------------------------------------------------------------
 
-interface ProposalRow {
-  id: string;
-  project_id: string;
-  schedule_id: string | null;
-  agent_id: string;
-  agent_version: string;
-  status: ProposalStatus;
-  title: string;
-  reasoning: string;
-  summary: string;
-  confidence_score: number;
-  confidence_factors: string | null;
-  risk_level: RiskLevel;
-  data_snapshot_version: string | null;
-  expires_at: string | null;
-  created_by: string;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  executed_at: string | null;
-  rolled_back_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 function rowToProposal(row: ProposalRow): Proposal {
   return {
     id: row.id,
@@ -121,13 +97,13 @@ function rowToProposal(row: ProposalRow): Proposal {
     scheduleId: row.schedule_id ?? undefined,
     agentId: row.agent_id,
     agentVersion: row.agent_version,
-    status: row.status,
+    status: row.status as ProposalStatus,
     title: row.title,
     reasoning: row.reasoning,
     summary: row.summary,
     confidenceScore: Number(row.confidence_score),
     confidenceFactors: row.confidence_factors ? JSON.parse(row.confidence_factors) : null,
-    riskLevel: row.risk_level,
+    riskLevel: row.risk_level as RiskLevel,
     dataSnapshotVersion: row.data_snapshot_version ?? undefined,
     expiresAt: row.expires_at ?? undefined,
     createdBy: row.created_by,
@@ -140,33 +116,18 @@ function rowToProposal(row: ProposalRow): Proposal {
   };
 }
 
-interface ActionRow {
-  id: string;
-  proposal_id: string;
-  execution_order: number;
-  action_type: ActionType;
-  target_entity_type: string;
-  target_entity_id: string;
-  old_value: string | null;
-  new_value: string;
-  reasoning: string | null;
-  status: ActionStatus;
-  executed_at: string | null;
-  error_message: string | null;
-}
-
 function rowToAction(row: ActionRow): ProposalAction {
   return {
     id: row.id,
     proposalId: row.proposal_id,
     executionOrder: row.execution_order,
-    actionType: row.action_type,
+    actionType: row.action_type as ActionType,
     targetEntityType: row.target_entity_type,
     targetEntityId: row.target_entity_id,
     oldValue: row.old_value ? JSON.parse(row.old_value) : null,
     newValue: JSON.parse(row.new_value),
     reasoning: row.reasoning ?? undefined,
-    status: row.status,
+    status: row.status as ActionStatus,
     executedAt: row.executed_at ?? undefined,
     errorMessage: row.error_message ?? undefined,
   };
@@ -182,46 +143,26 @@ export class ActionProposalService {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + (input.expiresInHours ?? 48) * 60 * 60 * 1000);
 
-    const connection = await databaseService.getConnection();
+    const connection = await actionProposalRepository.getConnection();
     try {
       await connection.beginTransaction();
 
-      await connection.query(
-        `INSERT INTO agent_proposals (id, project_id, schedule_id, agent_id, agent_version, status, title, reasoning, summary, confidence_score, confidence_factors, risk_level, data_snapshot_version, expires_at, created_by, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-        [
-          id,
-          input.projectId,
-          input.scheduleId ?? null,
-          input.agentId,
-          input.agentVersion,
-          input.title,
-          input.reasoning,
-          input.summary,
-          input.confidenceScore,
-          input.confidenceFactors ? JSON.stringify(input.confidenceFactors) : null,
-          input.riskLevel,
-          input.dataSnapshotVersion ?? null,
-          expiresAt.toISOString().replace('T', ' ').substring(0, 19),
-          input.createdBy,
-        ],
+      await actionProposalRepository.insertProposal(
+        id, input.projectId, input.scheduleId ?? null, input.agentId,
+        input.agentVersion, input.title, input.reasoning, input.summary,
+        input.confidenceScore,
+        input.confidenceFactors ? JSON.stringify(input.confidenceFactors) : null,
+        input.riskLevel, input.dataSnapshotVersion ?? null,
+        expiresAt.toISOString().replace('T', ' ').substring(0, 19),
+        input.createdBy, connection,
       );
 
       for (const action of input.actions) {
-        await connection.query(
-          `INSERT INTO agent_proposal_actions (id, proposal_id, execution_order, action_type, target_entity_type, target_entity_id, old_value, new_value, reasoning, status, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
-          [
-            uuidv4(),
-            id,
-            action.executionOrder,
-            action.actionType,
-            action.targetEntityType,
-            action.targetEntityId,
-            action.oldValue ? JSON.stringify(action.oldValue) : null,
-            JSON.stringify(action.newValue),
-            action.reasoning ?? null,
-          ],
+        await actionProposalRepository.insertAction(
+          uuidv4(), id, action.executionOrder, action.actionType,
+          action.targetEntityType, action.targetEntityId,
+          action.oldValue ? JSON.stringify(action.oldValue) : null,
+          JSON.stringify(action.newValue), action.reasoning ?? null, connection,
         );
       }
 
@@ -234,6 +175,18 @@ export class ActionProposalService {
     }
 
     const proposal = (await this.getById(id))!;
+
+    // Fire proposal_created workflow trigger (fire-and-forget)
+    import('../DagWorkflowService').then(({ dagWorkflowService }) =>
+      dagWorkflowService.evaluateProposalEvent('proposal_created', {
+        proposalId: id,
+        projectId: proposal.projectId,
+        agentId: proposal.agentId,
+        confidenceScore: proposal.confidenceScore,
+        riskLevel: proposal.riskLevel,
+        title: proposal.title,
+      })
+    ).catch(err => logger.error(`[ActionProposalService] Workflow trigger failed for ${id}:`, err));
 
     // Tier 3 auto-execute: if agent is promoted, execute immediately
     this.tryAutoExecute(proposal).catch(err =>
@@ -257,10 +210,7 @@ export class ActionProposalService {
     const { actionExecutor } = await import('./ActionExecutor');
 
     // Auto-approve
-    await databaseService.query(
-      `UPDATE agent_proposals SET status = 'approved', reviewed_by = 'autonomy-tier-3', reviewed_at = NOW(), updated_at = NOW() WHERE id = ?`,
-      [proposal.id],
-    );
+    await actionProposalRepository.autoApprove(proposal.id);
 
     // Execute
     try {
@@ -272,22 +222,16 @@ export class ActionProposalService {
   }
 
   async getById(id: string): Promise<Proposal | null> {
-    const rows = await databaseService.query<ProposalRow>(
-      'SELECT * FROM agent_proposals WHERE id = ?',
-      [id],
-    );
-    if (rows.length === 0) return null;
+    const row = await actionProposalRepository.findById(id);
+    if (!row) return null;
 
-    const proposal = rowToProposal(rows[0]);
+    const proposal = rowToProposal(row);
     proposal.actions = await this.getActions(id);
     return proposal;
   }
 
   async getActions(proposalId: string): Promise<ProposalAction[]> {
-    const rows = await databaseService.query<ActionRow>(
-      'SELECT * FROM agent_proposal_actions WHERE proposal_id = ? ORDER BY execution_order',
-      [proposalId],
-    );
+    const rows = await actionProposalRepository.findActions(proposalId);
     return rows.map(rowToAction);
   }
 
@@ -305,18 +249,10 @@ export class ActionProposalService {
     if (filters.status) { where += ' AND status = ?'; params.push(filters.status); }
     if (filters.agentId) { where += ' AND agent_id = ?'; params.push(filters.agentId); }
 
-    const countRows = await databaseService.query<{ cnt: number }>(
-      `SELECT COUNT(*) AS cnt FROM agent_proposals WHERE ${where}`,
-      params,
-    );
-    const total = Number(countRows[0]?.cnt ?? 0);
-
+    const total = await actionProposalRepository.count(where, params);
     const limit = filters.limit ?? 20;
     const offset = filters.offset ?? 0;
-    const rows = await databaseService.query<ProposalRow>(
-      `SELECT * FROM agent_proposals WHERE ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      [...params, limit, offset],
-    );
+    const rows = await actionProposalRepository.findFiltered(where, params, limit, offset);
 
     return { proposals: rows.map(rowToProposal), total };
   }
@@ -336,39 +272,16 @@ export class ActionProposalService {
       sets.push('rolled_back_at = NOW()');
     }
 
-    params.push(id);
-    await databaseService.query(
-      `UPDATE agent_proposals SET ${sets.join(', ')} WHERE id = ?`,
-      params,
-    );
+    await actionProposalRepository.updateStatus(id, sets, params);
   }
 
   async updateActionStatus(actionId: string, status: ActionStatus, errorMessage?: string): Promise<void> {
-    if (status === 'executed') {
-      await databaseService.query(
-        'UPDATE agent_proposal_actions SET status = ?, executed_at = NOW() WHERE id = ?',
-        [status, actionId],
-      );
-    } else if (status === 'failed') {
-      await databaseService.query(
-        'UPDATE agent_proposal_actions SET status = ?, error_message = ? WHERE id = ?',
-        [status, errorMessage ?? null, actionId],
-      );
-    } else {
-      await databaseService.query(
-        'UPDATE agent_proposal_actions SET status = ? WHERE id = ?',
-        [status, actionId],
-      );
-    }
+    await actionProposalRepository.updateActionStatus(actionId, status, errorMessage);
   }
 
   async addReview(proposalId: string, reviewerId: string, decision: 'approved' | 'rejected' | 'requested_changes', comment?: string): Promise<ProposalReview> {
     const id = uuidv4();
-    await databaseService.query(
-      `INSERT INTO agent_proposal_reviews (id, proposal_id, reviewer_id, decision, comment, created_at)
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [id, proposalId, reviewerId, decision, comment ?? null],
-    );
+    await actionProposalRepository.insertReview(id, proposalId, reviewerId, decision, comment ?? null);
 
     // Update proposal status
     if (decision === 'approved') {
@@ -388,36 +301,19 @@ export class ActionProposalService {
   }
 
   async expireStaleProposals(): Promise<number> {
-    const result = await databaseService.query<{ affectedRows?: number }>(
-      `UPDATE agent_proposals SET status = 'expired', updated_at = NOW()
-       WHERE status = 'pending' AND expires_at IS NOT NULL AND expires_at < NOW()`,
-    );
-    // mysql2 returns ResultSetHeader with affectedRows for UPDATE
-    return (result as any).affectedRows ?? 0;
+    return actionProposalRepository.expireStaleProposals();
   }
 
   async getPendingCountByProject(projectId: string): Promise<number> {
-    const rows = await databaseService.query<{ cnt: number }>(
-      `SELECT COUNT(*) AS cnt FROM agent_proposals WHERE project_id = ? AND status = 'pending'`,
-      [projectId],
-    );
-    return Number(rows[0]?.cnt ?? 0);
+    return actionProposalRepository.countPendingByProject(projectId);
   }
 
   async submitFeedback(proposalId: string, submittedBy: string, outcome: string, comment?: string, metricsBefore?: Record<string, unknown>, metricsAfter?: Record<string, unknown>): Promise<void> {
-    await databaseService.query(
-      `INSERT INTO agent_feedback (id, proposal_id, submitted_by, outcome, comment, metrics_before, metrics_after, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-       ON DUPLICATE KEY UPDATE outcome = VALUES(outcome), comment = VALUES(comment), metrics_after = VALUES(metrics_after)`,
-      [
-        uuidv4(),
-        proposalId,
-        submittedBy,
-        outcome,
-        comment ?? null,
-        metricsBefore ? JSON.stringify(metricsBefore) : null,
-        metricsAfter ? JSON.stringify(metricsAfter) : null,
-      ],
+    await actionProposalRepository.upsertFeedback(
+      uuidv4(), proposalId, submittedBy, outcome,
+      comment ?? null,
+      metricsBefore ? JSON.stringify(metricsBefore) : null,
+      metricsAfter ? JSON.stringify(metricsAfter) : null,
     );
   }
 }

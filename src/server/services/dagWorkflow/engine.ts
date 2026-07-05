@@ -49,7 +49,9 @@ export function matchesTrigger(config: Record<string, any>, task: Task, oldTask:
     }
     case 'budget_threshold':
     case 'project_status_change':
-      return false;
+    case 'proposal_created':
+    case 'proposal_executed':
+      return false; // handled by evaluateProposalEvent / evaluateProjectChange
     case 'manual':
       return true;
     default:
@@ -155,6 +157,15 @@ export async function executeAction(
       });
       return { action: 'invoke_agent', capabilityId: config.capabilityId, success: result.success, output: result.output };
     }
+    case 'auto_approve_proposal': {
+      const proposalId = config.proposalId as string;
+      if (!proposalId) return { action: 'auto_approve_proposal', skipped: true, reason: 'no proposalId' };
+      const { actionProposalService } = await import('../agents/ActionProposalService');
+      const { actionExecutor } = await import('../agents/ActionExecutor');
+      await actionProposalService.updateStatus(proposalId, 'approved', { reviewedBy: 'system' });
+      const result = await actionExecutor.execute(proposalId);
+      return { action: 'auto_approve_proposal', proposalId, ...result };
+    }
     default:
       return { action: actionType, skipped: true };
   }
@@ -167,11 +178,14 @@ export async function executeWorkflowEngine(
   triggerNode: WorkflowNode,
   task: Task | null,
   scheduleService: ScheduleService,
+  triggerContext?: Record<string, any>,
 ): Promise<string> {
   const execId = uuidv4();
-  const context = task ? { taskId: task.id, taskName: task.name, status: task.status, progress: task.progressPercentage } : {};
+  const context = task
+    ? { taskId: task.id, taskName: task.name, status: task.status, progress: task.progressPercentage }
+    : triggerContext ?? {};
 
-  await workflowRepository.insertExecution(execId, def.id, triggerNode.id, task ? 'task' : 'unknown', task?.id ?? '', context);
+  await workflowRepository.insertExecution(execId, def.id, triggerNode.id, task ? 'task' : (triggerContext?.entityType ?? 'unknown'), task?.id ?? (triggerContext?.entityId ?? ''), context);
 
   const triggerExecId = uuidv4();
   await workflowRepository.insertNodeExecution(triggerExecId, execId, triggerNode.id, 'completed');
@@ -180,7 +194,7 @@ export async function executeWorkflowEngine(
   const visited = new Set<string>([triggerNode.id]);
   const nodeOutputs: Record<string, any> = {};
 
-  await advanceExecution(execId, triggerNode.id, def, adjacency, visited, task, scheduleService, nodeOutputs);
+  await advanceExecution(execId, triggerNode.id, def, adjacency, visited, task, scheduleService, nodeOutputs, triggerContext);
 
   return execId;
 }
@@ -194,6 +208,7 @@ export async function advanceExecution(
   task: Task | null,
   scheduleService: ScheduleService,
   nodeOutputs: Record<string, any>,
+  triggerContext?: Record<string, any>,
 ): Promise<void> {
   const outEdges = adjacency.get(fromNodeId) || [];
   if (outEdges.length === 0) {
@@ -217,7 +232,7 @@ export async function advanceExecution(
     if (!targetNode) continue;
 
     visited.add(edge.targetNodeId);
-    await executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService, nodeOutputs);
+    await executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService, nodeOutputs, triggerContext);
   }
 }
 
@@ -230,6 +245,7 @@ async function executeNode(
   task: Task | null,
   scheduleService: ScheduleService,
   nodeOutputs: Record<string, any>,
+  triggerContext?: Record<string, any>,
 ): Promise<void> {
   const nodeExecId = uuidv4();
   await workflowRepository.insertNodeExecution(
@@ -254,13 +270,13 @@ async function executeNode(
           const targetNode = def.nodes.find(n => n.id === edge.targetNodeId);
           if (!targetNode) continue;
           visited.add(edge.targetNodeId);
-          await executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService, nodeOutputs);
+          await executeNode(execId, targetNode, def, adjacency, visited, task, scheduleService, nodeOutputs, triggerContext);
         }
         return;
       }
 
       case 'action': {
-        const resolvedConfig = resolveTemplates(node.config, nodeOutputs, task);
+        const resolvedConfig = resolveTemplates(node.config, nodeOutputs, task, triggerContext);
         const output = await executeAction(resolvedConfig, task, scheduleService);
         nodeOutputs[node.id] = output;
         await workflowRepository.updateNodeExecutionCompleted(nodeExecId, JSON.stringify(output));
@@ -278,7 +294,7 @@ async function executeNode(
           if (attempt > 0) {
             await new Promise(r => setTimeout(r, backoffMs * attempt));
           }
-          const resolvedInput = resolveTemplates(node.config.input ?? {}, nodeOutputs, task);
+          const resolvedInput = resolveTemplates(node.config.input ?? {}, nodeOutputs, task, triggerContext);
           const result = await agentRegistry.invoke(capabilityId, resolvedInput, {
             actorId: 'system', actorType: 'system', source: 'system',
             projectId: node.config.projectId as string | undefined,
@@ -318,7 +334,7 @@ async function executeNode(
   }
 
   await persistNodeOutputs(execId, nodeOutputs);
-  await advanceExecution(execId, node.id, def, adjacency, visited, task, scheduleService, nodeOutputs);
+  await advanceExecution(execId, node.id, def, adjacency, visited, task, scheduleService, nodeOutputs, triggerContext);
 }
 
 async function persistNodeOutputs(execId: string, nodeOutputs: Record<string, any>): Promise<void> {

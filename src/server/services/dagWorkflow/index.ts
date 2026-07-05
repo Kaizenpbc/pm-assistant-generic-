@@ -219,6 +219,49 @@ class DagWorkflowService {
     }
   }
 
+  async evaluateProposalEvent(
+    eventType: 'proposal_created' | 'proposal_executed',
+    data: { proposalId: string; projectId: string; agentId: string; confidenceScore: number; riskLevel: string; title: string },
+  ): Promise<void> {
+    if (!(await this.ensureTablesExist())) return;
+
+    try {
+      const defs = await workflowRepository.findEnabledDefinitions();
+
+      for (const def of defs) {
+        const fullDef = await this.getDefinition(def.id);
+        if (!fullDef) continue;
+
+        const triggerNodes = fullDef.nodes.filter(n => n.nodeType === 'trigger');
+        for (const triggerNode of triggerNodes) {
+          const config = triggerNode.config;
+          if (config.triggerType !== eventType) continue;
+
+          let matched = true;
+
+          if (config.agentId && data.agentId !== config.agentId) matched = false;
+          if (config.minConfidence && data.confidenceScore < config.minConfidence) matched = false;
+          if (config.riskLevel && data.riskLevel !== config.riskLevel) matched = false;
+
+          if (matched) {
+            await this.executeWorkflow(fullDef, triggerNode, null, {
+              entityType: 'proposal',
+              entityId: data.proposalId,
+              proposalId: data.proposalId,
+              projectId: data.projectId,
+              agentId: data.agentId,
+              confidenceScore: data.confidenceScore,
+              riskLevel: data.riskLevel,
+              title: data.title,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      logger.error('[DagWorkflow] evaluateProposalEvent error:', err);
+    }
+  }
+
   async triggerManual(
     workflowId: string,
     entityType: string,
@@ -284,10 +327,14 @@ class DagWorkflowService {
     def: DefinitionWithGraph,
     triggerNode: WorkflowNode,
     task: Task | null,
+    triggerContext?: Record<string, any>,
   ): Promise<WorkflowExecution> {
-    const execId = await executeWorkflowEngine(def, triggerNode, task, scheduleService);
+    const execId = await executeWorkflowEngine(def, triggerNode, task, scheduleService, triggerContext);
 
     const exec = await this.getExecution(execId);
+
+    const entityType = task ? 'task' : (triggerContext?.entityType ?? 'unknown');
+    const entityId = task?.id ?? (triggerContext?.entityId ?? '');
 
     auditLedgerService.append({
       actorId: 'system',
@@ -299,12 +346,12 @@ class DagWorkflowService {
         executionId: execId,
         workflowName: def.name,
         triggerNode: triggerNode.name,
-        entityType: task ? 'task' : 'unknown',
-        entityId: task?.id ?? '',
+        entityType,
+        entityId,
         status: exec?.status ?? 'unknown',
       },
       source: 'system',
-    }).catch(err => deadLetterService.capture('audit.workflow_trigger', { workflowId: def.id, entityId: task?.id }, err));
+    }).catch(err => deadLetterService.capture('audit.workflow_trigger', { workflowId: def.id, entityId }, err));
 
     return exec!;
   }

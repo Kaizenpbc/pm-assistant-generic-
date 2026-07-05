@@ -4,6 +4,7 @@ import { Task } from '../ScheduleService';
  * Replace `{{source.path}}` patterns in an input object with runtime values.
  * - `{{task.field}}` → value from the triggering task
  * - `{{nodes.<nodeId>.path}}` → value from a previous node's output
+ * - `{{trigger.field}}` → value from trigger context (e.g. proposal data)
  * If the entire string is a single template, the resolved type is preserved.
  * Mixed strings do string interpolation. Unresolved templates remain as-is.
  */
@@ -11,6 +12,7 @@ export function resolveTemplates(
   input: Record<string, any>,
   nodeOutputs: Record<string, any>,
   task: Task | null,
+  triggerContext?: Record<string, any>,
 ): Record<string, any> {
   const clone = JSON.parse(JSON.stringify(input));
 
@@ -32,6 +34,9 @@ export function resolveTemplates(
       const parts = token.slice(6).split('.');
       const nodeId = parts[0];
       return resolvePath(nodeOutputs[nodeId] ?? null, parts.slice(1));
+    }
+    if (token.startsWith('trigger.') && triggerContext) {
+      return resolvePath(triggerContext, token.slice(8).split('.'));
     }
     return undefined;
   }
