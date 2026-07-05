@@ -43,7 +43,7 @@ export function IssuesCreatedVsResolvedChart({ scope }: Props) {
 
   // SVG dimensions
   const W = 600;
-  const H = 200;
+  const H = 320;
   const padX = 40;
   const padY = 20;
   const chartW = W - padX * 2;

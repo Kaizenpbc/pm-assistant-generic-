@@ -48,47 +48,61 @@ export async function dashboardDataRoutes(fastify: FastifyInstance) {
 
     const { scope, weeks: weeksParam } = request.query as { scope?: string; weeks?: string };
     const global = isGlobalScope(user.role, scope);
-    const weeks = Math.min(Math.max(parseInt(weeksParam || '8', 10) || 8, 1), 52);
+    const numWeeks = Math.min(Math.max(parseInt(weeksParam || '8', 10) || 8, 1), 52);
 
-    const scopeJoin = global ? '' : 'AND p.created_by = ?';
+    const scopeFilter = global ? '' : 'AND p.created_by = ?';
     const params = global ? [] : [user.userId];
 
-    // Created per week
+    // Use YEARWEEK as stable key for matching
     const createdRows = await databaseService.query<any>(
-      `SELECT DATE_FORMAT(DATE_SUB(t.created_at, INTERVAL WEEKDAY(t.created_at) DAY), '%b %d') AS week,
-              COUNT(*) AS cnt
+      `SELECT YEARWEEK(t.created_at, 1) AS yw, COUNT(*) AS cnt
        FROM tasks t
        JOIN schedules s ON t.schedule_id = s.id
        JOIN projects p ON s.project_id = p.id
-       WHERE t.created_at >= DATE_SUB(CURDATE(), INTERVAL ? WEEK) ${scopeJoin}
-       GROUP BY YEARWEEK(t.created_at, 1)
-       ORDER BY MIN(t.created_at)`,
-      [weeks, ...params]
+       WHERE t.created_at >= DATE_SUB(CURDATE(), INTERVAL ? WEEK) ${scopeFilter}
+       GROUP BY yw`,
+      [numWeeks, ...params]
     );
 
-    // Resolved per week
     const resolvedRows = await databaseService.query<any>(
-      `SELECT DATE_FORMAT(DATE_SUB(t.updated_at, INTERVAL WEEKDAY(t.updated_at) DAY), '%b %d') AS week,
-              COUNT(*) AS cnt
+      `SELECT YEARWEEK(t.updated_at, 1) AS yw, COUNT(*) AS cnt
        FROM tasks t
        JOIN schedules s ON t.schedule_id = s.id
        JOIN projects p ON s.project_id = p.id
        WHERE t.status IN ('completed','done')
-         AND t.updated_at >= DATE_SUB(CURDATE(), INTERVAL ? WEEK) ${scopeJoin}
-       GROUP BY YEARWEEK(t.updated_at, 1)
-       ORDER BY MIN(t.updated_at)`,
-      [weeks, ...params]
+         AND t.updated_at >= DATE_SUB(CURDATE(), INTERVAL ? WEEK) ${scopeFilter}
+       GROUP BY yw`,
+      [numWeeks, ...params]
     );
 
-    // Merge into week buckets
-    const createdMap = new Map(createdRows.map((r: any) => [r.week, Number(r.cnt)]));
-    const resolvedMap = new Map(resolvedRows.map((r: any) => [r.week, Number(r.cnt)]));
-    const allWeeks = new Set([...createdMap.keys(), ...resolvedMap.keys()]);
-    const weekList = [...allWeeks].map(week => ({
-      week,
-      created: createdMap.get(week) || 0,
-      resolved: resolvedMap.get(week) || 0,
-    }));
+    const createdMap = new Map(createdRows.map((r: any) => [Number(r.yw), Number(r.cnt)]));
+    const resolvedMap = new Map(resolvedRows.map((r: any) => [Number(r.yw), Number(r.cnt)]));
+
+    // Generate all week buckets so the chart has no gaps
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const weekList = [];
+    for (let i = numWeeks - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i * 7);
+      // Move to Monday of that week
+      const day = d.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diff);
+
+      // Compute YEARWEEK the same way MySQL does (mode 1: Monday start)
+      const jan1 = new Date(d.getFullYear(), 0, 1);
+      const jan1Day = jan1.getDay() === 0 ? 7 : jan1.getDay();
+      const dayOfYear = Math.floor((d.getTime() - jan1.getTime()) / 86400000) + 1;
+      const weekNum = Math.floor((dayOfYear + jan1Day - 2) / 7) + 1;
+      const yw = d.getFullYear() * 100 + weekNum;
+
+      const label = `${months[d.getMonth()]} ${d.getDate()}`;
+      weekList.push({
+        week: label,
+        created: createdMap.get(yw) || 0,
+        resolved: resolvedMap.get(yw) || 0,
+      });
+    }
 
     return { weeks: weekList };
   });
