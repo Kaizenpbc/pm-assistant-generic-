@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Search, ChevronRight, LogOut, User, Moon, Sun, Menu } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { useThemeStore } from '../../stores/themeStore';
+import { apiService } from '../../services/api';
 import { NotificationBell } from '../notifications/NotificationBell';
 import CommandPalette from './CommandPalette';
 
@@ -47,6 +49,8 @@ interface TopBarProps {
   onMobileMenuToggle?: () => void;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const TopBar: React.FC<TopBarProps> = ({ onMobileMenuToggle }) => {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
@@ -57,7 +61,32 @@ const TopBar: React.FC<TopBarProps> = ({ onMobileMenuToggle }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const breadcrumbs = useMemo(() => buildBreadcrumbs(location.pathname), [location.pathname]);
+  // Extract project ID from URL like /project/:id
+  const segments = location.pathname.split('/').filter(Boolean);
+  const projectIdx = segments.indexOf('project');
+  const projectId = projectIdx >= 0 && segments[projectIdx + 1] && UUID_RE.test(segments[projectIdx + 1])
+    ? segments[projectIdx + 1] : null;
+
+  const { data: projectData } = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: () => apiService.getProject(projectId!),
+    enabled: !!projectId,
+    staleTime: 5 * 60 * 1000,
+  });
+  const projectName = projectData?.project?.name || projectData?.name;
+
+  const breadcrumbs = useMemo(() => {
+    const crumbs = buildBreadcrumbs(location.pathname);
+    // Replace UUID breadcrumb with project name
+    if (projectName) {
+      for (const crumb of crumbs) {
+        if (UUID_RE.test(crumb.label)) {
+          crumb.label = projectName;
+        }
+      }
+    }
+    return crumbs;
+  }, [location.pathname, projectName]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
