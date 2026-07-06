@@ -55,7 +55,7 @@ export function TimesheetPage() {
     queryFn: () => apiService.getTasks(logScheduleId),
     enabled: !!logScheduleId,
   });
-  const logTasks: any[] = logTasksData?.tasks || [];
+  const logTasks: any[] = logTasksData?.data || logTasksData?.tasks || [];
 
   const logTimeMutation = useMutation({
     mutationFn: () => apiService.createTimeEntry({

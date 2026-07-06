@@ -818,7 +818,7 @@ function MobileScheduleView({ schedules }: { schedules: any[] }) {
     enabled: schedules.length > 0,
   });
 
-  const tasks = tasksData?.tasks || [];
+  const tasks = tasksData?.data || tasksData?.tasks || [];
 
   return (
     <div className="space-y-3">
@@ -849,7 +849,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     queryFn: () => apiService.getTasks(schedule.id),
   });
 
-  const tasks: GanttTask[] = tasksData?.tasks || [];
+  const tasks: GanttTask[] = tasksData?.data || tasksData?.tasks || [];
 
   // Critical Path
   const { data: cpmData } = useQuery({
