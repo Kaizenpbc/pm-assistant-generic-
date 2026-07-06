@@ -24,13 +24,16 @@
     "help": "Ayuda",
     "resources": "Recursos",
     "evm": "Panel EVM",
-    "notifications": "Notificaciones"
+    "notifications": "Notificaciones",
+    "dashboardPM": "Panel de control (NEW)",
+    "projectsPM": "Proyectos (NEW)"
   },
   "section": {
     "plan": "Planificar",
     "analyze": "Analizar",
     "intelligence": "Inteligencia",
     "workspace": "Espacio de trabajo",
+    "pmWorkspace": "Espacio PM",
     "system": "Sistema"
   },
   "common": {

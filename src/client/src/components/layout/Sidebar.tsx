@@ -28,6 +28,8 @@ import {
   Users,
   DollarSign,
   Bell,
+  Gauge,
+  Briefcase,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -91,6 +93,13 @@ const navSections: NavSection[] = [
       { labelKey: 'nav.goals', icon: Target, path: '/goals' },
       { labelKey: 'nav.timesheets', icon: Clock, path: '/timesheet' },
       { labelKey: 'nav.integrations', icon: Plug, path: '/integrations' },
+    ],
+  },
+  {
+    titleKey: 'section.pmWorkspace',
+    items: [
+      { labelKey: 'nav.dashboardPM', icon: Gauge, path: '/dashboard-pm' },
+      { labelKey: 'nav.projectsPM', icon: Briefcase, path: '/projects-pm' },
     ],
   },
   {

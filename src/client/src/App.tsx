@@ -50,6 +50,9 @@ const ResourceManagementPage = lazy(() => import('./pages/ResourceManagementPage
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const EVMDashboardPage = lazy(() => import('./pages/EVMDashboardPage').then(m => ({ default: m.EVMDashboardPage })));
 const KPIDrillInPage = lazy(() => import('./pages/KPIDrillInPage').then(m => ({ default: m.KPIDrillInPage })));
+const DashboardPM = lazy(() => import('./pages/DashboardPM').then(m => ({ default: m.DashboardPM })));
+const ProjectsPM = lazy(() => import('./pages/ProjectsPM').then(m => ({ default: m.ProjectsPM })));
+const ProjectDetailPM = lazy(() => import('./pages/ProjectDetailPM').then(m => ({ default: m.ProjectDetailPM })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 function PageLoader() {
@@ -130,6 +133,9 @@ function App() {
         <Route path="/resources" element={<PrivateRoute><ResourceManagementPage /></PrivateRoute>} />
         <Route path="/evm" element={<PrivateRoute><EVMDashboardPage /></PrivateRoute>} />
         <Route path="/kpi/:type" element={<PrivateRoute><KPIDrillInPage /></PrivateRoute>} />
+        <Route path="/dashboard-pm" element={<PrivateRoute><DashboardPM /></PrivateRoute>} />
+        <Route path="/projects-pm" element={<PrivateRoute><ProjectsPM /></PrivateRoute>} />
+        <Route path="/project/:id/pm" element={<PrivateRoute><ProjectDetailPM /></PrivateRoute>} />
         <Route path="/agent" element={<PrivateRoute><AgentProposalsPage /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
 
