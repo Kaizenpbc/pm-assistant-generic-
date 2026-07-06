@@ -197,6 +197,9 @@ const GANTT_COLUMNS: GanttColDef[] = [
 /** Default visible columns (all toggleable columns visible by default) */
 const DEFAULT_VISIBLE_COLS = new Set(GANTT_COLUMNS.filter(c => !c.alwaysVisible).map(c => c.key));
 
+/** Default column order */
+const DEFAULT_COL_ORDER = GANTT_COLUMNS.map(c => c.key);
+
 /** Auto-scroll edge zone width (px) and speed */
 const AUTO_SCROLL_EDGE = 60;
 const AUTO_SCROLL_SPEED = 12;
@@ -531,6 +534,55 @@ export function GanttChart({
       return next;
     });
   }, []);
+
+  // -----------------------------------------------------------------------
+  // Column order state — persisted per schedule in localStorage
+  // -----------------------------------------------------------------------
+  const [ganttColOrder, setGanttColOrder] = useState<string[]>(() => {
+    if (!scheduleId) return DEFAULT_COL_ORDER;
+    try {
+      const stored = localStorage.getItem(`gantt-col-order:${scheduleId}`);
+      if (stored) {
+        const parsed: string[] = JSON.parse(stored);
+        // Ensure all current columns are present (handle added/removed columns)
+        const existing = new Set(parsed);
+        const all = DEFAULT_COL_ORDER.filter(k => !existing.has(k));
+        return [...parsed.filter(k => DEFAULT_COL_ORDER.includes(k)), ...all];
+      }
+      return DEFAULT_COL_ORDER;
+    } catch { return DEFAULT_COL_ORDER; }
+  });
+
+  useEffect(() => {
+    if (scheduleId && ganttColOrder.length > 0) {
+      localStorage.setItem(`gantt-col-order:${scheduleId}`, JSON.stringify(ganttColOrder));
+    }
+  }, [ganttColOrder, scheduleId]);
+
+  /** Move a column left or right in the order. Fixed columns (rowNum, name, editIcon) stay pinned. */
+  const moveColumn = useCallback((colKey: string, direction: 'left' | 'right') => {
+    setGanttColOrder(prev => {
+      const next = [...prev];
+      const idx = next.indexOf(colKey);
+      if (idx < 0) return prev;
+      // Don't allow moving into the fixed-start zone (rowNum=0, name=1) or fixed-end zone (editIcon=last)
+      const targetIdx = direction === 'left' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= next.length) return prev;
+      const targetKey = next[targetIdx];
+      const colDef = GANTT_COLUMNS.find(c => c.key === colKey);
+      const targetDef = GANTT_COLUMNS.find(c => c.key === targetKey);
+      // Don't swap with fixed columns
+      if (colDef?.alwaysVisible || targetDef?.alwaysVisible) return prev;
+      [next[idx], next[targetIdx]] = [next[targetIdx], next[idx]];
+      return next;
+    });
+  }, []);
+
+  /** Columns in user-specified order */
+  const orderedColumns = useMemo(() => {
+    const colMap = new Map(GANTT_COLUMNS.map(c => [c.key, c]));
+    return ganttColOrder.map(k => colMap.get(k)).filter((c): c is GanttColDef => !!c);
+  }, [ganttColOrder]);
 
   // -----------------------------------------------------------------------
   // Row expand/collapse state — persisted per schedule in localStorage
@@ -1268,10 +1320,10 @@ export function GanttChart({
       dur: 'duration', est: 'estimatedDays', pct: 'progressPercentage',
       priority: 'priority', assigned: 'assignedTo', status: 'status',
     };
-    return GANTT_COLUMNS
+    return orderedColumns
       .filter(c => isColVisible(c) && colKeyToField[c.key])
       .map(c => colKeyToField[c.key]);
-  }, [isColVisible]);
+  }, [isColVisible, orderedColumns]);
 
   // Arrow key navigation + copy/paste + indent/outdent
   useEffect(() => {
@@ -2046,24 +2098,46 @@ export function GanttChart({
                 Columns
               </button>
               {showColPicker && (
-                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-30 py-1 min-w-[160px]">
-                  {GANTT_COLUMNS.filter(c => !c.alwaysVisible).map(col => (
-                    <label key={col.key} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-xs text-gray-700 dark:text-gray-300">
+                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-30 py-1 min-w-[200px]">
+                  {orderedColumns.filter(c => !c.alwaysVisible).map((col, idx, arr) => (
+                    <div key={col.key} className="flex items-center gap-1 px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs text-gray-700 dark:text-gray-300">
                       <input
                         type="checkbox"
                         checked={ganttVisibleCols.has(col.key)}
                         onChange={() => toggleColVisibility(col.key)}
-                        className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                       />
-                      {col.label || col.key}
-                    </label>
+                      <span className="flex-1 cursor-pointer" onClick={() => toggleColVisibility(col.key)}>{col.label || col.key}</span>
+                      <button
+                        className="p-0.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-25 disabled:cursor-not-allowed"
+                        onClick={() => moveColumn(col.key, 'left')}
+                        disabled={idx === 0}
+                        title="Move left"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                      </button>
+                      <button
+                        className="p-0.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-25 disabled:cursor-not-allowed"
+                        onClick={() => moveColumn(col.key, 'right')}
+                        disabled={idx === arr.length - 1}
+                        title="Move right"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                    </div>
                   ))}
-                  <div className="border-t border-gray-200 dark:border-gray-600 mt-1 pt-1 px-3 py-1">
+                  <div className="border-t border-gray-200 dark:border-gray-600 mt-1 pt-1 px-3 py-1 flex items-center gap-3">
                     <button
                       className="text-xs text-primary-600 hover:text-primary-700"
                       onClick={() => setGanttVisibleCols(new Set(DEFAULT_VISIBLE_COLS))}
                     >
-                      Reset to default
+                      Reset visibility
+                    </button>
+                    <button
+                      className="text-xs text-primary-600 hover:text-primary-700"
+                      onClick={() => setGanttColOrder(DEFAULT_COL_ORDER)}
+                    >
+                      Reset order
                     </button>
                   </div>
                 </div>
@@ -2341,7 +2415,7 @@ export function GanttChart({
             className="sticky top-0 z-10 flex items-center bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
             style={{ height: HEADER_H }}
           >
-            {GANTT_COLUMNS.map(col => {
+            {orderedColumns.map(col => {
               // Skip editIcon column if no onTaskClick
               if (col.key === 'editIcon' && !onTaskClick) return null;
               // Skip hidden columns
@@ -2483,277 +2557,287 @@ export function GanttChart({
                   )}
                 </div>
 
-                {/* Predecessor(s) */}
-                {isColVisible(GANTT_COLUMNS[2]) && (
-                <div
-                  className={`shrink-0 px-1 text-center text-xs text-gray-500 font-mono ${editableCellClass(task.id, 'dependency')}`}
-                  style={{ width: getColWidth(GANTT_COLUMNS[2]) }}
-                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'dependency', task); } }}
-                  title={(task.dependencies || []).map(d => tasks.find(t => t.id === d.dependencyId)?.name || '').filter(Boolean).join(', ') || undefined}
-                >
-                  {isEditing(task.id, 'dependency') ? (
-                    <div>
-                      <input
-                        ref={el => { inputRef.current = el; }}
-                        className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center font-mono"
-                        value={editValue}
-                        onChange={e => setEditValue(e.target.value)}
-                        onBlur={() => saveEdit(task.id, 'dependency', editValue)}
-                        onKeyDown={e => handleKeyDown(e, task.id, 'dependency')}
-                        placeholder="e.g. 3FS"
-                      />
-                      {depError?.taskId === task.id && (
-                        <div className="absolute z-30 top-full left-0 bg-red-50 border border-red-200 text-red-600 text-[10px] px-1.5 py-0.5 rounded shadow whitespace-nowrap">
-                          {depError.message}
+                {/* Dynamic columns rendered in user-specified order */}
+                {orderedColumns.map(col => {
+                  if (col.key === 'rowNum' || col.key === 'name') return null; // already rendered above
+                  if (col.key === 'editIcon') return null; // rendered below
+                  if (!isColVisible(col)) return null;
+                  const w = getColWidth(col);
+
+                  if (col.key === 'pred') return (
+                    <div
+                      key="pred"
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 font-mono ${editableCellClass(task.id, 'dependency')}`}
+                      style={{ width: w }}
+                      onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'dependency', task); } }}
+                      title={(task.dependencies || []).map(d => tasks.find(t => t.id === d.dependencyId)?.name || '').filter(Boolean).join(', ') || undefined}
+                    >
+                      {isEditing(task.id, 'dependency') ? (
+                        <div>
+                          <input
+                            ref={el => { inputRef.current = el; }}
+                            className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center font-mono"
+                            value={editValue}
+                            onChange={e => setEditValue(e.target.value)}
+                            onBlur={() => saveEdit(task.id, 'dependency', editValue)}
+                            onKeyDown={e => handleKeyDown(e, task.id, 'dependency')}
+                            placeholder="e.g. 3FS"
+                          />
+                          {depError?.taskId === task.id && (
+                            <div className="absolute z-30 top-full left-0 bg-red-50 border border-red-200 text-red-600 text-[10px] px-1.5 py-0.5 rounded shadow whitespace-nowrap">
+                              {depError.message}
+                            </div>
+                          )}
                         </div>
+                      ) : (
+                        (task.dependencies && task.dependencies.length > 0) ? (() => {
+                          let worstHealth: 'satisfied' | 'in_progress' | 'at_risk' = 'satisfied';
+                          const labels: string[] = [];
+                          for (const dep of task.dependencies) {
+                            const depRowNum = rowNumMap.get(dep.dependencyId);
+                            const depType = (dep.dependencyType || 'FS').toUpperCase();
+                            const lag = dep.lagDays || 0;
+                            let label = depRowNum != null ? String(depRowNum) : '?';
+                            if (depType !== 'FS') label += depType;
+                            if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
+                            labels.push(label);
+                            const h = getDepHealth(dep.dependencyId);
+                            if (h === 'at_risk') worstHealth = 'at_risk';
+                            else if (h === 'in_progress' && worstHealth !== 'at_risk') worstHealth = 'in_progress';
+                          }
+                          return (
+                            <span className="inline-flex items-center gap-1 justify-center">
+                              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: healthColor(worstHealth) }} />
+                              {labels.join(',')}
+                            </span>
+                          );
+                        })() : '—'
                       )}
                     </div>
-                  ) : (
-                    (task.dependencies && task.dependencies.length > 0) ? (() => {
-                      let worstHealth: 'satisfied' | 'in_progress' | 'at_risk' = 'satisfied';
-                      const labels: string[] = [];
-                      for (const dep of task.dependencies) {
-                        const depRowNum = rowNumMap.get(dep.dependencyId);
-                        const depType = (dep.dependencyType || 'FS').toUpperCase();
-                        const lag = dep.lagDays || 0;
-                        let label = depRowNum != null ? String(depRowNum) : '?';
-                        if (depType !== 'FS') label += depType;
-                        if (lag !== 0) label += (lag > 0 ? `+${lag}d` : `${lag}d`);
-                        labels.push(label);
-                        const h = getDepHealth(dep.dependencyId);
-                        if (h === 'at_risk') worstHealth = 'at_risk';
-                        else if (h === 'in_progress' && worstHealth !== 'at_risk') worstHealth = 'in_progress';
-                      }
-                      return (
-                        <span className="inline-flex items-center gap-1 justify-center">
-                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: healthColor(worstHealth) }} />
-                          {labels.join(',')}
+                  );
+
+                  if (col.key === 'start') return (
+                    <div
+                      key="start"
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'startDate')}`}
+                      style={{ width: w }}
+                      onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'startDate', task); } }}
+                    >
+                      {isEditing(task.id, 'startDate') ? (
+                        <input
+                          ref={el => { inputRef.current = el; }}
+                          type="date"
+                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5"
+                          value={editValue}
+                          onChange={e => handleDateChange(task.id, 'startDate', e.target.value)}
+                          onBlur={() => cancelEditing()}
+                          onKeyDown={e => handleKeyDown(e, task.id, 'startDate')}
+                        />
+                      ) : (
+                        start ? formatShortDate(start) : '—'
+                      )}
+                    </div>
+                  );
+
+                  if (col.key === 'end') return (
+                    <div
+                      key="end"
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'endDate')}`}
+                      style={{ width: w }}
+                      onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'endDate', task); } }}
+                    >
+                      {isEditing(task.id, 'endDate') ? (
+                        <input
+                          ref={el => { inputRef.current = el; }}
+                          type="date"
+                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5"
+                          value={editValue}
+                          onChange={e => handleDateChange(task.id, 'endDate', e.target.value)}
+                          onBlur={() => cancelEditing()}
+                          onKeyDown={e => handleKeyDown(e, task.id, 'endDate')}
+                        />
+                      ) : (
+                        end ? formatShortDate(end) : '—'
+                      )}
+                    </div>
+                  );
+
+                  if (col.key === 'dur') return (
+                    <div
+                      key="dur"
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'duration')}`}
+                      style={{ width: w }}
+                      onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'duration', task); } }}
+                    >
+                      {isEditing(task.id, 'duration') ? (
+                        <input
+                          ref={el => { inputRef.current = el; }}
+                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                          value={editValue}
+                          onChange={e => setEditValue(e.target.value)}
+                          onBlur={() => saveEdit(task.id, 'duration', editValue)}
+                          onKeyDown={e => handleKeyDown(e, task.id, 'duration')}
+                          placeholder="days"
+                        />
+                      ) : (
+                        start && end ? `${daysBetween(start, end)}d` : '—'
+                      )}
+                    </div>
+                  );
+
+                  if (col.key === 'est') return (
+                    <div
+                      key="est"
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'estimatedDays')}`}
+                      style={{ width: w }}
+                      onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'estimatedDays', task); } }}
+                    >
+                      {isEditing(task.id, 'estimatedDays') ? (
+                        <input
+                          ref={el => { inputRef.current = el; }}
+                          type="number"
+                          min="0"
+                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                          value={editValue}
+                          onChange={e => setEditValue(e.target.value)}
+                          onBlur={() => saveEdit(task.id, 'estimatedDays', editValue)}
+                          onKeyDown={e => handleKeyDown(e, task.id, 'estimatedDays')}
+                        />
+                      ) : (
+                        task.estimatedDays != null ? `${task.estimatedDays}d` : '—'
+                      )}
+                    </div>
+                  );
+
+                  if (col.key === 'pct') return (
+                    <div
+                      key="pct"
+                      className={`shrink-0 px-1 text-center text-xs font-medium text-gray-600 ${editableCellClass(task.id, 'progressPercentage')}`}
+                      style={{ width: w }}
+                      onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'progressPercentage', task); } }}
+                    >
+                      {isEditing(task.id, 'progressPercentage') ? (
+                        <input
+                          ref={el => { inputRef.current = el; }}
+                          type="number"
+                          min="0"
+                          max="100"
+                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                          value={editValue}
+                          onChange={e => setEditValue(e.target.value)}
+                          onBlur={() => saveEdit(task.id, 'progressPercentage', editValue)}
+                          onKeyDown={e => handleKeyDown(e, task.id, 'progressPercentage')}
+                        />
+                      ) : (
+                        `${pct}%`
+                      )}
+                    </div>
+                  );
+
+                  if (col.key === 'priority') return (
+                    <div
+                      key="priority"
+                      className={`shrink-0 px-1 text-center ${editableCellClass(task.id, 'priority')}`}
+                      style={{ width: w }}
+                      onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'priority', task); } }}
+                    >
+                      {isEditing(task.id, 'priority') ? (
+                        <select
+                          ref={el => { inputRef.current = el; }}
+                          className="w-full h-full text-xs bg-white border-0 outline-none"
+                          value={editValue}
+                          onChange={e => handleSelectChange(task.id, 'priority', e.target.value)}
+                          onBlur={() => cancelEditing()}
+                          onKeyDown={e => handleKeyDown(e, task.id, 'priority')}
+                        >
+                          {priorityOptions.map(o => (
+                            <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        task.priority ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium">
+                            <span className={`w-1.5 h-1.5 rounded-full ${priorityDot[task.priority] || 'bg-gray-300'}`} />
+                            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                          </span>
+                        ) : '—'
+                      )}
+                    </div>
+                  );
+
+                  if (col.key === 'assigned') return (
+                    <div
+                      key="assigned"
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 truncate ${editableCellClass(task.id, 'assignedTo')}`}
+                      style={{ width: w }}
+                      onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'assignedTo', task); } }}
+                      title={task.assignedTo || undefined}
+                    >
+                      {isEditing(task.id, 'assignedTo') ? (
+                        <input
+                          ref={el => { inputRef.current = el; }}
+                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                          value={editValue}
+                          onChange={e => setEditValue(e.target.value)}
+                          onBlur={() => saveEdit(task.id, 'assignedTo', editValue)}
+                          onKeyDown={e => handleKeyDown(e, task.id, 'assignedTo')}
+                        />
+                      ) : (
+                        task.assignedTo || '—'
+                      )}
+                    </div>
+                  );
+
+                  if (col.key === 'status') return (
+                    <div
+                      key="status"
+                      className={`shrink-0 px-1 text-center ${editableCellClass(task.id, 'status')}`}
+                      style={{ width: w }}
+                      onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'status', task); } }}
+                    >
+                      {isEditing(task.id, 'status') ? (
+                        <select
+                          ref={el => { inputRef.current = el; }}
+                          className="w-full h-full text-xs bg-white border-0 outline-none"
+                          value={editValue}
+                          onChange={e => handleSelectChange(task.id, 'status', e.target.value)}
+                          onBlur={() => cancelEditing()}
+                          onKeyDown={e => handleKeyDown(e, task.id, 'status')}
+                        >
+                          {statusOptions.map(o => (
+                            <option key={o} value={o}>
+                              {o === 'in_progress' ? 'Active' : o === 'completed' ? 'Done' : o === 'pending' ? 'Pending' : o}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          className="text-xs font-medium px-1.5 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: barColors[task.status]?.bg || '#f3f4f6',
+                            color: barColors[task.status]?.text || '#374151',
+                          }}
+                        >
+                          {task.status === 'in_progress'
+                            ? 'Active'
+                            : task.status === 'completed'
+                              ? 'Done'
+                              : task.status === 'pending'
+                                ? 'Pending'
+                                : task.status}
                         </span>
-                      );
-                    })() : '—'
-                  )}
-                </div>
-                )}
+                      )}
+                    </div>
+                  );
 
-                {/* Start */}
-                {isColVisible(GANTT_COLUMNS[3]) && (
-                <div
-                  className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'startDate')}`}
-                  style={{ width: getColWidth(GANTT_COLUMNS[3]) }}
-                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'startDate', task); } }}
-                >
-                  {isEditing(task.id, 'startDate') ? (
-                    <input
-                      ref={el => { inputRef.current = el; }}
-                      type="date"
-                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5"
-                      value={editValue}
-                      onChange={e => handleDateChange(task.id, 'startDate', e.target.value)}
-                      onBlur={() => cancelEditing()}
-                      onKeyDown={e => handleKeyDown(e, task.id, 'startDate')}
-                    />
-                  ) : (
-                    start ? formatShortDate(start) : '—'
-                  )}
-                </div>
-                )}
-
-                {/* End */}
-                {isColVisible(GANTT_COLUMNS[4]) && (
-                <div
-                  className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'endDate')}`}
-                  style={{ width: getColWidth(GANTT_COLUMNS[4]) }}
-                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'endDate', task); } }}
-                >
-                  {isEditing(task.id, 'endDate') ? (
-                    <input
-                      ref={el => { inputRef.current = el; }}
-                      type="date"
-                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5"
-                      value={editValue}
-                      onChange={e => handleDateChange(task.id, 'endDate', e.target.value)}
-                      onBlur={() => cancelEditing()}
-                      onKeyDown={e => handleKeyDown(e, task.id, 'endDate')}
-                    />
-                  ) : (
-                    end ? formatShortDate(end) : '—'
-                  )}
-                </div>
-                )}
-
-                {/* Duration */}
-                {isColVisible(GANTT_COLUMNS[5]) && (
-                <div
-                  className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'duration')}`}
-                  style={{ width: getColWidth(GANTT_COLUMNS[5]) }}
-                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'duration', task); } }}
-                >
-                  {isEditing(task.id, 'duration') ? (
-                    <input
-                      ref={el => { inputRef.current = el; }}
-                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      onBlur={() => saveEdit(task.id, 'duration', editValue)}
-                      onKeyDown={e => handleKeyDown(e, task.id, 'duration')}
-                      placeholder="days"
-                    />
-                  ) : (
-                    start && end ? `${daysBetween(start, end)}d` : '—'
-                  )}
-                </div>
-                )}
-
-                {/* Estimated Days */}
-                {isColVisible(GANTT_COLUMNS[6]) && (
-                <div
-                  className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'estimatedDays')}`}
-                  style={{ width: getColWidth(GANTT_COLUMNS[6]) }}
-                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'estimatedDays', task); } }}
-                >
-                  {isEditing(task.id, 'estimatedDays') ? (
-                    <input
-                      ref={el => { inputRef.current = el; }}
-                      type="number"
-                      min="0"
-                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      onBlur={() => saveEdit(task.id, 'estimatedDays', editValue)}
-                      onKeyDown={e => handleKeyDown(e, task.id, 'estimatedDays')}
-                    />
-                  ) : (
-                    task.estimatedDays != null ? `${task.estimatedDays}d` : '—'
-                  )}
-                </div>
-                )}
-
-                {/* % Complete */}
-                {isColVisible(GANTT_COLUMNS[7]) && (
-                <div
-                  className={`shrink-0 px-1 text-center text-xs font-medium text-gray-600 ${editableCellClass(task.id, 'progressPercentage')}`}
-                  style={{ width: getColWidth(GANTT_COLUMNS[7]) }}
-                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'progressPercentage', task); } }}
-                >
-                  {isEditing(task.id, 'progressPercentage') ? (
-                    <input
-                      ref={el => { inputRef.current = el; }}
-                      type="number"
-                      min="0"
-                      max="100"
-                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      onBlur={() => saveEdit(task.id, 'progressPercentage', editValue)}
-                      onKeyDown={e => handleKeyDown(e, task.id, 'progressPercentage')}
-                    />
-                  ) : (
-                    `${pct}%`
-                  )}
-                </div>
-                )}
-
-                {/* Priority */}
-                {isColVisible(GANTT_COLUMNS[8]) && (
-                <div
-                  className={`shrink-0 px-1 text-center ${editableCellClass(task.id, 'priority')}`}
-                  style={{ width: getColWidth(GANTT_COLUMNS[8]) }}
-                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'priority', task); } }}
-                >
-                  {isEditing(task.id, 'priority') ? (
-                    <select
-                      ref={el => { inputRef.current = el; }}
-                      className="w-full h-full text-xs bg-white border-0 outline-none"
-                      value={editValue}
-                      onChange={e => handleSelectChange(task.id, 'priority', e.target.value)}
-                      onBlur={() => cancelEditing()}
-                      onKeyDown={e => handleKeyDown(e, task.id, 'priority')}
-                    >
-                      {priorityOptions.map(o => (
-                        <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    task.priority ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium">
-                        <span className={`w-1.5 h-1.5 rounded-full ${priorityDot[task.priority] || 'bg-gray-300'}`} />
-                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                      </span>
-                    ) : '—'
-                  )}
-                </div>
-                )}
-
-                {/* Assigned To */}
-                {isColVisible(GANTT_COLUMNS[9]) && (
-                <div
-                  className={`shrink-0 px-1 text-center text-xs text-gray-500 truncate ${editableCellClass(task.id, 'assignedTo')}`}
-                  style={{ width: getColWidth(GANTT_COLUMNS[9]) }}
-                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'assignedTo', task); } }}
-                  title={task.assignedTo || undefined}
-                >
-                  {isEditing(task.id, 'assignedTo') ? (
-                    <input
-                      ref={el => { inputRef.current = el; }}
-                      className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      onBlur={() => saveEdit(task.id, 'assignedTo', editValue)}
-                      onKeyDown={e => handleKeyDown(e, task.id, 'assignedTo')}
-                    />
-                  ) : (
-                    task.assignedTo || '—'
-                  )}
-                </div>
-                )}
-
-                {/* Status */}
-                {isColVisible(GANTT_COLUMNS[10]) && (
-                <div
-                  className={`shrink-0 px-1 text-center ${editableCellClass(task.id, 'status')}`}
-                  style={{ width: getColWidth(GANTT_COLUMNS[10]) }}
-                  onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'status', task); } }}
-                >
-                  {isEditing(task.id, 'status') ? (
-                    <select
-                      ref={el => { inputRef.current = el; }}
-                      className="w-full h-full text-xs bg-white border-0 outline-none"
-                      value={editValue}
-                      onChange={e => handleSelectChange(task.id, 'status', e.target.value)}
-                      onBlur={() => cancelEditing()}
-                      onKeyDown={e => handleKeyDown(e, task.id, 'status')}
-                    >
-                      {statusOptions.map(o => (
-                        <option key={o} value={o}>
-                          {o === 'in_progress' ? 'Active' : o === 'completed' ? 'Done' : o === 'pending' ? 'Pending' : o}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span
-                      className="text-xs font-medium px-1.5 py-0.5 rounded-full"
-                      style={{
-                        backgroundColor: barColors[task.status]?.bg || '#f3f4f6',
-                        color: barColors[task.status]?.text || '#374151',
-                      }}
-                    >
-                      {task.status === 'in_progress'
-                        ? 'Active'
-                        : task.status === 'completed'
-                          ? 'Done'
-                          : task.status === 'pending'
-                            ? 'Pending'
-                            : task.status}
-                    </span>
-                  )}
-                </div>
-                )}
+                  return null;
+                })}
 
                 {/* Edit icon (visible on hover) */}
                 {onTaskClick && (
                   <div
                     className="shrink-0 flex items-center justify-center"
-                    style={{ width: getColWidth(GANTT_COLUMNS[11]) }}
+                    style={{ width: getColWidth(GANTT_COLUMNS[GANTT_COLUMNS.length - 1]) }}
                     onClick={(e) => { e.stopPropagation(); onTaskClick(task); }}
                   >
                     <svg
