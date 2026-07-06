@@ -123,7 +123,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     },
   });
 
-  const templates = templatesData?.templates || [];
+  const templates = templatesData?.data || templatesData?.templates || [];
   const template = templateDetail?.template;
 
   const resetState = () => {

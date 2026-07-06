@@ -41,7 +41,7 @@ export function SprintList({ projectId, onSelect, onCreate }: SprintListProps) {
     queryFn: () => apiService.getSprints(projectId),
   });
 
-  const sprints: Sprint[] = data?.sprints ?? data ?? [];
+  const sprints: Sprint[] = data?.data || data?.sprints || [];
 
   if (isLoading) {
     return (
