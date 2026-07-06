@@ -98,9 +98,10 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
 
 interface Props {
   projects: ProjectRow[];
+  linkPrefix?: string;
 }
 
-export function ProjectTable({ projects }: Props) {
+export function ProjectTable({ projects, linkPrefix }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sortKey, setSortKey] = useState<SortKey>('name');
@@ -236,7 +237,7 @@ export function ProjectTable({ projects }: Props) {
             return (
               <tr
                 key={project.id}
-                onClick={() => navigate(`/project/${project.id}`)}
+                onClick={() => navigate(`/project/${project.id}${linkPrefix ? `/${linkPrefix}` : ''}`)}
                 className="cursor-pointer hover:bg-primary-50 dark:hover:bg-gray-700 transition-colors"
               >
                 {/* Name */}

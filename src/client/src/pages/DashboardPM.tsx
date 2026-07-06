@@ -34,6 +34,9 @@ const PM_WIDGETS: WidgetDef[] = [
   { id: 'milestones',  label: 'Milestones',             group: 'Details',  defaultOn: true },
   { id: 'budget',      label: 'Budget Watch',           group: 'Details',  defaultOn: true },
   { id: 'activity',    label: 'Activity Feed',          group: 'Details',  defaultOn: true },
+  { id: 'sprint',      label: 'Sprint Snapshot',        group: 'Details',  defaultOn: false },
+  { id: 'goals',       label: 'Goals Progress',         group: 'Details',  defaultOn: false },
+  { id: 'workload',    label: 'Team Workload',          group: 'Details',  defaultOn: false },
 ];
 
 const STORAGE_KEY = 'dashboard-pm-widgets';
@@ -239,6 +242,7 @@ export function DashboardPM() {
             value={`${avgHealth}%`}
             icon={Activity}
             color={healthColor}
+            statusDot={healthColor}
             drillPath="/portfolio"
           />
           <KpiTilePM
@@ -246,6 +250,7 @@ export function DashboardPM() {
             value={overdueTasks}
             icon={Clock}
             color={kpiColor(overdueTasks, true, 5, 10)}
+            statusDot={kpiColor(overdueTasks, true, 5, 10)}
             drillPath="/kpi/overdue"
           />
           <KpiTilePM
@@ -253,6 +258,7 @@ export function DashboardPM() {
             value={openRisks}
             icon={AlertTriangle}
             color={kpiColor(openRisks, true, 3, 7)}
+            statusDot={kpiColor(openRisks, true, 3, 7)}
             drillPath="/kpi/risks"
           />
           <KpiTilePM
@@ -260,6 +266,7 @@ export function DashboardPM() {
             value={atRiskCount}
             icon={AlertCircle}
             color={kpiColor(atRiskCount, true, 2, 4)}
+            statusDot={kpiColor(atRiskCount, true, 2, 4)}
             drillPath="/kpi/at-risk"
           />
           <KpiTilePM
@@ -267,6 +274,7 @@ export function DashboardPM() {
             value={varianceStr}
             icon={TrendingDown}
             color={varianceColor}
+            statusDot={varianceColor}
             drillPath="/kpi/budget"
           />
           <KpiTilePM
@@ -274,6 +282,7 @@ export function DashboardPM() {
             value={`${Math.round(utilization)}%`}
             icon={DollarSign}
             color={utilColor}
+            statusDot={utilColor}
             drillPath="/kpi/budget"
           />
         </div>
@@ -283,7 +292,7 @@ export function DashboardPM() {
       {show('intel') && <AISummaryBanner />}
 
       {/* ── Projects Table ── */}
-      {show('projects') && <ProjectTable projects={projectsWithHealth} />}
+      {show('projects') && <ProjectTable projects={projectsWithHealth} linkPrefix="pm" />}
 
       {/* ── Action Center ── */}
       {show('action') && <ActionCenterPM projects={projectSummaries} />}
