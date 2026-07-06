@@ -93,7 +93,7 @@ export function ProjectCardPM({ project }: ProjectCardPMProps) {
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <Link
-            to={`/project/${id}/pm`}
+            to={`/project/${id}`}
             className="text-sm font-semibold text-gray-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors line-clamp-1"
           >
             {name}
@@ -150,7 +150,7 @@ export function ProjectCardPM({ project }: ProjectCardPMProps) {
       {/* Action row */}
       <div className="flex items-center gap-2 pt-1 border-t border-gray-100 dark:border-gray-700">
         <Link
-          to={`/project/${id}/pm`}
+          to={`/project/${id}`}
           className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium transition-colors"
         >
           <ExternalLink className="w-3.5 h-3.5" />

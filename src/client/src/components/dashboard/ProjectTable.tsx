@@ -101,7 +101,7 @@ interface Props {
   linkPrefix?: string;
 }
 
-export function ProjectTable({ projects, linkPrefix }: Props) {
+export function ProjectTable({ projects }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sortKey, setSortKey] = useState<SortKey>('name');
@@ -237,7 +237,7 @@ export function ProjectTable({ projects, linkPrefix }: Props) {
             return (
               <tr
                 key={project.id}
-                onClick={() => navigate(`/project/${project.id}${linkPrefix ? `/${linkPrefix}` : ''}`)}
+                onClick={() => navigate(`/project/${project.id}`)}
                 className="cursor-pointer hover:bg-primary-50 dark:hover:bg-gray-700 transition-colors"
               >
                 {/* Name */}

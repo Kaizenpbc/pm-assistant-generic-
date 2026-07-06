@@ -292,7 +292,7 @@ export function DashboardPM() {
       {show('intel') && <AISummaryBanner />}
 
       {/* ── Projects Table ── */}
-      {show('projects') && <ProjectTable projects={projectsWithHealth} linkPrefix="pm" />}
+      {show('projects') && <ProjectTable projects={projectsWithHealth} />}
 
       {/* ── Action Center ── */}
       {show('action') && <ActionCenterPM projects={projectSummaries} />}
