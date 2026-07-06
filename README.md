@@ -212,6 +212,19 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Exportable reports
 - Scheduled report delivery via email (daily/weekly/monthly CSV)
 
+### Dashboard Widgets
+- **Next Best Actions** -- AI-synthesized action cards from proposals, notifications, and at-risk projects with priority ranking
+- **Health Trends** -- Daily health score snapshots with SVG sparklines per project (migration 038, `project_health_history` table, daily cron at 03:00)
+- **Customizable layout** -- Toggle widget sections on/off via Customize dropdown; selections saved per-user in localStorage
+
+### PM Workspace (Preview)
+- **PM Dashboard** (`/dashboard-pm`) -- Monitoring cockpit with 6 clickable KPI tiles (with status dots), scope toggle (My Projects / All), Portfolio Intelligence banner, Action Center (priorities + AI next-best-actions), sortable Projects Table, Issues Trend chart, Milestones, Budget Watch, and Activity Feed. Full dark mode support.
+- **PM Projects** (`/projects-pm`) -- Filterable project card grid with health-based card borders, search/filter bar, AI portfolio insights panel, and inline New Project via template picker
+- **PM Project Detail** (`/project/:id/pm`) -- Two-column layout: left panel with tabbed management (Tasks, Risks, Issues, Milestones, RAID, Documents) and right sticky intelligence rail (Health ring, AI Assistant, Activity Feed)
+- 16 components in `src/client/src/components/pm/`, shared types in `src/types/pm.ts`
+- Sidebar "PM Workspace" navigation group with i18n support (EN/FR/ES)
+- Opt-in widgets available: Sprint Snapshot, Goals Progress, Team Workload (disabled by default)
+
 ### Notifications
 - In-app notification center
 - Full-page Notifications Center (`/notifications`) with severity summary cards (Critical, High, Medium, Low), type/severity filters, and full notification list with mark-read controls; "Load More" pagination for large notification lists

@@ -1275,6 +1275,56 @@ The `AISummaryBanner` component shows a narrative section (when enabled via acce
 
 ---
 
+## 44. PM Workspace (Preview)
+
+The PM Workspace provides an alternative set of pages designed for project managers who want a lean, action-oriented experience. These pages run alongside the existing pages for side-by-side evaluation before cutover.
+
+### PM Dashboard (`/dashboard-pm`)
+
+A monitoring cockpit with read-only scope toggle:
+
+- **6 KPI Tiles** — Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, Budget Utilization. Each tile has a colored status dot, semantic color chip, hover lift animation, and click-through to drill-in pages.
+- **Portfolio Intelligence** — `AISummaryBanner` with circular health ring, risk summary chips, budget status, key insights, and AI narrative (when enabled). Full dark mode support.
+- **Projects Table** — Sortable by 10 columns (name, health, status, priority, type, progress, budget, spent%, end date, days left). Rows navigate to `/project/:id/pm`.
+- **Action Center** — Two-column card: "Today's Priorities" (deadline-driven items from predictions) and "AI Next Best Actions" (proposals to approve, notifications to investigate, at-risk projects to review).
+- **Issues Created vs Resolved** — Weekly trend chart with scope awareness.
+- **3-Column Footer** — Milestones widget, Budget Watch widget, Activity Feed with clickable rows, mark-as-read, and navigation.
+- **Customize Dropdown** — Toggle any widget section on/off. Includes opt-in placeholders for Sprint Snapshot, Goals Progress, and Team Workload (disabled by default).
+
+### PM Projects (`/projects-pm`)
+
+- **Filter Bar** — Search by name, filter by health band (Healthy/Warning/Critical) and status (Active/Planning/On Hold/Completed).
+- **AI Portfolio Insights** — Self-fetching 3-up insight tiles from analytics summary.
+- **Project Cards** — Grid layout with left border colored by health band, health pill, status/priority chips, progress meter, and inline action buttons.
+- **New Project** — Template picker integration for creating projects from templates.
+
+### PM Project Detail (`/project/:id/pm`)
+
+Two-column layout (8+4 grid):
+
+- **Left Panel** — Tab strip (Tasks, Risks, Issues, Milestones, RAID, Documents) with count badges and teal active indicator. Each tab renders a filterable list with status icons, type tags, and inline Add buttons.
+- **Right Rail (Sticky)** — Project Health ring (circular SVG with semantic color, 3 mini meter bars for schedule/budget/risk health), AI Assistant card (gradient teal with health summary and suggested actions), Activity Feed (project-scoped notifications).
+
+### Navigation
+
+Accessible via the "PM Workspace" section in the sidebar:
+- Dashboard (NEW) → `/dashboard-pm`
+- Projects (NEW) → `/projects-pm`
+
+Labels include "(NEW)" suffix for side-by-side evaluation. i18n translations available in EN, FR, and ES.
+
+### Design System
+
+- **Font**: Plus Jakarta Sans (imported via Google Fonts)
+- **Primary palette**: Teal (50–900)
+- **Health bands**: ≥75 green, 50–74 amber, <50 red
+- **Card radius**: `rounded-xl` (12px)
+- **Hover lift**: `hover:-translate-y-0.5 hover:shadow-md`
+- **KPI values**: 27px / font-weight 800
+- **Dark mode**: Full coverage across all PM components
+
+---
+
 ## Technical Architecture
 
 ### Backend

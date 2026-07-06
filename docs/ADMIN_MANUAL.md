@@ -98,6 +98,7 @@ Key variables in `.env` (never commit secrets):
 - **Fastify** listens on `PORT` (default 3001) behind LiteSpeed + Passenger in production.
 - Static assets are served directly by LiteSpeed; API routes proxy to Fastify.
 - CSP headers are managed by Helmet (currently in report-only mode).
+- **Health Snapshot Cron** — When `AGENT_ENABLED=true`, a daily cron job runs at 03:00 to snapshot each active project's health score into the `project_health_history` table (migration 038). This data powers the Health Trends sparklines on the dashboard. A manual trigger is available at `POST /api/v1/predictions/health/snapshot` (admin only).
 
 ---
 
@@ -498,6 +499,7 @@ Agents can be promoted from Tier 2 (propose-only) to Tier 3 (auto-execute) when 
 | Stripe webhooks failing      | Verify `STRIPE_WEBHOOK_SECRET`; check Stripe event logs.      |
 | Integrations not syncing     | Check API tokens/credentials; review sync logs.               |
 | Audit integrity check fails  | Investigate potential data tampering; restore from backup.     |
+| Health snapshots not appearing | Verify `AGENT_ENABLED=true`; run manual snapshot via `POST /api/v1/predictions/health/snapshot`; check `project_health_history` table. |
 
 For detailed logs, check `./logs/` or your hosting provider's log viewer.
 

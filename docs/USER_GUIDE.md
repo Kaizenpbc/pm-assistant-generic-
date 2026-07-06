@@ -98,6 +98,8 @@ The left sidebar provides access to all areas of the application:
 | Help           | In-app help and user guide                  |
 | Account        | Billing and subscription management         |
 | Settings       | User preferences and API keys (admin/manager)|
+| Dashboard (NEW) | PM Workspace monitoring cockpit (preview)    |
+| Projects (NEW)  | PM Workspace project card grid (preview)     |
 
 The sidebar can be collapsed using the toggle at the bottom. On mobile devices, it slides in as an overlay.
 
@@ -1251,6 +1253,39 @@ The unified dashboard supports toggling widget sections on/off via the **Customi
 3. Your selections are saved automatically in localStorage and persist across sessions.
 
 Available sections: KPI Tiles, Portfolio Intelligence, Projects Table, Issues Trend, Milestones, Budget Watch, Recent Activity, Next Best Actions, Health Trends.
+
+---
+
+## 30. PM Workspace (Preview)
+
+The PM Workspace provides alternative pages designed for a lean, action-oriented project management experience. These pages are available alongside the existing pages for evaluation.
+
+### PM Dashboard (`/dashboard-pm`)
+
+Access via the sidebar under **PM Workspace → Dashboard (NEW)**.
+
+- **Scope Toggle** — Switch between "My Projects" and "All Projects" to control which data is displayed.
+- **KPI Tiles** — 6 tiles showing Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, and Budget Utilization. Each has a colored status dot and click-through to drill-in pages.
+- **Portfolio Intelligence** — AI-generated health ring, risk chips, budget status, and key insights. Supports dark mode.
+- **Action Center** — Two columns: "Today's Priorities" (deadline-driven items) and "AI Next Best Actions" (proposals, notifications, at-risk projects to act on).
+- **Projects Table** — Sortable table; clicking a row navigates to the PM project detail view (`/project/:id/pm`).
+- **Customize** — Toggle widgets on/off. Opt-in widgets (Sprint Snapshot, Goals Progress, Team Workload) are available but disabled by default.
+
+### PM Projects (`/projects-pm`)
+
+Access via the sidebar under **PM Workspace → Projects (NEW)**.
+
+- **Filter Bar** — Search by name, filter by health band and status.
+- **AI Portfolio Insights** — 3 insight tiles pulled from analytics summary.
+- **Project Cards** — Grid of cards with health-based left borders, status/priority chips, and progress meters.
+- **New Project** — Create from template via the template picker.
+
+### PM Project Detail (`/project/:id/pm`)
+
+Navigate here by clicking a project row in the PM Dashboard or PM Projects page.
+
+- **Left Panel** — Tabbed view: Tasks, Risks, Issues, Milestones, RAID, Documents. Each tab shows a filterable list with inline Add buttons.
+- **Right Rail** — Sticky panel with Project Health ring (schedule/budget/risk sub-scores), AI Assistant card, and Activity Feed.
 
 ---
 

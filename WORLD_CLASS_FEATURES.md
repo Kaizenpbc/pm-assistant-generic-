@@ -125,6 +125,12 @@ An agentic AI project management platform that combines the scheduling power of 
 - Auto-refresh via WebSocket cache invalidation
 - **Benchmark:** Monday.com, Smartsheet
 
+**PM Workspace (Preview)**
+Three alternative PM-oriented pages run alongside existing ones for side-by-side evaluation:
+- **PM Dashboard** (`/dashboard-pm`) — 6 KPI tiles with status dots, Portfolio Intelligence banner, Action Center, Projects Table, Issues Trend, Milestones, Budget Watch, Activity Feed. Customizable via widget dropdown (includes opt-in Sprint Snapshot, Goals Progress, Team Workload).
+- **PM Projects** (`/projects-pm`) — Filterable card grid with health-based borders, AI portfolio insights.
+- **PM Project Detail** (`/project/:id/pm`) — Tabbed management + sticky intelligence rail.
+
 ### 2.4 Real-Time Collaboration
 - Real-time task updates (WebSocket)
 - Real-time presence indicators: avatar circles in project header show who else is viewing the same project
@@ -439,3 +445,7 @@ An agentic AI project management platform that combines the scheduling power of 
 | AI Circuit Breaker (trips after 5 transient failures, 60s cooldown, returns 503 instantly, auto-recovers) | Done | Reliability |
 | Parallel Agent Scheduler (projects processed concurrently with bounded parallelism of 3, ~3x scan speedup) | Done | Performance |
 | Structured Log Export (daily-rotated JSON logs with 14d retention, admin query/download endpoints) | Done | Observability |
+| Next Best Actions Widget | Done | Enhancement |
+| Health Trends Sparklines (daily cron + migration 038) | Done | Enhancement |
+| PM Workspace — Dashboard, Projects, Project Detail | Done | Enhancement |
+| PM Dashboard Design Gap Fixes (dark mode, KPI dots, linkPrefix) | Done | Enhancement |
