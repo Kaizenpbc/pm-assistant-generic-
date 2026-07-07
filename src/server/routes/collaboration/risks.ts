@@ -250,7 +250,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
       const userId = request.user!.userId;
 
       const service = new PredictiveIntelligenceService(fastify);
-      const { assessment } = await service.assessProjectRisks(projectId, userId);
+      const { assessment, aiPowered } = await service.assessProjectRisks(projectId, userId);
 
       const aiRisks = assessment.risks || [];
 
@@ -283,7 +283,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
           overallScore: assessment.overallScore ?? 0,
           overallSeverity: assessment.overallSeverity || 'low',
         },
-        aiPowered: true,
+        aiPowered,
       });
     } catch (err) {
       fastify.log.error({ err }, 'AI risk scan failed');
