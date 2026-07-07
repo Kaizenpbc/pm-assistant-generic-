@@ -107,15 +107,78 @@ const OUTDOOR_KEYWORDS = [
 // Prompt Templates (GENERIC — no Guyana, no Ministry of Works)
 // ---------------------------------------------------------------------------
 
+const DOMAIN_RISK_GUIDANCE: Record<string, string> = {
+  it: `Domain-specific risks to evaluate for IT/software projects:
+- Data migration failure or data loss during system transitions
+- Integration risks with existing systems, APIs, or third-party services
+- Security vulnerabilities (authentication, data breaches, access control)
+- Vendor lock-in or dependency on specific platforms/technologies
+- Scope creep from changing requirements or stakeholder expectations
+- Technical debt and maintainability concerns
+- User adoption and change management resistance
+- Performance and scalability under production load
+- Regulatory compliance (data privacy, accessibility, industry standards)
+- Key person dependency — loss of critical technical knowledge`,
+
+  construction: `Domain-specific risks to evaluate for construction projects:
+- Weather delays (rain, extreme heat/cold, storms, seasonal impacts)
+- Supply chain disruptions (material shortages, price increases, delivery delays)
+- Labor shortages or skill availability in the region
+- Permit and regulatory approval delays
+- Site conditions differing from surveys (soil, environmental, utilities)
+- Subcontractor performance and coordination failures
+- Safety incidents and occupational health hazards
+- Design changes or clashes discovered during construction
+- Equipment breakdown or availability issues
+- Community opposition or stakeholder objections`,
+
+  infrastructure: `Domain-specific risks to evaluate for infrastructure projects:
+- Environmental impact assessment delays or regulatory challenges
+- Right-of-way and land acquisition issues
+- Utility relocation conflicts and coordination
+- Geotechnical or subsurface condition surprises
+- Public safety and traffic management during construction
+- Multi-agency coordination and approval bottlenecks
+- Long-term maintenance and lifecycle cost considerations
+- Political or funding changes affecting project continuity
+- Weather and seasonal construction window constraints
+- Community disruption and public communication challenges`,
+
+  roads: `Domain-specific risks to evaluate for road/transportation projects:
+- Traffic management and public safety during construction
+- Weather and seasonal paving/construction windows
+- Utility relocation and underground service conflicts
+- Environmental and drainage impact concerns
+- Right-of-way acquisition and property access issues
+- Subgrade and soil condition variability
+- Material quality and supply chain reliability
+- Regulatory and permit compliance (environmental, safety)
+- Coordination with adjacent projects or jurisdictions
+- Public opposition and stakeholder communication failures`,
+
+  other: `Domain-specific risks to evaluate:
+- Stakeholder alignment and expectation management
+- Resource availability and key person dependencies
+- Scope definition clarity and change management
+- Regulatory or compliance requirements
+- External dependencies and vendor/partner reliability
+- Communication breakdowns across teams or organizations`,
+};
+
 const riskPredictionPrompt = new PromptTemplate(
   `You are a risk prediction engine for project management. Analyze the project data and produce a comprehensive risk assessment.
 
-Consider all risk dimensions: schedule, budget, resource, weather, regulatory, technical, and stakeholder risks.
+Consider all risk dimensions: schedule, budget, resource, weather, regulatory, technical, dependency, and stakeholder risks.
+
+{{domainGuidance}}
 
 For each risk:
 - Score probability (1-5) and impact (1-5)
 - Assign severity: low (score 1-5), medium (6-10), high (11-15), critical (16-25) where score = probability * impact
-- List concrete mitigations
+- List concrete, actionable mitigations specific to this project
+- Identify affected tasks where possible
+
+Even if the project metrics look healthy, identify risks that are inherent to this type of project and could emerge. A healthy project still has risks — surface them proactively.
 
 Project data:
 {{projectData}}
@@ -123,8 +186,8 @@ Project data:
 Weather summary:
 {{weatherSummary}}
 
-Return a JSON object matching the schema. Be specific to this project's context — avoid generic advice.`,
-  '1.0.0',
+Return a JSON object matching the schema. Be specific to this project's context — avoid generic advice. Aim for 3-8 risks.`,
+  '2.0.0',
 );
 
 const weatherImpactPrompt = new PromptTemplate(
@@ -392,9 +455,13 @@ export class PredictiveIntelligenceService {
         /* weather fetch failure is non-critical */
       }
 
+      const projectType = context.project.projectType || 'other';
+      const domainGuidance = DOMAIN_RISK_GUIDANCE[projectType] || DOMAIN_RISK_GUIDANCE.other;
+
       const systemPrompt = riskPredictionPrompt.render({
         projectData: projectPrompt,
         weatherSummary,
+        domainGuidance,
       });
 
       const result = await claudeService.completeWithJsonSchema({
@@ -941,22 +1008,9 @@ export class PredictiveIntelligenceService {
       });
     }
 
-    // Generic seasonal weather risk
-    risks.push({
-      type: 'weather',
-      title: 'Seasonal Weather Risk',
-      description:
-        'Weather conditions may affect outdoor project activities depending on the season and location. Review local forecasts regularly.',
-      probability: 2,
-      impact: 2,
-      severity: 'low',
-      affectedTasks: [],
-      mitigations: [
-        'Monitor weather forecasts',
-        'Build weather contingency into schedule',
-        'Prepare covered work areas where feasible',
-      ],
-    });
+    // Domain-specific risks based on project type
+    const domainRisks = this.getDomainFallbackRisks(context.project.projectType);
+    risks.push(...domainRisks);
 
     const trend =
       metrics.scheduleVariance < -15
@@ -973,6 +1027,151 @@ export class PredictiveIntelligenceService {
       summary: `Project "${context.project.name}" has ${severity} risk (score: ${score}/100). ${metrics.completionRate}% complete with ${metrics.daysRemaining} days remaining.`,
       trend,
     };
+  }
+
+  private getDomainFallbackRisks(projectType: string): AIRiskAssessment['risks'] {
+    const risks: AIRiskAssessment['risks'] = [];
+
+    switch (projectType) {
+      case 'it':
+        risks.push(
+          {
+            type: 'technical',
+            title: 'Integration and Compatibility Risk',
+            description: 'Integration with existing systems, APIs, or third-party services may encounter unexpected incompatibilities or data format issues.',
+            probability: 3, impact: 3, severity: 'medium',
+            affectedTasks: [],
+            mitigations: ['Define integration contracts early', 'Build integration test environments', 'Plan for API versioning and rollback'],
+          },
+          {
+            type: 'technical',
+            title: 'Security Vulnerability Risk',
+            description: 'New systems may introduce security gaps including authentication flaws, data exposure, or insufficient access controls.',
+            probability: 2, impact: 4, severity: 'medium',
+            affectedTasks: [],
+            mitigations: ['Conduct security review before launch', 'Implement automated vulnerability scanning', 'Follow OWASP guidelines for all endpoints'],
+          },
+          {
+            type: 'stakeholder',
+            title: 'User Adoption Risk',
+            description: 'End users may resist adopting the new system due to unfamiliarity, poor training, or preference for existing workflows.',
+            probability: 3, impact: 3, severity: 'medium',
+            affectedTasks: [],
+            mitigations: ['Plan user training sessions', 'Involve end users in UAT early', 'Create user documentation and quick-start guides'],
+          },
+        );
+        break;
+
+      case 'construction':
+        risks.push(
+          {
+            type: 'weather',
+            title: 'Weather Delay Risk',
+            description: 'Adverse weather (rain, extreme temperatures, storms) may halt outdoor construction activities and delay the schedule.',
+            probability: 3, impact: 3, severity: 'medium',
+            affectedTasks: [],
+            mitigations: ['Build weather contingency days into schedule', 'Monitor forecasts weekly', 'Prepare covered work areas where feasible'],
+          },
+          {
+            type: 'resource',
+            title: 'Supply Chain and Material Risk',
+            description: 'Material shortages, price increases, or delivery delays may impact construction timelines and budget.',
+            probability: 3, impact: 4, severity: 'high',
+            affectedTasks: [],
+            mitigations: ['Pre-order long-lead materials', 'Identify alternative suppliers', 'Include material escalation clauses in contracts'],
+          },
+          {
+            type: 'regulatory',
+            title: 'Permit and Inspection Delay Risk',
+            description: 'Permits or inspection approvals may take longer than anticipated, blocking subsequent construction phases.',
+            probability: 3, impact: 3, severity: 'medium',
+            affectedTasks: [],
+            mitigations: ['Submit permit applications early', 'Maintain regular contact with authorities', 'Schedule inspections well in advance'],
+          },
+        );
+        break;
+
+      case 'infrastructure':
+        risks.push(
+          {
+            type: 'regulatory',
+            title: 'Environmental and Regulatory Compliance Risk',
+            description: 'Environmental impact assessments, regulatory approvals, or multi-agency coordination may cause delays.',
+            probability: 3, impact: 4, severity: 'high',
+            affectedTasks: [],
+            mitigations: ['Engage environmental consultants early', 'Track all regulatory milestones', 'Build approval lead times into schedule'],
+          },
+          {
+            type: 'technical',
+            title: 'Subsurface and Geotechnical Risk',
+            description: 'Unexpected ground conditions, contamination, or utility conflicts may require design changes or additional work.',
+            probability: 3, impact: 4, severity: 'high',
+            affectedTasks: [],
+            mitigations: ['Conduct thorough geotechnical surveys', 'Budget for subsurface contingency', 'Locate existing utilities before excavation'],
+          },
+          {
+            type: 'stakeholder',
+            title: 'Community and Stakeholder Opposition Risk',
+            description: 'Public opposition or stakeholder objections may delay approvals or require project scope changes.',
+            probability: 2, impact: 3, severity: 'medium',
+            affectedTasks: [],
+            mitigations: ['Hold public consultation sessions early', 'Publish transparent project communications', 'Address community concerns proactively'],
+          },
+        );
+        break;
+
+      case 'roads':
+        risks.push(
+          {
+            type: 'weather',
+            title: 'Weather and Seasonal Paving Window Risk',
+            description: 'Paving, grading, and earthwork are weather-sensitive. Rain or freezing conditions may reduce the available construction window.',
+            probability: 3, impact: 3, severity: 'medium',
+            affectedTasks: [],
+            mitigations: ['Schedule paving for optimal weather windows', 'Monitor forecasts and adjust daily plans', 'Build weather float into critical path'],
+          },
+          {
+            type: 'dependency',
+            title: 'Utility Relocation Risk',
+            description: 'Underground utilities (gas, water, telecom) may need relocation, causing delays if not identified early.',
+            probability: 3, impact: 4, severity: 'high',
+            affectedTasks: [],
+            mitigations: ['Commission utility locate surveys before construction', 'Coordinate with utility companies early', 'Build relocation lead time into schedule'],
+          },
+          {
+            type: 'stakeholder',
+            title: 'Traffic Management and Public Safety Risk',
+            description: 'Maintaining traffic flow and public safety during construction may constrain work hours and methods.',
+            probability: 3, impact: 3, severity: 'medium',
+            affectedTasks: [],
+            mitigations: ['Develop traffic management plan', 'Coordinate with local authorities', 'Schedule high-impact work during off-peak hours'],
+          },
+        );
+        break;
+
+      default:
+        risks.push(
+          {
+            type: 'stakeholder',
+            title: 'Stakeholder Alignment Risk',
+            description: 'Misaligned expectations or unclear scope may lead to rework, scope changes, or stakeholder dissatisfaction.',
+            probability: 3, impact: 3, severity: 'medium',
+            affectedTasks: [],
+            mitigations: ['Document and confirm scope with all stakeholders', 'Hold regular status meetings', 'Establish a formal change request process'],
+          },
+          {
+            type: 'resource',
+            title: 'Key Person Dependency Risk',
+            description: 'Critical knowledge concentrated in one or two people creates a single point of failure if they become unavailable.',
+            probability: 2, impact: 4, severity: 'medium',
+            affectedTasks: [],
+            mitigations: ['Cross-train team members on critical areas', 'Document key processes and decisions', 'Identify backup resources'],
+          },
+        );
+        break;
+    }
+
+    return risks;
   }
 
   private buildFallbackWeatherImpact(

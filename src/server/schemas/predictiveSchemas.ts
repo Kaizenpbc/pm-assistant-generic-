@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Risk Assessment
 export const AIRiskItemSchema = z.object({
-  type: z.enum(['schedule', 'budget', 'resource', 'weather', 'regulatory', 'technical', 'stakeholder']),
+  type: z.enum(['schedule', 'budget', 'resource', 'weather', 'regulatory', 'technical', 'stakeholder', 'dependency']),
   title: z.string(),
   description: z.string(),
   probability: z.number().min(1).max(5),
