@@ -595,6 +595,29 @@ function OverviewTab({ project }: { project: any }) {
     enabled: !!project.id,
   });
 
+  // Fetch schedules → primary schedule → tasks (for milestones)
+  const { data: schedulesData } = useQuery({
+    queryKey: ['schedules', project.id],
+    queryFn: () => apiService.getSchedules(project.id),
+    enabled: !!project.id,
+  });
+  const schedules: any[] = schedulesData?.schedules || schedulesData?.data || [];
+  const primaryScheduleId: string | null = schedules[0]?.id ?? null;
+
+  const { data: tasksData, isLoading: tasksLoading } = useQuery({
+    queryKey: ['overview-tasks', primaryScheduleId],
+    queryFn: () => apiService.getTasks(primaryScheduleId!),
+    enabled: !!primaryScheduleId,
+  });
+  const allTasks: any[] = tasksData?.data || tasksData?.tasks || [];
+  const milestones = allTasks
+    .filter((t: any) => t.isMilestone === true || t.milestone === true || t.taskType === 'milestone')
+    .sort((a: any, b: any) => {
+      const da = a.startDate || a.start_date || a.endDate || a.end_date || '';
+      const db = b.startDate || b.start_date || b.endDate || b.end_date || '';
+      return da.localeCompare(db);
+    });
+
   const members: any[] = membersData?.members || [];
   const summary = analyticsData?.summary || analyticsData;
 
@@ -610,8 +633,6 @@ function OverviewTab({ project }: { project: any }) {
 
   const startDate = project.startDate || project.start_date;
   const endDate = project.endDate || project.end_date;
-  const createdAt = project.createdAt || project.created_at;
-  const updatedAt = project.updatedAt || project.updated_at;
 
   // Timeline calculations
   const now = new Date();
@@ -640,42 +661,76 @@ function OverviewTab({ project }: { project: any }) {
 
   return (
     <div className="space-y-6">
-      {/* Row 1: Project Info + Team Members */}
+      {/* Row 1: Description + Project Details (condensed) + Team Members */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Project Information */}
-        <div className={`lg:col-span-2 ${cardClass}`}>
-          <h3 className={headingClass}>Project Information</h3>
+        {/* Left: Description + condensed details */}
+        <div className={`lg:col-span-2 space-y-6`}>
+          {/* Project Description */}
           {project.description && (
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 whitespace-pre-wrap">
-              {project.description}
-            </p>
+            <div className={cardClass}>
+              <h3 className={headingClass}>Description</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                {project.description}
+              </p>
+            </div>
           )}
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            {project.type && <DetailRow label="Project Type" value={project.type} />}
-            {project.category && <DetailRow label="Category" value={project.category} />}
-            {project.priority && (
-              <div>
-                <dt className="text-xs text-gray-500 dark:text-gray-400">Priority</dt>
-                <dd>
+
+          {/* Condensed Project Details — inline chips */}
+          <div className={cardClass}>
+            <h3 className={headingClass}>Project Details</h3>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              {project.priority && (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-500 dark:text-gray-400">Priority</span>
                   <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize ${priorityColors[project.priority] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
                     {project.priority}
                   </span>
-                </dd>
-              </div>
-            )}
-            {project.location && <DetailRow label="Location" value={project.location} />}
-            <div>
-              <dt className="text-xs text-gray-500 dark:text-gray-400">Project Manager</dt>
-              <dd className="font-medium text-gray-900 dark:text-white">
-                {membersLoading ? <span className={`inline-block h-4 w-24 ${skeletonPulse}`} /> : managerName}
-              </dd>
+                </span>
+              )}
+              {project.category && (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-500 dark:text-gray-400">Category</span>
+                  <span className="font-medium text-gray-900 dark:text-white capitalize">{project.category}</span>
+                </span>
+              )}
+              {project.type && (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-500 dark:text-gray-400">Type</span>
+                  <span className="font-medium text-gray-900 dark:text-white capitalize">{project.type}</span>
+                </span>
+              )}
+              {project.location && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="font-medium text-gray-900 dark:text-white">{project.location}</span>
+                </span>
+              )}
+              <span className="flex items-center gap-1.5">
+                <span className="text-gray-500 dark:text-gray-400">PM</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {membersLoading ? <span className={`inline-block h-4 w-20 ${skeletonPulse}`} /> : managerName}
+                </span>
+              </span>
+              {startDate && (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-500 dark:text-gray-400">Start</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatDate(startDate)}</span>
+                </span>
+              )}
+              {endDate && (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-500 dark:text-gray-400">End</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatDate(endDate)}</span>
+                </span>
+              )}
+              {project.currency && (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-500 dark:text-gray-400">Currency</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{project.currency.toUpperCase()}</span>
+                </span>
+              )}
             </div>
-            {startDate && <DetailRow label="Start Date" value={formatDate(startDate)!} />}
-            {endDate && <DetailRow label="End Date" value={formatDate(endDate)!} />}
-            {createdAt && <DetailRow label="Created" value={formatDate(createdAt)!} />}
-            {updatedAt && <DetailRow label="Last Updated" value={formatDate(updatedAt)!} />}
-            {project.currency && <DetailRow label="Currency" value={project.currency.toUpperCase()} />}
-          </dl>
+          </div>
         </div>
 
         {/* Team Members */}
@@ -724,8 +779,8 @@ function OverviewTab({ project }: { project: any }) {
         </div>
       </div>
 
-      {/* Row 2: Task Summary + Timeline Progress */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Row 2: Task Summary + Timeline Progress + Key Milestones */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Task Summary */}
         <div className={cardClass}>
           <h3 className={headingClass}>
@@ -734,7 +789,7 @@ function OverviewTab({ project }: { project: any }) {
           {analyticsLoading ? (
             <div className="grid grid-cols-2 gap-3">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className={`h-20 ${skeletonPulse}`} />
+                <div key={i} className={`h-16 ${skeletonPulse}`} />
               ))}
             </div>
           ) : (
@@ -760,22 +815,19 @@ function OverviewTab({ project }: { project: any }) {
             <span className="flex items-center gap-2"><Clock className="w-4 h-4" /> Timeline Progress</span>
           </h3>
           {!start || !end ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">No start/end dates set for this project.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No start/end dates set.</p>
           ) : (
-            <div className="space-y-4">
-              {/* Progress comparison */}
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">Timeline elapsed</span>
-                  <span className="ml-2 font-semibold text-gray-900 dark:text-white">{Math.round(elapsedPct)}%</span>
+                  <span className="text-gray-500 dark:text-gray-400">Elapsed</span>
+                  <span className="ml-1 font-semibold text-gray-900 dark:text-white">{Math.round(elapsedPct)}%</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">Tasks complete</span>
-                  <span className="ml-2 font-semibold text-gray-900 dark:text-white">{Math.round(taskProgressPct)}%</span>
+                  <span className="text-gray-500 dark:text-gray-400">Complete</span>
+                  <span className="ml-1 font-semibold text-gray-900 dark:text-white">{Math.round(taskProgressPct)}%</span>
                 </div>
               </div>
-
-              {/* Timeline bar */}
               <div className="relative">
                 <div className="h-3 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                   <div
@@ -783,28 +835,19 @@ function OverviewTab({ project }: { project: any }) {
                     style={{ width: `${Math.min(100, elapsedPct)}%` }}
                   />
                 </div>
-                {/* Today marker */}
                 {elapsedPct > 0 && elapsedPct < 100 && (
-                  <div
-                    className="absolute top-0 w-0.5 h-3 bg-gray-900 dark:bg-white"
-                    style={{ left: `${elapsedPct}%` }}
-                    title="Today"
-                  />
+                  <div className="absolute top-0 w-0.5 h-3 bg-gray-900 dark:bg-white" style={{ left: `${elapsedPct}%` }} title="Today" />
                 )}
               </div>
-
-              {/* Date labels */}
               <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>{formatDate(startDate)}</span>
                 <span className="font-medium text-gray-700 dark:text-gray-300">Today</span>
                 <span>{formatDate(endDate)}</span>
               </div>
-
-              {/* Status badge */}
               <div className="flex items-center gap-2">
                 {isOverdue ? (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Project is overdue
+                    <AlertTriangle className="w-3.5 h-3.5" /> Overdue
                   </span>
                 ) : onTrack ? (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
@@ -816,6 +859,57 @@ function OverviewTab({ project }: { project: any }) {
                   </span>
                 )}
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Key Milestones */}
+        <div className={cardClass}>
+          <h3 className={headingClass}>
+            <span className="flex items-center gap-2"><Target className="w-4 h-4" /> Key Milestones</span>
+          </h3>
+          {tasksLoading || (!primaryScheduleId && schedules.length === 0) ? (
+            !primaryScheduleId && !tasksLoading ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No schedule created yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className={`h-10 ${skeletonPulse}`} />
+                ))}
+              </div>
+            )
+          ) : milestones.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No milestones defined. Mark tasks as milestones in the Schedule tab.</p>
+          ) : (
+            <div className="space-y-2.5">
+              {milestones.map((m: any) => {
+                const mDate = m.endDate || m.end_date || m.startDate || m.start_date;
+                const mStatus = m.status || 'not_started';
+                const isPast = mDate && new Date(mDate) < now;
+                const isDone = mStatus === 'completed' || mStatus === 'done';
+                return (
+                  <div key={m.id} className="flex items-start gap-2.5">
+                    <div className="mt-0.5 flex-shrink-0">
+                      {isDone ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      ) : isPast ? (
+                        <AlertTriangle className="w-4 h-4 text-red-500" />
+                      ) : (
+                        <div className="w-3 h-3 mt-0.5 rotate-45 border-2 border-primary-500 bg-transparent" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm font-medium truncate ${isDone ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white'}`}>
+                        {m.name}
+                      </p>
+                      <p className={`text-xs ${isPast && !isDone ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {mDate ? formatDate(mDate) : 'No date'}
+                        {isPast && !isDone && ' — overdue'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -3351,15 +3445,3 @@ function ResourceLevelingTab({ projectId }: { projectId: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Shared Helpers
-// ---------------------------------------------------------------------------
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs text-gray-500 dark:text-gray-400">{label}</dt>
-      <dd className="font-medium text-gray-900 dark:text-white capitalize">{value}</dd>
-    </div>
-  );
-}
