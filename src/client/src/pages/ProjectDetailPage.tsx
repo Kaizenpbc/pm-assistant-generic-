@@ -58,7 +58,6 @@ import { AutoReschedulePanel } from '../components/schedule/AutoReschedulePanel'
 import { TaskPrioritizationPanel } from '../components/ai/TaskPrioritizationPanel';
 import { SaveAsTemplateModal } from '../components/templates/SaveAsTemplateModal';
 import { AttachmentPanel } from '../components/attachments/AttachmentPanel';
-import { CustomFieldManager } from '../components/customfields/CustomFieldManager';
 import { CustomFieldsSection } from '../components/customfields/CustomFieldsSection';
 import { NetworkDiagramView } from '../components/network/NetworkDiagramView';
 import { BurndownPanel } from '../components/burndown/BurndownPanel';
@@ -584,81 +583,269 @@ function ContextCard({
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function OverviewTab({ project }: { project: any }) {
+  const { data: membersData, isLoading: membersLoading } = useQuery({
+    queryKey: ['project-members', project.id],
+    queryFn: () => apiService.getProjectMembers(project.id),
+    enabled: !!project.id,
+  });
+
+  const { data: analyticsData, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['project-analytics', project.id],
+    queryFn: () => apiService.getProjectAnalyticsSummary(project.id),
+    enabled: !!project.id,
+  });
+
+  const members: any[] = membersData?.members || [];
+  const summary = analyticsData?.summary || analyticsData;
+
+  const formatDate = (d: string | undefined) =>
+    d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+
+  const priorityColors: Record<string, string> = {
+    urgent: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    low: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  };
+
+  const startDate = project.startDate || project.start_date;
+  const endDate = project.endDate || project.end_date;
+  const createdAt = project.createdAt || project.created_at;
+  const updatedAt = project.updatedAt || project.updated_at;
+
+  // Timeline calculations
+  const now = new Date();
+  const start = startDate ? new Date(startDate) : null;
+  const end = endDate ? new Date(endDate) : null;
+  const elapsedPct = start && end && end > start
+    ? Math.min(100, Math.max(0, ((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100))
+    : 0;
+  const taskProgressPct = summary?.portfolio?.avgProgress ?? summary?.tasks?.completionRate ?? 0;
+  const isOverdue = end ? now > end : false;
+  const onTrack = isOverdue ? false : taskProgressPct >= elapsedPct - 10;
+
+  // Find project manager from members
+  const manager = members.find((m: any) => m.role === 'owner' || m.role === 'manager');
+  const managerName = manager ? (manager.user?.name || manager.name || manager.email) : 'Not assigned';
+
+  const maxVisibleMembers = 6;
+  const visibleMembers = members.slice(0, maxVisibleMembers);
+  const overflowCount = members.length - maxVisibleMembers;
+
+  const taskStats = summary?.tasks;
+
+  const cardClass = 'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5';
+  const headingClass = 'text-base font-semibold text-gray-900 dark:text-white mb-4';
+  const skeletonPulse = 'animate-pulse bg-gray-200 dark:bg-gray-700 rounded';
+
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      {/* Project Details */}
-      <div className="lg:col-span-2">
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-          <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">Project Details</h3>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            {project.code && <DetailRow label="Code" value={project.code} />}
+    <div className="space-y-6">
+      {/* Row 1: Project Info + Team Members */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Project Information */}
+        <div className={`lg:col-span-2 ${cardClass}`}>
+          <h3 className={headingClass}>Project Information</h3>
+          {project.description && (
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 whitespace-pre-wrap">
+              {project.description}
+            </p>
+          )}
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            {project.type && <DetailRow label="Project Type" value={project.type} />}
             {project.category && <DetailRow label="Category" value={project.category} />}
-            {project.priority && <DetailRow label="Priority" value={project.priority} />}
-            {(project.startDate || project.start_date) && (
-              <DetailRow
-                label="Start Date"
-                value={new Date(project.startDate || project.start_date).toLocaleDateString()}
-              />
-            )}
-            {(project.endDate || project.end_date) && (
-              <DetailRow
-                label="End Date"
-                value={new Date(project.endDate || project.end_date).toLocaleDateString()}
-              />
+            {project.priority && (
+              <div>
+                <dt className="text-xs text-gray-500 dark:text-gray-400">Priority</dt>
+                <dd>
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize ${priorityColors[project.priority] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
+                    {project.priority}
+                  </span>
+                </dd>
+              </div>
             )}
             {project.location && <DetailRow label="Location" value={project.location} />}
-            {(project.createdAt || project.created_at) && (
-              <DetailRow
-                label="Created"
-                value={new Date(project.createdAt || project.created_at).toLocaleDateString()}
-              />
-            )}
+            <div>
+              <dt className="text-xs text-gray-500 dark:text-gray-400">Project Manager</dt>
+              <dd className="font-medium text-gray-900 dark:text-white">
+                {membersLoading ? <span className={`inline-block h-4 w-24 ${skeletonPulse}`} /> : managerName}
+              </dd>
+            </div>
+            {startDate && <DetailRow label="Start Date" value={formatDate(startDate)!} />}
+            {endDate && <DetailRow label="End Date" value={formatDate(endDate)!} />}
+            {createdAt && <DetailRow label="Created" value={formatDate(createdAt)!} />}
+            {updatedAt && <DetailRow label="Last Updated" value={formatDate(updatedAt)!} />}
+            {project.currency && <DetailRow label="Currency" value={project.currency.toUpperCase()} />}
           </dl>
+        </div>
+
+        {/* Team Members */}
+        <div className={cardClass}>
+          <h3 className={headingClass}>
+            <span className="flex items-center gap-2"><Users className="w-4 h-4" /> Team Members</span>
+          </h3>
+          {membersLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full ${skeletonPulse}`} />
+                  <div className={`h-4 w-28 ${skeletonPulse}`} />
+                </div>
+              ))}
+            </div>
+          ) : members.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No team members assigned</p>
+          ) : (
+            <div className="space-y-3">
+              {visibleMembers.map((m: any, idx: number) => {
+                const name = m.user?.name || m.name || m.email || 'Unknown';
+                const initials = name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+                const colors = [
+                  'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500',
+                ];
+                return (
+                  <div key={m.id || idx} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium ${colors[idx % colors.length]}`}>
+                      {initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{name}</p>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 capitalize">
+                      {m.role || 'member'}
+                    </span>
+                  </div>
+                );
+              })}
+              {overflowCount > 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">+{overflowCount} more</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Right sidebar */}
-      <div className="space-y-4">
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-          <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">Quick Info</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Status</span>
-              <span className="font-medium text-gray-900 dark:text-white capitalize">{project.status}</span>
+      {/* Row 2: Task Summary + Timeline Progress */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Task Summary */}
+        <div className={cardClass}>
+          <h3 className={headingClass}>
+            <span className="flex items-center gap-2"><BarChart3 className="w-4 h-4" /> Task Summary</span>
+          </h3>
+          {analyticsLoading ? (
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className={`h-20 ${skeletonPulse}`} />
+              ))}
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Priority</span>
-              <span className="font-medium text-gray-900 dark:text-white capitalize">
-                {project.priority || 'Not set'}
-              </span>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <StatBox label="Total Tasks" value={taskStats?.total ?? 0} />
+                <StatBox label="Completed" value={taskStats?.byStatus?.completed ?? 0} color="text-green-600 dark:text-green-400" />
+                <StatBox label="Overdue" value={taskStats?.overdue ?? 0} color={taskStats?.overdue > 0 ? 'text-red-600 dark:text-red-400' : undefined} />
+                <StatBox label="In Progress" value={taskStats?.byStatus?.in_progress ?? 0} color="text-blue-600 dark:text-blue-400" />
+              </div>
+              {taskStats?.completedLast30Days != null && (
+                <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  Completed last 30 days: {taskStats.completedLast30Days}
+                </p>
+              )}
+            </>
+          )}
         </div>
 
-        {/* Attachments */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        {/* Timeline Progress */}
+        <div className={cardClass}>
+          <h3 className={headingClass}>
+            <span className="flex items-center gap-2"><Clock className="w-4 h-4" /> Timeline Progress</span>
+          </h3>
+          {!start || !end ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No start/end dates set for this project.</p>
+          ) : (
+            <div className="space-y-4">
+              {/* Progress comparison */}
+              <div className="flex items-center justify-between text-sm">
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Timeline elapsed</span>
+                  <span className="ml-2 font-semibold text-gray-900 dark:text-white">{Math.round(elapsedPct)}%</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Tasks complete</span>
+                  <span className="ml-2 font-semibold text-gray-900 dark:text-white">{Math.round(taskProgressPct)}%</span>
+                </div>
+              </div>
+
+              {/* Timeline bar */}
+              <div className="relative">
+                <div className="h-3 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${isOverdue ? 'bg-red-500' : onTrack ? 'bg-green-500' : 'bg-orange-500'}`}
+                    style={{ width: `${Math.min(100, elapsedPct)}%` }}
+                  />
+                </div>
+                {/* Today marker */}
+                {elapsedPct > 0 && elapsedPct < 100 && (
+                  <div
+                    className="absolute top-0 w-0.5 h-3 bg-gray-900 dark:bg-white"
+                    style={{ left: `${elapsedPct}%` }}
+                    title="Today"
+                  />
+                )}
+              </div>
+
+              {/* Date labels */}
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span>{formatDate(startDate)}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-300">Today</span>
+                <span>{formatDate(endDate)}</span>
+              </div>
+
+              {/* Status badge */}
+              <div className="flex items-center gap-2">
+                {isOverdue ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Project is overdue
+                  </span>
+                ) : onTrack ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> On track
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Behind schedule
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Row 3: Attachments + Custom Fields + Portal Links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className={cardClass}>
           <AttachmentPanel entityType="project" entityId={project.id} />
         </div>
-
-        {/* Custom Fields */}
         {project.id && (
-          <>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-              <CustomFieldsSection entityType="project" entityId={project.id} projectId={project.id} />
-            </div>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-              <CustomFieldManager projectId={project.id} entityType="task" />
-            </div>
-          </>
+          <div className={cardClass}>
+            <CustomFieldsSection entityType="project" entityId={project.id} projectId={project.id} />
+          </div>
         )}
-
-        {/* Portal Links */}
         {project.id && (
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+          <div className={cardClass}>
             <PortalLinkManager projectId={project.id} />
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function StatBox({ label, value, color }: { label: string; value: number; color?: string }) {
+  return (
+    <div className="rounded-lg bg-gray-50 dark:bg-gray-900/50 p-3 text-center">
+      <p className={`text-2xl font-bold ${color || 'text-gray-900 dark:text-white'}`}>{value}</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{label}</p>
     </div>
   );
 }
