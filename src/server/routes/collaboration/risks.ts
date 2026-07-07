@@ -241,7 +241,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /api/v1/projects/:projectId/risks/ai-scan — Trigger AI risk scan & import
+  // POST /api/v1/projects/:projectId/risks/ai-scan — Scan only, return candidates
   fastify.post('/:projectId/risks/ai-scan', {
     preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
@@ -252,11 +252,91 @@ export async function riskRoutes(fastify: FastifyInstance) {
       const service = new PredictiveIntelligenceService(fastify);
       const { assessment } = await service.assessProjectRisks(projectId, userId);
 
-      const result = await riskService.importFromAIScan(projectId, assessment.risks || [], userId);
-      return reply.send({ data: result, aiPowered: true });
+      const aiRisks = assessment.risks || [];
+
+      // Map AI risks to candidates
+      const candidates = aiRisks.map((r: any) => ({
+        type: r.type || 'risk',
+        title: r.title,
+        description: r.description,
+        probability: r.probability ?? 3,
+        impact: r.impact ?? 3,
+        severity: r.severity || 'medium',
+        category: riskService.mapAICategory(r.type),
+        mitigations: r.mitigations || [],
+        affectedTasks: r.affectedTasks || [],
+      }));
+
+      // Annotate with duplicate info
+      const dupes = await riskService.checkDuplicates(projectId, candidates);
+      for (const c of candidates) {
+        const match = dupes.get(c.title.toLowerCase().trim());
+        if (match) {
+          (c as any).duplicate = match;
+        }
+      }
+
+      return reply.send({
+        data: {
+          candidates,
+          summary: assessment.summary || '',
+          overallScore: assessment.overallScore ?? 0,
+          overallSeverity: assessment.overallSeverity || 'low',
+        },
+        aiPowered: true,
+      });
     } catch (err) {
       fastify.log.error({ err }, 'AI risk scan failed');
       return reply.status(500).send({ error: 'AI risk scan failed' });
+    }
+  });
+
+  // POST /api/v1/projects/:projectId/risks/batch — Batch import curated items
+  const batchImportSchema = z.object({
+    items: z.array(z.object({
+      title: z.string().min(1).max(255),
+      description: z.string().max(5000).optional(),
+      category: z.enum(CATEGORIES).optional(),
+      severity: z.enum(SEVERITIES).optional(),
+      probability: z.number().int().min(1).max(5).optional(),
+      impact: z.number().int().min(1).max(5).optional(),
+      mitigationPlan: z.string().max(5000).optional(),
+      linkedTaskIds: z.array(z.string()).optional(),
+    })).min(1).max(50),
+  });
+
+  fastify.post('/:projectId/risks/batch', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { projectId } = request.params as { projectId: string };
+      const body = batchImportSchema.parse(request.body);
+      const userId = request.user!.userId;
+
+      let imported = 0;
+      for (const item of body.items) {
+        await riskService.create({
+          projectId,
+          type: 'risk',
+          title: item.title,
+          description: item.description,
+          category: item.category,
+          severity: item.severity,
+          probability: item.probability,
+          impact: item.impact,
+          mitigationPlan: item.mitigationPlan,
+          linkedTaskIds: item.linkedTaskIds,
+          source: 'ai_detected',
+          createdBy: userId,
+        });
+        imported++;
+      }
+
+      return reply.status(201).send({ data: { imported } });
+    } catch (err) {
+      if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
+      fastify.log.error({ err }, 'Batch import failed');
+      return reply.status(500).send({ error: 'Batch import failed' });
     }
   });
 

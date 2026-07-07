@@ -71,6 +71,7 @@ import { cleanCsvForImport } from '../utils/csvCleaner';
 import { WorkflowEditor } from '../components/approvals/WorkflowEditor';
 import { PortalLinkManager } from '../components/portal/PortalLinkManager';
 import { RiskFormModal } from '../components/risks/RiskFormModal';
+import { AIScanReviewModal } from '../components/risks/AIScanReviewModal';
 import { RAIDDetailPanel } from '../components/risks/RAIDDetailPanel';
 import { ResourceLevelingPanel } from '../components/resources/ResourceLevelingPanel';
 import { SprintList } from '../components/sprints/SprintList';
@@ -965,6 +966,10 @@ function RAIDTab({ projectId }: { projectId: string }) {
   const [searchText, setSearchText] = useState('');
   const [selectedRaidId, setSelectedRaidId] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [scanCandidates, setScanCandidates] = useState<any[] | null>(null);
+  const [showScanReview, setShowScanReview] = useState(false);
+  const [scanAiPowered, setScanAiPowered] = useState(true);
+  const [importing, setImporting] = useState(false);
 
   const filters: Record<string, string> = {};
   if (filterType) filters.type = filterType;
@@ -998,13 +1003,29 @@ function RAIDTab({ projectId }: { projectId: string }) {
   const handleAiScan = async () => {
     setScanning(true);
     try {
-      await apiService.runAiRiskScan(projectId);
-      queryClient.invalidateQueries({ queryKey: ['project-risks', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['project-risks-stats', projectId] });
+      const result = await apiService.runAiRiskScan(projectId);
+      setScanCandidates(result.data?.candidates || []);
+      setScanAiPowered(result.aiPowered !== false);
+      setShowScanReview(true);
     } catch {
       // silently fail
     } finally {
       setScanning(false);
+    }
+  };
+
+  const handleImportSelected = async (items: Record<string, any>[]) => {
+    setImporting(true);
+    try {
+      await apiService.batchImportRisks(projectId, items);
+      queryClient.invalidateQueries({ queryKey: ['project-risks', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project-risks-stats', projectId] });
+      setShowScanReview(false);
+      setScanCandidates(null);
+    } catch {
+      // silently fail
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -1289,6 +1310,16 @@ function RAIDTab({ projectId }: { projectId: string }) {
         editRisk={editRisk}
         defaultType={defaultType}
         members={members}
+      />
+
+      {/* AI Scan Review modal */}
+      <AIScanReviewModal
+        isOpen={showScanReview}
+        onClose={() => { setShowScanReview(false); setScanCandidates(null); }}
+        onImport={handleImportSelected}
+        candidates={scanCandidates || []}
+        importing={importing}
+        aiPowered={scanAiPowered}
       />
     </div>
   );

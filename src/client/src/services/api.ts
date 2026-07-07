@@ -385,6 +385,11 @@ class ApiService {
     return response.data;
   }
 
+  async batchImportRisks(projectId: string, items: Record<string, any>[]) {
+    const response = await this.api.post(`/projects/${projectId}/risks/batch`, { items });
+    return response.data;
+  }
+
   async suggestRiskMitigation(projectId: string, riskId: string) {
     const response = await this.api.post(`/projects/${projectId}/risks/${riskId}/suggest-mitigation`);
     return response.data;

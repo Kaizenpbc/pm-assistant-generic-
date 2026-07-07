@@ -188,6 +188,34 @@ class RiskService {
   }
 
   /**
+   * Check for duplicate AI-detected risks by title match.
+   * Returns a Map keyed by lowercase-trimmed title with existing item info.
+   */
+  async checkDuplicates(
+    projectId: string,
+    candidates: Array<{ title: string }>,
+  ): Promise<Map<string, { existingId: string; currentSeverity: string; currentStatus: string }>> {
+    const existing = await riskRepository.findByProject(projectId, { source: 'ai_detected' });
+    const result = new Map<string, { existingId: string; currentSeverity: string; currentStatus: string }>();
+
+    const existingByTitle = new Map(existing.map(r => [r.title.toLowerCase().trim(), r]));
+
+    for (const c of candidates) {
+      const key = c.title.toLowerCase().trim();
+      const match = existingByTitle.get(key);
+      if (match) {
+        result.set(key, {
+          existingId: match.recordId || match.id,
+          currentSeverity: match.severity || 'medium',
+          currentStatus: match.status,
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Import risks from AI scan (PredictiveIntelligenceService output).
    * Deduplicates by matching title against existing AI-detected risks.
    */
@@ -300,7 +328,7 @@ class RiskService {
     return created;
   }
 
-  private mapAICategory(aiType?: string): string {
+  mapAICategory(aiType?: string): string {
     if (!aiType) return 'other';
     const map: Record<string, string> = {
       schedule: 'schedule',
