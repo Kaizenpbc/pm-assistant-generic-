@@ -1,4 +1,5 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import type { ColumnState } from '../../hooks/useColumnState';
 import { SavedViewsDropdown } from './SavedViewsDropdown';
 import type { SavedView } from './SavedViewsDropdown';
@@ -521,10 +522,22 @@ export function GanttChart({
     return () => document.removeEventListener('mousedown', onClick);
   }, [showColPicker]);
 
+  // Reverse mapping: Gantt key → Table key (for checking external visibility)
+  const ganttKeyToTableKey: Record<string, string> = {
+    pred: 'dependency', start: 'startDate', end: 'endDate',
+    dur: 'duration', est: 'estimatedDays', pct: 'progressPercentage',
+    assigned: 'assignedTo', priority: 'priority', status: 'status',
+  };
+
   const isColVisible = useCallback((col: GanttColDef): boolean => {
     if (col.alwaysVisible) return true;
+    // If external columnState is provided, use its visibility
+    if (_columnState) {
+      const tableKey = ganttKeyToTableKey[col.key];
+      if (tableKey) return _columnState.visibleKeys.has(tableKey as any);
+    }
     return ganttVisibleCols.has(col.key);
-  }, [ganttVisibleCols]);
+  }, [ganttVisibleCols, _columnState]);
 
   const toggleColVisibility = useCallback((key: string) => {
     setGanttVisibleCols(prev => {
@@ -578,11 +591,33 @@ export function GanttChart({
     });
   }, []);
 
-  /** Columns in user-specified order */
+  // Map external columnState keys to Gantt column keys
+  const tableKeyToGanttKey: Record<string, string> = {
+    dependency: 'pred', startDate: 'start', endDate: 'end',
+    duration: 'dur', estimatedDays: 'est', progressPercentage: 'pct',
+    assignedTo: 'assigned', priority: 'priority', status: 'status', name: 'name',
+  };
+
+  /** Columns in user-specified order — uses external columnState if available */
   const orderedColumns = useMemo(() => {
     const colMap = new Map(GANTT_COLUMNS.map(c => [c.key, c]));
+
+    // If external columnState provides an order, use it
+    if (_columnState && _columnState.columnOrder.length > 0) {
+      const mapped = _columnState.columnOrder
+        .map(k => tableKeyToGanttKey[k])
+        .filter((k): k is string => !!k && colMap.has(k));
+      // Start with fixed columns, then mapped order, then any Gantt-only columns not in the external order
+      const used = new Set(mapped);
+      const remaining = GANTT_COLUMNS
+        .filter(c => !c.alwaysVisible && !used.has(c.key))
+        .map(c => c.key);
+      const fullOrder = ['rowNum', 'name', ...mapped, ...remaining, 'editIcon'];
+      return fullOrder.map(k => colMap.get(k)).filter((c): c is GanttColDef => !!c);
+    }
+
     return ganttColOrder.map(k => colMap.get(k)).filter((c): c is GanttColDef => !!c);
-  }, [ganttColOrder]);
+  }, [ganttColOrder, _columnState]);
 
   // -----------------------------------------------------------------------
   // Row expand/collapse state — persisted per schedule in localStorage
@@ -742,13 +777,12 @@ export function GanttChart({
     const field = colKeyToSortField[colKey];
     if (!field) return;
     if (sortField === field) {
-      if (sortDirection === 'asc') setSortDirection('desc');
-      else { setSortField(null); setSortDirection(null); }
+      setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
       setSortDirection('asc');
     }
-  }, [sortField, sortDirection]);
+  }, [sortField]);
 
   const baseRows = useMemo(() => buildFlatRows(tasks, collapsedIds), [tasks, collapsedIds]);
 
@@ -2085,7 +2119,8 @@ export function GanttChart({
                 </svg>
               </button>
             )}
-            {/* Column picker */}
+            {/* Column picker — only shown if no external columnState is provided */}
+            {!_columnState && (
             <div className="relative" ref={colPickerRef}>
               <button
                 onClick={() => setShowColPicker(prev => !prev)}
@@ -2109,7 +2144,7 @@ export function GanttChart({
                       />
                       <span className="flex-1 cursor-pointer" onClick={() => toggleColVisibility(col.key)}>{col.label || col.key}</span>
                       <button
-                        className="p-0.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-25 disabled:cursor-not-allowed"
+                        className="p-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-25 disabled:cursor-not-allowed"
                         onClick={() => moveColumn(col.key, 'left')}
                         disabled={idx === 0}
                         title="Move left"
@@ -2117,7 +2152,7 @@ export function GanttChart({
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
                       </button>
                       <button
-                        className="p-0.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-25 disabled:cursor-not-allowed"
+                        className="p-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-25 disabled:cursor-not-allowed"
                         onClick={() => moveColumn(col.key, 'right')}
                         disabled={idx === arr.length - 1}
                         title="Move right"
@@ -2143,6 +2178,7 @@ export function GanttChart({
                 </div>
               )}
             </div>
+            )}
             <button
               onClick={() => {
                 const el = document.getElementById('gantt-print-container');
@@ -2415,7 +2451,7 @@ export function GanttChart({
             className="sticky top-0 z-10 flex items-center bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
             style={{ height: HEADER_H }}
           >
-            {orderedColumns.map(col => {
+            {orderedColumns.map((col) => {
               // Skip editIcon column if no onTaskClick
               if (col.key === 'editIcon' && !onTaskClick) return null;
               // Skip hidden columns
@@ -2428,14 +2464,16 @@ export function GanttChart({
                 dur: 'duration', est: 'estimatedDays', pct: 'progressPercentage',
                 priority: 'priority', assigned: 'assignedTo', status: 'status',
               };
-              const isActiveSortCol = sortField === colKeyToSortField[col.key];
+              const sortFieldForCol = colKeyToSortField[col.key];
+              const isActiveSortCol = sortField === sortFieldForCol;
+              const canReorder = !col.alwaysVisible && !col.fixed;
+              const visibleCols = orderedColumns.filter(c => !c.alwaysVisible && !c.fixed && isColVisible(c));
+              const reorderIdx = visibleCols.findIndex(c => c.key === col.key);
               return (
                 <div
                   key={col.key}
-                  className={`shrink-0 px-1 text-center relative select-none ${col.flex ? 'flex-1 min-w-0 px-2' : ''} ${isSortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600' : ''}`}
+                  className={`shrink-0 px-1 text-center relative select-none group/gh ${col.flex ? 'flex-1 min-w-0 px-2' : ''} ${isSortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600' : ''}`}
                   style={col.flex ? undefined : { width: w }}
-                  title={col.key === 'editIcon' ? 'Double-click row or click icon to edit' : isSortable ? 'Click to sort' : undefined}
-                  onClick={isSortable ? () => handleHeaderSort(col.key) : undefined}
                 >
                   {col.key === 'rowNum' && onBulkUpdate ? (
                     <input
@@ -2446,12 +2484,53 @@ export function GanttChart({
                       title="Select all"
                     />
                   ) : (
-                    <span className="inline-flex items-center gap-0.5">
-                      {col.label}
-                      {isActiveSortCol && (
-                        <span className="text-primary-600 text-[9px]">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+                    <div className="flex items-center gap-0.5 justify-center whitespace-nowrap">
+                      {/* Move arrows — visible on hover, same as TableView */}
+                      {canReorder && (
+                        <span className="flex items-center gap-0 opacity-0 group-hover/gh:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const tableKey = ganttKeyToTableKey[col.key];
+                              if (_columnState && tableKey) _columnState.moveColumn(tableKey as any, 'left');
+                              else moveColumn(col.key, 'left');
+                            }}
+                            disabled={reorderIdx <= 0}
+                            className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
+                            title="Move left"
+                          >
+                            <ArrowLeft className="w-2.5 h-2.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const tableKey = ganttKeyToTableKey[col.key];
+                              if (_columnState && tableKey) _columnState.moveColumn(tableKey as any, 'right');
+                              else moveColumn(col.key, 'right');
+                            }}
+                            disabled={reorderIdx >= visibleCols.length - 1}
+                            className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
+                            title="Move right"
+                          >
+                            <ArrowRight className="w-2.5 h-2.5" />
+                          </button>
+                        </span>
                       )}
-                    </span>
+                      {/* Column label — clickable to sort */}
+                      <span
+                        className={`flex items-center gap-0.5 ${isSortable ? 'cursor-pointer' : ''}`}
+                        onClick={isSortable ? () => handleHeaderSort(col.key) : undefined}
+                      >
+                        {col.label}
+                        {isSortable && (
+                          !isActiveSortCol
+                            ? <ArrowUpDown className="w-3 h-3 text-gray-400" />
+                            : sortDirection === 'asc'
+                              ? <ArrowUp className="w-3 h-3 text-primary-600" />
+                              : <ArrowDown className="w-3 h-3 text-primary-600" />
+                        )}
+                      </span>
+                    </div>
                   )}
                   {col.resizable && (
                     <div

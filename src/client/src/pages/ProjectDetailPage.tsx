@@ -1077,6 +1077,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           visibleKeys={columnState.visibleKeys}
           onToggle={columnState.toggleColumn}
           onToggleGroup={columnState.toggleGroup}
+          onMoveColumn={columnState.moveColumn}
+          columnOrder={columnState.columnOrder}
+          onResetOrder={() => columnState.setColumnOrder([])}
         />
 
         {viewMode === 'gantt' && (

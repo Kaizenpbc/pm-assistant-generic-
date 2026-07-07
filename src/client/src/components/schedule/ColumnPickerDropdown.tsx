@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Settings2, ChevronDown } from 'lucide-react';
+import { Settings2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ColumnDef, ColumnKey, ColumnGroup } from './tableColumns';
 
 const groupLabels: Record<ColumnGroup, string> = {
@@ -16,9 +16,12 @@ interface ColumnPickerDropdownProps {
   visibleKeys: Set<ColumnKey>;
   onToggle: (key: ColumnKey) => void;
   onToggleGroup: (group: ColumnGroup, visible: boolean) => void;
+  onMoveColumn?: (key: ColumnKey, direction: 'left' | 'right') => void;
+  columnOrder?: ColumnKey[];
+  onResetOrder?: () => void;
 }
 
-export function ColumnPickerDropdown({ columns, visibleKeys, onToggle, onToggleGroup }: ColumnPickerDropdownProps) {
+export function ColumnPickerDropdown({ columns, visibleKeys, onToggle, onToggleGroup, onMoveColumn, columnOrder, onResetOrder }: ColumnPickerDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -32,6 +35,19 @@ export function ColumnPickerDropdown({ columns, visibleKeys, onToggle, onToggleG
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
+
+  // Build ordered visible columns for determining move button disabled state
+  const visibleCols = columns.filter(c => visibleKeys.has(c.key));
+  const orderedVisibleCols = columnOrder && columnOrder.length > 0
+    ? (() => {
+        const orderMap = new Map(columnOrder.map((k, i) => [k, i]));
+        return [...visibleCols].sort((a, b) => {
+          const ia = a.key === 'rowNum' ? -1 : (orderMap.get(a.key) ?? 999);
+          const ib = b.key === 'rowNum' ? -1 : (orderMap.get(b.key) ?? 999);
+          return ia - ib;
+        });
+      })()
+    : visibleCols;
 
   const grouped = groupOrder.map(group => ({
     group,
@@ -52,7 +68,7 @@ export function ColumnPickerDropdown({ columns, visibleKeys, onToggle, onToggleG
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 max-h-[70vh] overflow-y-auto">
+        <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-2 max-h-[70vh] overflow-y-auto">
           {grouped.map(({ group, label, cols }) => {
             const allVisible = cols.every(c => visibleKeys.has(c.key));
             const someVisible = cols.some(c => visibleKeys.has(c.key));
@@ -71,25 +87,62 @@ export function ColumnPickerDropdown({ columns, visibleKeys, onToggle, onToggleG
                   />
                   <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{label}</span>
                 </div>
-                {cols.map(col => (
-                  <label
-                    key={col.key}
-                    className="flex items-center gap-2 px-4 py-1 hover:bg-gray-50 rounded cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={visibleKeys.has(col.key)}
-                      onChange={() => onToggle(col.key)}
-                      disabled={col.key === 'name' || col.key === 'rowNum'}
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <span className="text-xs text-gray-700">{col.label}</span>
-                  </label>
-                ))}
-                {group !== 'other' && <div className="border-b border-gray-100 my-1 mx-2" />}
+                {cols.map(col => {
+                  const isFixed = col.key === 'name' || col.key === 'rowNum';
+                  const visibleIdx = orderedVisibleCols.findIndex(c => c.key === col.key);
+                  const isFirst = visibleIdx <= 1; // 0 = rowNum (pinned), 1 = first moveable
+                  const isLast = visibleIdx === orderedVisibleCols.length - 1;
+
+                  return (
+                    <div
+                      key={col.key}
+                      className="flex items-center gap-1.5 px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={visibleKeys.has(col.key)}
+                        onChange={() => onToggle(col.key)}
+                        disabled={isFixed}
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" onClick={() => !isFixed && onToggle(col.key)}>{col.label}</span>
+                      {onMoveColumn && !isFixed && visibleKeys.has(col.key) && (
+                        <>
+                          <button
+                            className="p-0.5 text-primary-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
+                            onClick={() => onMoveColumn(col.key, 'left')}
+                            disabled={isFirst}
+                            title="Move left"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            className="p-0.5 text-primary-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
+                            onClick={() => onMoveColumn(col.key, 'right')}
+                            disabled={isLast}
+                            title="Move right"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+                {group !== 'other' && <div className="border-b border-gray-100 dark:border-gray-600 my-1 mx-2" />}
               </div>
             );
           })}
+          {onResetOrder && (
+            <div className="border-t border-gray-200 dark:border-gray-600 mt-1 pt-1.5 px-3 pb-1">
+              <button
+                className="text-xs text-primary-600 hover:text-primary-700"
+                onClick={onResetOrder}
+              >
+                Reset column order
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
