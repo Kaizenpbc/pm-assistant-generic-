@@ -69,6 +69,7 @@ import * as XLSX from 'xlsx';
 import { cleanCsvForImport } from '../utils/csvCleaner';
 import { WorkflowEditor } from '../components/approvals/WorkflowEditor';
 import { PortalLinkManager } from '../components/portal/PortalLinkManager';
+import { RiskFormModal } from '../components/risks/RiskFormModal';
 import { ResourceLevelingPanel } from '../components/resources/ResourceLevelingPanel';
 import { SprintList } from '../components/sprints/SprintList';
 import { SprintPlanningPanel } from '../components/sprints/SprintPlanningPanel';
@@ -83,11 +84,12 @@ import { ColumnPickerDropdown } from '../components/schedule/ColumnPickerDropdow
 import { TaskListMobile } from '../components/tasks/TaskListMobile';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 
-type Tab = 'overview' | 'schedule' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resource-leveling';
+type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resource-leveling';
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'schedule', label: 'Schedule' },
+  { id: 'raid', label: 'RAID' },
   { id: 'change-requests', label: 'Change Requests' },
   { id: 'sprints', label: 'Sprints' },
   { id: 'resource-leveling', label: 'Resource Leveling' },
@@ -514,6 +516,7 @@ export function ProjectDetailPage() {
 
       {/* Tab Content */}
       {activeTab === 'overview' && <OverviewTab project={project} />}
+      {activeTab === 'raid' && <RAIDTab projectId={id!} />}
       {activeTab === 'schedule' && <ScheduleTab projectId={id!} projectName={project.name} projectStartDate={project.startDate || project.start_date} />}
       {activeTab === 'ai-insights' && <AIInsightsTab projectId={id!} />}
       {activeTab === 'evm-forecast' && <EVMForecastTab projectId={id!} />}
@@ -940,6 +943,362 @@ function StatBox({ label, value, color }: { label: string; value: number; color?
     <div className="rounded-lg bg-gray-50 dark:bg-gray-900/50 p-3 text-center">
       <p className={`text-2xl font-bold ${color || 'text-gray-900 dark:text-white'}`}>{value}</p>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{label}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RAID Tab
+// ---------------------------------------------------------------------------
+
+function RAIDTab({ projectId }: { projectId: string }) {
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [editRisk, setEditRisk] = useState<any>(null);
+  const [defaultType, setDefaultType] = useState<'risk' | 'issue'>('risk');
+  const [filterType, setFilterType] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterSeverity, setFilterSeverity] = useState<string>('');
+  const [filterSource, setFilterSource] = useState<string>('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+
+  const filters: Record<string, string> = {};
+  if (filterType) filters.type = filterType;
+  if (filterStatus) filters.status = filterStatus;
+  if (filterSeverity) filters.severity = filterSeverity;
+  if (filterSource) filters.source = filterSource;
+
+  const { data: risksData, isLoading } = useQuery({
+    queryKey: ['project-risks', projectId, filters],
+    queryFn: () => apiService.getRiskItems(projectId, filters),
+    enabled: !!projectId,
+  });
+
+  const { data: statsData } = useQuery({
+    queryKey: ['project-risks-stats', projectId],
+    queryFn: () => apiService.getRiskStats(projectId),
+    enabled: !!projectId,
+  });
+
+  const { data: membersData } = useQuery({
+    queryKey: ['project-members', projectId],
+    queryFn: () => apiService.getProjectMembers(projectId),
+    enabled: !!projectId,
+  });
+
+  const risks: any[] = risksData?.data || [];
+  const stats = statsData?.data || {};
+  const members: any[] = membersData?.members || [];
+
+  const handleAiScan = async () => {
+    setScanning(true);
+    try {
+      await apiService.runAiRiskScan(projectId);
+      queryClient.invalidateQueries({ queryKey: ['project-risks', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project-risks-stats', projectId] });
+    } catch {
+      // silently fail
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleDelete = async (riskId: string) => {
+    try {
+      await apiService.deleteRiskItem(projectId, riskId);
+      queryClient.invalidateQueries({ queryKey: ['project-risks', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project-risks-stats', projectId] });
+      if (expandedId === riskId) setExpandedId(null);
+    } catch {
+      // silently fail
+    }
+  };
+
+  const handleStatusChange = async (riskId: string, newStatus: string) => {
+    try {
+      await apiService.updateRiskItem(projectId, riskId, { status: newStatus });
+      queryClient.invalidateQueries({ queryKey: ['project-risks', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project-risks-stats', projectId] });
+    } catch {
+      // silently fail
+    }
+  };
+
+  const openAdd = (type: 'risk' | 'issue') => {
+    setEditRisk(null);
+    setDefaultType(type);
+    setShowForm(true);
+  };
+
+  const openEdit = (risk: any) => {
+    setEditRisk(risk);
+    setDefaultType(risk.type);
+    setShowForm(true);
+  };
+
+  const onSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ['project-risks', projectId] });
+    queryClient.invalidateQueries({ queryKey: ['project-risks-stats', projectId] });
+  };
+
+  const severityColor = (s: string) => {
+    if (s === 'critical') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+    if (s === 'high') return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+    if (s === 'medium') return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+    return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+  };
+
+  const statusColor = (s: string) => {
+    if (s === 'open') return 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400';
+    if (s === 'monitoring') return 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400';
+    if (s === 'mitigating') return 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
+    if (s === 'mitigated' || s === 'resolved') return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
+    return 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400';
+  };
+
+  const sourceLabel = (s: string) => {
+    if (s === 'ai_detected') return 'AI';
+    if (s === 'agent') return 'Agent';
+    return 'Manual';
+  };
+
+  const sourceBadgeColor = (s: string) => {
+    if (s === 'ai_detected') return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+    if (s === 'agent') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+    return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+  };
+
+  const scoreColor = (score: number) => {
+    if (score >= 16) return 'text-red-600 dark:text-red-400';
+    if (score >= 10) return 'text-orange-600 dark:text-orange-400';
+    if (score >= 5) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-green-600 dark:text-green-400';
+  };
+
+  const formatDate = (d: string | undefined) =>
+    d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+  const cardClass = 'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800';
+  const selectClass = 'rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500';
+
+  return (
+    <div className="space-y-4">
+      {/* Stats row */}
+      <div className="flex flex-wrap gap-3">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Open Risks</span>
+          <span className="text-sm font-bold text-red-600 dark:text-red-400">{stats.openRisks ?? 0}</span>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Open Issues</span>
+          <span className="text-sm font-bold text-orange-600 dark:text-orange-400">{stats.openIssues ?? 0}</span>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Critical</span>
+          <span className="text-sm font-bold text-red-700 dark:text-red-300">{stats.critical ?? 0}</span>
+        </div>
+        {(stats.triggered ?? 0) > 0 && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Triggered</span>
+            <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{stats.triggered}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Actions + Filters bar */}
+      <div className={`${cardClass} p-3`}>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => openAdd('risk')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Add Risk
+          </button>
+          <button onClick={() => openAdd('issue')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Add Issue
+          </button>
+          <button
+            onClick={handleAiScan}
+            disabled={scanning}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {scanning ? <Activity className="w-3.5 h-3.5 animate-spin" /> : <Bot className="w-3.5 h-3.5" />}
+            {scanning ? 'Scanning...' : 'AI Scan'}
+          </button>
+
+          <div className="flex-1" />
+
+          <select value={filterType} onChange={e => setFilterType(e.target.value)} className={selectClass}>
+            <option value="">All Types</option>
+            <option value="risk">Risks</option>
+            <option value="issue">Issues</option>
+          </select>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={selectClass}>
+            <option value="">All Statuses</option>
+            <option value="open">Open</option>
+            <option value="monitoring">Monitoring</option>
+            <option value="mitigating">Mitigating</option>
+            <option value="mitigated">Mitigated</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+          <select value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)} className={selectClass}>
+            <option value="">All Severities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select value={filterSource} onChange={e => setFilterSource(e.target.value)} className={selectClass}>
+            <option value="">All Sources</option>
+            <option value="manual">Manual</option>
+            <option value="ai_detected">AI Detected</option>
+            <option value="agent">Agent</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Risk list */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+        </div>
+      ) : risks.length === 0 ? (
+        <div className={`${cardClass} p-8 text-center`}>
+          <ShieldAlert className="mx-auto mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">No Risks or Issues</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Add one manually or run an AI Scan to detect potential risks.
+          </p>
+        </div>
+      ) : (
+        <div className={`${cardClass} divide-y divide-gray-100 dark:divide-gray-700/50`}>
+          {risks.map((risk: any) => {
+            const isExpanded = expandedId === risk.id;
+            return (
+              <div key={risk.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-colors">
+                {/* Summary row */}
+                <div
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                  onClick={() => setExpandedId(isExpanded ? null : risk.id)}
+                >
+                  {/* Type indicator */}
+                  <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${risk.type === 'issue' ? 'bg-orange-500' : 'bg-red-500'}`} />
+
+                  {/* Title + category */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{risk.title}</p>
+                      {risk.triggered && <span className="text-amber-500" title="Triggered">⚡</span>}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500 capitalize">{risk.category}</span>
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${sourceBadgeColor(risk.source)}`}>
+                        {sourceLabel(risk.source)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Risk score */}
+                  <span className={`text-sm font-bold ${scoreColor(risk.riskScore)} flex-shrink-0`} title={`P${risk.probability} × I${risk.impact}`}>
+                    {risk.riskScore}
+                  </span>
+
+                  {/* Severity badge */}
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize flex-shrink-0 ${severityColor(risk.severity)}`}>
+                    {risk.severity}
+                  </span>
+
+                  {/* Status badge */}
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize flex-shrink-0 ${statusColor(risk.status)}`}>
+                    {risk.status}
+                  </span>
+
+                  {/* Date */}
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0 w-20 text-right">
+                    {formatDate(risk.createdAt)}
+                  </span>
+
+                  {/* Expand chevron */}
+                  <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                </div>
+
+                {/* Expanded detail */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 pl-8 space-y-3">
+                    {risk.description && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{risk.description}</p>
+                      </div>
+                    )}
+
+                    {risk.triggerCondition && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                          Trigger Condition {risk.triggered && <span className="text-amber-500">⚡ Triggered {risk.triggeredAt ? formatDate(risk.triggeredAt) : ''}</span>}
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{risk.triggerCondition}</p>
+                      </div>
+                    )}
+
+                    {risk.mitigationPlan && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Mitigation Plan</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{risk.mitigationPlan}</p>
+                      </div>
+                    )}
+
+                    {risk.responsePlan && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Response Plan</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{risk.responsePlan}</p>
+                      </div>
+                    )}
+
+                    {risk.aiConfidence != null && (
+                      <p className="text-xs text-gray-400">AI Confidence: {Math.round(risk.aiConfidence * 100)}%</p>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <button onClick={() => openEdit(risk)} className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                        Edit
+                      </button>
+                      <select
+                        value={risk.status}
+                        onChange={e => handleStatusChange(risk.id, e.target.value)}
+                        className="text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-1.5 py-1 text-gray-700 dark:text-gray-300"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <option value="open">Open</option>
+                        <option value="monitoring">Monitoring</option>
+                        <option value="mitigating">Mitigating</option>
+                        <option value="mitigated">Mitigated</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                      <div className="flex-1" />
+                      <button onClick={() => handleDelete(risk.id)} className="text-xs font-medium text-red-600 dark:text-red-400 hover:underline">
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Form modal */}
+      <RiskFormModal
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        onSaved={onSaved}
+        projectId={projectId}
+        editRisk={editRisk}
+        defaultType={defaultType}
+        members={members}
+      />
     </div>
   );
 }

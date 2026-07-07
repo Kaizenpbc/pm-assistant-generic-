@@ -329,6 +329,52 @@ class ApiService {
     return response.data;
   }
 
+  // -------------------------------------------------------------------------
+  // RAID — Risks & Issues
+  // -------------------------------------------------------------------------
+
+  async getRiskItems(projectId: string, filters?: Record<string, string>) {
+    const qp = new URLSearchParams(filters);
+    const qs = qp.toString();
+    const response = await this.api.get(`/projects/${projectId}/risks${qs ? `?${qs}` : ''}`);
+    return response.data;
+  }
+
+  async getRiskStats(projectId: string) {
+    const response = await this.api.get(`/projects/${projectId}/risks/stats`);
+    return response.data;
+  }
+
+  async getRiskItem(projectId: string, riskId: string) {
+    const response = await this.api.get(`/projects/${projectId}/risks/${riskId}`);
+    return response.data;
+  }
+
+  async createRiskItem(projectId: string, data: Record<string, any>) {
+    const response = await this.api.post(`/projects/${projectId}/risks`, data);
+    return response.data;
+  }
+
+  async updateRiskItem(projectId: string, riskId: string, data: Record<string, any>) {
+    const response = await this.api.put(`/projects/${projectId}/risks/${riskId}`, data);
+    return response.data;
+  }
+
+  async deleteRiskItem(projectId: string, riskId: string) {
+    const response = await this.api.delete(`/projects/${projectId}/risks/${riskId}`);
+    return response.data;
+  }
+
+  async runAiRiskScan(projectId: string) {
+    const response = await this.api.post(`/projects/${projectId}/risks/ai-scan`);
+    return response.data;
+  }
+
+  async suggestRiskMitigation(projectId: string, riskId: string) {
+    const response = await this.api.post(`/projects/${projectId}/risks/${riskId}/suggest-mitigation`);
+    return response.data;
+  }
+
   async getProjectBudget(projectId: string) {
     const response = await this.api.get(`/predictions/project/${projectId}/budget`);
     return response.data;
