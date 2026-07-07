@@ -16,6 +16,9 @@ export const UNIFIED_WIDGETS: WidgetDef[] = [
   { id: 'activity', label: 'Recent Activity', group: 'Details', defaultOn: true },
   { id: 'next-actions', label: 'Next Best Actions', group: 'Overview', defaultOn: true },
   { id: 'health-trends', label: 'Health Trends', group: 'Charts', defaultOn: true },
+  { id: 'sprints', label: 'Sprint Snapshot', group: 'Agile', defaultOn: false },
+  { id: 'goals', label: 'Goals', group: 'Overview', defaultOn: false },
+  { id: 'workload', label: 'Team Workload', group: 'Details', defaultOn: false },
 ];
 
 export function getDefaultWidgetIds(widgets: WidgetDef[]): string[] {

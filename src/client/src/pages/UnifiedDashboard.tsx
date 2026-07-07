@@ -15,6 +15,9 @@ import { BudgetWatchWidget } from '../components/dashboard/widgets/BudgetWatchWi
 import { RecentActivityWidget } from '../components/dashboard/widgets/RecentActivityWidget';
 import { NextBestActionsWidget } from '../components/dashboard/widgets/NextBestActionsWidget';
 import { HealthTrendsWidget } from '../components/dashboard/widgets/HealthTrendsWidget';
+import { SprintSnapshotWidget } from '../components/dashboard/widgets/SprintSnapshotWidget';
+import { GoalsWidget } from '../components/dashboard/widgets/GoalsWidget';
+import { TeamWorkloadWidget } from '../components/dashboard/widgets/TeamWorkloadWidget';
 
 const STORAGE_KEY = 'dashboard-widgets:unified';
 const SCOPE_KEY = 'dashboard:scope';
@@ -164,8 +167,17 @@ export function UnifiedDashboard() {
       {/* Next Best Actions */}
       {show('next-actions') && <NextBestActionsWidget />}
 
+      {/* Goals */}
+      {show('goals') && <GoalsWidget />}
+
       {/* Health Trends Sparklines */}
       {show('health-trends') && <HealthTrendsWidget projects={activeProjects} />}
+
+      {/* Sprint Snapshot */}
+      {show('sprints') && <SprintSnapshotWidget projects={activeProjects} />}
+
+      {/* Team Workload */}
+      {show('workload') && <TeamWorkloadWidget projects={activeProjects} />}
 
       <TemplatePicker
         isOpen={showTemplatePicker}
