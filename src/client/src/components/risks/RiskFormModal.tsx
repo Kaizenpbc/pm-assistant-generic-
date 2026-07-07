@@ -66,6 +66,10 @@ export function RiskFormModal({ isOpen, onClose, onSaved, projectId, editRisk, d
     responsePlan: '',
     ownerId: '',
     linkedTaskIds: [] as string[],
+    // Issue-specific fields
+    rootCause: '',
+    impactAssessment: '',
+    workaround: '',
     // Action fields
     dueDate: '',
     actionType: '' as string,
@@ -95,6 +99,9 @@ export function RiskFormModal({ isOpen, onClose, onSaved, projectId, editRisk, d
         responsePlan: editRisk.responsePlan || '',
         ownerId: editRisk.ownerId || '',
         linkedTaskIds: editRisk.linkedTaskIds || [],
+        rootCause: editRisk.rootCause || '',
+        impactAssessment: editRisk.impactAssessment || '',
+        workaround: editRisk.workaround || '',
         dueDate: editRisk.dueDate ? editRisk.dueDate.slice(0, 10) : '',
         actionType: editRisk.actionType || '',
         rationale: editRisk.rationale || '',
@@ -119,6 +126,9 @@ export function RiskFormModal({ isOpen, onClose, onSaved, projectId, editRisk, d
         responsePlan: '',
         ownerId: '',
         linkedTaskIds: [],
+        rootCause: '',
+        impactAssessment: '',
+        workaround: '',
         dueDate: '',
         actionType: '',
         rationale: '',
@@ -154,6 +164,9 @@ export function RiskFormModal({ isOpen, onClose, onSaved, projectId, editRisk, d
       if (!payload.triggerCondition) delete payload.triggerCondition;
       if (!payload.mitigationPlan) delete payload.mitigationPlan;
       if (!payload.responsePlan) delete payload.responsePlan;
+      if (!payload.rootCause) delete payload.rootCause;
+      if (!payload.impactAssessment) delete payload.impactAssessment;
+      if (!payload.workaround) delete payload.workaround;
       if (payload.linkedTaskIds.length === 0) delete payload.linkedTaskIds;
       if (!payload.dueDate) delete payload.dueDate;
       if (!payload.actionType) delete payload.actionType;
@@ -199,10 +212,13 @@ export function RiskFormModal({ isOpen, onClose, onSaved, projectId, editRisk, d
 
   const statuses = STATUSES[form.type] || STATUSES.risk;
   const riskScore = form.probability * form.impact;
-  const showProbImpact = form.type === 'risk' || form.type === 'issue';
-  const showTrigger = form.type === 'risk' || form.type === 'issue';
-  const showMitigation = form.type === 'risk' || form.type === 'issue';
-  const showResponse = form.type === 'risk' || form.type === 'issue';
+  const isRisk = form.type === 'risk';
+  const isIssue = form.type === 'issue';
+  const showProbImpact = isRisk;
+  const showTrigger = isRisk;
+  const showMitigation = isRisk;
+  const showResponse = isRisk;
+  const showIssueFields = isIssue;
   const showActionFields = form.type === 'action';
   const showDecisionFields = form.type === 'decision';
 
@@ -446,7 +462,7 @@ export function RiskFormModal({ isOpen, onClose, onSaved, projectId, editRisk, d
             </div>
           )}
 
-          {/* Response Plan — risk/issue */}
+          {/* Response Plan — risk only */}
           {showResponse && (
             <div>
               <label className={labelClass}>Response Plan</label>
@@ -457,6 +473,57 @@ export function RiskFormModal({ isOpen, onClose, onSaved, projectId, editRisk, d
                 placeholder="Contingency — what to do if the risk occurs..."
               />
             </div>
+          )}
+
+          {/* Issue-specific fields */}
+          {showIssueFields && (
+            <>
+              <div>
+                <label className={labelClass}>Root Cause</label>
+                <textarea
+                  value={form.rootCause}
+                  onChange={e => setForm(prev => ({ ...prev, rootCause: e.target.value }))}
+                  className={`${inputClass} h-20 resize-none`}
+                  placeholder="Why did this issue occur?"
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Impact Assessment</label>
+                <textarea
+                  value={form.impactAssessment}
+                  onChange={e => setForm(prev => ({ ...prev, impactAssessment: e.target.value }))}
+                  className={`${inputClass} h-16 resize-none`}
+                  placeholder="What is the actual impact on the project?"
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Workaround</label>
+                <textarea
+                  value={form.workaround}
+                  onChange={e => setForm(prev => ({ ...prev, workaround: e.target.value }))}
+                  className={`${inputClass} h-16 resize-none`}
+                  placeholder="Temporary fix while working on resolution..."
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Resolution Plan</label>
+                <textarea
+                  value={form.mitigationPlan}
+                  onChange={e => setForm(prev => ({ ...prev, mitigationPlan: e.target.value }))}
+                  className={`${inputClass} h-20 resize-none`}
+                  placeholder="Permanent fix — how will this issue be resolved?"
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Target Resolution Date</label>
+                <input
+                  type="date"
+                  value={form.dueDate}
+                  onChange={e => setForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                  className={inputClass}
+                />
+              </div>
+            </>
           )}
         </div>
 

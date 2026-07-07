@@ -244,7 +244,7 @@ export function RAIDDetailPanel({ projectId, raidId, onClose, onEdit, members }:
                 <p className={labelClass}>Owner</p>
                 <p className={valueClass}>{memberName(item.ownerId)}</p>
               </div>
-              {(item.type === 'risk' || item.type === 'issue') && (
+              {item.type === 'risk' && (
                 <>
                   <div>
                     <p className={labelClass}>Probability x Impact</p>
@@ -256,10 +256,16 @@ export function RAIDDetailPanel({ projectId, raidId, onClose, onEdit, members }:
                   </div>
                 </>
               )}
+              {item.type === 'issue' && (
+                <div>
+                  <p className={labelClass}>Source</p>
+                  <p className={`${valueClass} capitalize`}>{item.source?.replace('_', ' ')}</p>
+                </div>
+              )}
             </div>
 
-            {/* Risk/Issue-specific fields */}
-            {item.triggerCondition && (
+            {/* Risk-specific fields */}
+            {item.type === 'risk' && item.triggerCondition && (
               <div>
                 <p className={labelClass}>
                   Trigger Condition {item.triggered && <span className="text-amber-500 ml-1">Triggered {formatDate(item.triggeredAt)}</span>}
@@ -267,16 +273,48 @@ export function RAIDDetailPanel({ projectId, raidId, onClose, onEdit, members }:
                 <p className={`${valueClass} whitespace-pre-wrap mt-1`}>{item.triggerCondition}</p>
               </div>
             )}
-            {item.mitigationPlan && (
+            {item.type === 'risk' && item.mitigationPlan && (
               <div>
                 <p className={labelClass}>Mitigation Plan</p>
                 <p className={`${valueClass} whitespace-pre-wrap mt-1`}>{item.mitigationPlan}</p>
               </div>
             )}
-            {item.responsePlan && (
+            {item.type === 'risk' && item.responsePlan && (
               <div>
                 <p className={labelClass}>Response Plan</p>
                 <p className={`${valueClass} whitespace-pre-wrap mt-1`}>{item.responsePlan}</p>
+              </div>
+            )}
+
+            {/* Issue-specific fields */}
+            {item.type === 'issue' && item.rootCause && (
+              <div>
+                <p className={labelClass}>Root Cause</p>
+                <p className={`${valueClass} whitespace-pre-wrap mt-1`}>{item.rootCause}</p>
+              </div>
+            )}
+            {item.type === 'issue' && item.impactAssessment && (
+              <div>
+                <p className={labelClass}>Impact Assessment</p>
+                <p className={`${valueClass} whitespace-pre-wrap mt-1`}>{item.impactAssessment}</p>
+              </div>
+            )}
+            {item.type === 'issue' && item.workaround && (
+              <div>
+                <p className={labelClass}>Workaround</p>
+                <p className={`${valueClass} whitespace-pre-wrap mt-1`}>{item.workaround}</p>
+              </div>
+            )}
+            {item.type === 'issue' && item.mitigationPlan && (
+              <div>
+                <p className={labelClass}>Resolution Plan</p>
+                <p className={`${valueClass} whitespace-pre-wrap mt-1`}>{item.mitigationPlan}</p>
+              </div>
+            )}
+            {item.type === 'issue' && item.dueDate && (
+              <div>
+                <p className={labelClass}>Target Resolution Date</p>
+                <p className={valueClass}>{formatDate(item.dueDate)}</p>
               </div>
             )}
 

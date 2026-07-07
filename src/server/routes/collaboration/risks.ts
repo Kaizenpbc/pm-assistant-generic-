@@ -38,6 +38,10 @@ const createRiskSchema = z.object({
   stakeholdersConsulted: z.array(z.string()).optional(),
   // Related RAID items
   linkedRaidIds: z.array(z.string()).optional(),
+  // Issue-specific fields
+  rootCause: z.string().max(5000).optional(),
+  impactAssessment: z.string().max(5000).optional(),
+  workaround: z.string().max(5000).optional(),
 });
 
 const updateRiskSchema = createRiskSchema.partial();

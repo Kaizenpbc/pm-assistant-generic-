@@ -41,6 +41,10 @@ export interface ProjectRisk {
   stakeholdersConsulted: string[] | null;
   cancelReason: string | null;
   linkedRaidIds: string[] | null;
+  // Issue-specific fields
+  rootCause: string | null;
+  impactAssessment: string | null;
+  workaround: string | null;
 }
 
 export interface RaidActivityLog {
@@ -95,6 +99,9 @@ function mapRow(row: any): ProjectRisk {
     stakeholdersConsulted: row.stakeholders_consulted ? (typeof row.stakeholders_consulted === 'string' ? JSON.parse(row.stakeholders_consulted) : row.stakeholders_consulted) : null,
     cancelReason: row.cancel_reason ?? null,
     linkedRaidIds: row.linked_raid_ids ? (typeof row.linked_raid_ids === 'string' ? JSON.parse(row.linked_raid_ids) : row.linked_raid_ids) : null,
+    rootCause: row.root_cause ?? null,
+    impactAssessment: row.impact_assessment ?? null,
+    workaround: row.workaround ?? null,
   };
 }
 
@@ -168,6 +175,9 @@ const COLUMN_MAP: Record<string, string> = {
   stakeholdersConsulted: 'stakeholders_consulted',
   cancelReason: 'cancel_reason',
   linkedRaidIds: 'linked_raid_ids',
+  rootCause: 'root_cause',
+  impactAssessment: 'impact_assessment',
+  workaround: 'workaround',
 };
 
 class RiskRepository extends BaseRepository<ProjectRisk> {
@@ -263,6 +273,9 @@ class RiskRepository extends BaseRepository<ProjectRisk> {
     alternativesConsidered?: string;
     stakeholdersConsulted?: string[];
     linkedRaidIds?: string[];
+    rootCause?: string;
+    impactAssessment?: string;
+    workaround?: string;
   }): Promise<ProjectRisk> {
     const id = uuidv4();
     const { sequenceNumber, recordId } = await this.nextSequenceId(data.type);
@@ -272,8 +285,9 @@ class RiskRepository extends BaseRepository<ProjectRisk> {
         probability, impact, status, trigger_condition, mitigation_plan, response_plan, owner_id,
         source, source_agent_id, ai_confidence, linked_task_ids, linked_proposal_id, created_by,
         sequence_number, record_id, due_date, action_type, rationale, decided_by, decision_date,
-        alternatives_considered, stakeholders_consulted, linked_raid_ids)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        alternatives_considered, stakeholders_consulted, linked_raid_ids,
+        root_cause, impact_assessment, workaround)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.projectId,
@@ -305,6 +319,9 @@ class RiskRepository extends BaseRepository<ProjectRisk> {
         data.alternativesConsidered || null,
         data.stakeholdersConsulted ? JSON.stringify(data.stakeholdersConsulted) : null,
         data.linkedRaidIds ? JSON.stringify(data.linkedRaidIds) : null,
+        data.rootCause || null,
+        data.impactAssessment || null,
+        data.workaround || null,
       ],
     );
     return (await this.findById(id))!;
