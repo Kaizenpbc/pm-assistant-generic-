@@ -66,13 +66,16 @@ All users see a single **Unified Dashboard** with customizable widgets:
 - **Issues Trend** -- Chart showing issues created vs resolved per week.
 - **Milestones** -- Upcoming milestones with days-until badges.
 - **Budget Watch** -- Top 5 projects by budget spend percentage.
-- **Recent Activity** -- Latest notifications.
+- **Recent Activity** -- Latest notifications. Click any notification to navigate to the linked page and mark it as read. Includes a "View All" link to the full notifications page.
 - **Next Best Actions** -- AI-suggested actions.
 - **Health Trends** -- Sparkline health history per project.
+- **Sprint Snapshot** -- Active sprints across projects with day progress, task completion bar, and velocity trend (off by default).
+- **Goals** -- Objectives sorted by urgency with progress bars, status badges, and due dates (off by default).
+- **Team Workload** -- Per-resource task counts with horizontal bars and overload warnings for 15+ tasks (off by default).
 
 **Scope toggle**: If you have fewer projects than the full portfolio, a **My Projects / All Projects** toggle appears. Switching scope updates all widgets.
 
-Click **Customize** next to the dashboard title to toggle widget sections on/off. Your selections are saved automatically and persist across sessions.
+Click **Customize** next to the dashboard title to toggle widget sections on/off. Your selections are saved automatically and persist across sessions. The three new widgets (Sprint Snapshot, Goals, Team Workload) are off by default — enable them via Customize.
 
 ### Sidebar Navigation
 
@@ -140,15 +143,27 @@ From the project detail view, use the delete option. This action requires approp
 
 ### Project Detail View
 
-Each project page provides tabs or sections for:
+The project detail page shows 5 context cards at the top: **Progress**, **Budget**, **Timeline**, **Risks** (open risk count with critical alert), and **Status**.
 
-- **Overview** -- Project metadata, progress percentage, budget utilization.
-- **Schedule** -- Full schedule management (see Section 3).
-- **Resources** -- Team members assigned to the project.
+Tabs are organized into 7 primary tabs shown directly and 6 secondary tabs accessible via a **More** dropdown:
+
+**Primary tabs:** Overview, Schedule, RAID, Sprints, Team, AI Insights, EVM Forecast
+
+**More dropdown:** Change Requests, Resource Leveling, Network Diagram, Burndown, What-If, Agent Activity
+
+The **Overview** tab includes:
+
+- **Project Details** -- Metadata chips (priority, category, type, PM, dates, currency).
+- **Team Members** -- Assigned members with role badges.
+- **Task Summary** -- Total, completed, overdue, and in-progress task counts.
+- **Timeline Progress** -- Elapsed vs complete percentage with on-track/behind/overdue indicator.
+- **Key Milestones** -- Milestone list with status icons and dates.
+- **RAID Summary** -- 2x2 grid showing open risks, open issues, open actions, and pending decisions with critical/triggered badges.
+- **Current Sprint** -- Active sprint name, day progress (Day X of Y), task completion bar, and sprint goal.
+- **Recent Activity** -- Last 6 audit trail entries with user, action, and timestamp.
 - **Attachments** -- File uploads with version history.
 - **Custom Fields** -- User-defined metadata fields.
-- **Change Requests** -- Formal change management.
-- **Activity** -- Audit trail of all project changes.
+- **Portal Links** -- External portal link management.
 - **Export XML** -- Click the **Export XML** button (same row as Export CSV and Export PDF) to download the project as an MSPDI XML file. This format is compatible with Microsoft Project and ProjectLibre and includes tasks, resources, assignments, and dependency links.
 
 #### Real-Time Presence
@@ -1300,7 +1315,7 @@ The RAID Log is a project-level register for Risks, Actions, Issues, and Decisio
 The RAID log header contains four **Add** buttons, one per type:
 
 - **+ Risk** — Opens the Risk form. Fill in title, description, severity (low / medium / high / critical), probability, impact, owner, and optional mitigation plan. Click **Save** to create. The record is assigned the next `R-NNN` ID automatically.
-- **+ Issue** — Opens the Issue form. Fill in title, description, severity, impact, and owner. Assigned an `I-NNN` ID.
+- **+ Issue** — Opens the Issue form. Issues have their own fields distinct from risks: title, description, severity, category, owner, root cause ("Why did this happen?"), impact assessment, workaround ("Temporary fix"), resolution plan ("Permanent fix"), and target resolution date. Probability is not shown since the issue has already occurred. Assigned an `I-NNN` ID.
 - **+ Action** — Opens the Action form. Fill in title, description, owner, due date, and action type (Follow-Up / Decision Required / Information Only / Escalation). Assigned an `A-NNN` ID.
 - **+ Decision** — Opens the Decision form. Fill in title, description, decided by, rationale, decision date, and alternatives considered. Assigned a `D-NNN` ID.
 

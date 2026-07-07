@@ -215,6 +215,10 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 ### Dashboard Widgets
 - **Next Best Actions** -- AI-synthesized action cards from proposals, notifications, and at-risk projects with priority ranking
 - **Health Trends** -- Daily health score snapshots with SVG sparklines per project (migration 038, `project_health_history` table, daily cron at 03:00)
+- **Sprint Snapshot** -- Active sprints with day progress, task completion, and velocity trend (opt-in)
+- **Goals Progress** -- Objectives sorted by urgency with progress bars and status badges (opt-in)
+- **Team Workload** -- Per-resource task counts with overload indicators (opt-in)
+- **Clickable Recent Activity** -- Click notifications to navigate to linked entities; marks as read automatically
 - **Customizable layout** -- Toggle widget sections on/off via Customize dropdown; selections saved per-user in localStorage
 
 ### PM Workspace (Preview)

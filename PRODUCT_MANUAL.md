@@ -876,9 +876,12 @@ When a user's own projects are a subset of the full portfolio (e.g., a `team_mem
 | **Issues Trend** | SVG line chart showing issues created vs resolved per week (8-week window), with net change badge |
 | **Milestones** | Upcoming milestones with project name, date, and days-until badge (green/red) |
 | **Budget Watch** | Top 5 projects by spend percentage with progress bars |
-| **Recent Activity** | Latest notifications feed |
+| **Recent Activity** | Latest notifications feed — click any notification to navigate to the linked entity and mark it as read. "View All" link navigates to the full notifications page. |
 | **Next Best Actions** | AI-suggested next actions |
 | **Health Trends** | Sparkline health history per project |
+| **Sprint Snapshot** | Active sprints across projects with day progress, task completion bar, and velocity trend (default: off) |
+| **Goals** | Objectives sorted by urgency with progress bars, status badges, and due dates. "View All" links to the Goals page (default: off) |
+| **Team Workload** | Per-resource task counts with horizontal bars and overload indicator for resources with 15+ tasks (default: off) |
 
 ### Backend Endpoints
 
@@ -1365,7 +1368,9 @@ open → monitoring → mitigating → mitigated → closed
 
 #### Issue
 
-Fields: title, description, severity, impact, owner, resolution, source.
+Fields: title, description, severity, category, owner, root cause, impact assessment, workaround, resolution plan, target resolution date, source.
+
+Issues are differentiated from risks — they represent problems that have already materialized. The form shows issue-specific fields (root cause, impact assessment, workaround, resolution plan) instead of risk fields (trigger condition, mitigation plan, response plan). Probability is not shown since the issue has already occurred.
 
 Status workflow:
 ```
