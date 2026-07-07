@@ -345,6 +345,28 @@ Three alternative PM-oriented pages run alongside existing ones for side-by-side
 
 ---
 
+### 5.8 RAID Management (BMC Remedy/Helix ITSM-Inspired)
+
+A structured project control register for Risks, Actions, Issues, and Decisions — modelled on enterprise ITSM practices from BMC Remedy/Helix and adapted for project management.
+
+**Capabilities:**
+- Four record types in a single unified register: Risk, Action, Issue, Decision
+- Global sequential type-prefixed IDs (R-001, I-001, A-001, D-001) assigned atomically and never recycled
+- Type-specific status workflows: Risk (open → monitoring → mitigating → mitigated → closed), Issue (open → in_progress → resolved → closed), Action (open → in_progress → completed → closed / deferred), Decision (pending_decision → decided → deferred / reversed)
+- Action records carry due_date and action_type (follow_up, decision_required, information_only, escalation)
+- Decision records carry rationale, decided_by, decision_date, and alternatives_considered
+- No-delete semantics: records are cancelled (with mandatory reason) rather than deleted; cancelled IDs are never reused; decision reversal (admin-only) creates a `reversed` terminal state
+- Slide-out detail panel with inline field editing and full activity timeline
+- Activity auto-logged on every status transition, field edit, cancel, or reverse; manual comments interleave with auto-logged entries
+- Role-based permission matrix: admin=all operations including reverse; project_manager/scrum_master/pmo/ba=create all types + cancel; risk_manager=create risk+issue; team_member=create issue+action only; reverse restricted to admin
+- **AI Scan**: project-scoped AI analysis surfaces new Risks and Issues from schedule/task/budget data; user selects which findings to import; imported records tagged `source: ai_scan`
+- **Agent partnership**: background agents write directly to RAID log via `importFromAgent`; agent-written records tagged `source: agent`; `suggest-mitigation` MCP tool surfaces historical lessons-learned for open risks
+- Stats bar with live counts (Open Risks, Open Issues, Open Actions, Pending Decisions)
+- Search + multi-filter toolbar (type, status, severity, source)
+- **Benchmark:** BMC Remedy/Helix ITSM (no-delete audit semantics, sequential IDs, mandatory cancel reason); exceeds traditional PM tools with AI Scan integration and agent write pathway
+
+---
+
 ## Implementation Status
 
 | Feature | Status | Priority |
@@ -449,3 +471,4 @@ Three alternative PM-oriented pages run alongside existing ones for side-by-side
 | Health Trends Sparklines (daily cron + migration 038) | Done | Enhancement |
 | PM Workspace — Dashboard, Projects, Project Detail | Done | Enhancement |
 | PM Dashboard Design Gap Fixes (dark mode, KPI dots, linkPrefix) | Done | Enhancement |
+| RAID Management (Risk/Action/Issue/Decision register, sequential IDs, no-delete, AI Scan, agent writes) | Done | Enhancement |

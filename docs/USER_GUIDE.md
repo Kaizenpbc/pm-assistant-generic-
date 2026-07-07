@@ -35,6 +35,8 @@ A comprehensive guide for using PM Assistant, an AI-powered enterprise project m
 27. [EVM Dashboard Page](#27-evm-dashboard-page)
 28. [Notifications Center Page](#28-notifications-center-page)
 29. [Dashboard Widget Drag-to-Reorder](#29-dashboard-widget-drag-to-reorder)
+30. [PM Workspace (Preview)](#30-pm-workspace-preview)
+31. [RAID Log](#31-raid-log)
 
 ---
 
@@ -1286,6 +1288,95 @@ Navigate here by clicking a project row in the PM Dashboard or PM Projects page.
 
 - **Left Panel** — Tabbed view: Tasks, Risks, Issues, Milestones, RAID, Documents. Each tab shows a filterable list with inline Add buttons.
 - **Right Rail** — Sticky panel with Project Health ring (schedule/budget/risk sub-scores), AI Assistant card, and Activity Feed.
+
+---
+
+## 31. RAID Log
+
+The RAID Log is a project-level register for Risks, Actions, Issues, and Decisions. Access it from the **RAID** tab on any project detail page (or via the RAID tab in the PM Project Detail view).
+
+### Creating Records
+
+The RAID log header contains four **Add** buttons, one per type:
+
+- **+ Risk** — Opens the Risk form. Fill in title, description, severity (low / medium / high / critical), probability, impact, owner, and optional mitigation plan. Click **Save** to create. The record is assigned the next `R-NNN` ID automatically.
+- **+ Issue** — Opens the Issue form. Fill in title, description, severity, impact, and owner. Assigned an `I-NNN` ID.
+- **+ Action** — Opens the Action form. Fill in title, description, owner, due date, and action type (Follow-Up / Decision Required / Information Only / Escalation). Assigned an `A-NNN` ID.
+- **+ Decision** — Opens the Decision form. Fill in title, description, decided by, rationale, decision date, and alternatives considered. Assigned a `D-NNN` ID.
+
+All forms include a **Source** field (Manual / AI Scan / Agent / Import) that is set automatically when records are created by the AI Scan or an agent.
+
+### Searching and Filtering
+
+Above the RAID table, a toolbar provides:
+
+- **Search box** — Filters records by title or description as you type.
+- **Type** dropdown — Show all types or filter to Risks, Issues, Actions, or Decisions only.
+- **Status** dropdown — Filter by a specific status (open, in_progress, resolved, closed, cancelled, etc.).
+- **Severity** dropdown — Filter to a specific severity level (low, medium, high, critical).
+- **Source** dropdown — Filter by how the record was created (manual, ai_scan, agent, import).
+
+Filters combine — you can, for example, show only open critical Risks created by AI Scan.
+
+### Stats Row
+
+At the top of the RAID log, a stats bar shows at-a-glance counts:
+
+- **Total** — All active (non-cancelled, non-closed) records in the log.
+- **Open Risks** — Risks in `open` or `monitoring` status.
+- **Open Issues** — Issues in `open` or `in_progress` status.
+- **Open Actions** — Actions in `open`, `in_progress`, or `deferred` status.
+- **Pending Decisions** — Decisions in `pending_decision` status.
+
+These counts update immediately whenever a record is created, updated, or cancelled.
+
+### Slide-Out Detail Panel
+
+Click any row in the RAID table to open the detail panel on the right side of the screen without leaving the page. The panel shows:
+
+- The record's full header: sequential ID (e.g., `R-007`), type badge, current status pill, and severity chip.
+- All fields for that record type, editable inline for users with the appropriate role.
+- An **Activity Timeline** at the bottom of the panel — a chronological list of every status change, field edit, cancel/reverse action, and manual comment. Each entry shows the actor name, relative timestamp, and a description of what changed.
+
+Close the panel by clicking outside it or pressing **Escape**.
+
+### Adding Comments
+
+In the detail panel, a comment box appears below the activity timeline. Type your comment and press **Add Comment**. The comment appears immediately in the timeline with your name and the current time. Comments are permanent — they cannot be edited or deleted.
+
+### Cancelling a Record
+
+To cancel a record (instead of deleting it — RAID records are never deleted):
+
+1. Open the detail panel for the record.
+2. Click **Cancel Record**.
+3. Enter a mandatory cancellation reason in the prompt.
+4. Confirm. The record status changes to `cancelled` and the reason is logged in the activity timeline.
+
+Cancelled records remain visible in the log and can be found by filtering Status = cancelled. The sequential ID is not reused.
+
+### Reversing a Decision (Admin Only)
+
+If a Decision record has been marked `decided` and needs to be formally reversed:
+
+1. Open the detail panel for the Decision record.
+2. Click **Reverse Decision** (visible to admin users only).
+3. Enter a mandatory reason for the reversal.
+4. Confirm. Status changes to `reversed` and the reason is logged in the timeline.
+
+Reversal is a formal governance action and cannot be undone through the UI.
+
+### AI Scan
+
+The **AI Scan** button in the RAID toolbar triggers a project-scoped analysis:
+
+1. Click **AI Scan**.
+2. The AI reads the current schedule, task statuses, overdue items, budget data, and existing RAID entries.
+3. A preview panel shows suggested new Risks and Issues with titles, descriptions, and severity assessments.
+4. Check the records you want to import and click **Import Selected**.
+5. Selected records are created in the RAID log tagged as `source: ai_scan`.
+
+AI Scan does not overwrite or modify existing records — it only proposes new ones.
 
 ---
 

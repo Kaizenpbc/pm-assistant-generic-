@@ -360,8 +360,23 @@ class ApiService {
     return response.data;
   }
 
-  async deleteRiskItem(projectId: string, riskId: string) {
-    const response = await this.api.delete(`/projects/${projectId}/risks/${riskId}`);
+  async cancelRaidItem(projectId: string, riskId: string, reason: string) {
+    const response = await this.api.post(`/projects/${projectId}/risks/${riskId}/cancel`, { reason });
+    return response.data;
+  }
+
+  async reverseRaidItem(projectId: string, riskId: string, reason: string) {
+    const response = await this.api.post(`/projects/${projectId}/risks/${riskId}/reverse`, { reason });
+    return response.data;
+  }
+
+  async getRaidActivity(projectId: string, riskId: string) {
+    const response = await this.api.get(`/projects/${projectId}/risks/${riskId}/activity`);
+    return response.data;
+  }
+
+  async addRaidComment(projectId: string, riskId: string, comment: string) {
+    const response = await this.api.post(`/projects/${projectId}/risks/${riskId}/comments`, { comment });
     return response.data;
   }
 

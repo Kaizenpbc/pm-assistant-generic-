@@ -1325,6 +1325,131 @@ Labels include "(NEW)" suffix for side-by-side evaluation. i18n translations ava
 
 ---
 
+## 45. RAID Management
+
+RAID (Risks, Actions, Issues, Decisions) is a structured project control framework that gives project managers a single, auditable register for every threat, action item, live problem, and key decision on a project. The implementation is inspired by enterprise ITSM tooling (BMC Remedy / Helix) and enforces no-delete semantics, global sequential record IDs, and a full activity timeline on every record.
+
+### Framework Overview
+
+Each project has one RAID log containing records of four types:
+
+| Type | Purpose |
+|------|---------|
+| **Risk** | A potential future problem that may or may not materialise |
+| **Action** | A task or follow-up that must be completed by a specific owner and due date |
+| **Issue** | A problem that has already materialised and is actively impacting the project |
+| **Decision** | A formal project decision with rationale, decision maker, and alternatives considered |
+
+### Global Sequential Record IDs
+
+Every RAID record is assigned a globally unique, type-prefixed sequential identifier at creation time:
+
+- Risks: `R-001`, `R-002`, …
+- Issues: `I-001`, `I-002`, …
+- Actions: `A-001`, `A-002`, …
+- Decisions: `D-001`, `D-002`, …
+
+IDs are assigned atomically from a per-project counter and never recycled. A cancelled or reversed record retains its original ID permanently.
+
+### Type-Specific Fields and Status Workflows
+
+#### Risk
+
+Fields: title, description, severity (low / medium / high / critical), probability (low / medium / high), impact, owner, mitigation plan, source (manual / ai_scan / agent / import).
+
+Status workflow:
+```
+open → monitoring → mitigating → mitigated → closed
+                                            ↘ cancelled (requires reason)
+```
+
+#### Issue
+
+Fields: title, description, severity, impact, owner, resolution, source.
+
+Status workflow:
+```
+open → in_progress → resolved → closed
+                              ↘ cancelled (requires reason)
+```
+
+#### Action
+
+Fields: title, description, owner, due_date, action_type (follow_up / decision_required / information_only / escalation), source.
+
+Status workflow:
+```
+open → in_progress → completed → closed
+                               ↘ cancelled (requires reason)
+                               ↘ deferred
+```
+
+#### Decision
+
+Fields: title, description, owner, rationale, decided_by, decision_date, alternatives_considered, source.
+
+Status workflow:
+```
+pending_decision → decided → deferred
+                           ↘ reversed (admin only — requires reason)
+```
+
+### Cancel and Reverse Semantics
+
+RAID records are never deleted. This preserves the audit trail and prevents gap-filling in the sequential ID sequence.
+
+- **Cancel**: Available on any record in any status except `closed`. Requires a mandatory cancellation reason. Sets status to `cancelled`. Available to all roles that can edit the record type.
+- **Reverse**: Available on Decision records only, when status is `decided`. Requires a mandatory reason. Sets status to `reversed`. Restricted to admin users.
+
+### Slide-Out Detail Panel
+
+Clicking any row in the RAID log opens a slide-out panel from the right side of the screen. The panel shows:
+
+- Full record header (ID, type badge, status pill, severity chip)
+- All type-specific fields (editable inline for permitted roles)
+- **Activity timeline** — a chronological log of every state change and comment, with actor name, timestamp, and change description
+
+### Activity Logging
+
+Every change to a RAID record is automatically logged to the activity timeline:
+
+- Status transitions (e.g., `open → in_progress`, `decided → reversed`)
+- Field edits (title, description, owner, due date, rationale, etc.)
+- Cancel and reverse actions (with the mandatory reason recorded)
+- AI Scan findings imported as new records
+- Agent writes via `importFromAgent` or `importFromAIScan`
+
+Users can also add manual comments to any record via the comment box at the bottom of the detail panel. Manual comments appear in the timeline interleaved with auto-logged changes.
+
+### AI Agent Partnership
+
+The RAID log integrates with the platform's AI agent layer in two ways:
+
+**AI Scan** — A project-scoped scan that reads the current schedule, task statuses, overdue items, and budget data to surface new risks and issues. Results are presented as a preview; the user selects which findings to import. Imported records are tagged with `source: ai_scan`.
+
+**Agent writes** — Background agents (e.g., the Risk Agent, Budget Agent) can write directly to the RAID log using the `importFromAgent` pathway. These records are tagged with `source: agent` and appear in the log alongside manually created entries. Agent-written records go through the same activity logging as manual records.
+
+The `suggest-mitigation` MCP tool surfaces historical lessons-learned data to suggest mitigation strategies for open risks, callable by AI assistants operating on behalf of risk managers or project managers.
+
+### Role-Based Permissions
+
+| Role | Create Risk | Create Issue | Create Action | Create Decision | Cancel | Reverse |
+|------|-------------|--------------|---------------|-----------------|--------|---------|
+| `admin` | Yes | Yes | Yes | Yes | Yes | Yes |
+| `project_manager` | Yes | Yes | Yes | Yes | Yes | No |
+| `scrum_master` | Yes | Yes | Yes | Yes | Yes | No |
+| `pmo` | Yes | Yes | Yes | Yes | Yes | No |
+| `ba` | Yes | Yes | Yes | Yes | Yes | No |
+| `risk_manager` | Yes | Yes | No | No | Yes | No |
+| `team_member` | No | Yes | Yes | No | Own only | No |
+| `finance_officer` | No | No | No | No | No | No |
+| `executive` | No | No | No | No | No | No |
+| `qa` / `tester` / `devops` / `claude_sme` | No | No | No | No | No | No |
+
+Reverse (decision reversal) is restricted to `admin` only regardless of project membership role.
+
+---
+
 ## Technical Architecture
 
 ### Backend

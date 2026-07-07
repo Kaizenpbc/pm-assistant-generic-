@@ -37,6 +37,7 @@ import {
   ClipboardCopy,
   X,
   Target,
+  Search,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useUIStore } from '../stores/uiStore';
@@ -70,6 +71,7 @@ import { cleanCsvForImport } from '../utils/csvCleaner';
 import { WorkflowEditor } from '../components/approvals/WorkflowEditor';
 import { PortalLinkManager } from '../components/portal/PortalLinkManager';
 import { RiskFormModal } from '../components/risks/RiskFormModal';
+import { RAIDDetailPanel } from '../components/risks/RAIDDetailPanel';
 import { ResourceLevelingPanel } from '../components/resources/ResourceLevelingPanel';
 import { SprintList } from '../components/sprints/SprintList';
 import { SprintPlanningPanel } from '../components/sprints/SprintPlanningPanel';
@@ -955,12 +957,13 @@ function RAIDTab({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editRisk, setEditRisk] = useState<any>(null);
-  const [defaultType, setDefaultType] = useState<'risk' | 'issue'>('risk');
+  const [defaultType, setDefaultType] = useState<'risk' | 'issue' | 'action' | 'decision'>('risk');
   const [filterType, setFilterType] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterSeverity, setFilterSeverity] = useState<string>('');
   const [filterSource, setFilterSource] = useState<string>('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState('');
+  const [selectedRaidId, setSelectedRaidId] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
 
   const filters: Record<string, string> = {};
@@ -968,6 +971,7 @@ function RAIDTab({ projectId }: { projectId: string }) {
   if (filterStatus) filters.status = filterStatus;
   if (filterSeverity) filters.severity = filterSeverity;
   if (filterSource) filters.source = filterSource;
+  if (searchText.trim()) filters.search = searchText.trim();
 
   const { data: risksData, isLoading } = useQuery({
     queryKey: ['project-risks', projectId, filters],
@@ -1004,28 +1008,7 @@ function RAIDTab({ projectId }: { projectId: string }) {
     }
   };
 
-  const handleDelete = async (riskId: string) => {
-    try {
-      await apiService.deleteRiskItem(projectId, riskId);
-      queryClient.invalidateQueries({ queryKey: ['project-risks', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['project-risks-stats', projectId] });
-      if (expandedId === riskId) setExpandedId(null);
-    } catch {
-      // silently fail
-    }
-  };
-
-  const handleStatusChange = async (riskId: string, newStatus: string) => {
-    try {
-      await apiService.updateRiskItem(projectId, riskId, { status: newStatus });
-      queryClient.invalidateQueries({ queryKey: ['project-risks', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['project-risks-stats', projectId] });
-    } catch {
-      // silently fail
-    }
-  };
-
-  const openAdd = (type: 'risk' | 'issue') => {
+  const openAdd = (type: 'risk' | 'issue' | 'action' | 'decision') => {
     setEditRisk(null);
     setDefaultType(type);
     setShowForm(true);
@@ -1052,21 +1035,20 @@ function RAIDTab({ projectId }: { projectId: string }) {
   const statusColor = (s: string) => {
     if (s === 'open') return 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400';
     if (s === 'monitoring') return 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400';
-    if (s === 'mitigating') return 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
-    if (s === 'mitigated' || s === 'resolved') return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
+    if (s === 'mitigating' || s === 'in_progress') return 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
+    if (s === 'mitigated' || s === 'resolved' || s === 'completed' || s === 'decided') return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
+    if (s === 'pending_decision') return 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400';
+    if (s === 'deferred') return 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400';
+    if (s === 'cancelled' || s === 'reversed') return 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500';
     return 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400';
   };
 
-  const sourceLabel = (s: string) => {
-    if (s === 'ai_detected') return 'AI';
-    if (s === 'agent') return 'Agent';
-    return 'Manual';
-  };
-
-  const sourceBadgeColor = (s: string) => {
-    if (s === 'ai_detected') return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
-    if (s === 'agent') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-    return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+  const typeIndicatorColor = (t: string) => {
+    if (t === 'risk') return 'bg-red-500';
+    if (t === 'issue') return 'bg-orange-500';
+    if (t === 'action') return 'bg-blue-500';
+    if (t === 'decision') return 'bg-purple-500';
+    return 'bg-gray-500';
   };
 
   const scoreColor = (score: number) => {
@@ -1078,6 +1060,12 @@ function RAIDTab({ projectId }: { projectId: string }) {
 
   const formatDate = (d: string | undefined) =>
     d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+  const memberName = (userId: string | null) => {
+    if (!userId) return '';
+    const m = members.find((m: any) => (m.userId || m.id) === userId);
+    return m ? (m.userName || m.user?.name || m.name || m.email || '') : '';
+  };
 
   const cardClass = 'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800';
   const selectClass = 'rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500';
@@ -1094,6 +1082,14 @@ function RAIDTab({ projectId }: { projectId: string }) {
           <span className="text-xs text-gray-500 dark:text-gray-400">Open Issues</span>
           <span className="text-sm font-bold text-orange-600 dark:text-orange-400">{stats.openIssues ?? 0}</span>
         </div>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Open Actions</span>
+          <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{stats.openActions ?? 0}</span>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Pending Decisions</span>
+          <span className="text-sm font-bold text-purple-600 dark:text-purple-400">{stats.pendingDecisions ?? 0}</span>
+        </div>
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20">
           <span className="text-xs text-gray-500 dark:text-gray-400">Critical</span>
           <span className="text-sm font-bold text-red-700 dark:text-red-300">{stats.critical ?? 0}</span>
@@ -1109,11 +1105,17 @@ function RAIDTab({ projectId }: { projectId: string }) {
       {/* Actions + Filters bar */}
       <div className={`${cardClass} p-3`}>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => openAdd('risk')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors">
-            <Plus className="w-3.5 h-3.5" /> Add Risk
+          <button onClick={() => openAdd('risk')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Risk
           </button>
           <button onClick={() => openAdd('issue')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors">
-            <Plus className="w-3.5 h-3.5" /> Add Issue
+            <Plus className="w-3.5 h-3.5" /> Issue
+          </button>
+          <button onClick={() => openAdd('action')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Action
+          </button>
+          <button onClick={() => openAdd('decision')} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Decision
           </button>
           <button
             onClick={handleAiScan}
@@ -1126,18 +1128,39 @@ function RAIDTab({ projectId }: { projectId: string }) {
 
           <div className="flex-1" />
 
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              type="text"
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              placeholder="Search..."
+              className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 w-40 focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+
           <select value={filterType} onChange={e => setFilterType(e.target.value)} className={selectClass}>
             <option value="">All Types</option>
             <option value="risk">Risks</option>
             <option value="issue">Issues</option>
+            <option value="action">Actions</option>
+            <option value="decision">Decisions</option>
           </select>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={selectClass}>
             <option value="">All Statuses</option>
             <option value="open">Open</option>
             <option value="monitoring">Monitoring</option>
             <option value="mitigating">Mitigating</option>
+            <option value="in_progress">In Progress</option>
             <option value="mitigated">Mitigated</option>
             <option value="resolved">Resolved</option>
+            <option value="completed">Completed</option>
+            <option value="pending_decision">Pending Decision</option>
+            <option value="decided">Decided</option>
+            <option value="deferred">Deferred</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="reversed">Reversed</option>
             <option value="closed">Closed</option>
           </select>
           <select value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)} className={selectClass}>
@@ -1156,7 +1179,7 @@ function RAIDTab({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      {/* Risk list */}
+      {/* RAID table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
@@ -1164,129 +1187,97 @@ function RAIDTab({ projectId }: { projectId: string }) {
       ) : risks.length === 0 ? (
         <div className={`${cardClass} p-8 text-center`}>
           <ShieldAlert className="mx-auto mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">No Risks or Issues</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">No RAID Items</h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Add one manually or run an AI Scan to detect potential risks.
+            Add a Risk, Issue, Action, or Decision — or run AI Scan.
           </p>
         </div>
       ) : (
-        <div className={`${cardClass} divide-y divide-gray-100 dark:divide-gray-700/50`}>
-          {risks.map((risk: any) => {
-            const isExpanded = expandedId === risk.id;
-            return (
-              <div key={risk.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-colors">
-                {/* Summary row */}
+        <div className={`${cardClass} overflow-hidden`}>
+          {/* Table header */}
+          <div className="hidden md:grid grid-cols-[60px_1fr_80px_72px_100px_100px_60px_80px] gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700/30 text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <span>ID</span>
+            <span>Title</span>
+            <span>Type</span>
+            <span>Severity</span>
+            <span>Status</span>
+            <span>Owner</span>
+            <span>Score</span>
+            <span>Date</span>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+            {risks.map((risk: any) => {
+              const isTerminal = ['cancelled', 'reversed'].includes(risk.status);
+              return (
                 <div
-                  className="flex items-center gap-3 px-4 py-3 cursor-pointer"
-                  onClick={() => setExpandedId(isExpanded ? null : risk.id)}
+                  key={risk.id}
+                  className={`grid grid-cols-1 md:grid-cols-[60px_1fr_80px_72px_100px_100px_60px_80px] gap-2 px-4 py-2.5 items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-colors ${isTerminal ? 'opacity-50' : ''}`}
+                  onClick={() => setSelectedRaidId(risk.id)}
                 >
-                  {/* Type indicator */}
-                  <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${risk.type === 'issue' ? 'bg-orange-500' : 'bg-red-500'}`} />
-
-                  {/* Title + category */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{risk.title}</p>
-                      {risk.triggered && <span className="text-amber-500" title="Triggered">⚡</span>}
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500 capitalize">{risk.category}</span>
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${sourceBadgeColor(risk.source)}`}>
-                        {sourceLabel(risk.source)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Risk score */}
-                  <span className={`text-sm font-bold ${scoreColor(risk.riskScore)} flex-shrink-0`} title={`P${risk.probability} × I${risk.impact}`}>
-                    {risk.riskScore}
+                  {/* Record ID */}
+                  <span className="text-xs font-mono font-bold text-gray-600 dark:text-gray-400">
+                    {risk.recordId || '—'}
                   </span>
 
-                  {/* Severity badge */}
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize flex-shrink-0 ${severityColor(risk.severity)}`}>
+                  {/* Title + type indicator */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className={`w-1.5 h-6 rounded-full flex-shrink-0 ${typeIndicatorColor(risk.type)}`} />
+                    <p className={`text-sm font-medium text-gray-900 dark:text-white truncate ${isTerminal ? 'line-through' : ''}`}>
+                      {risk.title}
+                    </p>
+                    {risk.triggered && <span className="text-amber-500 flex-shrink-0" title="Triggered">⚡</span>}
+                  </div>
+
+                  {/* Type badge */}
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize w-fit ${
+                    risk.type === 'risk' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                    risk.type === 'issue' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                    risk.type === 'action' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                    'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                  }`}>
+                    {risk.type}
+                  </span>
+
+                  {/* Severity */}
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize w-fit ${severityColor(risk.severity)}`}>
                     {risk.severity}
                   </span>
 
-                  {/* Status badge */}
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize flex-shrink-0 ${statusColor(risk.status)}`}>
-                    {risk.status}
+                  {/* Status */}
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize w-fit ${statusColor(risk.status)}`}>
+                    {risk.status.replace('_', ' ')}
+                  </span>
+
+                  {/* Owner */}
+                  <span className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    {memberName(risk.ownerId) || '—'}
+                  </span>
+
+                  {/* Score */}
+                  <span className={`text-sm font-bold ${scoreColor(risk.riskScore)}`}>
+                    {(risk.type === 'risk' || risk.type === 'issue') ? risk.riskScore : '—'}
                   </span>
 
                   {/* Date */}
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0 w-20 text-right">
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500">
                     {formatDate(risk.createdAt)}
                   </span>
-
-                  {/* Expand chevron */}
-                  <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
-
-                {/* Expanded detail */}
-                {isExpanded && (
-                  <div className="px-4 pb-4 pl-8 space-y-3">
-                    {risk.description && (
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{risk.description}</p>
-                      </div>
-                    )}
-
-                    {risk.triggerCondition && (
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                          Trigger Condition {risk.triggered && <span className="text-amber-500">⚡ Triggered {risk.triggeredAt ? formatDate(risk.triggeredAt) : ''}</span>}
-                        </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{risk.triggerCondition}</p>
-                      </div>
-                    )}
-
-                    {risk.mitigationPlan && (
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Mitigation Plan</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{risk.mitigationPlan}</p>
-                      </div>
-                    )}
-
-                    {risk.responsePlan && (
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Response Plan</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{risk.responsePlan}</p>
-                      </div>
-                    )}
-
-                    {risk.aiConfidence != null && (
-                      <p className="text-xs text-gray-400">AI Confidence: {Math.round(risk.aiConfidence * 100)}%</p>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                      <button onClick={() => openEdit(risk)} className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
-                        Edit
-                      </button>
-                      <select
-                        value={risk.status}
-                        onChange={e => handleStatusChange(risk.id, e.target.value)}
-                        className="text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-1.5 py-1 text-gray-700 dark:text-gray-300"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <option value="open">Open</option>
-                        <option value="monitoring">Monitoring</option>
-                        <option value="mitigating">Mitigating</option>
-                        <option value="mitigated">Mitigated</option>
-                        <option value="resolved">Resolved</option>
-                        <option value="closed">Closed</option>
-                      </select>
-                      <div className="flex-1" />
-                      <button onClick={() => handleDelete(risk.id)} className="text-xs font-medium text-red-600 dark:text-red-400 hover:underline">
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
+      )}
+
+      {/* Slide-out detail panel */}
+      {selectedRaidId && (
+        <RAIDDetailPanel
+          projectId={projectId}
+          raidId={selectedRaidId}
+          onClose={() => setSelectedRaidId(null)}
+          onEdit={(item) => { setSelectedRaidId(null); openEdit(item); }}
+          members={members}
+        />
       )}
 
       {/* Form modal */}

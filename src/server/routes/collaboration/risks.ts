@@ -7,32 +7,70 @@ import { PredictiveIntelligenceService } from '../../services/predictiveIntellig
 import { lessonsLearnedService } from '../../services/LessonsLearnedService';
 import { projectService } from '../../services/ProjectService';
 
+const RAID_TYPES = ['risk', 'issue', 'action', 'decision'] as const;
+const ALL_STATUSES = ['open', 'monitoring', 'mitigating', 'mitigated', 'closed', 'resolved',
+  'cancelled', 'reversed', 'in_progress', 'completed', 'pending_decision', 'decided', 'deferred'] as const;
+const SEVERITIES = ['low', 'medium', 'high', 'critical'] as const;
+const CATEGORIES = ['schedule', 'budget', 'resource', 'technical', 'regulatory', 'stakeholder', 'weather', 'dependency', 'other'] as const;
+
 const createRiskSchema = z.object({
-  type: z.enum(['risk', 'issue']),
+  type: z.enum(RAID_TYPES),
   title: z.string().min(1).max(255),
   description: z.string().max(5000).optional(),
-  category: z.enum(['schedule', 'budget', 'resource', 'technical', 'regulatory', 'stakeholder', 'weather', 'dependency', 'other']).optional(),
-  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  category: z.enum(CATEGORIES).optional(),
+  severity: z.enum(SEVERITIES).optional(),
   probability: z.number().int().min(1).max(5).optional(),
   impact: z.number().int().min(1).max(5).optional(),
-  status: z.enum(['open', 'monitoring', 'mitigating', 'mitigated', 'closed', 'resolved']).optional(),
+  status: z.enum(ALL_STATUSES).optional(),
   triggerCondition: z.string().max(2000).optional(),
   mitigationPlan: z.string().max(5000).optional(),
   responsePlan: z.string().max(5000).optional(),
   ownerId: z.string().optional(),
   linkedTaskIds: z.array(z.string()).optional(),
+  // Action fields
+  dueDate: z.string().optional(),
+  actionType: z.enum(['preventive', 'corrective', 'improvement']).optional(),
+  // Decision fields
+  rationale: z.string().max(5000).optional(),
+  decidedBy: z.string().optional(),
+  decisionDate: z.string().optional(),
+  alternativesConsidered: z.string().max(5000).optional(),
+  stakeholdersConsulted: z.array(z.string()).optional(),
+  // Related RAID items
+  linkedRaidIds: z.array(z.string()).optional(),
 });
 
 const updateRiskSchema = createRiskSchema.partial();
 
 const filterSchema = z.object({
-  type: z.enum(['risk', 'issue']).optional(),
-  status: z.enum(['open', 'monitoring', 'mitigating', 'mitigated', 'closed', 'resolved']).optional(),
-  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  type: z.enum(RAID_TYPES).optional(),
+  status: z.enum(ALL_STATUSES).optional(),
+  severity: z.enum(SEVERITIES).optional(),
   source: z.enum(['manual', 'ai_detected', 'agent']).optional(),
-  sort: z.enum(['risk_score', 'created_at', 'severity', 'status']).optional(),
+  category: z.enum(CATEGORIES).optional(),
+  ownerId: z.string().optional(),
+  search: z.string().optional(),
+  sort: z.enum(['risk_score', 'created_at', 'severity', 'status', 'record_id', 'due_date']).optional(),
   sortDir: z.enum(['asc', 'desc']).optional(),
 });
+
+const cancelSchema = z.object({
+  reason: z.string().min(1).max(2000),
+});
+
+const commentSchema = z.object({
+  comment: z.string().min(1).max(5000),
+});
+
+function canPerformRaidAction(role: string, itemType: string, action: string): boolean {
+  if (role === 'admin') return true;
+  if (action === 'comment') return true;
+  if (action === 'reverse') return false; // admin only
+  if (role === 'team_member') return action === 'create' && ['issue', 'action'].includes(itemType);
+  if (role === 'risk_manager') return ['risk', 'issue'].includes(itemType);
+  if (['project_manager', 'scrum_master', 'pmo', 'ba'].includes(role)) return true;
+  return false;
+}
 
 export async function riskRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -82,7 +120,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /api/v1/projects/:projectId/risks — Create risk/issue
+  // POST /api/v1/projects/:projectId/risks — Create RAID item
   fastify.post('/:projectId/risks', {
     preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
@@ -90,44 +128,116 @@ export async function riskRoutes(fastify: FastifyInstance) {
       const { projectId } = request.params as { projectId: string };
       const body = createRiskSchema.parse(request.body);
       const userId = request.user!.userId;
+      const userRole = request.user!.role || 'team_member';
+
+      if (!canPerformRaidAction(userRole, body.type, 'create')) {
+        return reply.status(403).send({ error: 'Insufficient permissions to create this RAID type' });
+      }
+
       const risk = await riskService.create({ ...body, projectId, createdBy: userId });
       return reply.status(201).send({ data: risk });
     } catch (err) {
       if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
-      fastify.log.error({ err }, 'Failed to create risk');
-      return reply.status(500).send({ error: 'Failed to create risk' });
+      if (err instanceof Error && err.message.startsWith('Invalid status')) return reply.status(400).send({ error: err.message });
+      fastify.log.error({ err }, 'Failed to create RAID item');
+      return reply.status(500).send({ error: 'Failed to create RAID item' });
     }
   });
 
-  // PUT /api/v1/projects/:projectId/risks/:riskId — Update risk/issue
+  // PUT /api/v1/projects/:projectId/risks/:riskId — Update RAID item
   fastify.put('/:projectId/risks/:riskId', {
     preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { riskId } = request.params as { projectId: string; riskId: string };
       const body = updateRiskSchema.parse(request.body);
-      const risk = await riskService.update(riskId, body);
-      if (!risk) return reply.status(404).send({ error: 'Risk not found' });
+      const userId = request.user!.userId;
+      const risk = await riskService.update(riskId, body, userId);
+      if (!risk) return reply.status(404).send({ error: 'RAID item not found' });
       return reply.send({ data: risk });
     } catch (err) {
       if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
-      fastify.log.error({ err }, 'Failed to update risk');
-      return reply.status(500).send({ error: 'Failed to update risk' });
+      if (err instanceof Error && err.message.startsWith('Invalid status')) return reply.status(400).send({ error: err.message });
+      fastify.log.error({ err }, 'Failed to update RAID item');
+      return reply.status(500).send({ error: 'Failed to update RAID item' });
     }
   });
 
-  // DELETE /api/v1/projects/:projectId/risks/:riskId — Delete risk/issue
-  fastify.delete('/:projectId/risks/:riskId', {
+  // POST /api/v1/projects/:projectId/risks/:riskId/cancel — Cancel RAID item
+  fastify.post('/:projectId/risks/:riskId/cancel', {
     preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { riskId } = request.params as { projectId: string; riskId: string };
-      const deleted = await riskService.delete(riskId);
-      if (!deleted) return reply.status(404).send({ error: 'Risk not found' });
-      return reply.send({ message: 'Deleted' });
+      const { reason } = cancelSchema.parse(request.body);
+      const userId = request.user!.userId;
+      const risk = await riskService.cancel(riskId, reason, userId);
+      if (!risk) return reply.status(404).send({ error: 'RAID item not found' });
+      return reply.send({ data: risk });
     } catch (err) {
-      fastify.log.error({ err }, 'Failed to delete risk');
-      return reply.status(500).send({ error: 'Failed to delete risk' });
+      if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
+      fastify.log.error({ err }, 'Failed to cancel RAID item');
+      return reply.status(500).send({ error: 'Failed to cancel RAID item' });
+    }
+  });
+
+  // POST /api/v1/projects/:projectId/risks/:riskId/reverse — Reverse decision
+  fastify.post('/:projectId/risks/:riskId/reverse', {
+    preHandler: [requireScope('write')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { riskId } = request.params as { projectId: string; riskId: string };
+      const { reason } = cancelSchema.parse(request.body);
+      const userId = request.user!.userId;
+      const userRole = request.user!.role || 'team_member';
+
+      if (!canPerformRaidAction(userRole, 'decision', 'reverse')) {
+        return reply.status(403).send({ error: 'Only admins can reverse decisions' });
+      }
+
+      const risk = await riskService.reverse(riskId, reason, userId);
+      if (!risk) return reply.status(404).send({ error: 'RAID item not found' });
+      return reply.send({ data: risk });
+    } catch (err) {
+      if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
+      if (err instanceof Error && err.message === 'Only decisions can be reversed') return reply.status(400).send({ error: err.message });
+      fastify.log.error({ err }, 'Failed to reverse decision');
+      return reply.status(500).send({ error: 'Failed to reverse decision' });
+    }
+  });
+
+  // GET /api/v1/projects/:projectId/risks/:riskId/activity — Activity log
+  fastify.get('/:projectId/risks/:riskId/activity', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { riskId } = request.params as { projectId: string; riskId: string };
+      const activity = await riskService.getActivity(riskId);
+      return reply.send({ data: activity });
+    } catch (err) {
+      fastify.log.error({ err }, 'Failed to get activity');
+      return reply.status(500).send({ error: 'Failed to get activity' });
+    }
+  });
+
+  // POST /api/v1/projects/:projectId/risks/:riskId/comments — Add comment
+  fastify.post('/:projectId/risks/:riskId/comments', {
+    preHandler: [requireScope('read')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { projectId, riskId } = request.params as { projectId: string; riskId: string };
+      const { comment } = commentSchema.parse(request.body);
+      const userId = request.user!.userId;
+
+      const item = await riskService.findById(riskId);
+      if (!item) return reply.status(404).send({ error: 'RAID item not found' });
+
+      await riskService.addComment(riskId, projectId, userId, comment);
+      return reply.status(201).send({ message: 'Comment added' });
+    } catch (err) {
+      if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
+      fastify.log.error({ err }, 'Failed to add comment');
+      return reply.status(500).send({ error: 'Failed to add comment' });
     }
   });
 

@@ -1,6 +1,15 @@
 import { riskRepository, ProjectRisk, RiskFilters, RiskStats } from '../database/RiskRepository';
 import logger from '../utils/logger';
 
+const VALID_STATUSES: Record<string, string[]> = {
+  risk:     ['open', 'monitoring', 'mitigating', 'mitigated', 'closed', 'cancelled'],
+  issue:    ['open', 'in_progress', 'resolved', 'closed', 'cancelled'],
+  action:   ['open', 'in_progress', 'completed', 'closed', 'cancelled', 'deferred'],
+  decision: ['pending_decision', 'decided', 'deferred', 'reversed'],
+};
+
+const TERMINAL_STATUSES = ['closed', 'resolved', 'mitigated', 'cancelled', 'reversed', 'completed'];
+
 class RiskService {
   async findByProject(projectId: string, filters: RiskFilters = {}): Promise<ProjectRisk[]> {
     return riskRepository.findByProject(projectId, filters);
@@ -16,7 +25,7 @@ class RiskService {
 
   async create(data: {
     projectId: string;
-    type: 'risk' | 'issue';
+    type: 'risk' | 'issue' | 'action' | 'decision';
     title: string;
     description?: string;
     category?: string;
@@ -34,34 +43,148 @@ class RiskService {
     linkedTaskIds?: string[];
     linkedProposalId?: string;
     createdBy: string;
+    dueDate?: string;
+    actionType?: 'preventive' | 'corrective' | 'improvement';
+    rationale?: string;
+    decidedBy?: string;
+    decisionDate?: string;
+    alternativesConsidered?: string;
+    stakeholdersConsulted?: string[];
+    linkedRaidIds?: string[];
   }): Promise<ProjectRisk> {
+    if (data.status) {
+      const valid = VALID_STATUSES[data.type] || [];
+      if (valid.length && !valid.includes(data.status)) {
+        throw new Error(`Invalid status '${data.status}' for type '${data.type}'`);
+      }
+    }
+
     const risk = await riskRepository.create(data);
-    logger.info('Risk created: %s project=%s type=%s source=%s', risk.id, data.projectId, data.type, data.source || 'manual');
+    logger.info('RAID item created: %s record=%s project=%s type=%s source=%s', risk.id, risk.recordId, data.projectId, data.type, data.source || 'manual');
+
+    // Fire-and-forget activity log
+    riskRepository.createActivityLog({
+      raidItemId: risk.id,
+      projectId: data.projectId,
+      userId: data.createdBy,
+      actionType: 'created',
+      newValue: risk.recordId || risk.id,
+    }).catch(() => {});
+
     return risk;
   }
 
-  async update(id: string, data: Record<string, any>): Promise<ProjectRisk | null> {
+  async update(id: string, data: Record<string, any>, userId?: string): Promise<ProjectRisk | null> {
     const existing = await riskRepository.findById(id);
     if (!existing) return null;
 
-    // Auto-set resolvedAt when closing
-    if (data.status && ['closed', 'resolved', 'mitigated'].includes(data.status) && !existing.resolvedAt) {
+    // Validate status per type
+    if (data.status) {
+      const valid = VALID_STATUSES[existing.type] || [];
+      if (valid.length && !valid.includes(data.status)) {
+        throw new Error(`Invalid status '${data.status}' for type '${existing.type}'`);
+      }
+    }
+
+    // Auto-set resolvedAt when entering terminal status
+    if (data.status && TERMINAL_STATUSES.includes(data.status) && !existing.resolvedAt) {
       data.resolvedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
     }
     // Clear resolvedAt if reopening
-    if (data.status && ['open', 'monitoring', 'mitigating'].includes(data.status) && existing.resolvedAt) {
+    if (data.status && !TERMINAL_STATUSES.includes(data.status) && existing.resolvedAt) {
       data.resolvedAt = null;
     }
 
     const updated = await riskRepository.update(id, data);
-    logger.info('Risk updated: %s fields=%s', id, Object.keys(data).join(','));
+    logger.info('RAID item updated: %s fields=%s', id, Object.keys(data).join(','));
+
+    // Fire-and-forget activity logging for each changed field
+    if (userId) {
+      for (const key of Object.keys(data)) {
+        const oldVal = (existing as any)[key];
+        const newVal = data[key];
+        if (oldVal !== newVal) {
+          const actionType = key === 'status' ? 'status_change' as const : 'field_update' as const;
+          riskRepository.createActivityLog({
+            raidItemId: id,
+            projectId: existing.projectId,
+            userId,
+            actionType,
+            fieldName: key,
+            oldValue: oldVal != null ? String(oldVal) : undefined,
+            newValue: newVal != null ? String(newVal) : undefined,
+          }).catch(() => {});
+        }
+      }
+    }
+
     return updated;
   }
 
-  async delete(id: string): Promise<boolean> {
-    const deleted = await riskRepository.deleteById(id);
-    if (deleted) logger.info('Risk deleted: %s', id);
-    return deleted;
+  async cancel(id: string, reason: string, userId: string): Promise<ProjectRisk | null> {
+    const existing = await riskRepository.findById(id);
+    if (!existing) return null;
+    if (existing.status === 'cancelled') return existing;
+
+    const updated = await riskRepository.update(id, {
+      status: 'cancelled',
+      cancelReason: reason,
+      resolvedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+    });
+
+    riskRepository.createActivityLog({
+      raidItemId: id,
+      projectId: existing.projectId,
+      userId,
+      actionType: 'cancelled',
+      oldValue: existing.status,
+      newValue: 'cancelled',
+      comment: reason,
+    }).catch(() => {});
+
+    logger.info('RAID item cancelled: %s reason=%s', id, reason);
+    return updated;
+  }
+
+  async reverse(id: string, reason: string, userId: string): Promise<ProjectRisk | null> {
+    const existing = await riskRepository.findById(id);
+    if (!existing) return null;
+    if (existing.type !== 'decision') {
+      throw new Error('Only decisions can be reversed');
+    }
+
+    const updated = await riskRepository.update(id, {
+      status: 'reversed',
+      cancelReason: reason,
+      resolvedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+    });
+
+    riskRepository.createActivityLog({
+      raidItemId: id,
+      projectId: existing.projectId,
+      userId,
+      actionType: 'reversed',
+      oldValue: existing.status,
+      newValue: 'reversed',
+      comment: reason,
+    }).catch(() => {});
+
+    logger.info('Decision reversed: %s reason=%s', id, reason);
+    return updated;
+  }
+
+  async addComment(raidItemId: string, projectId: string, userId: string, comment: string): Promise<void> {
+    await riskRepository.createActivityLog({
+      raidItemId,
+      projectId,
+      userId,
+      actionType: 'comment',
+      comment,
+    });
+  }
+
+  async getActivity(raidItemId: string) {
+    return riskRepository.getActivityLog(raidItemId);
   }
 
   /**
@@ -94,7 +217,6 @@ class RiskService {
       const match = existingTitles.get(titleKey);
 
       if (match) {
-        // Update severity/probability if changed
         const updates: Record<string, any> = {};
         if (aiRisk.severity !== match.severity) updates.severity = aiRisk.severity;
         if (aiRisk.probability && aiRisk.probability !== match.probability) updates.probability = aiRisk.probability;
