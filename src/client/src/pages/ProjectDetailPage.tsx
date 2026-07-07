@@ -89,21 +89,26 @@ import { useUndoRedo } from '../hooks/useUndoRedo';
 
 type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resource-leveling';
 
-const tabs: { id: Tab; label: string }[] = [
+const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'schedule', label: 'Schedule' },
   { id: 'raid', label: 'RAID' },
-  { id: 'change-requests', label: 'Change Requests' },
   { id: 'sprints', label: 'Sprints' },
-  { id: 'resource-leveling', label: 'Resource Leveling' },
+  { id: 'team', label: 'Team' },
   { id: 'ai-insights', label: 'AI Insights' },
   { id: 'evm-forecast', label: 'EVM Forecast' },
+];
+
+const moreTabs: { id: Tab; label: string }[] = [
+  { id: 'change-requests', label: 'Change Requests' },
+  { id: 'resource-leveling', label: 'Resource Leveling' },
   { id: 'network-diagram', label: 'Network Diagram' },
   { id: 'burndown', label: 'Burndown' },
   { id: 'scenarios', label: 'What-If' },
-  { id: 'team', label: 'Team' },
   { id: 'agent-activity', label: 'Agent Activity' },
 ];
+
+const allTabs = [...primaryTabs, ...moreTabs];
 
 const statusStyles: Record<string, { label: string; color: string }> = {
   active: { label: 'Active', color: 'bg-green-100 text-green-700' },
@@ -232,6 +237,15 @@ export function ProjectDetailPage() {
   });
 
   const project = projectData?.project;
+
+  const { data: riskStatsData } = useQuery({
+    queryKey: ['project-risks-stats', id],
+    queryFn: () => apiService.getRiskStats(id!),
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+
+  const riskStats = riskStatsData?.data || riskStatsData;
 
   const queryClient = useQueryClient();
   const statusMutation = useMutation({
@@ -447,7 +461,7 @@ export function ProjectDetailPage() {
       </div>
 
       {/* Context Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <ContextCard
           label="Progress"
           value={`${progress}%`}
@@ -491,6 +505,21 @@ export function ProjectDetailPage() {
           }
         />
         <ContextCard
+          label="Risks"
+          value={riskStats ? `${riskStats.openRisks || 0} Open` : '—'}
+          icon={ShieldAlert}
+          color={
+            riskStats?.critical > 0
+              ? 'bg-red-50 text-red-600'
+              : riskStats?.openRisks > 0
+                ? 'bg-orange-50 text-orange-600'
+                : 'bg-green-50 text-green-600'
+          }
+          detail={riskStats?.critical > 0 ? (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">{riskStats.critical} critical</p>
+          ) : undefined}
+        />
+        <ContextCard
           label="Status"
           value={status.label}
           icon={Calendar}
@@ -501,19 +530,24 @@ export function ProjectDetailPage() {
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide">
-          {tabs.map((tab) => (
+          {primaryTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`border-b-2 pb-3 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === tab.id
                   ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               {tab.label}
             </button>
           ))}
+          <MoreTabsDropdown
+            tabs={moreTabs}
+            activeTab={activeTab}
+            onSelect={setActiveTab}
+          />
         </nav>
       </div>
 
@@ -584,6 +618,67 @@ function ContextCard({
 }
 
 // ---------------------------------------------------------------------------
+// More Tabs Dropdown
+// ---------------------------------------------------------------------------
+
+function MoreTabsDropdown({
+  tabs: dropdownTabs,
+  activeTab,
+  onSelect,
+}: {
+  tabs: { id: Tab; label: string }[];
+  activeTab: Tab;
+  onSelect: (id: Tab) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isActiveInMore = dropdownTabs.some(t => t.id === activeTab);
+  const activeLabel = dropdownTabs.find(t => t.id === activeTab)?.label;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div className="relative flex-shrink-0" ref={ref}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={`border-b-2 pb-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
+          isActiveInMore
+            ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+        }`}
+      >
+        {isActiveInMore ? activeLabel : 'More'}
+        <ChevronDown className="w-3.5 h-3.5" />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
+          {dropdownTabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => { onSelect(t.id); setOpen(false); }}
+              className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                activeTab === t.id
+                  ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-medium'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Overview Tab
 // ---------------------------------------------------------------------------
 
@@ -623,6 +718,34 @@ function OverviewTab({ project }: { project: any }) {
       const db = b.startDate || b.start_date || b.endDate || b.end_date || '';
       return da.localeCompare(db);
     });
+
+  // RAID stats
+  const { data: raidStatsData } = useQuery({
+    queryKey: ['project-risks-stats', project.id],
+    queryFn: () => apiService.getRiskStats(project.id),
+    enabled: !!project.id,
+    staleTime: 60_000,
+  });
+  const raidStats = raidStatsData?.data || raidStatsData;
+
+  // Active sprint
+  const { data: sprintsData } = useQuery({
+    queryKey: ['sprints', project.id, 'overview'],
+    queryFn: () => apiService.getSprints(project.id),
+    enabled: !!project.id,
+    staleTime: 120_000,
+  });
+  const sprints: any[] = sprintsData?.sprints || sprintsData || [];
+  const activeSprint = sprints.find((s: any) => s.status === 'active');
+
+  // Recent activity (audit trail)
+  const { data: auditData } = useQuery({
+    queryKey: ['auditTrail', project.id, 'overview'],
+    queryFn: () => apiService.getAuditTrail(project.id, 6),
+    enabled: !!project.id,
+    staleTime: 60_000,
+  });
+  const recentActivity: any[] = auditData?.activities || [];
 
   const members: any[] = membersData?.members || [];
   const summary = analyticsData?.summary || analyticsData;
@@ -921,7 +1044,127 @@ function OverviewTab({ project }: { project: any }) {
         </div>
       </div>
 
-      {/* Row 3: Attachments + Custom Fields + Portal Links */}
+      {/* Row 3: RAID Summary + Current Sprint + Recent Activity */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* RAID Summary */}
+        <div className={cardClass}>
+          <h3 className={headingClass}>
+            <span className="flex items-center gap-2"><ShieldAlert className="w-4 h-4" /> RAID Summary</span>
+          </h3>
+          {!raidStats ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-2.5 text-center">
+                  <p className="text-xl font-bold text-red-600 dark:text-red-400">{raidStats.openRisks || 0}</p>
+                  <p className="text-[10px] text-red-500 dark:text-red-400">Open Risks</p>
+                </div>
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/20 p-2.5 text-center">
+                  <p className="text-xl font-bold text-orange-600 dark:text-orange-400">{raidStats.openIssues || 0}</p>
+                  <p className="text-[10px] text-orange-500 dark:text-orange-400">Open Issues</p>
+                </div>
+                <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-2.5 text-center">
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{raidStats.openActions || 0}</p>
+                  <p className="text-[10px] text-blue-500 dark:text-blue-400">Open Actions</p>
+                </div>
+                <div className="rounded-lg bg-purple-50 dark:bg-purple-900/20 p-2.5 text-center">
+                  <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{raidStats.pendingDecisions || 0}</p>
+                  <p className="text-[10px] text-purple-500 dark:text-purple-400">Pending Decisions</p>
+                </div>
+              </div>
+              {(raidStats.critical > 0 || raidStats.triggered > 0) && (
+                <div className="flex gap-2 flex-wrap">
+                  {raidStats.critical > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">
+                      <AlertTriangle className="w-3 h-3" /> {raidStats.critical} critical
+                    </span>
+                  )}
+                  {raidStats.triggered > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
+                      {raidStats.triggered} triggered
+                    </span>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Current Sprint */}
+        <div className={cardClass}>
+          <h3 className={headingClass}>
+            <span className="flex items-center gap-2"><Kanban className="w-4 h-4" /> Current Sprint</span>
+          </h3>
+          {!activeSprint ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No active sprint</p>
+          ) : (() => {
+            const total = activeSprint.totalTasks || 0;
+            const done = activeSprint.completedTasks || 0;
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+            const sprintStart = new Date(activeSprint.startDate);
+            const sprintEnd = new Date(activeSprint.endDate);
+            const totalDays = Math.max(1, Math.ceil((sprintEnd.getTime() - sprintStart.getTime()) / 86400000));
+            const elapsed = Math.max(0, Math.ceil((now.getTime() - sprintStart.getTime()) / 86400000));
+            return (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{activeSprint.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Day {Math.min(elapsed, totalDays)} of {totalDays} &middot; {formatDate(activeSprint.startDate)} - {formatDate(activeSprint.endDate)}
+                  </p>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-500 dark:text-gray-400">Progress</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{done}/{total} tasks ({pct}%)</span>
+                  </div>
+                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+                    <div className="bg-primary-500 h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+                {activeSprint.goal && (
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Sprint Goal</p>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">{activeSprint.goal}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Recent Activity */}
+        <div className={cardClass}>
+          <h3 className={headingClass}>
+            <span className="flex items-center gap-2"><Activity className="w-4 h-4" /> Recent Activity</span>
+          </h3>
+          {recentActivity.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No recent activity</p>
+          ) : (
+            <div className="space-y-2.5 max-h-[220px] overflow-y-auto">
+              {recentActivity.map((a: any, i: number) => (
+                <div key={a.id || i} className="flex items-start gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Activity className="w-3 h-3 text-gray-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-gray-800 dark:text-gray-200 truncate">
+                      {a.action || a.description || a.summary || a.message || 'Activity'}
+                    </p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                      {a.userName || a.user || ''}{a.userName || a.user ? ' · ' : ''}
+                      {new Date(a.createdAt || a.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Row 4: Attachments + Custom Fields + Portal Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className={cardClass}>
           <AttachmentPanel entityType="project" entityId={project.id} />
