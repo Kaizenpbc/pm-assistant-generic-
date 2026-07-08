@@ -45,7 +45,7 @@ interface UsageStats {
   estimatedCost: number;
 }
 
-const REQUEST_TIMEOUT_MS = 30_000;
+const REQUEST_TIMEOUT_MS = 90_000;
 
 // ---------------------------------------------------------------------------
 // Circuit Breaker for user-facing AI calls
@@ -361,7 +361,7 @@ export class ClaudeService {
         this.client = new Anthropic({
           apiKey: config.ANTHROPIC_API_KEY,
           timeout: REQUEST_TIMEOUT_MS,
-          maxRetries: 2,
+          maxRetries: 1,
         });
       }
     }
