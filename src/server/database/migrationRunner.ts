@@ -99,10 +99,12 @@ export async function runMigrations(): Promise<void> {
 
     // Split on semicolons to execute statements individually
     // (mysql2 execute doesn't support multi-statement by default)
+    // Strip SQL comment lines (-- ...) before filtering so comments
+    // preceding a statement don't cause the whole chunk to be discarded.
     const statements = sql
       .split(/;\s*$/m)
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .map(s => s.split('\n').filter(line => !line.trimStart().startsWith('--')).join('\n').trim())
+      .filter(s => s.length > 0);
 
     const connection = await databaseService.getConnection();
     try {
@@ -181,8 +183,8 @@ export async function rollbackMigrations(count: number = 1, dryRun: boolean = fa
 
     const statements = sql
       .split(/;\s*$/m)
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .map(s => s.split('\n').filter(line => !line.trimStart().startsWith('--')).join('\n').trim())
+      .filter(s => s.length > 0);
 
     console.log(`[rollback] ${dryRun ? 'Would rollback' : 'Rolling back'}: ${migration.name} (${statements.length} statements)`);
 
@@ -253,8 +255,8 @@ export async function dryRunMigrations(): Promise<void> {
     const sql = fs.readFileSync(filePath, 'utf-8').trim();
     const statements = sql
       .split(/;\s*$/m)
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .map(s => s.split('\n').filter(line => !line.trimStart().startsWith('--')).join('\n').trim())
+      .filter(s => s.length > 0);
     console.log(`  #${String(num).padStart(3, '0')}: ${file} (${statements.length} statements)`);
   }
 }

@@ -72,3 +72,48 @@ describe('Migration file integrity', () => {
     expect(() => validateAndSortMigrations(testFiles)).not.toThrow();
   });
 });
+
+describe('SQL statement parsing (comment handling)', () => {
+  // Replicate the parsing logic used in runMigrations
+  function parseStatements(sql: string): string[] {
+    return sql
+      .split(/;\s*$/m)
+      .map(s => s.split('\n').filter(line => !line.trimStart().startsWith('--')).join('\n').trim())
+      .filter(s => s.length > 0);
+  }
+
+  it('parses a single statement with a leading comment', () => {
+    const sql = '-- Migration 042: Add cost_rate_hourly\nALTER TABLE resources ADD COLUMN cost_rate_hourly DECIMAL(10,2);\n';
+    const stmts = parseStatements(sql);
+    expect(stmts).toHaveLength(1);
+    expect(stmts[0]).toBe('ALTER TABLE resources ADD COLUMN cost_rate_hourly DECIMAL(10,2)');
+  });
+
+  it('parses multiple statements with interleaved comments', () => {
+    const sql = [
+      '-- Step 1',
+      'CREATE TABLE foo (id INT);',
+      '',
+      '-- Step 2',
+      'ALTER TABLE foo ADD COLUMN bar VARCHAR(50);',
+    ].join('\n');
+    const stmts = parseStatements(sql);
+    expect(stmts).toHaveLength(2);
+    expect(stmts[0]).toContain('CREATE TABLE foo');
+    expect(stmts[1]).toContain('ALTER TABLE foo');
+  });
+
+  it('handles comment-only files gracefully', () => {
+    const sql = '-- This migration is intentionally blank\n-- Nothing to do\n';
+    const stmts = parseStatements(sql);
+    expect(stmts).toHaveLength(0);
+  });
+
+  it('handles inline content after -- only strips full-line comments', () => {
+    const sql = "INSERT INTO config (key, val) VALUES ('mode', 'fast'); -- default\n";
+    const stmts = parseStatements(sql);
+    // The line doesn't START with --, so it should be kept intact
+    expect(stmts).toHaveLength(1);
+    expect(stmts[0]).toContain("INSERT INTO config");
+  });
+});
