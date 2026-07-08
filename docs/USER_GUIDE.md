@@ -457,9 +457,10 @@ A bar chart showing resource demand by time period. Helps identify peaks and val
 
 The resource leveling panel suggests schedule adjustments to resolve over-allocation:
 
-- Review suggested task shifts.
+- Review suggested task delay shifts.
 - Accept or reject leveling recommendations.
 - Apply changes to smooth resource demand.
+- **Reassignment suggestions** appear below the delay table for tasks that remain over-allocated. Each row shows the current resource, a suggested alternative (with skill match score), and a "Reassign" button to immediately reassign the task.
 
 ### Capacity Chart
 
@@ -952,6 +953,14 @@ Click the **Timeline** toggle to switch to the multi-project Gantt chart:
 - Click a project row to navigate to its detail page.
 
 Click **Dashboard** in the toggle to return to the KPI card view.
+
+### Portfolio Resources View
+
+Click the **Resources** toggle to see cross-project resource utilization:
+
+- **4 KPI cards**: Total Resources, Over-Allocated, Avg Utilization, Weekly Cost.
+- **Cross-project contention table** (red border): lists resources on 2+ projects with combined utilization > 100%, showing each project and its share.
+- **Resource utilization table**: all resources sorted by utilization, showing role, cost rate, project count, combined utilization percentage, and assigned projects.
 
 ---
 

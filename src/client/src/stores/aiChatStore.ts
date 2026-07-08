@@ -206,6 +206,7 @@ export const dashboardQuickActions: QuickAction[] = [
   { id: 'daily-brief', label: 'Daily Brief', icon: 'Sun', prompt: 'Give me a daily briefing on my projects. What needs attention today?' },
   { id: 'create-project', label: 'New Project', icon: 'Plus', prompt: 'Help me create a new project. Ask me what I need.' },
   { id: 'report', label: 'Status Report', icon: 'FileText', prompt: 'Generate a status report for all active projects.' },
+  { id: 'resource-contention', label: 'Resource Contention', icon: 'Users', prompt: 'Are any resources over-allocated across my projects? Show me who is spread too thin and suggest how to rebalance.' },
 ];
 
 export const projectQuickActions: QuickAction[] = [
@@ -213,4 +214,5 @@ export const projectQuickActions: QuickAction[] = [
   { id: 'risks', label: 'Find Risks', icon: 'AlertTriangle', prompt: 'What are the biggest risks for this project right now?' },
   { id: 'add-task', label: 'Add Task', icon: 'Plus', prompt: 'I need to add a new task to this project. Ask me for the details.' },
   { id: 'whats-overdue', label: 'Overdue?', icon: 'Clock', prompt: 'Show me any overdue or at-risk tasks in this project and suggest what to do about them.' },
+  { id: 'resource-check', label: 'Resource Check', icon: 'Users', prompt: 'Check resource utilization for this project. Who is over-allocated? Are there any bottlenecks or burnout risks?' },
 ];

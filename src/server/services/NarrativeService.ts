@@ -1,6 +1,7 @@
 import { claudeService } from './claudeService';
 import { projectService } from './ProjectService';
 import { scheduleService } from './ScheduleService';
+import { resourceService } from './ResourceService';
 import { insightAssemblyService } from './agents/InsightAssemblyService';
 import { sanitizeForPrompt } from '../utils/promptSanitizer';
 
@@ -25,6 +26,19 @@ export class NarrativeService {
       completedTasks += tasks.filter(t => t.status === 'completed').length;
     }
 
+    // Fetch resource workload summary
+    let resourceSummary = '';
+    try {
+      const workload = await resourceService.computeWorkload(projectId);
+      if (workload.length > 0) {
+        const overAlloc = workload.filter(w => w.isOverAllocated).length;
+        const avgUtil = Math.round(workload.reduce((s, w) => s + w.averageUtilization, 0) / workload.length);
+        resourceSummary = `\nResources: ${workload.length} assigned, ${overAlloc} over-allocated, ${avgUtil}% avg utilization`;
+      }
+    } catch {
+      // Non-critical
+    }
+
     const roleFocus = this.getRoleFocus(role);
     const projectName = sanitizeForPrompt(project.name);
 
@@ -34,7 +48,7 @@ Project status: ${project.status}
 Tasks: ${completedTasks}/${totalTasks} complete
 Budget: $${project.budgetSpent || 0} of $${project.budgetAllocated || 0} spent
 Health: ${insights.overallHealth}
-Agent findings: ${insights.agentFindings.map(f => `${f.agent}: ${f.finding}`).join('; ') || 'None'}
+Agent findings: ${insights.agentFindings.map(f => `${f.agent}: ${f.finding}`).join('; ') || 'None'}${resourceSummary}
 
 Focus on: ${roleFocus}
 Write in plain language, no markdown. Be concise and actionable.`;
@@ -93,7 +107,8 @@ Write in plain language, no markdown. Be concise and actionable.`;
       case 'scrum_master': return 'sprint progress, velocity trends, and team blockers';
       case 'executive': return 'high-level status, strategic risks, and portfolio health';
       case 'admin': return 'system health, resource allocation, and cross-project dependencies';
-      case 'project_manager': return 'schedule adherence, task completion, and immediate risks';
+      case 'project_manager': return 'schedule adherence, task completion, resource capacity and bottlenecks, and immediate risks';
+      case 'pmo': return 'portfolio health, resource capacity and bottlenecks, cross-project dependencies, and governance';
       case 'team_member': return 'upcoming deadlines, assigned work, and blockers';
       default: return 'overall project health and key action items';
     }

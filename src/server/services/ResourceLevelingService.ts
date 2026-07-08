@@ -1,5 +1,7 @@
 import { criticalPathService, CriticalPathResult, CPMTaskResult } from './CriticalPathService';
 import { scheduleService, Task } from './ScheduleService';
+import { resourceService } from './ResourceService';
+import type { Resource } from './ResourceService';
 
 // --- Interfaces ---
 
@@ -35,11 +37,22 @@ export interface TaskAdjustment {
   reason: string;
 }
 
+export interface ReassignmentSuggestion {
+  taskId: string;
+  taskName: string;
+  currentResource: string;
+  suggestedResource: string;
+  suggestedResourceId: string;
+  matchScore: number;
+  reason: string;
+}
+
 export interface LevelingResult {
   originalDemand: ResourceDemand[];
   leveledDemand: ResourceDemand[];
   adjustedTasks: TaskAdjustment[];
   overAllocations: OverAllocation[];
+  reassignmentSuggestions: ReassignmentSuggestion[];
 }
 
 // --- Service ---
@@ -149,6 +162,7 @@ export class ResourceLevelingService {
         leveledDemand: originalDemand,
         adjustedTasks: [],
         overAllocations: [],
+        reassignmentSuggestions: [],
       };
     }
 
@@ -326,11 +340,82 @@ export class ResourceLevelingService {
       }
     }
 
+    // --- Reassignment suggestions for remaining over-allocations ---
+    const reassignmentSuggestions: ReassignmentSuggestion[] = [];
+
+    if (remainingOverAllocations.length > 0) {
+      try {
+        const allResources = await resourceService.findAllResources();
+        const activeResources = allResources.filter(r => r.isActive);
+
+        // Identify still-overloaded resources
+        const overloadedResources = new Set(remainingOverAllocations.map(oa => oa.resourceName));
+
+        // Find tasks assigned to overloaded resources that could be reassigned
+        for (const lt of levelable) {
+          if (!lt.task.assignedTo || !overloadedResources.has(lt.task.assignedTo)) continue;
+
+          // Check if this task's date range overlaps with remaining over-allocations
+          const resourceOAs = remainingOverAllocations.filter(oa => oa.resourceName === lt.task.assignedTo);
+          const taskDates = new Set<string>();
+          for (let d = 0; d < lt.durationDays; d++) {
+            taskDates.add(toDateStr(addDays(lt.currentStart, d)));
+          }
+          const overlaps = resourceOAs.some(oa => taskDates.has(oa.date));
+          if (!overlaps) continue;
+
+          // Find alternative resources based on skill matching
+          const taskText = `${lt.task.name} ${lt.task.description || ''}`.toLowerCase();
+          const taskWords = new Set(taskText.split(/\s+/).filter(w => w.length > 2));
+
+          let bestMatch: { resource: Resource; score: number } | null = null;
+
+          for (const resource of activeResources) {
+            if (resource.name === lt.task.assignedTo) continue;
+
+            // Simple skill-keyword match
+            let matchCount = 0;
+            for (const skill of resource.skills) {
+              const skillLower = skill.toLowerCase();
+              for (const word of taskWords) {
+                if (skillLower.includes(word) || word.includes(skillLower)) {
+                  matchCount++;
+                  break;
+                }
+              }
+            }
+            const score = resource.skills.length > 0
+              ? Math.round((matchCount / resource.skills.length) * 100)
+              : 10; // Default low score for resources with no skills
+
+            if (!bestMatch || score > bestMatch.score) {
+              bestMatch = { resource, score };
+            }
+          }
+
+          if (bestMatch && bestMatch.score > 0) {
+            reassignmentSuggestions.push({
+              taskId: lt.task.id,
+              taskName: lt.task.name,
+              currentResource: lt.task.assignedTo!,
+              suggestedResource: bestMatch.resource.name,
+              suggestedResourceId: bestMatch.resource.id,
+              matchScore: bestMatch.score,
+              reason: `${lt.task.assignedTo} is over-allocated; ${bestMatch.resource.name} has matching skills (${bestMatch.score}% match)`,
+            });
+          }
+        }
+      } catch {
+        // Non-critical — return leveling results without suggestions
+      }
+    }
+
     return {
       originalDemand,
       leveledDemand,
       adjustedTasks,
       overAllocations: remainingOverAllocations,
+      reassignmentSuggestions,
     };
   }
 

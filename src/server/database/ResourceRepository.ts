@@ -17,6 +17,7 @@ function rowToResource(row: any): Resource {
     capacityHoursPerWeek: Number(row.capacity_hours_per_week),
     skills,
     isActive: Boolean(row.is_active),
+    costRateHourly: row.cost_rate_hourly != null ? Number(row.cost_rate_hourly) : null,
   };
 }
 
@@ -53,9 +54,9 @@ export class ResourceRepository extends BaseRepository<Resource> {
   async create(data: Omit<Resource, 'id'>): Promise<Resource> {
     const id = uuidv4();
     await this.queryRaw(
-      `INSERT INTO resources (id, name, role, email, capacity_hours_per_week, skills, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.name, data.role, data.email, data.capacityHoursPerWeek, JSON.stringify(data.skills || []), data.isActive ? 1 : 0],
+      `INSERT INTO resources (id, name, role, email, capacity_hours_per_week, skills, is_active, cost_rate_hourly)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, data.name, data.role, data.email, data.capacityHoursPerWeek, JSON.stringify(data.skills || []), data.isActive ? 1 : 0, data.costRateHourly ?? null],
     );
     return (await this.findById(id))!;
   }
@@ -68,6 +69,7 @@ export class ResourceRepository extends BaseRepository<Resource> {
       capacityHoursPerWeek: 'capacity_hours_per_week',
       skills: 'skills',
       isActive: 'is_active',
+      costRateHourly: 'cost_rate_hourly',
     };
 
     const fields: string[] = [];

@@ -12,6 +12,7 @@ export interface Resource {
   capacityHoursPerWeek: number;
   skills: string[];
   isActive: boolean;
+  costRateHourly: number | null;
 }
 
 export interface ResourceAssignment {

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Layers, DollarSign, TrendingUp, CheckCircle, AlertTriangle, FolderKanban, BarChart3 } from 'lucide-react';
+import { Layers, DollarSign, TrendingUp, CheckCircle, AlertTriangle, FolderKanban, BarChart3, Users } from 'lucide-react';
 import { apiService } from '../services/api';
 import { GanttChart, type GanttTask } from '../components/schedule/GanttChart';
 
@@ -75,7 +75,7 @@ function healthLabel(item: PortfolioItem): { label: string; color: string } {
 export function PortfolioPage() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [view, setView] = useState<'dashboard' | 'gantt'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'gantt' | 'resources'>('dashboard');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['portfolio'],
@@ -192,6 +192,12 @@ export function PortfolioPage() {
           >
             <Layers className="w-3.5 h-3.5 inline mr-1" />Timeline
           </button>
+          <button
+            onClick={() => setView('resources')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${view === 'resources' ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'}`}
+          >
+            <Users className="w-3.5 h-3.5 inline mr-1" />Resources
+          </button>
         </div>
       </div>
 
@@ -235,7 +241,9 @@ export function PortfolioPage() {
             })}
           </div>
 
-          {view === 'dashboard' ? (
+          {view === 'resources' ? (
+            <PortfolioResourcesView />
+          ) : view === 'dashboard' ? (
             <>
               {/* Budget Overview Bar */}
               {kpis.totalBudget > 0 && (
@@ -317,6 +325,164 @@ export function PortfolioPage() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Portfolio Resources View
+// ---------------------------------------------------------------------------
+
+interface PortfolioResource {
+  resourceId: string;
+  resourceName: string;
+  role: string;
+  costRateHourly: number | null;
+  projects: { projectId: string; projectName: string; averageUtilization: number }[];
+  combinedUtilization: number;
+  isOverAllocated: boolean;
+}
+
+interface PortfolioContention {
+  resourceId: string;
+  resourceName: string;
+  role: string;
+  projects: { projectId: string; projectName: string; averageUtilization: number }[];
+  combinedUtilization: number;
+}
+
+interface PortfolioResourcesSummary {
+  totalResources: number;
+  overAllocatedCount: number;
+  avgUtilization: number;
+  totalWeeklyCost: number;
+}
+
+function PortfolioResourcesView() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['portfolioResources'],
+    queryFn: () => apiService.getPortfolioResources(),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const resources: PortfolioResource[] = data?.resources || [];
+  const contentions: PortfolioContention[] = data?.contentions || [];
+  const summary: PortfolioResourcesSummary = data?.summary || { totalResources: 0, overAllocatedCount: 0, avgUtilization: 0, totalWeeklyCost: 0 };
+
+  if (resources.length === 0) {
+    return (
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center">
+        <Users className="mx-auto mb-3 h-12 w-12 text-gray-300" />
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">No Resource Data</h3>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">No resources are assigned across your projects.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <KPICard label="Total Resources" value={String(summary.totalResources)} icon={Users} color="bg-blue-50 text-blue-600" />
+        <KPICard label="Over-Allocated" value={String(summary.overAllocatedCount)} icon={AlertTriangle} color={summary.overAllocatedCount > 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'} />
+        <KPICard label="Avg Utilization" value={`${summary.avgUtilization}%`} icon={TrendingUp} color="bg-purple-50 text-purple-600" />
+        <KPICard label="Weekly Cost" value={summary.totalWeeklyCost > 0 ? `$${summary.totalWeeklyCost.toLocaleString()}` : '--'} icon={DollarSign} color="bg-blue-50 text-blue-600" />
+      </div>
+
+      {/* Cross-project contention */}
+      {contentions.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+            <h3 className="text-sm font-semibold text-red-700 dark:text-red-400">Cross-Project Contention</h3>
+            <span className="text-xs text-red-500">{contentions.length} resource{contentions.length !== 1 ? 's' : ''} over-allocated across projects</span>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-700">
+                  <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Resource</th>
+                  <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Role</th>
+                  <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Projects</th>
+                  <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Combined</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contentions.map(c => (
+                  <tr key={c.resourceId} className="border-t border-gray-100 dark:border-gray-700">
+                    <td className="px-4 py-2 font-medium text-gray-900 dark:text-white">{c.resourceName}</td>
+                    <td className="px-4 py-2 text-gray-600 dark:text-gray-400">{c.role}</td>
+                    <td className="px-4 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {c.projects.map(p => (
+                          <span key={p.projectId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                            {p.projectName} ({p.averageUtilization}%)
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white ${c.combinedUtilization > 150 ? 'bg-red-500' : 'bg-amber-500'}`}>
+                        {c.combinedUtilization}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* All resources table */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Resource Utilization</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-700">
+                <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Resource</th>
+                <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Role</th>
+                <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">$/hr</th>
+                <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300"># Projects</th>
+                <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Utilization</th>
+                <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Projects</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resources.map(r => (
+                <tr key={r.resourceId} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750">
+                  <td className="px-4 py-2 font-medium text-gray-900 dark:text-white">{r.resourceName}</td>
+                  <td className="px-4 py-2 text-gray-600 dark:text-gray-400">{r.role}</td>
+                  <td className="px-4 py-2 text-center text-gray-600 dark:text-gray-400">
+                    {r.costRateHourly != null ? `$${r.costRateHourly.toFixed(0)}` : '--'}
+                  </td>
+                  <td className="px-4 py-2 text-center text-gray-600 dark:text-gray-400">{r.projects.length}</td>
+                  <td className="px-4 py-2 text-center">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white ${
+                      r.combinedUtilization > 120 ? 'bg-red-500' : r.combinedUtilization > 100 ? 'bg-amber-500' : r.combinedUtilization > 80 ? 'bg-blue-500' : 'bg-green-500'
+                    }`}>
+                      {r.combinedUtilization}%
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
+                    {r.projects.map(p => p.projectName).join(', ')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

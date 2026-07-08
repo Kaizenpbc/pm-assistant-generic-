@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../../services/api';
 import {
   BarChart3,
@@ -8,6 +8,8 @@ import {
   AlertTriangle,
   ArrowRight,
   Loader2,
+  UserCheck,
+  Shuffle,
 } from 'lucide-react';
 import { ResourceHistogram } from './ResourceHistogram';
 
@@ -52,9 +54,20 @@ interface LevelingAdjustment {
   reason: string;
 }
 
-interface LevelingResult {
+interface ReassignmentSuggestion {
+  taskId: string;
+  taskName: string;
+  currentResource: string;
+  suggestedResource: string;
+  suggestedResourceId: string;
+  matchScore: number;
+  reason: string;
+}
+
+interface NormalizedLevelingResult {
   histogram: HistogramData;
   adjustments: LevelingAdjustment[];
+  reassignmentSuggestions: ReassignmentSuggestion[];
 }
 
 // ---------------------------------------------------------------------------
@@ -74,6 +87,19 @@ function formatDate(dateStr: string): string {
   }
 }
 
+function normalizeLevelingResult(data: any): NormalizedLevelingResult {
+  // Handle both { result: { ... } } and direct shape
+  const raw = data?.result || data;
+  return {
+    histogram: {
+      resources: raw.leveledDemand || [],
+      overAllocations: raw.overAllocations || [],
+    },
+    adjustments: raw.adjustedTasks || raw.adjustments || [],
+    reassignmentSuggestions: raw.reassignmentSuggestions || [],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -82,27 +108,31 @@ export function ResourceLevelingPanel({
   projectId: _projectId,
   scheduleId,
 }: ResourceLevelingPanelProps) {
+  const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<'before' | 'after'>('before');
-  const [levelingResult, setLevelingResult] = useState<LevelingResult | null>(
-    null
-  );
+  const [levelingResult, setLevelingResult] =
+    useState<NormalizedLevelingResult | null>(null);
   const [applied, setApplied] = useState(false);
 
   // Fetch original histogram data
   const {
-    data: histogramData,
+    data: rawHistogramData,
     isLoading: histogramLoading,
     isError: histogramError,
-  } = useQuery<HistogramData>({
+  } = useQuery({
     queryKey: ['resourceHistogram', scheduleId],
     queryFn: () => apiService.getResourceHistogram(scheduleId),
   });
 
+  // The API returns { histogram: { resources, overAllocations } }
+  const histogramData: HistogramData | null =
+    rawHistogramData?.histogram || rawHistogramData || null;
+
   // Level resources mutation
   const levelMutation = useMutation({
     mutationFn: () => apiService.levelResources(scheduleId),
-    onSuccess: (data: LevelingResult) => {
-      setLevelingResult(data);
+    onSuccess: (data: any) => {
+      setLevelingResult(normalizeLevelingResult(data));
       setActiveView('after');
     },
   });
@@ -116,8 +146,17 @@ export function ResourceLevelingPanel({
     },
   });
 
+  // Reassign mutation
+  const reassignMutation = useMutation({
+    mutationFn: ({ taskId, assignedTo }: { taskId: string; assignedTo: string }) =>
+      apiService.updateTask(scheduleId, taskId, { assignedTo }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resourceHistogram', scheduleId] });
+    },
+  });
+
   const hasOverAllocations =
-    histogramData && histogramData.overAllocations.length > 0;
+    histogramData && histogramData.overAllocations?.length > 0;
 
   return (
     <div className="space-y-6">
@@ -240,7 +279,7 @@ export function ResourceLevelingPanel({
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
             <h3 className="text-sm font-semibold text-gray-800">
-              Proposed Adjustments
+              Proposed Delay Adjustments
             </h3>
             <span className="text-xs text-gray-400">
               {levelingResult.adjustments.length} task
@@ -346,6 +385,79 @@ export function ResourceLevelingPanel({
               Leveling changes have been applied to the schedule.
             </div>
           )}
+        </div>
+      )}
+
+      {/* Reassignment Suggestions */}
+      {levelingResult && levelingResult.reassignmentSuggestions.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Shuffle className="w-4 h-4 text-blue-500" />
+            <h3 className="text-sm font-semibold text-gray-800">
+              Reassignment Suggestions
+            </h3>
+            <span className="text-xs text-gray-400">
+              {levelingResult.reassignmentSuggestions.length} task
+              {levelingResult.reassignmentSuggestions.length !== 1 ? 's' : ''} can be reassigned
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">
+            These tasks remain over-allocated after delay adjustments. Consider reassigning them to reduce contention.
+          </p>
+
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50 text-gray-500 uppercase text-xs">
+                  <th className="text-left px-3 py-2 font-semibold">Task</th>
+                  <th className="text-left px-3 py-2 font-semibold">Current</th>
+                  <th className="text-center px-3 py-2 font-semibold" />
+                  <th className="text-left px-3 py-2 font-semibold">Suggested</th>
+                  <th className="text-center px-3 py-2 font-semibold">Match</th>
+                  <th className="text-left px-3 py-2 font-semibold">Reason</th>
+                  <th className="text-right px-3 py-2 font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {levelingResult.reassignmentSuggestions.map((sug) => (
+                  <tr key={sug.taskId} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-3 py-2 font-medium text-gray-900 whitespace-nowrap">
+                      {sug.taskName}
+                    </td>
+                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                      {sug.currentResource}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <ArrowRight className="w-3.5 h-3.5 text-gray-400 inline-block" />
+                    </td>
+                    <td className="px-3 py-2 text-blue-600 font-medium whitespace-nowrap">
+                      {sug.suggestedResource}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${
+                        sug.matchScore >= 70 ? 'bg-green-500' : sug.matchScore >= 40 ? 'bg-amber-500' : 'bg-gray-400'
+                      }`}>
+                        {sug.matchScore}%
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-gray-500 max-w-[200px] truncate" title={sug.reason}>
+                      {sug.reason}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        onClick={() => reassignMutation.mutate({ taskId: sug.taskId, assignedTo: sug.suggestedResource })}
+                        disabled={reassignMutation.isPending}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-[11px] font-medium hover:bg-blue-100 transition-colors disabled:opacity-50"
+                      >
+                        <UserCheck className="w-3 h-3" />
+                        Reassign
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

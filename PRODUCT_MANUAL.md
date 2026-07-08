@@ -154,6 +154,7 @@ The `ResourceService` maintains a central resource registry. Each resource has:
 - Capacity (hours per week, default 40)
 - Skill tags
 - Active/inactive status
+- Cost rate ($/hour, optional) — used in portfolio cost projections
 
 The `GET /api/v1/resources` endpoint supports pagination via `?limit=` and `?offset=` query parameters (default limit 50, max 200). The response includes a `total` count for client-side pagination controls.
 
@@ -180,6 +181,7 @@ When over-allocations are detected, the leveling algorithm shifts non-critical t
 - Original vs. leveled demand profiles
 - List of adjusted tasks with original and new dates
 - Remaining over-allocations (if any cannot be resolved within float)
+- **Reassignment suggestions** — for tasks that remain over-allocated after delay adjustments, the system suggests alternative resources based on skill matching. Each suggestion includes the current and suggested resource, a match score, and a one-click "Reassign" button
 
 ### Resource Optimization
 
@@ -584,7 +586,15 @@ The Portfolio page UI consumes this endpoint and renders a full dashboard:
 - **Status filter pills** — click to filter the project card grid by status (All, Active, On Hold, Planning, Completed)
 - **Portfolio budget progress bar** — aggregate allocated vs. spent across all visible projects
 - **Project cards** — each card shows name, status badge, health indicator, progress bar, task completion ratio, budget utilization bar, and a link to the project detail page
-- **Dashboard / Timeline toggle** — switch between the KPI dashboard view and the original Portfolio Gantt timeline; selection persists within the session
+- **Dashboard / Timeline / Resources toggle** — switch between the KPI dashboard view, Portfolio Gantt timeline, and portfolio-wide resource view; selection persists within the session
+
+### Portfolio Resources View
+
+The `/api/v1/reporting/portfolio/resources` endpoint aggregates resource utilization across all active projects:
+
+- **KPI cards**: Total Resources, Over-Allocated Count, Avg Utilization, Weekly Cost
+- **Cross-project contention table**: resources assigned to 2+ projects with combined utilization > 100%, showing each project and its utilization share
+- **Resource utilization table**: all resources sorted by utilization (descending), showing role, cost rate, project count, combined utilization, and project names
 
 ---
 

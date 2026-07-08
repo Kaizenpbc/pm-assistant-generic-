@@ -108,7 +108,6 @@ const moreTabs: { id: Tab; label: string }[] = [
   { id: 'agent-activity', label: 'Agent Activity' },
 ];
 
-const allTabs = [...primaryTabs, ...moreTabs];
 
 const statusStyles: Record<string, { label: string; color: string }> = {
   active: { label: 'Active', color: 'bg-green-100 text-green-700' },
@@ -735,7 +734,7 @@ function OverviewTab({ project }: { project: any }) {
     enabled: !!project.id,
     staleTime: 120_000,
   });
-  const sprints: any[] = sprintsData?.sprints || sprintsData || [];
+  const sprints: any[] = sprintsData?.sprints || sprintsData?.data || (Array.isArray(sprintsData) ? sprintsData : []);
   const activeSprint = sprints.find((s: any) => s.status === 'active');
 
   // Recent activity (audit trail)
@@ -4049,7 +4048,7 @@ function ResourceLevelingTab({ projectId }: { projectId: string }) {
   if (schedulesLoading) return <SectionSpinner />;
 
   return (
-    <div className="mt-6 space-y-4">
+    <div className="mt-6 space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Resource Leveling</h3>
         {schedules.length > 1 && (
@@ -4065,6 +4064,28 @@ function ResourceLevelingTab({ projectId }: { projectId: string }) {
         )}
       </div>
       {selectedScheduleId && <ResourceLevelingPanel projectId={projectId} scheduleId={selectedScheduleId} />}
+
+      {/* Forecast & Capacity section */}
+      <ResourceForecastPanel projectId={projectId} />
+      <CapacityForecastSection projectId={projectId} />
+    </div>
+  );
+}
+
+function CapacityForecastSection({ projectId }: { projectId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['resourceForecast', projectId],
+    queryFn: () => apiService.getResourceForecast(projectId),
+    enabled: !!projectId,
+  });
+
+  const forecast = data?.result;
+  if (isLoading || !forecast?.capacityForecast?.length) return null;
+
+  return (
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+      <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Capacity Forecast</h3>
+      <CapacityChart data={forecast.capacityForecast} />
     </div>
   );
 }

@@ -577,6 +577,11 @@ class ApiService {
     return response.data;
   }
 
+  async getPortfolioResources() {
+    const response = await this.api.get('/portfolio/resources');
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Critical Path
   // -------------------------------------------------------------------------

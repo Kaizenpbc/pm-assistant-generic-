@@ -51,6 +51,7 @@ interface Resource {
   email: string;
   capacityHoursPerWeek?: number;
   skills?: string[];
+  costRateHourly?: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,6 +92,7 @@ export function ResourceManagementPage() {
   const [formRole, setFormRole] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formCapacity, setFormCapacity] = useState('40');
+  const [formCostRate, setFormCostRate] = useState('');
 
   // Queries
   const { data: projectsData } = useQuery({
@@ -158,6 +160,7 @@ export function ResourceManagementPage() {
     setFormRole('');
     setFormEmail('');
     setFormCapacity('40');
+    setFormCostRate('');
   }
 
   function openEdit(r: Resource) {
@@ -166,11 +169,13 @@ export function ResourceManagementPage() {
     setFormRole(r.role);
     setFormEmail(r.email);
     setFormCapacity(String(r.capacityHoursPerWeek || 40));
+    setFormCostRate(r.costRateHourly != null ? String(r.costRateHourly) : '');
     setShowResourceForm(true);
   }
 
   function handleSaveResource() {
-    const data = { name: formName, role: formRole, email: formEmail, capacityHoursPerWeek: parseInt(formCapacity) || 40 };
+    const costRate = formCostRate.trim() ? parseFloat(formCostRate) : null;
+    const data = { name: formName, role: formRole, email: formEmail, capacityHoursPerWeek: parseInt(formCapacity) || 40, costRateHourly: costRate };
     if (editingResource) {
       updateResourceMutation.mutate({ id: editingResource.id, data });
     } else {
@@ -247,7 +252,7 @@ export function ResourceManagementPage() {
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">{editingResource ? 'Edit Resource' : 'New Resource'}</h3>
                 <button onClick={resetForm} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Name</label>
                   <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="input w-full text-sm dark:bg-gray-700 dark:text-gray-100" placeholder="Full name" />
@@ -263,6 +268,10 @@ export function ResourceManagementPage() {
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Hours/Week</label>
                   <input type="number" value={formCapacity} onChange={(e) => setFormCapacity(e.target.value)} className="input w-full text-sm dark:bg-gray-700 dark:text-gray-100" min="1" max="80" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cost Rate ($/hr)</label>
+                  <input type="number" value={formCostRate} onChange={(e) => setFormCostRate(e.target.value)} className="input w-full text-sm dark:bg-gray-700 dark:text-gray-100" min="0" step="0.01" placeholder="Optional" />
                 </div>
               </div>
               <div className="flex justify-end">
@@ -296,6 +305,7 @@ export function ResourceManagementPage() {
                     <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Role</th>
                     <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Email</th>
                     <th className="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Hours/Wk</th>
+                    <th className="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">$/hr</th>
                     <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Actions</th>
                   </tr>
                 </thead>
@@ -306,6 +316,7 @@ export function ResourceManagementPage() {
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.role}</td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.email}</td>
                       <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{r.capacityHoursPerWeek || 40}</td>
+                      <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{r.costRateHourly != null ? `$${r.costRateHourly.toFixed(2)}` : '--'}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 className="w-3.5 h-3.5" /></button>

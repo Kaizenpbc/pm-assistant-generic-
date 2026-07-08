@@ -12,6 +12,7 @@ const createResourceSchema = z.object({
   capacityHoursPerWeek: z.number().positive().default(40),
   skills: z.array(z.string()).default([]),
   isActive: z.boolean().default(true),
+  costRateHourly: z.number().min(0).nullable().default(null),
 });
 
 const createAssignmentSchema = z.object({
