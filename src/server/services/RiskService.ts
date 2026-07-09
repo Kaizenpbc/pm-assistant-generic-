@@ -1,12 +1,19 @@
 import { riskRepository, ProjectRisk, RiskFilters, RiskStats } from '../database/RiskRepository';
+import { notificationService } from './NotificationService';
+import { projectMemberRepository } from '../database/ProjectMemberRepository';
 import logger from '../utils/logger';
 
 const VALID_STATUSES: Record<string, string[]> = {
-  risk:     ['open', 'monitoring', 'mitigating', 'mitigated', 'closed', 'cancelled'],
-  issue:    ['open', 'in_progress', 'resolved', 'closed', 'cancelled'],
-  action:   ['open', 'in_progress', 'completed', 'closed', 'cancelled', 'deferred'],
-  decision: ['pending_decision', 'decided', 'deferred', 'reversed'],
+  risk:     ['proposed', 'open', 'monitoring', 'mitigating', 'mitigated', 'closed', 'cancelled'],
+  issue:    ['proposed', 'open', 'in_progress', 'resolved', 'closed', 'cancelled'],
+  action:   ['proposed', 'open', 'in_progress', 'completed', 'closed', 'cancelled', 'deferred'],
+  decision: ['proposed', 'pending_decision', 'decided', 'deferred', 'reversed'],
 };
+
+// Roles that skip triage — their items go straight to 'open'
+const TRIAGE_BYPASS_ROLES = new Set([
+  'admin', 'project_manager', 'scrum_master', 'risk_manager', 'pmo',
+]);
 
 const TERMINAL_STATUSES = ['closed', 'resolved', 'mitigated', 'cancelled', 'reversed', 'completed'];
 
@@ -51,7 +58,12 @@ class RiskService {
     alternativesConsidered?: string;
     stakeholdersConsulted?: string[];
     linkedRaidIds?: string[];
-  }): Promise<ProjectRisk> {
+  }, userRole?: string): Promise<ProjectRisk> {
+    // Auto-set triage status for non-PM roles (unless caller explicitly set status)
+    if (!data.status && userRole && !TRIAGE_BYPASS_ROLES.has(userRole)) {
+      data.status = 'proposed';
+    }
+
     if (data.status) {
       const valid = VALID_STATUSES[data.type] || [];
       if (valid.length && !valid.includes(data.status)) {
@@ -60,7 +72,7 @@ class RiskService {
     }
 
     const risk = await riskRepository.create(data);
-    logger.info('RAID item created: %s record=%s project=%s type=%s source=%s', risk.id, risk.recordId, data.projectId, data.type, data.source || 'manual');
+    logger.info('RAID item created: %s record=%s project=%s type=%s status=%s source=%s', risk.id, risk.recordId, data.projectId, data.type, risk.status, data.source || 'manual');
 
     // Fire-and-forget activity log
     riskRepository.createActivityLog({
@@ -71,7 +83,47 @@ class RiskService {
       newValue: risk.recordId || risk.id,
     }).catch(() => {});
 
+    // Notify project managers/owners when a new item needs triage
+    this.notifyProjectManagers(data.projectId, risk).catch(() => {});
+
     return risk;
+  }
+
+  /**
+   * Notify project managers/owners about a new RAID item.
+   * For 'proposed' items: "needs triage". For others: informational.
+   */
+  private async notifyProjectManagers(projectId: string, risk: ProjectRisk): Promise<void> {
+    try {
+      const members = await projectMemberRepository.findByProjectId(projectId);
+      const pmMembers = members.filter(m => ['owner', 'manager'].includes(m.role));
+
+      if (pmMembers.length === 0) return;
+
+      const needsTriage = risk.status === 'proposed';
+      const typeLabel = risk.type.charAt(0).toUpperCase() + risk.type.slice(1);
+      const title = needsTriage
+        ? `New ${typeLabel} requires triage: ${risk.title}`
+        : `New ${typeLabel} raised: ${risk.title}`;
+      const message = needsTriage
+        ? `A team member raised a new ${risk.type} that needs review. Record: ${risk.recordId || risk.id}. Severity: ${risk.severity}.`
+        : `A new ${risk.type} has been logged. Record: ${risk.recordId || risk.id}. Severity: ${risk.severity}.`;
+
+      for (const pm of pmMembers) {
+        await notificationService.create({
+          userId: pm.userId,
+          type: 'raid_item',
+          severity: risk.severity === 'critical' ? 'critical' : risk.severity === 'high' ? 'high' : 'medium',
+          title,
+          message,
+          projectId,
+          linkType: 'raid',
+          linkId: risk.id,
+        });
+      }
+    } catch (err) {
+      logger.error('Failed to notify project managers about RAID item: %s', err);
+    }
   }
 
   async update(id: string, data: Record<string, any>, userId?: string): Promise<ProjectRisk | null> {

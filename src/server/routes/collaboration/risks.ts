@@ -8,7 +8,7 @@ import { lessonsLearnedService } from '../../services/LessonsLearnedService';
 import { projectService } from '../../services/ProjectService';
 
 const RAID_TYPES = ['risk', 'issue', 'action', 'decision'] as const;
-const ALL_STATUSES = ['open', 'monitoring', 'mitigating', 'mitigated', 'closed', 'resolved',
+const ALL_STATUSES = ['proposed', 'open', 'monitoring', 'mitigating', 'mitigated', 'closed', 'resolved',
   'cancelled', 'reversed', 'in_progress', 'completed', 'pending_decision', 'decided', 'deferred'] as const;
 const SEVERITIES = ['low', 'medium', 'high', 'critical'] as const;
 const CATEGORIES = ['schedule', 'budget', 'resource', 'technical', 'regulatory', 'stakeholder', 'weather', 'dependency', 'other'] as const;
@@ -138,7 +138,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: 'Insufficient permissions to create this RAID type' });
       }
 
-      const risk = await riskService.create({ ...body, projectId, createdBy: userId });
+      const risk = await riskService.create({ ...body, projectId, createdBy: userId }, userRole);
       return reply.status(201).send({ data: risk });
     } catch (err) {
       if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
