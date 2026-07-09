@@ -187,7 +187,8 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     READ_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TIME_TOOLS.has(tool) ||
-    INTAKE_SUBMIT_TOOLS.has(tool),
+    INTAKE_SUBMIT_TOOLS.has(tool) ||
+    RAID_WRITE_TOOLS.has(tool),
 
   finance_officer: (tool) =>
     READ_TOOLS.has(tool) ||
@@ -237,19 +238,22 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     READ_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TIME_TOOLS.has(tool) ||
-    INTAKE_SUBMIT_TOOLS.has(tool),
+    INTAKE_SUBMIT_TOOLS.has(tool) ||
+    RAID_WRITE_TOOLS.has(tool),
 
   tester: (tool) =>
     READ_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TIME_TOOLS.has(tool) ||
-    INTAKE_SUBMIT_TOOLS.has(tool),
+    INTAKE_SUBMIT_TOOLS.has(tool) ||
+    RAID_WRITE_TOOLS.has(tool),
 
   devops: (tool) =>
     READ_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TIME_TOOLS.has(tool) ||
-    INTAKE_SUBMIT_TOOLS.has(tool),
+    INTAKE_SUBMIT_TOOLS.has(tool) ||
+    RAID_WRITE_TOOLS.has(tool),
 
   claude_sme: (tool) =>
     READ_TOOLS.has(tool) ||
