@@ -54,22 +54,28 @@ jobs:
       - name: Build server & client
         run: npm run build
 
+      - name: Copy migration SQL files
+        run: cp src/server/database/migrations/*.sql dist/server/database/migrations/
+
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
-
-      - name: Deploy client assets
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /home/${{ secrets.SSH_USER }}/pm.ca/assets/*"
-          scp -r src/client/dist/assets src/client/dist/index.html src/client/dist/sw.js src/client/dist/manifest.webmanifest ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/pm.ca/
+          ssh-keyscan -H 147.5.127.99 >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy server
-        run: |
-          scp -r dist/server ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/pm.ca/dist/
+        run: scp -r dist/server ubuntu@147.5.127.99:/opt/pm-app/dist/
 
-      - name: Restart application
+      - name: Deploy client
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cloudlinux-selector restart --json --interpreter nodejs --domain pm.kpbc.ca --app-root pm.ca"
+          tar czf /tmp/client-dist.tar.gz -C src/client/dist .
+          scp /tmp/client-dist.tar.gz ubuntu@147.5.127.99:/tmp/
+          ssh ubuntu@147.5.127.99 "rm -rf /opt/pm-app/client-dist/assets && tar xzf /tmp/client-dist.tar.gz -C /opt/pm-app/client-dist"
+
+      - name: Restart & verify
+        run: |
+          ssh ubuntu@147.5.127.99 "sudo systemctl restart pm-app"
+          sleep 3
+          ssh ubuntu@147.5.127.99 "sudo systemctl is-active pm-app"
+          ssh ubuntu@147.5.127.99 "curl -sf http://127.0.0.1:3001/health | head -c 200"
