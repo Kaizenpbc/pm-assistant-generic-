@@ -73,7 +73,7 @@ import { PortalLinkManager } from '../components/portal/PortalLinkManager';
 import { RiskFormModal } from '../components/risks/RiskFormModal';
 import { AIScanReviewModal } from '../components/risks/AIScanReviewModal';
 import { RAIDDetailPanel } from '../components/risks/RAIDDetailPanel';
-import { ResourceLevelingPanel } from '../components/resources/ResourceLevelingPanel';
+import { ResourcesTab } from '../components/project/ResourcesTab';
 import { SprintList } from '../components/sprints/SprintList';
 import { SprintPlanningPanel } from '../components/sprints/SprintPlanningPanel';
 import { SprintBoard } from '../components/sprints/SprintBoard';
@@ -87,7 +87,7 @@ import { ColumnPickerDropdown } from '../components/schedule/ColumnPickerDropdow
 import { TaskListMobile } from '../components/tasks/TaskListMobile';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 
-type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resource-leveling';
+type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'network-diagram' | 'burndown' | 'change-requests' | 'sprints' | 'resources';
 
 const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -101,7 +101,7 @@ const primaryTabs: { id: Tab; label: string }[] = [
 
 const moreTabs: { id: Tab; label: string }[] = [
   { id: 'change-requests', label: 'Change Requests' },
-  { id: 'resource-leveling', label: 'Resource Leveling' },
+  { id: 'resources', label: 'Resources' },
   { id: 'network-diagram', label: 'Network Diagram' },
   { id: 'burndown', label: 'Burndown' },
   { id: 'scenarios', label: 'What-If' },
@@ -563,7 +563,7 @@ export function ProjectDetailPage() {
       {activeTab === 'burndown' && <BurndownTab projectId={id!} />}
       {activeTab === 'change-requests' && <ChangeRequestsTab projectId={id!} />}
       {activeTab === 'sprints' && <SprintsTab projectId={id!} />}
-      {activeTab === 'resource-leveling' && <ResourceLevelingTab projectId={id!} />}
+      {activeTab === 'resources' && <ResourcesTab projectId={id!} />}
 
       {project && (
         <SaveAsTemplateModal
@@ -4029,64 +4029,4 @@ function SprintsTab({ projectId }: { projectId: string }) {
 // Resource Leveling Tab
 // ---------------------------------------------------------------------------
 
-function ResourceLevelingTab({ projectId }: { projectId: string }) {
-  const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
-    queryKey: ['schedules', projectId],
-    queryFn: () => apiService.getSchedules(projectId),
-    enabled: !!projectId,
-  });
-
-  const schedules: any[] = schedulesData?.schedules || [];
-  const [selectedScheduleId, setSelectedScheduleId] = useState('');
-
-  React.useEffect(() => {
-    if (schedules.length > 0 && !selectedScheduleId) {
-      setSelectedScheduleId(schedules[0].id);
-    }
-  }, [schedules, selectedScheduleId]);
-
-  if (schedulesLoading) return <SectionSpinner />;
-
-  return (
-    <div className="mt-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Resource Leveling</h3>
-        {schedules.length > 1 && (
-          <select
-            value={selectedScheduleId}
-            onChange={(e) => setSelectedScheduleId(e.target.value)}
-            className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
-          >
-            {schedules.map((s: any) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        )}
-      </div>
-      {selectedScheduleId && <ResourceLevelingPanel projectId={projectId} scheduleId={selectedScheduleId} />}
-
-      {/* Forecast & Capacity section */}
-      <ResourceForecastPanel projectId={projectId} />
-      <CapacityForecastSection projectId={projectId} />
-    </div>
-  );
-}
-
-function CapacityForecastSection({ projectId }: { projectId: string }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['resourceForecast', projectId],
-    queryFn: () => apiService.getResourceForecast(projectId),
-    enabled: !!projectId,
-  });
-
-  const forecast = data?.result;
-  if (isLoading || !forecast?.capacityForecast?.length) return null;
-
-  return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-      <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Capacity Forecast</h3>
-      <CapacityChart data={forecast.capacityForecast} />
-    </div>
-  );
-}
 
