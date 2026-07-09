@@ -31,7 +31,10 @@
     "analyze": "Analyze",
     "intelligence": "Intelligence",
     "workspace": "Workspace",
-    "system": "System"
+    "system": "System",
+    "work": "Work",
+    "insights": "Insights",
+    "myWork": "My Work"
   },
   "common": {
     "save": "Save",

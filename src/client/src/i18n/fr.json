@@ -31,7 +31,10 @@
     "analyze": "Analyser",
     "intelligence": "Intelligence",
     "workspace": "Espace de travail",
-    "system": "Système"
+    "system": "Système",
+    "work": "Travail",
+    "insights": "Analyses",
+    "myWork": "Mon travail"
   },
   "common": {
     "save": "Enregistrer",

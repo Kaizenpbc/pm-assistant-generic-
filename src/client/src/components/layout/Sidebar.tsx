@@ -2,29 +2,14 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   FileText,
-  Brain,
   Settings,
   ChevronLeft,
   ChevronRight,
   Layers,
-  Workflow,
-  Dice5,
-  MessageSquare,
-  BookOpen,
   Search,
-  CreditCard,
-  HelpCircle,
   Clock,
-  Plug,
-  FileBarChart,
-  ClipboardList,
   BarChart3,
-  ShieldCheck,
-  Bot,
-  GitPullRequest,
   Target,
-  Users,
-  DollarSign,
   Bell,
   Gauge,
   Briefcase,
@@ -53,53 +38,28 @@ interface NavSection {
 
 const navSections: NavSection[] = [
   {
-    titleKey: 'section.plan',
+    titleKey: 'section.work',
     items: [
       { labelKey: 'nav.dashboard', icon: Gauge, path: '/dashboard' },
       { labelKey: 'nav.projects', icon: Briefcase, path: '/projects' },
-      { labelKey: 'nav.workflows', icon: Workflow, path: '/workflows' },
-      { labelKey: 'nav.intake', icon: ClipboardList, path: '/intake' },
-      { labelKey: 'nav.changeRequests', icon: GitPullRequest, path: '/change-requests' },
+      { labelKey: 'nav.portfolio', icon: Layers, path: '/portfolio', roles: ['admin', 'executive', 'pmo'] },
     ],
   },
   {
-    titleKey: 'section.analyze',
+    titleKey: 'section.insights',
     items: [
-      { labelKey: 'nav.portfolio', icon: Layers, path: '/portfolio' },
       { labelKey: 'nav.analytics', icon: BarChart3, path: '/analytics' },
       { labelKey: 'nav.reports', icon: FileText, path: '/reports' },
-      { labelKey: 'nav.reportBuilder', icon: FileBarChart, path: '/report-builder' },
-      { labelKey: 'nav.simulation', icon: Dice5, path: '/monte-carlo' },
-      { labelKey: 'nav.resources', icon: Users, path: '/resources' },
-      { labelKey: 'nav.evm', icon: DollarSign, path: '/evm' },
-    ],
-  },
-  {
-    titleKey: 'section.intelligence',
-    items: [
-      { labelKey: 'nav.scenarios', icon: Brain, path: '/scenarios' },
-      { labelKey: 'nav.meetings', icon: MessageSquare, path: '/meetings' },
-      { labelKey: 'nav.lessons', icon: BookOpen, path: '/lessons' },
       { labelKey: 'nav.askAi', icon: Search, path: '/query' },
-      { labelKey: 'nav.agent', icon: Bot, path: '/agent', roles: ['admin', 'project_manager', 'pmo'] },
     ],
   },
   {
-    titleKey: 'section.workspace',
+    titleKey: 'section.myWork',
     items: [
       { labelKey: 'nav.notifications', icon: Bell, path: '/notifications' },
-      { labelKey: 'nav.goals', icon: Target, path: '/goals' },
       { labelKey: 'nav.timesheets', icon: Clock, path: '/timesheet' },
-      { labelKey: 'nav.integrations', icon: Plug, path: '/integrations' },
-    ],
-  },
-  {
-    titleKey: 'section.system',
-    items: [
-      { labelKey: 'nav.account', icon: CreditCard, path: '/account' },
+      { labelKey: 'nav.goals', icon: Target, path: '/goals' },
       { labelKey: 'nav.settings', icon: Settings, path: '/settings', roles: ['admin', 'project_manager', 'pmo'] },
-      { labelKey: 'nav.admin', icon: ShieldCheck, path: '/admin', roles: ['admin'] },
-      { labelKey: 'nav.help', icon: HelpCircle, path: '/help' },
     ],
   },
 ];
