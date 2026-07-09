@@ -181,7 +181,8 @@ export function NotificationBell() {
 
   // Listen for real-time WebSocket notifications
   useEffect(() => {
-    const wsBase = import.meta.env.DEV ? 'ws://localhost:3001' : `ws://${window.location.host}`;
+    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsBase = import.meta.env.DEV ? 'ws://localhost:3001' : `${wsProto}//${window.location.host}`;
     let ws: WebSocket | null = null;
 
     try {
