@@ -59,6 +59,9 @@ export async function mcpProxyRoutes(fastify: FastifyInstance) {
     if (request.headers['mcp-session-id']) {
       headers['mcp-session-id'] = request.headers['mcp-session-id'] as string;
     }
+    if (request.headers['authorization']) {
+      headers['authorization'] = request.headers['authorization'] as string;
+    }
 
     const body = request.body as Buffer | undefined;
     if (body && body.length > 0) {
