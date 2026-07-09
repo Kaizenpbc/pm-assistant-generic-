@@ -44,6 +44,12 @@ const READ_TOOLS = new Set([
   'list-intake-forms', 'list-intake-submissions',
   // integrations (read)
   'list-integrations',
+  // raid (read)
+  'list-raid-items', 'get-raid-stats',
+  // lessons learned (read)
+  'list-lessons', 'get-knowledge-base', 'find-relevant-lessons', 'find-similar-lessons',
+  // resource optimizer (read)
+  'get-resource-availability', 'forecast-resource-bottlenecks',
   // admin (read-safe)
   'search', 'get-audit-trail', 'list-notifications', 'mark-notifications-read',
   // templates (read)
@@ -95,6 +101,17 @@ const PROJECT_WRITE_TOOLS = new Set([
 // Resource management: project_manager, pmo, admin
 const RESOURCE_WRITE_TOOLS = new Set([
   'create-resource', 'update-resource', 'delete-resource',
+  'set-resource-availability', 'find-skill-match',
+]);
+
+// RAID write: project_manager, scrum_master, risk_manager, pmo, ba, admin
+const RAID_WRITE_TOOLS = new Set([
+  'create-raid-item', 'update-raid-item', 'ai-scan-risks',
+]);
+
+// Lessons learned write: project_manager, pmo, ba, admin
+const LESSONS_WRITE_TOOLS = new Set([
+  'extract-lessons', 'detect-patterns', 'add-lesson',
 ]);
 
 // Approval actions: project_manager, executive, pmo, admin
@@ -152,7 +169,9 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     INTAKE_SUBMIT_TOOLS.has(tool) ||
     INTAKE_REVIEW_TOOLS.has(tool) ||
     CUSTOM_FIELD_WRITE_TOOLS.has(tool) ||
-    TEMPLATE_WRITE_TOOLS.has(tool),
+    TEMPLATE_WRITE_TOOLS.has(tool) ||
+    RAID_WRITE_TOOLS.has(tool) ||
+    LESSONS_WRITE_TOOLS.has(tool),
 
   scrum_master: (tool) =>
     READ_TOOLS.has(tool) ||
@@ -161,7 +180,8 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     TASK_DELETE_TOOLS.has(tool) ||
     SPRINT_WRITE_TOOLS.has(tool) ||
     TIME_TOOLS.has(tool) ||
-    INTAKE_SUBMIT_TOOLS.has(tool),
+    INTAKE_SUBMIT_TOOLS.has(tool) ||
+    RAID_WRITE_TOOLS.has(tool),
 
   team_member: (tool) =>
     READ_TOOLS.has(tool) ||
@@ -179,7 +199,8 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     RISK_ANALYSIS_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     APPROVAL_WRITE_TOOLS.has(tool) ||
-    INTAKE_SUBMIT_TOOLS.has(tool),
+    INTAKE_SUBMIT_TOOLS.has(tool) ||
+    RAID_WRITE_TOOLS.has(tool),
 
   pmo: (tool) =>
     READ_TOOLS.has(tool) ||
@@ -197,7 +218,9 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     INTAKE_SUBMIT_TOOLS.has(tool) ||
     INTAKE_REVIEW_TOOLS.has(tool) ||
     CUSTOM_FIELD_WRITE_TOOLS.has(tool) ||
-    TEMPLATE_WRITE_TOOLS.has(tool),
+    TEMPLATE_WRITE_TOOLS.has(tool) ||
+    RAID_WRITE_TOOLS.has(tool) ||
+    LESSONS_WRITE_TOOLS.has(tool),
 
   ba: (tool) =>
     READ_TOOLS.has(tool) ||
@@ -206,7 +229,9 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     TASK_WRITE_TOOLS.has(tool) ||
     TIME_TOOLS.has(tool) ||
     INTAKE_SUBMIT_TOOLS.has(tool) ||
-    CUSTOM_FIELD_WRITE_TOOLS.has(tool),
+    CUSTOM_FIELD_WRITE_TOOLS.has(tool) ||
+    RAID_WRITE_TOOLS.has(tool) ||
+    LESSONS_WRITE_TOOLS.has(tool),
 
   qa: (tool) =>
     READ_TOOLS.has(tool) ||

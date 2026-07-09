@@ -20,6 +20,9 @@ import { registerCustomFieldTools } from './tools/custom-fields.js';
 import { registerIntegrationTools } from './tools/integrations.js';
 import { registerAdminTools } from './tools/admin.js';
 import { registerTemplateTools } from './tools/templates.js';
+import { registerRaidTools } from './tools/raid.js';
+import { registerLessonsLearnedTools } from './tools/lessons-learned.js';
+import { registerResourceOptimizerTools } from './tools/resource-optimizer.js';
 import { type Role, isToolAllowed } from './permissions.js';
 import { registerResources } from './resources/index.js';
 
@@ -73,6 +76,9 @@ function createMcpServer(userContext?: McpUserContext): McpServer {
   registerIntegrationTools(registrationTarget);
   registerAdminTools(registrationTarget);
   registerTemplateTools(registrationTarget);
+  registerRaidTools(registrationTarget);
+  registerLessonsLearnedTools(registrationTarget);
+  registerResourceOptimizerTools(registrationTarget);
 
   // Register MCP resources (role-filtered)
   registerResources(server, userContext?.role);
