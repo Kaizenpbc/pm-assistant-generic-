@@ -12,9 +12,10 @@ export function registerApprovalTools(server: McpServer) {
   server.tool('create-change-request', 'Create a change request', {
     projectId: z.string().describe('Project ID'),
     title: z.string().describe('Change request title'),
-    description: z.string().describe('Description of the change'),
-    impact: z.string().optional().describe('Impact assessment'),
-    priority: z.enum(['low', 'medium', 'high', 'urgent']).optional().describe('Priority'),
+    description: z.string().optional().describe('Description of the change'),
+    category: z.string().describe('Category (e.g. scope, schedule, budget, resource, technical, requirement)'),
+    priority: z.enum(['low', 'medium', 'high', 'urgent']).describe('Priority'),
+    impactSummary: z.string().optional().describe('Impact assessment summary'),
   }, async ({ projectId, ...data }, extra) =>
     jsonResult(await getApiClientFromExtra(extra).post(`/approvals/change-requests/${projectId}`, data))
   );
