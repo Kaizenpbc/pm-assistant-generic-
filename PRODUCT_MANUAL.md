@@ -868,9 +868,9 @@ The `StripeService` manages subscription billing:
 
 ---
 
-## 23. Unified Dashboard
+## 23. Dashboard
 
-All users see a single unified dashboard (`UnifiedDashboard.tsx`) instead of the previous 5 role-based dashboards. The dashboard is customizable per-user via a **Customize** dropdown that toggles widget sections on/off, with selections persisted in `localStorage`.
+All users see a single dashboard (`DashboardPM` via `DashboardRouter`) instead of the previous role-based dashboards. The dashboard is customizable per-user via a **Customize** dropdown that toggles widget sections on/off, with selections persisted in `localStorage`.
 
 ### Scope Toggle
 
@@ -1235,13 +1235,13 @@ Pure algorithmic Flesch-Kincaid readability scoring (no LLM required). Returns:
 
 ---
 
-## 41. Unified Dashboard
+## 41. Dashboard
 
-All user roles now see the same unified, customizable dashboard. The previous 5 role-based dashboards (Executive, PM, ScrumMaster, Finance, Risk) have been replaced.
+All user roles now see the same customizable dashboard. The previous role-based dashboards have been replaced.
 
-The `DashboardRouter` component renders `UnifiedDashboard` for all roles. Users who own fewer projects than the full portfolio see a **scope toggle** (My Projects / All Projects). Widget visibility is controlled via the **Customize** dropdown and persisted per-user in `localStorage`.
+The `DashboardRouter` component renders `DashboardPM` for all roles. Users who own fewer projects than the full portfolio see a **scope toggle** (My Projects / All Projects). Widget visibility is controlled via the **Customize** dropdown and persisted per-user in `localStorage`.
 
-See [Section 23](#23-unified-dashboard) for full widget and endpoint details.
+See [Section 23](#23-dashboard) for full widget and endpoint details.
 
 ---
 
@@ -1288,43 +1288,36 @@ The `AISummaryBanner` component shows a narrative section (when enabled via acce
 
 ---
 
-## 44. PM Workspace (Preview)
+## 44. Dashboard & Projects
 
-The PM Workspace provides an alternative set of pages designed for project managers who want a lean, action-oriented experience. These pages run alongside the existing pages for side-by-side evaluation before cutover.
+The Dashboard and Projects pages provide a lean, action-oriented project management experience.
 
-### PM Dashboard (`/dashboard-pm`)
+### Dashboard (`/dashboard`)
 
 A monitoring cockpit with read-only scope toggle:
 
 - **6 KPI Tiles** — Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, Budget Utilization. Each tile has a colored status dot, semantic color chip, hover lift animation, and click-through to drill-in pages.
 - **Portfolio Intelligence** — `AISummaryBanner` with circular health ring, risk summary chips, budget status, key insights, and AI narrative (when enabled). Full dark mode support.
-- **Projects Table** — Sortable by 10 columns (name, health, status, priority, type, progress, budget, spent%, end date, days left). Rows navigate to `/project/:id/pm`.
+- **Projects Table** — Sortable by 10 columns (name, health, status, priority, type, progress, budget, spent%, end date, days left). Rows navigate to `/project/:id`.
 - **Action Center** — Two-column card: "Today's Priorities" (deadline-driven items from predictions) and "AI Next Best Actions" (proposals to approve, notifications to investigate, at-risk projects to review).
 - **Issues Created vs Resolved** — Weekly trend chart with scope awareness.
 - **3-Column Footer** — Milestones widget, Budget Watch widget, Activity Feed with clickable rows, mark-as-read, and navigation.
 - **Customize Dropdown** — Toggle any widget section on/off. Includes opt-in placeholders for Sprint Snapshot, Goals Progress, and Team Workload (disabled by default).
 
-### PM Projects (`/projects-pm`)
+### Projects (`/projects`)
 
 - **Filter Bar** — Search by name, filter by health band (Healthy/Warning/Critical) and status (Active/Planning/On Hold/Completed).
 - **AI Portfolio Insights** — Self-fetching 3-up insight tiles from analytics summary.
-- **Project Cards** — Grid layout with left border colored by health band, health pill, status/priority chips, progress meter, and inline action buttons.
+- **Project Cards** — Grid layout with left border colored by health band, health pill, status/priority chips, progress meter, and inline action buttons. Clicking a card navigates to `/project/:id`.
 - **New Project** — Template picker integration for creating projects from templates.
-
-### PM Project Detail (`/project/:id/pm`)
-
-Two-column layout (8+4 grid):
-
-- **Left Panel** — Tab strip (Tasks, Risks, Issues, Milestones, RAID, Documents) with count badges and teal active indicator. Each tab renders a filterable list with status icons, type tags, and inline Add buttons.
-- **Right Rail (Sticky)** — Project Health ring (circular SVG with semantic color, 3 mini meter bars for schedule/budget/risk health), AI Assistant card (gradient teal with health summary and suggested actions), Activity Feed (project-scoped notifications).
 
 ### Navigation
 
-Accessible via the "PM Workspace" section in the sidebar:
-- Dashboard (NEW) → `/dashboard-pm`
-- Projects (NEW) → `/projects-pm`
+Accessible via the "Plan" section in the sidebar:
+- Dashboard → `/dashboard`
+- Projects → `/projects`
 
-Labels include "(NEW)" suffix for side-by-side evaluation. i18n translations available in EN, FR, and ES.
+Old routes (`/dashboard-pm`, `/projects-pm`) redirect to the new paths for backwards compatibility.
 
 ### Design System
 

@@ -125,11 +125,9 @@ An agentic AI project management platform that combines the scheduling power of 
 - Auto-refresh via WebSocket cache invalidation
 - **Benchmark:** Monday.com, Smartsheet
 
-**PM Workspace (Preview)**
-Three alternative PM-oriented pages run alongside existing ones for side-by-side evaluation:
-- **PM Dashboard** (`/dashboard-pm`) — 6 KPI tiles with status dots, Portfolio Intelligence banner, Action Center, Projects Table, Issues Trend, Milestones, Budget Watch, Activity Feed. Customizable via widget dropdown (includes opt-in Sprint Snapshot, Goals Progress, Team Workload).
-- **PM Projects** (`/projects-pm`) — Filterable card grid with health-based borders, AI portfolio insights.
-- **PM Project Detail** (`/project/:id/pm`) — Tabbed management + sticky intelligence rail.
+**Dashboard & Projects**
+- **Dashboard** (`/dashboard`) — 6 KPI tiles with status dots, Portfolio Intelligence banner, Action Center, Projects Table, Issues Trend, Milestones, Budget Watch, Activity Feed. Customizable via widget dropdown (includes opt-in Sprint Snapshot, Goals Progress, Team Workload).
+- **Projects** (`/projects`) — Filterable card grid with health-based borders, AI portfolio insights. Cards link to `/project/:id` for full Gantt/Kanban/Calendar/EVM detail.
 
 ### 2.4 Real-Time Collaboration
 - Real-time task updates (WebSocket)
@@ -470,6 +468,6 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 | Structured Log Export (daily-rotated JSON logs with 14d retention, admin query/download endpoints) | Done | Observability |
 | Next Best Actions Widget | Done | Enhancement |
 | Health Trends Sparklines (daily cron + migration 038) | Done | Enhancement |
-| PM Workspace — Dashboard, Projects, Project Detail | Done | Enhancement |
+| Dashboard & Projects consolidation (PM pages promoted to primary) | Done | Enhancement |
 | PM Dashboard Design Gap Fixes (dark mode, KPI dots, linkPrefix) | Done | Enhancement |
 | RAID Management (Risk/Action/Issue/Decision register, sequential IDs, no-delete, AI Scan, agent writes) | Done | Enhancement |
