@@ -170,7 +170,7 @@ Analyze this meeting transcript and extract all actionable information.`;
       risks: aiResponse.risks,
       taskUpdates: aiResponse.taskUpdates,
       appliedItems: [],
-      createdAt: new Date().toISOString(),
+      createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     };
 
     await this.persistAnalysis(analysis);
