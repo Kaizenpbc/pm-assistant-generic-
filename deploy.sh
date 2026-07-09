@@ -3,10 +3,11 @@
 # Usage: bash deploy.sh [--skip-tests] [--server-only] [--client-only]
 set -euo pipefail
 
-SSH_KEY="/c/Users/gerog/Downloads/ssh-key-2026-07-08 (1).key"
+SSH_KEY='/c/Users/gerog/Downloads/ssh-key-2026-07-08 (1).key'
 SSH_HOST="ubuntu@147.5.127.99"
-SSH_CMD="ssh -i \"$SSH_KEY\" $SSH_HOST"
-SCP_CMD="scp -i \"$SSH_KEY\""
+
+do_ssh()  { ssh  -i "$SSH_KEY" "$SSH_HOST" "$@"; }
+do_scp()  { scp  -i "$SSH_KEY" "$@"; }
 
 SKIP_TESTS=false
 SERVER_ONLY=false
@@ -59,7 +60,7 @@ echo "  OK"
 # --- Step 5: Upload server ---
 if [ "$CLIENT_ONLY" = false ]; then
   echo "[5/7] Uploading server dist..."
-  $SCP_CMD -r dist/server $SSH_HOST:/opt/pm-app/dist/
+  do_scp -r dist/server "$SSH_HOST":/opt/pm-app/dist/
   echo "  OK"
 else
   echo "[5/7] Server upload skipped (--client-only)"
@@ -69,8 +70,8 @@ fi
 if [ "$SERVER_ONLY" = false ]; then
   echo "[6/7] Uploading client dist..."
   tar czf /tmp/client-dist.tar.gz -C src/client/dist .
-  $SCP_CMD /tmp/client-dist.tar.gz $SSH_HOST:/tmp/
-  eval $SSH_CMD '"rm -rf /opt/pm-app/client-dist/assets && tar xzf /tmp/client-dist.tar.gz -C /opt/pm-app/client-dist"'
+  do_scp /tmp/client-dist.tar.gz "$SSH_HOST":/tmp/
+  do_ssh "rm -rf /opt/pm-app/client-dist/assets && tar xzf /tmp/client-dist.tar.gz -C /opt/pm-app/client-dist"
   rm -f /tmp/client-dist.tar.gz
   echo "  OK"
 else
@@ -79,21 +80,21 @@ fi
 
 # --- Step 7: Restart & verify ---
 echo "[7/7] Restarting app..."
-eval $SSH_CMD '"sudo systemctl restart pm-app"'
+do_ssh "sudo systemctl restart pm-app"
 sleep 3
 
 echo ""
 echo "=== Verifying ==="
-STATUS=$(eval $SSH_CMD '"sudo systemctl is-active pm-app"')
+STATUS=$(do_ssh "sudo systemctl is-active pm-app")
 if [ "$STATUS" = "active" ]; then
   echo "  Service: RUNNING"
 else
   echo "  Service: $STATUS (PROBLEM!)"
-  eval $SSH_CMD '"sudo journalctl -u pm-app --no-pager -n 20"'
+  do_ssh "sudo journalctl -u pm-app --no-pager -n 20"
   exit 1
 fi
 
-HEALTH=$(eval $SSH_CMD '"curl -s http://127.0.0.1:3001/health | head -c 200"')
+HEALTH=$(do_ssh "curl -s http://127.0.0.1:3001/health | head -c 200")
 echo "  Health:  $HEALTH"
 
 echo ""
