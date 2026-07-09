@@ -81,7 +81,7 @@ fi
 # --- Step 7: Restart & verify ---
 echo "[7/7] Restarting app..."
 do_ssh "sudo systemctl restart pm-app"
-sleep 3
+sleep 5
 
 echo ""
 echo "=== Verifying ==="
@@ -94,8 +94,8 @@ else
   exit 1
 fi
 
-HEALTH=$(do_ssh "curl -s http://127.0.0.1:3001/health | head -c 200")
-echo "  Health:  $HEALTH"
+HEALTH=$(do_ssh "curl -s http://127.0.0.1:3001/health")
+echo "  Health:  ${HEALTH:0:200}"
 
 echo ""
 echo "=== Deploy complete ==="
