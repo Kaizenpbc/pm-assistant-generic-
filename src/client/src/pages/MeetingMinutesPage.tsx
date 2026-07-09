@@ -185,7 +185,7 @@ export const MeetingMinutesPage: React.FC = () => {
         scheduleId: selectedScheduleId,
       }),
     onSuccess: (data: any) => {
-      setAnalysisResult(data?.analysis || data);
+      setAnalysisResult(data?.data || data?.analysis || data);
       queryClient.invalidateQueries({ queryKey: ['meetingHistory', selectedProjectId] });
     },
   });
