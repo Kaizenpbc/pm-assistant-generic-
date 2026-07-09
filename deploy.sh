@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploy PM Assistant to Oracle Cloud (pm.kpbc.ca)
-# Usage: bash deploy.sh [--skip-tests] [--server-only] [--client-only]
+# Usage: bash deploy.sh [--skip-tests] [--server-only] [--client-only] [--mcp]
 set -euo pipefail
 
 SSH_KEY="$HOME/.ssh/ssh-key-2026-07-08 (1).key"
@@ -12,18 +12,51 @@ do_scp()  { scp  -i "$SSH_KEY" "$@"; }
 SKIP_TESTS=false
 SERVER_ONLY=false
 CLIENT_ONLY=false
+MCP_ONLY=false
 
 for arg in "$@"; do
   case $arg in
     --skip-tests)  SKIP_TESTS=true ;;
     --server-only) SERVER_ONLY=true ;;
     --client-only) CLIENT_ONLY=true ;;
+    --mcp)         MCP_ONLY=true ;;
     *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
 
 echo "=== PM Assistant Deploy ==="
 echo ""
+
+# --- MCP-only deploy shortcut ---
+if [ "$MCP_ONLY" = true ]; then
+  echo "[MCP] Building MCP server..."
+  cd mcp-server && npm run build && cd ..
+  echo "  OK"
+
+  echo "[MCP] Uploading MCP server..."
+  tar czf /tmp/mcp-server-dist.tar.gz -C mcp-server dist/ package.json package-lock.json
+  do_scp /tmp/mcp-server-dist.tar.gz "$SSH_HOST":/tmp/
+  do_ssh "tar xzf /tmp/mcp-server-dist.tar.gz -C /opt/pm-app/mcp-server/ && cd /opt/pm-app/mcp-server && npm install --omit=dev"
+  rm -f /tmp/mcp-server-dist.tar.gz
+  echo "  OK"
+
+  echo "[MCP] Restarting MCP service..."
+  do_ssh "sudo systemctl restart pm-mcp"
+  sleep 3
+
+  MCP_STATUS=$(do_ssh "sudo systemctl is-active pm-mcp")
+  if [ "$MCP_STATUS" = "active" ]; then
+    echo "  MCP Service: RUNNING"
+  else
+    echo "  MCP Service: $MCP_STATUS (PROBLEM!)"
+    do_ssh "sudo journalctl -u pm-mcp --no-pager -n 20"
+    exit 1
+  fi
+
+  echo ""
+  echo "=== MCP Deploy complete ==="
+  exit 0
+fi
 
 # --- Step 1: Type check ---
 echo "[1/7] Type checking..."
