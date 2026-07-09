@@ -3,7 +3,7 @@
 # Usage: bash deploy.sh [--skip-tests] [--server-only] [--client-only]
 set -euo pipefail
 
-SSH_KEY='/c/Users/gerog/Downloads/ssh-key-2026-07-08 (1).key'
+SSH_KEY="$HOME/.ssh/ssh-key-2026-07-08 (1).key"
 SSH_HOST="ubuntu@147.5.127.99"
 
 do_ssh()  { ssh  -i "$SSH_KEY" "$SSH_HOST" "$@"; }
