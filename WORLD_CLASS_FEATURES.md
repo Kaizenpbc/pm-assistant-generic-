@@ -352,13 +352,14 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 **Capabilities:**
 - Four record types in a single unified register: Risk, Action, Issue, Decision
 - Global sequential type-prefixed IDs (R-001, I-001, A-001, D-001) assigned atomically and never recycled
-- Type-specific status workflows: Risk (open → monitoring → mitigating → mitigated → closed), Issue (open → in_progress → resolved → closed), Action (open → in_progress → completed → closed / deferred), Decision (pending_decision → decided → deferred / reversed)
+- Type-specific status workflows with triage entry point: Risk (proposed → open → monitoring → mitigating → mitigated → closed), Issue (proposed → open → in_progress → resolved → closed), Action (proposed → open → in_progress → completed → closed / deferred), Decision (proposed → pending_decision → decided → deferred / reversed)
+- **Triage workflow**: any team member can raise RAID items (PMI/PRINCE2 open identification); non-PM roles create items as `proposed` requiring PM review; PM/admin roles bypass triage to `open`; PMs/owners receive notification when items need triage
 - Action records carry due_date and action_type (follow_up, decision_required, information_only, escalation)
 - Decision records carry rationale, decided_by, decision_date, and alternatives_considered
 - No-delete semantics: records are cancelled (with mandatory reason) rather than deleted; cancelled IDs are never reused; decision reversal (admin-only) creates a `reversed` terminal state
 - Slide-out detail panel with inline field editing and full activity timeline
 - Activity auto-logged on every status transition, field edit, cancel, or reverse; manual comments interleave with auto-logged entries
-- Role-based permission matrix: admin=all operations including reverse; project_manager/scrum_master/pmo/ba=create all types + cancel; risk_manager=create risk+issue; team_member=create issue+action only; reverse restricted to admin
+- Role-based permission matrix: all roles can create RAID items (triage-gated for non-PM roles); admin=all operations including reverse; project_manager/scrum_master/pmo/ba=create + triage + cancel; reverse restricted to admin
 - **AI Scan**: project-scoped AI analysis surfaces new Risks and Issues from schedule/task/budget data; user selects which findings to import; imported records tagged `source: ai_scan`
 - **Agent partnership**: background agents write directly to RAID log via `importFromAgent`; agent-written records tagged `source: agent`; `suggest-mitigation` MCP tool surfaces historical lessons-learned for open risks
 - Stats bar with live counts (Open Risks, Open Issues, Open Actions, Pending Decisions)

@@ -1330,13 +1330,26 @@ The RAID log header contains four **Add** buttons, one per type:
 
 All forms include a **Source** field (Manual / AI Scan / Agent / Import) that is set automatically when records are created by the AI Scan or an agent.
 
+**All team members** can raise RAID items — open identification of risks, issues, actions, and decisions is encouraged per PMI/PRINCE2 governance best practice.
+
+### Triage Workflow
+
+Items raised by non-PM roles (team members, QA, testers, DevOps, BAs) are created with status **Proposed** and require PM review before becoming active. Items raised by PMs, admins, scrum masters, risk managers, or PMO bypass triage and go straight to **Open**.
+
+When a Proposed item is created, all project managers and owners receive a notification: *"New [Type] requires triage: [Title]"*. The PM reviews the item and either:
+
+- **Promotes** it to `open` (or the appropriate starting status for its type)
+- **Cancels** it with a reason if it is not valid
+
+This keeps the active register curated while ensuring that threats identified by any team member are captured and reviewed.
+
 ### Searching and Filtering
 
 Above the RAID table, a toolbar provides:
 
 - **Search box** — Filters records by title or description as you type.
 - **Type** dropdown — Show all types or filter to Risks, Issues, Actions, or Decisions only.
-- **Status** dropdown — Filter by a specific status (open, in_progress, resolved, closed, cancelled, etc.).
+- **Status** dropdown — Filter by a specific status (proposed, open, in_progress, resolved, closed, cancelled, etc.).
 - **Severity** dropdown — Filter to a specific severity level (low, medium, high, critical).
 - **Source** dropdown — Filter by how the record was created (manual, ai_scan, agent, import).
 

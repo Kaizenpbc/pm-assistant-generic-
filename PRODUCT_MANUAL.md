@@ -1372,8 +1372,8 @@ Fields: title, description, severity (low / medium / high / critical), probabili
 
 Status workflow:
 ```
-open → monitoring → mitigating → mitigated → closed
-                                            ↘ cancelled (requires reason)
+proposed → open → monitoring → mitigating → mitigated → closed
+                                                       ↘ cancelled (requires reason)
 ```
 
 #### Issue
@@ -1384,8 +1384,8 @@ Issues are differentiated from risks — they represent problems that have alrea
 
 Status workflow:
 ```
-open → in_progress → resolved → closed
-                              ↘ cancelled (requires reason)
+proposed → open → in_progress → resolved → closed
+                                          ↘ cancelled (requires reason)
 ```
 
 #### Action
@@ -1394,9 +1394,9 @@ Fields: title, description, owner, due_date, action_type (follow_up / decision_r
 
 Status workflow:
 ```
-open → in_progress → completed → closed
-                               ↘ cancelled (requires reason)
-                               ↘ deferred
+proposed → open → in_progress → completed → closed
+                                           ↘ cancelled (requires reason)
+                                           ↘ deferred
 ```
 
 #### Decision
@@ -1405,9 +1405,20 @@ Fields: title, description, owner, rationale, decided_by, decision_date, alterna
 
 Status workflow:
 ```
-pending_decision → decided → deferred
-                           ↘ reversed (admin only — requires reason)
+proposed → pending_decision → decided → deferred
+                                      ↘ reversed (admin only — requires reason)
 ```
+
+### Triage Workflow
+
+RAID items follow a triage workflow aligned with PMI/PRINCE2 governance best practice. **Any team member** can raise a risk, issue, action, or decision — open identification is encouraged.
+
+- **Non-PM roles** (team_member, qa, tester, devops, ba): items are created with status `proposed` and require PM review before becoming active.
+- **PM/admin roles** (admin, project_manager, scrum_master, risk_manager, pmo): items bypass triage and are created directly as `open`.
+
+When a `proposed` item is created, all project managers and owners receive a notification: *"New [Type] requires triage: [Title]"*. The PM reviews the item and either promotes it to `open` (or the appropriate starting status) or cancels it with a reason.
+
+This ensures broad visibility of project threats while keeping the active register curated by accountable roles.
 
 ### Cancel and Reverse Semantics
 
