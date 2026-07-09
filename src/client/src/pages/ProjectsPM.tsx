@@ -114,9 +114,6 @@ export function ProjectsPM() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projects</h1>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 uppercase tracking-wide">
-              NEW
-            </span>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             {isLoading ? (

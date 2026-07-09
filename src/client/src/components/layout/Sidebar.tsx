@@ -1,8 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  FolderKanban,
   FileText,
   Brain,
   Settings,
@@ -57,8 +55,8 @@ const navSections: NavSection[] = [
   {
     titleKey: 'section.plan',
     items: [
-      { labelKey: 'nav.dashboard', icon: LayoutDashboard, path: '/dashboard' },
-      { labelKey: 'nav.projects', icon: FolderKanban, path: '/projects' },
+      { labelKey: 'nav.dashboard', icon: Gauge, path: '/dashboard' },
+      { labelKey: 'nav.projects', icon: Briefcase, path: '/projects' },
       { labelKey: 'nav.workflows', icon: Workflow, path: '/workflows' },
       { labelKey: 'nav.intake', icon: ClipboardList, path: '/intake' },
       { labelKey: 'nav.changeRequests', icon: GitPullRequest, path: '/change-requests' },
@@ -93,13 +91,6 @@ const navSections: NavSection[] = [
       { labelKey: 'nav.goals', icon: Target, path: '/goals' },
       { labelKey: 'nav.timesheets', icon: Clock, path: '/timesheet' },
       { labelKey: 'nav.integrations', icon: Plug, path: '/integrations' },
-    ],
-  },
-  {
-    titleKey: 'section.pmWorkspace',
-    items: [
-      { labelKey: 'nav.dashboardPM', icon: Gauge, path: '/dashboard-pm' },
-      { labelKey: 'nav.projectsPM', icon: Briefcase, path: '/projects-pm' },
     ],
   },
   {

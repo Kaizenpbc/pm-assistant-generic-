@@ -1,5 +1,5 @@
-import { UnifiedDashboard } from './UnifiedDashboard';
+import { DashboardPM } from './DashboardPM';
 
 export function DashboardRouter() {
-  return <UnifiedDashboard />;
+  return <DashboardPM />;
 }

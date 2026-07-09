@@ -24,16 +24,13 @@
     "help": "Help",
     "resources": "Resources",
     "evm": "EVM Dashboard",
-    "notifications": "Notifications",
-    "dashboardPM": "Dashboard (NEW)",
-    "projectsPM": "Projects (NEW)"
+    "notifications": "Notifications"
   },
   "section": {
     "plan": "Plan",
     "analyze": "Analyze",
     "intelligence": "Intelligence",
     "workspace": "Workspace",
-    "pmWorkspace": "PM Workspace",
     "system": "System"
   },
   "common": {
