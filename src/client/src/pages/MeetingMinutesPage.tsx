@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Mic,
+  MicOff,
   ChevronDown,
   Clock,
   FileText,
@@ -53,6 +54,87 @@ function formatDate(dateStr: string): string {
 // Component
 // ---------------------------------------------------------------------------
 
+// Speech Recognition types
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+interface SpeechRecognitionInstance extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: Event & { error?: string }) => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
+
+function useContinuousVoice(onTranscript: (text: string) => void) {
+  const [isListening, setIsListening] = useState(false);
+  const [isSupported, setIsSupported] = useState(false);
+  const recRef = useRef<SpeechRecognitionInstance | null>(null);
+  const wantListening = useRef(false);
+  const callbackRef = useRef(onTranscript);
+  callbackRef.current = onTranscript;
+
+  useEffect(() => {
+    const Ctor = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    setIsSupported(!!Ctor);
+    if (!Ctor) return;
+
+    const rec: SpeechRecognitionInstance = new (Ctor as SpeechRecognitionConstructor)();
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+
+    rec.onresult = (event: SpeechRecognitionEvent) => {
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          const text = result[0].transcript.trim();
+          if (text) callbackRef.current(text);
+        }
+      }
+    };
+
+    rec.onend = () => {
+      // Auto-restart if user hasn't toggled off (browser stops after silence)
+      if (wantListening.current) {
+        try { rec.start(); } catch { setIsListening(false); wantListening.current = false; }
+      } else {
+        setIsListening(false);
+      }
+    };
+
+    rec.onerror = (e: Event & { error?: string }) => {
+      // 'no-speech' is normal — browser fires it after silence, onend will restart
+      if ((e as any).error === 'no-speech') return;
+      setIsListening(false);
+      wantListening.current = false;
+    };
+
+    recRef.current = rec;
+    return () => { try { rec.abort(); } catch {} recRef.current = null; wantListening.current = false; };
+  }, []);
+
+  const toggle = useCallback(() => {
+    const rec = recRef.current;
+    if (!rec) return;
+    if (wantListening.current) {
+      wantListening.current = false;
+      try { rec.stop(); } catch {}
+      setIsListening(false);
+    } else {
+      wantListening.current = true;
+      try { rec.start(); setIsListening(true); } catch { wantListening.current = false; }
+    }
+  }, []);
+
+  return { isSupported, isListening, toggle };
+}
+
 export const MeetingMinutesPage: React.FC = () => {
   const queryClient = useQueryClient();
 
@@ -60,6 +142,12 @@ export const MeetingMinutesPage: React.FC = () => {
   const [transcript, setTranscript] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>('');
+
+  // Continuous voice transcription — appends each phrase to the textarea
+  const handleVoiceResult = useCallback((text: string) => {
+    setTranscript(prev => prev ? prev + ' ' + text : text);
+  }, []);
+  const { isSupported: micSupported, isListening, toggle: toggleMic } = useContinuousVoice(handleVoiceResult);
 
   // Analysis result
   const [analysisResult, setAnalysisResult] = useState<any>(null);
@@ -151,17 +239,40 @@ export const MeetingMinutesPage: React.FC = () => {
         <div className="card space-y-4">
           {/* Transcript textarea */}
           <div>
-            <label
-              htmlFor="transcript"
-              className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1"
-            >
-              Meeting Transcript
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label
+                htmlFor="transcript"
+                className="block text-xs font-medium text-gray-600 dark:text-gray-300"
+              >
+                Meeting Transcript
+              </label>
+              {micSupported && (
+                <button
+                  type="button"
+                  onClick={toggleMic}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                    isListening
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                  title={isListening ? 'Stop recording' : 'Start voice recording'}
+                >
+                  {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                  {isListening ? 'Stop Recording' : 'Record'}
+                </button>
+              )}
+            </div>
+            {isListening && (
+              <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-400">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                Listening — speak into your microphone. Text will appear below.
+              </div>
+            )}
             <textarea
               id="transcript"
               value={transcript}
               onChange={(e) => setTranscript(e.target.value)}
-              placeholder="Paste your meeting notes or transcript here..."
+              placeholder={isListening ? 'Listening... speak now' : 'Paste your meeting notes or transcript here, or click Record to use your microphone...'}
               className="input w-full resize-y"
               style={{ minHeight: '200px' }}
               rows={8}
