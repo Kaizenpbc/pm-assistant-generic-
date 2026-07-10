@@ -53,16 +53,12 @@ Rollback files use convention `NNN_name.down.sql` alongside `NNN_name.sql`. Forw
 
 ---
 
-## Item 14b: Portal Rate Limiting
+## ~~Item 14b: Portal Rate Limiting~~ — DONE (July 2026)
 
-**Current state:** Public portal endpoints (`GET /portal/view/:token`, `POST /portal/view/:token/comment`) have no rate limiting. Any user with a valid token can call them without restriction.
-
-**What's needed:**
-- Per-IP rate limit on `GET /portal/view/:token` (e.g., 60 req/min) to prevent scraping
-- Per-IP rate limit on `POST /portal/view/:token/comment` (e.g., 5 req/min) to prevent comment spam
-- Can use existing in-memory `RateLimitService` for single-instance deployment; upgrade to Redis-backed when available
-
-**Priority:** Low while in development. Should be added before exposing portal links to untrusted external users.
+**Implemented:** Per-IP rate limiting on public portal routes using existing in-memory `RateLimiter`:
+- `GET /portal/view/:token` — 60 req/min per IP
+- `POST /portal/view/:token/comment` — 5 req/min per IP
+- Returns `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers; 429 with `retryAfterMs` on excess
 
 ---
 
@@ -81,22 +77,19 @@ Rollback files use convention `NNN_name.down.sql` alongside `NNN_name.sql`. Forw
 
 ## Item 16: Dashboard Enhancements (UI)
 
-**These items came from the dashboard wireframe discussion (July 2026). Not infrastructure-blocked — just scoped out of current sprint.**
+**These items came from the dashboard wireframe discussion (July 2026).**
 
-### 16a: AI Next Best Actions Widget
-Prescriptive action cards (3-5 per dashboard) with inline action buttons (e.g., "Approve budget CR for Project X", "Reassign overdue task"). Different from AgentProposalsWidget — these are opinionated recommendations, not raw proposals.
+### ~~16a: AI Next Best Actions Widget~~ — DONE (July 2026)
+Implemented as `NextBestActionsWidget` + inline `AINextBestActions` in `ActionCenterPM`. Aggregates pending proposals, high-severity notifications, and low-health projects into prioritized action cards. Wired into PM Dashboard.
 
-### 16b: Health Trends Sparklines Widget
-3-column sparkline charts showing project health scores over time. **Requires backend work:**
-- New `project_health_snapshots` table (project_id, score, date, captured_by cron)
-- Daily cron job to snapshot health scores from predictions API
-- New API endpoint: `GET /api/v1/projects/:id/health-history`
+### ~~16b: Health Trends Sparklines Widget~~ — DONE (July 2026)
+Implemented as `HealthTrendsWidget` with SVG sparklines. Backend: `project_health_history` table (migration 038), daily snapshot cron (`healthSnapshotJob.ts`), `GET /api/v1/predictions/project/:id/health-history` endpoint. Wired into PM Dashboard.
 
 ### 16c: Activity Feed + AI Summary Sidebar
 Enhance `RecentActivityWidget` to 2-column layout: left = activity feed (existing), right = AI-generated summary of recent activity patterns.
 
-### 16d: Dashboard Footer
-Minor — version info, quick links, last refresh timestamp.
+### ~~16d: Dashboard Footer~~ — DONE (July 2026)
+Last-refreshed timestamp and version label added to PM Dashboard.
 
 ---
 

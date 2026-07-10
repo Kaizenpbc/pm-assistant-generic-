@@ -5,6 +5,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import logger from '../../utils/logger';
+import { rateLimiter } from '../../middleware/rateLimiter';
 
 const portalCommentSchema = z.object({
   entityType: z.string().min(1),
@@ -32,6 +33,14 @@ export async function portalRoutes(fastify: FastifyInstance) {
   // GET /view/:token — public portal view (no auth)
   fastify.get('/view/:token', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const ip = request.ip;
+      const rl = rateLimiter.check('portal-view:' + ip, 60, 60000);
+      reply.header('X-RateLimit-Remaining', rl.remaining);
+      reply.header('X-RateLimit-Reset', Math.ceil(rl.resetAt / 1000));
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many requests', retryAfterMs: rl.resetAt - Date.now() });
+      }
+
       const { token } = request.params as { token: string };
       const link = await portalService.validateToken(token);
       if (!link) return reply.status(404).send({ error: 'Invalid or expired portal link' });
@@ -47,6 +56,14 @@ export async function portalRoutes(fastify: FastifyInstance) {
   // POST /view/:token/comment — public comment submission (no auth)
   fastify.post('/view/:token/comment', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const ip = request.ip;
+      const rl = rateLimiter.check('portal-comment:' + ip, 5, 60000);
+      reply.header('X-RateLimit-Remaining', rl.remaining);
+      reply.header('X-RateLimit-Reset', Math.ceil(rl.resetAt / 1000));
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many requests', retryAfterMs: rl.resetAt - Date.now() });
+      }
+
       const { token } = request.params as { token: string };
       const link = await portalService.validateToken(token);
       if (!link) return reply.status(404).send({ error: 'Invalid or expired portal link' });

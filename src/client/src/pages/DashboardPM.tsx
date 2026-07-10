@@ -22,6 +22,8 @@ import type { WidgetDef } from '../components/dashboard/WidgetRegistry';
 import { KpiTilePM } from '../components/pm/KpiTilePM';
 import { ActionCenterPM } from '../components/pm/ActionCenterPM';
 import { ActivityFeedPM } from '../components/pm/ActivityFeedPM';
+import { NextBestActionsWidget } from '../components/dashboard/widgets/NextBestActionsWidget';
+import { HealthTrendsWidget } from '../components/dashboard/widgets/HealthTrendsWidget';
 
 // ─── Widget registry ──────────────────────────────────────────────────────────
 
@@ -30,7 +32,9 @@ const PM_WIDGETS: WidgetDef[] = [
   { id: 'intel',       label: 'Portfolio Intelligence', group: 'Overview', defaultOn: true },
   { id: 'projects',    label: 'Projects Table',         group: 'Overview', defaultOn: true },
   { id: 'action',      label: 'Action Center',          group: 'Overview', defaultOn: true },
+  { id: 'next-actions', label: 'Next Best Actions',     group: 'Overview', defaultOn: true },
   { id: 'trend',       label: 'Issues Trend',           group: 'Charts',   defaultOn: true },
+  { id: 'health-trends', label: 'Health Trends',        group: 'Charts',   defaultOn: true },
   { id: 'milestones',  label: 'Milestones',             group: 'Details',  defaultOn: true },
   { id: 'budget',      label: 'Budget Watch',           group: 'Details',  defaultOn: true },
   { id: 'activity',    label: 'Activity Feed',          group: 'Details',  defaultOn: true },
@@ -297,8 +301,14 @@ export function DashboardPM() {
       {/* ── Action Center ── */}
       {show('action') && <ActionCenterPM projects={projectSummaries} />}
 
+      {/* ── Next Best Actions ── */}
+      {show('next-actions') && <NextBestActionsWidget />}
+
       {/* ── Issues Created vs Resolved ── */}
       {show('trend') && <IssuesCreatedVsResolvedChart scope={scopeParam} />}
+
+      {/* ── Health Trends ── */}
+      {show('health-trends') && <HealthTrendsWidget projects={projectsWithHealth} />}
 
       {/* ── 3-column grid ── */}
       {(show('milestones') || show('budget') || show('activity')) && (
@@ -308,6 +318,12 @@ export function DashboardPM() {
           {show('activity')   && <ActivityFeedPM limit={10} />}
         </div>
       )}
+
+      {/* ── Footer ── */}
+      <div className="flex items-center justify-between text-[10px] text-gray-400 dark:text-gray-500 pt-2 border-t border-gray-100 dark:border-gray-800">
+        <span>Last refreshed: {new Date().toLocaleTimeString()}</span>
+        <span>PM Assistant v1.0</span>
+      </div>
 
     </div>
   );

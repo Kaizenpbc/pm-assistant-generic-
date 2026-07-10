@@ -912,10 +912,23 @@ const DangerZoneTab: React.FC = () => {
   const [deleteInput, setDeleteInput] = useState('');
   const [exporting, setExporting] = useState(false);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     setExporting(true);
-    setTimeout(() => {
-      const data = { exportedAt: new Date().toISOString(), message: 'Export placeholder' };
+    try {
+      const projectList = await apiService.getProjects();
+      const projectExports = await Promise.all(
+        projectList.map(async (project: { id: number }) => {
+          try {
+            return await apiService.request('get', `/exports/projects/${project.id}/export?format=json`);
+          } catch {
+            return { projectId: project.id, error: 'Failed to export' };
+          }
+        })
+      );
+      const data = {
+        exportedAt: new Date().toISOString(),
+        projects: projectExports,
+      };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -923,8 +936,12 @@ const DangerZoneTab: React.FC = () => {
       a.download = `pm-assistant-export-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Export failed. Please try again.');
+    } finally {
       setExporting(false);
-    }, 1000);
+    }
   };
 
   const handleDelete = () => {

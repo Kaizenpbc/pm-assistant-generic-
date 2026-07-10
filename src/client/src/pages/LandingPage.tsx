@@ -118,10 +118,10 @@ const pricingTiers = [
       'API access',
       'Dedicated support',
     ],
-    cta: 'Coming Soon',
-    ctaLink: '#',
+    cta: 'Contact Sales',
+    ctaLink: 'mailto:info@kpbc.ca',
     highlighted: false,
-    disabled: true,
+    disabled: false,
   },
 ];
 

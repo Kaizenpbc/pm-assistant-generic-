@@ -53,7 +53,7 @@ const tiers = [
       'Custom integrations',
     ],
     tierKey: 'business',
-    disabled: true,
+    disabled: false,
   },
 ];
 
@@ -123,6 +123,15 @@ export const PricingPage: React.FC = () => {
           }`}>
           {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
         </Link>
+      );
+    }
+
+    if (tier.tierKey === 'business') {
+      return (
+        <a href="mailto:info@kpbc.ca"
+          className="block w-full text-center py-2.5 px-4 text-sm font-medium rounded-lg transition-colors bg-primary-600 text-white hover:bg-primary-700">
+          Contact Sales
+        </a>
       );
     }
 
