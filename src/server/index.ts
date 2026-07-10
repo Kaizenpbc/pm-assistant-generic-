@@ -9,6 +9,7 @@ import './services/agentCapabilities';
 import { agentScheduler } from './services/AgentSchedulerService';
 import { redisService } from './services/RedisService';
 import { metricsService } from './services/MetricsService';
+import { alertService } from './services/AlertService';
 import { serviceContainer } from './container';
 
 const fastify = Fastify({
@@ -67,6 +68,9 @@ async function start() {
       metricsService.startRedisSync();
     }
 
+    // Start alert monitoring (no-op if ALERT_ENABLED is false)
+    alertService.start();
+
   } catch (err) {
     console.error('Failed to start server:', err);
     fastify.log.error(err);
@@ -87,6 +91,7 @@ process.on('unhandledRejection', (reason) => {
 process.on('SIGINT', async () => {
   console.log('Shutting down server...');
   agentScheduler.stop();
+  alertService.stop();
   metricsService.stopRedisSync();
   await fastify.close();
   await redisService.disconnect();
@@ -97,6 +102,7 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   console.log('Shutting down server...');
   agentScheduler.stop();
+  alertService.stop();
   metricsService.stopRedisSync();
   await fastify.close();
   await redisService.disconnect();

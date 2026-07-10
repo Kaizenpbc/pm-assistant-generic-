@@ -72,6 +72,12 @@ const configSchema = z.object({
   METRICS_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true || val === undefined, z.boolean().default(true)),
   REDIS_URL: z.string().optional().default(''),
 
+  // Alerting Configuration
+  ALERT_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
+  ALERT_EMAIL: z.string().optional().default(''),
+  ALERT_WEBHOOK_URL: z.string().optional().default(''),
+  ALERT_COOLDOWN_MINUTES: z.coerce.number().min(1).max(1440).default(30),
+
   // File Upload Configuration
   UPLOAD_DIR: z.string().default(process.env['HOME'] || process.env['USERPROFILE'] ? `${process.env['HOME'] || process.env['USERPROFILE']}/uploads/pm-assistant` : './uploads/pm-assistant'),
   MAX_UPLOAD_SIZE_MB: z.coerce.number().min(1).max(100).default(10),
@@ -152,6 +158,10 @@ export function validateConfiguration() {
       AI_MONTHLY_TOKEN_BUDGET: process.env['AI_MONTHLY_TOKEN_BUDGET'],
       METRICS_ENABLED: process.env['METRICS_ENABLED'],
       REDIS_URL: process.env['REDIS_URL'],
+      ALERT_ENABLED: process.env['ALERT_ENABLED'],
+      ALERT_EMAIL: process.env['ALERT_EMAIL'],
+      ALERT_WEBHOOK_URL: process.env['ALERT_WEBHOOK_URL'],
+      ALERT_COOLDOWN_MINUTES: process.env['ALERT_COOLDOWN_MINUTES'],
       UPLOAD_DIR: process.env['UPLOAD_DIR'],
       MAX_UPLOAD_SIZE_MB: process.env['MAX_UPLOAD_SIZE_MB'],
     };

@@ -60,16 +60,16 @@ Rollback files use convention `NNN_name.down.sql` alongside `NNN_name.sql`. Forw
 
 ---
 
-## Item 15: External Alerting / Distributed Tracing
+## ~~Item 15: External Alerting~~ — DONE (July 2026)
 
-**Current state:** Good local observability (Winston logs with requestId, MetricsService with counters/latency percentiles, admin `/api/v1/metrics` endpoint). No external alerting when metrics cross thresholds, no distributed tracing.
+**Implemented:** `AlertService` (`src/server/services/AlertService.ts`) — periodic health monitoring with multi-channel alerting.
+- **Checks (every 5 minutes):** error rate spike (>10% 5xx), AI budget warning (80%) and critical (95%), circuit breaker open, DB connection lost, DB latency high (>2s)
+- **Alert channels:** email (via Resend), webhook (POST JSON), in-app notifications (to all admin users)
+- **Cooldown:** Redis-backed deduplication — same alert type won't re-fire within `ALERT_COOLDOWN_MINUTES` (default: 30)
+- **Config:** `ALERT_ENABLED` (default: false), `ALERT_EMAIL`, `ALERT_WEBHOOK_URL`, `ALERT_COOLDOWN_MINUTES`
+- **Boot:** starts after server listen; stops on SIGINT/SIGTERM
 
-**What's needed:**
-- Webhook or email alerts when error rate spikes, AI budget nears limit, or circuit breaker opens
-- Optional integration with external monitoring (e.g., Sentry, Datadog, or simple webhook to Slack/email)
-- Trace IDs propagated to external services for correlation
-
-**Priority:** Low — current logging and metrics are sufficient for single-instance deployment. Becomes important if scaling or if uptime SLAs tighten.
+**Not implemented:** Distributed tracing (trace ID propagation to external services). Low priority for single-instance deployment.
 
 ---
 
@@ -96,4 +96,3 @@ Last-refreshed timestamp and version label added to PM Dashboard.
 | # | Item | Status | Blocker |
 |---|------|--------|---------|
 | 13 | External Cron Scheduler | Open | None (low priority) |
-| 15 | External Alerting | Open | None (low priority) |
