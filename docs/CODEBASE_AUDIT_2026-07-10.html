@@ -40,7 +40,7 @@
 </div>
 
 <div class="summary-box complete">
-  <strong>Executive Summary:</strong> A comprehensive audit of the PM Assistant codebase identified <strong>35 actionable issues</strong> across security, performance, error handling, code quality, and frontend categories. <strong>33 of 35 issues have been fixed and deployed to production.</strong> 1 issue was intentionally skipped (acceptable for CLI tools) and 1 remains open for a future dedicated accessibility pass. All fixes were deployed same-day.
+  <strong>Executive Summary:</strong> A comprehensive audit of the PM Assistant codebase identified <strong>35 actionable issues</strong> across security, performance, error handling, code quality, and frontend categories. <strong>34 of 35 issues have been fixed and deployed to production.</strong> 1 issue was intentionally skipped (#33 — console.log in CLI tools, acceptable by design). All fixes were deployed same-day.
 </div>
 
 <h2>Summary by Severity</h2>
@@ -49,8 +49,8 @@
   <tr class="critical"><td>CRITICAL</td><td>4</td><td>4</td><td>0</td><td>0</td></tr>
   <tr class="high"><td>HIGH</td><td>9</td><td>9</td><td>0</td><td>0</td></tr>
   <tr class="medium"><td>MEDIUM</td><td>16</td><td>16</td><td>0</td><td>0</td></tr>
-  <tr class="low"><td>LOW</td><td>6</td><td>4</td><td>1</td><td>1</td></tr>
-  <tr><th>TOTAL</th><th>35</th><th>33</th><th>1</th><th>1</th></tr>
+  <tr class="low"><td>LOW</td><td>6</td><td>5</td><td>1</td><td>0</td></tr>
+  <tr><th>TOTAL</th><th>35</th><th>34</th><th>1</th><th>0</th></tr>
 </table>
 
 <h2>Fix Deployment History</h2>
@@ -61,6 +61,7 @@
   <tr><td><span class="commit-ref">66a13d3</span></td><td>#22</td><td>Dark mode fixes across 7 components (147+ instances)</td></tr>
   <tr><td><span class="commit-ref">0a436ba</span></td><td>#23, #24, #26, #27</td><td>Remaining Medium issues (type safety, silent catches, magic numbers)</td></tr>
   <tr><td><span class="commit-ref">e27c028</span></td><td>#30, #32, #34, #35</td><td>Low-severity fixes (entropy, return types, bounds check, immutable state)</td></tr>
+  <tr><td><span class="commit-ref">ee919ce</span></td><td>#31</td><td>Accessibility: ARIA dialog roles, icon-button labels, keyboard support, heading hierarchy</td></tr>
 </table>
 
 <h2>Summary by Category</h2>
@@ -70,7 +71,7 @@
   <tr><td>Performance / Memory</td><td>1</td><td>3</td><td>2</td><td>0</td><td><strong>6</strong></td><td><strong>6</strong></td></tr>
   <tr><td>Error Handling</td><td>0</td><td>0</td><td>5</td><td>1</td><td><strong>6</strong></td><td><strong>6</strong></td></tr>
   <tr><td>Code Quality</td><td>0</td><td>1</td><td>4</td><td>2</td><td><strong>7</strong></td><td><strong>6</strong> (1 skipped)</td></tr>
-  <tr><td>Frontend</td><td>0</td><td>0</td><td>3</td><td>2</td><td><strong>5</strong></td><td><strong>4</strong> (1 open)</td></tr>
+  <tr><td>Frontend</td><td>0</td><td>0</td><td>3</td><td>2</td><td><strong>5</strong></td><td><strong>5</strong></td></tr>
   <tr><td>Database</td><td>0</td><td>1</td><td>0</td><td>0</td><td><strong>1</strong></td><td><strong>1</strong></td></tr>
 </table>
 
@@ -362,11 +363,11 @@
 
 <h3>#31 - Accessibility Gaps (aria-labels)</h3>
 <table>
-  <tr><th>File</th><td>20+ components across <code>src/client/src/</code></td></tr>
+  <tr><th>File</th><td>12 components across <code>src/client/src/</code></td></tr>
   <tr><th>Category</th><td>Frontend</td></tr>
-  <tr><th>Status</th><td class="status-open">OPEN — requires dedicated accessibility pass</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (ee919ce)</td></tr>
   <tr><th>Description</th><td>Many interactive elements (buttons, inputs, modals) lack <code>aria-label</code>, <code>aria-describedby</code>, or proper ARIA roles. Screen readers cannot convey the purpose of these controls.</td></tr>
-  <tr><th>Recommendation</th><td>Plan a dedicated accessibility sprint: audit all interactive elements with an axe-core scan, add ARIA attributes progressively, test with screen reader (NVDA/VoiceOver).</td></tr>
+  <tr><th>Fix Applied</th><td>Added <code>role="dialog"</code> and <code>aria-modal="true"</code> to 6 modal/panel components. Added <code>aria-hidden="true"</code> to modal backdrops. Added <code>aria-label</code> to 8 icon-only buttons. Added <code>role="button"</code>, <code>tabIndex</code>, and keyboard handlers to non-semantic clickables (NotificationBell, GanttChart, ColumnPickerDropdown). Added <code>aria-label</code> to unlabeled form input. Fixed heading hierarchy (h4→h3) in ChangeRequestDetail.</td></tr>
 </table>
 
 <h3>#32 - Missing Return Type Annotations</h3>
