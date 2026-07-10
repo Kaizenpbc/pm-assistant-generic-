@@ -1,8 +1,9 @@
-import { FastifyInstance } from 'fastify';
 import { randomUUID } from 'crypto';
 import { claudeService, promptTemplates } from './claudeService';
 import { AIContextBuilder } from './aiContextBuilder';
 import { logAIUsage } from './aiUsageLogger';
+import { databaseService } from '../database/connection';
+import logger from '../utils/logger';
 
 export type ReportType = 'weekly-status' | 'risk-assessment' | 'budget-forecast' | 'resource-utilization';
 
@@ -32,12 +33,10 @@ const REPORT_TITLES: Record<ReportType, string> = {
 };
 
 export class AIReportService {
-  private fastify: FastifyInstance;
   private contextBuilder: AIContextBuilder;
 
-  constructor(fastify: FastifyInstance) {
-    this.fastify = fastify;
-    this.contextBuilder = new AIContextBuilder(fastify);
+  constructor() {
+    this.contextBuilder = new AIContextBuilder(null as any);
   }
 
   async generateReport(
@@ -121,10 +120,7 @@ export class AIReportService {
       await this.storeReport(report, userId);
       return report;
     } catch (error) {
-      this.fastify.log.error(
-        { err: error instanceof Error ? error : new Error(String(error)) },
-        'AI report generation failed, using fallback',
-      );
+      logger.error(`AI report generation failed, using fallback: ${error instanceof Error ? error.message : String(error)}`);
 
       logAIUsage({
         userId,
@@ -152,9 +148,6 @@ export class AIReportService {
   }
 
   async getReportHistory(userId?: string, limit: number = 20): Promise<any[]> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
-    if (!db) return [];
-
     try {
       const query = userId
         ? `SELECT id, title, context_type, project_id, messages, token_count, created_at
@@ -169,9 +162,9 @@ export class AIReportService {
            LIMIT ?`;
 
       const params = userId ? [userId, limit] : [limit];
-      const [rows]: any = await db.query(query, params);
+      const rows = await databaseService.query(query, params);
 
-      return rows.map((row: any) => {
+      return (rows as any[]).map((row: any) => {
         let reportData: any = {};
         try {
           const messages = typeof row.messages === 'string' ? JSON.parse(row.messages) : row.messages;
@@ -193,15 +186,12 @@ export class AIReportService {
         };
       });
     } catch (err) {
-      this.fastify.log.warn({ err }, 'Failed to fetch report history');
+      logger.warn(`Failed to fetch report history: ${err instanceof Error ? err.message : String(err)}`);
       return [];
     }
   }
 
   private async storeReport(report: GeneratedReport, userId: string): Promise<void> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
-    if (!db) return;
-
     try {
       const messages = [
         {
@@ -216,7 +206,7 @@ export class AIReportService {
         },
       ];
 
-      await db.query(
+      await databaseService.query(
         `INSERT INTO ai_conversations (id, user_id, project_id, context_type, title, messages, token_count)
          VALUES (?, ?, ?, 'report', ?, ?, ?)`,
         [
@@ -229,7 +219,7 @@ export class AIReportService {
         ],
       );
     } catch (err) {
-      this.fastify.log.warn({ err }, 'Failed to store report (non-critical)');
+      logger.warn(`Failed to store report (non-critical): ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 

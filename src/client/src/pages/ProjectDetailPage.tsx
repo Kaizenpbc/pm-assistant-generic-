@@ -1822,7 +1822,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         dependencies: deps.length > 0 ? deps : undefined,
         afterTaskId: data.afterTaskId || undefined,
       };
-      return apiService.createTask(schedule.id, payload as any);
+      return apiService.createTask(schedule.id, payload as Parameters<typeof apiService.createTask>[1]);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
@@ -1892,7 +1892,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     // Capture old values for undo
     const oldValues: Record<string, unknown> = {};
     for (const key of Object.keys(data)) {
-      oldValues[key] = (task as any)[key];
+      oldValues[key] = (task as unknown as Record<string, unknown>)[key];
     }
     const fieldNames = Object.keys(data).join(', ');
     pushAction({
@@ -1944,7 +1944,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     // Capture old values
     const oldValues = taskIds.map(id => {
       const t = tasks.find(tt => tt.id === id);
-      return { id, oldValue: t ? (t as any)[field] : undefined };
+      return { id, oldValue: t ? (t as unknown as Record<string, unknown>)[field] : undefined };
     });
     pushAction({
       description: `Bulk update ${field} on ${taskIds.length} tasks`,
@@ -1969,7 +1969,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
 
   // Kanban status change
   const handleKanbanStatusChange = (taskId: string, newStatus: string) => {
-    updateMutation.mutate({ taskId, data: { status: newStatus } as any });
+    updateMutation.mutate({ taskId, data: { status: newStatus } });
   };
 
   if (tasksLoading) {

@@ -10,6 +10,7 @@ import { projectService, Project } from '../ProjectService';
 import { scheduleService } from '../ScheduleService';
 import { resourceService } from '../ResourceService';
 import { computeEVMMetrics } from '../predictiveIntelligence';
+import { MS_PER_DAY } from '../../utils/constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -261,10 +262,10 @@ export class CrossProjectIntelligenceAgent {
   private async buildProjectSnapshot(project: Project): Promise<ProjectHealthSnapshot> {
     const now = new Date();
     const startDate = project.startDate ? new Date(project.startDate) : now;
-    const endDate = project.endDate ? new Date(project.endDate) : new Date(now.getTime() + 365 * 86400000);
+    const endDate = project.endDate ? new Date(project.endDate) : new Date(now.getTime() + 365 * MS_PER_DAY);
 
-    const daysElapsed = Math.max(0, Math.round((now.getTime() - startDate.getTime()) / 86400000));
-    const daysRemaining = Math.max(0, Math.round((endDate.getTime() - now.getTime()) / 86400000));
+    const daysElapsed = Math.max(0, Math.round((now.getTime() - startDate.getTime()) / MS_PER_DAY));
+    const daysRemaining = Math.max(0, Math.round((endDate.getTime() - now.getTime()) / MS_PER_DAY));
     const totalDays = daysElapsed + daysRemaining;
 
     // Get tasks (batch query)

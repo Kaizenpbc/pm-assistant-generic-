@@ -1,4 +1,5 @@
 import { resourceAvailabilityRepository, ResourceAvailability } from '../database/ResourceAvailabilityRepository';
+import { MS_PER_DAY } from '../utils/constants';
 
 export type { ResourceAvailability } from '../database/ResourceAvailabilityRepository';
 
@@ -57,7 +58,7 @@ export class ResourceAvailabilityService {
     for (const block of blocks) {
       const blockStart = new Date(Math.max(new Date(block.dateFrom).getTime(), weekStart.getTime()));
       const blockEnd = new Date(Math.min(new Date(block.dateTo).getTime(), weekEnd.getTime()));
-      const overlapDays = Math.max(0, Math.ceil((blockEnd.getTime() - blockStart.getTime()) / 86400000) + 1);
+      const overlapDays = Math.max(0, Math.ceil((blockEnd.getTime() - blockStart.getTime()) / MS_PER_DAY) + 1);
 
       if (block.type === 'reduced' && block.hoursAvailable != null) {
         reducedDays += overlapDays;

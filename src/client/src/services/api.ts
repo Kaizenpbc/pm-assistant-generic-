@@ -224,6 +224,10 @@ class ApiService {
       dependency?: string;
       parentTaskId?: string;
       afterTaskId?: string;
+      recurrenceRule?: string;
+      isRecurrenceTemplate?: boolean;
+      isMilestone?: boolean;
+      dependencies?: Array<{ dependencyId: string; dependencyType: string; lagDays: number }>;
     }
   ) {
     const response = await this.api.post(`/schedules/${scheduleId}/tasks`, taskData);
@@ -1948,6 +1952,7 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
 
   /** Generic request helper for one-off API calls */
   async request(method: 'get' | 'post' | 'put' | 'delete', path: string, data?: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await this.api[method](path, data as any);
     return response.data;
   }

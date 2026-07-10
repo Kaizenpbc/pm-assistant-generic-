@@ -10,6 +10,7 @@ import { projectService } from '../ProjectService';
 import { scheduleService, Task } from '../ScheduleService';
 import { lessonsLearnedService } from '../LessonsLearnedService';
 import { databaseService } from '../../database/connection';
+import { MS_PER_DAY } from '../../utils/constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -97,7 +98,7 @@ export class LessonsLearnedAgentClass {
 
     const now = new Date();
     const startDate = project.startDate ? new Date(project.startDate) : now;
-    const durationDays = Math.max(1, Math.round((now.getTime() - startDate.getTime()) / 86400000));
+    const durationDays = Math.max(1, Math.round((now.getTime() - startDate.getTime()) / MS_PER_DAY));
 
     let budgetVariance: number | null = null;
     if (project.budgetAllocated && project.budgetSpent !== undefined) {

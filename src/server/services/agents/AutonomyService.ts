@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { autonomyRepository } from '../../database/AutonomyRepository';
 import type { RiskLevel } from './ActionProposalService';
 import logger from '../../utils/logger';
+import { MS_PER_DAY } from '../../utils/constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -108,7 +109,7 @@ export class AutonomyService {
       const firstDate = await autonomyRepository.findFirstProposalDate(agentId, projectFilter, params);
       if (firstDate) {
         daysSinceFirstProposal = Math.floor(
-          (Date.now() - new Date(firstDate).getTime()) / 86400000,
+          (Date.now() - new Date(firstDate).getTime()) / MS_PER_DAY,
         );
       }
     } catch {

@@ -4,6 +4,7 @@ import { claudeService, PromptTemplate } from './claudeService';
 import { logAIUsage } from './aiUsageLogger';
 import { computeEVMMetrics } from './predictiveIntelligence';
 import type { AICrossProjectInsight } from '../schemas/phase5Schemas';
+import { MS_PER_DAY } from '../utils/constants';
 
 // ---------------------------------------------------------------------------
 // Prompt Template
@@ -287,7 +288,7 @@ export class CrossProjectIntelligenceService {
       const similar = rows.map((r: any) => {
         const startDate = new Date(r.start_date);
         const endDate = new Date(r.end_date);
-        const durationDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000));
+        const durationDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / MS_PER_DAY));
 
         return {
           projectId: r.id,

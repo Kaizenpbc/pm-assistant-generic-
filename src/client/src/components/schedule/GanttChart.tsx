@@ -1374,7 +1374,7 @@ export function GanttChart({
           if (task) {
             const val = getTaskFieldValue(task, focusedCell.field);
             setCopiedValue({ field: focusedCell.field, value: val });
-            navigator.clipboard.writeText(val).catch(() => {});
+            navigator.clipboard.writeText(val).catch(() => { /* Clipboard API may be unavailable */ });
           }
           return;
         }

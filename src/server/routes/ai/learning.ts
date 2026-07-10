@@ -7,7 +7,7 @@ import { requireScope } from '../../middleware/requireScope';
 export async function learningRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
-  const service = new AILearningServiceV2(fastify);
+  const service = new AILearningServiceV2();
 
   fastify.post('/feedback', {
     preHandler: [requireScope('write')],

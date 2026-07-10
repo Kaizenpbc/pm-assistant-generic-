@@ -1,5 +1,6 @@
 import { claudeService } from '../claudeService';
 import { databaseService } from '../../database/connection';
+import { MS_PER_MINUTE } from '../../utils/constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -74,7 +75,7 @@ export class DegradationHandler {
         breaker.state = 'half_open';
         return { allowed: true };
       }
-      const waitMinutes = Math.ceil((breaker.retryAfterMs - elapsed) / 60000);
+      const waitMinutes = Math.ceil((breaker.retryAfterMs - elapsed) / MS_PER_MINUTE);
       return { allowed: false, reason: `Circuit breaker open for ${agentId}. Retry in ${waitMinutes}m.` };
     }
 

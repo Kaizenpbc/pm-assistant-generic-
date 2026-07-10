@@ -9,6 +9,7 @@ import { notificationService } from '../NotificationService';
 import { projectService } from '../ProjectService';
 import { scheduleService, Task } from '../ScheduleService';
 import { databaseService } from '../../database/connection';
+import { MS_PER_DAY } from '../../utils/constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -189,9 +190,9 @@ export class PredictiveAlertingAgent {
 
     const now = new Date();
     const startDate = project.startDate ? new Date(project.startDate) : now;
-    const endDate = project.endDate ? new Date(project.endDate) : new Date(now.getTime() + 365 * 86400000);
-    const totalDays = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000));
-    const daysElapsed = Math.max(0, Math.round((now.getTime() - startDate.getTime()) / 86400000));
+    const endDate = project.endDate ? new Date(project.endDate) : new Date(now.getTime() + 365 * MS_PER_DAY);
+    const totalDays = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / MS_PER_DAY));
+    const daysElapsed = Math.max(0, Math.round((now.getTime() - startDate.getTime()) / MS_PER_DAY));
     const timeElapsedPercent = Math.min(100, Math.round((daysElapsed / totalDays) * 100));
 
     // Get all tasks for completion rate

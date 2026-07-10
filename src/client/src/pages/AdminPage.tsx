@@ -115,7 +115,7 @@ function UsersTab() {
     onSuccess: (res) => {
       const token = res.resetToken;
       setCopiedToken(token);
-      navigator.clipboard.writeText(token).catch(() => {});
+      navigator.clipboard.writeText(token).catch(() => { /* Clipboard API may be unavailable */ });
       setTimeout(() => setCopiedToken(null), 4000);
     },
   });

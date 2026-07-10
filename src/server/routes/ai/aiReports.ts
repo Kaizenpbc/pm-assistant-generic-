@@ -19,7 +19,7 @@ const generateReportSchema = z.object({
 export async function aiReportRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
-  const reportService = new AIReportService(fastify);
+  const reportService = new AIReportService();
 
   // POST /generate — generate a report
   fastify.post('/generate', {

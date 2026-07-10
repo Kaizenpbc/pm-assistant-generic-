@@ -1,7 +1,8 @@
-import { FastifyInstance } from 'fastify';
 import { randomUUID } from 'crypto';
 import { claudeService, PromptTemplate } from './claudeService';
 import { logAIUsage } from './aiUsageLogger';
+import { databaseService } from '../database/connection';
+import logger from '../utils/logger';
 import type {
   AIFeedbackRecord,
   AIAccuracyRecord,
@@ -32,22 +33,15 @@ Return a JSON object with: { "improvements": ["suggestion1", "suggestion2", ...]
 // ---------------------------------------------------------------------------
 
 export class AILearningServiceV2 {
-  private fastify: FastifyInstance;
-
-  constructor(fastify: FastifyInstance) {
-    this.fastify = fastify;
-  }
+  constructor() {}
 
   // -------------------------------------------------------------------------
   // Record Feedback (fire-and-forget)
   // -------------------------------------------------------------------------
 
   recordFeedback(feedback: AIFeedbackRecord, userId: string): void {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
-    if (!db) return;
-
     const id = randomUUID();
-    db.query(
+    databaseService.query(
       `INSERT INTO ai_feedback (id, user_id, project_id, feature, suggestion_data, user_action, modified_data, feedback_text)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -61,7 +55,7 @@ export class AILearningServiceV2 {
         feedback.feedbackText || null,
       ],
     ).catch((err: Error) => {
-      this.fastify.log.warn({ err }, 'Failed to record AI feedback (non-critical)');
+      logger.warn(`Failed to record AI feedback (non-critical): ${err.message}`);
     });
   }
 
@@ -70,15 +64,12 @@ export class AILearningServiceV2 {
   // -------------------------------------------------------------------------
 
   recordAccuracy(record: AIAccuracyRecord): void {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
-    if (!db) return;
-
     const id = randomUUID();
     const variancePct = record.actualValue !== 0
       ? parseFloat((((record.predictedValue - record.actualValue) / record.actualValue) * 100).toFixed(2))
       : 0;
 
-    db.query(
+    databaseService.query(
       `INSERT INTO ai_accuracy_tracking (id, project_id, task_id, metric_type, predicted_value, actual_value, variance_pct, project_type)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -92,7 +83,7 @@ export class AILearningServiceV2 {
         record.projectType || null,
       ],
     ).catch((err: Error) => {
-      this.fastify.log.warn({ err }, 'Failed to record AI accuracy (non-critical)');
+      logger.warn(`Failed to record AI accuracy (non-critical): ${err.message}`);
     });
   }
 
@@ -107,13 +98,10 @@ export class AILearningServiceV2 {
     rejected: number;
     acceptanceRate: number;
   }> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
-    if (!db) return { total: 0, accepted: 0, modified: 0, rejected: 0, acceptanceRate: 0 };
-
     const whereClause = feature ? 'WHERE feature = ?' : '';
     const params = feature ? [feature] : [];
 
-    const [rows]: any = await db.query(
+    const rows = await databaseService.query(
       `SELECT user_action, COUNT(*) as cnt
        FROM ai_feedback
        ${whereClause}
@@ -140,7 +128,6 @@ export class AILearningServiceV2 {
   async getAccuracyReport(filters?: {
     projectType?: string;
   }): Promise<AIAccuracyReport> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
     const emptyReport: AIAccuracyReport = {
       overall: { totalRecords: 0, averageVariance: 0, accuracy: 0 },
       byMetric: [],
@@ -148,7 +135,6 @@ export class AILearningServiceV2 {
       feedbackSummary: { total: 0, accepted: 0, modified: 0, rejected: 0, acceptanceRate: 0 },
       improvements: [],
     };
-    if (!db) return emptyReport;
 
     const conditions: string[] = ['1=1'];
     const params: any[] = [];
@@ -157,21 +143,21 @@ export class AILearningServiceV2 {
     const where = conditions.join(' AND ');
 
     // Overall
-    const [overallRows]: any = await db.query(
+    const overallRows = await databaseService.query(
       `SELECT COUNT(*) as total, AVG(ABS(variance_pct)) as avg_var FROM ai_accuracy_tracking WHERE ${where}`,
       params,
     );
-    const totalRecords = parseInt(overallRows[0]?.total) || 0;
-    const averageVariance = parseFloat(overallRows[0]?.avg_var) || 0;
+    const totalRecords = parseInt((overallRows as any[])[0]?.total) || 0;
+    const averageVariance = parseFloat((overallRows as any[])[0]?.avg_var) || 0;
     const accuracy = Math.max(0, Math.min(100, parseFloat((100 - averageVariance).toFixed(1))));
 
     // By metric
-    const [metricRows]: any = await db.query(
+    const metricRows = await databaseService.query(
       `SELECT metric_type, COUNT(*) as cnt, AVG(ABS(variance_pct)) as avg_var
        FROM ai_accuracy_tracking WHERE ${where} GROUP BY metric_type`,
       params,
     );
-    const byMetric = metricRows.map((r: any) => ({
+    const byMetric = (metricRows as any[]).map((r: any) => ({
       metricType: r.metric_type,
       count: parseInt(r.cnt),
       averageVariance: parseFloat(parseFloat(r.avg_var).toFixed(1)),
@@ -179,12 +165,12 @@ export class AILearningServiceV2 {
     }));
 
     // By project type
-    const [typeRows]: any = await db.query(
+    const typeRows = await databaseService.query(
       `SELECT project_type, COUNT(*) as cnt, AVG(ABS(variance_pct)) as avg_var
        FROM ai_accuracy_tracking WHERE ${where} AND project_type IS NOT NULL GROUP BY project_type`,
       params,
     );
-    const byProjectType = typeRows.map((r: any) => ({
+    const byProjectType = (typeRows as any[]).map((r: any) => ({
       projectType: r.project_type,
       count: parseInt(r.cnt),
       averageVariance: parseFloat(parseFloat(r.avg_var).toFixed(1)),
@@ -222,31 +208,28 @@ export class AILearningServiceV2 {
   // -------------------------------------------------------------------------
 
   async buildLearningContext(projectType?: string): Promise<string> {
-    const db = (this.fastify as any).mysql || (this.fastify as any).db;
-    if (!db) return '';
-
     try {
       const conditions: string[] = ['recorded_at > DATE_SUB(NOW(), INTERVAL 90 DAY)'];
       const params: any[] = [];
       if (projectType) { conditions.push('project_type = ?'); params.push(projectType); }
       const where = conditions.join(' AND ');
 
-      const [rows]: any = await db.query(
+      const rows = await databaseService.query(
         `SELECT metric_type, AVG(ABS(variance_pct)) as avg_var, COUNT(*) as cnt
          FROM ai_accuracy_tracking WHERE ${where} GROUP BY metric_type`,
         params,
       );
 
-      if (rows.length === 0) return '';
+      if ((rows as any[]).length === 0) return '';
 
       let context = '\n\n### Historical AI Accuracy Context (last 90 days)\n';
-      for (const r of rows) {
+      for (const r of rows as any[]) {
         const acc = Math.max(0, 100 - parseFloat(r.avg_var));
         context += `- ${r.metric_type}: ${acc.toFixed(1)}% accurate (${r.cnt} samples, avg variance ${parseFloat(r.avg_var).toFixed(1)}%)\n`;
       }
 
       // Feedback adjustment patterns
-      const [feedbackRows]: any = await db.query(
+      const feedbackRows = await databaseService.query(
         `SELECT feature, user_action, COUNT(*) as cnt
          FROM ai_feedback
          WHERE created_at > DATE_SUB(NOW(), INTERVAL 90 DAY)
@@ -254,9 +237,9 @@ export class AILearningServiceV2 {
         [],
       );
 
-      if (feedbackRows.length > 0) {
+      if ((feedbackRows as any[]).length > 0) {
         const featureStats = new Map<string, { accepted: number; modified: number; rejected: number }>();
-        for (const r of feedbackRows) {
+        for (const r of feedbackRows as any[]) {
           if (!featureStats.has(r.feature)) {
             featureStats.set(r.feature, { accepted: 0, modified: 0, rejected: 0 });
           }
@@ -276,7 +259,7 @@ export class AILearningServiceV2 {
 
       return context;
     } catch (err) {
-      this.fastify.log.warn({ err }, 'Failed to build learning context (non-critical)');
+      logger.warn(`Failed to build learning context (non-critical): ${err instanceof Error ? err.message : String(err)}`);
       return '';
     }
   }
@@ -320,7 +303,7 @@ export class AILearningServiceV2 {
       }
       return { insights: report, aiPowered: true };
     } catch (err) {
-      this.fastify.log.warn({ err }, 'AI accuracy insights failed, using deterministic fallback');
+      logger.warn(`AI accuracy insights failed, using deterministic fallback: ${err instanceof Error ? err.message : String(err)}`);
       return { insights: report, aiPowered: false };
     }
   }

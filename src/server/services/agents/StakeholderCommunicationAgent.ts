@@ -9,6 +9,7 @@ import { notificationService } from '../NotificationService';
 import { projectService, Project } from '../ProjectService';
 import { scheduleService, Task } from '../ScheduleService';
 import { computeEVMMetrics } from '../predictiveIntelligence';
+import { MS_PER_DAY } from '../../utils/constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -181,9 +182,9 @@ export class StakeholderCommunicationAgent {
 
     const now = new Date();
     const startDate = project.startDate ? new Date(project.startDate) : now;
-    const endDate = project.endDate ? new Date(project.endDate) : new Date(now.getTime() + 365 * 86400000);
-    const daysElapsed = Math.max(0, Math.round((now.getTime() - startDate.getTime()) / 86400000));
-    const daysRemaining = Math.max(0, Math.round((endDate.getTime() - now.getTime()) / 86400000));
+    const endDate = project.endDate ? new Date(project.endDate) : new Date(now.getTime() + 365 * MS_PER_DAY);
+    const daysElapsed = Math.max(0, Math.round((now.getTime() - startDate.getTime()) / MS_PER_DAY));
+    const daysRemaining = Math.max(0, Math.round((endDate.getTime() - now.getTime()) / MS_PER_DAY));
     const totalDays = daysElapsed + daysRemaining;
 
     // Get all tasks
@@ -218,7 +219,7 @@ export class StakeholderCommunicationAgent {
     }
 
     // Upcoming milestones (tasks ending in next 14 days)
-    const fourteenDaysOut = new Date(now.getTime() + 14 * 86400000);
+    const fourteenDaysOut = new Date(now.getTime() + 14 * MS_PER_DAY);
     const upcomingMilestones = allTasks
       .filter(t => t.endDate && new Date(t.endDate) >= now && new Date(t.endDate) <= fourteenDaysOut && t.status !== 'completed' && t.status !== 'cancelled')
       .sort((a, b) => new Date(a.endDate!).getTime() - new Date(b.endDate!).getTime())
@@ -226,11 +227,11 @@ export class StakeholderCommunicationAgent {
       .map(t => ({
         name: t.name,
         endDate: t.endDate!,
-        daysUntil: Math.ceil((new Date(t.endDate!).getTime() - now.getTime()) / 86400000),
+        daysUntil: Math.ceil((new Date(t.endDate!).getTime() - now.getTime()) / MS_PER_DAY),
       }));
 
     // Recently completed (last 7 days)
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * MS_PER_DAY);
     const recentlyCompleted = completedTasks
       .filter(t => t.updatedAt && new Date(t.updatedAt) >= sevenDaysAgo)
       .sort((a, b) => new Date(b.updatedAt!).getTime() - new Date(a.updatedAt!).getTime())

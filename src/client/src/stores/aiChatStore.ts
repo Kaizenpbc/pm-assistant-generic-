@@ -150,7 +150,7 @@ export const useAIChatStore = create<AIChatState>()((set, get) => ({
       }
 
       // Refresh conversation list in background
-      get().loadConversations().catch(() => {});
+      get().loadConversations().catch(() => { /* Background refresh — non-critical */ });
 
       setLoading(false);
     } catch (error) {

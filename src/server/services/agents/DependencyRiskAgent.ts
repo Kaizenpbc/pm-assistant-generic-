@@ -7,6 +7,7 @@ import { proposalRateLimiter } from './ProposalRateLimiter';
 import { degradationHandler } from './DegradationHandler';
 import { notificationService } from '../NotificationService';
 import { scheduleService, Task } from '../ScheduleService';
+import { MS_PER_DAY } from '../../utils/constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -227,7 +228,7 @@ export class DependencyRiskAgent {
         blocker.status !== 'completed' && blocker.status !== 'cancelled';
       const isBlockerStalled = blocker.status === 'in_progress' &&
         (!blocker.progressPercentage || blocker.progressPercentage === 0) &&
-        blocker.updatedAt && (now.getTime() - new Date(blocker.updatedAt).getTime()) > 7 * 86400000;
+        blocker.updatedAt && (now.getTime() - new Date(blocker.updatedAt).getTime()) > 7 * MS_PER_DAY;
 
       if (isBlockerOverdue || isBlockerStalled) {
         // Walk the chain downstream

@@ -76,7 +76,7 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
         }
       })
-      .catch(() => {})
+      .catch(() => { /* Non-critical: fall back to local prefs */ })
       .finally(() => setLoading(false));
   }, [isAuthenticated]);
 

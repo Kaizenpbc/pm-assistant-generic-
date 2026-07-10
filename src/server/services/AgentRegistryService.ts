@@ -5,6 +5,7 @@ import { agentMemoryService } from './AgentMemoryService';
 import { agentRepository } from '../database/AgentRepository';
 import logger from '../utils/logger';
 import { deadLetterService } from './DeadLetterService';
+import { MS_PER_MINUTE } from '../utils/constants';
 
 export interface AgentCapability {
   id: string;
@@ -115,7 +116,7 @@ export class AgentRegistry {
     }
 
     // 3. Execute with timeout
-    const timeoutMs = cap.timeoutMs ?? 60000;
+    const timeoutMs = cap.timeoutMs ?? MS_PER_MINUTE;
     let output: any;
     try {
       output = await Promise.race([
