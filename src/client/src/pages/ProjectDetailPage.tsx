@@ -86,8 +86,10 @@ import { COLUMN_DEFS } from '../components/schedule/tableColumns';
 import { ColumnPickerDropdown } from '../components/schedule/ColumnPickerDropdown';
 import { TaskListMobile } from '../components/tasks/TaskListMobile';
 import { useUndoRedo } from '../hooks/useUndoRedo';
+import { TimeTrackingTab } from '../components/project/TimeTrackingTab';
+import { SetupChecklist } from '../components/project/SetupChecklist';
 
-type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources';
+type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources' | 'time' | 'files';
 
 const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -95,6 +97,8 @@ const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'raid', label: 'RAID' },
   { id: 'sprints', label: 'Sprints' },
   { id: 'team', label: 'Team' },
+  { id: 'time', label: 'Time' },
+  { id: 'files', label: 'Files' },
   { id: 'ai-insights', label: 'AI Insights' },
   { id: 'evm-forecast', label: 'EVM Forecast' },
   { id: 'scenarios', label: 'What-If' },
@@ -548,6 +552,9 @@ export function ProjectDetailPage() {
         </nav>
       </div>
 
+      {/* Setup Checklist */}
+      {activeTab === 'overview' && <SetupChecklist project={project} onNavigate={(tab) => setActiveTab(tab as Tab)} />}
+
       {/* Tab Content */}
       {activeTab === 'overview' && <OverviewTab project={project} />}
       {activeTab === 'raid' && <RAIDTab projectId={id!} />}
@@ -560,6 +567,12 @@ export function ProjectDetailPage() {
       {activeTab === 'change-requests' && <ChangeRequestsTab projectId={id!} />}
       {activeTab === 'sprints' && <SprintsTab projectId={id!} />}
       {activeTab === 'resources' && <ResourcesTab projectId={id!} />}
+      {activeTab === 'time' && <TimeTrackingTab projectId={id!} />}
+      {activeTab === 'files' && (
+        <div className="mt-6">
+          <AttachmentPanel entityType="project" entityId={id!} />
+        </div>
+      )}
 
       {project && (
         <SaveAsTemplateModal
@@ -1159,11 +1172,8 @@ function OverviewTab({ project }: { project: any }) {
         </div>
       </div>
 
-      {/* Row 4: Attachments + Custom Fields + Portal Links */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className={cardClass}>
-          <AttachmentPanel entityType="project" entityId={project.id} />
-        </div>
+      {/* Row 4: Custom Fields + Portal Links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {project.id && (
           <div className={cardClass}>
             <CustomFieldsSection entityType="project" entityId={project.id} projectId={project.id} />
