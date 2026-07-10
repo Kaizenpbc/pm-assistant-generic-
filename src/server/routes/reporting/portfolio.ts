@@ -4,6 +4,7 @@ import { scheduleService } from '../../services/ScheduleService';
 import { resourceService } from '../../services/ResourceService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 export async function portfolioRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -77,7 +78,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
 
       return { portfolioItems };
     } catch (error) {
-      console.error('Get portfolio error:', error);
+      logger.error('Get portfolio error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch portfolio' });
     }
   });
@@ -176,7 +177,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
         summary: { totalResources, overAllocatedCount, avgUtilization, totalWeeklyCost: Math.round(totalWeeklyCost * 100) / 100 },
       };
     } catch (error) {
-      console.error('Get portfolio resources error:', error);
+      logger.error('Get portfolio resources error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch portfolio resources' });
     }
   });

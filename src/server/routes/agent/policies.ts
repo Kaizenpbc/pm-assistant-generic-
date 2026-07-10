@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { policyEngineService } from '../../services/PolicyEngineService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const createPolicySchema = z.object({
   projectId: z.string().optional().nullable(),
@@ -44,7 +45,7 @@ export async function policyRoutes(fastify: FastifyInstance) {
         : await policyEngineService.getAllPolicies();
       return { policies };
     } catch (error) {
-      console.error('Get policies error:', error);
+      logger.error('Get policies error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -61,7 +62,7 @@ export async function policyRoutes(fastify: FastifyInstance) {
       }
       return { policy };
     } catch (error) {
-      console.error('Get policy error:', error);
+      logger.error('Get policy error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -79,7 +80,7 @@ export async function policyRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ policy });
     } catch (error) {
-      console.error('Create policy error:', error);
+      logger.error('Create policy error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -97,7 +98,7 @@ export async function policyRoutes(fastify: FastifyInstance) {
       }
       return { policy };
     } catch (error) {
-      console.error('Update policy error:', error);
+      logger.error('Update policy error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -114,7 +115,7 @@ export async function policyRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Policy deleted' };
     } catch (error) {
-      console.error('Delete policy error:', error);
+      logger.error('Delete policy error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -128,7 +129,7 @@ export async function policyRoutes(fastify: FastifyInstance) {
       const stats = await policyEngineService.getEvaluationStats(projectId, since);
       return { stats };
     } catch (error) {
-      console.error('Get policy stats error:', error);
+      logger.error('Get policy stats error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { customFieldService } from '../../services/CustomFieldService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 export async function customFieldRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -14,7 +15,7 @@ export async function customFieldRoutes(fastify: FastifyInstance) {
       const fields = await customFieldService.getFieldsByProject(projectId, entityType);
       return { fields };
     } catch (error) {
-      console.error('Get custom fields error:', error);
+      logger.error('Get custom fields error', { error });
       return reply.status(500).send({ error: 'Failed to fetch custom fields' });
     }
   });
@@ -31,7 +32,7 @@ export async function customFieldRoutes(fastify: FastifyInstance) {
       const field = await customFieldService.createField({ ...body, projectId, createdBy: user.userId });
       return { field };
     } catch (error) {
-      console.error('Create custom field error:', error);
+      logger.error('Create custom field error', { error });
       return reply.status(500).send({ error: 'Failed to create custom field' });
     }
   });
@@ -44,7 +45,7 @@ export async function customFieldRoutes(fastify: FastifyInstance) {
       const field = await customFieldService.updateField(id, body);
       return { field };
     } catch (error) {
-      console.error('Update custom field error:', error);
+      logger.error('Update custom field error', { error });
       return reply.status(500).send({ error: 'Failed to update custom field' });
     }
   });
@@ -56,7 +57,7 @@ export async function customFieldRoutes(fastify: FastifyInstance) {
       await customFieldService.deleteField(id);
       return { message: 'Custom field deleted' };
     } catch (error) {
-      console.error('Delete custom field error:', error);
+      logger.error('Delete custom field error', { error });
       return reply.status(500).send({ error: 'Failed to delete custom field' });
     }
   });
@@ -71,7 +72,7 @@ export async function customFieldRoutes(fastify: FastifyInstance) {
       const fieldsWithValues = await customFieldService.getValues(entityType, entityId, projectId);
       return { fields: fieldsWithValues };
     } catch (error) {
-      console.error('Get custom field values error:', error);
+      logger.error('Get custom field values error', { error });
       return reply.status(500).send({ error: 'Failed to fetch custom field values' });
     }
   });
@@ -86,7 +87,7 @@ export async function customFieldRoutes(fastify: FastifyInstance) {
       await customFieldService.bulkSetValues(entityId, values);
       return { message: 'Values saved' };
     } catch (error) {
-      console.error('Bulk set values error:', error);
+      logger.error('Bulk set values error', { error });
       return reply.status(500).send({ error: 'Failed to save values' });
     }
   });

@@ -6,6 +6,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { paginate } from '../../dto/responses';
 import { parsePagination } from '../../schemas/paginationSchema';
+import logger from '../../utils/logger';
 
 const createTemplateSchema = z.object({
   name: z.string().min(1),
@@ -55,7 +56,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       const page = Math.floor(offset / limit) + 1;
       return paginate(summaries, total, page, limit);
     } catch (error) {
-      console.error('List templates error:', error);
+      logger.error('List templates error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch templates' });
     }
   });
@@ -70,7 +71,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       }
       return { template };
     } catch (error) {
-      console.error('Get template error:', error);
+      logger.error('Get template error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch template' });
     }
   });
@@ -89,7 +90,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ template });
     } catch (error) {
-      console.error('Create template error:', error);
+      logger.error('Create template error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create template' });
     }
   });
@@ -107,7 +108,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       }
       return { template };
     } catch (error) {
-      console.error('Update template error:', error);
+      logger.error('Update template error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update template' });
     }
   });
@@ -124,7 +125,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Template deleted successfully' };
     } catch (error) {
-      console.error('Delete template error:', error);
+      logger.error('Delete template error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete template' });
     }
   });
@@ -143,7 +144,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send(result);
     } catch (error: any) {
-      console.error('Apply template error:', error);
+      logger.error('Apply template error', { error });
       if (error.message === 'Template not found') {
         return reply.status(404).send({ error: 'Template not found' });
       }
@@ -165,7 +166,7 @@ export async function templateRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ template });
     } catch (error: any) {
-      console.error('Save as template error:', error);
+      logger.error('Save as template error', { error });
       if (error.message === 'Project not found') {
         return reply.status(404).send({ error: 'Project not found' });
       }

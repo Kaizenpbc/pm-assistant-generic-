@@ -4,6 +4,7 @@ import { resourceService } from '../../services/ResourceService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
+import logger from '../../utils/logger';
 
 const createResourceSchema = z.object({
   name: z.string().min(1),
@@ -44,7 +45,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       const resource = await resourceService.createResource(data);
       return reply.status(201).send({ resource });
     } catch (error) {
-      console.error('Create resource error:', error);
+      logger.error('Create resource error', { error });
       return reply.status(400).send({ error: 'Invalid resource data' });
     }
   });
@@ -58,7 +59,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       if (!resource) return reply.status(404).send({ error: 'Resource not found' });
       return { resource };
     } catch (error) {
-      console.error('Update resource error:', error);
+      logger.error('Update resource error', { error });
       return reply.status(400).send({ error: 'Invalid resource data' });
     }
   });
@@ -85,7 +86,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
       const assignment = await resourceService.createAssignment(data);
       return reply.status(201).send({ assignment });
     } catch (error) {
-      console.error('Create assignment error:', error);
+      logger.error('Create assignment error', { error });
       return reply.status(400).send({ error: 'Invalid assignment data' });
     }
   });

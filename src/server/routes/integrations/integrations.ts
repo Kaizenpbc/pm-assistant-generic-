@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { integrationService } from '../../services/IntegrationService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const createIntegrationSchema = z.object({
   provider: z.string().min(1),
@@ -31,7 +32,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
       return { integration };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Create integration error:', error);
+      logger.error('Create integration error', { error });
       return reply.status(500).send({ error: 'Failed to create integration' });
     }
   });
@@ -43,7 +44,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
       const integrations = await integrationService.getByUser(user.userId);
       return { integrations };
     } catch (error) {
-      console.error('Get integrations error:', error);
+      logger.error('Get integrations error', { error });
       return reply.status(500).send({ error: 'Failed to fetch integrations' });
     }
   });
@@ -55,7 +56,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
       const integration = await integrationService.getById(id);
       return { integration };
     } catch (error) {
-      console.error('Get integration error:', error);
+      logger.error('Get integration error', { error });
       return reply.status(500).send({ error: 'Failed to fetch integration' });
     }
   });
@@ -69,7 +70,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
       return { integration };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Update integration error:', error);
+      logger.error('Update integration error', { error });
       return reply.status(500).send({ error: 'Failed to update integration' });
     }
   });
@@ -81,7 +82,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
       await integrationService.delete(id);
       return { message: 'Integration deleted' };
     } catch (error) {
-      console.error('Delete integration error:', error);
+      logger.error('Delete integration error', { error });
       return reply.status(500).send({ error: 'Failed to delete integration' });
     }
   });
@@ -93,7 +94,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
       const result = await integrationService.testConnection(id);
       return { result };
     } catch (error) {
-      console.error('Test connection error:', error);
+      logger.error('Test connection error', { error });
       return reply.status(500).send({ error: 'Failed to test connection' });
     }
   });
@@ -107,7 +108,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
       return { result };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Sync integration error:', error);
+      logger.error('Sync integration error', { error });
       return reply.status(500).send({ error: 'Failed to sync integration' });
     }
   });
@@ -119,7 +120,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
       const log = await integrationService.getSyncLog(id);
       return { log };
     } catch (error) {
-      console.error('Get sync log error:', error);
+      logger.error('Get sync log error', { error });
       return reply.status(500).send({ error: 'Failed to fetch sync log' });
     }
   });

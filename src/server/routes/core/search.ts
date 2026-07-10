@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { databaseService } from '../../database/connection';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 export async function searchRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -60,7 +61,7 @@ export async function searchRoutes(fastify: FastifyInstance) {
       ];
       return { results };
     } catch (error) {
-      console.error('Search error:', error);
+      logger.error('Search error', { error });
       return reply.status(500).send({ error: 'Search failed' });
     }
   });

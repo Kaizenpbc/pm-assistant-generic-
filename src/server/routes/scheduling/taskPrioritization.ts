@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { taskPrioritizationService } from '../../services/TaskPrioritizationService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const applyBodySchema = z.object({
   taskId: z.string(),
@@ -37,7 +38,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
           message: error.issues,
         });
       }
-      console.error('Task prioritization error:', error);
+      logger.error('Task prioritization error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to prioritize tasks',
@@ -67,7 +68,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
           message: error.issues,
         });
       }
-      console.error('Apply priority error:', error);
+      logger.error('Apply priority error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to apply priority change',
@@ -91,7 +92,7 @@ export async function taskPrioritizationRoutes(fastify: FastifyInstance) {
           message: error.issues,
         });
       }
-      console.error('Apply all priorities error:', error);
+      logger.error('Apply all priorities error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to apply priority changes',

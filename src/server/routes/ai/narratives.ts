@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { narrativeService } from '../../services/NarrativeService';
+import logger from '../../utils/logger';
 
 export async function narrativeRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -16,7 +17,7 @@ export async function narrativeRoutes(fastify: FastifyInstance) {
       const narrative = await narrativeService.generateProjectNarrative(projectId, role as any);
       return { narrative };
     } catch (error) {
-      console.error('Generate project narrative error:', error);
+      logger.error('Generate project narrative error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -30,7 +31,7 @@ export async function narrativeRoutes(fastify: FastifyInstance) {
       const narrative = await narrativeService.generatePortfolioNarrative(role as any);
       return { narrative };
     } catch (error) {
-      console.error('Generate portfolio narrative error:', error);
+      logger.error('Generate portfolio narrative error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

@@ -8,6 +8,7 @@ import { userService } from '../../services/UserService';
 import { emailService } from '../../services/EmailService';
 import { stripeService } from '../../services/StripeService';
 import { rateLimiter } from '../../middleware/rateLimiter';
+import logger from '../../utils/logger';
 
 const loginSchema = z.object({
   username: z.string().min(3),
@@ -105,7 +106,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         },
       };
     } catch (error) {
-      console.error('Login error:', error instanceof Error ? error.message : 'unknown');
+      logger.error('Login error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Login failed' });
     }
   });
@@ -167,7 +168,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         message: 'Registration successful. Please check your email to verify your account.',
       });
     } catch (error) {
-      console.error('Registration error:', error instanceof Error ? error.message : 'unknown');
+      logger.error('Registration error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Registration failed' });
     }
   });
@@ -204,7 +205,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       return { message: 'Email verified successfully. You can now log in.' };
     } catch (error) {
-      console.error('Email verification error:', error instanceof Error ? error.message : 'unknown');
+      logger.error('Email verification error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Email verification failed' });
     }
   });
@@ -243,7 +244,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       return { message: 'If an unverified account with that email exists, a new verification link has been sent.' };
     } catch (error) {
-      console.error('Resend verification error:', error instanceof Error ? error.message : 'unknown');
+      logger.error('Resend verification error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to resend verification email' });
     }
   });
@@ -277,7 +278,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       return { message: 'If an account with that email exists, a password reset link has been sent.' };
     } catch (error) {
-      console.error('Forgot password error:', error instanceof Error ? error.message : 'unknown');
+      logger.error('Forgot password error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Password reset request failed' });
     }
   });
@@ -309,7 +310,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       return { message: 'Password reset successful. You can now log in with your new password.' };
     } catch (error) {
-      console.error('Reset password error:', error instanceof Error ? error.message : 'unknown');
+      logger.error('Reset password error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Password reset failed' });
     }
   });
@@ -357,7 +358,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       return { message: 'Token refreshed successfully' };
     } catch (error) {
-      console.error('Token refresh error:', error instanceof Error ? error.message : 'unknown');
+      logger.error('Token refresh error', { error });
       return reply.status(401).send({ error: 'Invalid refresh token', message: 'Refresh token is invalid or expired' });
     }
   });

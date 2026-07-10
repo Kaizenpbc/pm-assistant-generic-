@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { resourceOptimizerService } from '../../services/ResourceOptimizerService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const forecastQuerySchema = z.object({
   weeksAhead: z.coerce.number().min(1).max(52).default(8),
@@ -44,7 +45,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
           message: error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
         });
       }
-      console.error('Resource forecast error:', error);
+      logger.error('Resource forecast error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to generate resource forecast',
@@ -82,7 +83,7 @@ export async function resourceOptimizerRoutes(fastify: FastifyInstance) {
           message: error.message,
         });
       }
-      console.error('Skill match error:', error);
+      logger.error('Skill match error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to find resource matches',

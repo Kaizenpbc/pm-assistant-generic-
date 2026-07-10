@@ -4,6 +4,7 @@ import { dagWorkflowService } from '../../services/DagWorkflowService';
 import { scheduleService } from '../../services/ScheduleService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 // ── Zod schemas ────────────────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       const definitions = await dagWorkflowService.listDefinitions(projectId);
       return { definitions };
     } catch (error) {
-      console.error('List workflows error:', error);
+      logger.error('List workflows error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -80,7 +81,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (!definition) return reply.status(404).send({ error: 'Workflow not found' });
       return { definition };
     } catch (error) {
-      console.error('Get workflow error:', error);
+      logger.error('Get workflow error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -102,7 +103,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (error instanceof z.ZodError) {
         return reply.status(400).send({ error: 'Validation error', details: error.issues });
       }
-      console.error('Create workflow error:', error);
+      logger.error('Create workflow error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -122,7 +123,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (error instanceof z.ZodError) {
         return reply.status(400).send({ error: 'Validation error', details: error.issues });
       }
-      console.error('Update workflow error:', error);
+      logger.error('Update workflow error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -138,7 +139,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (!deleted) return reply.status(404).send({ error: 'Workflow not found' });
       return { message: 'Workflow deleted' };
     } catch (error) {
-      console.error('Delete workflow error:', error);
+      logger.error('Delete workflow error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -158,7 +159,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (!definition) return reply.status(404).send({ error: 'Workflow not found' });
       return { definition };
     } catch (error) {
-      console.error('Toggle workflow error:', error);
+      logger.error('Toggle workflow error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -178,7 +179,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (error instanceof z.ZodError) {
         return reply.status(400).send({ error: 'Validation error', details: error.issues });
       }
-      console.error('Trigger workflow error:', error);
+      logger.error('Trigger workflow error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -196,7 +197,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       });
       return { executions };
     } catch (error) {
-      console.error('List executions error:', error);
+      logger.error('List executions error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -212,7 +213,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (!execution) return reply.status(404).send({ error: 'Execution not found' });
       return { execution };
     } catch (error) {
-      console.error('Get execution error:', error);
+      logger.error('Get execution error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -232,7 +233,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
       if (error instanceof z.ZodError) {
         return reply.status(400).send({ error: 'Validation error', details: error.issues });
       }
-      console.error('Resume execution error:', error);
+      logger.error('Resume execution error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

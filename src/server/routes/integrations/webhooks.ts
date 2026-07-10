@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { webhookService } from '../../services/WebhookService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const createWebhookSchema = z.object({
   url: z.string().url().max(2000),
@@ -28,7 +29,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
       const webhook = await webhookService.register(user.userId, url, events);
       return { webhook };
     } catch (error) {
-      console.error('Register webhook error:', error);
+      logger.error('Register webhook error', { error });
       return reply.status(500).send({ error: 'Failed to register webhook' });
     }
   });
@@ -42,7 +43,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
       const webhooks = await webhookService.list(user.userId);
       return { webhooks };
     } catch (error) {
-      console.error('List webhooks error:', error);
+      logger.error('List webhooks error', { error });
       return reply.status(500).send({ error: 'Failed to fetch webhooks' });
     }
   });
@@ -61,7 +62,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
 
       return { webhook };
     } catch (error) {
-      console.error('Update webhook error:', error);
+      logger.error('Update webhook error', { error });
       return reply.status(500).send({ error: 'Failed to update webhook' });
     }
   });
@@ -78,7 +79,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
 
       return { message: 'Webhook deleted' };
     } catch (error) {
-      console.error('Delete webhook error:', error);
+      logger.error('Delete webhook error', { error });
       return reply.status(500).send({ error: 'Failed to delete webhook' });
     }
   });
@@ -95,7 +96,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
 
       return { message: 'Test webhook sent' };
     } catch (error) {
-      console.error('Test webhook error:', error);
+      logger.error('Test webhook error', { error });
       return reply.status(500).send({ error: 'Failed to send test webhook' });
     }
   });

@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { BaseRepository } from './BaseRepository';
 import { databaseService } from './connection';
+import logger from '../utils/logger';
 import type { Integration, IntegrationSyncLog } from '../services/IntegrationService';
 
 interface IntegrationRow {
@@ -40,7 +41,7 @@ function maskConfig(config: Record<string, any>): Record<string, any> {
 
 export function parseConfig(raw: string | Record<string, any>): Record<string, any> {
   if (typeof raw === 'string') {
-    try { return JSON.parse(raw); } catch (e) { console.warn('IntegrationRepository: malformed config JSON, returning {}', e); return {}; }
+    try { return JSON.parse(raw); } catch (e) { logger.warn('IntegrationRepository: malformed config JSON, returning {}', { error: e }); return {}; }
   }
   return raw || {};
 }

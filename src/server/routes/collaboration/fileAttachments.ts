@@ -3,6 +3,7 @@ import { fileAttachmentService } from '../../services/FileAttachmentService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { validateMimeType } from '../../utils/mimeValidator';
+import logger from '../../utils/logger';
 
 export async function fileAttachmentRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -28,7 +29,7 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
       );
       return { attachment };
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error', { error });
       return reply.status(500).send({ error: 'Failed to upload file' });
     }
   });
@@ -40,7 +41,7 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
       const attachments = await fileAttachmentService.getByEntity(entityType, entityId);
       return { attachments };
     } catch (error) {
-      console.error('List attachments error:', error);
+      logger.error('List attachments error', { error });
       return reply.status(500).send({ error: 'Failed to list attachments' });
     }
   });
@@ -62,7 +63,7 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
       reply.header('Content-Disposition', `attachment; filename="${attachment.originalName}"`);
       return reply.send(stream);
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error', { error });
       return reply.status(500).send({ error: 'Failed to download file' });
     }
   });
@@ -87,7 +88,7 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
       );
       return { attachment };
     } catch (error) {
-      console.error('Upload version error:', error);
+      logger.error('Upload version error', { error });
       return reply.status(500).send({ error: 'Failed to upload new version' });
     }
   });
@@ -99,7 +100,7 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
       const versions = await fileAttachmentService.getVersionHistory(id);
       return { versions };
     } catch (error) {
-      console.error('Version history error:', error);
+      logger.error('Version history error', { error });
       return reply.status(500).send({ error: 'Failed to fetch version history' });
     }
   });
@@ -111,7 +112,7 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
       await fileAttachmentService.delete(id);
       return { message: 'Attachment deleted' };
     } catch (error) {
-      console.error('Delete attachment error:', error);
+      logger.error('Delete attachment error', { error });
       return reply.status(500).send({ error: 'Failed to delete attachment' });
     }
   });

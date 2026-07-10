@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { apiKeyService } from '../../services/ApiKeyService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const createApiKeySchema = z.object({
   name: z.string().min(1).max(200),
@@ -33,7 +34,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
 
       return { apiKey };
     } catch (error) {
-      console.error('Create API key error:', error);
+      logger.error('Create API key error', { error });
       return reply.status(500).send({ error: 'Failed to create API key' });
     }
   });
@@ -47,7 +48,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       const apiKeys = await apiKeyService.listKeys(user.userId);
       return { apiKeys };
     } catch (error) {
-      console.error('List API keys error:', error);
+      logger.error('List API keys error', { error });
       return reply.status(500).send({ error: 'Failed to list API keys' });
     }
   });
@@ -62,7 +63,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       await apiKeyService.revokeKey(user.userId, id);
       return { message: 'API key revoked' };
     } catch (error) {
-      console.error('Revoke API key error:', error);
+      logger.error('Revoke API key error', { error });
       return reply.status(500).send({ error: 'Failed to revoke API key' });
     }
   });
@@ -78,7 +79,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       const usage = await apiKeyService.getUsageStats(id, since);
       return { usage };
     } catch (error) {
-      console.error('Get API key usage error:', error);
+      logger.error('Get API key usage error', { error });
       return reply.status(500).send({ error: 'Failed to fetch API key usage' });
     }
   });

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { reportScheduleService } from '../../services/ReportScheduleService';
+import logger from '../../utils/logger';
 
 const createScheduleSchema = z.object({
   templateId: z.string().min(1),
@@ -33,7 +34,7 @@ export async function reportScheduleRoutes(fastify: FastifyInstance) {
       return reply.status(201).send({ schedule });
     } catch (error: any) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Create report schedule error:', error);
+      logger.error('Create report schedule error', { error });
       return reply.status(500).send({ error: error.message || 'Internal server error' });
     }
   });
@@ -45,7 +46,7 @@ export async function reportScheduleRoutes(fastify: FastifyInstance) {
       const schedules = await reportScheduleService.listByUser(userId);
       return { schedules };
     } catch (error) {
-      console.error('List report schedules error:', error);
+      logger.error('List report schedules error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -58,7 +59,7 @@ export async function reportScheduleRoutes(fastify: FastifyInstance) {
       if (!schedule) return reply.status(404).send({ error: 'Schedule not found' });
       return { schedule };
     } catch (error) {
-      console.error('Get report schedule error:', error);
+      logger.error('Get report schedule error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -70,7 +71,7 @@ export async function reportScheduleRoutes(fastify: FastifyInstance) {
       const schedules = await reportScheduleService.getByTemplateId(templateId);
       return { schedules };
     } catch (error) {
-      console.error('Get template schedules error:', error);
+      logger.error('Get template schedules error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -85,7 +86,7 @@ export async function reportScheduleRoutes(fastify: FastifyInstance) {
       return { schedule };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Update report schedule error:', error);
+      logger.error('Update report schedule error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -97,7 +98,7 @@ export async function reportScheduleRoutes(fastify: FastifyInstance) {
       await reportScheduleService.delete(id);
       return { success: true };
     } catch (error) {
-      console.error('Delete report schedule error:', error);
+      logger.error('Delete report schedule error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { reportBuilderService } from '../../services/ReportBuilderService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const reportSectionSchema = z.object({
   title: z.string().optional(),
@@ -46,7 +47,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
       return { template };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Create report template error:', error);
+      logger.error('Create report template error', { error });
       return reply.status(500).send({ error: 'Failed to create report template' });
     }
   });
@@ -58,7 +59,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
       const templates = await reportBuilderService.getTemplates(user.userId);
       return { templates };
     } catch (error) {
-      console.error('Get report templates error:', error);
+      logger.error('Get report templates error', { error });
       return reply.status(500).send({ error: 'Failed to fetch report templates' });
     }
   });
@@ -70,7 +71,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
       const template = await reportBuilderService.getTemplateById(id);
       return { template };
     } catch (error) {
-      console.error('Get report template error:', error);
+      logger.error('Get report template error', { error });
       return reply.status(500).send({ error: 'Failed to fetch report template' });
     }
   });
@@ -84,7 +85,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
       return { template };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Update report template error:', error);
+      logger.error('Update report template error', { error });
       return reply.status(500).send({ error: 'Failed to update report template' });
     }
   });
@@ -96,7 +97,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
       await reportBuilderService.deleteTemplate(id);
       return { message: 'Report template deleted' };
     } catch (error) {
-      console.error('Delete report template error:', error);
+      logger.error('Delete report template error', { error });
       return reply.status(500).send({ error: 'Failed to delete report template' });
     }
   });
@@ -110,7 +111,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
       return { report };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Generate report error:', error);
+      logger.error('Generate report error', { error });
       return reply.status(500).send({ error: 'Failed to generate report' });
     }
   });
@@ -124,7 +125,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
       return { result };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Export report error:', error);
+      logger.error('Export report error', { error });
       return reply.status(500).send({ error: 'Failed to export report' });
     }
   });

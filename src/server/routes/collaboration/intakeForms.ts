@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { intakeFormService } from '../../services/IntakeFormService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const intakeFieldSchema = z.object({
   id: z.string().min(1),
@@ -39,7 +40,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
       const form = await intakeFormService.createForm(body, user.userId);
       return { form };
     } catch (error) {
-      console.error('Create intake form error:', error);
+      logger.error('Create intake form error', { error });
       return reply.status(500).send({ error: 'Failed to create intake form' });
     }
   });
@@ -50,7 +51,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
       const forms = await intakeFormService.getForms();
       return { forms };
     } catch (error) {
-      console.error('Get intake forms error:', error);
+      logger.error('Get intake forms error', { error });
       return reply.status(500).send({ error: 'Failed to fetch intake forms' });
     }
   });
@@ -62,7 +63,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
       const form = await intakeFormService.getFormById(id);
       return { form };
     } catch (error) {
-      console.error('Get intake form error:', error);
+      logger.error('Get intake form error', { error });
       return reply.status(500).send({ error: 'Failed to fetch intake form' });
     }
   });
@@ -75,7 +76,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
       const form = await intakeFormService.updateForm(id, body);
       return { form };
     } catch (error) {
-      console.error('Update intake form error:', error);
+      logger.error('Update intake form error', { error });
       return reply.status(500).send({ error: 'Failed to update intake form' });
     }
   });
@@ -87,7 +88,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
       await intakeFormService.deleteForm(id);
       return { message: 'Intake form deleted' };
     } catch (error) {
-      console.error('Delete intake form error:', error);
+      logger.error('Delete intake form error', { error });
       return reply.status(500).send({ error: 'Failed to delete intake form' });
     }
   });
@@ -101,7 +102,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
       const submission = await intakeFormService.submitForm(id, values, user.userId);
       return { submission };
     } catch (error) {
-      console.error('Submit intake form error:', error);
+      logger.error('Submit intake form error', { error });
       return reply.status(500).send({ error: 'Failed to submit intake form' });
     }
   });
@@ -113,7 +114,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
       const submissions = await intakeFormService.getSubmissions(formId, status);
       return { submissions };
     } catch (error) {
-      console.error('Get submissions error:', error);
+      logger.error('Get submissions error', { error });
       return reply.status(500).send({ error: 'Failed to fetch submissions' });
     }
   });
@@ -125,7 +126,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
       const submission = await intakeFormService.getSubmissionById(id);
       return { submission };
     } catch (error) {
-      console.error('Get submission error:', error);
+      logger.error('Get submission error', { error });
       return reply.status(500).send({ error: 'Failed to fetch submission' });
     }
   });
@@ -139,7 +140,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
       const result = await intakeFormService.reviewSubmission(id, status, notes || '', user.userId);
       return { result };
     } catch (error) {
-      console.error('Review submission error:', error);
+      logger.error('Review submission error', { error });
       return reply.status(500).send({ error: 'Failed to review submission' });
     }
   });
@@ -152,7 +153,7 @@ export async function intakeFormRoutes(fastify: FastifyInstance) {
       const project = await intakeFormService.convertToProject(id, user.userId);
       return { project };
     } catch (error) {
-      console.error('Convert to project error:', error);
+      logger.error('Convert to project error', { error });
       return reply.status(500).send({ error: 'Failed to convert to project' });
     }
   });

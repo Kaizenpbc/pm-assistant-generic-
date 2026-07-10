@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { projectMemberService } from '../../services/ProjectMemberService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const addMemberSchema = z.object({
   userId: z.string().optional(),
@@ -28,7 +29,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       const members = await projectMemberService.findByProjectId(projectId);
       return { members };
     } catch (error) {
-      console.error('Get members error:', error instanceof Error ? error.message : error);
+      logger.error('Get members error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -62,7 +63,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       });
       return reply.status(201).send({ member });
     } catch (error) {
-      console.error('Add member error:', error instanceof Error ? error.message : error);
+      logger.error('Add member error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -79,7 +80,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       if (!member) return reply.status(404).send({ error: 'Member not found' });
       return { member };
     } catch (error) {
-      console.error('Update member error:', error instanceof Error ? error.message : error);
+      logger.error('Update member error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -95,7 +96,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       if (!removed) return reply.status(400).send({ error: 'Cannot remove member (may be last owner)' });
       return { message: 'Member removed' };
     } catch (error) {
-      console.error('Remove member error:', error instanceof Error ? error.message : error);
+      logger.error('Remove member error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

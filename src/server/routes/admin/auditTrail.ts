@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { auditLedgerService } from '../../services/AuditLedgerService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 export async function auditTrailRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -16,7 +17,7 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
       const result = await auditLedgerService.verifyChain(projectId, since);
       return result;
     } catch (error) {
-      console.error('Verify audit chain error:', error);
+      logger.error('Verify audit chain error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -64,7 +65,7 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
         offset: Number(offset),
       };
     } catch (error) {
-      console.error('Get audit trail error:', error);
+      logger.error('Get audit trail error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -139,7 +140,7 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
         filters: { from, to, actions },
       };
     } catch (error) {
-      console.error('Compliance export error:', error);
+      logger.error('Compliance export error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

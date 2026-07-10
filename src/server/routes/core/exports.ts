@@ -4,6 +4,7 @@ import { projectService } from '../../services/ProjectService';
 import { criticalPathService } from '../../services/CriticalPathService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 export async function exportRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -261,7 +262,7 @@ ${assignmentsXml}
       reply.header('Content-Disposition', `attachment; filename="project-${id}-export.csv"`);
       return reply.send(csv);
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error', { error });
       return reply.status(500).send({ error: 'Failed to export project data' });
     }
   });

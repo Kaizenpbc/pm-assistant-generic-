@@ -5,6 +5,7 @@ import { ProposedChangeSchema } from '../../schemas/autoRescheduleSchemas';
 import { webhookService } from '../../services/WebhookService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const rejectBodySchema = z.object({
   feedback: z.string().optional(),
@@ -27,7 +28,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       const delayedTasks = await autoRescheduleService.detectDelays(scheduleId);
       return { delayedTasks };
     } catch (error) {
-      console.error('Detect delays error:', error);
+      logger.error('Detect delays error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to detect delays',
@@ -48,7 +49,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       webhookService.dispatch('proposal.created', { proposal }, userId);
       return { proposal };
     } catch (error) {
-      console.error('Generate proposal error:', error);
+      logger.error('Generate proposal error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to generate reschedule proposal',
@@ -66,7 +67,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       const proposals = await autoRescheduleService.getProposals(scheduleId);
       return { proposals };
     } catch (error) {
-      console.error('Get proposals error:', error);
+      logger.error('Get proposals error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to fetch proposals',
@@ -92,7 +93,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       webhookService.dispatch('proposal.accepted', { proposalId: id }, user.userId);
       return { message: 'Proposal accepted and changes applied successfully' };
     } catch (error) {
-      console.error('Accept proposal error:', error);
+      logger.error('Accept proposal error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to accept proposal',
@@ -117,7 +118,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal rejected successfully' };
     } catch (error) {
-      console.error('Reject proposal error:', error);
+      logger.error('Reject proposal error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to reject proposal',
@@ -142,7 +143,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Proposal modified successfully' };
     } catch (error) {
-      console.error('Modify proposal error:', error);
+      logger.error('Modify proposal error', { error });
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to modify proposal',

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { userService } from '../../services/UserService';
+import logger from '../../utils/logger';
 
 const notificationPrefsSchema = z.object({
   emailNotificationsEnabled: z.boolean().optional(),
@@ -47,7 +48,7 @@ export async function userRoutes(fastify: FastifyInstance) {
         },
       };
     } catch (error) {
-      console.error('Get user profile error:', error);
+      logger.error('Get user profile error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch user profile' });
     }
   });
@@ -74,7 +75,7 @@ export async function userRoutes(fastify: FastifyInstance) {
         digestFrequency: updated?.digestFrequency ?? 'none',
       };
     } catch (error) {
-      console.error('Update notification preferences error:', error);
+      logger.error('Update notification preferences error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -101,7 +102,7 @@ export async function userRoutes(fastify: FastifyInstance) {
         locale: updated?.locale ?? 'en',
       };
     } catch (error) {
-      console.error('Update user preferences error:', error);
+      logger.error('Update user preferences error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -116,7 +117,7 @@ export async function userRoutes(fastify: FastifyInstance) {
       const prefs = await userService.getAccessibilityPrefs(userId);
       return { preferences: prefs };
     } catch (error) {
-      console.error('Get accessibility preferences error:', error);
+      logger.error('Get accessibility preferences error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -131,7 +132,7 @@ export async function userRoutes(fastify: FastifyInstance) {
       await userService.updateAccessibilityPrefs(userId, parsed);
       return { preferences: parsed };
     } catch (error) {
-      console.error('Update accessibility preferences error:', error);
+      logger.error('Update accessibility preferences error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

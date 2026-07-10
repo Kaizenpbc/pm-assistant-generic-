@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { burndownService } from '../../services/BurndownService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 export async function burndownRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -13,7 +14,7 @@ export async function burndownRoutes(fastify: FastifyInstance) {
       const data = await burndownService.getBurndownData(scheduleId);
       return data;
     } catch (error) {
-      console.error('Get burndown data error:', error);
+      logger.error('Get burndown data error', { error });
       return reply.status(500).send({ error: 'Failed to generate burndown data' });
     }
   });
@@ -25,7 +26,7 @@ export async function burndownRoutes(fastify: FastifyInstance) {
       const data = await burndownService.getVelocityData(scheduleId);
       return data;
     } catch (error) {
-      console.error('Get velocity data error:', error);
+      logger.error('Get velocity data error', { error });
       return reply.status(500).send({ error: 'Failed to generate velocity data' });
     }
   });

@@ -7,6 +7,7 @@ import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import { webhookService } from '../../services/WebhookService';
 import { toProjectDTO, paginate } from '../../dto/responses';
 import { parsePagination } from '../../schemas/paginationSchema';
+import logger from '../../utils/logger';
 
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -48,7 +49,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       const page = Math.floor(offset / limit) + 1;
       return paginate(rows.map(toProjectDTO), total, page, limit);
     } catch (error) {
-      console.error('Get projects error:', error);
+      logger.error('Get projects error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch projects' });
     }
   });
@@ -65,7 +66,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       }
       return { project: toProjectDTO(project) };
     } catch (error) {
-      console.error('Get project error:', error);
+      logger.error('Get project error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch project' });
     }
   });
@@ -86,7 +87,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       webhookService.dispatch('project.created', { project }, userId);
       return reply.status(201).send({ project: toProjectDTO(project) });
     } catch (error) {
-      console.error('Create project error:', error);
+      logger.error('Create project error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create project' });
     }
   });
@@ -110,7 +111,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       webhookService.dispatch('project.updated', { project }, userId);
       return { project: toProjectDTO(project) };
     } catch (error) {
-      console.error('Update project error:', error);
+      logger.error('Update project error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update project' });
     }
   });
@@ -130,7 +131,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       webhookService.dispatch('project.updated', { project }, user.userId);
       return { project };
     } catch (error) {
-      console.error('Update project status error:', error);
+      logger.error('Update project status error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update project status' });
     }
   });
@@ -148,7 +149,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       }
       return { message: 'Project deleted successfully' };
     } catch (error) {
-      console.error('Delete project error:', error);
+      logger.error('Delete project error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete project' });
     }
   });

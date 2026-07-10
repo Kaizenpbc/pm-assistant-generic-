@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { notificationService } from '../../services/NotificationService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 export async function notificationRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -22,7 +23,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
       ]);
       return { notifications, total, limit: parsedLimit, offset: parsedOffset };
     } catch (error) {
-      console.error('Get notifications error:', error);
+      logger.error('Get notifications error', { error });
       return reply.status(500).send({ error: 'Failed to fetch notifications' });
     }
   });
@@ -37,7 +38,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
       const count = await notificationService.getUnreadCount(user.userId);
       return { count };
     } catch (error) {
-      console.error('Get unread count error:', error);
+      logger.error('Get unread count error', { error });
       return reply.status(500).send({ error: 'Failed to fetch unread count' });
     }
   });
@@ -52,7 +53,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
       await notificationService.markRead(id);
       return { message: 'Notification marked as read' };
     } catch (error) {
-      console.error('Mark read error:', error);
+      logger.error('Mark read error', { error });
       return reply.status(500).send({ error: 'Failed to mark notification as read' });
     }
   });
@@ -67,7 +68,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
       await notificationService.markAllRead(user.userId);
       return { message: 'All notifications marked as read' };
     } catch (error) {
-      console.error('Mark all read error:', error);
+      logger.error('Mark all read error', { error });
       return reply.status(500).send({ error: 'Failed to mark all as read' });
     }
   });

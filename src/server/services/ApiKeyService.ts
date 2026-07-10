@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { apiKeyRepository, ApiKeyRow } from '../database/ApiKeyRepository';
+import logger from '../utils/logger';
 
 export class ApiKeyService {
   /**
@@ -110,7 +111,7 @@ export class ApiKeyService {
       const id = uuidv4();
       apiKeyRepository.logUsage(id, keyId, method, path, statusCode, responseTimeMs, ip)
         .catch((err) => {
-          console.error('Failed to log API key usage:', err);
+          logger.error('Failed to log API key usage', { error: err });
         });
     });
   }

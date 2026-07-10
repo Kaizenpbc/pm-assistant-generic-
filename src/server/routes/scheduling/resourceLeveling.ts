@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { resourceLevelingService } from '../../services/ResourceLevelingService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const taskAdjustmentSchema = z.object({
   taskId: z.string().min(1),
@@ -28,7 +29,7 @@ export async function resourceLevelingRoutes(fastify: FastifyInstance) {
       const histogram = await resourceLevelingService.getResourceHistogram(scheduleId);
       return { histogram };
     } catch (error) {
-      console.error('Get resource histogram error:', error);
+      logger.error('Get resource histogram error', { error });
       return reply.status(500).send({ error: 'Failed to fetch resource histogram' });
     }
   });
@@ -40,7 +41,7 @@ export async function resourceLevelingRoutes(fastify: FastifyInstance) {
       const result = await resourceLevelingService.levelResources(scheduleId);
       return { result };
     } catch (error) {
-      console.error('Level resources error:', error);
+      logger.error('Level resources error', { error });
       return reply.status(500).send({ error: 'Failed to level resources' });
     }
   });
@@ -54,7 +55,7 @@ export async function resourceLevelingRoutes(fastify: FastifyInstance) {
       return { result };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Apply leveled dates error:', error);
+      logger.error('Apply leveled dates error', { error });
       return reply.status(500).send({ error: 'Failed to apply leveled dates' });
     }
   });

@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { analyticsSummaryService } from '../../services/AnalyticsSummaryService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 export async function analyticsSummaryRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -20,7 +21,7 @@ export async function analyticsSummaryRoutes(fastify: FastifyInstance) {
         : await analyticsSummaryService.getSummary(user.userId);
       return { summary };
     } catch (error) {
-      console.error('Get analytics summary error:', error);
+      logger.error('Get analytics summary error', { error });
       return reply.status(500).send({ error: 'Failed to generate analytics summary' });
     }
   });
@@ -35,7 +36,7 @@ export async function analyticsSummaryRoutes(fastify: FastifyInstance) {
       const summary = await analyticsSummaryService.getProjectSummary(id);
       return { summary };
     } catch (error) {
-      console.error('Get project analytics summary error:', error);
+      logger.error('Get project analytics summary error', { error });
       return reply.status(500).send({ error: 'Failed to generate project analytics summary' });
     }
   });

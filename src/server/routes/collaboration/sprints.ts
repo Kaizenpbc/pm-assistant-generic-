@@ -6,6 +6,7 @@ import { requireScope } from '../../middleware/requireScope';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import { paginate } from '../../dto/responses';
 import { parsePagination } from '../../schemas/paginationSchema';
+import logger from '../../utils/logger';
 
 const createSprintSchema = z.object({
   projectId: z.string().uuid(),
@@ -31,7 +32,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       return { sprint };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Create sprint error:', error);
+      logger.error('Create sprint error', { error });
       return reply.status(500).send({ error: 'Failed to create sprint' });
     }
   });
@@ -45,7 +46,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const page = Math.floor(offset / limit) + 1;
       return paginate(rows, total, page, limit);
     } catch (error) {
-      console.error('Get sprints error:', error);
+      logger.error('Get sprints error', { error });
       return reply.status(500).send({ error: 'Failed to fetch sprints' });
     }
   });
@@ -57,7 +58,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const sprint = await sprintService.getById(id);
       return { sprint };
     } catch (error) {
-      console.error('Get sprint error:', error);
+      logger.error('Get sprint error', { error });
       return reply.status(500).send({ error: 'Failed to fetch sprint' });
     }
   });
@@ -71,7 +72,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       return { sprint };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Update sprint error:', error);
+      logger.error('Update sprint error', { error });
       return reply.status(500).send({ error: 'Failed to update sprint' });
     }
   });
@@ -83,7 +84,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       await sprintService.delete(id);
       return { message: 'Sprint deleted' };
     } catch (error) {
-      console.error('Delete sprint error:', error);
+      logger.error('Delete sprint error', { error });
       return reply.status(500).send({ error: 'Failed to delete sprint' });
     }
   });
@@ -96,7 +97,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const result = await sprintService.addTask(id, taskId, storyPoints);
       return { result };
     } catch (error) {
-      console.error('Add task to sprint error:', error);
+      logger.error('Add task to sprint error', { error });
       return reply.status(500).send({ error: 'Failed to add task to sprint' });
     }
   });
@@ -108,7 +109,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       await sprintService.removeTask(id, taskId);
       return { message: 'Task removed from sprint' };
     } catch (error) {
-      console.error('Remove task from sprint error:', error);
+      logger.error('Remove task from sprint error', { error });
       return reply.status(500).send({ error: 'Failed to remove task from sprint' });
     }
   });
@@ -120,7 +121,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const sprint = await sprintService.startSprint(id);
       return { sprint };
     } catch (error) {
-      console.error('Start sprint error:', error);
+      logger.error('Start sprint error', { error });
       return reply.status(500).send({ error: 'Failed to start sprint' });
     }
   });
@@ -132,7 +133,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const sprint = await sprintService.completeSprint(id);
       return { sprint };
     } catch (error) {
-      console.error('Complete sprint error:', error);
+      logger.error('Complete sprint error', { error });
       return reply.status(500).send({ error: 'Failed to complete sprint' });
     }
   });
@@ -144,7 +145,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const board = await sprintService.getSprintBoard(id);
       return { board };
     } catch (error) {
-      console.error('Get sprint board error:', error);
+      logger.error('Get sprint board error', { error });
       return reply.status(500).send({ error: 'Failed to fetch sprint board' });
     }
   });
@@ -156,7 +157,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const burndown = await sprintService.getSprintBurndown(id);
       return { burndown };
     } catch (error) {
-      console.error('Get sprint burndown error:', error);
+      logger.error('Get sprint burndown error', { error });
       return reply.status(500).send({ error: 'Failed to fetch sprint burndown' });
     }
   });
@@ -168,7 +169,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const velocity = await sprintService.getVelocityHistory(projectId);
       return { velocity };
     } catch (error) {
-      console.error('Get velocity history error:', error);
+      logger.error('Get velocity history error', { error });
       return reply.status(500).send({ error: 'Failed to fetch velocity history' });
     }
   });

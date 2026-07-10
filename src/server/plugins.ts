@@ -10,7 +10,7 @@ import websocket from '@fastify/websocket';
 import multipart from '@fastify/multipart';
 import rawBody from 'fastify-raw-body';
 import { config } from './config';
-import { requestLogger, responseLogger } from './utils/logger';
+import logger, { requestLogger, responseLogger } from './utils/logger';
 import { toCamelCaseKeys } from './utils/caseConverter';
 import { auditService } from './services/auditService';
 import { databaseService } from './database/connection';
@@ -235,7 +235,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.setErrorHandler(async (err: unknown, request, reply) => {
     const error = err instanceof Error ? err : new Error(String(err));
     const statusCode = (error as { statusCode?: number }).statusCode ?? 500;
-    console.error('Global error handler:', error.name, error.message);
+    logger.error('Global error handler', { errorName: error.name, errorMessage: error.message });
 
     auditService.logSystemEvent(request, 'error', {
       error: error.message, url: request.url, method: request.method

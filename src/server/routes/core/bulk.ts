@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../../database/connection';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const MAX_BULK = 100;
 
@@ -106,7 +107,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
 
       return { succeeded, failed };
     } catch (error) {
-      console.error('Bulk create tasks error:', error);
+      logger.error('Bulk create tasks error', { error });
       return reply.status(500).send({ error: 'Failed to bulk create tasks' });
     }
   });
@@ -171,7 +172,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
 
       return { succeeded, failed };
     } catch (error) {
-      console.error('Bulk update tasks error:', error);
+      logger.error('Bulk update tasks error', { error });
       return reply.status(500).send({ error: 'Failed to bulk update tasks' });
     }
   });
@@ -203,7 +204,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
 
       return { updated };
     } catch (error) {
-      console.error('Batch status update error:', error);
+      logger.error('Batch status update error', { error });
       return reply.status(500).send({ error: 'Failed to batch update task status' });
     }
   });

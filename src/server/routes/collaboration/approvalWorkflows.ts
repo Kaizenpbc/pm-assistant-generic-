@@ -4,6 +4,7 @@ import { approvalWorkflowService } from '../../services/ApprovalWorkflowService'
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
+import logger from '../../utils/logger';
 
 const workflowStepSchema = z.object({
   name: z.string().min(1),
@@ -51,7 +52,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       return { workflow };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Create workflow error:', error);
+      logger.error('Create workflow error', { error });
       return reply.status(500).send({ error: 'Failed to create workflow' });
     }
   });
@@ -63,7 +64,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       const workflows = await approvalWorkflowService.getWorkflows(projectId);
       return { workflows };
     } catch (error) {
-      console.error('Get workflows error:', error);
+      logger.error('Get workflows error', { error });
       return reply.status(500).send({ error: 'Failed to fetch workflows' });
     }
   });
@@ -77,7 +78,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       return { workflow };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Update workflow error:', error);
+      logger.error('Update workflow error', { error });
       return reply.status(500).send({ error: 'Failed to update workflow' });
     }
   });
@@ -89,7 +90,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       await approvalWorkflowService.deleteWorkflow(id);
       return { message: 'Workflow deleted' };
     } catch (error) {
-      console.error('Delete workflow error:', error);
+      logger.error('Delete workflow error', { error });
       return reply.status(500).send({ error: 'Failed to delete workflow' });
     }
   });
@@ -104,7 +105,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       return { changeRequest };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Create change request error:', error);
+      logger.error('Create change request error', { error });
       return reply.status(500).send({ error: 'Failed to create change request' });
     }
   });
@@ -117,7 +118,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       const changeRequests = await approvalWorkflowService.getChangeRequests(projectId, status);
       return { changeRequests };
     } catch (error) {
-      console.error('Get change requests error:', error);
+      logger.error('Get change requests error', { error });
       return reply.status(500).send({ error: 'Failed to fetch change requests' });
     }
   });
@@ -129,7 +130,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       const detail = await approvalWorkflowService.getChangeRequestDetail(id);
       return { detail };
     } catch (error) {
-      console.error('Get change request detail error:', error);
+      logger.error('Get change request detail error', { error });
       return reply.status(500).send({ error: 'Failed to fetch change request detail' });
     }
   });
@@ -143,7 +144,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       return { result };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Submit for approval error:', error);
+      logger.error('Submit for approval error', { error });
       return reply.status(500).send({ error: 'Failed to submit for approval' });
     }
   });
@@ -158,7 +159,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       return { result };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Act on step error:', error);
+      logger.error('Act on step error', { error });
       return reply.status(500).send({ error: 'Failed to process action' });
     }
   });
@@ -170,7 +171,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       const result = await approvalWorkflowService.withdrawChangeRequest(id);
       return { result };
     } catch (error) {
-      console.error('Withdraw change request error:', error);
+      logger.error('Withdraw change request error', { error });
       return reply.status(500).send({ error: 'Failed to withdraw change request' });
     }
   });

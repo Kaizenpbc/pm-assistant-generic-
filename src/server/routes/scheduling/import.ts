@@ -4,6 +4,7 @@ import { parse as csvParse } from 'csv-parse/sync';
 import { scheduleService } from '../../services/ScheduleService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const importCsvSchema = z.object({
   csv: z.string().min(1).max(5 * 1024 * 1024),
@@ -204,7 +205,7 @@ export async function importRoutes(fastify: FastifyInstance) {
       };
     } catch (error: any) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('CSV import error:', error);
+      logger.error('CSV import error', { error });
       return reply.status(500).send({ error: 'Failed to import CSV' });
     }
   });

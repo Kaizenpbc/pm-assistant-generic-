@@ -4,6 +4,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { userService } from '../../services/UserService';
 import { stripeService } from '../../services/StripeService';
+import logger from '../../utils/logger';
 
 export async function stripeRoutes(fastify: FastifyInstance) {
   // Stripe webhook — must receive raw body, no auth
@@ -25,7 +26,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
       await stripeService.handleWebhookEvent(rawBody as Buffer, signature);
       return { received: true };
     } catch (error) {
-      console.error('Stripe webhook error:', error);
+      logger.error('Stripe webhook error', { error });
       return reply.status(400).send({ error: 'Webhook processing failed' });
     }
   });
@@ -58,7 +59,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
 
       return { url };
     } catch (error) {
-      console.error('Create checkout session error:', error);
+      logger.error('Create checkout session error', { error });
       return reply.status(500).send({ error: 'Failed to create checkout session' });
     }
   });
@@ -81,7 +82,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
       const url = await stripeService.createBillingPortalSession(user.stripeCustomerId);
       return { url };
     } catch (error) {
-      console.error('Create portal session error:', error);
+      logger.error('Create portal session error', { error });
       return reply.status(500).send({ error: 'Failed to create portal session' });
     }
   });
@@ -95,7 +96,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
       const status = await stripeService.getSubscriptionStatus(userId);
       return status;
     } catch (error) {
-      console.error('Get subscription status error:', error);
+      logger.error('Get subscription status error', { error });
       return reply.status(500).send({ error: 'Failed to get subscription status' });
     }
   });

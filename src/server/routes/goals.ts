@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { requireScope } from '../middleware/requireScope';
 import { goalService } from '../services/GoalService';
+import logger from '../utils/logger';
 
 const createGoalSchema = z.object({
   name: z.string().min(1).max(200),
@@ -40,7 +41,7 @@ export async function goalRoutes(fastify: FastifyInstance) {
       const goals = await goalService.list({ ownerId, projectId, goalType, status });
       return { goals };
     } catch (error) {
-      console.error('List goals error:', error);
+      logger.error('List goals error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to list goals' });
     }
   });
@@ -58,7 +59,7 @@ export async function goalRoutes(fastify: FastifyInstance) {
       }
       return { goal };
     } catch (error) {
-      console.error('Get goal error:', error);
+      logger.error('Get goal error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch goal' });
     }
   });
@@ -83,7 +84,7 @@ export async function goalRoutes(fastify: FastifyInstance) {
 
       return reply.status(201).send({ goal });
     } catch (error) {
-      console.error('Create goal error:', error);
+      logger.error('Create goal error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to create goal' });
     }
   });
@@ -109,7 +110,7 @@ export async function goalRoutes(fastify: FastifyInstance) {
 
       return { goal };
     } catch (error) {
-      console.error('Update goal error:', error);
+      logger.error('Update goal error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to update goal' });
     }
   });
@@ -140,7 +141,7 @@ export async function goalRoutes(fastify: FastifyInstance) {
 
       return { success: true };
     } catch (error) {
-      console.error('Delete goal error:', error);
+      logger.error('Delete goal error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete goal' });
     }
   });

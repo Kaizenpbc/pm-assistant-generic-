@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { networkDiagramService } from '../../services/NetworkDiagramService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 export async function networkDiagramRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -13,7 +14,7 @@ export async function networkDiagramRoutes(fastify: FastifyInstance) {
       const diagram = await networkDiagramService.getNetworkDiagram(scheduleId);
       return diagram;
     } catch (error) {
-      console.error('Get network diagram error:', error);
+      logger.error('Get network diagram error', { error });
       return reply.status(500).send({ error: 'Failed to generate network diagram' });
     }
   });

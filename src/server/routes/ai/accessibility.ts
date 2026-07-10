@@ -4,6 +4,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { textSimplificationService } from '../../services/TextSimplificationService';
 import { analyzeReadingLevel } from '../../utils/readingLevel';
+import logger from '../../utils/logger';
 
 const simplifySchema = z.object({
   text: z.string().min(1).max(50000),
@@ -30,7 +31,7 @@ export async function accessibilityRoutes(fastify: FastifyInstance) {
       if (error instanceof z.ZodError) {
         return reply.status(400).send({ error: 'Invalid input', details: error.issues });
       }
-      console.error('Text simplification error:', error);
+      logger.error('Text simplification error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
@@ -47,7 +48,7 @@ export async function accessibilityRoutes(fastify: FastifyInstance) {
       if (error instanceof z.ZodError) {
         return reply.status(400).send({ error: 'Invalid input', details: error.issues });
       }
-      console.error('Reading level analysis error:', error);
+      logger.error('Reading level analysis error', { error });
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

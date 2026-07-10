@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { AgentActivityLogService } from '../../services/AgentActivityLogService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const logService = new AgentActivityLogService();
 
@@ -30,7 +31,7 @@ export async function agentActivityLogRoutes(fastify: FastifyInstance) {
 
       return result;
     } catch (error) {
-      console.error('Get agent activity log error:', error);
+      logger.error('Get agent activity log error', { error });
       return reply.status(500).send({ error: 'Failed to fetch agent activity log' });
     }
   });
