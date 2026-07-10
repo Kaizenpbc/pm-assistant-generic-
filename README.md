@@ -169,6 +169,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 ### AI Features (requires `AI_ENABLED=true`)
 - **Auto-Reschedule** -- AI-driven schedule optimization
 - **Natural Language Queries** -- Ask questions about project data in plain English
+- **Natural Language Workflow Builder** -- Describe automations in plain English, AI generates a complete DAG workflow definition for review and editing
 - **Meeting Intelligence** -- Automated meeting minutes and action item extraction
 - **Lessons Learned** -- AI-assisted capture, edit, delete, and retrieval of project lessons; edit opens pre-filled modal, delete uses a styled confirmation modal; "Load More" pagination on the Lessons Learned page
 - **Task Prioritization** -- Intelligent priority scoring
@@ -281,9 +282,12 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Stripe Checkout and customer portal integration
 
 ### Progressive Web App (PWA)
-- Offline capability via service worker
-- Installable on desktop and mobile
-- Push notification support
+- Installable on desktop and mobile (standalone display mode)
+- App-shell caching with Workbox (precaches all static assets)
+- Runtime caching: API calls use NetworkFirst (5-min TTL, 10s timeout), static assets use CacheFirst (30-day TTL)
+- Auto-updates service worker silently on new deployments
+- Offline banner indicator when connection is lost
+- Apple mobile web app support (meta tags for iOS home screen)
 
 ### Mobile-Optimized Views
 - Bottom navigation bar for mobile devices
@@ -559,7 +563,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Templates | `/api/v1/templates` | Project templates (paginated: `?limit=&offset=`) |
 | Integrations | `/api/v1/integrations` | Third-party integrations |
 | Webhooks | `/api/v1/webhooks` | Outbound webhook management |
-| Workflows | `/api/v1/workflows` | DAG workflow engine |
+| Workflows | `/api/v1/workflows` | DAG workflow engine (+ `POST /generate` for AI generation) |
 | Approvals | `/api/v1/approvals` | Change request approval chains |
 | Report Builder | `/api/v1/report-builder` | Custom report templates |
 | AI Reports | `/api/v1/ai-reports` | AI-generated narrative reports |

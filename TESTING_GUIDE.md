@@ -190,7 +190,21 @@ curl -s -b cookies.txt \
 
 Check that `status` is `completed`, `running`, or `waiting` as expected.
 
-### 4h. Clean up test workflow
+### 4h. Generate a workflow with AI
+
+```bash
+curl -s -b cookies.txt -H 'Content-Type: application/json' \
+  -d '{"description": "When a task is marked complete, send a notification to the project manager and log the completion"}' \
+  https://pm.kpbc.ca/api/v1/workflows/generate | jq .
+```
+
+Verify:
+- Response contains `workflow` with `name`, `description`, `nodes[]`, `edges[]`
+- First node has `nodeType: "trigger"`
+- Edge indices are within bounds of the nodes array
+- Requires `write` scope and `AI_ENABLED=true`
+
+### 4i. Clean up test workflow
 
 ```bash
 curl -s -b cookies.txt -X DELETE \

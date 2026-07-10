@@ -277,6 +277,20 @@ Workflows are triggered automatically by task and project lifecycle events:
 
 All event-driven calls are non-blocking -- they use `.catch()` so workflow failures never break task or project operations.
 
+### Natural Language Workflow Builder
+
+Users can generate workflow definitions from plain English descriptions:
+
+1. Navigate to **Workflows** in the sidebar.
+2. In the **Generate with AI** section, type a description of the desired automation (10-500 characters).
+3. Click **Generate** — the AI analyzes available triggers, actions, and conditions and returns a complete workflow definition.
+4. The generated workflow populates the editor form for review. Users can edit nodes, add/remove steps, and adjust configuration before saving.
+5. Click **Create Workflow** to save.
+
+**API:** `POST /api/v1/workflows/generate` with `{ description: string, projectId?: string }`. Requires `write` scope.
+
+The system prompt enumerates all available trigger types, action types, condition operators, and node types so the AI produces valid, executable workflows.
+
 ### Execution Model
 
 - Each workflow definition is versioned and can be project-scoped or global

@@ -493,8 +493,20 @@ PM Assistant includes a DAG (Directed Acyclic Graph) workflow engine for automat
 
 ### Creating a Workflow
 
+There are two ways to create a workflow:
+
+**Option A: Generate with AI**
+
 1. Navigate to **Workflows** in the sidebar.
-2. Click **Create Workflow**.
+2. In the **Generate with AI** panel, describe your workflow in plain English (e.g., "When a task is marked complete, notify the project manager and log the activity").
+3. Click **Generate** — the AI creates a complete workflow definition.
+4. Review and edit the generated nodes and edges in the form below.
+5. Click **Create Workflow** to save.
+
+**Option B: Manual creation**
+
+1. Navigate to **Workflows** in the sidebar.
+2. Click **New Workflow**.
 3. Define the workflow:
    - **Name** -- Descriptive workflow name.
    - **Description** -- What this workflow automates.

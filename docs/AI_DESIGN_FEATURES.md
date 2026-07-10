@@ -348,6 +348,26 @@ Probabilistic schedule simulation for completion date confidence intervals.
 
 ---
 
+## 18. Natural Language Workflow Builder
+
+**Route:** `POST /api/v1/workflows/generate` in `workflows.ts`
+**Schema:** `workflowGenerationSchemas.ts`
+
+AI-powered workflow generation from plain English descriptions.
+
+**Capabilities:**
+- User provides a natural language description of desired automation (10-500 chars)
+- System prompt enumerates all available trigger types, action types, condition operators, and node types from the DAG engine
+- `claudeService.completeWithJsonSchema()` generates a structured workflow: `{ name, description, nodes[], edges[] }`
+- Output validated with Zod schema (node types, edge index bounds, trigger-first rule)
+- Returns workflow definition for preview in the existing visual editor before save
+- Supports optional `projectId` scoping
+- Budget-enforced via per-user AI token tracking
+
+**Architecture:** No new service — the route directly calls `claudeService` with a static system prompt constant and the generation output schema. The frontend populates the existing form state, so the user reviews and edits before saving through the standard create flow.
+
+---
+
 ## AI Scheduling Services
 
 **Service:** `aiSchedulingClaude.ts`

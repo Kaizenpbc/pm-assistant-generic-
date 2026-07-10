@@ -103,6 +103,7 @@ An agentic AI project management platform that combines the scheduling power of 
 
 ### 2.2 Workflow Automation Builder (DAG Engine)
 - Declarative DAG-based workflow engine with DB persistence
+- **Natural Language Builder:** "Generate with AI" input — describe automation in plain English, AI returns a structured DAG definition (nodes + edges) for preview and editing before save (`POST /api/v1/workflows/generate`)
 - Node types: trigger, condition, action, approval gate, delay, agent
 - Triggers: status_change, progress_threshold, date_passed, task_created, priority_change, assignment_change, dependency_change, budget_threshold, project_status_change, manual
 - Event-driven: task create/update and project budget/status changes automatically fire matching workflows
@@ -115,7 +116,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - 15-minute overdue-task scanner triggers date_passed workflows automatically
 - Cycle protection, graceful degradation, audit integration
 - 5 DB tables: workflow_definitions, workflow_nodes, workflow_edges, workflow_executions, workflow_node_executions
-- **Benchmark:** Monday.com, Wrike, Smartsheet (exceeds with DAG support + approval gates + agent nodes)
+- **Benchmark:** Monday.com, Wrike, Smartsheet (exceeds with DAG support + approval gates + agent nodes + NL builder)
 
 ### 2.3 Custom Dashboards
 - Role-based dashboards (PM project list, Executive analytics)
@@ -473,3 +474,5 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 | Dashboard & Projects consolidation (PM pages promoted to primary) | Done | Enhancement |
 | PM Dashboard Design Gap Fixes (dark mode, KPI dots, linkPrefix) | Done | Enhancement |
 | RAID Management (Risk/Action/Issue/Decision register, sequential IDs, no-delete, AI Scan, agent writes) | Done | Enhancement |
+| NL Workflow Builder (AI generates DAG workflows from plain English descriptions) | Done | Enhancement |
+| PWA Support (real service worker, app-shell caching, installable, offline banner, auto-update) | Done | Enhancement |
