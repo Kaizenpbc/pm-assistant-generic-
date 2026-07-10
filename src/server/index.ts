@@ -7,6 +7,8 @@ import { databaseService } from './database/connection';
 import { runMigrations } from './database/migrationRunner';
 import './services/agentCapabilities';
 import { agentScheduler } from './services/AgentSchedulerService';
+import { redisService } from './services/RedisService';
+import { metricsService } from './services/MetricsService';
 import { serviceContainer } from './container';
 
 const fastify = Fastify({
@@ -26,6 +28,14 @@ async function start() {
     } else {
       console.log('Database connection successful');
       await runMigrations();
+    }
+
+    // Connect to Redis (optional — graceful degradation if unavailable)
+    if (config.REDIS_URL) {
+      console.log('Connecting to Redis...');
+      redisService.connect(config.REDIS_URL);
+      // Load persisted metrics from Redis
+      await metricsService.loadFromRedis();
     }
 
     // Register service container for DI
@@ -52,6 +62,11 @@ async function start() {
     // Start agent scheduler (no-op if AGENT_ENABLED is false)
     agentScheduler.start();
 
+    // Start Redis metrics sync if connected
+    if (redisService.isConnected()) {
+      metricsService.startRedisSync();
+    }
+
   } catch (err) {
     console.error('Failed to start server:', err);
     fastify.log.error(err);
@@ -72,7 +87,9 @@ process.on('unhandledRejection', (reason) => {
 process.on('SIGINT', async () => {
   console.log('Shutting down server...');
   agentScheduler.stop();
+  metricsService.stopRedisSync();
   await fastify.close();
+  await redisService.disconnect();
   await databaseService.close();
   process.exit(0);
 });
@@ -80,7 +97,9 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   console.log('Shutting down server...');
   agentScheduler.stop();
+  metricsService.stopRedisSync();
   await fastify.close();
+  await redisService.disconnect();
   await databaseService.close();
   process.exit(0);
 });

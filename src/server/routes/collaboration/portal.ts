@@ -34,7 +34,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
   fastify.get('/view/:token', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const ip = request.ip;
-      const rl = rateLimiter.check('portal-view:' + ip, 60, 60000);
+      const rl = await rateLimiter.checkAsync('portal-view:' + ip, 60, 60000);
       reply.header('X-RateLimit-Remaining', rl.remaining);
       reply.header('X-RateLimit-Reset', Math.ceil(rl.resetAt / 1000));
       if (!rl.allowed) {
@@ -57,7 +57,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
   fastify.post('/view/:token/comment', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const ip = request.ip;
-      const rl = rateLimiter.check('portal-comment:' + ip, 5, 60000);
+      const rl = await rateLimiter.checkAsync('portal-comment:' + ip, 5, 60000);
       reply.header('X-RateLimit-Remaining', rl.remaining);
       reply.header('X-RateLimit-Reset', Math.ceil(rl.resetAt / 1000));
       if (!rl.allowed) {

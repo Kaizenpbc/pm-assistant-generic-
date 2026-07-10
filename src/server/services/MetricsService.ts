@@ -1,3 +1,5 @@
+import { redisService } from './RedisService';
+
 export interface MetricsSnapshot {
   uptimeSeconds: number;
   requests: {
@@ -38,8 +40,13 @@ class MetricsService {
   private dbQueryCount = 0;
   private durations: number[] = [];
   private startTime = Date.now();
+  private syncInterval: ReturnType<typeof setInterval> | null = null;
 
   private static readonly MAX_DURATIONS = 10000;
+  private static readonly REDIS_KEY = 'metrics:snapshot';
+  private static readonly REDIS_TOTAL_KEY = 'metrics:total_requests';
+  private static readonly SYNC_INTERVAL_MS = 30_000;
+  private static readonly REDIS_TTL = 86400;
 
   incrementActiveRequests(): void {
     this.activeRequests++;
@@ -63,6 +70,10 @@ class MetricsService {
     if (this.durations.length > MetricsService.MAX_DURATIONS) {
       this.durations = this.durations.slice(-MetricsService.MAX_DURATIONS);
     }
+
+    if (redisService.isConnected()) {
+      redisService.incrby(MetricsService.REDIS_TOTAL_KEY, 1).catch(() => {});
+    }
   }
 
   recordAIUsage(inputTokens: number, outputTokens: number): void {
@@ -73,6 +84,54 @@ class MetricsService {
 
   incrementDbQueries(): void {
     this.dbQueryCount++;
+  }
+
+  startRedisSync(): void {
+    if (this.syncInterval) return;
+    this.syncInterval = setInterval(() => {
+      if (!redisService.isConnected()) return;
+      const counters = {
+        requestCount: this.requestCount,
+        methodCounts: this.methodCounts,
+        statusBucketCounts: this.statusBucketCounts,
+        error4xx: this.error4xx,
+        error5xx: this.error5xx,
+        aiInputTokens: this.aiInputTokens,
+        aiOutputTokens: this.aiOutputTokens,
+        aiRequests: this.aiRequests,
+        dbQueryCount: this.dbQueryCount,
+      };
+      redisService
+        .set(MetricsService.REDIS_KEY, JSON.stringify(counters), MetricsService.REDIS_TTL)
+        .catch(() => {});
+    }, MetricsService.SYNC_INTERVAL_MS);
+  }
+
+  stopRedisSync(): void {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
+    }
+  }
+
+  async loadFromRedis(): Promise<void> {
+    if (!redisService.isConnected()) return;
+    const raw = await redisService.get(MetricsService.REDIS_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      this.requestCount = data.requestCount ?? 0;
+      this.methodCounts = data.methodCounts ?? {};
+      this.statusBucketCounts = data.statusBucketCounts ?? {};
+      this.error4xx = data.error4xx ?? 0;
+      this.error5xx = data.error5xx ?? 0;
+      this.aiInputTokens = data.aiInputTokens ?? 0;
+      this.aiOutputTokens = data.aiOutputTokens ?? 0;
+      this.aiRequests = data.aiRequests ?? 0;
+      this.dbQueryCount = data.dbQueryCount ?? 0;
+    } catch {
+      // Corrupted snapshot — start fresh
+    }
   }
 
   getSnapshot(): MetricsSnapshot {
@@ -124,6 +183,11 @@ class MetricsService {
     this.dbQueryCount = 0;
     this.durations = [];
     this.startTime = Date.now();
+
+    if (redisService.isConnected()) {
+      redisService.del(MetricsService.REDIS_KEY).catch(() => {});
+      redisService.del(MetricsService.REDIS_TOTAL_KEY).catch(() => {});
+    }
   }
 }
 

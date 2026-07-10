@@ -1,32 +1,28 @@
-# Infrastructure-Blocked TODO Items
+# Infrastructure TODO Items
 
-These architecture audit items are blocked by infrastructure constraints on TMD Hosting (shared plan, no Redis, no external job runner).
-
----
-
-## Item 11: Redis Rate Limiter + Metrics Store
-
-**Current state:** In-memory rate limiter (`RateLimitService`) and `MetricsService` singleton. Works for single-instance deployment but prevents horizontal scaling.
-
-**What Redis enables:**
-- Shared rate limiting across multiple Node instances
-- Persistent metrics store (survives process restarts)
-- Distributed circuit breaker state
-
-**When unblocked:** Replace in-memory stores with Redis-backed implementations. No API changes needed -- same interfaces, different backing store.
+Items from the architecture audit. Most were previously blocked by TMD shared hosting — resolved after migration to Oracle Cloud (July 2026).
 
 ---
 
-## Item 12: Repository Caching Layer
+## ~~Item 11: Redis Rate Limiter + Metrics Store~~ — DONE (July 2026)
 
-**Current state:** Repository pattern covers 8 entities (Project, User, Schedule, Sprint, ApprovalWorkflow, IntakeForm, Resource, Integration). All SQL centralized in repository classes.
+**Implemented:** Redis installed on Oracle Cloud (`redis-server`, systemd-managed). `ioredis` package added.
+- **RedisService** (`src/server/services/RedisService.ts`) — singleton with graceful fallback. All methods return safe defaults when disconnected.
+- **RateLimiter** upgraded with `checkAsync()` method — uses Redis `INCR`/`EXPIRE` when connected, falls back to in-memory. Portal routes migrated to `checkAsync`.
+- **MetricsService** upgraded with `startRedisSync()` / `loadFromRedis()` — persists aggregate counters to Redis every 30s (key: `metrics:snapshot`, 24h TTL). Counters survive process restarts.
+- **Config:** `REDIS_URL` env var (default: empty = disabled). Set to `redis://localhost:6379` on server.
+- **Boot:** `index.ts` connects Redis before plugins, loads metrics, starts sync interval. Shutdown disconnects cleanly.
 
-**What Redis enables:**
-- Read-through cache on `findById()` / `findByProject()` calls
-- Cache invalidation on writes (update/delete)
-- TTL-based expiry for list queries
+---
 
-**When unblocked:** Add a `CachedRepository<T>` wrapper or mixin that checks Redis before hitting MySQL. Apply to high-read entities (Project, Sprint, Resource).
+## ~~Item 12: Repository Caching Layer~~ — DONE (July 2026)
+
+**Implemented:** `CachedRepository<T>` wrapper (`src/server/database/CachedRepository.ts`) — generic read-through cache with Redis backing.
+- `findById()` checks Redis first (key: `cache:<prefix>:<id>`), falls through to DB on miss, stores result with TTL
+- `invalidate(id)` deletes cache entry on write
+- Applied to `ProjectService` — `findById()` uses cached path (5-min TTL), `update()` and `delete()` invalidate
+- Graceful fallback: when Redis is disconnected, all calls pass through directly to the repository
+- Extensible: wrap any repository with `new CachedRepository(repo, { prefix, ttlSeconds })` to add caching
 
 ---
 
@@ -34,9 +30,11 @@ These architecture audit items are blocked by infrastructure constraints on TMD 
 
 **Current state:** 5 in-process cron jobs via `node-cron` (agent scan, overdue scan, recurrence, digest emails, report delivery). If the Node process crashes, all stop. If multiple instances run, jobs execute in duplicate.
 
-**What's needed:** An external job runner (e.g., BullMQ + Redis, or a cPanel cron hitting an API endpoint).
+**What's needed:** An external job runner (e.g., BullMQ + Redis, or systemd timers hitting API endpoints).
 
-**When unblocked:** Move job definitions to external scheduler. Keep job logic in existing services -- just change the trigger mechanism.
+**When ready:** Move job definitions to external scheduler. Keep job logic in existing services — just change the trigger mechanism.
+
+**Priority:** Low — single-process deployment with systemd auto-restart is reliable enough. Becomes important if scaling to multiple instances.
 
 ---
 
@@ -55,7 +53,7 @@ Rollback files use convention `NNN_name.down.sql` alongside `NNN_name.sql`. Forw
 
 ## ~~Item 14b: Portal Rate Limiting~~ — DONE (July 2026)
 
-**Implemented:** Per-IP rate limiting on public portal routes using existing in-memory `RateLimiter`:
+**Implemented:** Per-IP rate limiting on public portal routes using `rateLimiter.checkAsync()` (Redis-backed when available, in-memory fallback):
 - `GET /portal/view/:token` — 60 req/min per IP
 - `POST /portal/view/:token/comment` — 5 req/min per IP
 - Returns `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers; 429 with `retryAfterMs` on excess
@@ -85,17 +83,17 @@ Implemented as `NextBestActionsWidget` + inline `AINextBestActions` in `ActionCe
 ### ~~16b: Health Trends Sparklines Widget~~ — DONE (July 2026)
 Implemented as `HealthTrendsWidget` with SVG sparklines. Backend: `project_health_history` table (migration 038), daily snapshot cron (`healthSnapshotJob.ts`), `GET /api/v1/predictions/project/:id/health-history` endpoint. Wired into PM Dashboard.
 
-### 16c: Activity Feed + AI Summary Sidebar
-Enhance `RecentActivityWidget` to 2-column layout: left = activity feed (existing), right = AI-generated summary of recent activity patterns.
+### ~~16c: Activity Feed + AI Summary Sidebar~~ — SKIPPED (July 2026)
+Redundant — dashboard already has `AISummaryBanner` (portfolio AI insights) and `ActionCenterPM` (priorities + AI next best actions) covering this use case.
 
 ### ~~16d: Dashboard Footer~~ — DONE (July 2026)
 Last-refreshed timestamp and version label added to PM Dashboard.
 
 ---
 
-## Unblocking Path
+## Remaining Open Items
 
-1. Request Redis addon from TMD Hosting, or
-2. Migrate to a VPS/container hosting plan with Redis support
-
-**Status:** Upgrade requested from TMD Hosting (as of March 2026). No response yet.
+| # | Item | Status | Blocker |
+|---|------|--------|---------|
+| 13 | External Cron Scheduler | Open | None (low priority) |
+| 15 | External Alerting | Open | None (low priority) |

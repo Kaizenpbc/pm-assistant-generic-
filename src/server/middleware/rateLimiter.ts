@@ -1,7 +1,10 @@
 /**
- * Simple in-memory sliding window rate limiter.
- * No Redis dependency — suitable for single-process deployments.
+ * Sliding window rate limiter.
+ * Uses Redis when available for cross-restart persistence,
+ * falling back to in-memory tracking for single-process deployments.
  */
+
+import { redisService } from '../services/RedisService';
 
 interface WindowEntry {
   count: number;
@@ -41,6 +44,38 @@ export class RateLimiter {
     const allowed = entry.count <= limit;
     const remaining = Math.max(0, limit - entry.count);
     return { allowed, remaining, resetAt: entry.resetAt };
+  }
+
+  /**
+   * Async rate-limit check that uses Redis when connected, falling back
+   * to the synchronous in-memory `check` method when Redis is unavailable.
+   *
+   * Callers that can await should prefer this method for cross-restart
+   * consistency.
+   */
+  async checkAsync(
+    key: string,
+    limit: number,
+    windowMs: number = 60000,
+  ): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+    if (!redisService.isConnected()) {
+      return this.check(key, limit, windowMs);
+    }
+
+    const redisKey = `rl:${key}`;
+    const windowSec = Math.ceil(windowMs / 1000);
+
+    const count = await redisService.incr(redisKey);
+    if (count === 1) {
+      await redisService.expire(redisKey, windowSec);
+    }
+
+    const ttl = await redisService.ttl(redisKey);
+    const resetAt = Date.now() + (ttl > 0 ? ttl * 1000 : windowMs);
+    const allowed = count <= limit;
+    const remaining = Math.max(0, limit - count);
+
+    return { allowed, remaining, resetAt };
   }
 
   /**

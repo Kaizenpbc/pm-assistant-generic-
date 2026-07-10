@@ -70,6 +70,7 @@ const configSchema = z.object({
 
   // Metrics
   METRICS_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true || val === undefined, z.boolean().default(true)),
+  REDIS_URL: z.string().optional().default(''),
 
   // File Upload Configuration
   UPLOAD_DIR: z.string().default(process.env['HOME'] || process.env['USERPROFILE'] ? `${process.env['HOME'] || process.env['USERPROFILE']}/uploads/pm-assistant` : './uploads/pm-assistant'),
@@ -150,6 +151,7 @@ export function validateConfiguration() {
       RAG_SIMILARITY_THRESHOLD: process.env['RAG_SIMILARITY_THRESHOLD'],
       AI_MONTHLY_TOKEN_BUDGET: process.env['AI_MONTHLY_TOKEN_BUDGET'],
       METRICS_ENABLED: process.env['METRICS_ENABLED'],
+      REDIS_URL: process.env['REDIS_URL'],
       UPLOAD_DIR: process.env['UPLOAD_DIR'],
       MAX_UPLOAD_SIZE_MB: process.env['MAX_UPLOAD_SIZE_MB'],
     };

@@ -1,4 +1,5 @@
 import { projectRepository } from '../database/ProjectRepository';
+import { CachedRepository } from '../database/CachedRepository';
 import { projectMemberService } from './ProjectMemberService';
 import { userService } from './UserService';
 import { auditLedgerService } from './AuditLedgerService';
@@ -6,6 +7,11 @@ import { policyEngineService } from './PolicyEngineService';
 import logger from '../utils/logger';
 import { dagWorkflowService } from './DagWorkflowService';
 import { deadLetterService } from './DeadLetterService';
+
+const cachedProject = new CachedRepository<Project>(projectRepository, {
+  prefix: 'cache:project',
+  ttlSeconds: 300,
+});
 
 export interface Project {
   id: string;
@@ -51,7 +57,7 @@ export class ProjectService {
     if (userId) {
       return projectRepository.findByIdForUser(id, userId);
     }
-    return projectRepository.findById(id);
+    return cachedProject.findById(id);
   }
 
   async findByUserId(userId: string): Promise<Project[]> {
@@ -133,6 +139,8 @@ export class ProjectService {
     const updated = await projectRepository.update(id, data as Record<string, any>);
     if (!updated) return existing; // no fields to update
 
+    cachedProject.invalidate(id).catch(() => {});
+
     auditLedgerService.append({
       actorId: userId || existing.createdBy,
       actorType: 'user',
@@ -180,6 +188,10 @@ export class ProjectService {
     const deleted = userId
       ? await projectRepository.deleteForUser(id, userId)
       : await projectRepository.deleteById(id);
+
+    if (deleted) {
+      cachedProject.invalidate(id).catch(() => {});
+    }
 
     if (deleted && existing) {
       auditLedgerService.append({
