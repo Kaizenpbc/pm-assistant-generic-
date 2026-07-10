@@ -114,7 +114,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
           (SELECT COALESCE(SUM(cost_estimate), 0) FROM ai_usage_log) AS total_ai_cost,
           (SELECT COALESCE(SUM(input_tokens + output_tokens), 0) FROM ai_usage_log) AS total_tokens`
       );
-      return { stats: rows[0] };
+      return { stats: rows[0] ?? {} };
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Internal server error' });

@@ -147,7 +147,15 @@ export class AIReportService {
     }
   }
 
-  async getReportHistory(userId?: string, limit: number = 20): Promise<any[]> {
+  async getReportHistory(userId?: string, limit: number = 20): Promise<Array<{
+    id: string;
+    title: string;
+    reportType: string;
+    generatedAt: string;
+    projectId: string | null;
+    aiPowered: boolean;
+    content: string;
+  }>> {
     try {
       const query = userId
         ? `SELECT id, title, context_type, project_id, messages, token_count, created_at

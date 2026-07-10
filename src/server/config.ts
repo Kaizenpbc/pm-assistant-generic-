@@ -84,6 +84,18 @@ const configSchema = z.object({
   if (data.JWT_REFRESH_SECRET === data.COOKIE_SECRET) {
     throw new Error('JWT_REFRESH_SECRET and COOKIE_SECRET must be different');
   }
+  // Entropy check: reject secrets that are all-same-char or trivial repeating patterns
+  const secrets = [
+    { name: 'JWT_SECRET', value: data.JWT_SECRET },
+    { name: 'JWT_REFRESH_SECRET', value: data.JWT_REFRESH_SECRET },
+    { name: 'COOKIE_SECRET', value: data.COOKIE_SECRET },
+  ];
+  for (const { name, value } of secrets) {
+    const uniqueChars = new Set(value).size;
+    if (uniqueChars < 8) {
+      throw new Error(`${name} has insufficient entropy (only ${uniqueChars} unique characters). Use a strong random secret.`);
+    }
+  }
   return true;
 }, { message: 'Security secrets must be unique' });
 

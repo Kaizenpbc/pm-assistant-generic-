@@ -90,14 +90,16 @@ export const useAIChatStore = create<AIChatState>()((set, get) => ({
   }),
 
   updateLastAssistantMessage: (content) => set((state) => {
-    const messages = [...state.messages];
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === 'assistant') {
-        messages[i] = { ...messages[i], content };
-        break;
-      }
+    let lastIdx = -1;
+    for (let i = state.messages.length - 1; i >= 0; i--) {
+      if (state.messages[i].role === 'assistant') { lastIdx = i; break; }
     }
-    return { messages };
+    if (lastIdx === -1) return state;
+    return {
+      messages: state.messages.map((m, i) =>
+        i === lastIdx ? { ...m, content } : m
+      ),
+    };
   }),
 
   setStreaming: (messageId, isStreaming) => set((state) => ({
