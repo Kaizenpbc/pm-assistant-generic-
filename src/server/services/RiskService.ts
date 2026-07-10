@@ -81,10 +81,10 @@ class RiskService {
       userId: data.createdBy,
       actionType: 'created',
       newValue: risk.recordId || risk.id,
-    }).catch(() => {});
+    }).catch((error) => { logger.warn('Failed to log RAID activity', { raidItemId: risk.id, error }); });
 
     // Notify project managers/owners when a new item needs triage
-    this.notifyProjectManagers(data.projectId, risk).catch(() => {});
+    this.notifyProjectManagers(data.projectId, risk).catch((error) => { logger.warn('Failed to notify PMs about RAID item', { raidItemId: risk.id, error }); });
 
     return risk;
   }
@@ -165,7 +165,7 @@ class RiskService {
             fieldName: key,
             oldValue: oldVal != null ? String(oldVal) : undefined,
             newValue: newVal != null ? String(newVal) : undefined,
-          }).catch(() => {});
+          }).catch((error) => { logger.warn('Failed to log RAID field update', { raidItemId: id, field: key, error }); });
         }
       }
     }
@@ -192,7 +192,7 @@ class RiskService {
       oldValue: existing.status,
       newValue: 'cancelled',
       comment: reason,
-    }).catch(() => {});
+    }).catch((error) => { logger.warn('Failed to log RAID cancellation', { raidItemId: id, error }); });
 
     logger.info('RAID item cancelled: %s reason=%s', id, reason);
     return updated;
@@ -219,7 +219,7 @@ class RiskService {
       oldValue: existing.status,
       newValue: 'reversed',
       comment: reason,
-    }).catch(() => {});
+    }).catch((error) => { logger.warn('Failed to log RAID reversal', { raidItemId: id, error }); });
 
     logger.info('Decision reversed: %s reason=%s', id, reason);
     return updated;

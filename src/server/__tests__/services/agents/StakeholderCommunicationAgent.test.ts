@@ -68,10 +68,11 @@ vi.mock('../../../services/ProjectService', () => ({
 vi.mock('../../../services/ScheduleService', () => ({
   scheduleService: {
     findByProjectId: vi.fn().mockResolvedValue([{ id: 'sched-1' }]),
-    findTasksByScheduleId: vi.fn().mockResolvedValue([
-      { id: 't1', name: 'Task 1', status: 'completed', startDate: '2026-01-01', endDate: '2026-03-01', assignedTo: 'user-1', updatedAt: new Date().toISOString() },
-      { id: 't2', name: 'Task 2', status: 'in_progress', startDate: '2026-03-01', endDate: '2026-07-15', assignedTo: 'user-2', updatedAt: new Date().toISOString() },
-      { id: 't3', name: 'Task 3', status: 'pending', startDate: '2026-06-01', endDate: '2026-09-01', assignedTo: 'user-3', updatedAt: new Date().toISOString() },
+    findTasksByScheduleId: vi.fn().mockResolvedValue([]),
+    findTasksByScheduleIds: vi.fn().mockResolvedValue([
+      { id: 't1', name: 'Task 1', status: 'completed', scheduleId: 'sched-1', startDate: '2026-01-01', endDate: '2026-03-01', assignedTo: 'user-1', updatedAt: new Date().toISOString() },
+      { id: 't2', name: 'Task 2', status: 'in_progress', scheduleId: 'sched-1', startDate: '2026-03-01', endDate: '2026-07-15', assignedTo: 'user-2', updatedAt: new Date().toISOString() },
+      { id: 't3', name: 'Task 3', status: 'pending', scheduleId: 'sched-1', startDate: '2026-06-01', endDate: '2026-09-01', assignedTo: 'user-3', updatedAt: new Date().toISOString() },
     ]),
   },
 }));
@@ -122,10 +123,10 @@ describe('StakeholderCommunicationAgent', () => {
       budgetAllocated: 100000, budgetSpent: 40000,
     } as any);
     vi.mocked(scheduleService.findByProjectId).mockResolvedValue([{ id: 'sched-1' }] as any);
-    vi.mocked(scheduleService.findTasksByScheduleId).mockResolvedValue([
-      { id: 't1', name: 'Task 1', status: 'completed', startDate: '2026-01-01', endDate: '2026-03-01', assignedTo: 'user-1', updatedAt: new Date().toISOString() },
-      { id: 't2', name: 'Task 2', status: 'in_progress', startDate: '2026-03-01', endDate: '2026-07-15', assignedTo: 'user-2', updatedAt: new Date().toISOString() },
-      { id: 't3', name: 'Task 3', status: 'pending', startDate: '2026-06-01', endDate: '2026-09-01', assignedTo: 'user-3', updatedAt: new Date().toISOString() },
+    vi.mocked((scheduleService as any).findTasksByScheduleIds).mockResolvedValue([
+      { id: 't1', name: 'Task 1', status: 'completed', scheduleId: 'sched-1', startDate: '2026-01-01', endDate: '2026-03-01', assignedTo: 'user-1', updatedAt: new Date().toISOString() },
+      { id: 't2', name: 'Task 2', status: 'in_progress', scheduleId: 'sched-1', startDate: '2026-03-01', endDate: '2026-07-15', assignedTo: 'user-2', updatedAt: new Date().toISOString() },
+      { id: 't3', name: 'Task 3', status: 'pending', scheduleId: 'sched-1', startDate: '2026-06-01', endDate: '2026-09-01', assignedTo: 'user-3', updatedAt: new Date().toISOString() },
     ] as any);
     vi.mocked(reasoningEngine.generateStakeholderReport).mockResolvedValue(mockAnalysis);
   });
@@ -190,7 +191,7 @@ describe('StakeholderCommunicationAgent', () => {
   });
 
   it('should skip when project has no tasks', async () => {
-    vi.mocked(scheduleService.findTasksByScheduleId).mockResolvedValue([]);
+    vi.mocked((scheduleService as any).findTasksByScheduleIds).mockResolvedValue([]);
 
     const result = await agent.run({ projectId: 'proj-1', userId: 'user-1' });
 
@@ -240,8 +241,8 @@ describe('StakeholderCommunicationAgent', () => {
 
   it('should include risk indicators for overdue tasks', async () => {
     const pastDate = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-    vi.mocked(scheduleService.findTasksByScheduleId).mockResolvedValue([
-      { id: 't1', name: 'Overdue Task', status: 'in_progress', startDate: '2026-01-01', endDate: pastDate, assignedTo: 'user-1', updatedAt: new Date().toISOString() },
+    vi.mocked((scheduleService as any).findTasksByScheduleIds).mockResolvedValue([
+      { id: 't1', name: 'Overdue Task', status: 'in_progress', scheduleId: 'sched-1', startDate: '2026-01-01', endDate: pastDate, assignedTo: 'user-1', updatedAt: new Date().toISOString() },
     ] as any);
 
     const result = await agent.run({ projectId: 'proj-1', userId: 'user-1' });

@@ -29,7 +29,7 @@ vi.mock('../../../services/ProjectService', () => ({
   projectService: { findAll: vi.fn().mockResolvedValue([]) },
 }));
 vi.mock('../../../services/ScheduleService', () => ({
-  scheduleService: { findByProjectId: vi.fn().mockResolvedValue([]), findTasksByScheduleId: vi.fn().mockResolvedValue([]) },
+  scheduleService: { findByProjectId: vi.fn().mockResolvedValue([]), findTasksByScheduleId: vi.fn().mockResolvedValue([]), findTasksByScheduleIds: vi.fn().mockResolvedValue([]) },
 }));
 vi.mock('../../../services/ResourceService', () => ({
   resourceService: { computeWorkload: vi.fn().mockResolvedValue([]) },
@@ -148,9 +148,9 @@ describe('CrossProjectIntelligenceAgent', () => {
     ] as any);
     // Simulate healthy tasks (completed)
     vi.mocked(scheduleService.findByProjectId).mockResolvedValue([{ id: 's1', name: 'Schedule 1', endDate: '2026-12-31' }] as any);
-    vi.mocked(scheduleService.findTasksByScheduleId).mockResolvedValue([
-      { id: 't1', name: 'Task 1', status: 'completed', createdAt: '2026-01-01' },
-      { id: 't2', name: 'Task 2', status: 'completed', createdAt: '2026-01-01' },
+    vi.mocked((scheduleService as any).findTasksByScheduleIds).mockResolvedValue([
+      { id: 't1', name: 'Task 1', status: 'completed', scheduleId: 's1', createdAt: '2026-01-01' },
+      { id: 't2', name: 'Task 2', status: 'completed', scheduleId: 's1', createdAt: '2026-01-01' },
     ] as any);
 
     const result = await agent.run(baseInput);
@@ -161,10 +161,14 @@ describe('CrossProjectIntelligenceAgent', () => {
   });
 
   it('should skip when reasoning engine returns null', async () => {
-    // Make projects unhealthy to trigger analysis
+    // Make projects unhealthy to trigger analysis — need overdue tasks to be "at risk"
     vi.mocked(projectService.findAll).mockResolvedValue([
       makeProject('p1', 'Troubled A', 'active', { budgetSpent: 95000 }),
       makeProject('p2', 'Troubled B', 'active', { budgetSpent: 92000 }),
+    ] as any);
+    vi.mocked(scheduleService.findByProjectId).mockResolvedValue([{ id: 's1', name: 'Sched 1' }] as any);
+    vi.mocked((scheduleService as any).findTasksByScheduleIds).mockResolvedValue([
+      { id: 't1', name: 'Overdue', status: 'in_progress', scheduleId: 's1', endDate: '2025-01-01' },
     ] as any);
     vi.mocked(reasoningEngine.generatePortfolioAnalysis).mockResolvedValue(null);
 
@@ -178,6 +182,10 @@ describe('CrossProjectIntelligenceAgent', () => {
     vi.mocked(projectService.findAll).mockResolvedValue([
       makeProject('p1', 'Struggling A', 'active', { budgetSpent: 95000 }),
       makeProject('p2', 'Struggling B', 'active', { budgetSpent: 92000 }),
+    ] as any);
+    vi.mocked(scheduleService.findByProjectId).mockResolvedValue([{ id: 's1', name: 'Sched 1' }] as any);
+    vi.mocked((scheduleService as any).findTasksByScheduleIds).mockResolvedValue([
+      { id: 't1', name: 'Overdue', status: 'in_progress', scheduleId: 's1', endDate: '2025-01-01' },
     ] as any);
 
     vi.mocked(reasoningEngine.generatePortfolioAnalysis).mockResolvedValue({
@@ -205,6 +213,10 @@ describe('CrossProjectIntelligenceAgent', () => {
     vi.mocked(projectService.findAll).mockResolvedValue([
       makeProject('p1', 'Troubled A', 'active', { budgetSpent: 95000 }),
       makeProject('p2', 'Troubled B', 'active', { budgetSpent: 92000 }),
+    ] as any);
+    vi.mocked(scheduleService.findByProjectId).mockResolvedValue([{ id: 's1', name: 'Sched 1' }] as any);
+    vi.mocked((scheduleService as any).findTasksByScheduleIds).mockResolvedValue([
+      { id: 't1', name: 'Overdue', status: 'in_progress', scheduleId: 's1', endDate: '2025-01-01' },
     ] as any);
 
     vi.mocked(reasoningEngine.generatePortfolioAnalysis).mockResolvedValue({

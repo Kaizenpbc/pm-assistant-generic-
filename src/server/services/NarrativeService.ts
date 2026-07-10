@@ -18,13 +18,9 @@ export class NarrativeService {
 
     const insights = await insightAssemblyService.assembleForProject(projectId);
     const schedules = await scheduleService.findByProjectId(projectId);
-    let totalTasks = 0;
-    let completedTasks = 0;
-    for (const s of schedules) {
-      const tasks = await scheduleService.findTasksByScheduleId(s.id);
-      totalTasks += tasks.length;
-      completedTasks += tasks.filter(t => t.status === 'completed').length;
-    }
+    const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
+    const totalTasks = allTasks.length;
+    const completedTasks = allTasks.filter(t => t.status === 'completed').length;
 
     // Fetch resource workload summary
     let resourceSummary = '';

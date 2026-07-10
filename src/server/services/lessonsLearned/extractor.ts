@@ -18,24 +18,27 @@ export async function extractLessons(
   }
 
   const schedules = await scheduleService.findByProjectId(projectId);
-  const scheduleData: Array<{ scheduleName: string; tasks: any[] }> = [];
-  for (const schedule of schedules) {
-    const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
-    scheduleData.push({
-      scheduleName: schedule.name,
-      tasks: tasks.map((t) => ({
-        name: t.name,
-        status: t.status,
-        priority: t.priority,
-        progress: t.progressPercentage ?? 0,
-        startDate: t.startDate ?? null,
-        endDate: t.endDate ?? null,
-        dueDate: t.dueDate ?? null,
-        dependency: t.dependency ?? null,
-        dependencies: t.dependencies.map(d => ({ id: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
-      })),
-    });
+  const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
+  const tasksBySchedule = new Map<string, typeof allTasks>();
+  for (const t of allTasks) {
+    const list = tasksBySchedule.get(t.scheduleId) ?? [];
+    list.push(t);
+    tasksBySchedule.set(t.scheduleId, list);
   }
+  const scheduleData: Array<{ scheduleName: string; tasks: any[] }> = schedules.map(schedule => ({
+    scheduleName: schedule.name,
+    tasks: (tasksBySchedule.get(schedule.id) ?? []).map((t) => ({
+      name: t.name,
+      status: t.status,
+      priority: t.priority,
+      progress: t.progressPercentage ?? 0,
+      startDate: t.startDate ?? null,
+      endDate: t.endDate ?? null,
+      dueDate: t.dueDate ?? null,
+      dependency: t.dependency ?? null,
+      dependencies: t.dependencies.map(d => ({ id: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
+    })),
+  }));
 
   const projectDataStr = JSON.stringify(
     {

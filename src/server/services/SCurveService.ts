@@ -20,12 +20,8 @@ export class SCurveService {
     const schedules = await scheduleService.findByProjectId(projectId);
     if (schedules.length === 0) return [];
 
-    // Gather all tasks across schedules
-    const allTasks: Task[] = [];
-    for (const sch of schedules) {
-      const tasks = await scheduleService.findTasksByScheduleId(sch.id);
-      allTasks.push(...tasks);
-    }
+    // Gather all tasks across schedules (batch query)
+    const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
     if (allTasks.length === 0) return [];
 
     // Determine overall date range

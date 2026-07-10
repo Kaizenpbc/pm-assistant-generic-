@@ -267,23 +267,15 @@ export class CrossProjectIntelligenceAgent {
     const daysRemaining = Math.max(0, Math.round((endDate.getTime() - now.getTime()) / 86400000));
     const totalDays = daysElapsed + daysRemaining;
 
-    // Get tasks
+    // Get tasks (batch query)
     const schedules = await scheduleService.findByProjectId(project.id);
-    let taskCount = 0;
-    let overdueTasks = 0;
-    let completionRate = 0;
-
-    for (const s of schedules) {
-      const tasks = await scheduleService.findTasksByScheduleId(s.id);
-      taskCount += tasks.length;
-      overdueTasks += tasks.filter(t =>
-        t.endDate && new Date(t.endDate) < now && t.status !== 'completed' && t.status !== 'cancelled'
-      ).length;
-      if (tasks.length > 0) {
-        const completed = tasks.filter(t => t.status === 'completed').length;
-        completionRate = Math.round((completed / tasks.length) * 100);
-      }
-    }
+    const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
+    const taskCount = allTasks.length;
+    const overdueTasks = allTasks.filter(t =>
+      t.endDate && new Date(t.endDate) < now && t.status !== 'completed' && t.status !== 'cancelled'
+    ).length;
+    const completed = allTasks.filter(t => t.status === 'completed').length;
+    const completionRate = taskCount > 0 ? Math.round((completed / taskCount) * 100) : 0;
 
     // EVM metrics
     let CPI: number | null = null;

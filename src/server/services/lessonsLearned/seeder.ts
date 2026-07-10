@@ -18,11 +18,7 @@ export async function seedFromProjects(persistLesson: (lesson: LessonLearned) =>
 
   for (const project of projects) {
     const schedules = await scheduleService.findByProjectId(project.id);
-    const allTasks = [];
-    for (const schedule of schedules) {
-      const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
-      allTasks.push(...tasks);
-    }
+    const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
 
     const totalTasks = allTasks.length;
     const completedTasks = allTasks.filter((t) => t.status === 'completed').length;

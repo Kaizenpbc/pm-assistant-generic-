@@ -1410,9 +1410,12 @@ export class PredictiveIntelligenceService {
 
     const slipTasks: SlipTask[] = [];
 
+    const allBatchedTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
+    const schedNameMap = new Map(schedules.map(s => [s.id, s.name]));
+    const taskMap = new Map(allBatchedTasks.map((t: any) => [t.id, t]));
+
     for (const sched of schedules) {
-      const tasks = await scheduleService.findTasksByScheduleId(sched.id);
-      const taskMap = new Map(tasks.map((t: any) => [t.id, t]));
+      const tasks = allBatchedTasks.filter(t => t.scheduleId === sched.id);
 
       for (const task of tasks) {
         if (task.status === 'completed' || task.status === 'cancelled') continue;

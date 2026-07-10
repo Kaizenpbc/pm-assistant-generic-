@@ -515,10 +515,17 @@ export class TemplateService {
     if (!project) throw new Error('Project not found');
 
     const schedules = await scheduleService.findByProjectId(input.projectId);
+    const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
+    const tasksBySchedule = new Map<string, typeof allTasks>();
+    for (const t of allTasks) {
+      const list = tasksBySchedule.get(t.scheduleId) ?? [];
+      list.push(t);
+      tasksBySchedule.set(t.scheduleId, list);
+    }
     const templateTasks: TemplateTask[] = [];
 
     for (const schedule of schedules) {
-      const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
+      const tasks = tasksBySchedule.get(schedule.id) ?? [];
       const taskIdToRefId = new Map<string, string>();
 
       // Build refId map

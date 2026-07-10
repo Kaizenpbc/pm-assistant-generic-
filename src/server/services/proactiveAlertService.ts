@@ -74,10 +74,11 @@ export class ProactiveAlertService {
         }
       }
 
-      // Check tasks
+      // Check tasks (batch query across all schedules)
       const schedules = await scheduleService.findByProjectId(project.id);
+      const allProjectTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
       for (const schedule of schedules) {
-        const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
+        const tasks = allProjectTasks.filter(t => t.scheduleId === schedule.id);
 
         // Count tasks per assignee for overload check
         const assigneeTasks: Map<string, number> = new Map();

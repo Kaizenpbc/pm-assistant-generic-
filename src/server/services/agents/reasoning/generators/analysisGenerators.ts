@@ -32,11 +32,7 @@ async function getProjectTasksContext(projectId: string) {
   if (!project) return null;
 
   const schedules = await scheduleService.findByProjectId(projectId);
-  let allTasks: Task[] = [];
-  for (const s of schedules) {
-    const tasks = await scheduleService.findTasksByScheduleId(s.id);
-    allTasks = allTasks.concat(tasks);
-  }
+  const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
   return { project, allTasks };
 }
 

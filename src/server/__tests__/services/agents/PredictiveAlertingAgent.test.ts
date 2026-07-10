@@ -67,6 +67,7 @@ vi.mock('../../../services/ScheduleService', () => ({
   scheduleService: {
     findByProjectId: vi.fn().mockResolvedValue([]),
     findTasksByScheduleId: vi.fn().mockResolvedValue([]),
+    findTasksByScheduleIds: vi.fn().mockResolvedValue([]),
   },
 }));
 

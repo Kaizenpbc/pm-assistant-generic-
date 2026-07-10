@@ -188,11 +188,7 @@ export class StakeholderCommunicationAgent {
 
     // Get all tasks
     const schedules = await scheduleService.findByProjectId(projectId);
-    let allTasks: Task[] = [];
-    for (const s of schedules) {
-      const tasks = await scheduleService.findTasksByScheduleId(s.id);
-      allTasks = allTasks.concat(tasks);
-    }
+    const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
 
     const completedTasks = allTasks.filter(t => t.status === 'completed');
     const inProgressTasks = allTasks.filter(t => t.status === 'in_progress');
