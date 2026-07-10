@@ -134,15 +134,15 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
                 </p>
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => setVersionHistoryId(att.id)} className="p-1 text-gray-400 hover:text-gray-600" title="Version history">
+                <button onClick={() => setVersionHistoryId(att.id)} className="p-1 text-gray-400 hover:text-gray-600" title="Version history" aria-label="Version history">
                   <Clock className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => handleDownload(att)} className="p-1 text-gray-400 hover:text-primary-600" title="Download">
+                <button onClick={() => handleDownload(att)} className="p-1 text-gray-400 hover:text-primary-600" title="Download" aria-label="Download file">
                   <Download className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => { if (confirm('Delete this file?')) deleteMutation.mutate(att.id); }}
-                  className="p-1 text-gray-400 hover:text-red-600" title="Delete"
+                  className="p-1 text-gray-400 hover:text-red-600" title="Delete" aria-label="Delete file"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

@@ -326,6 +326,18 @@ export function NotificationBell() {
                         navigate(`/projects/${notification.projectId}/schedule`);
                       }
                     }}
+                    {...(isClickable ? {
+                      role: 'button',
+                      tabIndex: 0,
+                      onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setOpen(false);
+                          dismissNotification(notification.id);
+                          navigate(`/projects/${notification.projectId}/schedule`);
+                        }
+                      },
+                    } : {})}
                     className={`
                       flex items-start gap-3 px-4 py-3 border-b border-gray-50
                       hover:bg-gray-50 transition-colors duration-150 relative

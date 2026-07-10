@@ -183,7 +183,7 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
         {/* Description */}
         {cr.description && (
           <div className="mb-4">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</h4>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</h3>
             <p className="text-sm text-gray-700 whitespace-pre-wrap">{cr.description}</p>
           </div>
         )}
@@ -191,7 +191,7 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
         {/* Impact Summary */}
         {cr.impactSummary && (
           <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Impact Summary</h4>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Impact Summary</h3>
             <p className="text-sm text-gray-700 whitespace-pre-wrap">{cr.impactSummary}</p>
           </div>
         )}
@@ -207,7 +207,7 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
       {/* Current Step Indicator */}
       {currentStep && (
         <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
-          <h4 className="text-xs font-semibold text-primary-700 uppercase tracking-wider mb-1">Current Approval Step</h4>
+          <h3 className="text-xs font-semibold text-primary-700 uppercase tracking-wider mb-1">Current Approval Step</h3>
           <p className="text-sm text-primary-900 font-medium">
             Step {currentStep.stepOrder}: {currentStep.role} - {currentStep.action}
           </p>
@@ -217,7 +217,7 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
       {/* Approval Timeline */}
       {approvalHistory.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Approval Timeline</h4>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Approval Timeline</h3>
           <div className="relative">
             <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gray-200" />
             <div className="space-y-4">
@@ -255,7 +255,7 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
       {/* Action Buttons */}
       {(canSubmit || canReview || canWithdraw) && (
         <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</h4>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</h3>
 
           {/* Submit for Approval (draft) */}
           {canSubmit && !showWorkflowSelect && (

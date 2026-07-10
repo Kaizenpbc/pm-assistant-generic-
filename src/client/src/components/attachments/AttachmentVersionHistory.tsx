@@ -49,8 +49,8 @@ export function AttachmentVersionHistory({ attachmentId, onClose }: AttachmentVe
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-md mx-4 bg-white rounded-xl shadow-2xl max-h-[80vh] flex flex-col">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div className="relative w-full max-w-md mx-4 bg-white rounded-xl shadow-2xl max-h-[80vh] flex flex-col" role="dialog" aria-modal="true">
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
           <h3 className="text-sm font-bold text-gray-900">Version History</h3>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">

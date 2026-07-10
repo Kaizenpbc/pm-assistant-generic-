@@ -182,11 +182,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]" onClick={onClose}>
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
 
       {/* Modal */}
       <div
         className="relative w-full max-w-lg mx-4 bg-white rounded-xl border border-gray-200 shadow-2xl overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search commands"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input */}

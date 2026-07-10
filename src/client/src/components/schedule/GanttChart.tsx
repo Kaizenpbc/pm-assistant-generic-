@@ -2142,7 +2142,13 @@ export function GanttChart({
                         onChange={() => toggleColVisibility(col.key)}
                         className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                       />
-                      <span className="flex-1 cursor-pointer" onClick={() => toggleColVisibility(col.key)}>{col.label || col.key}</span>
+                      <span
+                        className="flex-1 cursor-pointer"
+                        onClick={() => toggleColVisibility(col.key)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleColVisibility(col.key); } }}
+                      >{col.label || col.key}</span>
                       <button
                         className="p-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-25 disabled:cursor-not-allowed"
                         onClick={() => moveColumn(col.key, 'left')}
@@ -2520,6 +2526,11 @@ export function GanttChart({
                       <span
                         className={`flex items-center gap-0.5 ${isSortable ? 'cursor-pointer' : ''}`}
                         onClick={isSortable ? () => handleHeaderSort(col.key) : undefined}
+                        {...(isSortable ? {
+                          role: 'button',
+                          tabIndex: 0,
+                          onKeyDown: (e: React.KeyboardEvent<HTMLSpanElement>) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleHeaderSort(col.key); } },
+                        } : {})}
                       >
                         {col.label}
                         {isSortable && (

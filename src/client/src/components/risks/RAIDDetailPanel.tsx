@@ -149,7 +149,7 @@ export function RAIDDetailPanel({ projectId, raidId, onClose, onEdit, members }:
   if (!item) {
     return (
       <>
-        <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+        <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} aria-hidden="true" />
         <div className="fixed inset-y-0 right-0 z-50 w-[520px] bg-white dark:bg-gray-800 shadow-2xl flex items-center justify-center">
           <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
@@ -165,10 +165,10 @@ export function RAIDDetailPanel({ projectId, raidId, onClose, onEdit, members }:
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} aria-hidden="true" />
 
       {/* Panel */}
-      <div className="fixed inset-y-0 right-0 z-50 w-[520px] bg-white dark:bg-gray-800 shadow-2xl flex flex-col transform transition-transform duration-300">
+      <div className="fixed inset-y-0 right-0 z-50 w-[520px] bg-white dark:bg-gray-800 shadow-2xl flex flex-col transform transition-transform duration-300" role="dialog" aria-modal="true" aria-label="RAID item details">
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200 dark:border-gray-700">
           {item.recordId && (
@@ -180,10 +180,10 @@ export function RAIDDetailPanel({ projectId, raidId, onClose, onEdit, members }:
             {item.type}
           </span>
           <h2 className="flex-1 text-base font-semibold text-gray-900 dark:text-white truncate">{item.title}</h2>
-          <button onClick={() => onEdit(item)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="Edit">
+          <button onClick={() => onEdit(item)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="Edit" aria-label="Edit">
             <Pencil className="w-4 h-4 text-gray-500" />
           </button>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close">
             <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>

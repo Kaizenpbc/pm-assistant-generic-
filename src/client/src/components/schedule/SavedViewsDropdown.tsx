@@ -154,7 +154,8 @@ export function SavedViewsDropdown({ scheduleId, currentColumns, currentSortFiel
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDelete(view.id); }}
                     className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 transition-opacity"
-                    title="Delete view"
+                    title="Delete saved view"
+                    aria-label="Delete saved view"
                   >
                     <Trash2 className="w-3 h-3 text-red-400" />
                   </button>
@@ -180,6 +181,7 @@ export function SavedViewsDropdown({ scheduleId, currentColumns, currentSortFiel
                 ref={inputRef}
                 type="text"
                 placeholder="View name..."
+                aria-label="View name"
                 className="flex-1 text-xs px-2 py-1 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
                 value={newName}
                 onChange={e => setNewName(e.target.value)}

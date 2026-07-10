@@ -105,14 +105,21 @@ export function ColumnPickerDropdown({ columns, visibleKeys, onToggle, onToggleG
                         disabled={isFixed}
                         className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       />
-                      <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" onClick={() => !isFixed && onToggle(col.key)}>{col.label}</span>
+                      <span
+                        className="text-xs text-gray-700 dark:text-gray-300 flex-1 cursor-pointer"
+                        onClick={() => !isFixed && onToggle(col.key)}
+                        role="button"
+                        tabIndex={isFixed ? -1 : 0}
+                        onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isFixed) { e.preventDefault(); onToggle(col.key); } }}
+                      >{col.label}</span>
                       {onMoveColumn && !isFixed && visibleKeys.has(col.key) && (
                         <>
                           <button
                             className="p-0.5 text-primary-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
                             onClick={() => onMoveColumn(col.key, 'left')}
                             disabled={isFirst}
-                            title="Move left"
+                            title="Move column left"
+                            aria-label="Move column left"
                           >
                             <ChevronLeft className="w-3.5 h-3.5" />
                           </button>
@@ -120,7 +127,8 @@ export function ColumnPickerDropdown({ columns, visibleKeys, onToggle, onToggleG
                             className="p-0.5 text-primary-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
                             onClick={() => onMoveColumn(col.key, 'right')}
                             disabled={isLast}
-                            title="Move right"
+                            title="Move column right"
+                            aria-label="Move column right"
                           >
                             <ChevronRight className="w-3.5 h-3.5" />
                           </button>
