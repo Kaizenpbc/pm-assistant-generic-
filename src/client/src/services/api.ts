@@ -1544,7 +1544,7 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
 
   async getPortalView(token: string) {
     const response = await this.api.get(`/portal/view/${token}`);
-    return response.data;
+    return response.data.view;
   }
 
   async addPortalComment(token: string, data: { entityType: string; entityId: string; authorName: string; content: string }) {

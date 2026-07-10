@@ -12,6 +12,8 @@ vi.mock('../../database/PortalRepository', () => {
     getProjectInfo: vi.fn().mockResolvedValue(null),
     getTaskStats: vi.fn().mockResolvedValue([]),
     getTimeline: vi.fn().mockResolvedValue({ min_start: null, max_end: null }),
+    getMilestones: vi.fn().mockResolvedValue([]),
+    getRecentCompletions: vi.fn().mockResolvedValue([]),
     insertComment: vi.fn(),
     findComments: vi.fn().mockResolvedValue([]),
   };
@@ -249,6 +251,10 @@ describe('PortalService', () => {
       name: 'My Project',
       status: 'active',
       description: 'A cool project',
+      budget_allocated: 100000,
+      budget_spent: 45000,
+      start_date: '2026-01-01',
+      end_date: '2026-12-31',
     };
 
     it('returns full portal view for a valid token', async () => {
@@ -267,7 +273,13 @@ describe('PortalService', () => {
       const result = await portalService.getPortalView('abc123token');
 
       expect(result).not.toBeNull();
-      expect(result!.project).toEqual(projectInfo);
+      expect(result!.project.id).toBe('proj-1');
+      expect(result!.project.name).toBe('My Project');
+      expect(result!.project.budgetAllocated).toBe(100000);
+      expect(result!.project.budgetSpent).toBe(45000);
+      expect(result!.project.startDate).toBe('2026-01-01');
+      expect(result!.project.endDate).toBe('2026-12-31');
+      expect(result!.project.progressPercentage).toBe(50);
       expect(result!.taskStats).toEqual({
         total: 10,
         completed: 5,
@@ -279,6 +291,9 @@ describe('PortalService', () => {
         endDate: '2026-06-30',
       });
       expect(result!.permissions).toEqual(sampleLink.permissions);
+      expect(result!.comments).toEqual([]);
+      expect(result!.milestones).toEqual([]);
+      expect(result!.recentActivity).toEqual([]);
     });
 
     it('returns null when token is invalid', async () => {
@@ -309,6 +324,7 @@ describe('PortalService', () => {
 
       expect(result!.taskStats.completed).toBe(4);
       expect(result!.taskStats.total).toBe(4);
+      expect(result!.project.progressPercentage).toBe(100);
     });
 
     it('counts "in-progress" (hyphenated) as inProgress', async () => {
@@ -353,9 +369,10 @@ describe('PortalService', () => {
         inProgress: 0,
         notStarted: 0,
       });
+      expect(result!.project.progressPercentage).toBe(0);
     });
 
-    it('handles null timeline dates', async () => {
+    it('handles null timeline dates and falls back to project dates', async () => {
       mockRepo.validateToken.mockResolvedValueOnce(validatedLink);
       mockRepo.getProjectInfo.mockResolvedValueOnce(projectInfo);
       mockRepo.getTaskStats.mockResolvedValueOnce([]);
@@ -364,6 +381,9 @@ describe('PortalService', () => {
       const result = await portalService.getPortalView('abc123token');
 
       expect(result!.timeline).toEqual({ startDate: null, endDate: null });
+      // Project dates come from project table, not timeline
+      expect(result!.project.startDate).toBe('2026-01-01');
+      expect(result!.project.endDate).toBe('2026-12-31');
     });
   });
 

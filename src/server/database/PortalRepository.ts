@@ -98,12 +98,45 @@ class PortalRepository {
     return { ...linkRowToDTO(row), projectName: row.project_name, projectStatus: row.project_status };
   }
 
-  async getProjectInfo(projectId: string): Promise<{ id: string; name: string; status: string; description: string | null } | null> {
+  async getProjectInfo(projectId: string): Promise<{
+    id: string; name: string; status: string; description: string | null;
+    budget_allocated: number; budget_spent: number;
+    start_date: string | null; end_date: string | null;
+  } | null> {
     const rows = await databaseService.query(
-      'SELECT id, name, status, description FROM projects WHERE id = ?',
+      `SELECT id, name, status, description,
+              COALESCE(budget_allocated, 0) as budget_allocated,
+              COALESCE(budget_spent, 0) as budget_spent,
+              start_date, end_date
+       FROM projects WHERE id = ?`,
       [projectId],
     );
     return rows.length > 0 ? rows[0] : null;
+  }
+
+  async getMilestones(projectId: string): Promise<{ id: string; name: string; status: string; endDate: string | null }[]> {
+    const rows = await databaseService.query(
+      `SELECT t.id, t.name, t.status, t.end_date
+       FROM tasks t
+       JOIN schedules s ON s.id = t.schedule_id
+       WHERE s.project_id = ? AND t.is_milestone = TRUE
+       ORDER BY t.end_date ASC, t.name ASC`,
+      [projectId],
+    );
+    return rows.map((r: any) => ({ id: r.id, name: r.name, status: r.status, endDate: r.end_date }));
+  }
+
+  async getRecentCompletions(projectId: string, limit = 10): Promise<{ id: string; name: string; completedAt: string }[]> {
+    const rows = await databaseService.query(
+      `SELECT t.id, t.name, t.updated_at as completed_at
+       FROM tasks t
+       JOIN schedules s ON s.id = t.schedule_id
+       WHERE s.project_id = ? AND t.status IN ('completed', 'done')
+       ORDER BY t.updated_at DESC
+       LIMIT ?`,
+      [projectId, limit],
+    );
+    return rows.map((r: any) => ({ id: r.id, name: r.name, completedAt: r.completed_at }));
   }
 
   async getTaskStats(projectId: string): Promise<{ status: string; count: number }[]> {

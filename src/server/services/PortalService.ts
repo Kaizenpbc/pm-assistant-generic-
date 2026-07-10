@@ -45,10 +45,18 @@ class PortalService {
   }
 
   async getPortalView(token: string): Promise<{
-    project: { id: string; name: string; status: string; description: string | null };
+    project: {
+      id: string; name: string; status: string; description: string | null;
+      budgetAllocated: number; budgetSpent: number;
+      startDate: string | null; endDate: string | null;
+      progressPercentage: number;
+    };
     taskStats: { total: number; completed: number; inProgress: number; notStarted: number };
     timeline: { startDate: string | null; endDate: string | null };
     permissions: Record<string, boolean>;
+    comments: PortalComment[];
+    milestones: { id: string; name: string; status: string; endDate: string | null }[];
+    recentActivity: { id: string; name: string; completedAt: string }[];
   } | null> {
     const link = await this.validateToken(token);
     if (!link) return null;
@@ -56,8 +64,8 @@ class PortalService {
     const projectId = link.projectId;
     const permissions = link.permissions;
 
-    const project = await portalRepository.getProjectInfo(projectId);
-    if (!project) return null;
+    const projectRow = await portalRepository.getProjectInfo(projectId);
+    if (!projectRow) return null;
 
     const statRows = await portalRepository.getTaskStats(projectId);
     const taskStats = { total: 0, completed: 0, inProgress: 0, notStarted: 0 };
@@ -69,13 +77,35 @@ class PortalService {
       else taskStats.notStarted += cnt;
     }
 
+    const progressPercentage = taskStats.total > 0
+      ? Math.round((taskStats.completed / taskStats.total) * 100)
+      : 0;
+
     const timelineRow = await portalRepository.getTimeline(projectId);
     const timeline = {
       startDate: timelineRow.min_start || null,
       endDate: timelineRow.max_end || null,
     };
 
-    return { project, taskStats, timeline, permissions };
+    const [comments, milestones, recentActivity] = await Promise.all([
+      portalRepository.findComments(projectId),
+      portalRepository.getMilestones(projectId),
+      portalRepository.getRecentCompletions(projectId),
+    ]);
+
+    const project = {
+      id: projectRow.id,
+      name: projectRow.name,
+      status: projectRow.status,
+      description: projectRow.description,
+      budgetAllocated: Number(projectRow.budget_allocated) || 0,
+      budgetSpent: Number(projectRow.budget_spent) || 0,
+      startDate: projectRow.start_date || timeline.startDate,
+      endDate: projectRow.end_date || timeline.endDate,
+      progressPercentage,
+    };
+
+    return { project, taskStats, timeline, permissions, comments, milestones, recentActivity };
   }
 
   async addComment(

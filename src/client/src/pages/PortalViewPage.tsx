@@ -10,8 +10,8 @@ import {
   Calendar,
   MessageSquare,
   Send,
-  GanttChartSquare,
-  FileText,
+  Milestone,
+  Activity,
   Loader2,
   ShieldAlert,
 } from 'lucide-react';
@@ -20,11 +20,11 @@ import { apiService } from '../services/api';
 interface PortalData {
   project: {
     name: string;
-    description: string;
+    description: string | null;
     status: string;
     progressPercentage: number;
-    startDate: string;
-    endDate: string;
+    startDate: string | null;
+    endDate: string | null;
     budgetAllocated: number;
     budgetSpent: number;
   };
@@ -36,24 +36,42 @@ interface PortalData {
   };
   taskStats: {
     total: number;
-    pending: number;
-    in_progress: number;
+    notStarted: number;
+    inProgress: number;
     completed: number;
   };
   comments: Array<{
     id: string;
     authorName: string;
     content: string;
-    created_at: string;
+    createdAt: string;
+  }>;
+  milestones: Array<{
+    id: string;
+    name: string;
+    status: string;
+    endDate: string | null;
+  }>;
+  recentActivity: Array<{
+    id: string;
+    name: string;
+    completedAt: string;
   }>;
 }
 
 const statusStyles: Record<string, { label: string; bg: string; text: string }> = {
-  active: { label: 'Active', bg: 'bg-green-100', text: 'text-green-700' },
-  planning: { label: 'Planning', bg: 'bg-purple-100', text: 'text-purple-700' },
-  on_hold: { label: 'On Hold', bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  completed: { label: 'Completed', bg: 'bg-blue-100', text: 'text-blue-700' },
+  active: { label: 'Active', bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300' },
+  planning: { label: 'Planning', bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300' },
+  on_hold: { label: 'On Hold', bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300' },
+  completed: { label: 'Completed', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300' },
   cancelled: { label: 'Cancelled', bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-300' },
+};
+
+const milestoneStatusColor: Record<string, string> = {
+  completed: 'bg-green-500',
+  done: 'bg-green-500',
+  in_progress: 'bg-blue-500',
+  'in-progress': 'bg-blue-500',
 };
 
 function daysRemaining(endDate: string): number {
@@ -63,7 +81,8 @@ function daysRemaining(endDate: string): number {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return 'TBD';
   return new Date(dateStr).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -75,6 +94,20 @@ function formatCurrency(amount: number): string {
   if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
   if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1)}K`;
   return `$${amount.toFixed(0)}`;
+}
+
+function timeAgo(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return formatDate(dateStr);
 }
 
 export default function PortalViewPage() {
@@ -110,7 +143,6 @@ export default function PortalViewPage() {
     });
   };
 
-  // -- Loading state --
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -122,7 +154,6 @@ export default function PortalViewPage() {
     );
   }
 
-  // -- Error / invalid token state --
   if (error || !data) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -140,9 +171,9 @@ export default function PortalViewPage() {
     );
   }
 
-  const { project, permissions, taskStats, comments } = data;
+  const { project, permissions, taskStats, comments, milestones, recentActivity } = data;
   const status = statusStyles[project.status] || statusStyles.active;
-  const remaining = daysRemaining(project.endDate);
+  const remaining = project.endDate ? daysRemaining(project.endDate) : null;
   const budgetPct =
     project.budgetAllocated > 0
       ? Math.round((project.budgetSpent / project.budgetAllocated) * 100)
@@ -186,7 +217,7 @@ export default function PortalViewPage() {
               {project.progressPercentage}%
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
             <div
               className="bg-primary-600 h-3 rounded-full transition-all duration-500"
               style={{ width: `${Math.min(project.progressPercentage, 100)}%` }}
@@ -203,22 +234,22 @@ export default function PortalViewPage() {
             bg="bg-primary-50 dark:bg-primary-900/30"
           />
           <StatCard
-            icon={<Clock className="w-5 h-5 text-yellow-600" />}
-            label="Pending"
-            value={taskStats.pending}
-            bg="bg-yellow-50"
+            icon={<Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />}
+            label="Not Started"
+            value={taskStats.notStarted}
+            bg="bg-yellow-50 dark:bg-yellow-900/30"
           />
           <StatCard
-            icon={<AlertTriangle className="w-5 h-5 text-blue-600" />}
+            icon={<AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
             label="In Progress"
-            value={taskStats.in_progress}
-            bg="bg-blue-50"
+            value={taskStats.inProgress}
+            bg="bg-blue-50 dark:bg-blue-900/30"
           />
           <StatCard
-            icon={<CheckCircle2 className="w-5 h-5 text-green-600" />}
+            icon={<CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />}
             label="Completed"
             value={taskStats.completed}
-            bg="bg-green-50"
+            bg="bg-green-50 dark:bg-green-900/30"
           />
         </div>
 
@@ -251,14 +282,18 @@ export default function PortalViewPage() {
               </p>
               <p
                 className={`text-sm font-medium mt-0.5 ${
-                  remaining < 0
-                    ? 'text-red-600'
+                  remaining === null
+                    ? 'text-gray-500 dark:text-gray-400'
+                    : remaining < 0
+                    ? 'text-red-600 dark:text-red-400'
                     : remaining < 14
-                    ? 'text-yellow-600'
+                    ? 'text-yellow-600 dark:text-yellow-400'
                     : 'text-gray-900 dark:text-white'
                 }`}
               >
-                {remaining < 0
+                {remaining === null
+                  ? 'No end date'
+                  : remaining < 0
                   ? `${Math.abs(remaining)} days overdue`
                   : `${remaining} days`}
               </p>
@@ -267,7 +302,7 @@ export default function PortalViewPage() {
         </div>
 
         {/* Budget Summary (conditional) */}
-        {permissions.canViewBudget && (
+        {permissions.canViewBudget && project.budgetAllocated > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -296,7 +331,7 @@ export default function PortalViewPage() {
                 </p>
                 <p
                   className={`text-lg font-bold ${
-                    budgetPct > 90 ? 'text-red-600' : 'text-green-600'
+                    budgetPct > 90 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
                   }`}
                 >
                   {formatCurrency(project.budgetAllocated - project.budgetSpent)}
@@ -307,13 +342,13 @@ export default function PortalViewPage() {
               <span>Budget Used</span>
               <span
                 className={`font-medium ${
-                  budgetPct > 90 ? 'text-red-600' : 'text-gray-900 dark:text-white'
+                  budgetPct > 90 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'
                 }`}
               >
                 {budgetPct}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
               <div
                 className={`h-2.5 rounded-full transition-all duration-500 ${
                   budgetPct > 90
@@ -328,39 +363,75 @@ export default function PortalViewPage() {
           </div>
         )}
 
-        {/* Gantt placeholder (conditional) */}
+        {/* Milestone Timeline (conditional — uses canViewGantt permission) */}
         {permissions.canViewGantt && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <GanttChartSquare className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-              Gantt Chart
+              <Milestone className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              Milestones
             </h2>
-            <div className="flex items-center justify-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
-              <div className="text-center">
-                <GanttChartSquare className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Timeline view - Interactive Gantt chart coming soon
-                </p>
+            {milestones.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
+                No milestones defined for this project.
+              </p>
+            ) : (
+              <div className="relative">
+                {/* Connecting line */}
+                <div className="absolute left-3 top-3 bottom-3 w-0.5 bg-gray-200 dark:bg-gray-700" />
+                <div className="space-y-4">
+                  {milestones.map((ms) => {
+                    const dotColor = milestoneStatusColor[ms.status] || 'bg-gray-400 dark:bg-gray-500';
+                    const isComplete = ms.status === 'completed' || ms.status === 'done';
+                    return (
+                      <div key={ms.id} className="relative flex items-start gap-4 pl-1">
+                        <div className={`relative z-10 w-5 h-5 rounded-full border-2 border-white dark:border-gray-800 ${dotColor} flex-shrink-0 mt-0.5`} />
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${isComplete ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-900 dark:text-white'}`}>
+                            {ms.name}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                            {ms.endDate ? formatDate(ms.endDate) : 'No date set'}
+                            {isComplete && ' — Completed'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* Reports placeholder (conditional) */}
+        {/* Recent Activity (conditional — uses canViewReports permission) */}
         {permissions.canViewReports && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-              Reports
+              <Activity className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              Recent Activity
             </h2>
-            <div className="flex items-center justify-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
-              <div className="text-center">
-                <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Project reports and analytics will appear here
-                </p>
+            {recentActivity.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
+                No recently completed tasks.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {recentActivity.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 text-sm"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-900 dark:text-white flex-1 min-w-0 truncate">
+                      {item.name}
+                    </span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
+                      {timeAgo(item.completedAt)}
+                    </span>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -372,7 +443,6 @@ export default function PortalViewPage() {
               Comments
             </h2>
 
-            {/* Comment List */}
             {comments.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 py-4 text-center">
                 No comments yet. Be the first to leave a comment.
@@ -382,14 +452,14 @@ export default function PortalViewPage() {
                 {comments.map((comment) => (
                   <div
                     key={comment.id}
-                    className="border-b border-gray-100 pb-3 last:border-b-0"
+                    className="border-b border-gray-100 dark:border-gray-700 pb-3 last:border-b-0"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {comment.authorName}
                       </span>
                       <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(comment.created_at).toLocaleString()}
+                        {new Date(comment.createdAt).toLocaleString()}
                       </span>
                     </div>
                     <p className="text-sm text-gray-700 dark:text-gray-200">{comment.content}</p>
@@ -409,7 +479,7 @@ export default function PortalViewPage() {
                   value={authorName}
                   onChange={(e) => setAuthorName(e.target.value)}
                   placeholder="Enter your name"
-                  className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   required
                 />
               </div>
@@ -422,7 +492,7 @@ export default function PortalViewPage() {
                   onChange={(e) => setCommentContent(e.target.value)}
                   placeholder="Write your comment..."
                   rows={3}
-                  className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                  className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
                   required
                 />
               </div>
@@ -439,7 +509,7 @@ export default function PortalViewPage() {
                 {commentMutation.isPending ? 'Sending...' : 'Submit Comment'}
               </button>
               {commentMutation.isError && (
-                <p className="text-xs text-red-600">
+                <p className="text-xs text-red-600 dark:text-red-400">
                   Failed to submit comment. Please try again.
                 </p>
               )}
@@ -452,7 +522,7 @@ export default function PortalViewPage() {
       <footer className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 mt-8">
         <div className="max-w-4xl mx-auto px-6 py-4 text-center">
           <p className="text-xs text-gray-400 dark:text-gray-500">
-            Powered by Kovarti PM Assistant
+            Powered by Kovarti PM Assistant &middot; Last updated {new Date().toLocaleString()}
           </p>
         </div>
       </footer>
