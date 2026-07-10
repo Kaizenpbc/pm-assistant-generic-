@@ -1353,6 +1353,38 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
   }
 
   // -------------------------------------------------------------------------
+  // Expenses
+  // -------------------------------------------------------------------------
+
+  async createExpense(data: { projectId: string; date: string; amount: number; category: string; vendor?: string; description?: string }) {
+    const response = await this.api.post('/expenses', data);
+    return response.data;
+  }
+
+  async getProjectExpenses(projectId: string, startDate?: string, endDate?: string) {
+    const params: Record<string, string> = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await this.api.get(`/expenses/project/${projectId}`, { params });
+    return response.data;
+  }
+
+  async getExpenseSummary(projectId: string) {
+    const response = await this.api.get(`/expenses/project/${projectId}/summary`);
+    return response.data;
+  }
+
+  async updateExpense(id: string, data: { date?: string; amount?: number; category?: string; vendor?: string; description?: string }) {
+    const response = await this.api.put(`/expenses/${id}`, data);
+    return response.data;
+  }
+
+  async deleteExpense(id: string) {
+    const response = await this.api.delete(`/expenses/${id}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
   // Custom Fields
   // -------------------------------------------------------------------------
 

@@ -87,9 +87,10 @@ import { ColumnPickerDropdown } from '../components/schedule/ColumnPickerDropdow
 import { TaskListMobile } from '../components/tasks/TaskListMobile';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import { TimeTrackingTab } from '../components/project/TimeTrackingTab';
+import { BudgetTab } from '../components/project/BudgetTab';
 import { SetupChecklist } from '../components/project/SetupChecklist';
 
-type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources' | 'time' | 'files';
+type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources' | 'time' | 'files' | 'budget';
 
 const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -99,6 +100,7 @@ const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'team', label: 'Team' },
   { id: 'time', label: 'Time' },
   { id: 'files', label: 'Files' },
+  { id: 'budget', label: 'Budget' },
   { id: 'ai-insights', label: 'AI Insights' },
   { id: 'evm-forecast', label: 'EVM Forecast' },
   { id: 'scenarios', label: 'What-If' },
@@ -568,6 +570,7 @@ export function ProjectDetailPage() {
       {activeTab === 'sprints' && <SprintsTab projectId={id!} />}
       {activeTab === 'resources' && <ResourcesTab projectId={id!} />}
       {activeTab === 'time' && <TimeTrackingTab projectId={id!} />}
+      {activeTab === 'budget' && <BudgetTab projectId={id!} project={project} />}
       {activeTab === 'files' && (
         <div className="mt-6">
           <AttachmentPanel entityType="project" entityId={id!} />
