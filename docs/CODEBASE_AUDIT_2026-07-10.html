@@ -19,10 +19,13 @@
   code { background-color: #edf2f7; padding: 2px 6px; border-radius: 3px; font-family: Consolas, monospace; font-size: 12px; }
   pre { background-color: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
   .summary-box { background: #ebf8ff; border: 1px solid #90cdf4; border-radius: 5px; padding: 15px; margin: 15px 0; }
+  .summary-box.complete { background: #f0fff4; border-color: #9ae6b4; }
   .status-fixed { color: #276749; font-weight: bold; }
   .status-open { color: #c05621; font-weight: bold; }
+  .status-skipped { color: #718096; font-weight: bold; }
   .page-break { page-break-before: always; }
   .header-meta { color: #718096; font-size: 14px; margin-bottom: 20px; }
+  .commit-ref { font-family: Consolas, monospace; font-size: 12px; background: #edf2f7; padding: 2px 6px; border-radius: 3px; }
 </style>
 </head>
 <body>
@@ -32,32 +35,43 @@
   <strong>Date:</strong> July 10, 2026 &nbsp;|&nbsp;
   <strong>Application:</strong> PM Assistant (pm.kpbc.ca) &nbsp;|&nbsp;
   <strong>Version:</strong> Current master branch &nbsp;|&nbsp;
-  <strong>Auditor:</strong> Claude Opus 4.6 (Automated Deep Audit)
+  <strong>Auditor:</strong> Claude Opus 4.6 (Automated Deep Audit) &nbsp;|&nbsp;
+  <strong>Last Updated:</strong> July 10, 2026 (all fixes deployed)
 </div>
 
-<div class="summary-box">
-  <strong>Executive Summary:</strong> A comprehensive audit of the PM Assistant codebase identified <strong>35 actionable issues</strong> across security, performance, error handling, code quality, and frontend categories. Of these, <strong>4 are Critical</strong> and <strong>9 are High</strong> severity. All Critical and High issues were fixed in the same commit as this report. 16 Medium and 6 Low issues remain for future sprints.
+<div class="summary-box complete">
+  <strong>Executive Summary:</strong> A comprehensive audit of the PM Assistant codebase identified <strong>35 actionable issues</strong> across security, performance, error handling, code quality, and frontend categories. <strong>33 of 35 issues have been fixed and deployed to production.</strong> 1 issue was intentionally skipped (acceptable for CLI tools) and 1 remains open for a future dedicated accessibility pass. All fixes were deployed same-day.
 </div>
 
 <h2>Summary by Severity</h2>
 <table>
-  <tr><th>Severity</th><th>Count</th><th>Fixed</th><th>Remaining</th></tr>
-  <tr class="critical"><td>CRITICAL</td><td>4</td><td>4</td><td>0</td></tr>
-  <tr class="high"><td>HIGH</td><td>9</td><td>9</td><td>0</td></tr>
-  <tr class="medium"><td>MEDIUM</td><td>16</td><td>0</td><td>16</td></tr>
-  <tr class="low"><td>LOW</td><td>6</td><td>0</td><td>6</td></tr>
-  <tr><th>TOTAL</th><th>35</th><th>13</th><th>22</th></tr>
+  <tr><th>Severity</th><th>Count</th><th>Fixed</th><th>Skipped</th><th>Remaining</th></tr>
+  <tr class="critical"><td>CRITICAL</td><td>4</td><td>4</td><td>0</td><td>0</td></tr>
+  <tr class="high"><td>HIGH</td><td>9</td><td>9</td><td>0</td><td>0</td></tr>
+  <tr class="medium"><td>MEDIUM</td><td>16</td><td>16</td><td>0</td><td>0</td></tr>
+  <tr class="low"><td>LOW</td><td>6</td><td>4</td><td>1</td><td>1</td></tr>
+  <tr><th>TOTAL</th><th>35</th><th>33</th><th>1</th><th>1</th></tr>
+</table>
+
+<h2>Fix Deployment History</h2>
+<table>
+  <tr><th>Commit</th><th>Issues Fixed</th><th>Description</th></tr>
+  <tr><td><span class="commit-ref">782be3f</span></td><td>#1-#13</td><td>All Critical (4) and High (9) issues</td></tr>
+  <tr><td><span class="commit-ref">f21c4fd</span></td><td>#14-#21, #25, #28, #29</td><td>10 Medium issues (quick + moderate fixes)</td></tr>
+  <tr><td><span class="commit-ref">66a13d3</span></td><td>#22</td><td>Dark mode fixes across 7 components (147+ instances)</td></tr>
+  <tr><td><span class="commit-ref">0a436ba</span></td><td>#23, #24, #26, #27</td><td>Remaining Medium issues (type safety, silent catches, magic numbers)</td></tr>
+  <tr><td><span class="commit-ref">e27c028</span></td><td>#30, #32, #34, #35</td><td>Low-severity fixes (entropy, return types, bounds check, immutable state)</td></tr>
 </table>
 
 <h2>Summary by Category</h2>
 <table>
-  <tr><th>Category</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Total</th></tr>
-  <tr><td>Security</td><td>3</td><td>4</td><td>2</td><td>1</td><td><strong>10</strong></td></tr>
-  <tr><td>Performance / Memory</td><td>1</td><td>3</td><td>2</td><td>0</td><td><strong>6</strong></td></tr>
-  <tr><td>Error Handling</td><td>0</td><td>0</td><td>5</td><td>1</td><td><strong>6</strong></td></tr>
-  <tr><td>Code Quality</td><td>0</td><td>1</td><td>4</td><td>2</td><td><strong>7</strong></td></tr>
-  <tr><td>Frontend</td><td>0</td><td>0</td><td>3</td><td>2</td><td><strong>5</strong></td></tr>
-  <tr><td>Database</td><td>0</td><td>1</td><td>0</td><td>0</td><td><strong>1</strong></td></tr>
+  <tr><th>Category</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Total</th><th>Fixed</th></tr>
+  <tr><td>Security</td><td>3</td><td>4</td><td>2</td><td>1</td><td><strong>10</strong></td><td><strong>10</strong></td></tr>
+  <tr><td>Performance / Memory</td><td>1</td><td>3</td><td>2</td><td>0</td><td><strong>6</strong></td><td><strong>6</strong></td></tr>
+  <tr><td>Error Handling</td><td>0</td><td>0</td><td>5</td><td>1</td><td><strong>6</strong></td><td><strong>6</strong></td></tr>
+  <tr><td>Code Quality</td><td>0</td><td>1</td><td>4</td><td>2</td><td><strong>7</strong></td><td><strong>6</strong> (1 skipped)</td></tr>
+  <tr><td>Frontend</td><td>0</td><td>0</td><td>3</td><td>2</td><td><strong>5</strong></td><td><strong>4</strong> (1 open)</td></tr>
+  <tr><td>Database</td><td>0</td><td>1</td><td>0</td><td>0</td><td><strong>1</strong></td><td><strong>1</strong></td></tr>
 </table>
 
 <!-- ============================================================ -->
@@ -68,7 +82,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/routes/admin/waitlist.ts</code> lines 55, 65</td></tr>
   <tr><th>Category</th><td>Security</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>The <code>WAITLIST_ADMIN_KEY</code> environment variable falls back to <code>'changeme'</code> if not set. Anyone can access the admin waitlist endpoints by sending <code>x-admin-key: changeme</code>.</td></tr>
   <tr><th>Fix Applied</th><td>Removed the default. If <code>WAITLIST_ADMIN_KEY</code> is not set, admin endpoints return 503 Service Unavailable with a message indicating the feature is not configured.</td></tr>
 </table>
@@ -77,7 +91,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/config.ts</code> line 11</td></tr>
   <tr><th>Category</th><td>Security</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td><code>DB_PASSWORD</code> defaults to <code>'rootpassword'</code> via Zod schema. If the env var is not set, the app connects with a well-known weak password.</td></tr>
   <tr><th>Fix Applied</th><td>Changed <code>DB_PASSWORD</code> to required (no default). Added it to the required env vars check alongside JWT secrets. App will refuse to start without an explicit DB password.</td></tr>
 </table>
@@ -86,7 +100,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/routes/integrations/mcpProxy.ts</code> lines 38, 42, 86</td></tr>
   <tr><th>Category</th><td>Security</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>The MCP proxy endpoint accepts all HTTP methods with no authentication and sets <code>Access-Control-Allow-Origin: *</code>, allowing any website to proxy requests to the internal MCP server.</td></tr>
   <tr><th>Fix Applied</th><td>Replaced wildcard CORS with the configured <code>CORS_ORIGIN</code> from config. The proxy now uses the same origin policy as the rest of the app. MCP clients authenticate via the <code>Authorization</code> header which is forwarded to the MCP server.</td></tr>
 </table>
@@ -95,7 +109,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/services/dataProviders/index.ts</code> lines 41-42</td></tr>
   <tr><th>Category</th><td>Memory</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>The weather data cache (<code>Map</code>) grows without bound. <code>pruneExpiredEntries()</code> exists but is never called automatically. With unique coordinate combinations, memory usage grows indefinitely.</td></tr>
   <tr><th>Fix Applied</th><td>Added a <code>MAX_CACHE_SIZE = 500</code> limit. On each cache insert, expired entries are pruned first. If still over limit, oldest entries are evicted (LRU by fetch time). Prevents unbounded growth.</td></tr>
 </table>
@@ -108,7 +122,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/services/WebhookService.ts</code> line 75</td></tr>
   <tr><th>Category</th><td>Security</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>User-provided webhook URLs are passed directly to <code>fetch()</code>. An attacker who registers a webhook with <code>http://127.0.0.1:*</code> or private IPs could scan the internal network or access internal services.</td></tr>
   <tr><th>Fix Applied</th><td>Added <code>isPrivateUrl()</code> validation that blocks private/internal IP ranges (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, ::1, localhost) and non-HTTP(S) schemes. Applied to both <code>register()</code> and <code>deliverWebhook()</code>.</td></tr>
 </table>
@@ -117,7 +131,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/services/integrations/SlackAdapter.ts</code> lines 9, 40</td></tr>
   <tr><th>Category</th><td>Security</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>Slack webhook URLs are user-controlled and passed directly to <code>fetch()</code> without validating they point to Slack's domain.</td></tr>
   <tr><th>Fix Applied</th><td>Added <code>isValidSlackWebhookUrl()</code> that validates URLs must use HTTPS and point to <code>hooks.slack.com</code>. Returns error for invalid URLs instead of making the request.</td></tr>
 </table>
@@ -126,7 +140,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/routes/core/auth.ts</code> lines 70-80, 337, 347-350<br><code>src/server/middleware/auth.ts</code> line 48</td></tr>
   <tr><th>Category</th><td>Security</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>JWT sign and verify calls don't specify the algorithm explicitly. While <code>jsonwebtoken</code> defaults to HS256, best practice requires explicit specification to prevent algorithm confusion attacks.</td></tr>
   <tr><th>Fix Applied</th><td>Added <code>algorithm: 'HS256'</code> to all <code>jwt.sign()</code> calls and <code>algorithms: ['HS256']</code> to all <code>jwt.verify()</code> calls.</td></tr>
 </table>
@@ -135,7 +149,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/routes/core/auth.ts</code> lines 50, 55</td></tr>
   <tr><th>Category</th><td>Security</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>Login failure responses include a <code>debug</code> field that reveals whether the username exists (<code>'no_user'</code>) or the password is wrong (<code>'bad_password'</code>). This enables username enumeration.</td></tr>
   <tr><th>Fix Applied</th><td>Replaced both error responses with identical generic messages: <code>"Username or password is incorrect"</code>. Removed the <code>debug</code> field entirely.</td></tr>
 </table>
@@ -144,7 +158,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/services/EmbeddingService.ts</code> lines 31-33</td></tr>
   <tr><th>Category</th><td>Memory</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>Two Maps (<code>cache</code> and <code>cacheTimestamps</code>) store parsed embedding vectors (1536 dimensions each) without a maximum size limit. With TTL-only expiration, cached entries accumulate during high-traffic periods.</td></tr>
   <tr><th>Fix Applied</th><td>Added <code>MAX_CACHE_ENTRIES = 100</code> limit. On each cache write, if the cache exceeds the limit, the oldest entry (by timestamp) is evicted. Prevents unbounded memory growth from large vector collections.</td></tr>
 </table>
@@ -153,7 +167,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/services/ScheduleService.ts</code> line 371</td></tr>
   <tr><th>Category</th><td>Performance / Data Integrity</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td><code>findAllTasks()</code> applies <code>LIMIT 1000</code> silently. Portfolios with more than 1000 tasks return incomplete data without any warning, causing incorrect aggregations.</td></tr>
   <tr><th>Fix Applied</th><td>Increased limit to 50,000 (effectively unlimited for practical use). Added a warning log when the limit is reached so administrators know data may be truncated.</td></tr>
 </table>
@@ -162,7 +176,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/services/ResourceLevelingService.ts</code> lines 226-280</td></tr>
   <tr><th>Category</th><td>Performance</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>The leveling algorithm has nested loops: for each non-critical task, iterate through its float range, and for each delay attempt, iterate through all task days. With 500+ tasks, this is O(n^2) with no timeout or iteration limit.</td></tr>
   <tr><th>Fix Applied</th><td>Added a <code>MAX_LEVELING_ITERATIONS = 50000</code> counter. The inner loops increment the counter, and leveling stops gracefully when the limit is reached. Logs a warning when truncated. Prevents runaway computation on large schedules.</td></tr>
 </table>
@@ -171,7 +185,7 @@
 <table>
   <tr><th>File</th><td><code>src/server/services/MonteCarloService.ts</code> lines 71-107</td></tr>
   <tr><th>Category</th><td>Performance / Memory</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>For 10,000 iterations with N tasks, <code>sampledDurationsPerTask</code> stores 10,000 x N numbers. For a schedule with 1000 tasks, this is ~40MB of memory per simulation run. No cap on iterations.</td></tr>
   <tr><th>Fix Applied</th><td>Added <code>MAX_ITERATIONS = 50000</code> cap with a clamp. If the user requests more than 50K iterations, it silently caps at 50K. This bounds worst-case memory while preserving statistical accuracy.</td></tr>
 </table>
@@ -180,69 +194,276 @@
 <table>
   <tr><th>File</th><td><code>src/server/services/aiUsageLogger.ts</code> lines 18-25<br><code>src/server/services/agents/AgentCostTracker.ts</code> lines 25-31</td></tr>
   <tr><th>Category</th><td>Code Quality / Correctness</td></tr>
-  <tr><th>Status</th><td class="status-fixed">FIXED</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f)</td></tr>
   <tr><th>Description</th><td>Hardcoded model pricing tables are duplicated in two files, while <code>config.ts</code> already provides <code>AI_PRICING_INPUT</code> and <code>AI_PRICING_OUTPUT</code> env vars. The hardcoded tables can drift out of sync with config and with each other.</td></tr>
-  <tr><th>Fix Applied</th><td>Both files now import and use config-driven pricing (<code>config.AI_PRICING_INPUT</code> / <code>config.AI_PRICING_OUTPUT</code>) as the default, with model-specific overrides still available. Pricing is consistent across all services.</td></tr>
+  <tr><th>Fix Applied</th><td>Both files now import and use config-driven pricing (<code>config.AI_PRICING_INPUT</code> / <code>config.AI_PRICING_OUTPUT</code>). Removed hardcoded per-model pricing tables entirely.</td></tr>
 </table>
 
 <!-- ============================================================ -->
-<h2 class="page-break">MEDIUM Issues (16) - Open</h2>
+<h2 class="page-break">MEDIUM Issues (16) - ALL FIXED</h2>
 <!-- ============================================================ -->
 
+<h3>#14 - Unsafe Content-Disposition Header</h3>
 <table>
-  <tr><th>#</th><th>Category</th><th>Issue</th><th>File</th><th>Recommended Fix</th></tr>
-  <tr><td>14</td><td>Security</td><td>Unsafe Content-Disposition header (no RFC 5987 encoding)</td><td><code>fileAttachments.ts:63</code></td><td>Use <code>content-disposition</code> library or escape quotes</td></tr>
-  <tr><td>15</td><td>Security</td><td>XSS via <code>dangerouslySetInnerHTML</code> without DOMPurify</td><td><code>QueryPage.tsx:282</code></td><td>Add DOMPurify sanitization before rendering</td></tr>
-  <tr><td>16</td><td>Error</td><td>WebSocket <code>ws.send()</code> has no error handling</td><td><code>WebSocketService.ts:94,103</code></td><td>Add try-catch or callback on send</td></tr>
-  <tr><td>17</td><td>Error</td><td>WebSocket <code>ws.on('error')</code> swallows error silently</td><td><code>WebSocketService.ts:64</code></td><td>Log the error event</td></tr>
-  <tr><td>18</td><td>Error</td><td><code>auditLedgerService.append()</code> not wrapped with DLQ fallback</td><td><code>ActionExecutor.ts:50,82,124</code></td><td>Add <code>.catch(deadLetterService.capture)</code></td></tr>
-  <tr><td>19</td><td>Error</td><td>DeadLetterService uses <code>console.error</code> instead of logger</td><td><code>DeadLetterService.ts:29</code></td><td>Use <code>logger.error()</code></td></tr>
-  <tr><td>20</td><td>Error</td><td>Cron overdue scan error log missing task context</td><td><code>cronManager.ts:140</code></td><td>Include taskId in log message</td></tr>
-  <tr><td>21</td><td>Perf</td><td>Missing DB indexes on 4 tables</td><td><code>task_dependencies</code>, <code>lessons_learned</code>, <code>meeting_analyses</code>, <code>embeddings</code></td><td>Add index migration</td></tr>
-  <tr><td>22</td><td>Frontend</td><td>Dark mode broken on 20+ components</td><td>AIChatPanel, AutoReschedulePanel, ChangeRequestList, KanbanBoard, GanttChart, CalendarView, TableView</td><td>Add <code>dark:</code> variants to Tailwind classes</td></tr>
-  <tr><td>23</td><td>Frontend</td><td>API type safety gaps - <code>as any</code> casts bypass validation</td><td><code>api.ts</code>, <code>ProjectDetailPage.tsx</code>, <code>LessonsLearnedPage.tsx</code></td><td>Add proper TypeScript interfaces</td></tr>
-  <tr><td>24</td><td>Frontend</td><td>5 silent <code>.catch(() => {})</code> in client code</td><td>GanttChart, AccessibilityContext, AdminPage, aiChatStore</td><td>Add comments or console.warn</td></tr>
-  <tr><td>25</td><td>Quality</td><td><code>console.log</code> in production runtime code</td><td><code>config.ts:145+</code>, <code>connection.ts:42+</code></td><td>Migrate to Winston logger</td></tr>
-  <tr><td>26</td><td>Quality</td><td>5+ <code>as any</code> casts for Fastify DB access</td><td><code>aiLearningService.ts</code>, <code>aiReportService.ts</code></td><td>Type the Fastify DB accessor properly</td></tr>
-  <tr><td>27</td><td>Quality</td><td>Hardcoded magic numbers (timeouts, rate limits)</td><td><code>agentCapabilities.ts</code>, <code>auth.ts</code>, <code>claudeService.ts</code></td><td>Extract to constants file</td></tr>
-  <tr><td>28</td><td>Quality</td><td>Pricing config vs hardcoded mismatch</td><td><code>aiUsageLogger.ts</code>, <code>AgentCostTracker.ts</code></td><td>Use config-driven pricing (partially addressed in #13)</td></tr>
-  <tr><td>29</td><td>Perf</td><td>EmbeddingService loads ALL rows on cache miss</td><td><code>EmbeddingService.ts:112</code></td><td>Add pagination or filtered queries</td></tr>
+  <tr><th>File</th><td><code>src/server/routes/collaboration/fileAttachments.ts</code> line 63</td></tr>
+  <tr><th>Category</th><td>Security</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (f21c4fd)</td></tr>
+  <tr><th>Description</th><td>Content-Disposition header does not use RFC 5987 encoding. Filenames with Unicode or special characters could break downloads or enable header injection.</td></tr>
+  <tr><th>Fix Applied</th><td>Added RFC 5987 <code>filename*=UTF-8''</code> encoding alongside ASCII-safe <code>filename</code> fallback. Quotes and control characters stripped from ASCII fallback.</td></tr>
+</table>
+
+<h3>#15 - XSS via dangerouslySetInnerHTML</h3>
+<table>
+  <tr><th>File</th><td><code>src/client/src/pages/QueryPage.tsx</code> line 282</td></tr>
+  <tr><th>Category</th><td>Security</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (f21c4fd)</td></tr>
+  <tr><th>Description</th><td><code>dangerouslySetInnerHTML</code> renders AI-generated markdown without sanitization. Injected script tags or event handlers could execute.</td></tr>
+  <tr><th>Fix Applied</th><td>Added DOMPurify sanitization: <code>DOMPurify.sanitize(renderMarkdown(result.answer))</code> before rendering.</td></tr>
+</table>
+
+<h3>#16 - WebSocket send() No Error Handling</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/services/WebSocketService.ts</code> lines 94, 103</td></tr>
+  <tr><th>Category</th><td>Error Handling</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (f21c4fd)</td></tr>
+  <tr><th>Description</th><td><code>ws.send()</code> called without error handling. If the client disconnects mid-send, the error propagates unhandled.</td></tr>
+  <tr><th>Fix Applied</th><td>Wrapped <code>ws.send()</code> in try-catch with warning log on failure.</td></tr>
+</table>
+
+<h3>#17 - WebSocket Error Event Swallowed</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/services/WebSocketService.ts</code> line 64</td></tr>
+  <tr><th>Category</th><td>Error Handling</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (f21c4fd)</td></tr>
+  <tr><th>Description</th><td><code>ws.on('error')</code> callback is empty, silently swallowing WebSocket errors.</td></tr>
+  <tr><th>Fix Applied</th><td>Added <code>logger.warn('WebSocket client error', { error: err.message })</code> to the error handler.</td></tr>
+</table>
+
+<h3>#18 - Audit Ledger Without DLQ Fallback</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/services/agents/ActionExecutor.ts</code> lines 50, 82, 124</td></tr>
+  <tr><th>Category</th><td>Error Handling</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (f21c4fd)</td></tr>
+  <tr><th>Description</th><td><code>auditLedgerService.append()</code> is awaited directly. If the audit table is unavailable, the entire action execution fails.</td></tr>
+  <tr><th>Fix Applied</th><td>Changed all 4 audit calls to fire-and-forget with DLQ fallback: <code>.catch(err =&gt; deadLetterService.capture(...))</code>.</td></tr>
+</table>
+
+<h3>#19 - DeadLetterService Uses console.error</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/services/DeadLetterService.ts</code> line 29</td></tr>
+  <tr><th>Category</th><td>Error Handling</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (f21c4fd)</td></tr>
+  <tr><th>Description</th><td>The last-resort error handler in DeadLetterService uses <code>console.error</code> instead of the structured Winston logger.</td></tr>
+  <tr><th>Fix Applied</th><td>Replaced with <code>logger.error('[DeadLetter] Failed to capture', { operation, errorMessage, dbErr })</code>.</td></tr>
+</table>
+
+<h3>#20 - Cron Overdue Scan Missing Task Context</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/services/scheduling/cronManager.ts</code> line 140</td></tr>
+  <tr><th>Category</th><td>Error Handling</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (f21c4fd)</td></tr>
+  <tr><th>Description</th><td>Error log for overdue workflow trigger does not include the task ID, making debugging difficult.</td></tr>
+  <tr><th>Fix Applied</th><td>Added <code>taskId</code> to the structured log: <code>logger.error('[Agent] Overdue workflow trigger error', { taskId, error: err })</code>.</td></tr>
+</table>
+
+<h3>#21 - Missing Database Indexes</h3>
+<table>
+  <tr><th>File</th><td><code>task_dependencies</code>, <code>lessons_learned</code>, <code>meeting_analyses</code>, <code>embeddings</code> tables</td></tr>
+  <tr><th>Category</th><td>Performance</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (f21c4fd)</td></tr>
+  <tr><th>Description</th><td>Frequently queried foreign key columns lack indexes, causing full table scans on JOIN and WHERE queries.</td></tr>
+  <tr><th>Fix Applied</th><td>Created migration <code>046_add_missing_indexes.sql</code> adding 4 indexes: <code>idx_task_deps_dependency_id</code>, <code>idx_lessons_project_id</code>, <code>idx_meetings_project_id</code>, <code>idx_embeddings_document</code>.</td></tr>
+</table>
+
+<h3>#22 - Dark Mode Broken on 7 Components</h3>
+<table>
+  <tr><th>File</th><td>AIChatPanel, AutoReschedulePanel, ChangeRequestList, KanbanBoard, GanttChart, CalendarView, TableView</td></tr>
+  <tr><th>Category</th><td>Frontend</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (66a13d3)</td></tr>
+  <tr><th>Description</th><td>147+ hardcoded light-mode Tailwind color classes lack <code>dark:</code> variants. Components are unreadable in dark mode (white text on white backgrounds, invisible borders).</td></tr>
+  <tr><th>Fix Applied</th><td>Added <code>dark:</code> Tailwind variants to all backgrounds, text colors, borders, badges, form inputs, hover states, and status indicators across all 7 components. 254 lines changed.</td></tr>
+</table>
+
+<h3>#23 - API Type Safety Gaps</h3>
+<table>
+  <tr><th>File</th><td><code>api.ts</code>, <code>ProjectDetailPage.tsx</code>, <code>LessonsLearnedPage.tsx</code></td></tr>
+  <tr><th>Category</th><td>Frontend</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (0a436ba)</td></tr>
+  <tr><th>Description</th><td>7 unnecessary <code>(apiService as any)</code> casts in LessonsLearnedPage bypass type checking. 4 <code>as any</code> casts in ProjectDetailPage for dynamic property access and task creation.</td></tr>
+  <tr><th>Fix Applied</th><td>Removed all 7 casts in LessonsLearnedPage (methods exist on apiService). Extended <code>createTask</code> type signature with missing fields (<code>isMilestone</code>, <code>isRecurrenceTemplate</code>, <code>dependencies</code>, <code>recurrenceRule</code>). Used <code>unknown</code> intermediate cast for dynamic property access in ProjectDetailPage.</td></tr>
+</table>
+
+<h3>#24 - Silent .catch(() => {}) in Client Code</h3>
+<table>
+  <tr><th>File</th><td>GanttChart, AccessibilityContext, AdminPage, aiChatStore</td></tr>
+  <tr><th>Category</th><td>Error Handling</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (0a436ba)</td></tr>
+  <tr><th>Description</th><td>4 empty <code>.catch(() =&gt; {})</code> handlers silently swallow errors with no indication of why they're intentionally empty.</td></tr>
+  <tr><th>Fix Applied</th><td>Added explanatory comments to each: clipboard API unavailability, background refresh non-critical, local prefs fallback.</td></tr>
+</table>
+
+<h3>#25 - console.log in Production Runtime</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/database/connection.ts</code></td></tr>
+  <tr><th>Category</th><td>Code Quality</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (f21c4fd)</td></tr>
+  <tr><th>Description</th><td><code>console.log</code> and <code>console.error</code> calls in database connection module bypass structured logging.</td></tr>
+  <tr><th>Fix Applied</th><td>Migrated all 4 <code>console.*</code> calls to Winston <code>logger.info</code> / <code>logger.error</code>.</td></tr>
+</table>
+
+<h3>#26 - Fastify DB as any Casts</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/services/aiLearningService.ts</code>, <code>src/server/services/aiReportService.ts</code></td></tr>
+  <tr><th>Category</th><td>Code Quality</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (0a436ba)</td></tr>
+  <tr><th>Description</th><td>7 instances of <code>(this.fastify as any).mysql || (this.fastify as any).db</code> bypass type safety. Both services depend on Fastify instance for database access instead of using the standard <code>databaseService</code>.</td></tr>
+  <tr><th>Fix Applied</th><td>Migrated both services to use <code>databaseService</code> directly. Removed Fastify constructor dependency entirely. Updated route files that instantiate these services. Replaced <code>this.fastify.log</code> with Winston logger.</td></tr>
+</table>
+
+<h3>#27 - Hardcoded Magic Numbers</h3>
+<table>
+  <tr><th>File</th><td>10 service files across <code>src/server/services/</code></td></tr>
+  <tr><th>Category</th><td>Code Quality</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (0a436ba)</td></tr>
+  <tr><th>Description</th><td><code>86400000</code> (ms/day) appears 17 times across 8 files. <code>60000</code> (ms/minute) appears as a magic default in 2 files. Hard to understand intent at a glance.</td></tr>
+  <tr><th>Fix Applied</th><td>Created <code>src/server/utils/constants.ts</code> with <code>MS_PER_DAY</code>, <code>MS_PER_MINUTE</code>, <code>MS_PER_HOUR</code>. Replaced all 19 occurrences across 10 files.</td></tr>
+</table>
+
+<h3>#28 - Pricing Config vs Hardcoded Mismatch</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/services/aiUsageLogger.ts</code>, <code>src/server/services/agents/AgentCostTracker.ts</code></td></tr>
+  <tr><th>Category</th><td>Code Quality</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (782be3f, as part of #13)</td></tr>
+  <tr><th>Description</th><td>Hardcoded pricing tables duplicate config-driven <code>AI_PRICING_INPUT</code> / <code>AI_PRICING_OUTPUT</code> values and can drift out of sync.</td></tr>
+  <tr><th>Fix Applied</th><td>Fully resolved as part of #13. Both files now use config-driven pricing exclusively.</td></tr>
+</table>
+
+<h3>#29 - EmbeddingService Loads ALL Rows</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/services/EmbeddingService.ts</code> line 112, <code>src/server/database/EmbeddingRepository.ts</code></td></tr>
+  <tr><th>Category</th><td>Performance</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (f21c4fd) — partially mitigated</td></tr>
+  <tr><th>Description</th><td>On cache miss, <code>findAll()</code> loads every embedding row into memory. With thousands of embeddings, this is expensive.</td></tr>
+  <tr><th>Fix Applied</th><td>Added <code>LIMIT</code> clause to <code>EmbeddingRepository.findAll()</code> (default 5000, max 10000). Full fix (SQL-based vector search) requires MariaDB 11.6+ upgrade — tracked in <code>docs/TODO_INFRASTRUCTURE.md</code>.</td></tr>
 </table>
 
 <!-- ============================================================ -->
-<h2>LOW Issues (6) - Open</h2>
+<h2 class="page-break">LOW Issues (6)</h2>
 <!-- ============================================================ -->
 
+<h3>#30 - Weak Secret Entropy Validation</h3>
 <table>
-  <tr><th>#</th><th>Category</th><th>Issue</th><th>File</th><th>Recommended Fix</th></tr>
-  <tr><td>30</td><td>Security</td><td>Weak secret entropy validation (only checks min length 32)</td><td><code>config.ts:77</code></td><td>Add entropy check for JWT/cookie secrets</td></tr>
-  <tr><td>31</td><td>Frontend</td><td>Accessibility gaps - missing aria-labels on interactive elements</td><td>20+ components</td><td>Add ARIA attributes progressively</td></tr>
-  <tr><td>32</td><td>Quality</td><td>Missing return type annotations</td><td><code>aiReportService.ts</code>, <code>BaseRepository.ts</code></td><td>Add proper return types</td></tr>
-  <tr><td>33</td><td>Quality</td><td>Console.log in migration CLI and scripts</td><td><code>migrationRunner.ts</code>, <code>backfillEmbeddings.ts</code></td><td>Acceptable for CLI tools - low priority</td></tr>
-  <tr><td>34</td><td>Error</td><td>Array bounds not checked on <code>rows[0]</code> in admin routes</td><td><code>admin.ts:117</code></td><td>Add <code>rows.length</code> guard</td></tr>
-  <tr><td>35</td><td>Frontend</td><td>Zustand store uses in-place array mutation then spread</td><td><code>aiChatStore.ts:93</code></td><td>Use <code>.map()</code> for clarity</td></tr>
+  <tr><th>File</th><td><code>src/server/config.ts</code> line 77</td></tr>
+  <tr><th>Category</th><td>Security</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (e27c028)</td></tr>
+  <tr><th>Description</th><td>Secret validation only checks minimum length (32 characters). A string of 32 identical characters like <code>aaaaa...aaa</code> would pass.</td></tr>
+  <tr><th>Fix Applied</th><td>Added entropy check: all three secrets (JWT_SECRET, JWT_REFRESH_SECRET, COOKIE_SECRET) must contain at least 8 unique characters. Rejects trivial/repeating patterns with a descriptive error message.</td></tr>
+</table>
+
+<h3>#31 - Accessibility Gaps (aria-labels)</h3>
+<table>
+  <tr><th>File</th><td>20+ components across <code>src/client/src/</code></td></tr>
+  <tr><th>Category</th><td>Frontend</td></tr>
+  <tr><th>Status</th><td class="status-open">OPEN — requires dedicated accessibility pass</td></tr>
+  <tr><th>Description</th><td>Many interactive elements (buttons, inputs, modals) lack <code>aria-label</code>, <code>aria-describedby</code>, or proper ARIA roles. Screen readers cannot convey the purpose of these controls.</td></tr>
+  <tr><th>Recommendation</th><td>Plan a dedicated accessibility sprint: audit all interactive elements with an axe-core scan, add ARIA attributes progressively, test with screen reader (NVDA/VoiceOver).</td></tr>
+</table>
+
+<h3>#32 - Missing Return Type Annotations</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/services/aiReportService.ts</code></td></tr>
+  <tr><th>Category</th><td>Code Quality</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (e27c028)</td></tr>
+  <tr><th>Description</th><td><code>getReportHistory()</code> returns <code>Promise&lt;any[]&gt;</code>, losing type information for callers.</td></tr>
+  <tr><th>Fix Applied</th><td>Replaced <code>Promise&lt;any[]&gt;</code> with a proper inline type: <code>Promise&lt;Array&lt;{ id, title, reportType, generatedAt, projectId, aiPowered, content }&gt;&gt;</code>.</td></tr>
+</table>
+
+<h3>#33 - Console.log in Migration CLI</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/database/migrationRunner.ts</code>, <code>src/server/scripts/backfillEmbeddings.ts</code></td></tr>
+  <tr><th>Category</th><td>Code Quality</td></tr>
+  <tr><th>Status</th><td class="status-skipped">SKIPPED — acceptable for CLI tools</td></tr>
+  <tr><th>Description</th><td>CLI scripts use <code>console.log</code> for user-facing output.</td></tr>
+  <tr><th>Rationale</th><td>CLI tools intentionally write to stdout for human consumption. Using a structured logger would add unnecessary complexity and reduce readability of CLI output.</td></tr>
+</table>
+
+<h3>#34 - Array Bounds Not Checked on rows[0]</h3>
+<table>
+  <tr><th>File</th><td><code>src/server/routes/admin/admin.ts</code> line 117</td></tr>
+  <tr><th>Category</th><td>Error Handling</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (e27c028)</td></tr>
+  <tr><th>Description</th><td><code>rows[0]</code> accessed without checking if the array is empty. If the stats query returns no rows (edge case), this would return <code>undefined</code> which serializes as missing data.</td></tr>
+  <tr><th>Fix Applied</th><td>Added nullish coalesce: <code>rows[0] ?? {}</code>. Returns empty object instead of undefined if no rows.</td></tr>
+</table>
+
+<h3>#35 - Zustand In-Place Array Mutation</h3>
+<table>
+  <tr><th>File</th><td><code>src/client/src/stores/aiChatStore.ts</code> line 93</td></tr>
+  <tr><th>Category</th><td>Frontend</td></tr>
+  <tr><th>Status</th><td class="status-fixed">FIXED (e27c028)</td></tr>
+  <tr><th>Description</th><td><code>updateLastAssistantMessage</code> spreads the array then mutates elements in-place with <code>messages[i] = ...</code>. While spread creates a new array reference, the mutation pattern is confusing and could cause subtle bugs if the order of operations changes.</td></tr>
+  <tr><th>Fix Applied</th><td>Replaced with immutable <code>.map()</code> pattern: find last assistant index, then map all messages, replacing only the target message. No in-place mutations.</td></tr>
 </table>
 
 <!-- ============================================================ -->
-<h2 class="page-break">Appendix: Files Modified in This Fix</h2>
+<h2 class="page-break">Appendix: All Files Modified</h2>
 <!-- ============================================================ -->
 
 <table>
-  <tr><th>File</th><th>Issues Fixed</th><th>Changes</th></tr>
-  <tr><td><code>src/server/routes/admin/waitlist.ts</code></td><td>#1</td><td>Removed <code>'changeme'</code> default; return 503 when not configured</td></tr>
-  <tr><td><code>src/server/config.ts</code></td><td>#2</td><td>Removed <code>'rootpassword'</code> default; added DB_PASSWORD to required vars</td></tr>
-  <tr><td><code>src/server/routes/integrations/mcpProxy.ts</code></td><td>#3</td><td>Replaced CORS <code>*</code> with <code>config.CORS_ORIGIN</code></td></tr>
-  <tr><td><code>src/server/services/dataProviders/index.ts</code></td><td>#4</td><td>Added MAX_CACHE_SIZE=500, auto-prune, LRU eviction</td></tr>
-  <tr><td><code>src/server/services/WebhookService.ts</code></td><td>#5</td><td>Added <code>isPrivateUrl()</code> SSRF protection</td></tr>
-  <tr><td><code>src/server/services/integrations/SlackAdapter.ts</code></td><td>#6</td><td>Added Slack domain validation</td></tr>
-  <tr><td><code>src/server/routes/core/auth.ts</code></td><td>#7, #8</td><td>Added JWT algorithm; removed info disclosure</td></tr>
-  <tr><td><code>src/server/middleware/auth.ts</code></td><td>#7</td><td>Added <code>algorithms: ['HS256']</code> to verify</td></tr>
-  <tr><td><code>src/server/services/EmbeddingService.ts</code></td><td>#9</td><td>Added MAX_CACHE_ENTRIES=100, LRU eviction</td></tr>
-  <tr><td><code>src/server/services/ScheduleService.ts</code></td><td>#10</td><td>Increased limit to 50000, added truncation warning</td></tr>
-  <tr><td><code>src/server/services/ResourceLevelingService.ts</code></td><td>#11</td><td>Added MAX_LEVELING_ITERATIONS=50000 guard</td></tr>
-  <tr><td><code>src/server/services/MonteCarloService.ts</code></td><td>#12</td><td>Added MAX_ITERATIONS=50000 cap</td></tr>
-  <tr><td><code>src/server/services/aiUsageLogger.ts</code></td><td>#13</td><td>Config-driven pricing via <code>config.AI_PRICING_*</code></td></tr>
-  <tr><td><code>src/server/services/agents/AgentCostTracker.ts</code></td><td>#13</td><td>Config-driven pricing via <code>config.AI_PRICING_*</code></td></tr>
+  <tr><th>File</th><th>Issues</th><th>Commit</th><th>Changes</th></tr>
+  <tr><td><code>src/server/routes/admin/waitlist.ts</code></td><td>#1</td><td>782be3f</td><td>Removed <code>'changeme'</code> default; return 503 when not configured</td></tr>
+  <tr><td><code>src/server/config.ts</code></td><td>#2, #30</td><td>782be3f, e27c028</td><td>Removed DB_PASSWORD default; added entropy check for secrets</td></tr>
+  <tr><td><code>src/server/routes/integrations/mcpProxy.ts</code></td><td>#3</td><td>782be3f</td><td>Replaced CORS <code>*</code> with <code>config.CORS_ORIGIN</code></td></tr>
+  <tr><td><code>src/server/services/dataProviders/index.ts</code></td><td>#4</td><td>782be3f</td><td>Added MAX_CACHE_SIZE=500, auto-prune, LRU eviction</td></tr>
+  <tr><td><code>src/server/services/WebhookService.ts</code></td><td>#5</td><td>782be3f</td><td>Added <code>isPrivateUrl()</code> SSRF protection</td></tr>
+  <tr><td><code>src/server/services/integrations/SlackAdapter.ts</code></td><td>#6</td><td>782be3f</td><td>Added Slack domain validation</td></tr>
+  <tr><td><code>src/server/routes/core/auth.ts</code></td><td>#7, #8</td><td>782be3f</td><td>Added JWT algorithm pinning; removed info disclosure</td></tr>
+  <tr><td><code>src/server/middleware/auth.ts</code></td><td>#7</td><td>782be3f</td><td>Added <code>algorithms: ['HS256']</code> to verify</td></tr>
+  <tr><td><code>src/server/services/EmbeddingService.ts</code></td><td>#9</td><td>782be3f</td><td>Added MAX_CACHE_ENTRIES=100, LRU eviction</td></tr>
+  <tr><td><code>src/server/services/ScheduleService.ts</code></td><td>#10</td><td>782be3f</td><td>Increased limit to 50000, added truncation warning</td></tr>
+  <tr><td><code>src/server/services/ResourceLevelingService.ts</code></td><td>#11</td><td>782be3f</td><td>Added MAX_LEVELING_ITERATIONS=50000 guard</td></tr>
+  <tr><td><code>src/server/services/MonteCarloService.ts</code></td><td>#12</td><td>782be3f</td><td>Added MAX_ITERATIONS=50000 cap</td></tr>
+  <tr><td><code>src/server/services/aiUsageLogger.ts</code></td><td>#13, #28</td><td>782be3f</td><td>Config-driven pricing via <code>config.AI_PRICING_*</code></td></tr>
+  <tr><td><code>src/server/services/agents/AgentCostTracker.ts</code></td><td>#13, #28</td><td>782be3f</td><td>Config-driven pricing via <code>config.AI_PRICING_*</code></td></tr>
+  <tr><td><code>src/server/routes/collaboration/fileAttachments.ts</code></td><td>#14</td><td>f21c4fd</td><td>RFC 5987 Content-Disposition encoding</td></tr>
+  <tr><td><code>src/client/src/pages/QueryPage.tsx</code></td><td>#15</td><td>f21c4fd</td><td>DOMPurify sanitization on dangerouslySetInnerHTML</td></tr>
+  <tr><td><code>src/server/services/WebSocketService.ts</code></td><td>#16, #17</td><td>f21c4fd</td><td>Error handling on ws.send(); logged ws.on('error')</td></tr>
+  <tr><td><code>src/server/services/agents/ActionExecutor.ts</code></td><td>#18</td><td>f21c4fd</td><td>DLQ fallback on all audit append calls</td></tr>
+  <tr><td><code>src/server/services/DeadLetterService.ts</code></td><td>#19</td><td>f21c4fd</td><td>Replaced console.error with logger.error</td></tr>
+  <tr><td><code>src/server/services/scheduling/cronManager.ts</code></td><td>#20</td><td>f21c4fd</td><td>Added taskId to error log context</td></tr>
+  <tr><td><code>src/server/database/migrations/046_add_missing_indexes.sql</code></td><td>#21</td><td>f21c4fd</td><td>4 new indexes on frequently queried columns</td></tr>
+  <tr><td><code>src/server/database/EmbeddingRepository.ts</code></td><td>#29</td><td>f21c4fd</td><td>Added LIMIT to findAll()</td></tr>
+  <tr><td><code>src/server/database/connection.ts</code></td><td>#25</td><td>f21c4fd</td><td>Migrated console.* to Winston logger</td></tr>
+  <tr><td><code>src/server/__tests__/services/agents/ActionExecutor.test.ts</code></td><td>#18</td><td>f21c4fd</td><td>Added DeadLetterService mock</td></tr>
+  <tr><td><code>src/client/src/components/ai/AIChatPanel.tsx</code></td><td>#22</td><td>66a13d3</td><td>24 dark mode fixes</td></tr>
+  <tr><td><code>src/client/src/components/approvals/ChangeRequestList.tsx</code></td><td>#22</td><td>66a13d3</td><td>12 dark mode fixes</td></tr>
+  <tr><td><code>src/client/src/components/schedule/AutoReschedulePanel.tsx</code></td><td>#22</td><td>66a13d3</td><td>24 dark mode fixes</td></tr>
+  <tr><td><code>src/client/src/components/schedule/CalendarView.tsx</code></td><td>#22</td><td>66a13d3</td><td>10 dark mode fixes</td></tr>
+  <tr><td><code>src/client/src/components/schedule/GanttChart.tsx</code></td><td>#22, #24</td><td>66a13d3, 0a436ba</td><td>36+ dark mode fixes; clipboard catch comment</td></tr>
+  <tr><td><code>src/client/src/components/schedule/KanbanBoard.tsx</code></td><td>#22</td><td>66a13d3</td><td>10 dark mode fixes</td></tr>
+  <tr><td><code>src/client/src/components/schedule/TableView.tsx</code></td><td>#22</td><td>66a13d3</td><td>31+ dark mode fixes</td></tr>
+  <tr><td><code>src/client/src/pages/LessonsLearnedPage.tsx</code></td><td>#23</td><td>0a436ba</td><td>Removed 7 unnecessary <code>as any</code> casts</td></tr>
+  <tr><td><code>src/client/src/pages/ProjectDetailPage.tsx</code></td><td>#23</td><td>0a436ba</td><td>Fixed 4 <code>as any</code> casts with proper types</td></tr>
+  <tr><td><code>src/client/src/services/api.ts</code></td><td>#23</td><td>0a436ba</td><td>Extended createTask type; annotated generic request helper</td></tr>
+  <tr><td><code>src/client/src/contexts/AccessibilityContext.tsx</code></td><td>#24</td><td>0a436ba</td><td>Added explanatory comment to silent catch</td></tr>
+  <tr><td><code>src/client/src/pages/AdminPage.tsx</code></td><td>#24</td><td>0a436ba</td><td>Added explanatory comment to clipboard catch</td></tr>
+  <tr><td><code>src/client/src/stores/aiChatStore.ts</code></td><td>#24, #35</td><td>0a436ba, e27c028</td><td>Catch comment; immutable .map() pattern</td></tr>
+  <tr><td><code>src/server/services/aiLearningService.ts</code></td><td>#26</td><td>0a436ba</td><td>Migrated from Fastify to databaseService</td></tr>
+  <tr><td><code>src/server/services/aiReportService.ts</code></td><td>#26, #32</td><td>0a436ba, e27c028</td><td>Migrated from Fastify to databaseService; added return type</td></tr>
+  <tr><td><code>src/server/routes/ai/learning.ts</code></td><td>#26</td><td>0a436ba</td><td>Updated constructor call</td></tr>
+  <tr><td><code>src/server/routes/ai/aiReports.ts</code></td><td>#26</td><td>0a436ba</td><td>Updated constructor call</td></tr>
+  <tr><td><code>src/server/utils/constants.ts</code></td><td>#27</td><td>0a436ba</td><td>New file: MS_PER_DAY, MS_PER_MINUTE, MS_PER_HOUR</td></tr>
+  <tr><td><code>src/server/services/agents/AutonomyService.ts</code></td><td>#27</td><td>0a436ba</td><td>Replaced 86400000 with MS_PER_DAY</td></tr>
+  <tr><td><code>src/server/services/agents/CrossProjectIntelligenceAgent.ts</code></td><td>#27</td><td>0a436ba</td><td>Replaced 86400000 with MS_PER_DAY (3x)</td></tr>
+  <tr><td><code>src/server/services/agents/DegradationHandler.ts</code></td><td>#27</td><td>0a436ba</td><td>Replaced 60000 with MS_PER_MINUTE</td></tr>
+  <tr><td><code>src/server/services/agents/DependencyRiskAgent.ts</code></td><td>#27</td><td>0a436ba</td><td>Replaced 86400000 with MS_PER_DAY</td></tr>
+  <tr><td><code>src/server/services/agents/LessonsLearnedAgent.ts</code></td><td>#27</td><td>0a436ba</td><td>Replaced 86400000 with MS_PER_DAY</td></tr>
+  <tr><td><code>src/server/services/agents/PredictiveAlertingAgent.ts</code></td><td>#27</td><td>0a436ba</td><td>Replaced 86400000 with MS_PER_DAY (3x)</td></tr>
+  <tr><td><code>src/server/services/agents/StakeholderCommunicationAgent.ts</code></td><td>#27</td><td>0a436ba</td><td>Replaced 86400000 with MS_PER_DAY (6x)</td></tr>
+  <tr><td><code>src/server/services/AgentRegistryService.ts</code></td><td>#27</td><td>0a436ba</td><td>Replaced 60000 with MS_PER_MINUTE</td></tr>
+  <tr><td><code>src/server/services/ResourceAvailabilityService.ts</code></td><td>#27</td><td>0a436ba</td><td>Replaced 86400000 with MS_PER_DAY</td></tr>
+  <tr><td><code>src/server/services/crossProjectIntelligenceService.ts</code></td><td>#27</td><td>0a436ba</td><td>Replaced 86400000 with MS_PER_DAY</td></tr>
+  <tr><td><code>src/server/routes/admin/admin.ts</code></td><td>#34</td><td>e27c028</td><td>Added nullish coalesce on rows[0]</td></tr>
 </table>
 
 <h2>Appendix: Methodology</h2>
@@ -255,7 +476,7 @@
   <li><strong>Frontend &amp; API Contracts</strong> - Data mismatches, placeholders, loading/error states, dark mode, accessibility, responsive design</li>
 </ol>
 
-<p><em>Report generated automatically. Save as .doc to open in Microsoft Word.</em></p>
+<p><em>Report generated and maintained automatically. Save as .doc to open in Microsoft Word.</em></p>
 
 </body>
 </html>
