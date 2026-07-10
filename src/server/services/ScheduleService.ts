@@ -768,24 +768,6 @@ export class ScheduleService {
     return rows.map(rowToActivity);
   }
 
-  async getActivitiesBySchedule(scheduleId: string): Promise<TaskActivityEntry[]> {
-    const rows = await databaseService.query(
-      `SELECT a.* FROM task_activities a
-       INNER JOIN tasks t ON a.task_id = t.id
-       WHERE t.schedule_id = ?
-       ORDER BY a.created_at DESC`,
-      [scheduleId],
-    );
-    return rows.map(rowToActivity);
-  }
-
-  async getAllActivities(): Promise<TaskActivityEntry[]> {
-    const rows = await databaseService.query(
-      'SELECT * FROM task_activities ORDER BY created_at DESC',
-    );
-    return rows.map(rowToActivity);
-  }
-
   // -------------------------------------------------------------------------
   // Auto-Scheduling: Cascade Reschedule
   // -------------------------------------------------------------------------

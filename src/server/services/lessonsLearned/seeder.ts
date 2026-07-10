@@ -13,16 +13,33 @@ export async function seedFromProjects(persistLesson: (lesson: LessonLearned) =>
   }
 
   const projects = await projectService.findAll();
+  const allSchedules = await scheduleService.findByProjectIds(projects.map(p => p.id));
+  const allTasks = await scheduleService.findTasksByScheduleIds(allSchedules.map(s => s.id));
+
+  // Group schedules and tasks by project
+  const schedulesByProject = new Map<string, typeof allSchedules>();
+  for (const s of allSchedules) {
+    const list = schedulesByProject.get(s.projectId) ?? [];
+    list.push(s);
+    schedulesByProject.set(s.projectId, list);
+  }
+  const tasksBySchedule = new Map<string, typeof allTasks>();
+  for (const t of allTasks) {
+    const list = tasksBySchedule.get(t.scheduleId) ?? [];
+    list.push(t);
+    tasksBySchedule.set(t.scheduleId, list);
+  }
+
   const seededLessons: LessonLearned[] = [];
   let counter = 0;
 
   for (const project of projects) {
-    const schedules = await scheduleService.findByProjectId(project.id);
-    const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
+    const schedules = schedulesByProject.get(project.id) ?? [];
+    const projectTasks = schedules.flatMap(s => tasksBySchedule.get(s.id) ?? []);
 
-    const totalTasks = allTasks.length;
-    const completedTasks = allTasks.filter((t) => t.status === 'completed').length;
-    const overdueTasks = allTasks.filter(
+    const totalTasks = projectTasks.length;
+    const completedTasks = projectTasks.filter((t) => t.status === 'completed').length;
+    const overdueTasks = projectTasks.filter(
       (t) => t.status !== 'completed' && t.dueDate && new Date(t.dueDate) < new Date(),
     ).length;
     const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;

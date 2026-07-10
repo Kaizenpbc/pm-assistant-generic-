@@ -280,28 +280,30 @@ export class AIActionExecutor {
     }
 
     const schedules = await scheduleService.findByProjectId(projectId);
-    const schedulesWithTasks = await Promise.all(
-      schedules.map(async (s) => {
-        const tasks = await scheduleService.findTasksByScheduleId(s.id);
-        return {
-          id: s.id,
-          name: s.name,
-          status: s.status,
-          startDate: s.startDate,
-          endDate: s.endDate,
-          tasks: tasks.map(t => ({
-            id: t.id,
-            name: t.name,
-            status: t.status,
-            priority: t.priority,
-            assignedTo: t.assignedTo,
-            dueDate: t.dueDate,
-            progressPercentage: t.progressPercentage,
-            parentTaskId: t.parentTaskId,
-          })),
-        };
-      })
-    );
+    const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
+    const tasksBySchedule = new Map<string, typeof allTasks>();
+    for (const t of allTasks) {
+      const list = tasksBySchedule.get(t.scheduleId) ?? [];
+      list.push(t);
+      tasksBySchedule.set(t.scheduleId, list);
+    }
+    const schedulesWithTasks = schedules.map(s => ({
+      id: s.id,
+      name: s.name,
+      status: s.status,
+      startDate: s.startDate,
+      endDate: s.endDate,
+      tasks: (tasksBySchedule.get(s.id) ?? []).map(t => ({
+        id: t.id,
+        name: t.name,
+        status: t.status,
+        priority: t.priority,
+        assignedTo: t.assignedTo,
+        dueDate: t.dueDate,
+        progressPercentage: t.progressPercentage,
+        parentTaskId: t.parentTaskId,
+      })),
+    }));
 
     return {
       success: true,
@@ -472,6 +474,10 @@ export class AIActionExecutor {
       return { success: false, toolName: 'get_dependency_chain', summary: `Task '${taskId}' not found`, error: 'Task not found' };
     }
 
+    // Pre-load all tasks in this schedule for in-memory BFS
+    const allScheduleTasks = await scheduleService.findTasksByScheduleId(task.scheduleId);
+    const taskMap = new Map(allScheduleTasks.map(t => [t.id, t]));
+
     // Walk upstream (predecessors) via BFS for multi-dep
     const upstream: Array<{ id: string; name: string; type: string }> = [];
     const visitedUp = new Set<string>();
@@ -481,7 +487,7 @@ export class AIActionExecutor {
       for (const dep of current.dependencies) {
         if (visitedUp.has(dep.dependencyId)) continue;
         visitedUp.add(dep.dependencyId);
-        const pred = await scheduleService.findTaskById(dep.dependencyId);
+        const pred = taskMap.get(dep.dependencyId);
         if (!pred) continue;
         upstream.push({ id: pred.id, name: pred.name, type: dep.dependencyType || 'FS' });
         queue.push(pred);
@@ -572,32 +578,34 @@ export class AIActionExecutor {
   private async getOverdueTasks(): Promise<ActionResult> {
     const today = new Date().toISOString().slice(0, 10);
     const projects = await projectService.findAll();
-    const overdueTasks: Array<Record<string, unknown>> = [];
+    const projectMap = new Map(projects.map(p => [p.id, p]));
 
-    for (const project of projects) {
-      const schedules = await scheduleService.findByProjectId(project.id);
-      for (const schedule of schedules) {
-        const tasks = await scheduleService.findTasksByScheduleId(schedule.id);
-        for (const task of tasks) {
-          if (
-            task.dueDate &&
-            String(task.dueDate).slice(0, 10) < today &&
-            task.status !== 'completed' &&
-            task.status !== 'cancelled'
-          ) {
-            overdueTasks.push({
-              id: task.id,
-              name: task.name,
-              status: task.status,
-              dueDate: task.dueDate,
-              projectName: project.name,
-              projectId: project.id,
-              scheduleName: schedule.name,
-              assignedTo: task.assignedTo,
-              daysOverdue: Math.floor((Date.now() - new Date(String(task.dueDate)).getTime()) / (1000 * 60 * 60 * 24)),
-            });
-          }
-        }
+    const allSchedules = await scheduleService.findByProjectIds(projects.map(p => p.id));
+    const scheduleMap = new Map(allSchedules.map(s => [s.id, s]));
+
+    const allTasks = await scheduleService.findTasksByScheduleIds(allSchedules.map(s => s.id));
+
+    const overdueTasks: Array<Record<string, unknown>> = [];
+    for (const task of allTasks) {
+      if (
+        task.dueDate &&
+        String(task.dueDate).slice(0, 10) < today &&
+        task.status !== 'completed' &&
+        task.status !== 'cancelled'
+      ) {
+        const schedule = scheduleMap.get(task.scheduleId);
+        const project = schedule ? projectMap.get(schedule.projectId) : undefined;
+        overdueTasks.push({
+          id: task.id,
+          name: task.name,
+          status: task.status,
+          dueDate: task.dueDate,
+          projectName: project?.name,
+          projectId: project?.id,
+          scheduleName: schedule?.name,
+          assignedTo: task.assignedTo,
+          daysOverdue: Math.floor((Date.now() - new Date(String(task.dueDate)).getTime()) / (1000 * 60 * 60 * 24)),
+        });
       }
     }
 

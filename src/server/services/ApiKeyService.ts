@@ -38,7 +38,9 @@ export class ApiKeyService {
     if (!row) return null;
 
     // Update last_used_at (fire-and-forget)
-    apiKeyRepository.touchLastUsed(row.id).catch(() => {});
+    apiKeyRepository.touchLastUsed(row.id).catch((error) => {
+      logger.warn('Failed to update API key last_used_at', { keyId: row.id, error });
+    });
 
     return {
       userId: row.user_id,
