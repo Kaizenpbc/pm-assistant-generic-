@@ -8,8 +8,34 @@ function maskSecret(webhook: Webhook): Webhook {
   return { ...webhook, secret: webhook.secret.substring(0, 8) + '...' };
 }
 
+/** Block SSRF: reject URLs targeting private/internal networks. */
+function isPrivateUrl(urlStr: string): boolean {
+  try {
+    const url = new URL(urlStr);
+    if (!['http:', 'https:'].includes(url.protocol)) return true;
+    const hostname = url.hostname.toLowerCase();
+    if (hostname === 'localhost' || hostname === '[::1]') return true;
+    // IPv4 private ranges
+    const parts = hostname.split('.').map(Number);
+    if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+      if (parts[0] === 127) return true; // 127.0.0.0/8
+      if (parts[0] === 10) return true; // 10.0.0.0/8
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true; // 172.16.0.0/12
+      if (parts[0] === 192 && parts[1] === 168) return true; // 192.168.0.0/16
+      if (parts[0] === 169 && parts[1] === 254) return true; // 169.254.0.0/16
+      if (parts[0] === 0) return true; // 0.0.0.0/8
+    }
+    return false;
+  } catch {
+    return true; // Invalid URL = reject
+  }
+}
+
 export class WebhookService {
   async register(userId: string, url: string, events: string[], secret?: string): Promise<Webhook> {
+    if (isPrivateUrl(url)) {
+      throw new Error('Webhook URL must not target private or internal networks');
+    }
     const webhookSecret = secret || crypto.randomBytes(32).toString('hex');
     return webhookRepository.insert(userId, url, webhookSecret, events);
   }
@@ -65,6 +91,10 @@ export class WebhookService {
   }
 
   private async deliverWebhook(webhook: Webhook, event: string, payload: object): Promise<void> {
+    if (isPrivateUrl(webhook.url)) {
+      logger.warn('Blocked webhook delivery to private URL', { webhookId: webhook.id, url: webhook.url });
+      return;
+    }
     const body = JSON.stringify({ event, payload, timestamp: new Date().toISOString() });
     const signature = crypto.createHmac('sha256', webhook.secret).update(body).digest('hex');
 

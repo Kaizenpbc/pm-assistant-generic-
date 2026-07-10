@@ -8,7 +8,7 @@ const configSchema = z.object({
   DB_HOST: z.string().min(1).default('localhost'),
   DB_PORT: z.coerce.number().min(1).max(65535).default(3306),
   DB_USER: z.string().min(1).default('root'),
-  DB_PASSWORD: z.string().min(1).default('rootpassword'),
+  DB_PASSWORD: z.string().min(1),
   DB_NAME: z.string().min(1).default('pm_assistant_generic'),
   DB_CONNECT_TIMEOUT: z.coerce.number().min(1000).max(30000).default(5000),
   DB_IDLE_TIMEOUT: z.coerce.number().min(5000).max(300000).default(30000),
@@ -144,7 +144,7 @@ export function validateConfiguration() {
 
     console.log('Validating configuration...');
 
-    const requiredVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'COOKIE_SECRET'];
+    const requiredVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'COOKIE_SECRET', 'DB_PASSWORD'];
     const missingVars = requiredVars.filter(varName => !process.env[varName]);
 
     if (missingVars.length > 0) {

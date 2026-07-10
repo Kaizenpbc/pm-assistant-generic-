@@ -40,7 +40,8 @@ export class MonteCarloService {
     scheduleId: string,
     config?: Partial<MonteCarloConfig>,
   ): Promise<MonteCarloResult> {
-    const iterations = config?.iterations ?? 10000;
+    const MAX_ITERATIONS = 50_000;
+    const iterations = Math.min(config?.iterations ?? 10000, MAX_ITERATIONS);
     const confidenceLevels = config?.confidenceLevels ?? [50, 80, 90];
     const uncertaintyModel = config?.uncertaintyModel ?? 'pert';
 

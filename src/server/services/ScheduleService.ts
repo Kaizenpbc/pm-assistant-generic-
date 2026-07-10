@@ -368,7 +368,11 @@ export class ScheduleService {
   }
 
   async findAllTasks(): Promise<Task[]> {
-    const rows = await databaseService.query('SELECT * FROM tasks ORDER BY sort_order, created_at LIMIT 1000');
+    const MAX_TASKS = 50000;
+    const rows = await databaseService.query(`SELECT * FROM tasks ORDER BY sort_order, created_at LIMIT ${MAX_TASKS}`);
+    if (rows.length === MAX_TASKS) {
+      logger.warn(`findAllTasks() returned ${MAX_TASKS} rows — results may be truncated`);
+    }
     const tasks = rows.map(rowToTask);
     await this.attachDependencies(tasks);
     return tasks;

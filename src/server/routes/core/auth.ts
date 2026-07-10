@@ -47,12 +47,12 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       const user = await userService.findByUsername(username);
       if (!user) {
-        return reply.status(401).send({ error: 'Invalid credentials', message: 'User not found', debug: 'no_user' });
+        return reply.status(401).send({ error: 'Invalid credentials', message: 'Username or password is incorrect' });
       }
 
       const isValidPassword = await bcrypt.compare(password, user.passwordHash);
       if (!isValidPassword) {
-        return reply.status(401).send({ error: 'Invalid credentials', message: 'Password mismatch', debug: 'bad_password' });
+        return reply.status(401).send({ error: 'Invalid credentials', message: 'Username or password is incorrect' });
       }
 
       if (!user.emailVerified) {
@@ -70,13 +70,13 @@ export async function authRoutes(fastify: FastifyInstance) {
       const accessToken = jwt.sign(
         { userId: user.id, username: user.username, role: user.role },
         config.JWT_SECRET,
-        { expiresIn: '15m' }
+        { expiresIn: '15m', algorithm: 'HS256' }
       );
 
       const refreshToken = jwt.sign(
         { userId: user.id, type: 'refresh' },
         config.JWT_REFRESH_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: '7d', algorithm: 'HS256' }
       );
 
       reply.setCookie('access_token', accessToken, {
@@ -334,7 +334,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'No refresh token', message: 'Refresh token is required' });
       }
 
-      const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET) as any;
+      const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET, { algorithms: ['HS256'] }) as any;
       if (decoded.type !== 'refresh') {
         return reply.status(401).send({ error: 'Invalid token type', message: 'Token is not a refresh token' });
       }
@@ -347,7 +347,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const accessToken = jwt.sign(
         { userId: user.id, username: user.username, role: user.role },
         config.JWT_SECRET,
-        { expiresIn: '15m' }
+        { expiresIn: '15m', algorithm: 'HS256' }
       );
 
       reply.setCookie('access_token', accessToken, {

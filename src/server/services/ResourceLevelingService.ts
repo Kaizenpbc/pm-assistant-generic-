@@ -2,6 +2,7 @@ import { criticalPathService, CriticalPathResult, CPMTaskResult } from './Critic
 import { scheduleService, Task } from './ScheduleService';
 import { resourceService } from './ResourceService';
 import type { Resource } from './ResourceService';
+import logger from '../utils/logger';
 
 // --- Interfaces ---
 
@@ -216,6 +217,8 @@ export class ResourceLevelingService {
     }
 
     const adjustedTasks: TaskAdjustment[] = [];
+    const MAX_LEVELING_ITERATIONS = 50_000;
+    let iterationCount = 0;
 
     // Sort non-critical tasks by float descending (most flexible tasks first)
     const nonCritical = levelable
@@ -224,6 +227,10 @@ export class ResourceLevelingService {
 
     // Iteratively try to resolve over-allocations
     for (const lt of nonCritical) {
+      if (iterationCount >= MAX_LEVELING_ITERATIONS) {
+        logger.warn(`Resource leveling stopped after ${MAX_LEVELING_ITERATIONS} iterations for schedule ${scheduleId}`);
+        break;
+      }
       const resourceName = lt.task.assignedTo!;
       const resourceDemand = demandSim.get(resourceName);
       if (!resourceDemand) continue;
@@ -231,6 +238,7 @@ export class ResourceLevelingService {
       // Check if this resource still has over-allocations during this task's span
       let hasOverAllocation = false;
       for (let d = 0; d < lt.durationDays; d++) {
+        iterationCount++;
         const dateStr = toDateStr(addDays(lt.currentStart, d));
         const demand = resourceDemand.get(dateStr) || 0;
         if (demand > DEFAULT_CAPACITY_HOURS) {
@@ -246,11 +254,13 @@ export class ResourceLevelingService {
       let bestDelay = 0;
 
       for (let delay = 1; delay <= maxDelay; delay++) {
+        if (iterationCount >= MAX_LEVELING_ITERATIONS) break;
         const newStart = addDays(lt.currentStart, delay);
 
         // Check if the new position reduces over-allocation
         let overAllocationCount = 0;
         for (let d = 0; d < lt.durationDays; d++) {
+          iterationCount++;
           const dateStr = toDateStr(addDays(newStart, d));
           // Current demand at new position minus this task's contribution that would be added
           const existingDemand = resourceDemand.get(dateStr) || 0;

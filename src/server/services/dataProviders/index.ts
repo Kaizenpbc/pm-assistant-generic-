@@ -37,6 +37,7 @@ export { OpenWeatherMapProvider, WeatherAPIProvider, MockWeatherProvider } from 
  *   const weather = await dataProviderManager.getWeather(40.71, -74.01, 7);
  */
 export class DataProviderManager {
+  private static readonly MAX_CACHE_SIZE = 500;
   private weatherProvider: WeatherProvider;
   private cache: Map<string, CacheEntry<any>>;
   private cacheTTLMinutes: number;
@@ -143,13 +144,14 @@ export class DataProviderManager {
     try {
       const forecast = await this.weatherProvider.getForecast(roundedLat, roundedLon, days);
 
-      // Store in cache
+      // Store in cache (with size enforcement)
       const now = new Date();
       this.cache.set(cacheKey, {
         data: forecast,
         fetchedAt: now,
         expiresAt: new Date(now.getTime() + this.cacheTTLMinutes * 60 * 1000),
       });
+      this.enforceCacheLimit();
 
       return forecast;
     } catch (error) {
@@ -219,6 +221,24 @@ export class DataProviderManager {
    */
   getActiveWeatherProviderName(): string {
     return this.weatherProvider.name;
+  }
+
+  /**
+   * Enforce cache size limit by pruning expired entries first, then evicting oldest.
+   */
+  private enforceCacheLimit(): void {
+    if (this.cache.size <= DataProviderManager.MAX_CACHE_SIZE) return;
+    this.pruneExpiredEntries();
+    if (this.cache.size <= DataProviderManager.MAX_CACHE_SIZE) return;
+    // Evict oldest entries by fetchedAt
+    const entries = [...this.cache.entries()].sort(
+      (a, b) => a[1].fetchedAt.getTime() - b[1].fetchedAt.getTime(),
+    );
+    const toRemove = this.cache.size - DataProviderManager.MAX_CACHE_SIZE;
+    for (let i = 0; i < toRemove; i++) {
+      this.cache.delete(entries[i][0]);
+    }
+    logger.info(`[DataProviderManager] Evicted ${toRemove} oldest cache entries (max ${DataProviderManager.MAX_CACHE_SIZE}).`);
   }
 
   /**

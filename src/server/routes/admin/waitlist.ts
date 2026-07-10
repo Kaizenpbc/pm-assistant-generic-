@@ -52,7 +52,8 @@ export async function waitlistRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/admin', async (request: FastifyRequest, reply: FastifyReply) => {
-    const adminKey = process.env.WAITLIST_ADMIN_KEY || 'changeme';
+    const adminKey = process.env.WAITLIST_ADMIN_KEY;
+    if (!adminKey) return reply.status(503).send({ error: 'Waitlist admin not configured' });
     const key = request.headers['x-admin-key'] as string | undefined;
     if (key !== adminKey) return reply.status(401).send({ error: 'Unauthorized' });
     const rows = await databaseService.query<any>(
@@ -62,7 +63,8 @@ export async function waitlistRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/admin/export', async (request: FastifyRequest, reply: FastifyReply) => {
-    const adminKey = process.env.WAITLIST_ADMIN_KEY || 'changeme';
+    const adminKey = process.env.WAITLIST_ADMIN_KEY;
+    if (!adminKey) return reply.status(503).send({ error: 'Waitlist admin not configured' });
     const key = request.headers['x-admin-key'] as string | undefined;
     if (key !== adminKey) return reply.status(401).send({ error: 'Unauthorized' });
     const rows = await databaseService.query<any>(

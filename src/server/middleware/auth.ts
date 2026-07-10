@@ -45,7 +45,7 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
       });
     }
 
-    const decoded = jwt.verify(token, config.JWT_SECRET) as any;
+    const decoded = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] }) as any;
 
     request.user = {
       userId: decoded.userId,

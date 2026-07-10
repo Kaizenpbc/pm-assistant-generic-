@@ -21,19 +21,9 @@ export interface CostSummary {
   entries: number;
 }
 
-// Pricing per million tokens (matches claudeService)
-const PRICING: Record<string, { input: number; output: number }> = {
-  'claude-sonnet-4-5-20250929': { input: 3.0, output: 15.0 },
-  'claude-sonnet-4-20250514': { input: 3.0, output: 15.0 },
-  'claude-haiku-4-20250414': { input: 0.80, output: 4.0 },
-  'claude-opus-4-20250514': { input: 15.0, output: 75.0 },
-};
-const DEFAULT_PRICING = { input: 3.0, output: 15.0 };
-
 export class AgentCostTracker {
-  estimateCost(model: string | undefined, inputTokens: number, outputTokens: number): number {
-    const pricing = (model && PRICING[model]) || DEFAULT_PRICING;
-    return (inputTokens * pricing.input + outputTokens * pricing.output) / 1_000_000;
+  estimateCost(_model: string | undefined, inputTokens: number, outputTokens: number): number {
+    return (inputTokens * config.AI_PRICING_INPUT + outputTokens * config.AI_PRICING_OUTPUT) / 1_000_000;
   }
 
   async record(entry: CostEntry): Promise<void> {

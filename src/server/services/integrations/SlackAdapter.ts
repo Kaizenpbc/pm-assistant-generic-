@@ -3,8 +3,20 @@ export interface SlackConfig {
   channel?: string;
 }
 
+function isValidSlackWebhookUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' && parsed.hostname === 'hooks.slack.com';
+  } catch {
+    return false;
+  }
+}
+
 export class SlackAdapter {
   async testConnection(config: SlackConfig): Promise<{ success: boolean; message: string }> {
+    if (!isValidSlackWebhookUrl(config.webhookUrl)) {
+      return { success: false, message: 'Invalid Slack webhook URL. Must be https://hooks.slack.com/...' };
+    }
     try {
       const response = await fetch(config.webhookUrl, {
         method: 'POST',
@@ -28,6 +40,9 @@ export class SlackAdapter {
       blocks?: any[];
     },
   ): Promise<{ success: boolean; message: string }> {
+    if (!isValidSlackWebhookUrl(config.webhookUrl)) {
+      return { success: false, message: 'Invalid Slack webhook URL. Must be https://hooks.slack.com/...' };
+    }
     try {
       const payload: Record<string, any> = {
         text: message.text,

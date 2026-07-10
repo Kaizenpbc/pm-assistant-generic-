@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import http from 'node:http';
+import { config } from '../../config';
 
 // Headers to strip from proxied response (added by Helmet/Fastify, not relevant for MCP)
 const STRIP_HEADERS = new Set([
@@ -39,7 +40,7 @@ export async function mcpProxyRoutes(fastify: FastifyInstance) {
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       reply.raw.writeHead(204, {
-        'access-control-allow-origin': '*',
+        'access-control-allow-origin': config.CORS_ORIGIN,
         'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
         'access-control-allow-headers': 'Content-Type, Accept, Mcp-Session-Id, Authorization',
         'access-control-expose-headers': 'Mcp-Session-Id',
@@ -83,7 +84,7 @@ export async function mcpProxyRoutes(fastify: FastifyInstance) {
         (proxyRes) => {
           // Build clean response headers: keep MCP headers, strip Helmet headers
           const responseHeaders: Record<string, string | string[]> = {
-            'access-control-allow-origin': '*',
+            'access-control-allow-origin': config.CORS_ORIGIN,
             'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
             'access-control-allow-headers': 'Content-Type, Accept, Mcp-Session-Id, Authorization',
             'access-control-expose-headers': 'Mcp-Session-Id',

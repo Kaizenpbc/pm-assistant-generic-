@@ -28,9 +28,23 @@ export interface SimilarityResult {
 // ---------------------------------------------------------------------------
 
 export class EmbeddingService {
+  private static readonly MAX_CACHE_ENTRIES = 100;
   private cache: Map<string, { vector: number[]; documentType: string; documentId: string }[]> = new Map();
   private cacheTimestamps: Map<string, number> = new Map();
   private readonly cacheTtlMs = 5 * 60 * 1000; // 5 minutes
+
+  /** Enforce max cache size by evicting the oldest entry. */
+  private enforceCacheLimit(): void {
+    while (this.cache.size > EmbeddingService.MAX_CACHE_ENTRIES) {
+      let oldestKey: string | null = null;
+      let oldestTime = Infinity;
+      for (const [key, ts] of this.cacheTimestamps) {
+        if (ts < oldestTime) { oldestTime = ts; oldestKey = key; }
+      }
+      if (oldestKey) { this.cache.delete(oldestKey); this.cacheTimestamps.delete(oldestKey); }
+      else break;
+    }
+  }
 
   isAvailable(): boolean {
     return !!(config.EMBEDDING_ENABLED && config.OPENAI_API_KEY);
@@ -136,6 +150,7 @@ export class EmbeddingService {
 
       this.cache.set(cacheKey, entries);
       this.cacheTimestamps.set(cacheKey, Date.now());
+      this.enforceCacheLimit();
     }
 
     // Compute cosine similarity in JS
