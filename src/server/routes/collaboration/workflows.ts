@@ -4,6 +4,8 @@ import { dagWorkflowService } from '../../services/DagWorkflowService';
 import { scheduleService } from '../../services/ScheduleService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { claudeService } from '../../services/claudeService';
+import { workflowGenerateRequestSchema, workflowGenerationOutputSchema, WORKFLOW_GENERATION_SYSTEM_PROMPT } from '../../schemas/workflowGenerationSchemas';
 import logger from '../../utils/logger';
 
 // ── Zod schemas ────────────────────────────────────────────────────────────
@@ -54,6 +56,48 @@ const resumeSchema = z.object({
 
 export async function workflowRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
+
+  // POST /api/v1/workflows/generate — AI-generate workflow from natural language
+  fastify.post('/generate', {
+    preHandler: [requireScope('write')],
+    schema: { description: 'Generate a workflow definition from natural language', tags: ['workflows'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { description, projectId } = workflowGenerateRequestSchema.parse(request.body);
+      const user = request.user!;
+
+      const result = await claudeService.completeWithJsonSchema({
+        systemPrompt: WORKFLOW_GENERATION_SYSTEM_PROMPT,
+        userMessage: description,
+        schema: workflowGenerationOutputSchema,
+        maxTokens: 2000,
+        temperature: 0.7,
+        userId: user.userId,
+      });
+
+      const workflow = result.data;
+
+      // Validate edge indices are within bounds
+      for (const edge of workflow.edges) {
+        if (edge.sourceIndex >= workflow.nodes.length || edge.targetIndex >= workflow.nodes.length) {
+          return reply.status(422).send({ error: 'AI generated invalid edge indices. Please try again.' });
+        }
+      }
+
+      // Validate first node is a trigger
+      if (workflow.nodes.length > 0 && workflow.nodes[0].nodeType !== 'trigger') {
+        return reply.status(422).send({ error: 'AI generated workflow without trigger as first node. Please try again.' });
+      }
+
+      return { workflow: { ...workflow, projectId } };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ error: 'Validation error', details: error.issues });
+      }
+      logger.error('Generate workflow error', { error });
+      return reply.status(500).send({ error: 'Failed to generate workflow' });
+    }
+  });
 
   // GET /api/v1/workflows — list definitions
   fastify.get('/', {

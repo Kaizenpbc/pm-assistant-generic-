@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import BottomNav from './BottomNav';
+import { OfflineBanner } from './OfflineBanner';
 import { Bot, X } from 'lucide-react';
 import { AIChatPanel } from '../ai/AIChatPanel';
 import { useUIStore } from '../../stores/uiStore';
@@ -88,6 +89,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <OfflineBanner />
       {/* Sidebar */}
       <Sidebar
         collapsed={effectiveCollapsed}

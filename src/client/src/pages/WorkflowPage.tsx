@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, Zap, Clock, ChevronDown, ChevronRight, ArrowRight, Eye } from 'lucide-react';
+import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, Zap, Clock, ChevronDown, ChevronRight, ArrowRight, Eye, Sparkles, Loader2 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { WorkflowNodeEditor } from '../components/workflows/WorkflowNodeEditor';
 import { ExecutionDetail } from '../components/workflows/ExecutionDetail';
@@ -71,6 +71,10 @@ export function WorkflowPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewExecId, setViewExecId] = useState<string | null>(null);
 
+  // AI generation state
+  const [nlPrompt, setNlPrompt] = useState('');
+  const [nlError, setNlError] = useState<string | null>(null);
+
   // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -124,6 +128,23 @@ export function WorkflowPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workflowExecutions'] });
       queryClient.invalidateQueries({ queryKey: ['workflowExecution', viewExecId] });
+    },
+  });
+
+  const generateMut = useMutation({
+    mutationFn: (desc: string) => apiService.generateWorkflow(desc),
+    onSuccess: (data) => {
+      const wf = data.workflow;
+      setName(wf.name || '');
+      setDescription(wf.description || '');
+      setNodes(wf.nodes || [...defaultNodes]);
+      setEdges(wf.edges || [...defaultEdges]);
+      setShowForm(true);
+      setNlPrompt('');
+      setNlError(null);
+    },
+    onError: (err: any) => {
+      setNlError(err?.response?.data?.error || 'Failed to generate workflow. Please try again.');
     },
   });
 
@@ -226,6 +247,39 @@ export function WorkflowPage() {
           <Plus className="w-3.5 h-3.5" />
           New Workflow
         </button>
+      </div>
+
+      {/* AI Generate */}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-4 h-4 text-purple-500" />
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Generate with AI</h3>
+        </div>
+        <div className="flex gap-2">
+          <textarea
+            value={nlPrompt}
+            onChange={e => { setNlPrompt(e.target.value); setNlError(null); }}
+            placeholder="Describe your workflow in plain English, e.g. &quot;When a task is marked complete, notify the project manager and log the activity&quot;"
+            rows={2}
+            maxLength={500}
+            className="flex-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+          />
+          <button
+            onClick={() => generateMut.mutate(nlPrompt)}
+            disabled={nlPrompt.trim().length < 10 || generateMut.isPending}
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors disabled:opacity-50 self-end"
+          >
+            {generateMut.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5" />
+            )}
+            {generateMut.isPending ? 'Generating...' : 'Generate'}
+          </button>
+        </div>
+        {nlError && (
+          <p className="text-xs text-red-500 mt-1.5">{nlError}</p>
+        )}
       </div>
 
       {/* Tabs */}

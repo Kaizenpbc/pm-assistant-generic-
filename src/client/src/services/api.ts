@@ -776,6 +776,11 @@ class ApiService {
     return response.data;
   }
 
+  async generateWorkflow(description: string, projectId?: string) {
+    const response = await this.api.post('/workflows/generate', { description, projectId });
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Export
   // -------------------------------------------------------------------------
