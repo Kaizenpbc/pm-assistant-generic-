@@ -87,7 +87,7 @@ import { ColumnPickerDropdown } from '../components/schedule/ColumnPickerDropdow
 import { TaskListMobile } from '../components/tasks/TaskListMobile';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 
-type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'burndown' | 'change-requests' | 'sprints' | 'resources';
+type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources';
 
 const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -102,7 +102,6 @@ const primaryTabs: { id: Tab; label: string }[] = [
 const moreTabs: { id: Tab; label: string }[] = [
   { id: 'change-requests', label: 'Change Requests' },
   { id: 'resources', label: 'Resources' },
-  { id: 'burndown', label: 'Burndown' },
   { id: 'scenarios', label: 'What-If' },
   { id: 'agent-activity', label: 'Agent Activity' },
 ];
@@ -558,7 +557,6 @@ export function ProjectDetailPage() {
       {activeTab === 'scenarios' && <ScenariosTab projectId={id!} />}
       {activeTab === 'team' && <TeamTab />}
       {activeTab === 'agent-activity' && <AgentActivityTab projectId={id!} />}
-      {activeTab === 'burndown' && <BurndownTab projectId={id!} />}
       {activeTab === 'change-requests' && <ChangeRequestsTab projectId={id!} />}
       {activeTab === 'sprints' && <SprintsTab projectId={id!} />}
       {activeTab === 'resources' && <ResourcesTab projectId={id!} />}
@@ -1573,7 +1571,7 @@ function ScheduleTab({ projectId, projectName, projectStartDate }: { projectId: 
   const queryClient = useQueryClient();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
-  const [viewMode, setViewMode] = useState<'gantt' | 'kanban' | 'table' | 'calendar' | 'network'>('gantt');
+  const [viewMode, setViewMode] = useState<'gantt' | 'kanban' | 'table' | 'calendar' | 'network' | 'burndown'>('gantt');
   const [uploadingSchedule, setUploadingSchedule] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const scheduleFileRef = useRef<HTMLInputElement>(null);
@@ -1690,6 +1688,7 @@ function ScheduleTab({ projectId, projectName, projectStartDate }: { projectId: 
             { mode: 'table' as const, icon: Table2, label: 'Table' },
             { mode: 'calendar' as const, icon: CalendarDays, label: 'Calendar' },
             { mode: 'network' as const, icon: MapPin, label: 'Network' },
+            { mode: 'burndown' as const, icon: TrendingUp, label: 'Burndown' },
           ] as const).map(({ mode, icon: Icon, label }) => (
             <button
               key={mode}
@@ -1733,7 +1732,7 @@ function MobileScheduleView({ schedules }: { schedules: any[] }) {
   );
 }
 
-function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewMode: 'gantt' | 'kanban' | 'table' | 'calendar' | 'network'; projectId: string }) {
+function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewMode: 'gantt' | 'kanban' | 'table' | 'calendar' | 'network' | 'burndown'; projectId: string }) {
   const queryClient = useQueryClient();
   const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -2131,6 +2130,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
       )}
       {viewMode === 'network' && (
         <NetworkDiagramView scheduleId={schedule.id} />
+      )}
+      {viewMode === 'burndown' && (
+        <BurndownPanel scheduleId={schedule.id} />
       )}
 
       {/* Baseline Variance Report */}
@@ -3808,44 +3810,6 @@ function AgentActivityTab({ projectId }: { projectId: string }) {
 // Burndown Tab
 // ---------------------------------------------------------------------------
 
-function BurndownTab({ projectId }: { projectId: string }) {
-  const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
-    queryKey: ['schedules', projectId],
-    queryFn: () => apiService.getSchedules(projectId),
-    enabled: !!projectId,
-  });
-
-  const schedules: any[] = schedulesData?.schedules || [];
-  const [selectedScheduleId, setSelectedScheduleId] = useState('');
-
-  React.useEffect(() => {
-    if (schedules.length > 0 && !selectedScheduleId) {
-      setSelectedScheduleId(schedules[0].id);
-    }
-  }, [schedules, selectedScheduleId]);
-
-  if (schedulesLoading) return <SectionSpinner />;
-
-  return (
-    <div className="mt-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Burndown / Burnup</h3>
-        {schedules.length > 1 && (
-          <select
-            value={selectedScheduleId}
-            onChange={(e) => setSelectedScheduleId(e.target.value)}
-            className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
-          >
-            {schedules.map((s: any) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        )}
-      </div>
-      {selectedScheduleId && <BurndownPanel scheduleId={selectedScheduleId} />}
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Change Requests Tab
