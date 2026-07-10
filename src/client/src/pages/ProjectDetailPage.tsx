@@ -527,8 +527,8 @@ export function ProjectDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide">
+      <div className="border-b border-gray-200 dark:border-gray-700 overflow-visible">
+        <nav className="-mb-px flex gap-4 md:gap-6 flex-wrap">
           {primaryTabs.map((tab) => (
             <button
               key={tab.id}
