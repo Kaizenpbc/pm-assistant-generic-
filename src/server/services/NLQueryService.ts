@@ -189,29 +189,32 @@ async function executeToolFn(
       if (!project) return JSON.stringify({ error: `Project ${projectId} not found` });
 
       const schedules = await scheduleService.findByProjectId(projectId);
-      const schedulesWithTasks = [];
-      for (const sch of schedules) {
-        const tasks = await scheduleService.findTasksByScheduleId(sch.id);
-        schedulesWithTasks.push({
-          id: sch.id,
-          name: sch.name,
-          status: sch.status,
-          startDate: sch.startDate ?? null,
-          endDate: sch.endDate ?? null,
-          tasks: tasks.map((t) => ({
-            id: t.id,
-            name: t.name,
-            status: t.status,
-            priority: t.priority,
-            progressPercentage: t.progressPercentage ?? 0,
-            startDate: t.startDate ?? null,
-            endDate: t.endDate ?? null,
-            dependency: t.dependency ?? null,
-            dependencies: t.dependencies.map(d => ({ id: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
-            assignedTo: t.assignedTo ?? null,
-          })),
-        });
+      const allTasks = await scheduleService.findTasksByScheduleIds(schedules.map(s => s.id));
+      const tasksBySchedule = new Map<string, typeof allTasks>();
+      for (const t of allTasks) {
+        const list = tasksBySchedule.get(t.scheduleId) ?? [];
+        list.push(t);
+        tasksBySchedule.set(t.scheduleId, list);
       }
+      const schedulesWithTasks = schedules.map(sch => ({
+        id: sch.id,
+        name: sch.name,
+        status: sch.status,
+        startDate: sch.startDate ?? null,
+        endDate: sch.endDate ?? null,
+        tasks: (tasksBySchedule.get(sch.id) ?? []).map((t) => ({
+          id: t.id,
+          name: t.name,
+          status: t.status,
+          priority: t.priority,
+          progressPercentage: t.progressPercentage ?? 0,
+          startDate: t.startDate ?? null,
+          endDate: t.endDate ?? null,
+          dependency: t.dependency ?? null,
+          dependencies: t.dependencies.map(d => ({ id: d.dependencyId, type: d.dependencyType, lag: d.lagDays })),
+          assignedTo: t.assignedTo ?? null,
+        })),
+      }));
 
       return JSON.stringify(
         {

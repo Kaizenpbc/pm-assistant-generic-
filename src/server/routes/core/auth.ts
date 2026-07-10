@@ -63,7 +63,9 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       // Fire-and-forget: update last login timestamp
-      userService.update(user.id, { lastLoginAt: new Date() }).catch(() => {});
+      userService.update(user.id, { lastLoginAt: new Date() }).catch((error) => {
+        logger.warn('Failed to update last login timestamp', { userId: user.id, error });
+      });
 
       const accessToken = jwt.sign(
         { userId: user.id, username: user.username, role: user.role },

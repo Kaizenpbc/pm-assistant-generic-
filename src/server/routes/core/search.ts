@@ -32,15 +32,15 @@ export async function searchRoutes(fastify: FastifyInstance) {
         databaseService.query<any>(
           `SELECT id, name, description, status FROM goals WHERE (name LIKE ? OR description LIKE ?) AND created_by = ? LIMIT 5`,
           [term, term, user.userId]
-        ).catch(() => []),
+        ).catch((error) => { logger.warn('Search goals query failed', { error }); return []; }),
         databaseService.query<any>(
           `SELECT id, title as name, description, category as status FROM lessons_learned WHERE (title LIKE ? OR description LIKE ?) LIMIT 5`,
           [term, term]
-        ).catch(() => []),
+        ).catch((error) => { logger.warn('Search lessons query failed', { error }); return []; }),
         databaseService.query<any>(
           `SELECT id, name, role as description, email as status FROM resources WHERE (name LIKE ? OR role LIKE ? OR email LIKE ?) AND created_by = ? LIMIT 5`,
           [term, term, term, user.userId]
-        ).catch(() => []),
+        ).catch((error) => { logger.warn('Search resources query failed', { error }); return []; }),
         databaseService.query<any>(
           `SELECT cr.id, cr.title as name, cr.description, cr.status, cr.project_id, p.name as project_name
            FROM change_requests cr
@@ -48,7 +48,7 @@ export async function searchRoutes(fastify: FastifyInstance) {
            WHERE (cr.title LIKE ? OR cr.description LIKE ?) AND p.created_by = ?
            LIMIT 5`,
           [term, term, user.userId]
-        ).catch(() => []),
+        ).catch((error) => { logger.warn('Search change requests query failed', { error }); return []; }),
       ]);
 
       const results = [
