@@ -4,6 +4,11 @@ import { portalRepository, PortalLink, PortalComment } from '../database/PortalR
 
 export type { PortalLink, PortalComment } from '../database/PortalRepository';
 
+/** Strip HTML tags from user-supplied strings to prevent stored XSS. */
+function stripHtml(input: string): string {
+  return input.replace(/<[^>]*>/g, '').trim();
+}
+
 class PortalService {
   async createLink(
     projectId: string,
@@ -19,6 +24,10 @@ class PortalService {
 
   async getLinks(projectId: string): Promise<PortalLink[]> {
     return portalRepository.findLinksByProject(projectId);
+  }
+
+  async getLinkById(id: string): Promise<PortalLink | null> {
+    return portalRepository.findLinkById(id);
   }
 
   async updateLink(id: string, data: { label?: string; permissions?: Record<string, boolean>; isActive?: boolean; expiresAt?: string | null }): Promise<PortalLink> {
@@ -87,10 +96,11 @@ class PortalService {
       endDate: timelineRow.max_end || null,
     };
 
+    // Server-side permission enforcement: only query data the token is allowed to see
     const [comments, milestones, recentActivity] = await Promise.all([
-      portalRepository.findComments(projectId),
-      portalRepository.getMilestones(projectId),
-      portalRepository.getRecentCompletions(projectId),
+      permissions.canComment ? portalRepository.findCommentsByLink(link.id) : Promise.resolve([]),
+      permissions.canViewGantt ? portalRepository.getMilestones(projectId) : Promise.resolve([]),
+      permissions.canViewReports ? portalRepository.getRecentCompletions(projectId) : Promise.resolve([]),
     ]);
 
     const project = {
@@ -98,8 +108,8 @@ class PortalService {
       name: projectRow.name,
       status: projectRow.status,
       description: projectRow.description,
-      budgetAllocated: Number(projectRow.budget_allocated) || 0,
-      budgetSpent: Number(projectRow.budget_spent) || 0,
+      budgetAllocated: permissions.canViewBudget ? (Number(projectRow.budget_allocated) || 0) : 0,
+      budgetSpent: permissions.canViewBudget ? (Number(projectRow.budget_spent) || 0) : 0,
       startDate: projectRow.start_date || timeline.startDate,
       endDate: projectRow.end_date || timeline.endDate,
       progressPercentage,
@@ -117,11 +127,14 @@ class PortalService {
     content: string,
   ): Promise<PortalComment> {
     const id = uuidv4();
-    return portalRepository.insertComment(id, portalLinkId, projectId, entityType, entityId, authorName, content);
+    const safeName = stripHtml(authorName);
+    const safeContent = stripHtml(content);
+    if (!safeName || !safeContent) throw new Error('Author name and content are required');
+    return portalRepository.insertComment(id, portalLinkId, projectId, entityType, entityId, safeName, safeContent);
   }
 
-  async getComments(projectId: string, entityType?: string, entityId?: string): Promise<PortalComment[]> {
-    return portalRepository.findComments(projectId, entityType, entityId);
+  async getComments(projectId: string, entityType?: string, entityId?: string, limit = 100): Promise<PortalComment[]> {
+    return portalRepository.findComments(projectId, entityType, entityId, limit);
   }
 }
 

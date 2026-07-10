@@ -53,6 +53,19 @@ Rollback files use convention `NNN_name.down.sql` alongside `NNN_name.sql`. Forw
 
 ---
 
+## Item 14b: Portal Rate Limiting
+
+**Current state:** Public portal endpoints (`GET /portal/view/:token`, `POST /portal/view/:token/comment`) have no rate limiting. Any user with a valid token can call them without restriction.
+
+**What's needed:**
+- Per-IP rate limit on `GET /portal/view/:token` (e.g., 60 req/min) to prevent scraping
+- Per-IP rate limit on `POST /portal/view/:token/comment` (e.g., 5 req/min) to prevent comment spam
+- Can use existing in-memory `RateLimitService` for single-instance deployment; upgrade to Redis-backed when available
+
+**Priority:** Low while in development. Should be added before exposing portal links to untrusted external users.
+
+---
+
 ## Item 15: External Alerting / Distributed Tracing
 
 **Current state:** Good local observability (Winston logs with requestId, MetricsService with counters/latency percentiles, admin `/api/v1/metrics` endpoint). No external alerting when metrics cross thresholds, no distributed tracing.

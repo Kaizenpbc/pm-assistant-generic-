@@ -174,13 +174,22 @@ class PortalRepository {
     return commentRowToDTO(rows[0]);
   }
 
-  async findComments(projectId: string, entityType?: string, entityId?: string): Promise<PortalComment[]> {
+  async findComments(projectId: string, entityType?: string, entityId?: string, limit = 100): Promise<PortalComment[]> {
     let sql = 'SELECT * FROM portal_comments WHERE project_id = ?';
     const params: any[] = [projectId];
     if (entityType) { sql += ' AND entity_type = ?'; params.push(entityType); }
     if (entityId) { sql += ' AND entity_id = ?'; params.push(entityId); }
-    sql += ' ORDER BY created_at DESC';
+    sql += ' ORDER BY created_at DESC LIMIT ?';
+    params.push(limit);
     const rows = await databaseService.query(sql, params);
+    return rows.map(commentRowToDTO);
+  }
+
+  async findCommentsByLink(portalLinkId: string, limit = 100): Promise<PortalComment[]> {
+    const rows = await databaseService.query(
+      'SELECT * FROM portal_comments WHERE portal_link_id = ? ORDER BY created_at DESC LIMIT ?',
+      [portalLinkId, limit],
+    );
     return rows.map(commentRowToDTO);
   }
 }

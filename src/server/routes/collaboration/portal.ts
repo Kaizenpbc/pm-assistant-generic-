@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { portalService } from '../../services/PortalService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
+import logger from '../../utils/logger';
 
 const portalCommentSchema = z.object({
   entityType: z.string().min(1),
@@ -37,23 +39,8 @@ export async function portalRoutes(fastify: FastifyInstance) {
       const view = await portalService.getPortalView(token);
       return { view };
     } catch (error) {
-      console.error('Get portal view error:', error);
+      logger.error('Get portal view error', { error });
       return reply.status(500).send({ error: 'Failed to fetch portal view' });
-    }
-  });
-
-  // GET /view/:token/gantt — public gantt view (no auth)
-  fastify.get('/view/:token/gantt', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { token } = request.params as { token: string };
-      const link = await portalService.validateToken(token);
-      if (!link) return reply.status(404).send({ error: 'Invalid or expired portal link' });
-
-      const view = await portalService.getPortalView(token);
-      return { gantt: view ? (view as any).gantt || null : null };
-    } catch (error) {
-      console.error('Get portal gantt error:', error);
-      return reply.status(500).send({ error: 'Failed to fetch portal gantt' });
     }
   });
 
@@ -64,12 +51,16 @@ export async function portalRoutes(fastify: FastifyInstance) {
       const link = await portalService.validateToken(token);
       if (!link) return reply.status(404).send({ error: 'Invalid or expired portal link' });
 
+      if (!link.permissions.canComment) {
+        return reply.status(403).send({ error: 'Comments are not enabled for this portal link' });
+      }
+
       const { entityType, entityId, authorName, content } = portalCommentSchema.parse(request.body);
       const comment = await portalService.addComment(link.id, link.projectId, entityType, entityId, authorName, content);
       return { comment };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Add portal comment error:', error);
+      logger.error('Add portal comment error', { error });
       return reply.status(500).send({ error: 'Failed to add comment' });
     }
   });
@@ -78,7 +69,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
 
   // POST /links/:projectId — create portal link
   fastify.post('/links/:projectId', {
-    preHandler: [authMiddleware, requireScope('write')],
+    preHandler: [authMiddleware, requireScope('write'), requireProjectAccess('editor')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
@@ -88,21 +79,21 @@ export async function portalRoutes(fastify: FastifyInstance) {
       return { link };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Create portal link error:', error);
+      logger.error('Create portal link error', { error });
       return reply.status(500).send({ error: 'Failed to create portal link' });
     }
   });
 
   // GET /links/:projectId — list portal links
   fastify.get('/links/:projectId', {
-    preHandler: [authMiddleware, requireScope('read')],
+    preHandler: [authMiddleware, requireScope('read'), requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
       const links = await portalService.getLinks(projectId);
       return { links };
     } catch (error) {
-      console.error('Get portal links error:', error);
+      logger.error('Get portal links error', { error });
       return reply.status(500).send({ error: 'Failed to fetch portal links' });
     }
   });
@@ -113,12 +104,15 @@ export async function portalRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
+      const existing = await portalService.getLinkById(id);
+      if (!existing) return reply.status(404).send({ error: 'Portal link not found' });
+
       const body = updateLinkSchema.parse(request.body);
       const link = await portalService.updateLink(id, body);
       return { link };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
-      console.error('Update portal link error:', error);
+      logger.error('Update portal link error', { error });
       return reply.status(500).send({ error: 'Failed to update portal link' });
     }
   });
@@ -129,24 +123,27 @@ export async function portalRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
+      const existing = await portalService.getLinkById(id);
+      if (!existing) return reply.status(404).send({ error: 'Portal link not found' });
+
       await portalService.deleteLink(id);
       return { message: 'Portal link deleted' };
     } catch (error) {
-      console.error('Delete portal link error:', error);
+      logger.error('Delete portal link error', { error });
       return reply.status(500).send({ error: 'Failed to delete portal link' });
     }
   });
 
   // GET /comments/:projectId — get portal comments
   fastify.get('/comments/:projectId', {
-    preHandler: [authMiddleware, requireScope('read')],
+    preHandler: [authMiddleware, requireScope('read'), requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
       const comments = await portalService.getComments(projectId);
       return { comments };
     } catch (error) {
-      console.error('Get portal comments error:', error);
+      logger.error('Get portal comments error', { error });
       return reply.status(500).send({ error: 'Failed to fetch portal comments' });
     }
   });

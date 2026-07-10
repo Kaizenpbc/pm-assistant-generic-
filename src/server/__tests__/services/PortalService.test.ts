@@ -16,6 +16,7 @@ vi.mock('../../database/PortalRepository', () => {
     getRecentCompletions: vi.fn().mockResolvedValue([]),
     insertComment: vi.fn(),
     findComments: vi.fn().mockResolvedValue([]),
+    findCommentsByLink: vi.fn().mockResolvedValue([]),
   };
   return { portalRepository: mockRepo };
 });
@@ -30,7 +31,7 @@ const sampleLink = {
   projectId: 'proj-1',
   token: 'abc123token',
   label: 'Stakeholder view',
-  permissions: { viewTasks: true, addComments: true },
+  permissions: { canViewGantt: true, canViewBudget: true, canComment: true, canViewReports: true },
   expiresAt: '2026-12-31T23:59:59Z',
   isActive: true,
   createdBy: 'user-1',
@@ -59,7 +60,7 @@ describe('PortalService', () => {
 
       const result = await portalService.createLink(
         'proj-1',
-        { viewTasks: true },
+        { canViewGantt: true },
         'user-1',
         'Stakeholder view',
         '2026-12-31T23:59:59Z',
@@ -70,7 +71,7 @@ describe('PortalService', () => {
         'proj-1',
         expect.any(String),    // generated token (64 hex chars)
         'Stakeholder view',
-        { viewTasks: true },
+        { canViewGantt: true },
         '2026-12-31T23:59:59Z',
         'user-1',
       );
@@ -80,14 +81,14 @@ describe('PortalService', () => {
     it('passes null for optional label and expiresAt when not provided', async () => {
       mockRepo.insertLink.mockResolvedValueOnce(sampleLink);
 
-      await portalService.createLink('proj-1', { viewTasks: true }, 'user-1');
+      await portalService.createLink('proj-1', { canViewGantt: true }, 'user-1');
 
       expect(mockRepo.insertLink).toHaveBeenCalledWith(
         expect.any(String),
         'proj-1',
         expect.any(String),
         null,   // label defaults to null
-        { viewTasks: true },
+        { canViewGantt: true },
         null,   // expiresAt defaults to null
         'user-1',
       );
@@ -134,7 +135,7 @@ describe('PortalService', () => {
     });
 
     it('updates permissions with JSON stringified value', async () => {
-      const newPerms = { viewTasks: true, addComments: false };
+      const newPerms = { canViewGantt: true, canComment: false };
       mockRepo.findLinkById.mockResolvedValueOnce({ ...sampleLink, permissions: newPerms });
 
       await portalService.updateLink('link-1', { permissions: newPerms });
@@ -385,6 +386,45 @@ describe('PortalService', () => {
       expect(result!.project.startDate).toBe('2026-01-01');
       expect(result!.project.endDate).toBe('2026-12-31');
     });
+
+    it('skips milestones, activity, budget when permissions deny them', async () => {
+      const restrictedLink = {
+        ...sampleLink,
+        permissions: { canViewGantt: false, canViewBudget: false, canComment: false, canViewReports: false },
+        projectName: 'My Project',
+        projectStatus: 'active',
+      };
+      mockRepo.validateToken.mockResolvedValueOnce(restrictedLink);
+      mockRepo.getProjectInfo.mockResolvedValueOnce(projectInfo);
+      mockRepo.getTaskStats.mockResolvedValueOnce([{ status: 'completed', count: 3 }]);
+      mockRepo.getTimeline.mockResolvedValueOnce({ min_start: '2026-01-01', max_end: '2026-06-30' });
+
+      const result = await portalService.getPortalView('abc123token');
+
+      expect(result).not.toBeNull();
+      // Budget zeroed out
+      expect(result!.project.budgetAllocated).toBe(0);
+      expect(result!.project.budgetSpent).toBe(0);
+      // Empty arrays — queries not even executed
+      expect(result!.milestones).toEqual([]);
+      expect(result!.recentActivity).toEqual([]);
+      expect(result!.comments).toEqual([]);
+      expect(mockRepo.getMilestones).not.toHaveBeenCalled();
+      expect(mockRepo.getRecentCompletions).not.toHaveBeenCalled();
+      expect(mockRepo.findCommentsByLink).not.toHaveBeenCalled();
+    });
+
+    it('queries comments by portal link id, not project id', async () => {
+      mockRepo.validateToken.mockResolvedValueOnce(validatedLink);
+      mockRepo.getProjectInfo.mockResolvedValueOnce(projectInfo);
+      mockRepo.getTaskStats.mockResolvedValueOnce([]);
+      mockRepo.getTimeline.mockResolvedValueOnce({ min_start: null, max_end: null });
+
+      await portalService.getPortalView('abc123token');
+
+      expect(mockRepo.findCommentsByLink).toHaveBeenCalledWith('link-1');
+      expect(mockRepo.findComments).not.toHaveBeenCalled();
+    });
   });
 
   describe('addComment', () => {
@@ -406,6 +446,29 @@ describe('PortalService', () => {
       );
       expect(result).toEqual(sampleComment);
     });
+
+    it('strips HTML tags from author name and content', async () => {
+      mockRepo.insertComment.mockResolvedValueOnce(sampleComment);
+
+      await portalService.addComment(
+        'link-1', 'proj-1', 'task', 'task-1',
+        '<script>alert("xss")</script>Jane',
+        'Nice <b>work</b>!',
+      );
+
+      expect(mockRepo.insertComment).toHaveBeenCalledWith(
+        expect.any(String),
+        'link-1', 'proj-1', 'task', 'task-1',
+        'alert("xss")Jane',
+        'Nice work!',
+      );
+    });
+
+    it('throws when sanitized author name is empty', async () => {
+      await expect(
+        portalService.addComment('link-1', 'proj-1', 'task', 'task-1', '<script></script>', 'content'),
+      ).rejects.toThrow('Author name and content are required');
+    });
   });
 
   describe('getComments', () => {
@@ -414,7 +477,7 @@ describe('PortalService', () => {
 
       const result = await portalService.getComments('proj-1');
 
-      expect(mockRepo.findComments).toHaveBeenCalledWith('proj-1', undefined, undefined);
+      expect(mockRepo.findComments).toHaveBeenCalledWith('proj-1', undefined, undefined, 100);
       expect(result).toEqual([sampleComment]);
     });
 
@@ -423,7 +486,7 @@ describe('PortalService', () => {
 
       await portalService.getComments('proj-1', 'task');
 
-      expect(mockRepo.findComments).toHaveBeenCalledWith('proj-1', 'task', undefined);
+      expect(mockRepo.findComments).toHaveBeenCalledWith('proj-1', 'task', undefined, 100);
     });
 
     it('passes entityType and entityId filters when both provided', async () => {
@@ -431,7 +494,7 @@ describe('PortalService', () => {
 
       await portalService.getComments('proj-1', 'task', 'task-1');
 
-      expect(mockRepo.findComments).toHaveBeenCalledWith('proj-1', 'task', 'task-1');
+      expect(mockRepo.findComments).toHaveBeenCalledWith('proj-1', 'task', 'task-1', 100);
     });
 
     it('returns empty array when no comments exist', async () => {
