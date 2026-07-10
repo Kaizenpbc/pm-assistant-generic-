@@ -87,7 +87,7 @@ import { ColumnPickerDropdown } from '../components/schedule/ColumnPickerDropdow
 import { TaskListMobile } from '../components/tasks/TaskListMobile';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 
-type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources';
+type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources';
 
 const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -97,6 +97,7 @@ const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'team', label: 'Team' },
   { id: 'ai-insights', label: 'AI Insights' },
   { id: 'evm-forecast', label: 'EVM Forecast' },
+  { id: 'scenarios', label: 'What-If' },
 ];
 
 const moreTabs: { id: Tab; label: string }[] = [
@@ -553,6 +554,7 @@ export function ProjectDetailPage() {
       {activeTab === 'schedule' && <ScheduleTab projectId={id!} projectName={project.name} projectStartDate={project.startDate || project.start_date} />}
       {activeTab === 'ai-insights' && <AIInsightsTab projectId={id!} />}
       {activeTab === 'evm-forecast' && <EVMForecastTab projectId={id!} />}
+      {activeTab === 'scenarios' && <ScenariosTab projectId={id!} />}
       {activeTab === 'team' && <TeamTab />}
       {activeTab === 'agent-activity' && <AgentActivityTab projectId={id!} />}
       {activeTab === 'change-requests' && <ChangeRequestsTab projectId={id!} />}
@@ -1569,7 +1571,7 @@ function ScheduleTab({ projectId, projectName, projectStartDate }: { projectId: 
   const queryClient = useQueryClient();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
-  const [viewMode, setViewMode] = useState<'gantt' | 'kanban' | 'table' | 'calendar' | 'network' | 'burndown' | 'what-if'>('gantt');
+  const [viewMode, setViewMode] = useState<'gantt' | 'kanban' | 'table' | 'calendar' | 'network' | 'burndown'>('gantt');
   const [uploadingSchedule, setUploadingSchedule] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const scheduleFileRef = useRef<HTMLInputElement>(null);
@@ -1687,7 +1689,6 @@ function ScheduleTab({ projectId, projectName, projectStartDate }: { projectId: 
             { mode: 'calendar' as const, icon: CalendarDays, label: 'Calendar' },
             { mode: 'network' as const, icon: MapPin, label: 'Network' },
             { mode: 'burndown' as const, icon: TrendingUp, label: 'Burndown' },
-            { mode: 'what-if' as const, icon: SlidersHorizontal, label: 'What-If' },
           ] as const).map(({ mode, icon: Icon, label }) => (
             <button
               key={mode}
@@ -1731,7 +1732,7 @@ function MobileScheduleView({ schedules }: { schedules: any[] }) {
   );
 }
 
-function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewMode: 'gantt' | 'kanban' | 'table' | 'calendar' | 'network' | 'burndown' | 'what-if'; projectId: string }) {
+function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewMode: 'gantt' | 'kanban' | 'table' | 'calendar' | 'network' | 'burndown'; projectId: string }) {
   const queryClient = useQueryClient();
   const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -2132,9 +2133,6 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
       )}
       {viewMode === 'burndown' && (
         <BurndownPanel scheduleId={schedule.id} />
-      )}
-      {viewMode === 'what-if' && (
-        <ScenariosTab projectId={projectId} />
       )}
 
       {/* Baseline Variance Report */}
