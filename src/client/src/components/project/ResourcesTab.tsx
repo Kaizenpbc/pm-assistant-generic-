@@ -59,6 +59,12 @@ interface Resource {
 // Helpers
 // ---------------------------------------------------------------------------
 
+const RESOURCE_ROLES = [
+  'Project Manager', 'Developer', 'Designer', 'QA Tester', 'Business Analyst',
+  'Scrum Master', 'DevOps Engineer', 'Architect', 'Technical Lead', 'Data Analyst',
+  'UX Researcher', 'Product Owner', 'System Administrator', 'Security Analyst',
+];
+
 const UTIL_COLORS = {
   low: '#22c55e',
   optimal: '#3b82f6',
@@ -99,6 +105,7 @@ export function ResourcesTab({ projectId }: { projectId: string }) {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [formName, setFormName] = useState('');
   const [formRole, setFormRole] = useState('');
+  const [isCustomRole, setIsCustomRole] = useState(false);
   const [formEmail, setFormEmail] = useState('');
   const [formCapacity, setFormCapacity] = useState('40');
   const [formCostRate, setFormCostRate] = useState('');
@@ -169,6 +176,7 @@ export function ResourcesTab({ projectId }: { projectId: string }) {
     setEditingResource(null);
     setFormName('');
     setFormRole('');
+    setIsCustomRole(false);
     setFormEmail('');
     setFormCapacity('40');
     setFormCostRate('');
@@ -178,6 +186,7 @@ export function ResourcesTab({ projectId }: { projectId: string }) {
     setEditingResource(r);
     setFormName(r.name);
     setFormRole(r.role);
+    setIsCustomRole(!RESOURCE_ROLES.includes(r.role));
     setFormEmail(r.email);
     setFormCapacity(String(r.capacityHoursPerWeek || 40));
     setFormCostRate(r.costRateHourly != null ? String(r.costRateHourly) : '');
@@ -264,7 +273,21 @@ export function ResourcesTab({ projectId }: { projectId: string }) {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Role</label>
-                  <input type="text" value={formRole} onChange={(e) => setFormRole(e.target.value)} className="input w-full text-sm dark:bg-gray-700 dark:text-gray-100" placeholder="e.g. Developer" />
+                  <select
+                    value={isCustomRole ? '__custom__' : formRole}
+                    onChange={(e) => {
+                      if (e.target.value === '__custom__') { setIsCustomRole(true); setFormRole(''); }
+                      else { setIsCustomRole(false); setFormRole(e.target.value); }
+                    }}
+                    className="input w-full text-sm dark:bg-gray-700 dark:text-gray-100"
+                  >
+                    <option value="">Select role...</option>
+                    {RESOURCE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    <option value="__custom__">Other (custom)...</option>
+                  </select>
+                  {isCustomRole && (
+                    <input type="text" value={formRole} onChange={(e) => setFormRole(e.target.value)} className="input w-full text-sm mt-1 dark:bg-gray-700 dark:text-gray-100" placeholder="Enter custom role" autoFocus />
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Email</label>
