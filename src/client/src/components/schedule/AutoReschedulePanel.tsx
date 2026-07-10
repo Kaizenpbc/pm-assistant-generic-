@@ -49,10 +49,10 @@ interface Proposal {
 // ---------------------------------------------------------------------------
 
 const severityColors: Record<string, { bg: string; text: string }> = {
-  critical: { bg: 'bg-red-100', text: 'text-red-700' },
-  high: { bg: 'bg-orange-100', text: 'text-orange-700' },
-  medium: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  low: { bg: 'bg-green-100', text: 'text-green-700' },
+  critical: { bg: 'bg-red-100 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-400' },
+  high: { bg: 'bg-orange-100 dark:bg-orange-900/20', text: 'text-orange-700 dark:text-orange-400' },
+  medium: { bg: 'bg-yellow-100 dark:bg-yellow-900/20', text: 'text-yellow-700 dark:text-yellow-400' },
+  low: { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400' },
 };
 
 function formatDate(dateStr: string): string {
@@ -202,21 +202,21 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
       />
 
       {/* Slide-in panel from right */}
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-white shadow-2xl flex flex-col animate-slide-in-right">
+      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-white dark:bg-gray-900 shadow-2xl flex flex-col animate-slide-in-right">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-50 to-white dark:from-gray-800 dark:to-gray-900">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-primary-600" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900">AI Auto-Reschedule</h2>
-              <p className="text-xs text-gray-500">Detect delays and generate optimized schedule proposals</p>
+              <h2 className="text-base font-bold text-gray-900 dark:text-white">AI Auto-Reschedule</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Detect delays and generate optimized schedule proposals</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -226,23 +226,23 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
           {/* --- Detected Delays Section --- */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Detected Delays</h3>
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">Detected Delays</h3>
 
             {delaysLoading && (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-5 h-5 animate-spin text-primary-500 mr-2" />
-                <span className="text-sm text-gray-500">Analyzing schedule for delays...</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Analyzing schedule for delays...</span>
               </div>
             )}
 
             {delaysError && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 text-sm text-red-700 dark:text-red-400">
                 Failed to detect delays. Please try again later.
               </div>
             )}
 
             {!delaysLoading && !delaysError && delays.length === 0 && (
-              <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-700 flex items-center gap-2">
+              <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4" />
                 No delays detected. Schedule is on track.
               </div>
@@ -255,18 +255,18 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                   return (
                     <div
                       key={delay.taskId}
-                      className="flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3"
+                      className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900 truncate">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
                             {delay.taskName}
                           </span>
                           {delay.isCriticalPath && (
                             <Flag className="w-3.5 h-3.5 text-red-500 flex-shrink-0" aria-label="Critical path" />
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">{delay.reason}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{delay.reason}</p>
                       </div>
                       <span className="text-sm font-semibold text-red-600 whitespace-nowrap">
                         -{delay.delayDays}d
@@ -304,7 +304,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
           )}
 
           {generateMutation.isError && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+            <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 text-sm text-red-700 dark:text-red-400">
               Failed to generate proposal. Please try again.
             </div>
           )}
@@ -315,12 +315,12 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
               {/* Diff Table */}
               <section>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-800">Proposed Changes</h3>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Proposed Changes</h3>
                   {isModifying && (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={handleCancelModify}
-                        className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+                        className="px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                       >
                         Cancel
                       </button>
@@ -340,14 +340,14 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                   )}
                 </div>
                 {modifyMutation.isError && (
-                  <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-700 mb-3">
+                  <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-xs text-red-700 dark:text-red-400 mb-3">
                     Failed to save modifications. Please try again.
                   </div>
                 )}
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="bg-gray-50 text-gray-500 uppercase text-xs">
+                      <tr className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase text-xs">
                         <th className="text-left px-3 py-2 font-semibold">Task Name</th>
                         <th className="text-left px-3 py-2 font-semibold">Current Start</th>
                         <th className="text-left px-3 py-2 font-semibold">Current End</th>
@@ -356,7 +356,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                         <th className="text-left px-3 py-2 font-semibold">Reason</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                       {proposal.changes.map((change) => {
                         const modDates = modifiedChanges[change.taskId];
                         const displayStart = isModifying && modDates ? modDates.proposedStart : change.proposedStart;
@@ -364,14 +364,14 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                         const startDir = dateMoved(change.currentStart, displayStart);
                         const endDir = dateMoved(change.currentEnd, displayEnd);
                         return (
-                          <tr key={change.taskId} className={`hover:bg-gray-50 transition-colors ${isModifying ? 'bg-yellow-50/30' : ''}`}>
-                            <td className="px-3 py-2 font-medium text-gray-900 whitespace-nowrap">
+                          <tr key={change.taskId} className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${isModifying ? 'bg-yellow-50/30 dark:bg-yellow-900/10' : 'dark:bg-gray-900'}`}>
+                            <td className="px-3 py-2 font-medium text-gray-900 dark:text-white whitespace-nowrap">
                               {change.taskName}
                             </td>
-                            <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                            <td className="px-3 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                               {formatDate(change.currentStart)}
                             </td>
-                            <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                            <td className="px-3 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                               {formatDate(change.currentEnd)}
                             </td>
                             <td className={`px-3 py-2 whitespace-nowrap ${isModifying ? '' : dateTextClass(startDir)}`}>
@@ -380,7 +380,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                                   type="date"
                                   value={modDates?.proposedStart ?? change.proposedStart}
                                   onChange={(e) => handleModifyDateChange(change.taskId, 'proposedStart', e.target.value)}
-                                  className="border border-gray-300 rounded px-1.5 py-0.5 text-xs focus:border-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-400 w-[130px]"
+                                  className="border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-400 w-[130px]"
                                 />
                               ) : (
                                 formatDate(change.proposedStart)
@@ -392,13 +392,13 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                                   type="date"
                                   value={modDates?.proposedEnd ?? change.proposedEnd}
                                   onChange={(e) => handleModifyDateChange(change.taskId, 'proposedEnd', e.target.value)}
-                                  className="border border-gray-300 rounded px-1.5 py-0.5 text-xs focus:border-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-400 w-[130px]"
+                                  className="border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-400 w-[130px]"
                                 />
                               ) : (
                                 formatDate(change.proposedEnd)
                               )}
                             </td>
-                            <td className="px-3 py-2 text-gray-500 max-w-[160px] truncate" title={change.reason}>
+                            <td className="px-3 py-2 text-gray-500 dark:text-gray-400 max-w-[160px] truncate" title={change.reason}>
                               {change.reason}
                             </td>
                           </tr>
@@ -411,37 +411,37 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
 
               {/* Rationale */}
               <section>
-                <h3 className="text-sm font-semibold text-gray-800 mb-2">Rationale</h3>
-                <div className="rounded-lg bg-primary-50 border border-primary-100 p-4 text-sm text-gray-700 leading-relaxed">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">Rationale</h3>
+                <div className="rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800 p-4 text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
                   {proposal.rationale}
                 </div>
               </section>
 
               {/* Estimated Impact */}
               <section>
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">Estimated Impact</h3>
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">Estimated Impact</h3>
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="rounded-lg border border-gray-200 p-3 text-center">
-                    <p className="text-xs uppercase text-gray-500 font-medium mb-1">Original End Date</p>
-                    <p className="text-sm font-semibold text-gray-900">
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
+                    <p className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-1">Original End Date</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
                       {formatDate(proposal.estimatedImpact.originalEndDate)}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-3 text-center">
-                    <p className="text-xs uppercase text-gray-500 font-medium mb-1">Proposed End Date</p>
-                    <p className="text-sm font-semibold text-gray-900">
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
+                    <p className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-1">Proposed End Date</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
                       {formatDate(proposal.estimatedImpact.proposedEndDate)}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-3 text-center">
-                    <p className="text-xs uppercase text-gray-500 font-medium mb-1">Days Change</p>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
+                    <p className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-1">Days Change</p>
                     <p
                       className={`text-sm font-semibold ${
                         proposal.estimatedImpact.daysChange > 0
                           ? 'text-red-600'
                           : proposal.estimatedImpact.daysChange < 0
                           ? 'text-green-600'
-                          : 'text-gray-600'
+                          : 'text-gray-600 dark:text-gray-300'
                       }`}
                     >
                       {proposal.estimatedImpact.daysChange > 0 ? '+' : ''}
@@ -454,13 +454,13 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
               {/* Reject Feedback */}
               {showRejectFeedback && (
                 <section>
-                  <h3 className="text-sm font-semibold text-gray-800 mb-2">Rejection Feedback</h3>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">Rejection Feedback</h3>
                   <textarea
                     value={rejectFeedback}
                     onChange={(e) => setRejectFeedback(e.target.value)}
                     rows={3}
                     placeholder="Explain why this proposal is not suitable (optional)..."
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400 resize-none"
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400 resize-none"
                   />
                   <div className="flex items-center gap-2 mt-2">
                     <button
@@ -477,7 +477,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
                     </button>
                     <button
                       onClick={() => setShowRejectFeedback(false)}
-                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
                       Cancel
                     </button>
@@ -487,14 +487,14 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
 
               {/* Success / Rejected states */}
               {accepted && (
-                <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-700 flex items-center gap-2">
+                <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />
                   Proposal accepted. Schedule has been updated.
                 </div>
               )}
 
               {rejected && (
-                <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 text-sm text-gray-600 flex items-center gap-2">
+                <div className="rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
                   <XCircle className="w-4 h-4" />
                   Proposal rejected. Feedback has been recorded.
                 </div>
@@ -505,7 +505,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
 
         {/* Footer action buttons */}
         {proposal && !accepted && !rejected && !showRejectFeedback && !isModifying && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <button
               onClick={() => setShowRejectFeedback(true)}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"

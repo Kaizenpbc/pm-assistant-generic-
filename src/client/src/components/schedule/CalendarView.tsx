@@ -88,30 +88,30 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
   const monthLabel = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-100 transition-colors">
-            <ChevronLeft className="w-4 h-4 text-gray-600" />
+          <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
           </button>
-          <h3 className="text-sm font-semibold text-gray-900 min-w-[160px] text-center">{monthLabel}</h3>
-          <button onClick={nextMonth} className="p-1 rounded hover:bg-gray-100 transition-colors">
-            <ChevronRight className="w-4 h-4 text-gray-600" />
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white min-w-[160px] text-center">{monthLabel}</h3>
+          <button onClick={nextMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" />
           </button>
         </div>
         <button
           onClick={goToday}
-          className="px-2.5 py-1 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-md transition-colors"
+          className="px-2.5 py-1 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/40 dark:text-primary-400 rounded-md transition-colors"
         >
           Today
         </button>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-gray-200">
+      <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
         {DAYS.map(day => (
-          <div key={day} className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">
+          <div key={day} className="px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide text-center">
             {day}
           </div>
         ))}
@@ -127,8 +127,8 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
           return (
             <div
               key={idx}
-              className={`min-h-[80px] border-b border-r border-gray-100 p-1 ${
-                !isCurrentMonth ? 'bg-gray-50/50' : ''
+              className={`min-h-[80px] border-b border-r border-gray-100 dark:border-gray-800 p-1 ${
+                !isCurrentMonth ? 'bg-gray-50/50 dark:bg-gray-800/50' : ''
               } ${idx % 7 === 6 ? 'border-r-0' : ''}`}
             >
               {/* Day number */}
@@ -137,8 +137,8 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
                   isToday
                     ? 'bg-primary-600 text-white'
                     : isCurrentMonth
-                    ? 'text-gray-700'
-                    : 'text-gray-300'
+                    ? 'text-gray-700 dark:text-gray-200'
+                    : 'text-gray-300 dark:text-gray-600'
                 }`}>
                   {day.getDate()}
                 </span>
@@ -168,7 +168,7 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
                   );
                 })}
                 {dayTasks.length > 3 && (
-                  <span className="text-xs text-gray-400 pl-1">+{dayTasks.length - 3} more</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 pl-1">+{dayTasks.length - 3} more</span>
                 )}
               </div>
             </div>

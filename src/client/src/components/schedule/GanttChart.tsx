@@ -1486,10 +1486,10 @@ export function GanttChart({
     if (!onTaskUpdate) return '';
     const base = 'relative cursor-pointer transition-all duration-150';
     if (isEditing(taskId, field)) return `${base} ring-2 ring-blue-400 ring-inset rounded`;
-    if (isPasteFlash(taskId, field)) return `${base} ring-2 ring-green-400 ring-inset rounded bg-green-50`;
-    if (isFocused(taskId, field)) return `${base} ring-2 ring-primary-300 ring-inset rounded bg-primary-50/30`;
-    if (isSaved(taskId, field)) return `${base} bg-green-50`;
-    return `${base} hover:bg-blue-50/50`;
+    if (isPasteFlash(taskId, field)) return `${base} ring-2 ring-green-400 ring-inset rounded bg-green-50 dark:bg-green-900/20`;
+    if (isFocused(taskId, field)) return `${base} ring-2 ring-primary-300 ring-inset rounded bg-primary-50/30 dark:bg-primary-900/20`;
+    if (isSaved(taskId, field)) return `${base} bg-green-50 dark:bg-green-900/20`;
+    return `${base} hover:bg-blue-50/50 dark:hover:bg-blue-900/20`;
   };
 
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -1950,7 +1950,7 @@ export function GanttChart({
 
   if (rows.length === 0 && baseRows.length === 0) {
     return (
-      <div className="text-center py-8 text-sm text-gray-400">
+      <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
         No tasks to display.
       </div>
     );
@@ -1963,7 +1963,7 @@ export function GanttChart({
         <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-4 rounded-full bg-primary-500" />
-            <span className="text-sm font-semibold text-gray-800">
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
               {scheduleName}
             </span>
             <span className="text-xs text-gray-400 ml-2">
@@ -2063,7 +2063,7 @@ export function GanttChart({
               />
               {searchQuery && (
                 <button
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -2075,7 +2075,7 @@ export function GanttChart({
             {/* Filter toggle */}
             <button
               onClick={() => setShowFilters(prev => !prev)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors border ${showFilters || activeFilterCount > 0 ? 'bg-primary-50 text-primary-700 border-primary-300' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors border ${showFilters || activeFilterCount > 0 ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border-primary-300 dark:border-primary-700' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
               title="Filter tasks"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -2109,8 +2109,8 @@ export function GanttChart({
                 disabled={!activeTaskId}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   activeTaskId
-                    ? 'text-red-600 bg-red-50 hover:bg-red-100'
-                    : 'text-gray-300 bg-gray-50 cursor-not-allowed'
+                    ? 'text-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+                    : 'text-gray-300 dark:text-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed'
                 }`}
                 title={activeTaskId ? 'Delete selected task' : 'Select a task first'}
               >
@@ -2124,7 +2124,7 @@ export function GanttChart({
             <div className="relative" ref={colPickerRef}>
               <button
                 onClick={() => setShowColPicker(prev => !prev)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border ${showColPicker ? 'bg-primary-50 text-primary-700 border-primary-300' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border ${showColPicker ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border-primary-300 dark:border-primary-700' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 title="Show/hide columns"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -2203,7 +2203,7 @@ export function GanttChart({
             {/* Resource overallocation toggle */}
             <button
               onClick={() => setShowOverallocation(v => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors print:hidden ${showOverallocation ? 'text-amber-700 bg-amber-50 border-amber-300 hover:bg-amber-100' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors print:hidden ${showOverallocation ? 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
               title="Highlight resource scheduling conflicts"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -2217,7 +2217,7 @@ export function GanttChart({
             {/* Minimap toggle */}
             <button
               onClick={() => setShowMinimap(v => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors print:hidden ${showMinimap ? 'text-primary-700 bg-primary-50 border-primary-300 hover:bg-primary-100' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors print:hidden ${showMinimap ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700 hover:bg-primary-100 dark:hover:bg-primary-900/30' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
               title="Toggle timeline overview"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -2342,7 +2342,7 @@ export function GanttChart({
             <>
               <div className="h-4 w-px bg-gray-300 dark:bg-gray-500" />
               <button
-                className="text-xs px-2 py-1 rounded bg-white dark:bg-gray-800 text-gray-500 hover:text-gray-700 border border-gray-300 dark:border-gray-600"
+                className="text-xs px-2 py-1 rounded bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600"
                 onClick={clearFilters}
               >
                 Clear all
@@ -2354,14 +2354,14 @@ export function GanttChart({
 
       {/* Bulk action toolbar */}
       {someSelected && onBulkUpdate && (
-        <div className="sticky top-0 z-10 bg-primary-50 border-b border-primary-200 px-4 py-2 flex items-center gap-3 flex-wrap">
+        <div className="sticky top-0 z-10 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800 px-4 py-2 flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-semibold text-primary-700">{selectedIds.size} selected</span>
           </div>
           <div className="h-4 w-px bg-primary-200" />
           <div className="flex items-center gap-1">
             <select
-              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={bulkStatus}
               onChange={e => setBulkStatus(e.target.value)}
               disabled={bulkLoading}
@@ -2375,7 +2375,7 @@ export function GanttChart({
           </div>
           <div className="flex items-center gap-1">
             <select
-              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={bulkPriority}
               onChange={e => setBulkPriority(e.target.value)}
               disabled={bulkLoading}
@@ -2391,7 +2391,7 @@ export function GanttChart({
             <input
               type="text"
               placeholder="Assign to..."
-              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400 w-28"
+              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400 w-28"
               value={bulkAssignee}
               onChange={e => setBulkAssignee(e.target.value)}
               disabled={bulkLoading}
@@ -2405,7 +2405,7 @@ export function GanttChart({
             <>
               <div className="h-4 w-px bg-primary-200" />
               <button
-                className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 flex items-center gap-1"
+                className="text-xs px-2 py-1 rounded bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 flex items-center gap-1"
                 onClick={handleBulkDelete}
                 disabled={bulkLoading}
               >
@@ -2417,7 +2417,7 @@ export function GanttChart({
             </>
           )}
           <button
-            className="text-xs px-2 py-1 rounded bg-white text-gray-500 hover:bg-gray-100 border border-gray-200 ml-auto"
+            className="text-xs px-2 py-1 rounded bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 ml-auto"
             onClick={clearBulkState}
           >
             Clear
@@ -2432,7 +2432,7 @@ export function GanttChart({
 
       {/* No matching tasks message */}
       {rows.length === 0 && baseRows.length > 0 && (
-        <div className="text-center py-6 text-sm text-gray-400">
+        <div className="text-center py-6 text-sm text-gray-400 dark:text-gray-500">
           No tasks match the current {searchQuery ? 'search' : 'filters'}.
           <button className="ml-2 text-primary-600 hover:text-primary-700 underline" onClick={() => { setSearchQuery(''); clearFilters(); }}>Clear all</button>
         </div>
@@ -2496,7 +2496,7 @@ export function GanttChart({
                               else moveColumn(col.key, 'left');
                             }}
                             disabled={reorderIdx <= 0}
-                            className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
+                            className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-20"
                             title="Move left"
                           >
                             <ArrowLeft className="w-2.5 h-2.5" />
@@ -2509,7 +2509,7 @@ export function GanttChart({
                               else moveColumn(col.key, 'right');
                             }}
                             disabled={reorderIdx >= visibleCols.length - 1}
-                            className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
+                            className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-20"
                             title="Move right"
                           >
                             <ArrowRight className="w-2.5 h-2.5" />
@@ -2553,7 +2553,7 @@ export function GanttChart({
             return (
               <div
                 key={task.id}
-                className={`flex items-center border-b border-gray-100 hover:bg-blue-50/40 transition-colors group cursor-pointer ${rowIdx % 2 === 1 ? 'bg-gray-50/60 dark:bg-gray-800/30' : ''} ${activeTaskId === task.id ? 'bg-primary-50 ring-1 ring-inset ring-primary-200' : ''} ${rowDrag?.targetIdx === rowIdx && rowDrag?.taskId !== task.id && rowDrag?.parentTaskId === (task.parentTaskId || null) ? 'border-t-2 border-t-blue-500' : ''} ${rowDrag?.taskId === task.id ? 'opacity-40' : ''}`}
+                className={`flex items-center border-b border-gray-100 dark:border-gray-700 hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-colors group cursor-pointer ${rowIdx % 2 === 1 ? 'bg-gray-50/60 dark:bg-gray-800/30' : ''} ${activeTaskId === task.id ? 'bg-primary-50 dark:bg-primary-900/20 ring-1 ring-inset ring-primary-200 dark:ring-primary-700' : ''} ${rowDrag?.targetIdx === rowIdx && rowDrag?.taskId !== task.id && rowDrag?.parentTaskId === (task.parentTaskId || null) ? 'border-t-2 border-t-blue-500' : ''} ${rowDrag?.taskId === task.id ? 'opacity-40' : ''}`}
                 style={{ height: ROW_H }}
                 onClick={() => {
                   if (editingCell) return;
@@ -2598,7 +2598,7 @@ export function GanttChart({
                   {isEditing(task.id, 'name') ? (
                     <input
                       ref={el => { inputRef.current = el; }}
-                      className="w-full h-full text-xs bg-white border-0 outline-none px-1"
+                      className="w-full h-full text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-0 outline-none px-1"
                       value={editValue}
                       onChange={e => setEditValue(e.target.value)}
                       onBlur={() => saveEdit(task.id, 'name', editValue)}
@@ -2609,7 +2609,7 @@ export function GanttChart({
                       {/* Expand/collapse toggle for parent tasks */}
                       {isParent ? (
                         <button
-                          className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-gray-400 hover:text-gray-700 transition-colors"
+                          className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                           onClick={(e) => { e.stopPropagation(); toggleCollapse(task.id); }}
                           title={collapsedIds.has(task.id) ? 'Expand children' : 'Collapse children'}
                         >
@@ -2646,7 +2646,7 @@ export function GanttChart({
                   if (col.key === 'pred') return (
                     <div
                       key="pred"
-                      className={`shrink-0 px-1 text-center text-xs text-gray-500 font-mono ${editableCellClass(task.id, 'dependency')}`}
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 dark:text-gray-400 font-mono ${editableCellClass(task.id, 'dependency')}`}
                       style={{ width: w }}
                       onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'dependency', task); } }}
                       title={(task.dependencies || []).map(d => tasks.find(t => t.id === d.dependencyId)?.name || '').filter(Boolean).join(', ') || undefined}
@@ -2655,7 +2655,7 @@ export function GanttChart({
                         <div>
                           <input
                             ref={el => { inputRef.current = el; }}
-                            className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center font-mono"
+                            className="w-full h-full text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-0 outline-none px-0.5 text-center font-mono"
                             value={editValue}
                             onChange={e => setEditValue(e.target.value)}
                             onBlur={() => saveEdit(task.id, 'dependency', editValue)}
@@ -2663,7 +2663,7 @@ export function GanttChart({
                             placeholder="e.g. 3FS"
                           />
                           {depError?.taskId === task.id && (
-                            <div className="absolute z-30 top-full left-0 bg-red-50 border border-red-200 text-red-600 text-[10px] px-1.5 py-0.5 rounded shadow whitespace-nowrap">
+                            <div className="absolute z-30 top-full left-0 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 text-[10px] px-1.5 py-0.5 rounded shadow whitespace-nowrap">
                               {depError.message}
                             </div>
                           )}
@@ -2698,7 +2698,7 @@ export function GanttChart({
                   if (col.key === 'start') return (
                     <div
                       key="start"
-                      className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'startDate')}`}
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 dark:text-gray-400 ${editableCellClass(task.id, 'startDate')}`}
                       style={{ width: w }}
                       onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'startDate', task); } }}
                     >
@@ -2706,7 +2706,7 @@ export function GanttChart({
                         <input
                           ref={el => { inputRef.current = el; }}
                           type="date"
-                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5"
+                          className="w-full h-full text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-0 outline-none px-0.5"
                           value={editValue}
                           onChange={e => handleDateChange(task.id, 'startDate', e.target.value)}
                           onBlur={() => cancelEditing()}
@@ -2721,7 +2721,7 @@ export function GanttChart({
                   if (col.key === 'end') return (
                     <div
                       key="end"
-                      className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'endDate')}`}
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 dark:text-gray-400 ${editableCellClass(task.id, 'endDate')}`}
                       style={{ width: w }}
                       onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'endDate', task); } }}
                     >
@@ -2729,7 +2729,7 @@ export function GanttChart({
                         <input
                           ref={el => { inputRef.current = el; }}
                           type="date"
-                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5"
+                          className="w-full h-full text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-0 outline-none px-0.5"
                           value={editValue}
                           onChange={e => handleDateChange(task.id, 'endDate', e.target.value)}
                           onBlur={() => cancelEditing()}
@@ -2744,14 +2744,14 @@ export function GanttChart({
                   if (col.key === 'dur') return (
                     <div
                       key="dur"
-                      className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'duration')}`}
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 dark:text-gray-400 ${editableCellClass(task.id, 'duration')}`}
                       style={{ width: w }}
                       onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'duration', task); } }}
                     >
                       {isEditing(task.id, 'duration') ? (
                         <input
                           ref={el => { inputRef.current = el; }}
-                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                          className="w-full h-full text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-0 outline-none px-0.5 text-center"
                           value={editValue}
                           onChange={e => setEditValue(e.target.value)}
                           onBlur={() => saveEdit(task.id, 'duration', editValue)}
@@ -2767,7 +2767,7 @@ export function GanttChart({
                   if (col.key === 'est') return (
                     <div
                       key="est"
-                      className={`shrink-0 px-1 text-center text-xs text-gray-500 ${editableCellClass(task.id, 'estimatedDays')}`}
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 dark:text-gray-400 ${editableCellClass(task.id, 'estimatedDays')}`}
                       style={{ width: w }}
                       onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'estimatedDays', task); } }}
                     >
@@ -2776,7 +2776,7 @@ export function GanttChart({
                           ref={el => { inputRef.current = el; }}
                           type="number"
                           min="0"
-                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                          className="w-full h-full text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-0 outline-none px-0.5 text-center"
                           value={editValue}
                           onChange={e => setEditValue(e.target.value)}
                           onBlur={() => saveEdit(task.id, 'estimatedDays', editValue)}
@@ -2791,7 +2791,7 @@ export function GanttChart({
                   if (col.key === 'pct') return (
                     <div
                       key="pct"
-                      className={`shrink-0 px-1 text-center text-xs font-medium text-gray-600 ${editableCellClass(task.id, 'progressPercentage')}`}
+                      className={`shrink-0 px-1 text-center text-xs font-medium text-gray-600 dark:text-gray-300 ${editableCellClass(task.id, 'progressPercentage')}`}
                       style={{ width: w }}
                       onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'progressPercentage', task); } }}
                     >
@@ -2801,7 +2801,7 @@ export function GanttChart({
                           type="number"
                           min="0"
                           max="100"
-                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                          className="w-full h-full text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-0 outline-none px-0.5 text-center"
                           value={editValue}
                           onChange={e => setEditValue(e.target.value)}
                           onBlur={() => saveEdit(task.id, 'progressPercentage', editValue)}
@@ -2823,7 +2823,7 @@ export function GanttChart({
                       {isEditing(task.id, 'priority') ? (
                         <select
                           ref={el => { inputRef.current = el; }}
-                          className="w-full h-full text-xs bg-white border-0 outline-none"
+                          className="w-full h-full text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-0 outline-none"
                           value={editValue}
                           onChange={e => handleSelectChange(task.id, 'priority', e.target.value)}
                           onBlur={() => cancelEditing()}
@@ -2847,7 +2847,7 @@ export function GanttChart({
                   if (col.key === 'assigned') return (
                     <div
                       key="assigned"
-                      className={`shrink-0 px-1 text-center text-xs text-gray-500 truncate ${editableCellClass(task.id, 'assignedTo')}`}
+                      className={`shrink-0 px-1 text-center text-xs text-gray-500 dark:text-gray-400 truncate ${editableCellClass(task.id, 'assignedTo')}`}
                       style={{ width: w }}
                       onClick={(e) => { if (onTaskUpdate) { e.stopPropagation(); startEditing(task.id, 'assignedTo', task); } }}
                       title={task.assignedTo || undefined}
@@ -2855,7 +2855,7 @@ export function GanttChart({
                       {isEditing(task.id, 'assignedTo') ? (
                         <input
                           ref={el => { inputRef.current = el; }}
-                          className="w-full h-full text-xs bg-white border-0 outline-none px-0.5 text-center"
+                          className="w-full h-full text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-0 outline-none px-0.5 text-center"
                           value={editValue}
                           onChange={e => setEditValue(e.target.value)}
                           onBlur={() => saveEdit(task.id, 'assignedTo', editValue)}
@@ -2877,7 +2877,7 @@ export function GanttChart({
                       {isEditing(task.id, 'status') ? (
                         <select
                           ref={el => { inputRef.current = el; }}
-                          className="w-full h-full text-xs bg-white border-0 outline-none"
+                          className="w-full h-full text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-0 outline-none"
                           value={editValue}
                           onChange={e => handleSelectChange(task.id, 'status', e.target.value)}
                           onBlur={() => cancelEditing()}
@@ -3550,15 +3550,15 @@ export function GanttChart({
               className="w-3 h-2.5 rounded-sm"
               style={{ backgroundColor: barColors[key]?.fill || '#9ca3af' }}
             />
-            <span className="text-xs text-gray-500">{label}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
           </div>
         ))}
         <div className="flex items-center gap-1.5 ml-2">
           <div className="w-3 h-0.5 bg-red-500" />
-          <span className="text-xs text-gray-500">Today</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Today</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-400 dark:text-gray-500">
             <svg width="16" height="8" className="inline-block">
               <line
                 x1="0"
@@ -3571,18 +3571,18 @@ export function GanttChart({
               />
             </svg>
           </span>
-          <span className="text-xs text-gray-500">Dependency</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Dependency</span>
         </div>
         {criticalPathTaskIds && criticalPathTaskIds.length > 0 && (
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-2.5 rounded-sm border-2 border-red-600 bg-red-50" />
-            <span className="text-xs text-gray-500">Critical Path</span>
+            <div className="w-3 h-2.5 rounded-sm border-2 border-red-600 bg-red-50 dark:bg-red-900/20" />
+            <span className="text-xs text-gray-500 dark:text-gray-400">Critical Path</span>
           </div>
         )}
         {baselineTasks && baselineTasks.length > 0 && (
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-2.5 rounded-sm bg-gray-300 border border-dashed border-gray-400 opacity-50" />
-            <span className="text-xs text-gray-500">Baseline</span>
+            <div className="w-3 h-2.5 rounded-sm bg-gray-300 dark:bg-gray-600 border border-dashed border-gray-400 dark:border-gray-500 opacity-50" />
+            <span className="text-xs text-gray-500 dark:text-gray-400">Baseline</span>
           </div>
         )}
         {taskFloatMap && Object.values(taskFloatMap).some(v => v > 0) && (
@@ -3594,13 +3594,13 @@ export function GanttChart({
                 border: '1px dashed #eab308',
               }}
             />
-            <span className="text-xs text-gray-500">Float/Slack</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Float/Slack</span>
           </div>
         )}
         {showOverallocation && overallocatedTaskIds.size > 0 && (
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-2.5 rounded-sm border-2 border-amber-500 bg-amber-50" />
-            <span className="text-xs text-gray-500">Resource Conflict</span>
+            <div className="w-3 h-2.5 rounded-sm border-2 border-amber-500 bg-amber-50 dark:bg-amber-900/20" />
+            <span className="text-xs text-gray-500 dark:text-gray-400">Resource Conflict</span>
           </div>
         )}
       </div>

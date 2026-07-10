@@ -8,17 +8,17 @@ import type { ColumnKey, ColumnDef } from './tableColumns';
 import type { ColumnState } from '../../hooks/useColumnState';
 
 const barColors: Record<string, { bg: string; text: string }> = {
-  completed: { bg: 'bg-green-100', text: 'text-green-700' },
-  in_progress: { bg: 'bg-blue-100', text: 'text-blue-700' },
-  pending: { bg: 'bg-gray-100', text: 'text-gray-600' },
-  cancelled: { bg: 'bg-red-100', text: 'text-red-600' },
+  completed: { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400' },
+  in_progress: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400' },
+  pending: { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-300' },
+  cancelled: { bg: 'bg-red-100 dark:bg-red-900/20', text: 'text-red-600 dark:text-red-400' },
 };
 
 const priorityColors: Record<string, string> = {
-  urgent: 'bg-red-100 text-red-700',
-  high: 'bg-orange-100 text-orange-700',
-  medium: 'bg-yellow-100 text-yellow-700',
-  low: 'bg-green-100 text-green-700',
+  urgent: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400',
+  high: 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400',
+  medium: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400',
+  low: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400',
 };
 
 type SortDir = 'asc' | 'desc';
@@ -319,7 +319,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
   }, [tasks]);
 
   const SortIcon = ({ field }: { field: ColumnKey }) => {
-    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 text-gray-400" />;
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 text-gray-400 dark:text-gray-500" />;
     return sortDir === 'asc'
       ? <ArrowUp className="w-3 h-3 text-primary-600" />
       : <ArrowDown className="w-3 h-3 text-primary-600" />;
@@ -456,8 +456,8 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
   const editableCellClass = (taskId: string, field: string) => {
     const base = 'relative cursor-pointer transition-all duration-150';
     if (isEditing(taskId, field)) return `${base} ring-2 ring-blue-400 ring-inset rounded`;
-    if (isSaved(taskId, field)) return `${base} bg-green-50`;
-    return `${base} hover:bg-blue-50/50 group/cell`;
+    if (isSaved(taskId, field)) return `${base} bg-green-50 dark:bg-green-900/20`;
+    return `${base} hover:bg-blue-50/50 dark:hover:bg-blue-900/20 group/cell`;
   };
 
   // Selection helpers
@@ -572,7 +572,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     if (isEditing(taskId, field) || isSaving(taskId, field) || isSaved(taskId, field)) return null;
     return (
       <span className="absolute top-1 right-1 opacity-0 group-hover/cell:opacity-100 transition-opacity">
-        <Pencil className="w-2.5 h-2.5 text-gray-400" />
+        <Pencil className="w-2.5 h-2.5 text-gray-400 dark:text-gray-500" />
       </span>
     );
   };
@@ -587,8 +587,8 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
   // Render a variance badge (positive = late, negative = early)
   const renderVarianceBadge = (days: number | undefined): React.ReactNode => {
     if (days === undefined || days === null) return '-';
-    if (days === 0) return <span className="text-xs text-gray-500">0d</span>;
-    const color = days > 0 ? 'text-red-600' : 'text-green-600';
+    if (days === 0) return <span className="text-xs text-gray-500 dark:text-gray-400">0d</span>;
+    const color = days > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400';
     const prefix = days > 0 ? '+' : '';
     return <span className={`text-xs font-medium ${color}`}>{prefix}{days}d</span>;
   };
@@ -606,14 +606,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
         return (
           <td
             key={col.key}
-            className={`px-3 py-2 font-medium text-gray-900 min-w-[200px] ${editableCellClass(task.id, 'name')}`}
+            className={`px-3 py-2 font-medium text-gray-900 dark:text-white min-w-[200px] ${editableCellClass(task.id, 'name')}`}
             onClick={() => { if (!isEditing(task.id, 'name')) startEditing(task.id, 'name', task); }}
           >
             {isEditing(task.id, 'name') ? (
               <input
                 ref={el => { inputRef.current = el; }}
                 type="text"
-                className="w-full text-sm border-0 bg-transparent px-0 py-0 focus:outline-none focus:ring-0 font-medium text-gray-900"
+                className="w-full text-sm border-0 bg-transparent px-0 py-0 focus:outline-none focus:ring-0 font-medium text-gray-900 dark:text-white"
                 value={editValue}
                 onChange={e => setEditValue(e.target.value)}
                 onKeyDown={e => handleKeyDown(e, task.id, 'name')}
@@ -625,7 +625,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                   <span className="inline-block w-2.5 h-2.5 rotate-45 bg-amber-500 flex-shrink-0" title="Milestone" />
                 )}
                 {(levelMap.get(task.id) || 0) > 0 && (
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${task.parentTaskId ? 'bg-gray-300' : ''}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${task.parentTaskId ? 'bg-gray-300 dark:bg-gray-600' : ''}`} />
                 )}
                 <span className={(levelMap.get(task.id) || 0) === 0 ? 'font-semibold' : ''}>{task.name}</span>
               </div>
@@ -645,7 +645,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
             {isEditing(task.id, 'status') ? (
               <select
                 ref={el => { inputRef.current = el; }}
-                className="text-xs border border-blue-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                className="text-xs border border-blue-300 dark:border-blue-600 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                 value={editValue}
                 onChange={e => handleSelectChange(task.id, 'status', e.target.value)}
                 onBlur={() => cancelEditing()}
@@ -675,7 +675,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
             {isEditing(task.id, 'priority') ? (
               <select
                 ref={el => { inputRef.current = el; }}
-                className="text-xs border border-blue-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                className="text-xs border border-blue-300 dark:border-blue-600 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                 value={editValue}
                 onChange={e => handleSelectChange(task.id, 'priority', e.target.value)}
                 onBlur={() => cancelEditing()}
@@ -699,14 +699,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
         return (
           <td
             key={col.key}
-            className={`px-3 py-2 text-xs text-gray-600 w-28 ${editableCellClass(task.id, 'startDate')}`}
+            className={`px-3 py-2 text-xs text-gray-600 dark:text-gray-300 w-28 ${editableCellClass(task.id, 'startDate')}`}
             onClick={() => { if (!isEditing(task.id, 'startDate')) startEditing(task.id, 'startDate', task); }}
           >
             {isEditing(task.id, 'startDate') ? (
               <input
                 ref={el => { inputRef.current = el; }}
                 type="date"
-                className="text-xs border border-blue-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                className="text-xs border border-blue-300 dark:border-blue-600 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                 value={editValue}
                 onChange={e => handleDateChange(task.id, 'startDate', e.target.value)}
                 onBlur={() => cancelEditing()}
@@ -724,14 +724,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
         return (
           <td
             key={col.key}
-            className={`px-3 py-2 text-xs text-gray-600 w-28 ${editableCellClass(task.id, 'endDate')}`}
+            className={`px-3 py-2 text-xs text-gray-600 dark:text-gray-300 w-28 ${editableCellClass(task.id, 'endDate')}`}
             onClick={() => { if (!isEditing(task.id, 'endDate')) startEditing(task.id, 'endDate', task); }}
           >
             {isEditing(task.id, 'endDate') ? (
               <input
                 ref={el => { inputRef.current = el; }}
                 type="date"
-                className="text-xs border border-blue-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                className="text-xs border border-blue-300 dark:border-blue-600 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                 value={editValue}
                 onChange={e => handleDateChange(task.id, 'endDate', e.target.value)}
                 onBlur={() => cancelEditing()}
@@ -758,7 +758,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                 type="number"
                 min={0}
                 max={100}
-                className="w-16 text-xs border border-blue-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                className="w-16 text-xs border border-blue-300 dark:border-blue-600 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                 value={editValue}
                 onChange={e => setEditValue(e.target.value)}
                 onKeyDown={e => handleKeyDown(e, task.id, 'progressPercentage')}
@@ -766,13 +766,13 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
               />
             ) : (
               <div className="flex items-center gap-2">
-                <div className="h-1.5 flex-1 rounded-full bg-gray-200 min-w-[40px]">
+                <div className="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-gray-700 min-w-[40px]">
                   <div
                     className="h-full rounded-full bg-primary-500 transition-all"
                     style={{ width: `${Math.min(progress, 100)}%` }}
                   />
                 </div>
-                <span className="text-xs text-gray-500 w-7 text-right">{progress}%</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 w-7 text-right">{progress}%</span>
               </div>
             )}
             {renderSaveIndicator(task.id, 'progressPercentage')}
@@ -784,14 +784,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
         return (
           <td
             key={col.key}
-            className={`px-3 py-2 text-xs text-gray-600 w-32 ${editableCellClass(task.id, 'assignedTo')}`}
+            className={`px-3 py-2 text-xs text-gray-600 dark:text-gray-300 w-32 ${editableCellClass(task.id, 'assignedTo')}`}
             onClick={() => { if (!isEditing(task.id, 'assignedTo')) startEditing(task.id, 'assignedTo', task); }}
           >
             {isEditing(task.id, 'assignedTo') ? (
               <input
                 ref={el => { inputRef.current = el; }}
                 type="text"
-                className="w-full text-xs border-0 bg-transparent px-0 py-0 focus:outline-none focus:ring-0 text-gray-600"
+                className="w-full text-xs border-0 bg-transparent px-0 py-0 focus:outline-none focus:ring-0 text-gray-600 dark:text-gray-300"
                 value={editValue}
                 onChange={e => setEditValue(e.target.value)}
                 onKeyDown={e => handleKeyDown(e, task.id, 'assignedTo')}
@@ -812,27 +812,27 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
           const diff = Math.round((new Date(task.endDate).getTime() - new Date(task.startDate).getTime()) / 86400000);
           if (diff > 0) days = diff;
         }
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600">{days != null ? `${days}d` : '-'}</td>;
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{days != null ? `${days}d` : '-'}</td>;
       }
 
       case 'earlyStart':
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600">{formatCpmDate(cpm?.ES)}</td>;
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{formatCpmDate(cpm?.ES)}</td>;
       case 'earlyFinish':
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600">{formatCpmDate(cpm?.EF)}</td>;
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{formatCpmDate(cpm?.EF)}</td>;
       case 'lateStart':
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600">{formatCpmDate(cpm?.LS)}</td>;
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{formatCpmDate(cpm?.LS)}</td>;
       case 'lateFinish':
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600">{formatCpmDate(cpm?.LF)}</td>;
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{formatCpmDate(cpm?.LF)}</td>;
 
       case 'totalFloat':
         return (
-          <td key={col.key} className="px-3 py-2 text-xs text-gray-600">
+          <td key={col.key} className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
             {cpm ? `${cpm.totalFloat}d` : '-'}
           </td>
         );
       case 'freeFloat':
         return (
-          <td key={col.key} className="px-3 py-2 text-xs text-gray-600">
+          <td key={col.key} className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
             {cpm ? `${cpm.freeFloat}d` : '-'}
           </td>
         );
@@ -842,16 +842,16 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
           <td key={col.key} className="px-3 py-2 text-xs">
             {cpm ? (
               cpm.isCritical
-                ? <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700">Yes</span>
-                : <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500">No</span>
+                ? <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400">Yes</span>
+                : <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">No</span>
             ) : '-'}
           </td>
         );
 
       case 'baselineStart':
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600">{baseline?.baselineStart ? formatDate(baseline.baselineStart) : '-'}</td>;
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{baseline?.baselineStart ? formatDate(baseline.baselineStart) : '-'}</td>;
       case 'baselineEnd':
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600">{baseline?.baselineEnd ? formatDate(baseline.baselineEnd) : '-'}</td>;
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{baseline?.baselineEnd ? formatDate(baseline.baselineEnd) : '-'}</td>;
       case 'startVariance':
         return <td key={col.key} className="px-3 py-2">{renderVarianceBadge(baseline?.startVarianceDays)}</td>;
       case 'endVariance':
@@ -871,7 +871,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                 ref={el => { inputRef.current = el; }}
                 type="text"
                 placeholder="e.g. 3FS+2d,5SS"
-                className={`w-full text-xs border ${hasDepError ? 'border-red-400' : 'border-blue-300'} rounded px-1 py-0.5 focus:outline-none focus:ring-1 ${hasDepError ? 'focus:ring-red-500' : 'focus:ring-blue-500'} bg-white font-mono`}
+                className={`w-full text-xs border ${hasDepError ? 'border-red-400 dark:border-red-600' : 'border-blue-300 dark:border-blue-600'} rounded px-1 py-0.5 focus:outline-none focus:ring-1 ${hasDepError ? 'focus:ring-red-500' : 'focus:ring-blue-500'} bg-white dark:bg-gray-800 dark:text-gray-100 font-mono`}
                 value={editValue}
                 onChange={e => { setEditValue(e.target.value); setDepError(null); }}
                 onKeyDown={e => handleKeyDown(e, task.id, 'dependency')}
@@ -880,7 +880,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
             ) : (() => {
               const deps = ((task as any).dependencies || []) as Array<{ dependencyId: string; dependencyType: string; lagDays: number }>;
               if (deps.length === 0 && !task.dependency) {
-                return <span className="text-gray-400">-</span>;
+                return <span className="text-gray-400 dark:text-gray-500">-</span>;
               }
               // Build labels and find worst health
               const items = deps.length > 0 ? deps : (task.dependency ? [{ dependencyId: task.dependency, dependencyType: task.dependencyType || 'FS', lagDays: task.dependencyLagDays || 0 }] : []);
@@ -917,20 +917,20 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
       }
 
       case 'rowNum':
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-400 font-mono text-center w-12">{rowNumMap.get(task.id) || '-'}</td>;
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500 font-mono text-center w-12">{rowNumMap.get(task.id) || '-'}</td>;
 
       case 'wbs':
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-500 font-mono">{wbsMap.get(task.id) || '-'}</td>;
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 font-mono">{wbsMap.get(task.id) || '-'}</td>;
 
       default:
-        return <td key={col.key} className="px-3 py-2 text-xs text-gray-400">-</td>;
+        return <td key={col.key} className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500">-</td>;
     }
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
       {/* Saved views header */}
-      <div className="flex items-center justify-end gap-1.5 px-3 py-1.5 border-b border-gray-100 bg-gray-50/50">
+      <div className="flex items-center justify-end gap-1.5 px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
         <SavedViewsDropdown
           scheduleId={scheduleId}
           currentColumns={visibleKeys}
@@ -952,7 +952,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
 
           <div className="flex items-center gap-1">
             <select
-              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              className="text-xs px-2 py-1 rounded border border-primary-200 dark:border-primary-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={bulkStatus}
               onChange={e => setBulkStatus(e.target.value)}
               disabled={bulkLoading}
@@ -975,7 +975,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
 
           <div className="flex items-center gap-1">
             <select
-              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              className="text-xs px-2 py-1 rounded border border-primary-200 dark:border-primary-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={bulkPriority}
               onChange={e => setBulkPriority(e.target.value)}
               disabled={bulkLoading}
@@ -1000,7 +1000,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
             <input
               type="text"
               placeholder="Assign to..."
-              className="text-xs px-2 py-1 rounded border border-primary-200 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-400 w-28"
+              className="text-xs px-2 py-1 rounded border border-primary-200 dark:border-primary-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-400 w-28"
               value={bulkAssignee}
               onChange={e => setBulkAssignee(e.target.value)}
               disabled={bulkLoading}
@@ -1020,7 +1020,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
           <div className="h-4 w-px bg-primary-200" />
 
           <button
-            className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 flex items-center gap-1"
+            className="text-xs px-2 py-1 rounded bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 flex items-center gap-1"
             onClick={handleBulkDelete}
             disabled={bulkLoading}
           >
@@ -1029,7 +1029,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
           </button>
 
           <button
-            className="text-xs px-2 py-1 rounded bg-white text-gray-500 hover:bg-gray-100 border border-gray-200 flex items-center gap-1 ml-auto"
+            className="text-xs px-2 py-1 rounded bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center gap-1 ml-auto"
             onClick={clearBulkState}
           >
             <X className="w-3 h-3" />
@@ -1037,7 +1037,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
           </button>
 
           {bulkMessage && (
-            <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded">
+            <span className="text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
               {bulkMessage}
             </span>
           )}
@@ -1047,19 +1047,19 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
       <div className="overflow-x-auto">
         <table className="text-sm" style={{ minWidth: '100%' }}>
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
+            <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <th className="w-10 px-2 py-2.5">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleSelectAll}
-                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
+                  className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
                 />
               </th>
               {visibleColumns.map((col, colIdx) => (
                 <th
                   key={col.key}
-                  className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide select-none relative group/th hover:bg-gray-100"
+                  className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide select-none relative group/th hover:bg-gray-100 dark:hover:bg-gray-700"
                   style={colWidths[col.key] ? { width: colWidths[col.key], minWidth: colWidths[col.key], maxWidth: colWidths[col.key] } : { minWidth: col.key === 'name' ? 200 : 100 }}
                 >
                   <div className="flex items-center gap-1 whitespace-nowrap">
@@ -1068,7 +1068,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                       <button
                         onClick={(e) => { e.stopPropagation(); moveColumn(col.key, 'left'); }}
                         disabled={colIdx === 0}
-                        className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
+                        className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-20"
                         title="Move left"
                       >
                         <ArrowLeft className="w-2.5 h-2.5" />
@@ -1076,7 +1076,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                       <button
                         onClick={(e) => { e.stopPropagation(); moveColumn(col.key, 'right'); }}
                         disabled={colIdx === visibleColumns.length - 1}
-                        className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
+                        className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-20"
                         title="Move right"
                       >
                         <ArrowRight className="w-2.5 h-2.5" />
@@ -1101,7 +1101,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                       handleResizeStart(e, col.key, th?.offsetWidth ?? 120);
                     }}
                   >
-                    <div className="w-0.5 h-4 bg-gray-200 group-hover/th:bg-primary-400 rounded-full transition-colors" />
+                    <div className="w-0.5 h-4 bg-gray-200 dark:bg-gray-600 group-hover/th:bg-primary-400 rounded-full transition-colors" />
                   </div>
                 </th>
               ))}
@@ -1114,7 +1114,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
               return (
                 <tr
                   key={task.id}
-                  className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors group cursor-pointer ${isSelected ? 'bg-primary-50/40' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 bg-primary-50/60' : ''}`}
+                  className={`border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors group cursor-pointer ${isSelected ? 'bg-primary-50/40 dark:bg-primary-900/20' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 dark:ring-primary-700 bg-primary-50/60 dark:bg-primary-900/30' : ''}`}
                   onClick={() => onTaskSelect?.(task)}
                 >
                   <td className="px-2 py-2">
@@ -1122,7 +1122,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleSelect(task.id)}
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
+                      className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
                     />
                   </td>
 
@@ -1132,17 +1132,17 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
                       <button
                         onClick={() => onTaskClick(task)}
-                        className="p-1 rounded hover:bg-gray-200"
+                        className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                         title="Edit task"
                       >
-                        <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                        <Pencil className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                       </button>
                       <button
                         onClick={() => handleRowDelete(task.id)}
-                        className="p-1 rounded hover:bg-red-100"
+                        className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20"
                         title="Delete task"
                       >
-                        <Trash2 className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                        <Trash2 className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 hover:text-red-500" />
                       </button>
                     </div>
                   </td>
@@ -1152,7 +1152,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
 
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={visibleColumns.length + 2} className="text-center py-8 text-sm text-gray-400">
+                <td colSpan={visibleColumns.length + 2} className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
                   No tasks found
                 </td>
               </tr>

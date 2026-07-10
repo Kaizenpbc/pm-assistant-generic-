@@ -22,10 +22,10 @@ interface KanbanBoardProps {
 }
 
 const COLUMNS: { id: string; label: string; color: string; bg: string; border: string }[] = [
-  { id: 'pending', label: 'Pending', color: 'text-gray-700', bg: 'bg-gray-50', border: 'border-gray-200' },
-  { id: 'in_progress', label: 'In Progress', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' },
-  { id: 'completed', label: 'Completed', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200' },
-  { id: 'cancelled', label: 'Cancelled', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' },
+  { id: 'pending', label: 'Pending', color: 'text-gray-700 dark:text-gray-200', bg: 'bg-gray-50 dark:bg-gray-800/50', border: 'border-gray-200 dark:border-gray-600' },
+  { id: 'in_progress', label: 'In Progress', color: 'text-blue-700 dark:text-blue-300', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-700' },
+  { id: 'completed', label: 'Completed', color: 'text-green-700 dark:text-green-300', bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-700' },
+  { id: 'cancelled', label: 'Cancelled', color: 'text-red-700 dark:text-red-300', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-700' },
 ];
 
 const priorityOrder: Record<string, number> = {
@@ -36,10 +36,10 @@ const priorityOrder: Record<string, number> = {
 };
 
 const priorityBadge: Record<string, { bg: string; text: string }> = {
-  urgent: { bg: 'bg-red-100', text: 'text-red-700' },
-  high: { bg: 'bg-orange-100', text: 'text-orange-700' },
-  medium: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  low: { bg: 'bg-green-100', text: 'text-green-700' },
+  urgent: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300' },
+  high: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-300' },
+  medium: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300' },
+  low: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300' },
 };
 
 function getInitials(name: string): string {
@@ -162,7 +162,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, scheduleId, ac
           return (
             <div
               key={col.id}
-              className={`flex-1 min-w-[240px] rounded-lg border ${col.border} ${col.bg} dark:bg-gray-800/50 dark:border-gray-600 transition-all ${
+              className={`flex-1 min-w-[240px] rounded-lg border ${col.border} ${col.bg} transition-all ${
                 isOver ? 'ring-2 ring-primary-400 ring-opacity-50' : ''
               } ${isOverWip ? 'ring-2 ring-amber-400' : ''}`}
               onDragOver={(e) => handleDragOver(e, col.id)}
@@ -172,7 +172,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, scheduleId, ac
               {/* Column header */}
               <div className={`flex items-center justify-between px-3 py-2.5 border-b border-gray-200/60 dark:border-gray-600 ${isOverWip ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs font-semibold uppercase tracking-wide ${col.color} dark:opacity-90`}>
+                  <span className={`text-xs font-semibold uppercase tracking-wide ${col.color}`}>
                     {col.label}
                   </span>
                 </div>
@@ -240,7 +240,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, scheduleId, ac
                             <span>Progress</span>
                             <span>{task.progressPercentage}%</span>
                           </div>
-                          <div className="h-1.5 w-full rounded-full bg-gray-100">
+                          <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-600">
                             <div
                               className="h-full rounded-full bg-blue-500 transition-all"
                               style={{ width: `${Math.min(task.progressPercentage || 0, 100)}%` }}
@@ -255,7 +255,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, scheduleId, ac
                           <div className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[8px] font-bold">
                             {getInitials(task.assignedTo)}
                           </div>
-                          <span className="text-xs text-gray-500 truncate">{task.assignedTo}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{task.assignedTo}</span>
                         </div>
                       )}
                     </div>
