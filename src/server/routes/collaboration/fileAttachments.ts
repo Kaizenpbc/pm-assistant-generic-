@@ -60,7 +60,8 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
 
       const stream = fs.createReadStream(attachment.filePath);
       reply.header('Content-Type', attachment.mimeType);
-      reply.header('Content-Disposition', `attachment; filename="${attachment.originalName}"`);
+      const safeName = attachment.originalName.replace(/["\r\n]/g, '_');
+      reply.header('Content-Disposition', `attachment; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(attachment.originalName)}`);
       return reply.send(stream);
     } catch (error) {
       logger.error('Download error', { error });

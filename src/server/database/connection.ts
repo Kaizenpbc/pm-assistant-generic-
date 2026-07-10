@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
 import { config } from '../config';
+import logger from '../utils/logger';
 
 export interface DatabaseConfig {
   host: string;
@@ -39,9 +40,9 @@ class DatabaseService {
 
       this.pool = mysql.createPool({ ...dbConfig, dateStrings: true });
       this.isConnected = true;
-      console.log('Database connection pool initialized');
+      logger.info('Database connection pool initialized');
     } catch (error) {
-      console.error('Failed to initialize database connection pool:', error);
+      logger.error('Failed to initialize database connection pool', { error });
       this.isConnected = false;
     }
   }
@@ -86,7 +87,7 @@ class DatabaseService {
       await this.query('SELECT 1');
       return true;
     } catch (error) {
-      console.error('Database connection test failed:', error);
+      logger.error('Database connection test failed', { error });
       return false;
     }
   }
@@ -96,7 +97,7 @@ class DatabaseService {
       await this.pool.end();
       this.pool = null;
       this.isConnected = false;
-      console.log('Database connection pool closed');
+      logger.info('Database connection pool closed');
     }
   }
 

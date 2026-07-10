@@ -2,6 +2,7 @@ import { actionProposalService, Proposal, ProposalAction } from './ActionProposa
 import { scheduleService } from '../ScheduleService';
 import { auditLedgerService } from '../AuditLedgerService';
 import { notificationService } from '../NotificationService';
+import { deadLetterService } from '../DeadLetterService';
 import logger from '../../utils/logger';
 
 export interface ExecutionResult {
@@ -46,8 +47,8 @@ export class ActionExecutor {
         await actionProposalService.updateActionStatus(action.id, 'executed');
         executedActions.push(action);
 
-        // Audit each successful action
-        await auditLedgerService.append({
+        // Audit each successful action (fire-and-forget with DLQ fallback)
+        auditLedgerService.append({
           actorId: 'system',
           actorType: 'system',
           action: `agent.execute.${action.actionType}`,
@@ -61,7 +62,7 @@ export class ActionExecutor {
             newValue: action.newValue,
           },
           source: 'system',
-        });
+        }).catch(err => deadLetterService.capture('audit.action-execute', { proposalId, actionId: action.id }, err));
       } catch (err) {
         failedAction = action;
         failError = err instanceof Error ? err.message : String(err);
@@ -78,8 +79,8 @@ export class ActionExecutor {
 
       await actionProposalService.updateStatus(proposalId, 'failed');
 
-      // Audit the failure
-      await auditLedgerService.append({
+      // Audit the failure (fire-and-forget with DLQ fallback)
+      auditLedgerService.append({
         actorId: 'system',
         actorType: 'system',
         action: 'agent.execute.failed',
@@ -94,7 +95,7 @@ export class ActionExecutor {
           actionsRolledBack: rolledBack,
         },
         source: 'system',
-      });
+      }).catch(err => deadLetterService.capture('audit.action-failed', { proposalId }, err));
 
       // Notify project owner
       await notificationService.create({
@@ -120,8 +121,8 @@ export class ActionExecutor {
     // All actions succeeded
     await actionProposalService.updateStatus(proposalId, 'executed');
 
-    // Audit success
-    await auditLedgerService.append({
+    // Audit success (fire-and-forget with DLQ fallback)
+    auditLedgerService.append({
       actorId: 'system',
       actorType: 'system',
       action: 'agent.execute.success',
@@ -133,7 +134,7 @@ export class ActionExecutor {
         actionsExecuted: executedActions.length,
       },
       source: 'system',
-    });
+    }).catch(err => deadLetterService.capture('audit.action-success', { proposalId }, err));
 
     // Notify project owner
     await notificationService.create({
@@ -253,7 +254,7 @@ export class ActionExecutor {
         await actionProposalService.updateActionStatus(action.id, 'rolled_back');
         rolledBack++;
 
-        await auditLedgerService.append({
+        auditLedgerService.append({
           actorId: 'system',
           actorType: 'system',
           action: 'agent.rollback',
@@ -266,7 +267,7 @@ export class ActionExecutor {
             restoredValue: action.oldValue,
           },
           source: 'system',
-        });
+        }).catch(err => deadLetterService.capture('audit.action-rollback', { proposalId: proposal.id, actionId: action.id }, err));
       } catch (err) {
         logger.error(`[ActionExecutor] Rollback failed for action ${action.id}:`, err);
         // Continue rolling back remaining actions

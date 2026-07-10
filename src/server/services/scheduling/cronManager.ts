@@ -138,7 +138,7 @@ export async function runOverdueScanImpl(flaggedOverdue: Set<string>): Promise<n
 
     // Fire date_passed triggers via workflow engine
     dagWorkflowService.evaluateTaskChange(task, task, scheduleService).catch(err =>
-      logger.error('[Agent] Overdue workflow trigger error:', err)
+      logger.error('[Agent] Overdue workflow trigger error', { taskId, error: err })
     );
     triggered++;
   }

@@ -29,6 +29,12 @@ vi.mock('../../../services/NotificationService', () => ({
   },
 }));
 
+vi.mock('../../../services/DeadLetterService', () => ({
+  deadLetterService: {
+    capture: vi.fn(),
+  },
+}));
+
 describe('ActionExecutor', () => {
   let executor: ActionExecutor;
 

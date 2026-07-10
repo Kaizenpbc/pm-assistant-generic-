@@ -1,4 +1,5 @@
 import { WebSocket } from 'ws';
+import logger from '../utils/logger';
 
 export interface WSMessage {
   type: 'task_updated' | 'task_created' | 'task_deleted' | 'schedule_updated' | 'notification' | 'presence_update';
@@ -61,7 +62,8 @@ export class WebSocketService {
       }
     });
 
-    ws.on('error', () => {
+    ws.on('error', (err) => {
+      logger.warn('WebSocket client error', { error: err.message });
       const info = WebSocketService.clientInfo.get(ws);
       const projectId = info?.projectId;
       WebSocketService.clients.delete(ws);
@@ -91,7 +93,7 @@ export class WebSocketService {
     // Send only to clients viewing this project
     for (const [ws, info] of WebSocketService.clientInfo) {
       if (info.projectId === projectId && ws.readyState === WebSocket.OPEN) {
-        ws.send(message);
+        try { ws.send(message); } catch (err) { logger.warn('WebSocket send failed', { error: (err as Error).message }); }
       }
     }
   }
@@ -100,7 +102,7 @@ export class WebSocketService {
     const data = JSON.stringify(message);
     for (const client of WebSocketService.clients) {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(data);
+        try { client.send(data); } catch (err) { logger.warn('WebSocket broadcast send failed', { error: (err as Error).message }); }
       }
     }
   }

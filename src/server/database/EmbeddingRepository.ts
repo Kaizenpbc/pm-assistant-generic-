@@ -21,13 +21,14 @@ class EmbeddingRepository {
     );
   }
 
-  async findAll(documentType?: string): Promise<Array<Pick<EmbeddingRow, 'document_type' | 'document_id' | 'embedding'>>> {
+  async findAll(documentType?: string, limit = 5000): Promise<Array<Pick<EmbeddingRow, 'document_type' | 'document_id' | 'embedding'>>> {
     let sql = 'SELECT document_type, document_id, embedding FROM embeddings';
     const params: any[] = [];
     if (documentType) {
       sql += ' WHERE document_type = ?';
       params.push(documentType);
     }
+    sql += ` LIMIT ${Math.min(limit, 10000)}`;
     return databaseService.query(sql, params);
   }
 

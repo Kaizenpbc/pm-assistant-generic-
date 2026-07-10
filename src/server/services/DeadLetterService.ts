@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { deadLetterRepository } from '../database/DeadLetterRepository';
+import logger from '../utils/logger';
 
 interface DeadLetterEntry {
   id: string;
@@ -25,8 +26,8 @@ class DeadLetterService {
 
     deadLetterRepository.insert(id, operation, JSON.stringify(payload), errorMessage, nextRetryAt)
     .catch((dbErr) => {
-      // Last resort: log to console if we can't even write to DLQ
-      console.error('[DeadLetter] Failed to capture:', operation, errorMessage, dbErr);
+      // Last resort: log if we can't even write to DLQ
+      logger.error('[DeadLetter] Failed to capture', { operation, errorMessage, dbErr });
     });
   }
 

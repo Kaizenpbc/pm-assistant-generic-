@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
 import {
   MessageSquare,
   Search,
@@ -279,7 +280,7 @@ export const QueryPage: React.FC = () => {
               </h2>
               <div
                 className="prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(result.answer) }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(result.answer)) }}
               />
             </div>
           )}
