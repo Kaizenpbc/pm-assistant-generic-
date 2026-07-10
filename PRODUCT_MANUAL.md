@@ -675,7 +675,22 @@ Portal token holders can access without authentication:
 
 ### Stakeholder Comments
 
-External stakeholders can submit comments on project entities through the portal, identified by author name rather than system user account. Comments are displayed in reverse chronological order with the commenter's name and timestamp. The comment form includes name and message fields with dark mode support.
+External stakeholders can submit comments on project entities through the portal, identified by author name rather than system user account. Comments are displayed in reverse chronological order with the commenter's name and timestamp. The comment form includes name and message fields with dark mode support. Comments are scoped per portal link — two links to the same project maintain separate comment threads.
+
+### Portal Security
+
+**Server-side permission enforcement:** The backend filters the API response based on the token's permissions. When a permission is denied, the data is never queried or returned — not just hidden on the client:
+
+- `canViewBudget: false` → `budgetAllocated` and `budgetSpent` return as 0
+- `canViewGantt: false` → `milestones` array is empty (query skipped)
+- `canViewReports: false` → `recentActivity` array is empty (query skipped)
+- `canComment: false` → `comments` array is empty; `POST /view/:token/comment` returns HTTP 403
+
+**Input sanitization:** Comment `authorName` and `content` are stripped of HTML tags before storage to prevent stored XSS.
+
+**Project-level access control:** All authenticated portal management routes (`POST /links`, `GET /links`, `PUT /links/:id`, `DELETE /links/:id`, `GET /comments`) enforce project membership via `requireProjectAccess`. Admin and PMO roles bypass this check; executives get read-only access.
+
+**Comment pagination:** `findComments()` defaults to a limit of 100 results to prevent unbounded queries.
 
 ---
 
