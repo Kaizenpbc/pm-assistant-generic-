@@ -98,10 +98,10 @@ const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'ai-insights', label: 'AI Insights' },
   { id: 'evm-forecast', label: 'EVM Forecast' },
   { id: 'scenarios', label: 'What-If' },
+  { id: 'change-requests', label: 'Changes' },
 ];
 
 const moreTabs: { id: Tab; label: string }[] = [
-  { id: 'change-requests', label: 'Change Requests' },
   { id: 'resources', label: 'Resources' },
   { id: 'agent-activity', label: 'Agent Activity' },
 ];
