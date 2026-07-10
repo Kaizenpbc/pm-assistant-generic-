@@ -296,10 +296,12 @@ An agentic AI project management platform that combines the scheduling power of 
 - **Benchmark:** Monday.com, Asana, Wrike
 
 ### 5.2 Client/Stakeholder Portal
-- Read-only external view for clients
-- Branded portal with project status
-- Approval workflows for deliverables
-- Comment/feedback from external stakeholders
+- Read-only external view for clients with computed progress percentage
+- Branded portal with project status, budget summary, and timeline
+- Milestone timeline — vertical timeline with color-coded status indicators
+- Recent activity feed — last 10 completed tasks with relative timestamps
+- Comment/feedback from external stakeholders with dark mode support
+- Permission-controlled sections (budget, milestones, activity, comments)
 - **Benchmark:** Wrike, Smartsheet
 
 ### 5.3 Approval Workflows & Change Requests

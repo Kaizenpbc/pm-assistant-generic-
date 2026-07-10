@@ -666,13 +666,16 @@ The `PortalService` generates shareable portal links with:
 
 Portal token holders can access without authentication:
 
-- Project overview and status
-- Gantt chart view
-- Task listing
+- **Project overview and status** — name, description, status badge, and computed progress percentage (completed tasks / total tasks)
+- **Budget summary** — allocated, spent, remaining, and budget usage bar (requires `canViewBudget` permission; hidden when budget is zero)
+- **Timeline** — project start/end dates with days-remaining indicator (falls back to task date range when project dates are null)
+- **Milestone timeline** — vertical timeline of tasks marked as milestones, color-coded by status: green (completed), blue (in-progress), gray (not started). Controlled by `canViewGantt` permission.
+- **Recent activity** — last 10 completed tasks with relative timestamps (e.g., "2h ago", "3d ago"). Controlled by `canViewReports` permission.
+- **Task statistics** — total, not started, in-progress, and completed counts
 
 ### Stakeholder Comments
 
-External stakeholders can submit comments on project entities through the portal, identified by author name rather than system user account.
+External stakeholders can submit comments on project entities through the portal, identified by author name rather than system user account. Comments are displayed in reverse chronological order with the commenter's name and timestamp. The comment form includes name and message fields with dark mode support.
 
 ---
 

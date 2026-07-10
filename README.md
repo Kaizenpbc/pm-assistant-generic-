@@ -237,8 +237,9 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Daily and weekly email digests (overdue tasks, upcoming deadlines, unread count)
 
 ### Client / Stakeholder Portal
-- External-facing read-only project views
-- Scoped access for stakeholders
+- External-facing read-only project views with progress, budget, milestones, and recent activity
+- Scoped access for stakeholders with configurable permissions per link
+- Milestone timeline and completed-task feed replace placeholder sections
 
 ### Intake Forms
 - Configurable intake form builder

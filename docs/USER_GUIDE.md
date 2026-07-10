@@ -161,7 +161,7 @@ The **Overview** tab includes:
 - **Recent Activity** -- Last 6 audit trail entries with user, action, and timestamp.
 - **Attachments** -- File uploads with version history.
 - **Custom Fields** -- User-defined metadata fields.
-- **Portal Links** -- External portal link management.
+- **Portal Links** -- External portal link management. Each link generates a unique token URL (`/portal/:token`) that stakeholders can access without logging in. The portal shows project progress, task statistics, budget summary, milestone timeline, recent activity, and a comment form. Visibility of each section is controlled by the link's permissions (`canViewBudget`, `canViewGantt`, `canViewReports`, `canComment`).
 - **Export XML** -- Click the **Export XML** button (same row as Export CSV and Export PDF) to download the project as an MSPDI XML file. This format is compatible with Microsoft Project and ProjectLibre and includes tasks, resources, assignments, and dependency links.
 
 #### Real-Time Presence
