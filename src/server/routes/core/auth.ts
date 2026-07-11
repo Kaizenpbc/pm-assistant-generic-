@@ -105,11 +105,12 @@ export async function authRoutes(fastify: FastifyInstance) {
           role: user.role,
           subscriptionTier: user.role === 'admin' ? 'pro' : user.subscriptionTier,
           subscriptionStatus: user.role === 'admin' ? 'active' : user.subscriptionStatus,
-          trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
+          trialEndsAt: user.trialEndsAt ? (user.trialEndsAt instanceof Date ? user.trialEndsAt.toISOString() : String(user.trialEndsAt)) : null,
         },
       };
     } catch (error) {
-      logger.error('Login error', { error });
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Login error', { errorMessage: err.message, errorStack: err.stack });
       return reply.status(500).send({ error: 'Internal server error', message: 'Login failed' });
     }
   });
