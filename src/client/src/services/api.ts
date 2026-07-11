@@ -97,6 +97,7 @@ class ApiService {
     email: string;
     password: string;
     fullName: string;
+    organizationName?: string;
   }) {
     const response = await this.api.post('/auth/register', userData);
     return response.data;

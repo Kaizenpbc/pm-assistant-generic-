@@ -9,6 +9,7 @@ const TENANT_EXEMPT_PREFIXES = [
   '/api/v1/auth',
   '/api/v1/stripe',
   '/api/v1/admin/tenants',
+  '/api/v1/org',
   '/api/v1/waitlist',
   '/health',
   '/documentation',

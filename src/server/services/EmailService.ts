@@ -250,6 +250,41 @@ export class EmailService {
       `,
     });
   }
+  async sendOrgInviteEmail(to: string, orgName: string, inviterName: string): Promise<void> {
+    if (!this.isConfigured) {
+      logger.info(`[EmailService] Org invite email would be sent to ${maskPii(to)} for org "${orgName}"`);
+      return;
+    }
+
+    await this.getClient().emails.send({
+      from: config.RESEND_FROM_EMAIL,
+      to,
+      subject: `You've been invited to join ${orgName} on Kovarti PM`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <h1 style="color: #4f46e5; margin: 0;">Kovarti PM Assistant</h1>
+          </div>
+          <h2 style="color: #1f2937;">You're invited!</h2>
+          <p style="color: #4b5563; line-height: 1.6;">
+            ${inviterName} has invited you to join <strong>${orgName}</strong> on Kovarti PM Assistant.
+          </p>
+          <p style="color: #4b5563; line-height: 1.6;">
+            Create your account to get started:
+          </p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${config.APP_URL}/register" style="background-color: #4f46e5; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+              Create Account
+            </a>
+          </div>
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
+          <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+            Kovarti PM Assistant - AI-Powered Project Management
+          </p>
+        </div>
+      `,
+    });
+  }
 }
 
 export const emailService = new EmailService();

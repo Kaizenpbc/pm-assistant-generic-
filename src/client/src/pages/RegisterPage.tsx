@@ -7,6 +7,7 @@ export const RegisterPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +32,7 @@ export const RegisterPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await apiService.register({ fullName, email, username, password });
+      await apiService.register({ fullName, email, username, password, organizationName: organizationName || undefined });
       setSuccess(true);
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
@@ -99,6 +100,14 @@ export const RegisterPage: React.FC = () => {
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Username</label>
               <input id="username" type="text" required autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)}
                 className="input" placeholder="johndoe" minLength={3} />
+            </div>
+
+            <div>
+              <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                Organization Name <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input id="organizationName" type="text" autoComplete="organization" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)}
+                className="input" placeholder="My Company" />
             </div>
 
             <div>

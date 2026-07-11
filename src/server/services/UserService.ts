@@ -81,6 +81,10 @@ export class UserService {
     return userRepository.list();
   }
 
+  async listByOrganization(orgId: string): Promise<User[]> {
+    return userRepository.listByOrganization(orgId);
+  }
+
   async getAccessibilityPrefs(userId: string): Promise<Record<string, unknown> | null> {
     return userRepository.getAccessibilityPrefs(userId);
   }

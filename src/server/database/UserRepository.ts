@@ -134,6 +134,14 @@ export class UserRepository extends BaseRepository<User> {
     return this.findAll(limit);
   }
 
+  async listByOrganization(orgId: string): Promise<User[]> {
+    const rows = await this.queryRaw(
+      'SELECT * FROM users WHERE organization_id = ? ORDER BY created_at ASC',
+      [orgId],
+    );
+    return rows.map(rowToUser);
+  }
+
   async getAccessibilityPrefs(userId: string): Promise<Record<string, unknown> | null> {
     const rows = await this.queryRaw(
       'SELECT accessibility_preferences FROM users WHERE id = ?',
