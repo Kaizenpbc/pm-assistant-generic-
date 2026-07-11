@@ -49,9 +49,7 @@ import { TableView } from '../components/schedule/TableView';
 import { CalendarView } from '../components/schedule/CalendarView';
 import { SCurveChart } from '../components/evm/SCurveChart';
 import { WorkloadHeatmap } from '../components/resources/WorkloadHeatmap';
-import { EVMForecastDashboard } from '../components/evm/EVMForecastDashboard';
-import { EVMTrendChart } from '../components/evm/EVMTrendChart';
-import { ForecastComparisonChart } from '../components/evm/ForecastComparisonChart';
+import { PerformancePanel } from '../components/evm/PerformancePanel';
 import { ResourceForecastPanel } from '../components/resources/ResourceForecastPanel';
 import { RebalanceSuggestions } from '../components/resources/RebalanceSuggestions';
 import { CapacityChart } from '../components/resources/CapacityChart';
@@ -90,7 +88,7 @@ import { TimeTrackingTab } from '../components/project/TimeTrackingTab';
 import { BudgetTab } from '../components/project/BudgetTab';
 import { SetupChecklist } from '../components/project/SetupChecklist';
 
-type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'evm-forecast' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources' | 'time' | 'files' | 'budget';
+type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'performance' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources' | 'time' | 'files' | 'budget';
 
 const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -100,11 +98,14 @@ const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'team', label: 'Team' },
   { id: 'time', label: 'Time' },
   { id: 'files', label: 'Files' },
-  { id: 'budget', label: 'Budget' },
   { id: 'ai-insights', label: 'AI Insights' },
-  { id: 'evm-forecast', label: 'EVM Forecast' },
-  { id: 'scenarios', label: 'What-If' },
   { id: 'change-requests', label: 'Changes' },
+];
+
+const financialTabs: { id: Tab; label: string }[] = [
+  { id: 'budget', label: 'Budget' },
+  { id: 'performance', label: 'Performance' },
+  { id: 'scenarios', label: 'What-If' },
 ];
 
 const moreTabs: { id: Tab; label: string }[] = [
@@ -546,6 +547,11 @@ export function ProjectDetailPage() {
               {tab.label}
             </button>
           ))}
+          <FinancialsDropdown
+            tabs={financialTabs}
+            activeTab={activeTab}
+            onSelect={setActiveTab}
+          />
           <MoreTabsDropdown
             tabs={moreTabs}
             activeTab={activeTab}
@@ -562,7 +568,7 @@ export function ProjectDetailPage() {
       {activeTab === 'raid' && <RAIDTab projectId={id!} />}
       {activeTab === 'schedule' && <ScheduleTab projectId={id!} projectName={project.name} projectStartDate={project.startDate || project.start_date} />}
       {activeTab === 'ai-insights' && <AIInsightsTab projectId={id!} />}
-      {activeTab === 'evm-forecast' && <EVMForecastTab projectId={id!} />}
+      {activeTab === 'performance' && <PerformancePanel projectId={id!} onNavigate={(tab) => setActiveTab(tab as Tab)} />}
       {activeTab === 'scenarios' && <ScenariosTab projectId={id!} />}
       {activeTab === 'team' && <TeamTab />}
       {activeTab === 'agent-activity' && <AgentActivityTab projectId={id!} />}
@@ -666,6 +672,68 @@ function MoreTabsDropdown({
         }`}
       >
         {isActiveInMore ? activeLabel : 'More'}
+        <ChevronDown className="w-3.5 h-3.5" />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
+          {dropdownTabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => { onSelect(t.id); setOpen(false); }}
+              className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                activeTab === t.id
+                  ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-medium'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Financials Dropdown
+// ---------------------------------------------------------------------------
+
+function FinancialsDropdown({
+  tabs: dropdownTabs,
+  activeTab,
+  onSelect,
+}: {
+  tabs: { id: Tab; label: string }[];
+  activeTab: Tab;
+  onSelect: (id: Tab) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isActiveInFinancials = dropdownTabs.some(t => t.id === activeTab);
+  const activeLabel = dropdownTabs.find(t => t.id === activeTab)?.label;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div className="relative flex-shrink-0" ref={ref}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={`border-b-2 pb-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
+          isActiveInFinancials
+            ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+        }`}
+      >
+        <DollarSign className="w-3.5 h-3.5" />
+        {isActiveInFinancials ? activeLabel : 'Financials'}
         <ChevronDown className="w-3.5 h-3.5" />
       </button>
       {open && (
@@ -3031,52 +3099,6 @@ function MetricCard({
     <div className="rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-900 p-3 text-center" title={tooltip}>
       <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">{label}</div>
       <div className={`mt-1 text-lg font-bold ${color}`}>{value}</div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// EVM Forecast Tab
-// ---------------------------------------------------------------------------
-
-function EVMForecastTab({ projectId }: { projectId: string }) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['evmForecast', projectId],
-    queryFn: () => apiService.getEVMForecast(projectId),
-    enabled: !!projectId,
-  });
-
-  const forecast = data?.result;
-
-  return (
-    <div className="space-y-6">
-      {isLoading && <SectionSpinner />}
-      {error && <SectionError message="Failed to load EVM forecast." />}
-      {!isLoading && !error && forecast && (
-        <>
-          <EVMForecastDashboard data={forecast} />
-
-          {forecast.historicalTrends?.weeklyData?.length > 0 && (
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">CPI / SPI Trend</h3>
-              <EVMTrendChart
-                historicalData={forecast.historicalTrends.weeklyData}
-                predictions={forecast.aiPredictions?.predictedCPI}
-              />
-            </div>
-          )}
-
-          {forecast.forecastComparison?.length > 0 && (
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Forecast Method Comparison</h3>
-              <ForecastComparisonChart
-                data={forecast.forecastComparison}
-                bac={forecast.currentMetrics?.BAC || 0}
-              />
-            </div>
-          )}
-        </>
-      )}
     </div>
   );
 }

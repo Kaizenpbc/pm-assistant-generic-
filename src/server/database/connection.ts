@@ -38,7 +38,7 @@ class DatabaseService {
         queueLimit: config.DB_QUEUE_LIMIT,
       };
 
-      this.pool = mysql.createPool({ ...dbConfig, dateStrings: true });
+      this.pool = mysql.createPool({ ...dbConfig, dateStrings: true, charset: 'utf8mb4' });
       this.isConnected = true;
       logger.info('Database connection pool initialized');
     } catch (error) {
