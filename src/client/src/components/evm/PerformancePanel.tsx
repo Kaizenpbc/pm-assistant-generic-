@@ -66,50 +66,50 @@ function tooltipBorderColor(health: 'green' | 'amber' | 'red'): string {
 // Dynamic tooltip content generators
 // ---------------------------------------------------------------------------
 
-function getInputCardTooltip(metric: string, value: number, bac: number, ev: number, pv: number, ac: number): { definition: string; insight: string; action: string; health: 'green' | 'amber' | 'red' } {
+function getInputCardTooltip(metric: string, _value: number, bac: number, ev: number, pv: number, ac: number, cpi: number, spi: number): { definition: string; insight: string; action: string; health: 'green' | 'amber' | 'red' } {
   switch (metric) {
     case 'BAC':
       return {
         definition: 'The total approved budget for all planned work. This is your cost baseline.',
-        insight: `Your project is baselined at ${formatDollar(value)}.`,
+        insight: `Your project is baselined at ${formatDollar(bac)}.`,
         action: 'If scope changes, update the BAC through a formal change request to keep forecasts accurate.',
         health: 'green',
       };
     case 'PV': {
-      const pvPct = bac > 0 ? (value / bac) * 100 : 0;
+      const pvPct = bac > 0 ? (pv / bac) * 100 : 0;
       return {
         definition: 'The authorized budget for work scheduled to be completed by now.',
-        insight: `${pvPct.toFixed(0)}% of the budget should have been spent by this point in the schedule.`,
-        action: pvPct > 80 ? 'Most planned work should be done. Focus on closing out remaining tasks.' : 'Ensure work is progressing according to the baseline schedule.',
-        health: 'green',
+        insight: `${pvPct.toFixed(0)}% of the budget should have been earned by this point in the schedule.`,
+        action: spi >= 1.0
+          ? 'Schedule is on track. Continue monitoring baseline adherence.'
+          : 'Work is behind the planned timeline. Review upcoming milestones and critical-path tasks.',
+        health: spi >= 1.0 ? 'green' : spi >= 0.9 ? 'amber' : 'red',
       };
     }
     case 'EV': {
       const evPct = bac > 0 ? (ev / bac) * 100 : 0;
       const pvPct = bac > 0 ? (pv / bac) * 100 : 0;
-      const behind = evPct < pvPct;
       return {
         definition: 'The value of work actually completed, measured against the budget. EV = % complete x BAC.',
-        insight: behind
-          ? `Only ${evPct.toFixed(0)}% of budgeted work is complete vs ${pvPct.toFixed(0)}% planned. You are behind schedule.`
-          : `${evPct.toFixed(0)}% of budgeted work is complete vs ${pvPct.toFixed(0)}% planned. You are on or ahead of schedule.`,
-        action: behind
-          ? 'Prioritize critical-path tasks. Consider fast-tracking or adding resources to catch up.'
-          : 'Maintain current pace. Look for opportunities to bank schedule buffer.',
-        health: behind ? (evPct < pvPct - 10 ? 'red' : 'amber') : 'green',
+        insight: spi >= 1.0
+          ? `${evPct.toFixed(0)}% of budgeted work is complete vs ${pvPct.toFixed(0)}% planned — on or ahead of schedule.`
+          : `${evPct.toFixed(0)}% of budgeted work is complete vs ${pvPct.toFixed(0)}% planned — behind schedule.`,
+        action: spi >= 1.0
+          ? 'Maintain current pace. Look for opportunities to bank schedule buffer.'
+          : 'Prioritize critical-path tasks. Consider fast-tracking or adding resources to catch up.',
+        health: spi >= 1.0 ? 'green' : spi >= 0.9 ? 'amber' : 'red',
       };
     }
     case 'AC': {
-      const overSpend = ac > ev;
       return {
         definition: 'The total cost actually incurred for work performed to date.',
-        insight: overSpend
-          ? `You have spent ${formatDollar(ac)} but only earned ${formatDollar(ev)} in value — spending faster than earning.`
-          : `You have spent ${formatDollar(ac)} and earned ${formatDollar(ev)} in value — spending efficiently.`,
-        action: overSpend
-          ? 'Review cost drivers. Look for overruns in labour, materials, or scope creep.'
-          : 'Cost efficiency is good. Continue monitoring to sustain this trend.',
-        health: overSpend ? (ac > ev * 1.1 ? 'red' : 'amber') : 'green',
+        insight: cpi >= 1.0
+          ? `Spent ${formatDollar(ac)} and earned ${formatDollar(ev)} in value — cost efficiency is good (CPI ${cpi.toFixed(2)}).`
+          : `Spent ${formatDollar(ac)} against ${formatDollar(ev)} earned — cost efficiency is below target (CPI ${cpi.toFixed(2)}).`,
+        action: cpi >= 1.0
+          ? 'Cost performance is healthy. Continue monitoring to sustain this trend.'
+          : 'Review top cost drivers. Consider renegotiating contracts, reducing overtime, or re-estimating remaining work.',
+        health: cpi >= 1.0 ? 'green' : cpi >= 0.9 ? 'amber' : 'red',
       };
     }
     default:
@@ -645,7 +645,7 @@ export function PerformancePanel({ projectId, onNavigate }: {
           value={formatDollar(bac)}
           subtitle="Total approved budget"
           colorClass="text-gray-900 dark:text-white"
-          tooltip={getInputCardTooltip('BAC', bac, bac, ev, pv, ac)}
+          tooltip={getInputCardTooltip('BAC', bac, bac, ev, pv, ac, cpi, spi)}
         />
         <InputCard
           label="PV"
@@ -653,7 +653,7 @@ export function PerformancePanel({ projectId, onNavigate }: {
           value={formatDollar(pv)}
           subtitle={`${pctOfBAC(pv, bac)} planned by now`}
           colorClass="text-indigo-600 dark:text-indigo-400"
-          tooltip={getInputCardTooltip('PV', pv, bac, ev, pv, ac)}
+          tooltip={getInputCardTooltip('PV', pv, bac, ev, pv, ac, cpi, spi)}
         />
         <InputCard
           label="EV"
@@ -661,7 +661,7 @@ export function PerformancePanel({ projectId, onNavigate }: {
           value={formatDollar(ev)}
           subtitle={`${pctOfBAC(ev, bac)} complete x BAC`}
           colorClass="text-teal-600 dark:text-teal-400"
-          tooltip={getInputCardTooltip('EV', ev, bac, ev, pv, ac)}
+          tooltip={getInputCardTooltip('EV', ev, bac, ev, pv, ac, cpi, spi)}
         />
         <InputCard
           label="AC"
@@ -669,7 +669,7 @@ export function PerformancePanel({ projectId, onNavigate }: {
           value={formatDollar(ac)}
           subtitle="Spent to date"
           colorClass="text-orange-600 dark:text-orange-400"
-          tooltip={getInputCardTooltip('AC', ac, bac, ev, pv, ac)}
+          tooltip={getInputCardTooltip('AC', ac, bac, ev, pv, ac, cpi, spi)}
         />
       </div>
 
