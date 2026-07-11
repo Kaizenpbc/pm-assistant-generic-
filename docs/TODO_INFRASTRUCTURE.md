@@ -96,3 +96,40 @@ Last-refreshed timestamp and version label added to PM Dashboard.
 | # | Item | Status | Blocker |
 |---|------|--------|---------|
 | 13 | External Cron Scheduler | Open | None (low priority) |
+| 17 | Native Mobile Apps | Open | None (major effort) |
+| 18 | Integration Marketplace | Open | None (major effort) |
+
+---
+
+## Item 17: Native Mobile Apps
+
+**Gap:** PWA support is live (app-shell caching, installability, offline banner, auto-update) but competitors (Monday, Asana, ClickUp) all have native iOS/Android apps with offline sync, push notifications, camera integration, and deep mobile UX. Kovarti scores 3/5 vs competitor 5/5 on mobile.
+
+**What's needed:**
+- React Native or Capacitor wrapper around the existing React app
+- Offline data storage (IndexedDB or SQLite) with background sync / mutation queue
+- Push notifications via Firebase Cloud Messaging (FCM) / APNs
+- Camera integration for file attachments
+- Biometric authentication (Face ID / fingerprint)
+- App Store / Play Store listing
+
+**Priority:** Medium — PWA covers basic installability, but native apps are table stakes for enterprise adoption.
+
+---
+
+## Item 18: Integration Marketplace
+
+**Gap:** Kovarti has webhook support, API keys, and MCP but no pre-built integrations or marketplace. Competitors offer 200-2000+ integrations. Kovarti scores 2/5 vs competitor 4-5/5.
+
+**What's needed:**
+- Pre-built integrations for top platforms: Slack, MS Teams, Jira, GitHub, Google Workspace, Outlook, Zapier
+- OAuth2 connection flow for each integration
+- Integration marketplace UI (browse, install, configure)
+- Webhook event catalog (standardized event types for outbound triggers)
+- Zapier / Make.com connector (enables hundreds of integrations via proxy)
+
+**Priority:** Medium — the quickest win is a Zapier/Make connector, which unlocks hundreds of integrations without building each one natively.
+
+---
+
+See [COMPETITIVE_MATRIX.md](COMPETITIVE_MATRIX.md) for the full feature comparison against Monday.com, Asana, ClickUp, Wrike, and Smartsheet.
