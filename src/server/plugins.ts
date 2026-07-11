@@ -19,6 +19,7 @@ import { requestContextHook } from './middleware/requestContext';
 import { rateLimiter } from './middleware/rateLimiter';
 import { apiKeyService } from './services/ApiKeyService';
 import { metricsService } from './services/MetricsService';
+import { requireActiveSubscription } from './middleware/requireSubscription';
 
 // Standard HTTP status text for error response normalization
 const HTTP_STATUS_TEXT: Record<number, string> = {
@@ -39,6 +40,30 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.addHook('preHandler', securityValidationMiddleware);
   // Request context must run after securityValidationMiddleware (which sets x-request-id)
   fastify.addHook('preHandler', requestContextHook);
+
+  // Subscription gating — block write operations for expired trials / unpaid users
+  // Exempt paths: auth, stripe, portal (public), websocket, waitlist, MCP, and read-only GET/OPTIONS/HEAD
+  const SUBSCRIPTION_EXEMPT_PREFIXES = [
+    '/api/v1/auth',
+    '/api/v1/stripe',
+    '/api/v1/portal',
+    '/api/v1/ws',
+    '/api/v1/waitlist',
+    '/mcp',
+  ];
+  fastify.addHook('preHandler', async (request, reply) => {
+    // Only gate write methods
+    if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return;
+    // Skip non-API routes
+    if (!request.url.startsWith('/api/') && !request.url.startsWith('/mcp')) return;
+    // Skip exempt paths
+    for (const prefix of SUBSCRIPTION_EXEMPT_PREFIXES) {
+      if (request.url.startsWith(prefix)) return;
+    }
+    // Skip if no user (authMiddleware will handle 401)
+    if (!request.user) return;
+    await requireActiveSubscription(request, reply);
+  });
 
   if (config.METRICS_ENABLED) {
     fastify.addHook('onRequest', async () => { metricsService.incrementActiveRequests(); });

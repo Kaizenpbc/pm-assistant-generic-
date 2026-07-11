@@ -98,6 +98,7 @@ Last-refreshed timestamp and version label added to PM Dashboard.
 | 13 | External Cron Scheduler | Open | None (low priority) |
 | 17 | Native Mobile Apps | Open | None (major effort) |
 | 18 | Integration Marketplace | Open | None (major effort) |
+| 19 | Subscription Gating (5 phases) | In Progress | None |
 
 ---
 
@@ -129,6 +130,22 @@ Last-refreshed timestamp and version label added to PM Dashboard.
 - Zapier / Make.com connector (enables hundreds of integrations via proxy)
 
 **Priority:** Medium — the quickest win is a Zapier/Make connector, which unlocks hundreds of integrations without building each one natively.
+
+---
+
+---
+
+## Item 19: Subscription Gating (5 Phases)
+
+**Spec:** [SUBSCRIPTION_MODEL.md](SUBSCRIPTION_MODEL.md)
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 19a | Backend gating middleware (`requireActiveSubscription`) | Open |
+| 19b | Stripe updates (Consultant product, monthly/annual prices, remove Stripe trial) | Open |
+| 19c | Database changes (tier ENUM update, migration) | Open |
+| 19d | Frontend updates (pricing redesign, trial banner, upgrade prompts) | Open |
+| 19e | Refund policy display (checkout, pricing page, acceptance tracking) | Open |
 
 ---
 
