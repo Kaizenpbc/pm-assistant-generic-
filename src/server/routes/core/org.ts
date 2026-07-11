@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { authMiddleware } from '../../middleware/auth';
 import { organizationService } from '../../services/OrganizationService';
 import { userService } from '../../services/UserService';
 import { emailService } from '../../services/EmailService';
@@ -16,11 +17,7 @@ const inviteSchema = z.object({
 
 export async function orgRoutes(fastify: FastifyInstance) {
   // All org routes require authentication
-  fastify.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.user?.userId) {
-      return reply.status(401).send({ error: 'Unauthorized', message: 'Authentication required' });
-    }
-  });
+  fastify.addHook('preHandler', authMiddleware);
 
   fastify.post('/invite', {
     schema: { description: 'Invite a user to your organization', tags: ['org'] },

@@ -33,11 +33,8 @@ export async function tenantResolverHook(
 
   const org = await organizationService.findByUserId(request.user.userId);
   if (!org) {
-    logger.warn('User has no organization', { userId: request.user.userId, url: request.url });
-    return reply.status(403).send({
-      error: 'No organization',
-      message: 'Your account is not associated with an organization.',
-    });
+    // User has no organization — fall through to main DB (supports legacy/unassigned users)
+    return;
   }
 
   if (!org.isActive) {

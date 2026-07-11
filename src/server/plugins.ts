@@ -14,6 +14,7 @@ import logger, { requestLogger, responseLogger } from './utils/logger';
 import { toCamelCaseKeys } from './utils/caseConverter';
 import { auditService } from './services/auditService';
 import { databaseService } from './database/connection';
+import jwt from 'jsonwebtoken';
 import { securityMiddleware, securityValidationMiddleware } from './middleware/securityMiddleware';
 import { requestContextHook } from './middleware/requestContext';
 import { tenantResolverHook } from './middleware/tenantResolver';
@@ -39,6 +40,21 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.addHook('onRequest', requestLogger);
   fastify.addHook('onRequest', securityMiddleware);
   fastify.addHook('preHandler', securityValidationMiddleware);
+
+  // Early JWT resolution — populates request.user from cookie before tenant resolver.
+  // Does NOT fail on missing/invalid tokens (route-level authMiddleware handles enforcement).
+  fastify.addHook('preHandler', async (request) => {
+    if (request.user) return; // Already set by API key hook
+    try {
+      const token = request.cookies?.access_token;
+      if (!token) return;
+      const decoded = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] }) as any;
+      request.user = { userId: decoded.userId, username: decoded.username, role: decoded.role };
+    } catch {
+      // Silently ignore — route-level authMiddleware will enforce auth
+    }
+  });
+
   // Request context must run after securityValidationMiddleware (which sets x-request-id)
   fastify.addHook('preHandler', requestContextHook);
   // Tenant resolver must run after requestContextHook (needs userId in context)
