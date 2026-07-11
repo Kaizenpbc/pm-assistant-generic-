@@ -143,7 +143,7 @@ Last-refreshed timestamp and version label added to PM Dashboard.
 |-------|-------------|--------|
 | 19a | Backend gating middleware (`requireActiveSubscription`) | Done |
 | 19b | Stripe updates (Consultant product, monthly/annual prices, remove Stripe trial) | Done |
-| 19c | Database changes (tier ENUM update, migration) | Open |
+| 19c | Database changes (tier ENUM update, migration) | Done |
 | 19d | Frontend updates (pricing redesign, trial banner, upgrade prompts) | Open |
 | 19e | Refund policy display (checkout, pricing page, acceptance tracking) | Open |
 

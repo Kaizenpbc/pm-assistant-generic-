@@ -17,6 +17,7 @@ export interface User {
   subscriptionTier: 'free' | 'pro' | 'business' | 'consultant';
   subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
   trialEndsAt: Date | null;
+  trialStartedAt: Date | null;
   emailNotificationsEnabled: boolean;
   digestFrequency: 'none' | 'daily' | 'weekly';
   digestLastSentAt: Date | null;

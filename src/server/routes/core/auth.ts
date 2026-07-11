@@ -156,12 +156,13 @@ export async function authRoutes(fastify: FastifyInstance) {
         stripeCustomerId: stripeCustomerId || undefined,
       });
 
-      // Update Stripe customer with real user ID
-      if (stripeCustomerId && stripeService.isConfigured) {
-        // The customer was already created; the metadata will be set via the userId
-        // In practice the userId in metadata is set at creation time; here we used 'pending'
-        // We can update it if needed, but for now the customerId on the user record is enough
-      }
+      // Set 14-day trial period
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+      await userService.update(user.id, {
+        trialStartedAt: now,
+        trialEndsAt: trialEnd,
+      });
 
       // Send verification email
       await emailService.sendVerificationEmail(email, verificationToken);
