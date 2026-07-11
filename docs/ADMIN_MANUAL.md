@@ -89,6 +89,7 @@ Key variables in `.env` (never commit secrets):
 | `SMTP_HOST` / `SMTP_PORT` | Outbound email configuration            |
 | `CORS_ORIGIN`         | Allowed CORS origins                        |
 | `BASE_URL`            | Public-facing URL of the application        |
+| `MULTI_TENANT_ENABLED` | Enable database-per-customer multi-tenancy (`true`/`false`) |
 
 ### AI Features Toggle
 - Set `AI_ENABLED=true` and provide `ANTHROPIC_API_KEY` to enable AI-powered features (task suggestions, risk analysis, natural language queries).
@@ -462,7 +463,48 @@ Agents can be promoted from Tier 2 (propose-only) to Tier 3 (auto-execute) when 
 
 ---
 
-## 19. Backup and Maintenance
+## 19. Tenant Management (Multi-Tenant)
+
+When `MULTI_TENANT_ENABLED=true`, the platform uses a **database-per-customer** architecture. Each organization gets its own tenant database (`pmassist_t_<slug>`), with a shared control-plane database (`pmassist`) storing users and organizations.
+
+### Admin Panel — Tenants Tab
+
+Navigate to **Admin Panel > Tenants** to view and manage all organizations. This tab is visible only to admin users.
+
+**Table columns:**
+
+| Column | Description |
+|--------|-------------|
+| Organization | Name and slug |
+| Owner | Full name and email of the org owner |
+| Users | Current user count / max users limit |
+| Tier | Subscription tier badge (free, pro, business, consultant) |
+| Status | Active/Inactive toggle — deactivated orgs cannot log in |
+| Provisioned | Green check if tenant DB exists; red retry button if provisioning failed |
+| Created | Organization creation date |
+| Actions | Run pending tenant migrations |
+
+### Managing Tenants
+
+- **Toggle Active/Inactive** — Click the toggle in the Status column. Deactivated tenants cannot authenticate. All cached user→org lookups are invalidated on change.
+- **Retry Provisioning** — If a tenant database failed to provision (red X), click the **Retry** button to re-run `provisionTenantDatabase()`. This creates the database and runs the baseline migration.
+- **Run Migrations** — Click **Migrate** to apply any pending tenant migrations to a provisioned org's database. Returns the count of migrations applied.
+
+### API Endpoints
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/v1/admin/tenants` | List all organizations with owner info and user counts |
+| `GET` | `/api/v1/admin/tenants/:id` | Get single org details including table count |
+| `PATCH` | `/api/v1/admin/tenants/:id` | Update org settings (name, isActive, maxUsers, tier, status, trialEndsAt) |
+| `POST` | `/api/v1/admin/tenants/:id/provision` | Retry tenant database provisioning |
+| `POST` | `/api/v1/admin/tenants/:id/run-migrations` | Run pending tenant migrations |
+
+All endpoints require admin role authentication.
+
+---
+
+## 20. Backup and Maintenance
 
 ### Database Backups
 - Use your hosting provider's backup tools (e.g., cPanel MySQL backup) or `mysqldump` via SSH.
@@ -500,6 +542,8 @@ Agents can be promoted from Tier 2 (propose-only) to Tier 3 (auto-execute) when 
 | Integrations not syncing     | Check API tokens/credentials; review sync logs.               |
 | Audit integrity check fails  | Investigate potential data tampering; restore from backup.     |
 | Health snapshots not appearing | Verify `AGENT_ENABLED=true`; run manual snapshot via `POST /api/v1/predictions/health/snapshot`; check `project_health_history` table. |
+| Tenant provisioning failed   | Check DB user has `CREATE DATABASE` privileges; retry via Admin > Tenants > Retry button or `POST /api/v1/admin/tenants/:id/provision`. |
+| Tenant tab shows no orgs     | Verify `MULTI_TENANT_ENABLED=true` in `.env` and at least one organization exists in the `organizations` table. |
 
 For detailed logs, check `./logs/` or your hosting provider's log viewer.
 

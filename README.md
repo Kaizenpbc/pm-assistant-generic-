@@ -604,6 +604,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Goals / OKR | `/api/v1/goals` | Objectives and Key Results CRUD |
 | Task Import | `/api/v1/schedules/:id/import` | Bulk CSV task import |
 | User Preferences | `/api/v1/users/me/preferences` | Timezone and locale preferences |
+| Admin Tenants | `/api/v1/admin/tenants` | Multi-tenant org management (list, update, provision, migrate) |
 
 ---
 
