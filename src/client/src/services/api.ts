@@ -2008,6 +2008,31 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async getAdminTenants() {
+    const response = await this.api.get('/admin/tenants');
+    return response.data;
+  }
+
+  async getAdminTenant(id: string) {
+    const response = await this.api.get(`/admin/tenants/${id}`);
+    return response.data;
+  }
+
+  async updateAdminTenant(id: string, data: Record<string, unknown>) {
+    const response = await this.api.patch(`/admin/tenants/${id}`, data);
+    return response.data;
+  }
+
+  async provisionTenant(id: string) {
+    const response = await this.api.post(`/admin/tenants/${id}/provision`, {});
+    return response.data;
+  }
+
+  async runTenantMigrations(id: string) {
+    const response = await this.api.post(`/admin/tenants/${id}/run-migrations`, {});
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Notification Preferences
   // -------------------------------------------------------------------------
