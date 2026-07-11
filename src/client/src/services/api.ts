@@ -51,6 +51,17 @@ class ApiService {
           }
         }
 
+        // Handle 403 subscription-required errors
+        if (
+          error.response?.status === 403 &&
+          error.response?.data?.error === 'Subscription required'
+        ) {
+          // Dispatch custom event for UI components to handle
+          window.dispatchEvent(new CustomEvent('subscription-required', {
+            detail: error.response.data,
+          }));
+        }
+
         return Promise.reject(error);
       }
     );
@@ -120,8 +131,8 @@ class ApiService {
   // Stripe / Subscription endpoints
   // -------------------------------------------------------------------------
 
-  async createCheckoutSession() {
-    const response = await this.api.post('/stripe/create-checkout-session');
+  async createCheckoutSession(plan: 'monthly' | 'annual' = 'monthly') {
+    const response = await this.api.post('/stripe/create-checkout-session', { plan });
     return response.data;
   }
 

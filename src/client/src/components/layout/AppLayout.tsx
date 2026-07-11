@@ -3,6 +3,8 @@ import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import BottomNav from './BottomNav';
 import { OfflineBanner } from './OfflineBanner';
+import { TrialBanner } from './TrialBanner';
+import { UpgradePrompt } from './UpgradePrompt';
 import { Bot, X } from 'lucide-react';
 import { AIChatPanel } from '../ai/AIChatPanel';
 import { useUIStore } from '../../stores/uiStore';
@@ -90,6 +92,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <OfflineBanner />
+      <TrialBanner />
       {/* Sidebar */}
       <Sidebar
         collapsed={effectiveCollapsed}
@@ -180,6 +183,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           <Bot className="w-5 h-5" />
         </button>
       )}
+
+      <UpgradePrompt />
     </div>
   );
 };

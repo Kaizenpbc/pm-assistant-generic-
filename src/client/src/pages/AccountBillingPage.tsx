@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import {
   CreditCard,
   Crown,
@@ -12,10 +13,6 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/api';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface SubscriptionStatus {
   tier: string;
   status: string;
@@ -24,12 +21,8 @@ interface SubscriptionStatus {
   cancelAtPeriodEnd: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '—';
+  if (!dateStr) return '--';
   return new Date(dateStr).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -61,13 +54,17 @@ function getStatusBadge(status: string, cancelAtPeriodEnd: boolean) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+const PLAN_FEATURES = [
+  'Unlimited projects',
+  'All AI features',
+  'EVM forecasting & Monte Carlo simulation',
+  'Workflow automation & NL builder',
+  'Stakeholder portal & reports',
+  'API access & MCP integration',
+];
 
 export const AccountBillingPage: React.FC = () => {
   const [portalLoading, setPortalLoading] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const { data, isLoading, error } = useQuery<SubscriptionStatus>({
     queryKey: ['subscription-status'],
@@ -84,23 +81,13 @@ export const AccountBillingPage: React.FC = () => {
     }
   };
 
-  const handleUpgrade = async () => {
-    setCheckoutLoading(true);
-    try {
-      const result = await apiService.createCheckoutSession();
-      window.location.href = result.url;
-    } catch {
-      setCheckoutLoading(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-64" />
-          <div className="h-4 bg-gray-200 rounded w-48" />
-          <div className="h-48 bg-gray-200 rounded-xl" />
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48" />
+          <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl" />
         </div>
       </div>
     );
@@ -109,32 +96,30 @@ export const AccountBillingPage: React.FC = () => {
   if (error || !data) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
           <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-          <p className="text-red-700 text-sm">Failed to load billing information. Please try again later.</p>
+          <p className="text-red-700 dark:text-red-300 text-sm">Failed to load billing information. Please try again later.</p>
         </div>
       </div>
     );
   }
 
-  const isPro = data.tier === 'pro' || data.tier === 'business' || data.tier === 'consultant';
-  const isTrialing = data.status === 'trialing';
+  const isPaid = data.tier === 'consultant' || data.tier === 'pro' || data.tier === 'business';
   const trialDays = daysUntil(data.trialEndsAt);
   const badge = getStatusBadge(data.status, data.cancelAtPeriodEnd);
   const BadgeIcon = badge.icon;
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Account & Billing</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your subscription and billing details</p>
       </div>
 
-      {isPro ? (
+      {isPaid ? (
         <>
           {/* Current Plan Card */}
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm dark:shadow-gray-900/30 p-6 mb-4">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6 mb-4">
             <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Current Plan</h2>
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
@@ -142,7 +127,7 @@ export const AccountBillingPage: React.FC = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-lg font-semibold text-gray-900 dark:text-white">Pro Plan</span>
+                  <span className="text-lg font-semibold text-gray-900 dark:text-white">Consultant Plan</span>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
                     <BadgeIcon className="w-3 h-3" />
                     {badge.label}
@@ -150,7 +135,7 @@ export const AccountBillingPage: React.FC = () => {
                 </div>
 
                 <div className="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-300">
-                  {isTrialing && trialDays !== null && (
+                  {data.status === 'trialing' && trialDays !== null && (
                     <p>
                       Trial ends <span className="font-medium text-gray-900 dark:text-white">{formatDate(data.trialEndsAt)}</span>
                       {' '}({trialDays} day{trialDays !== 1 ? 's' : ''} remaining)
@@ -162,8 +147,8 @@ export const AccountBillingPage: React.FC = () => {
                     </p>
                   )}
                   {data.cancelAtPeriodEnd && data.currentPeriodEnd && (
-                    <p className="text-amber-700">
-                      Access until <span className="font-medium">{formatDate(data.currentPeriodEnd)}</span>, then reverts to Free
+                    <p className="text-amber-700 dark:text-amber-400">
+                      Access until <span className="font-medium">{formatDate(data.currentPeriodEnd)}</span>, then reverts to read-only
                     </p>
                   )}
                 </div>
@@ -184,17 +169,11 @@ export const AccountBillingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Plan Details Card */}
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm dark:shadow-gray-900/30 p-6">
+          {/* Plan Details */}
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6">
             <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Plan Details</h2>
             <ul className="space-y-3">
-              {[
-                'Unlimited projects',
-                'AI-powered insights & reports',
-                'EVM forecasting & Monte Carlo simulation',
-                'Meeting minutes & lessons learned',
-                'Priority support',
-              ].map((feature) => (
+              {PLAN_FEATURES.map((feature) => (
                 <li key={feature} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                   <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
                   {feature}
@@ -204,25 +183,24 @@ export const AccountBillingPage: React.FC = () => {
           </div>
         </>
       ) : (
-        /* Free User — Upgrade Card */
-        <div className="bg-primary-50 dark:bg-primary-900/30 border border-primary-200 rounded-xl shadow-sm dark:shadow-gray-900/30 p-6">
+        /* Unpaid — Upgrade Card */
+        <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl shadow-sm p-6">
           <div className="text-center max-w-md mx-auto">
             <div className="w-14 h-14 rounded-2xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center mx-auto mb-4">
               <Zap className="w-7 h-7 text-primary-600 dark:text-primary-400" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Upgrade to Pro</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
-              Unlock AI insights, advanced forecasting, and unlimited projects with a 14-day free trial.
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Subscribe to Consultant Plan</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              {trialDays !== null && trialDays > 0
+                ? `Your trial ends in ${trialDays} day${trialDays !== 1 ? 's' : ''}. Subscribe to keep full access.`
+                : 'Your trial has ended. Subscribe to restore full access to all features.'}
             </p>
 
+            <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">$25<span className="text-sm font-normal text-gray-500 dark:text-gray-400">/mo</span></div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">or $250/yr (save 17%)</p>
+
             <ul className="text-left space-y-2 mb-6">
-              {[
-                'Unlimited projects',
-                'AI-powered insights & reports',
-                'EVM forecasting & Monte Carlo simulation',
-                'Meeting minutes & lessons learned',
-                'Priority support',
-              ].map((feature) => (
+              {PLAN_FEATURES.map((feature) => (
                 <li key={feature} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                   <CheckCircle2 className="w-4 h-4 text-primary-500 flex-shrink-0" />
                   {feature}
@@ -230,19 +208,13 @@ export const AccountBillingPage: React.FC = () => {
               ))}
             </ul>
 
-            <button
-              onClick={handleUpgrade}
-              disabled={checkoutLoading}
-              className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+            <Link
+              to="/pricing"
+              className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors"
             >
-              {checkoutLoading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Crown className="w-4 h-4" />
-              )}
-              Start Free Trial
-            </button>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">No charge until your trial ends</p>
+              <Crown className="w-4 h-4" />
+              View Plans & Subscribe
+            </Link>
           </div>
         </div>
       )}
