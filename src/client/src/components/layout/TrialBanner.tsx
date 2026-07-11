@@ -14,8 +14,9 @@ export function TrialBanner() {
   if (tier === 'consultant' || tier === 'pro' || tier === 'business') return null;
   if (user.role === 'admin') return null;
 
-  // Don't show for active trials
+  // Don't show for active trials (check trialEndsAt for app-managed trials)
   if (status === 'trialing' || status === 'active') return null;
+  if (user.trialEndsAt && new Date(user.trialEndsAt) > new Date()) return null;
 
   return (
     <div className="bg-amber-500 text-white text-center py-2.5 px-4 text-sm font-medium flex items-center justify-center gap-3">

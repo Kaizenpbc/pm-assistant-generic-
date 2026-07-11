@@ -105,6 +105,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           role: user.role,
           subscriptionTier: user.role === 'admin' ? 'pro' : user.subscriptionTier,
           subscriptionStatus: user.role === 'admin' ? 'active' : user.subscriptionStatus,
+          trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
         },
       };
     } catch (error) {

@@ -9,6 +9,7 @@ export interface User {
   role: 'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer' | 'risk_manager' | 'pmo' | 'ba' | 'qa' | 'tester' | 'devops' | 'claude_sme';
   subscriptionTier?: 'free' | 'pro' | 'business' | 'consultant';
   subscriptionStatus?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
+  trialEndsAt?: string | null;
 }
 
 interface AuthState {
