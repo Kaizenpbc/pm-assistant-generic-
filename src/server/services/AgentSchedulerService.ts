@@ -1,5 +1,5 @@
 import { AgentActivityLogService } from './AgentActivityLogService';
-import { startCronTasks, stopCronTasks, runOverdueScanImpl, CronTasks } from './scheduling/cronManager';
+import { startCronTasks, stopCronTasks, runOverdueScanImpl, CronTasks, TenantInfo } from './scheduling/cronManager';
 import { runScanImpl, ScanStats } from './scheduling/scanOrchestrator';
 
 export class AgentSchedulerService {
@@ -11,13 +11,13 @@ export class AgentSchedulerService {
     reportScheduleTask: null,
     healthSnapshotTask: null,
   };
-  private flaggedOverdue = new Set<string>();
+  private flaggedOverdue = new Map<string, Set<string>>();
   private activityLog = new AgentActivityLogService();
 
   start(): void {
     this.cronTasks = startCronTasks(
-      () => this.runScan().then(() => {}),
-      () => this.runOverdueScan().then(() => {}),
+      (_tenant) => this.runScan().then(() => {}),
+      (tenant) => this.runOverdueScan(tenant?.slug ?? 'default').then(() => {}),
     );
   }
 
@@ -29,8 +29,8 @@ export class AgentSchedulerService {
     return runScanImpl(this.activityLog, projectId);
   }
 
-  async runOverdueScan(): Promise<number> {
-    return runOverdueScanImpl(this.flaggedOverdue);
+  async runOverdueScan(tenantKey: string = 'default'): Promise<number> {
+    return runOverdueScanImpl(this.flaggedOverdue, tenantKey);
   }
 }
 
