@@ -44,7 +44,6 @@ export class StripeService {
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
       subscription_data: {
-        trial_period_days: 14,
         metadata: { userId },
       },
       success_url: `${config.APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
@@ -86,6 +85,16 @@ export class StripeService {
         }
         break;
       }
+      case 'invoice.payment_failed':
+      case 'invoice.paid': {
+        const invoice = event.data.object as any;
+        const subId = invoice.subscription as string | undefined;
+        if (subId) {
+          const subscription = await stripe.subscriptions.retrieve(subId);
+          await this.upsertSubscription(subscription);
+        }
+        break;
+      }
       default:
         logger.info(`[StripeService] Unhandled event type: ${event.type}`);
     }
@@ -104,7 +113,7 @@ export class StripeService {
     const sub = await subscriptionRepository.findLatestByUser(userId);
     const isAdmin = user.role === 'admin';
     return {
-      tier: isAdmin ? 'pro' : user.subscriptionTier,
+      tier: isAdmin ? 'consultant' : user.subscriptionTier,
       status: isAdmin ? 'active' : user.subscriptionStatus,
       trialEndsAt: user.trialEndsAt,
       currentPeriodEnd: sub ? sub.current_period_end : null,
@@ -123,8 +132,13 @@ export class StripeService {
     // Determine tier from price ID
     const item = subscription.items.data[0];
     const priceId = item?.price?.id;
-    let tier: 'free' | 'pro' | 'business' = 'free';
-    if (priceId === config.STRIPE_PRO_PRICE_ID) tier = 'pro';
+    const consultantPriceIds = [
+      config.STRIPE_MONTHLY_PRICE_ID,
+      config.STRIPE_ANNUAL_PRICE_ID,
+      config.STRIPE_PRO_PRICE_ID, // legacy fallback
+    ].filter(Boolean);
+    let tier: 'free' | 'pro' | 'business' | 'consultant' = 'free';
+    if (priceId && consultantPriceIds.includes(priceId)) tier = 'consultant';
 
     // Map Stripe status
     const statusMap: Record<string, 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none'> = {

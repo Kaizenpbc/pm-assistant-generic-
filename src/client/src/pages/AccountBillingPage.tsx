@@ -117,7 +117,7 @@ export const AccountBillingPage: React.FC = () => {
     );
   }
 
-  const isPro = data.tier === 'pro' || data.tier === 'business';
+  const isPro = data.tier === 'pro' || data.tier === 'business' || data.tier === 'consultant';
   const isTrialing = data.status === 'trialing';
   const trialDays = daysUntil(data.trialEndsAt);
   const badge = getStatusBadge(data.status, data.cancelAtPeriodEnd);

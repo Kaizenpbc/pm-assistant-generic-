@@ -14,7 +14,7 @@ export interface User {
   passwordResetToken: string | null;
   passwordResetExpires: Date | null;
   stripeCustomerId: string | null;
-  subscriptionTier: 'free' | 'pro' | 'business';
+  subscriptionTier: 'free' | 'pro' | 'business' | 'consultant';
   subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
   trialEndsAt: Date | null;
   emailNotificationsEnabled: boolean;

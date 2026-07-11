@@ -38,6 +38,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
+      const { plan } = (request.body as { plan?: string }) || {};
       const user = await userService.findById(userId);
       if (!user) {
         return reply.status(404).send({ error: 'User not found' });
@@ -47,13 +48,23 @@ export async function stripeRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'No Stripe customer', message: 'Please contact support' });
       }
 
-      if (!config.STRIPE_PRO_PRICE_ID) {
-        return reply.status(500).send({ error: 'Stripe not configured', message: 'Pro plan pricing is not configured' });
+      // Resolve price ID from plan parameter
+      let priceId: string | undefined;
+      if (plan === 'annual' && config.STRIPE_ANNUAL_PRICE_ID) {
+        priceId = config.STRIPE_ANNUAL_PRICE_ID;
+      } else if (config.STRIPE_MONTHLY_PRICE_ID) {
+        priceId = config.STRIPE_MONTHLY_PRICE_ID;
+      } else {
+        priceId = config.STRIPE_PRO_PRICE_ID; // legacy fallback
+      }
+
+      if (!priceId) {
+        return reply.status(500).send({ error: 'Stripe not configured', message: 'Pricing is not configured' });
       }
 
       const url = await stripeService.createCheckoutSession(
         user.stripeCustomerId,
-        config.STRIPE_PRO_PRICE_ID,
+        priceId,
         userId
       );
 

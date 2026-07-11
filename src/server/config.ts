@@ -40,6 +40,8 @@ const configSchema = z.object({
   STRIPE_PUBLISHABLE_KEY: z.string().optional().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().optional().default(''),
   STRIPE_PRO_PRICE_ID: z.string().optional().default(''),
+  STRIPE_MONTHLY_PRICE_ID: z.string().optional().default(''),
+  STRIPE_ANNUAL_PRICE_ID: z.string().optional().default(''),
 
   // Weather Configuration
   WEATHER_API_PROVIDER: z.enum(['openweathermap', 'weatherapi', 'accuweather', 'mock']).default('mock'),
@@ -139,6 +141,8 @@ export function validateConfiguration() {
       STRIPE_PUBLISHABLE_KEY: process.env['STRIPE_PUBLISHABLE_KEY'],
       STRIPE_WEBHOOK_SECRET: process.env['STRIPE_WEBHOOK_SECRET'],
       STRIPE_PRO_PRICE_ID: process.env['STRIPE_PRO_PRICE_ID'],
+      STRIPE_MONTHLY_PRICE_ID: process.env['STRIPE_MONTHLY_PRICE_ID'],
+      STRIPE_ANNUAL_PRICE_ID: process.env['STRIPE_ANNUAL_PRICE_ID'],
       WEATHER_API_PROVIDER: process.env['WEATHER_API_PROVIDER'],
       WEATHER_API_KEY: process.env['WEATHER_API_KEY'],
       WEATHER_CACHE_MINUTES: process.env['WEATHER_CACHE_MINUTES'],
