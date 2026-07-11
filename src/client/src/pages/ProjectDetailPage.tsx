@@ -257,6 +257,22 @@ export function ProjectDetailPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['project', id] }),
   });
 
+  // Prefetch EVM data on project open — so Performance tab loads instantly
+  useEffect(() => {
+    if (id) {
+      queryClient.prefetchQuery({
+        queryKey: ['evmForecast', id],
+        queryFn: () => apiService.getEVMForecast(id),
+        staleTime: 5 * 60 * 1000,
+      });
+      queryClient.prefetchQuery({
+        queryKey: ['evmForecastAI', id],
+        queryFn: () => apiService.getEVMAIPredictions(id),
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+  }, [id, queryClient]);
+
   // Set AI panel context when project loads
   useEffect(() => {
     if (project) {

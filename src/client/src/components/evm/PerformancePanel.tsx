@@ -577,10 +577,20 @@ export function PerformancePanel({ projectId, onNavigate }: {
 }) {
   const [forecastMethod, setForecastMethod] = useState<ForecastMethod>('cumulative');
 
+  // Stage 1: metrics (fast — no AI wait)
   const { data: evmData, isLoading: evmLoading, error: evmError } = useQuery({
     queryKey: ['evmForecast', projectId],
     queryFn: () => apiService.getEVMForecast(projectId),
     enabled: !!projectId,
+    staleTime: 5 * 60 * 1000, // 5 min client cache
+  });
+
+  // Stage 2: AI predictions (deferred — may take 3-8s on cache miss)
+  const { data: aiData, isLoading: aiLoading } = useQuery({
+    queryKey: ['evmForecastAI', projectId],
+    queryFn: () => apiService.getEVMAIPredictions(projectId),
+    enabled: !!projectId && !!evmData?.result,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: sCurveData } = useQuery({
@@ -597,7 +607,8 @@ export function PerformancePanel({ projectId, onNavigate }: {
 
   const metrics = forecast.currentMetrics;
   const traditionalForecasts = forecast.traditionalForecasts || forecast.forecasts;
-  const aiPredictions = forecast.aiPredictions;
+  // Use AI from the metrics response (if cached) or from the deferred AI query
+  const aiPredictions = forecast.aiPredictions || aiData?.aiPredictions;
   const earlyWarnings = forecast.earlyWarnings;
   const historicalWeekly = forecast.historicalTrends?.weeklyData || [];
 
@@ -874,7 +885,22 @@ export function PerformancePanel({ projectId, onNavigate }: {
       {/* ================================================================= */}
       {/* [7] AI Analysis (structured)                                      */}
       {/* ================================================================= */}
-      <AIAnalysisSection aiPredictions={aiPredictions} bac={bac} />
+      {aiLoading && !aiPredictions ? (
+        <div className="rounded-xl border border-primary-200 dark:border-primary-800 bg-white dark:bg-gray-800 overflow-hidden">
+          <div className="bg-primary-50 dark:bg-primary-900/20 px-5 py-3 flex items-center gap-2 border-b border-primary-200 dark:border-primary-800">
+            <Bot className="h-4 w-4 text-primary-500 animate-pulse" />
+            <h3 className="text-sm font-semibold text-primary-700 dark:text-primary-300">AI Analysis</h3>
+            <span className="ml-auto text-xs text-primary-500 dark:text-primary-400 animate-pulse">Generating...</span>
+          </div>
+          <div className="p-5 space-y-3">
+            <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse w-3/4" />
+            <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse w-full" />
+            <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse w-2/3" />
+          </div>
+        </div>
+      ) : (
+        <AIAnalysisSection aiPredictions={aiPredictions} bac={bac} />
+      )}
 
       {/* ================================================================= */}
       {/* [8] Early Warnings                                                */}

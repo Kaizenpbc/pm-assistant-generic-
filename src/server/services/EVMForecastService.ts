@@ -1,6 +1,7 @@
 import { claudeService, PromptTemplate } from './claudeService';
 import { sCurveService, SCurveDataPoint } from './SCurveService';
 import { projectService, Project } from './ProjectService';
+import { redisService } from './RedisService';
 import { config } from '../config';
 import logger from '../utils/logger';
 import {
@@ -11,6 +12,8 @@ import {
   type EVMForecastComparison,
   type EVMForecastAIResponse,
 } from '../schemas/evmForecastSchemas';
+
+const AI_CACHE_TTL_SECONDS = 30 * 60; // 30 minutes
 
 // ---------------------------------------------------------------------------
 // Prompt Template
@@ -98,18 +101,30 @@ export class EVMForecastService {
       },
     ];
 
-    // 8. If AI enabled, call Claude for predictions
+    // 8. Check Redis cache for AI predictions
     let aiPredictions: EVMForecastAIResponse | undefined;
+    const cacheKey = `evm:ai:${projectId}`;
 
     if (config.AI_ENABLED && claudeService.isAvailable()) {
       try {
-        aiPredictions = await this.getAIPredictions(
-          project,
-          currentMetrics,
-          weeklyData,
-          earlyWarnings,
-          traditionalForecasts,
-        );
+        const cached = await redisService.get(cacheKey);
+        if (cached) {
+          aiPredictions = JSON.parse(cached);
+          logger.debug('[EVMForecastService] AI predictions loaded from cache', { projectId });
+        } else {
+          aiPredictions = await this.getAIPredictions(
+            project,
+            currentMetrics,
+            weeklyData,
+            earlyWarnings,
+            traditionalForecasts,
+          );
+
+          // Cache the result
+          if (aiPredictions) {
+            await redisService.set(cacheKey, JSON.stringify(aiPredictions), AI_CACHE_TTL_SECONDS);
+          }
+        }
 
         // Add AI prediction to comparison table
         if (aiPredictions) {
@@ -133,6 +148,90 @@ export class EVMForecastService {
       aiPredictions,
       forecastComparison,
     };
+  }
+
+  // -------------------------------------------------------------------------
+  // Generate metrics only (no AI) — used for fast initial load
+  // -------------------------------------------------------------------------
+
+  async generateMetricsOnly(projectId: string): Promise<Omit<EVMForecastResult, 'aiPredictions'> & { aiPredictions?: EVMForecastAIResponse }> {
+    const project = await projectService.findById(projectId);
+    if (!project) {
+      throw new Error(`Project not found: ${projectId}`);
+    }
+
+    const sCurveData = await sCurveService.computeSCurveData(projectId);
+    const BAC = project.budgetAllocated || 0;
+    const currentMetrics = this.computeCurrentMetrics(BAC, sCurveData);
+    const weeklyData = this.computeHistoricalTrends(BAC, sCurveData);
+    const earlyWarnings = this.generateEarlyWarnings(currentMetrics);
+    const traditionalForecasts = this.computeTraditionalForecasts(currentMetrics);
+
+    const forecastComparison: EVMForecastComparison[] = [
+      { method: 'EAC (Cumulative CPI)', eacValue: traditionalForecasts.eacCumulative, varianceFromBAC: parseFloat((traditionalForecasts.eacCumulative - BAC).toFixed(2)) },
+      { method: 'EAC (Composite CPI*SPI)', eacValue: traditionalForecasts.eacComposite, varianceFromBAC: parseFloat((traditionalForecasts.eacComposite - BAC).toFixed(2)) },
+      { method: 'EAC (Management Estimate)', eacValue: traditionalForecasts.eacManagement, varianceFromBAC: parseFloat((traditionalForecasts.eacManagement - BAC).toFixed(2)) },
+    ];
+
+    // Check Redis cache — if AI is cached, include it for free
+    let aiPredictions: EVMForecastAIResponse | undefined;
+    const cacheKey = `evm:ai:${projectId}`;
+    try {
+      const cached = await redisService.get(cacheKey);
+      if (cached) {
+        aiPredictions = JSON.parse(cached);
+        forecastComparison.push({
+          method: 'AI-Adjusted EAC',
+          eacValue: aiPredictions!.aiAdjustedEAC,
+          varianceFromBAC: parseFloat((aiPredictions!.aiAdjustedEAC - BAC).toFixed(2)),
+        });
+      }
+    } catch { /* ignore cache errors */ }
+
+    return {
+      currentMetrics,
+      historicalTrends: { weeklyData },
+      earlyWarnings,
+      traditionalForecasts,
+      aiPredictions,
+      forecastComparison,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // AI predictions only — used for deferred loading
+  // -------------------------------------------------------------------------
+
+  async generateAIPredictions(projectId: string, userId?: string): Promise<EVMForecastAIResponse | null> {
+    if (!config.AI_ENABLED || !claudeService.isAvailable()) return null;
+
+    const cacheKey = `evm:ai:${projectId}`;
+
+    // Check cache first
+    try {
+      const cached = await redisService.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch { /* ignore */ }
+
+    // Generate fresh
+    const project = await projectService.findById(projectId);
+    if (!project) throw new Error(`Project not found: ${projectId}`);
+
+    const sCurveData = await sCurveService.computeSCurveData(projectId);
+    const BAC = project.budgetAllocated || 0;
+    const currentMetrics = this.computeCurrentMetrics(BAC, sCurveData);
+    const weeklyData = this.computeHistoricalTrends(BAC, sCurveData);
+    const earlyWarnings = this.generateEarlyWarnings(currentMetrics);
+    const traditionalForecasts = this.computeTraditionalForecasts(currentMetrics);
+
+    const aiPredictions = await this.getAIPredictions(project, currentMetrics, weeklyData, earlyWarnings, traditionalForecasts);
+
+    // Cache
+    if (aiPredictions) {
+      await redisService.set(cacheKey, JSON.stringify(aiPredictions), AI_CACHE_TTL_SECONDS);
+    }
+
+    return aiPredictions;
   }
 
   // -------------------------------------------------------------------------

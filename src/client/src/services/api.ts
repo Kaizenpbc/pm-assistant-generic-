@@ -845,6 +845,11 @@ class ApiService {
     return response.data;
   }
 
+  async getEVMAIPredictions(projectId: string) {
+    const response = await this.api.get(`/evm-forecast/${projectId}/ai`);
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Auto-Reschedule
   // -------------------------------------------------------------------------
