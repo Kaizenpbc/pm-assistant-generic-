@@ -571,7 +571,7 @@ export function PerformancePanel({ projectId, onNavigate }: {
   if (!forecast) return <EmptyState onNavigate={onNavigate} />;
 
   const metrics = forecast.currentMetrics;
-  const traditionalForecasts = forecast.forecasts;
+  const traditionalForecasts = forecast.traditionalForecasts || forecast.forecasts;
   const aiPredictions = forecast.aiPredictions;
   const earlyWarnings = forecast.earlyWarnings;
 

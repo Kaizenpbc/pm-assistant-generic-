@@ -16,9 +16,14 @@ export const EVMCorrectiveActionSchema = z.object({
   estimatedImpact: z.string(),
 });
 
+const WeeklyPredictionOrNumber = z.union([
+  EVMForecastWeeklyPredictionSchema,
+  z.number().transform((v) => ({ week: 0, value: v })),
+]);
+
 export const EVMForecastAIResponseSchema = z.object({
-  predictedCPI: z.array(EVMForecastWeeklyPredictionSchema),
-  predictedSPI: z.array(EVMForecastWeeklyPredictionSchema),
+  predictedCPI: z.array(WeeklyPredictionOrNumber),
+  predictedSPI: z.array(WeeklyPredictionOrNumber),
   aiAdjustedEAC: z.number(),
   eacConfidenceRange: z.object({
     low: z.number(),
