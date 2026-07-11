@@ -107,7 +107,7 @@ export const RegisterPage: React.FC = () => {
                 Organization Name <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <input id="organizationName" type="text" autoComplete="organization" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)}
-                className="input" placeholder="My Company" />
+                className="input" placeholder="Your company name (we'll use your name if blank)" />
             </div>
 
             <div>

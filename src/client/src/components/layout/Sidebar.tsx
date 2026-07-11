@@ -13,6 +13,7 @@ import {
   Bell,
   Gauge,
   Briefcase,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -60,6 +61,7 @@ const navSections: NavSection[] = [
       { labelKey: 'nav.timesheets', icon: Clock, path: '/timesheet' },
       { labelKey: 'nav.goals', icon: Target, path: '/goals' },
       { labelKey: 'nav.settings', icon: Settings, path: '/settings', roles: ['admin', 'project_manager', 'pmo'] },
+      { labelKey: 'nav.admin', icon: ShieldCheck, path: '/admin', roles: ['admin'] },
     ],
   },
 ];

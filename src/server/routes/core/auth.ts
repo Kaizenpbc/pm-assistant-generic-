@@ -181,7 +181,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       // Multi-tenant: create organization and provision tenant database
       if (config.MULTI_TENANT_ENABLED) {
-        const orgName = organizationName || `${fullName}'s Organization`;
+        const orgName = organizationName || fullName;
         try {
           const org = await organizationService.createOrganization(orgName, user.id, stripeCustomerId || undefined);
           await userService.update(user.id, { organizationId: org.id } as any);
