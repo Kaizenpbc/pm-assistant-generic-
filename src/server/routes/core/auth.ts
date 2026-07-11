@@ -7,6 +7,8 @@ import { config } from '../../config';
 import { userService } from '../../services/UserService';
 import { emailService } from '../../services/EmailService';
 import { stripeService } from '../../services/StripeService';
+import { organizationService } from '../../services/OrganizationService';
+import { provisionTenantDatabase } from '../../database/tenantProvisioner';
 import { rateLimiter } from '../../middleware/rateLimiter';
 import logger from '../../utils/logger';
 
@@ -20,6 +22,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   fullName: z.string().min(2).max(100),
+  organizationName: z.string().min(2).max(255).optional(),
 });
 
 const forgotPasswordSchema = z.object({
@@ -126,7 +129,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(429).send({ error: 'Too many registration attempts. Please try again later.' });
       }
 
-      const { username, email, password, fullName } = registerSchema.parse(request.body);
+      const { username, email, password, fullName, organizationName } = registerSchema.parse(request.body);
 
       const existingUsername = await userService.findByUsername(username);
       if (existingUsername) {
@@ -165,6 +168,22 @@ export async function authRoutes(fastify: FastifyInstance) {
         trialStartedAt: now,
         trialEndsAt: trialEnd,
       });
+
+      // Multi-tenant: create organization and provision tenant database
+      if (config.MULTI_TENANT_ENABLED) {
+        const orgName = organizationName || `${fullName}'s Organization`;
+        try {
+          const org = await organizationService.createOrganization(orgName, user.id, stripeCustomerId || undefined);
+          await userService.update(user.id, { organizationId: org.id } as any);
+          // Provision tenant DB in background — don't block registration
+          provisionTenantDatabase(org.id).catch((err) => {
+            logger.error('Tenant provisioning failed', { orgId: org.id, error: err });
+          });
+        } catch (orgError) {
+          logger.error('Organization creation failed during registration', { userId: user.id, error: orgError });
+          // Don't fail registration — user is created, org can be provisioned later
+        }
+      }
 
       // Send verification email
       await emailService.sendVerificationEmail(email, verificationToken);

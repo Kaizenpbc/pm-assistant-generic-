@@ -55,6 +55,7 @@ const USER_COLUMN_MAP: Record<string, string> = {
   lastLoginAt: 'last_login_at',
   timezone: 'timezone',
   locale: 'locale',
+  organizationId: 'organization_id',
 };
 
 export class UserRepository extends BaseRepository<User> {

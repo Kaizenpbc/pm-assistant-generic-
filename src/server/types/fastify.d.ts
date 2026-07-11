@@ -14,6 +14,11 @@ declare module 'fastify' {
     apiKeyRateLimit?: number | null;
     rawBody?: Buffer;
     projectMembership?: ProjectMember;
+    tenantOrg?: {
+      id: string;
+      slug: string;
+      dbName: string;
+    };
   }
 
   interface FastifyInstance {

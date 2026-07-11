@@ -16,6 +16,7 @@ import { auditService } from './services/auditService';
 import { databaseService } from './database/connection';
 import { securityMiddleware, securityValidationMiddleware } from './middleware/securityMiddleware';
 import { requestContextHook } from './middleware/requestContext';
+import { tenantResolverHook } from './middleware/tenantResolver';
 import { rateLimiter } from './middleware/rateLimiter';
 import { apiKeyService } from './services/ApiKeyService';
 import { metricsService } from './services/MetricsService';
@@ -40,6 +41,8 @@ export async function registerPlugins(fastify: FastifyInstance) {
   fastify.addHook('preHandler', securityValidationMiddleware);
   // Request context must run after securityValidationMiddleware (which sets x-request-id)
   fastify.addHook('preHandler', requestContextHook);
+  // Tenant resolver must run after requestContextHook (needs userId in context)
+  fastify.addHook('preHandler', tenantResolverHook);
 
   // Subscription gating — block write operations for expired trials / unpaid users
   // Exempt paths: auth, stripe, portal (public), websocket, waitlist, MCP, and read-only GET/OPTIONS/HEAD

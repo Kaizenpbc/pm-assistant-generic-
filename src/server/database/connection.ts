@@ -47,16 +47,40 @@ class DatabaseService {
     }
   }
 
+  private getTenantDbName(): string | undefined {
+    if (!config.MULTI_TENANT_ENABLED) return undefined;
+    // Lazy import to avoid circular dependency at module load time
+    const { getRequestContext } = require('../middleware/requestContext');
+    const ctx = getRequestContext();
+    return ctx?.tenantDbName;
+  }
+
   public async getConnection(): Promise<mysql.PoolConnection> {
     if (!this.pool) {
       throw new Error('Database pool not initialized');
     }
-    return this.pool.getConnection();
+    const conn = await this.pool.getConnection();
+    const tenantDb = this.getTenantDbName();
+    if (tenantDb) {
+      await conn.query(`USE \`${tenantDb}\``);
+    }
+    return conn;
   }
 
   public async query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
     if (!this.pool) {
       throw new Error('Database pool not initialized');
+    }
+    const tenantDb = this.getTenantDbName();
+    if (tenantDb) {
+      const conn = await this.pool.getConnection();
+      try {
+        await conn.query(`USE \`${tenantDb}\``);
+        const [rows] = await conn.execute(sql, params);
+        return rows as T[];
+      } finally {
+        conn.release();
+      }
     }
     const [rows] = await this.pool.execute(sql, params);
     return rows as T[];
@@ -64,6 +88,28 @@ class DatabaseService {
 
   public async queryOn<T = any>(connection: mysql.PoolConnection, sql: string, params: any[] = []): Promise<T[]> {
     const [rows] = await connection.execute(sql, params);
+    return rows as T[];
+  }
+
+  /**
+   * Execute a query explicitly against the control plane database,
+   * bypassing any tenant context from AsyncLocalStorage.
+   */
+  public async queryControlPlane<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+    if (!this.pool) {
+      throw new Error('Database pool not initialized');
+    }
+    if (config.MULTI_TENANT_ENABLED) {
+      const conn = await this.pool.getConnection();
+      try {
+        await conn.query(`USE \`${config.DB_NAME}\``);
+        const [rows] = await conn.execute(sql, params);
+        return rows as T[];
+      } finally {
+        conn.release();
+      }
+    }
+    const [rows] = await this.pool.execute(sql, params);
     return rows as T[];
   }
 
@@ -103,6 +149,14 @@ class DatabaseService {
 
   public isHealthy(): boolean {
     return this.isConnected && this.pool !== null;
+  }
+
+  /**
+   * Get the underlying pool for direct connection management (e.g., tenant provisioning).
+   * Use with caution — prefer query() or getConnection() for normal operations.
+   */
+  public getPool(): mysql.Pool | null {
+    return this.pool;
   }
 }
 

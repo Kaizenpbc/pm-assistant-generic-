@@ -3,6 +3,7 @@ import { config } from '../../config';
 import { scheduleService } from '../ScheduleService';
 import { dagWorkflowService } from '../DagWorkflowService';
 import { databaseService } from '../../database/connection';
+import { runWithTenantContext } from '../../middleware/requestContext';
 import logger from '../../utils/logger';
 
 export interface CronTasks {
@@ -114,6 +115,34 @@ export function stopCronTasks(tasks: CronTasks): void {
   if (tasks.reportScheduleTask) { tasks.reportScheduleTask.stop(); tasks.reportScheduleTask = null; }
   if (tasks.healthSnapshotTask) { tasks.healthSnapshotTask.stop(); tasks.healthSnapshotTask = null; }
   logger.info('[Agent] Stopped agent scheduler');
+}
+
+/**
+ * Run a callback for each active tenant (when multi-tenant is enabled)
+ * or once without tenant context (single-tenant mode).
+ * Bounded concurrency: processes 3 tenants at a time.
+ */
+export async function forEachTenant(callback: () => Promise<void>): Promise<void> {
+  if (!config.MULTI_TENANT_ENABLED) {
+    await callback();
+    return;
+  }
+
+  const { organizationService } = await import('../OrganizationService');
+  const orgs = await organizationService.getAllActiveProvisioned();
+
+  // Process tenants with bounded concurrency (3 at a time)
+  const concurrency = 3;
+  for (let i = 0; i < orgs.length; i += concurrency) {
+    const batch = orgs.slice(i, i + concurrency);
+    await Promise.allSettled(
+      batch.map(org =>
+        runWithTenantContext(org.dbName, org.id, callback).catch(err => {
+          logger.error(`[cron] Tenant job failed for ${org.slug}`, { error: err });
+        })
+      )
+    );
+  }
 }
 
 export async function runOverdueScanImpl(flaggedOverdue: Set<string>): Promise<number> {

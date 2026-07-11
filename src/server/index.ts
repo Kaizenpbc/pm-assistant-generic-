@@ -5,6 +5,7 @@ import { registerPlugins } from './plugins';
 import { registerRoutes } from './routes';
 import { databaseService } from './database/connection';
 import { runMigrations } from './database/migrationRunner';
+import { runAllTenantMigrations } from './database/tenantMigrationRunner';
 import './services/agentCapabilities';
 import { agentScheduler } from './services/AgentSchedulerService';
 import { redisService } from './services/RedisService';
@@ -29,6 +30,12 @@ async function start() {
     } else {
       console.log('Database connection successful');
       await runMigrations();
+
+      // Run pending tenant migrations if multi-tenant is enabled
+      if (config.MULTI_TENANT_ENABLED) {
+        console.log('Running tenant migrations...');
+        await runAllTenantMigrations();
+      }
     }
 
     // Connect to Redis (optional — graceful degradation if unavailable)

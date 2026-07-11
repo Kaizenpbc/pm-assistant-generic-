@@ -80,6 +80,9 @@ const configSchema = z.object({
   ALERT_WEBHOOK_URL: z.string().optional().default(''),
   ALERT_COOLDOWN_MINUTES: z.coerce.number().min(1).max(1440).default(30),
 
+  // Multi-Tenant Configuration
+  MULTI_TENANT_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean().default(false)),
+
   // File Upload Configuration
   UPLOAD_DIR: z.string().default(process.env['HOME'] || process.env['USERPROFILE'] ? `${process.env['HOME'] || process.env['USERPROFILE']}/uploads/pm-assistant` : './uploads/pm-assistant'),
   MAX_UPLOAD_SIZE_MB: z.coerce.number().min(1).max(100).default(10),
@@ -166,6 +169,7 @@ export function validateConfiguration() {
       ALERT_EMAIL: process.env['ALERT_EMAIL'],
       ALERT_WEBHOOK_URL: process.env['ALERT_WEBHOOK_URL'],
       ALERT_COOLDOWN_MINUTES: process.env['ALERT_COOLDOWN_MINUTES'],
+      MULTI_TENANT_ENABLED: process.env['MULTI_TENANT_ENABLED'],
       UPLOAD_DIR: process.env['UPLOAD_DIR'],
       MAX_UPLOAD_SIZE_MB: process.env['MAX_UPLOAD_SIZE_MB'],
     };
