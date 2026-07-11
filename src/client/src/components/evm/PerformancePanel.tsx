@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { SCurveChart } from './SCurveChart';
+import { EVMTrendChart } from './EVMTrendChart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -54,6 +55,28 @@ function verdictInfo(spi: number, cpi: number): { label: string; bg: string; tex
 function pctOfBAC(value: number, bac: number): string {
   if (!bac) return '0%';
   return `${((value / bac) * 100).toFixed(0)}%`;
+}
+
+/** Compute trend direction from recent historical data (last 4 weeks vs prior 4). */
+function computeTrend(values: number[]): 'up' | 'flat' | 'down' {
+  if (values.length < 3) return 'flat';
+  const recent = values.slice(-4);
+  const prior = values.slice(-8, -4);
+  if (prior.length === 0) {
+    // Not enough history — compare last value to first
+    const diff = recent[recent.length - 1] - recent[0];
+    return Math.abs(diff) < 0.02 ? 'flat' : diff > 0 ? 'up' : 'down';
+  }
+  const avgRecent = recent.reduce((a, b) => a + b, 0) / recent.length;
+  const avgPrior = prior.reduce((a, b) => a + b, 0) / prior.length;
+  const diff = avgRecent - avgPrior;
+  return Math.abs(diff) < 0.02 ? 'flat' : diff > 0 ? 'up' : 'down';
+}
+
+function TrendArrow({ direction }: { direction: 'up' | 'flat' | 'down' }) {
+  if (direction === 'up') return <span className="text-green-500 text-sm" title="Improving">↑</span>;
+  if (direction === 'down') return <span className="text-red-500 text-sm" title="Declining">↓</span>;
+  return <span className="text-gray-400 text-sm" title="Stable">→</span>;
 }
 
 function tooltipBorderColor(health: 'green' | 'amber' | 'red'): string {
@@ -238,7 +261,7 @@ function InputCard({ label, fullName, value, subtitle, colorClass, tooltip }: {
 }
 
 // Horizontal gauge for SPI/CPI with hover tooltip
-function IndexGauge({ label, abbreviation, value, variance, varianceLabel, varianceFullName, tooltipContent }: {
+function IndexGauge({ label, abbreviation, value, variance, varianceLabel, varianceFullName, tooltipContent, trend }: {
   label: string;
   abbreviation: string;
   value: number;
@@ -246,6 +269,7 @@ function IndexGauge({ label, abbreviation, value, variance, varianceLabel, varia
   varianceLabel: string;
   varianceFullName: string;
   tooltipContent: { insight: string; action: string };
+  trend?: 'up' | 'flat' | 'down';
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const clampedValue = Math.max(0.5, Math.min(1.5, value));
@@ -271,8 +295,9 @@ function IndexGauge({ label, abbreviation, value, variance, varianceLabel, varia
         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
           {abbreviation} <span className="font-normal text-gray-400 dark:text-gray-500 text-xs">({label})</span>
         </h4>
-        <span className={`text-2xl font-bold ${indexColor(value)}`}>
+        <span className={`text-2xl font-bold ${indexColor(value)} flex items-center gap-1`}>
           {value.toFixed(2)}
+          {trend && <TrendArrow direction={trend} />}
         </span>
       </div>
 
@@ -574,6 +599,7 @@ export function PerformancePanel({ projectId, onNavigate }: {
   const traditionalForecasts = forecast.traditionalForecasts || forecast.forecasts;
   const aiPredictions = forecast.aiPredictions;
   const earlyWarnings = forecast.earlyWarnings;
+  const historicalWeekly = forecast.historicalTrends?.weeklyData || [];
 
   const bac = metrics?.BAC ?? 0;
   const pv = metrics?.PV ?? 0;
@@ -584,6 +610,10 @@ export function PerformancePanel({ projectId, onNavigate }: {
   const sv = metrics?.SV ?? 0;
   const cv = metrics?.CV ?? 0;
   const tcpi = metrics?.tcpi ?? metrics?.TCPI ?? 1;
+
+  // Trend arrows from historical data
+  const spiTrend = computeTrend(historicalWeekly.map((w: any) => w.spi));
+  const cpiTrend = computeTrend(historicalWeekly.map((w: any) => w.cpi));
 
   // Empty state: no budget set
   if (bac === 0) return <EmptyState onNavigate={onNavigate} />;
@@ -685,6 +715,7 @@ export function PerformancePanel({ projectId, onNavigate }: {
           varianceLabel="SV"
           varianceFullName="Schedule Variance"
           tooltipContent={spiTooltip}
+          trend={historicalWeekly.length >= 3 ? spiTrend : undefined}
         />
         <IndexGauge
           label="Cost Performance Index"
@@ -694,11 +725,31 @@ export function PerformancePanel({ projectId, onNavigate }: {
           varianceLabel="CV"
           varianceFullName="Cost Variance"
           tooltipContent={cpiTooltip}
+          trend={historicalWeekly.length >= 3 ? cpiTrend : undefined}
         />
       </div>
 
       {/* ================================================================= */}
-      {/* [4] Forecast Card with Method Selector                            */}
+      {/* [4] CPI / SPI Trend Chart                                        */}
+      {/* ================================================================= */}
+      {historicalWeekly.length >= 2 && (
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+            Performance Trend
+            <span className="font-normal text-gray-400 dark:text-gray-500 text-sm ml-2">
+              CPI & SPI over time
+            </span>
+          </h3>
+          <EVMTrendChart
+            historicalData={historicalWeekly}
+            predictions={aiPredictions?.predictedCPI}
+            height={260}
+          />
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* [5] Forecast Card with Method Selector                            */}
       {/* ================================================================= */}
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
