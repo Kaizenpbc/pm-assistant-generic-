@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import crypto from 'crypto';
 
-vi.mock('../../database/connection', () => ({
-  databaseService: { query: vi.fn().mockResolvedValue([]) },
-}));
+vi.mock('../../database/connection', () => {
+  const queryFn = vi.fn().mockResolvedValue([]);
+  return {
+    databaseService: { query: queryFn, queryControlPlane: queryFn },
+  };
+});
 
 vi.mock('uuid', () => ({ v4: () => 'test-key-id' }));
 

@@ -98,6 +98,15 @@ export async function authRoutes(fastify: FastifyInstance) {
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
+      // Look up org info if multi-tenant
+      let organization: { id: string; name: string; slug: string } | null = null;
+      if (config.MULTI_TENANT_ENABLED) {
+        const org = await organizationService.findByUserId(user.id);
+        if (org) {
+          organization = { id: org.id, name: org.name, slug: org.slug };
+        }
+      }
+
       return {
         message: 'Login successful',
         user: {
@@ -109,6 +118,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           subscriptionTier: user.role === 'admin' ? 'pro' : user.subscriptionTier,
           subscriptionStatus: user.role === 'admin' ? 'active' : user.subscriptionStatus,
           trialEndsAt: user.trialEndsAt ? (user.trialEndsAt instanceof Date ? user.trialEndsAt.toISOString() : String(user.trialEndsAt)) : null,
+          organization,
         },
       };
     } catch (error) {

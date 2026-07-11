@@ -97,6 +97,14 @@ export class BaseRepository<T> {
     return databaseService.query(sql, params);
   }
 
+  /**
+   * Query the control plane database, bypassing tenant context.
+   * Use this in repositories for tables that live in the control plane (users, api_keys).
+   */
+  protected async queryControlPlaneRaw(sql: string, params: any[] = []): Promise<any[]> {
+    return databaseService.queryControlPlane(sql, params);
+  }
+
   protected mapRows(rows: any[]): T[] {
     return rows.map(this.rowMapper);
   }

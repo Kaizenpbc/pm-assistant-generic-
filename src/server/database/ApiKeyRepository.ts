@@ -20,7 +20,7 @@ class ApiKeyRepository {
     id: string, userId: string, name: string, keyHash: string, keyPrefix: string,
     scopes: string, rateLimit: number, expiresAt: string | null,
   ): Promise<any> {
-    return databaseService.query(
+    return databaseService.queryControlPlane(
       `INSERT INTO api_keys (id, user_id, name, key_hash, key_prefix, scopes, rate_limit, is_active, expires_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
       [id, userId, name, keyHash, keyPrefix, scopes, rateLimit, expiresAt],
@@ -28,7 +28,7 @@ class ApiKeyRepository {
   }
 
   async findByHash(keyHash: string): Promise<(ApiKeyRow & { user_role?: string }) | null> {
-    const rows = await databaseService.query<ApiKeyRow & { user_role?: string }>(
+    const rows = await databaseService.queryControlPlane<ApiKeyRow & { user_role?: string }>(
       `SELECT ak.*, u.role AS user_role
        FROM api_keys ak
        LEFT JOIN users u ON u.id = ak.user_id
@@ -39,25 +39,25 @@ class ApiKeyRepository {
   }
 
   touchLastUsed(id: string): Promise<any> {
-    return databaseService.query('UPDATE api_keys SET last_used_at = NOW() WHERE id = ?', [id]);
+    return databaseService.queryControlPlane('UPDATE api_keys SET last_used_at = NOW() WHERE id = ?', [id]);
   }
 
   async findByUser(userId: string): Promise<ApiKeyRow[]> {
-    return databaseService.query<ApiKeyRow>(
+    return databaseService.queryControlPlane<ApiKeyRow>(
       'SELECT * FROM api_keys WHERE user_id = ? ORDER BY created_at DESC',
       [userId],
     );
   }
 
   revoke(keyId: string, userId: string): Promise<any> {
-    return databaseService.query(
+    return databaseService.queryControlPlane(
       'UPDATE api_keys SET is_active = 0 WHERE id = ? AND user_id = ?',
       [keyId, userId],
     );
   }
 
   delete(keyId: string, userId: string): Promise<any> {
-    return databaseService.query(
+    return databaseService.queryControlPlane(
       'DELETE FROM api_keys WHERE id = ? AND user_id = ?',
       [keyId, userId],
     );
@@ -67,7 +67,7 @@ class ApiKeyRepository {
     id: string, apiKeyId: string, method: string, path: string,
     statusCode: number, responseTimeMs: number, ipAddress: string,
   ): Promise<any> {
-    return databaseService.query(
+    return databaseService.queryControlPlane(
       `INSERT INTO api_key_usage_log (id, api_key_id, method, path, status_code, response_time_ms, ip_address)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [id, apiKeyId, method, path, statusCode, responseTimeMs, ipAddress],
@@ -75,7 +75,7 @@ class ApiKeyRepository {
   }
 
   async getUsageTotal(keyId: string, whereClause: string, params: unknown[]): Promise<{ cnt: number; avg_rt: number }> {
-    const rows = await databaseService.query<{ cnt: number; avg_rt: number }>(
+    const rows = await databaseService.queryControlPlane<{ cnt: number; avg_rt: number }>(
       `SELECT COUNT(*) as cnt, COALESCE(AVG(response_time_ms), 0) as avg_rt
        FROM api_key_usage_log ${whereClause}`,
       params,
@@ -84,14 +84,14 @@ class ApiKeyRepository {
   }
 
   async getUsageByMethod(whereClause: string, params: unknown[]): Promise<Array<{ method: string; cnt: number }>> {
-    return databaseService.query<{ method: string; cnt: number }>(
+    return databaseService.queryControlPlane<{ method: string; cnt: number }>(
       `SELECT method, COUNT(*) as cnt FROM api_key_usage_log ${whereClause} GROUP BY method`,
       params,
     );
   }
 
   async getUsageByStatus(whereClause: string, params: unknown[]): Promise<Array<{ status_code: number; cnt: number }>> {
-    return databaseService.query<{ status_code: number; cnt: number }>(
+    return databaseService.queryControlPlane<{ status_code: number; cnt: number }>(
       `SELECT status_code, COUNT(*) as cnt FROM api_key_usage_log ${whereClause} GROUP BY status_code`,
       params,
     );

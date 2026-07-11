@@ -63,6 +63,11 @@ export class UserRepository extends BaseRepository<User> {
     super('users', rowToUser);
   }
 
+  // Users table lives in the control plane DB — always bypass tenant context
+  protected override async queryRaw(sql: string, params: any[] = []): Promise<any[]> {
+    return this.queryControlPlaneRaw(sql, params);
+  }
+
   async findByUsername(username: string): Promise<User | null> {
     const rows = await this.queryRaw('SELECT * FROM users WHERE username = ?', [username]);
     return rows.length > 0 ? rowToUser(rows[0]) : null;
