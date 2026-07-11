@@ -29,7 +29,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
       const limit = Math.min(Math.max(parseInt(query.limit || '100', 10) || 100, 1), 500);
       const offset = Math.max(parseInt(query.offset || '0', 10) || 0, 0);
 
-      const rows = await databaseService.query<any>(
+      const rows = await databaseService.queryControlPlane(
         `SELECT
           u.id, u.username, u.email, u.full_name, u.role, u.is_active,
           u.created_at, u.last_login_at, u.subscription_tier,
@@ -105,7 +105,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
   fastify.get('/stats', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!requireAdmin(request, reply)) return;
     try {
-      const rows = await databaseService.query<any>(
+      const rows = await databaseService.queryControlPlane(
         `SELECT
           (SELECT COUNT(*) FROM users) AS total_users,
           (SELECT COUNT(*) FROM users WHERE is_active = 1) AS active_users,
@@ -125,7 +125,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
   fastify.get('/ai-usage', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!requireAdmin(request, reply)) return;
     try {
-      const rows = await databaseService.query<any>(
+      const rows = await databaseService.queryControlPlane(
         `SELECT
           u.username, u.email, u.full_name,
           COUNT(a.id) AS call_count,
