@@ -98,13 +98,13 @@ const primaryTabs: { id: Tab; label: string }[] = [
   { id: 'team', label: 'Team' },
   { id: 'time', label: 'Time' },
   { id: 'files', label: 'Files' },
+  { id: 'performance', label: 'Performance' },
   { id: 'ai-insights', label: 'AI Insights' },
   { id: 'change-requests', label: 'Changes' },
 ];
 
 const financialTabs: { id: Tab; label: string }[] = [
   { id: 'budget', label: 'Budget' },
-  { id: 'performance', label: 'Performance' },
   { id: 'scenarios', label: 'What-If' },
 ];
 
