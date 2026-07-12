@@ -87,6 +87,8 @@ import { useUndoRedo } from '../hooks/useUndoRedo';
 import { TimeTrackingTab } from '../components/project/TimeTrackingTab';
 import { BudgetTab } from '../components/project/BudgetTab';
 import { SetupChecklist } from '../components/project/SetupChecklist';
+import { EditProjectModal } from '../components/project/EditProjectModal';
+import { Pencil } from 'lucide-react';
 
 type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'performance' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources' | 'time' | 'files' | 'budget';
 
@@ -224,6 +226,7 @@ export function ProjectDetailPage() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const [showStatusReport, setShowStatusReport] = useState(false);
+  const [showEditProject, setShowEditProject] = useState(false);
 
   const { user } = useAuthStore();
   const canEditStatus = user?.role === 'admin' || user?.role === 'project_manager';
@@ -255,6 +258,15 @@ export function ProjectDetailPage() {
   const statusMutation = useMutation({
     mutationFn: (newStatus: string) => apiService.updateProjectStatus(id!, newStatus),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['project', id] }),
+  });
+
+  const updateProjectMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => apiService.updateProject(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setShowEditProject(false);
+    },
   });
 
   // Prefetch EVM data on project open — so Performance tab loads instantly
@@ -418,6 +430,15 @@ export function ProjectDetailPage() {
                 </div>
                 <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1.5 whitespace-nowrap">viewing</span>
               </div>
+            )}
+            {canEditStatus && (
+              <button
+                onClick={() => setShowEditProject(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit
+              </button>
             )}
             <button
               onClick={() => setShowStatusReport(true)}
@@ -605,6 +626,14 @@ export function ProjectDetailPage() {
           onClose={() => setShowSaveTemplate(false)}
           projectId={id!}
           projectName={project.name}
+        />
+      )}
+      {showEditProject && project && (
+        <EditProjectModal
+          project={project}
+          onSave={(data) => updateProjectMutation.mutate(data)}
+          onClose={() => setShowEditProject(false)}
+          saving={updateProjectMutation.isPending}
         />
       )}
 
