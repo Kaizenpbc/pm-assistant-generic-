@@ -29,7 +29,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const user = request.user!;
       const body = createSprintSchema.parse(request.body);
       const sprint = await sprintService.create(body.projectId, body.scheduleId, body, user.userId);
-      return { sprint };
+      return reply.status(201).send({ sprint });
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       logger.error('Create sprint error', { error });
@@ -56,6 +56,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string };
       const sprint = await sprintService.getById(id);
+      if (!sprint) return reply.status(404).send({ error: 'Not found', message: 'Sprint not found' });
       return { sprint };
     } catch (error) {
       logger.error('Get sprint error', { error });
@@ -142,6 +143,8 @@ export async function sprintRoutes(fastify: FastifyInstance) {
   fastify.get('/:id/board', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
+      const sprint = await sprintService.getById(id);
+      if (!sprint) return reply.status(404).send({ error: 'Not found', message: 'Sprint not found' });
       const board = await sprintService.getSprintBoard(id);
       return { board };
     } catch (error) {
@@ -154,6 +157,8 @@ export async function sprintRoutes(fastify: FastifyInstance) {
   fastify.get('/:id/burndown', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
+      const sprint = await sprintService.getById(id);
+      if (!sprint) return reply.status(404).send({ error: 'Not found', message: 'Sprint not found' });
       const burndown = await sprintService.getSprintBurndown(id);
       return { burndown };
     } catch (error) {

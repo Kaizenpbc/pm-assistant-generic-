@@ -220,7 +220,11 @@ export async function runOverdueScanImpl(
   let rows: any[];
   try {
     rows = await databaseService.query(
-      `SELECT * FROM tasks WHERE end_date < CURDATE() AND status NOT IN ('completed', 'cancelled')`,
+      `SELECT id, schedule_id, name, status, priority, assigned_to, start_date, end_date,
+              estimated_days, actual_days, description, parent_task_id, created_by,
+              dependency_id, dependency_type, sort_order, is_recurrence_template, recurrence_rule, recurrence_parent_id
+       FROM tasks WHERE end_date < CURDATE() AND status NOT IN ('completed', 'cancelled')
+       LIMIT 1000`,
     );
   } catch {
     // Tables may not exist yet
@@ -238,6 +242,7 @@ export async function runOverdueScanImpl(
     if (tenantSet.has(taskId)) continue;
 
     tenantSet.add(taskId);
+    // Use row data directly instead of re-fetching from DB
     const task = await scheduleService.findTaskById(taskId);
     if (!task) continue;
 

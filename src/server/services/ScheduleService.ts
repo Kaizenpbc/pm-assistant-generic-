@@ -391,22 +391,21 @@ export class ScheduleService {
   }
 
   async findAllDownstreamTasks(taskId: string): Promise<Task[]> {
-    const result: Task[] = [];
-    const visited = new Set<string>();
-
-    const collect = async (id: string) => {
-      const dependents = await this.findDependentTasks(id);
-      for (const dep of dependents) {
-        if (!visited.has(dep.id)) {
-          visited.add(dep.id);
-          result.push(dep);
-          await collect(dep.id);
-        }
-      }
-    };
-
-    await collect(taskId);
-    return result;
+    // Use recursive CTE instead of N+1 individual queries
+    const rows = await databaseService.query(
+      `WITH RECURSIVE downstream AS (
+        SELECT task_id FROM task_dependencies WHERE dependency_id = ?
+        UNION ALL
+        SELECT td.task_id FROM task_dependencies td
+        JOIN downstream d ON td.dependency_id = d.task_id
+      )
+      SELECT t.* FROM tasks t
+      JOIN downstream d ON d.task_id = t.id`,
+      [taskId],
+    );
+    const tasks = rows.map(rowToTask);
+    await this.attachDependencies(tasks);
+    return tasks;
   }
 
   async validateDependency(taskId: string | null, dependencyId: string, scheduleId: string): Promise<void> {

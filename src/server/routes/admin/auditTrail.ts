@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { auditLedgerService } from '../../services/AuditLedgerService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import logger from '../../utils/logger';
 
 export async function auditTrailRoutes(fastify: FastifyInstance) {
@@ -24,7 +25,7 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/audit/:projectId — paginated, filterable audit log
   fastify.get('/:projectId', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Get audit trail for a project', tags: ['audit'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -72,7 +73,7 @@ export async function auditTrailRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/audit/:projectId/compliance-export — downloadable audit report
   fastify.get('/:projectId/compliance-export', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Export compliance audit report', tags: ['audit'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

@@ -6,6 +6,7 @@ import { actionProposalService } from '../../services/agents/ActionProposalServi
 import { claudeService } from '../../services/claudeService';
 import { degradationHandler } from '../../services/agents/DegradationHandler';
 import { killSwitchService } from '../../services/agents/KillSwitchService';
+import logger from '../../utils/logger';
 
 export async function agentHealthRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -15,36 +16,41 @@ export async function agentHealthRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('read')],
     schema: { description: 'Get agent system health status', tags: ['agent'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const [dailyCost, pendingProposals, healthStatus] = await Promise.all([
-      agentCostTracker.getDailyCost(),
-      actionProposalService.list({ status: 'pending', limit: 0 }),
-      degradationHandler.getHealthStatus(),
-    ]);
+    try {
+      const [dailyCost, pendingProposals, healthStatus] = await Promise.all([
+        agentCostTracker.getDailyCost(),
+        actionProposalService.list({ status: 'pending', limit: 0 }),
+        degradationHandler.getHealthStatus(),
+      ]);
 
-    const killSwitch = killSwitchService.getStatus();
+      const killSwitch = killSwitchService.getStatus();
 
-    return {
-      status: healthStatus.claudeAvailable && healthStatus.databaseHealthy && killSwitch.globalEnabled
-        ? 'healthy'
-        : 'degraded',
-      claudeApiStatus: healthStatus.claudeAvailable ? 'available' : 'unavailable',
-      userFacingCircuitBreaker: claudeService.getCircuitBreakerStatus(),
-      databaseStatus: {
-        healthy: healthStatus.databaseHealthy,
-        latencyMs: healthStatus.databaseLatencyMs,
-      },
-      circuitBreakers: healthStatus.circuitBreakers,
-      killSwitch,
-      recommendedScanScope: healthStatus.recommendedScope,
-      costs: {
-        today: {
-          tokens: dailyCost.totalTokens,
-          estimatedUsd: dailyCost.estimatedCostUsd,
-          invocations: dailyCost.entries,
+      return {
+        status: healthStatus.claudeAvailable && healthStatus.databaseHealthy && killSwitch.globalEnabled
+          ? 'healthy'
+          : 'degraded',
+        claudeApiStatus: healthStatus.claudeAvailable ? 'available' : 'unavailable',
+        userFacingCircuitBreaker: claudeService.getCircuitBreakerStatus(),
+        databaseStatus: {
+          healthy: healthStatus.databaseHealthy,
+          latencyMs: healthStatus.databaseLatencyMs,
         },
-      },
-      pendingProposals: pendingProposals.total,
-    };
+        circuitBreakers: healthStatus.circuitBreakers,
+        killSwitch,
+        recommendedScanScope: healthStatus.recommendedScope,
+        costs: {
+          today: {
+            tokens: dailyCost.totalTokens,
+            estimatedUsd: dailyCost.estimatedCostUsd,
+            invocations: dailyCost.entries,
+          },
+        },
+        pendingProposals: pendingProposals.total,
+      };
+    } catch (error) {
+      logger.error('Agent health check error', { error });
+      return reply.status(500).send({ error: 'Failed to get agent health status' });
+    }
   });
 
   // Agent cost breakdown
@@ -52,13 +58,18 @@ export async function agentHealthRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('read')],
     schema: { description: 'Get agent cost breakdown', tags: ['agent'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const query = request.query as { since?: string; until?: string };
-    const byAgent = await agentCostTracker.getCostsByAgent(query.since, query.until);
-    const dailyCost = await agentCostTracker.getDailyCost();
+    try {
+      const query = request.query as { since?: string; until?: string };
+      const byAgent = await agentCostTracker.getCostsByAgent(query.since, query.until);
+      const dailyCost = await agentCostTracker.getDailyCost();
 
-    return {
-      daily: dailyCost,
-      byAgent,
-    };
+      return {
+        daily: dailyCost,
+        byAgent,
+      };
+    } catch (error) {
+      logger.error('Agent costs error', { error });
+      return reply.status(500).send({ error: 'Failed to get agent costs' });
+    }
   });
 }

@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { AgentActivityLogService } from '../../services/AgentActivityLogService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import logger from '../../utils/logger';
 
 const logService = new AgentActivityLogService();
@@ -11,7 +12,7 @@ export async function agentActivityLogRoutes(fastify: FastifyInstance) {
 
   // GET /:projectId — paginated log entries for a project
   fastify.get('/:projectId', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
     schema: { description: 'Get agent activity log for a project', tags: ['agent-log'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

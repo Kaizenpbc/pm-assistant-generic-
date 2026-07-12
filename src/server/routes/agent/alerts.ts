@@ -6,6 +6,7 @@ import { proactiveAlertService } from '../../services/proactiveAlertService';
 import { AIActionExecutor } from '../../services/aiActionExecutor';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import logger from '../../utils/logger';
 
 const executeActionSchema = z.object({
   toolName: z.string().min(1),
@@ -24,9 +25,14 @@ export async function alertRoutes(fastify: FastifyInstance) {
       description: 'Get all proactive alerts across projects',
       tags: ['alerts'],
     },
-    handler: async (_request: FastifyRequest, _reply: FastifyReply) => {
-      const alerts = await proactiveAlertService.generateAlerts();
-      return { alerts, count: alerts.length };
+    handler: async (_request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const alerts = await proactiveAlertService.generateAlerts();
+        return { alerts, count: alerts.length };
+      } catch (error) {
+        logger.error('Failed to generate alerts', { error });
+        return reply.status(500).send({ error: 'Failed to generate alerts' });
+      }
     },
   });
 
@@ -37,9 +43,14 @@ export async function alertRoutes(fastify: FastifyInstance) {
       description: 'Get alert summary with counts by severity and type',
       tags: ['alerts'],
     },
-    handler: async (_request: FastifyRequest, _reply: FastifyReply) => {
-      const summary = await proactiveAlertService.getAlertsSummary();
-      return summary;
+    handler: async (_request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const summary = await proactiveAlertService.getAlertsSummary();
+        return summary;
+      } catch (error) {
+        logger.error('Failed to get alert summary', { error });
+        return reply.status(500).send({ error: 'Failed to get alert summary' });
+      }
     },
   });
 
@@ -50,10 +61,15 @@ export async function alertRoutes(fastify: FastifyInstance) {
       description: 'Get alerts for a specific project',
       tags: ['alerts'],
     },
-    handler: async (request: FastifyRequest, _reply: FastifyReply) => {
-      const { projectId } = request.params as any;
-      const alerts = await proactiveAlertService.getAlertsByProject(projectId);
-      return { alerts, count: alerts.length };
+    handler: async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const { projectId } = request.params as any;
+        const alerts = await proactiveAlertService.getAlertsByProject(projectId);
+        return { alerts, count: alerts.length };
+      } catch (error) {
+        logger.error('Failed to get project alerts', { error });
+        return reply.status(500).send({ error: 'Failed to get project alerts' });
+      }
     },
   });
 

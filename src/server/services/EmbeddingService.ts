@@ -115,7 +115,7 @@ export class EmbeddingService {
       config.EMBEDDING_DIMENSIONS,
     );
 
-    this.clearCache();
+    this.clearCacheForType(documentType);
     return { id, skipped: false };
   }
 
@@ -177,7 +177,7 @@ export class EmbeddingService {
 
   async deleteEmbedding(documentType: 'lesson' | 'meeting', documentId: string): Promise<void> {
     await embeddingRepository.delete(documentType, documentId);
-    this.clearCache();
+    this.clearCacheForType(documentType);
   }
 
   // -------------------------------------------------------------------------
@@ -197,6 +197,14 @@ export class EmbeddingService {
   private clearCache(): void {
     this.cache.clear();
     this.cacheTimestamps.clear();
+  }
+
+  /** Invalidate cache only for the affected document type (and 'all' key). */
+  private clearCacheForType(documentType: string): void {
+    this.cache.delete(documentType);
+    this.cacheTimestamps.delete(documentType);
+    this.cache.delete('all');
+    this.cacheTimestamps.delete('all');
   }
 
   // -------------------------------------------------------------------------
