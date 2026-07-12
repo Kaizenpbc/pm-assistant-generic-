@@ -15,6 +15,11 @@ import {
 } from '../schemas/predictiveSchemas';
 import type { WeatherForecast } from './dataProviders';
 import { projectService } from './ProjectService';
+import { redisService } from './RedisService';
+import logger from '../utils/logger';
+
+const DASHBOARD_CACHE_KEY = 'predictions:dashboard';
+const DASHBOARD_CACHE_TTL = 300; // 5 minutes
 
 // ---------------------------------------------------------------------------
 // Project Metrics (computed inline since AIContextBuilder doesn't carry them)
@@ -678,6 +683,16 @@ export class PredictiveIntelligenceService {
     userId?: string,
     userRole?: string,
   ): Promise<{ predictions: AIDashboardPredictions; aiPowered: boolean }> {
+    // Check cache first — return immediately if fresh data available
+    const cacheKey = `${DASHBOARD_CACHE_KEY}:${userId || 'anon'}`;
+    try {
+      const cached = await redisService.get(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return parsed;
+      }
+    } catch { /* cache miss, continue */ }
+
     const portfolio = await this.contextBuilder.buildPortfolioContext({ userId, role: userRole });
 
     // Compute per-project health deterministically
@@ -804,52 +819,67 @@ export class PredictiveIntelligenceService {
     };
 
     if (!claudeService.isAvailable()) {
-      return { predictions: fallbackPredictions, aiPowered: false };
+      const fallbackResult = { predictions: fallbackPredictions, aiPowered: false };
+      this.cacheDashboardResult(cacheKey, fallbackResult);
+      return fallbackResult;
     }
 
-    try {
-      const portfolioPrompt = this.contextBuilder.portfolioToPromptString(portfolio);
+    // Return fallback immediately, trigger AI enrichment in background
+    const fallbackResult = { predictions: fallbackPredictions, aiPowered: false };
 
-      const systemPrompt = dashboardBriefingPrompt.render({
-        portfolioData: portfolioPrompt,
-        weatherOverview,
-      });
+    // Fire-and-forget: enrich with AI and cache the result for subsequent requests
+    this.enrichDashboardWithAI(cacheKey, portfolio, fallbackPredictions, weatherOverview, userId).catch((err) => {
+      logger.warn('Background AI dashboard enrichment failed: ' + String(err));
+    });
 
-      const result = await claudeService.completeWithJsonSchema({
-        systemPrompt,
-        userMessage: 'Generate the dashboard predictions JSON.',
-        schema: AIDashboardPredictionsSchema,
-        temperature: 0.3,
-      });
+    return fallbackResult;
+  }
 
-      logAIUsage({
-        userId,
-        feature: 'dashboard_predictions',
-        model: 'claude',
-        usage: result.usage,
-        latencyMs: result.latencyMs,
-        success: true,
-        requestContext: {},
-      });
+  private async enrichDashboardWithAI(
+    cacheKey: string,
+    portfolio: PortfolioContext,
+    fallbackPredictions: AIDashboardPredictions,
+    weatherOverview: string,
+    userId?: string,
+  ): Promise<void> {
+    const portfolioPrompt = this.contextBuilder.portfolioToPromptString(portfolio);
 
-      // Override AI-generated summary/risks/budget/projectHealthScores with
-      // deterministic values — AI can hallucinate counts, so we only trust it
-      // for qualitative fields (highlights, weather narrative).
-      const merged: AIDashboardPredictions = {
-        ...result.data,
-        summary: fallbackPredictions.summary,
-        risks: fallbackPredictions.risks,
-        budget: fallbackPredictions.budget,
-        projectHealthScores: fallbackPredictions.projectHealthScores,
-      };
-      return { predictions: merged, aiPowered: true };
-    } catch (err) {
-      this.fastify.log.warn(
-        { err },
-        'AI dashboard predictions failed, using fallback',
-      );
-      return { predictions: fallbackPredictions, aiPowered: false };
-    }
+    const systemPrompt = dashboardBriefingPrompt.render({
+      portfolioData: portfolioPrompt,
+      weatherOverview,
+    });
+
+    const result = await claudeService.completeWithJsonSchema({
+      systemPrompt,
+      userMessage: 'Generate the dashboard predictions JSON.',
+      schema: AIDashboardPredictionsSchema,
+      temperature: 0.3,
+    });
+
+    logAIUsage({
+      userId,
+      feature: 'dashboard_predictions',
+      model: 'claude',
+      usage: result.usage,
+      latencyMs: result.latencyMs,
+      success: true,
+      requestContext: {},
+    });
+
+    const merged: AIDashboardPredictions = {
+      ...result.data,
+      summary: fallbackPredictions.summary,
+      risks: fallbackPredictions.risks,
+      budget: fallbackPredictions.budget,
+      projectHealthScores: fallbackPredictions.projectHealthScores,
+    };
+
+    const enrichedResult = { predictions: merged, aiPowered: true };
+    this.cacheDashboardResult(cacheKey, enrichedResult);
+  }
+
+  private cacheDashboardResult(cacheKey: string, result: { predictions: AIDashboardPredictions; aiPowered: boolean }): void {
+    redisService.set(cacheKey, JSON.stringify(result), DASHBOARD_CACHE_TTL).catch(() => {});
   }
 
   // -----------------------------------------------------------------------
