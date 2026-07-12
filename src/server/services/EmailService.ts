@@ -2,6 +2,15 @@ import { Resend } from 'resend';
 import { config } from '../config';
 import logger, { maskPii } from '../utils/logger';
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export class EmailService {
   private resend: Resend | null = null;
 
@@ -103,7 +112,7 @@ export class EmailService {
         <div style="text-align: center; margin-bottom: 32px;">
           <h1 style="color: #4f46e5; margin: 0;">Kovarti PM Assistant</h1>
         </div>
-        <h2 style="color: #1f2937;">${title}</h2>
+        <h2 style="color: #1f2937;">${escapeHtml(title)}</h2>
         ${bodyHtml}
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
         <p style="color: #9ca3af; font-size: 12px; text-align: center;">
@@ -119,12 +128,12 @@ export class EmailService {
       return;
     }
 
-    let bodyHtml = `<p style="color: #4b5563; line-height: 1.6;">${message}</p>`;
+    let bodyHtml = `<p style="color: #4b5563; line-height: 1.6;">${escapeHtml(message)}</p>`;
     if (ctaUrl) {
       bodyHtml += `
         <div style="text-align: center; margin: 32px 0;">
-          <a href="${ctaUrl}" style="background-color: #4f46e5; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
-            ${ctaLabel || 'View Details'}
+          <a href="${escapeHtml(ctaUrl)}" style="background-color: #4f46e5; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+            ${escapeHtml(ctaLabel || 'View Details')}
           </a>
         </div>
       `;
@@ -149,12 +158,12 @@ export class EmailService {
       return;
     }
 
-    let bodyHtml = `<p style="color: #4b5563; line-height: 1.6;">Hi ${name}, here's your project digest:</p>`;
+    let bodyHtml = `<p style="color: #4b5563; line-height: 1.6;">Hi ${escapeHtml(name)}, here's your project digest:</p>`;
 
     if (digest.overdueTasks.length > 0) {
       bodyHtml += `<h3 style="color: #dc2626; margin-top: 24px;">Overdue Tasks (${digest.overdueTasks.length})</h3><ul style="color: #4b5563;">`;
       for (const t of digest.overdueTasks.slice(0, 10)) {
-        bodyHtml += `<li>${t.name} (due ${t.dueDate})</li>`;
+        bodyHtml += `<li>${escapeHtml(t.name)} (due ${escapeHtml(t.dueDate)})</li>`;
       }
       bodyHtml += '</ul>';
     }
@@ -162,7 +171,7 @@ export class EmailService {
     if (digest.upcomingDeadlines.length > 0) {
       bodyHtml += `<h3 style="color: #f59e0b; margin-top: 24px;">Upcoming Deadlines (${digest.upcomingDeadlines.length})</h3><ul style="color: #4b5563;">`;
       for (const t of digest.upcomingDeadlines.slice(0, 10)) {
-        bodyHtml += `<li>${t.name} (due ${t.dueDate})</li>`;
+        bodyHtml += `<li>${escapeHtml(t.name)} (due ${escapeHtml(t.dueDate)})</li>`;
       }
       bodyHtml += '</ul>';
     }
@@ -195,7 +204,7 @@ export class EmailService {
 
     const bodyHtml = `
       <p style="color: #4b5563; line-height: 1.6;">
-        Your scheduled report <strong>${reportName}</strong> is attached as a CSV file.
+        Your scheduled report <strong>${escapeHtml(reportName)}</strong> is attached as a CSV file.
       </p>
       <div style="text-align: center; margin: 32px 0;">
         <a href="${config.APP_URL}/report-builder" style="background-color: #4f46e5; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
@@ -233,7 +242,7 @@ export class EmailService {
           <div style="text-align: center; margin-bottom: 32px;">
             <h1 style="color: #4f46e5; margin: 0;">Kovarti PM Assistant</h1>
           </div>
-          <h2 style="color: #1f2937;">Welcome, ${name}!</h2>
+          <h2 style="color: #1f2937;">Welcome, ${escapeHtml(name)}!</h2>
           <p style="color: #4b5563; line-height: 1.6;">
             Your email has been verified and your account is ready to use. Start managing your projects with AI-powered insights.
           </p>
@@ -267,7 +276,7 @@ export class EmailService {
           </div>
           <h2 style="color: #1f2937;">You're invited!</h2>
           <p style="color: #4b5563; line-height: 1.6;">
-            ${inviterName} has invited you to join <strong>${orgName}</strong> on Kovarti PM Assistant.
+            ${escapeHtml(inviterName)} has invited you to join <strong>${escapeHtml(orgName)}</strong> on Kovarti PM Assistant.
           </p>
           <p style="color: #4b5563; line-height: 1.6;">
             Create your account to get started:

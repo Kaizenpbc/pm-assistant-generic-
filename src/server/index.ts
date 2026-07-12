@@ -92,7 +92,8 @@ process.on('uncaughtException', (err) => {
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error('UNHANDLED REJECTION:', reason);
+  console.error('UNHANDLED REJECTION — shutting down:', reason);
+  process.exit(1);
 });
 
 process.on('SIGINT', async () => {

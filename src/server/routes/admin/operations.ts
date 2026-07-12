@@ -121,9 +121,10 @@ async function getRedisMemory(): Promise<number | null> {
 }
 
 async function getAiBudgetInfo(): Promise<{ totalRequests: number; inputTokens: number; outputTokens: number; costThisMonth: number; monthlyBudget: number; budgetUsedPercent: number }> {
-  const pricingInput = parseFloat(process.env.AI_PRICING_INPUT || '3');
-  const pricingOutput = parseFloat(process.env.AI_PRICING_OUTPUT || '15');
-  const monthlyBudget = parseFloat(process.env.AI_MONTHLY_BUDGET || '100');
+  const pricingInput = config.AI_PRICING_INPUT;
+  const pricingOutput = config.AI_PRICING_OUTPUT;
+  // Budget in dollars: derive from token budget and pricing (tokens / 1M * price per M)
+  const monthlyBudget = (config.AI_MONTHLY_TOKEN_BUDGET / 1_000_000) * ((pricingInput + pricingOutput) / 2);
 
   try {
     const now = new Date();

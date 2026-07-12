@@ -222,7 +222,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
   await fastify.register(cors, {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
+      if (origin === 'http://localhost:5173' || origin === 'https://localhost:5173') {
         return callback(null, true);
       }
       // Accept both http and https variants of the configured origin
