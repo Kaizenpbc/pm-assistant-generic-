@@ -118,7 +118,10 @@ export const ChangeRequestsPage: React.FC = () => {
                 setSelectedCRId(id);
                 setView('detail');
               }}
-              onNew={() => setView('form')}
+              onNew={() => {
+                setSelectedCRId('');
+                setView('form');
+              }}
             />
           )}
 
@@ -129,14 +132,28 @@ export const ChangeRequestsPage: React.FC = () => {
                 setView('list');
                 setSelectedCRId('');
               }}
+              onEdit={(id) => {
+                setSelectedCRId(id);
+                setView('form');
+              }}
             />
           )}
 
           {tab === 'requests' && view === 'form' && (
             <ChangeRequestForm
               projectId={selectedProjectId}
-              onClose={() => setView('list')}
-              onSaved={() => setView('list')}
+              crId={selectedCRId || undefined}
+              onClose={() => {
+                setView(selectedCRId ? 'detail' : 'list');
+              }}
+              onSaved={() => {
+                if (selectedCRId) {
+                  setView('detail');
+                } else {
+                  setView('list');
+                  setSelectedCRId('');
+                }
+              }}
             />
           )}
 

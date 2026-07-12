@@ -7,12 +7,16 @@ import {
   Clock,
   GitPullRequest,
   X,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { ConfirmModal } from '../ui/ConfirmModal';
 
 interface ChangeRequestDetailProps {
   crId: string;
   onBack: () => void;
+  onEdit?: (crId: string) => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -51,12 +55,13 @@ function statusLabel(status: string): string {
   return status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) {
+export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetailProps) {
   const queryClient = useQueryClient();
 
   const [actionComment, setActionComment] = useState('');
   const [showWorkflowSelect, setShowWorkflowSelect] = useState(false);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['change-request', crId],
@@ -121,6 +126,14 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => apiService.deleteChangeRequest(crId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['change-requests'] });
+      onBack();
+    },
+  });
+
   const isActionPending =
     submitMutation.isPending ||
     approveMutation.isPending ||
@@ -148,6 +161,8 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
   }
 
   const canSubmit = cr.status === 'draft';
+  const canEdit = cr.status === 'draft';
+  const canDelete = cr.status === 'draft';
   const canReview = cr.status === 'pending' || cr.status === 'in_review';
   const canWithdraw = cr.status === 'pending' || cr.status === 'in_review';
 
@@ -162,10 +177,10 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
       </button>
 
       {/* Header */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">{cr.title}</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{cr.title}</h2>
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[cr.status] || STATUS_COLORS.draft}`}>
                 {statusLabel(cr.status)}
@@ -178,6 +193,28 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
               </span>
             </div>
           </div>
+          {(canEdit || canDelete) && (
+            <div className="flex items-center gap-2 ml-4">
+              {canEdit && onEdit && (
+                <button
+                  onClick={() => onEdit(crId)}
+                  className="p-2 text-gray-400 hover:text-primary-600 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                  title="Edit change request"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                  title="Delete change request"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Description */}
@@ -374,6 +411,18 @@ export function ChangeRequestDetail({ crId, onBack }: ChangeRequestDetailProps) 
             <p className="text-sm text-red-600">Action failed. Please try again.</p>
           )}
         </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title="Delete Change Request"
+          message={`Delete "${cr.title}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          isPending={deleteMutation.isPending}
+          onConfirm={() => deleteMutation.mutate()}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       )}
     </div>
   );

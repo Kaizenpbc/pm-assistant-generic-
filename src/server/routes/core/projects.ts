@@ -5,6 +5,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import { webhookService } from '../../services/WebhookService';
+import { auditLedgerService } from '../../services/AuditLedgerService';
 import { toProjectDTO, paginate } from '../../dto/responses';
 import { parsePagination } from '../../schemas/paginationSchema';
 import logger from '../../utils/logger';
@@ -29,6 +30,7 @@ const updateProjectSchema = createProjectSchema.partial();
 
 const statusUpdateSchema = z.object({
   status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']),
+  cancellationReason: z.string().max(2000).optional(),
 });
 
 export async function projectRoutes(fastify: FastifyInstance) {
@@ -123,11 +125,30 @@ export async function projectRoutes(fastify: FastifyInstance) {
     try {
       const user = request.user!;
       const { id } = request.params as { id: string };
-      const { status } = statusUpdateSchema.parse(request.body);
+      const { status, cancellationReason } = statusUpdateSchema.parse(request.body);
+
+      if (status === 'cancelled' && !cancellationReason?.trim()) {
+        return reply.status(400).send({ error: 'Validation error', message: 'A cancellation reason is required when cancelling a project' });
+      }
+
       const project = await projectService.update(id, { status }, user.userId);
       if (!project) {
         return reply.status(404).send({ error: 'Project not found', message: 'Project does not exist or you do not have access' });
       }
+
+      if (status === 'cancelled' && cancellationReason) {
+        auditLedgerService.append({
+          actorId: user.userId,
+          actorType: 'user',
+          action: 'project.cancelled',
+          entityType: 'project',
+          entityId: id,
+          projectId: id,
+          payload: { reason: cancellationReason.trim() },
+          source: 'web',
+        }).catch(() => {});
+      }
+
       webhookService.dispatch('project.updated', { project }, user.userId);
       return { project };
     } catch (error) {

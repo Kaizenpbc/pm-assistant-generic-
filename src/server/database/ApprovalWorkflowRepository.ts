@@ -187,6 +187,33 @@ export class ApprovalWorkflowRepository extends BaseRepository<ApprovalWorkflow>
     return rows.length > 0 ? rows[0] : null;
   }
 
+  async updateChangeRequest(id: string, data: {
+    title?: string;
+    description?: string;
+    category?: string;
+    priority?: string;
+    impactSummary?: string;
+  }): Promise<ChangeRequest> {
+    const sets: string[] = [];
+    const params: any[] = [];
+    if (data.title !== undefined) { sets.push('title = ?'); params.push(data.title); }
+    if (data.description !== undefined) { sets.push('description = ?'); params.push(data.description); }
+    if (data.category !== undefined) { sets.push('category = ?'); params.push(data.category); }
+    if (data.priority !== undefined) { sets.push('priority = ?'); params.push(data.priority); }
+    if (data.impactSummary !== undefined) { sets.push('impact_summary = ?'); params.push(data.impactSummary); }
+    if (sets.length > 0) {
+      params.push(id);
+      await this.queryRaw(`UPDATE change_requests SET ${sets.join(', ')} WHERE id = ?`, params);
+    }
+    const rows = await this.queryRaw('SELECT * FROM change_requests WHERE id = ?', [id]);
+    return changeRequestRowToDTO(rows[0]);
+  }
+
+  async deleteChangeRequest(id: string): Promise<void> {
+    await this.queryRaw('DELETE FROM approval_actions WHERE change_request_id = ?', [id]);
+    await this.queryRaw('DELETE FROM change_requests WHERE id = ?', [id]);
+  }
+
   async updateChangeRequestStatus(id: string, status: string, extra?: { currentStep?: number; workflowId?: string }): Promise<ChangeRequest> {
     const sets: string[] = ['status = ?'];
     const params: any[] = [status];

@@ -254,10 +254,18 @@ export function ProjectDetailPage() {
 
   const riskStats = riskStatsData?.data || riskStatsData;
 
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+
   const queryClient = useQueryClient();
   const statusMutation = useMutation({
-    mutationFn: (newStatus: string) => apiService.updateProjectStatus(id!, newStatus),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['project', id] }),
+    mutationFn: ({ status, cancellationReason }: { status: string; cancellationReason?: string }) =>
+      apiService.updateProjectStatus(id!, status, cancellationReason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      setShowCancelModal(false);
+      setCancelReason('');
+    },
   });
 
   const updateProjectMutation = useMutation({
@@ -364,7 +372,14 @@ export function ProjectDetailPage() {
               {canEditStatus ? (
                 <select
                   value={project.status}
-                  onChange={(e) => statusMutation.mutate(e.target.value)}
+                  onChange={(e) => {
+                    const newStatus = e.target.value;
+                    if (newStatus === 'cancelled') {
+                      setShowCancelModal(true);
+                    } else {
+                      statusMutation.mutate({ status: newStatus });
+                    }
+                  }}
                   disabled={statusMutation.isPending}
                   className={`rounded-full px-2.5 py-0.5 text-xs font-medium cursor-pointer border border-current border-opacity-30 outline-none pr-5 ${status.color} ${statusMutation.isPending ? 'opacity-60' : 'hover:opacity-80'}`}
                 >
@@ -383,7 +398,7 @@ export function ProjectDetailPage() {
                   </span>
                   {project.status === 'planning' && (
                     <button
-                      onClick={() => statusMutation.mutate('active')}
+                      onClick={() => statusMutation.mutate({ status: 'active' })}
                       disabled={statusMutation.isPending}
                       className="inline-flex items-center gap-1 rounded-md bg-primary-600 px-3 py-1 text-xs font-medium text-white hover:bg-primary-700 transition-colors disabled:opacity-50"
                     >
@@ -643,6 +658,44 @@ export function ProjectDetailPage() {
           projectName={project?.name || ''}
           onClose={() => setShowStatusReport(false)}
         />
+      )}
+
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowCancelModal(false)} />
+          <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Cancel Project</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Please provide a reason for cancelling this project. This action will be recorded in the audit trail.
+            </p>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Reason for cancellation..."
+              rows={3}
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none resize-none"
+              autoFocus
+            />
+            {statusMutation.isError && (
+              <p className="text-sm text-red-600 mt-2">Failed to cancel project. Please try again.</p>
+            )}
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => { setShowCancelModal(false); setCancelReason(''); }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={() => statusMutation.mutate({ status: 'cancelled', cancellationReason: cancelReason.trim() })}
+                disabled={!cancelReason.trim() || statusMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {statusMutation.isPending ? 'Cancelling...' : 'Cancel Project'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -30,6 +30,8 @@ const createChangeRequestSchema = z.object({
   impactSummary: z.string().max(2000).optional(),
 });
 
+const updateChangeRequestSchema = createChangeRequestSchema.partial();
+
 const submitForApprovalSchema = z.object({
   workflowId: z.string().min(1),
 });
@@ -132,6 +134,40 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
     } catch (error) {
       logger.error('Get change request detail error', { error });
       return reply.status(500).send({ error: 'Failed to fetch change request detail' });
+    }
+  });
+
+  // PUT /change-requests/:id — update draft change request
+  fastify.put('/change-requests/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = request.user!;
+      const { id } = request.params as { id: string };
+      const body = updateChangeRequestSchema.parse(request.body);
+      const changeRequest = await approvalWorkflowService.updateChangeRequest(id, body, user.userId);
+      return { changeRequest };
+    } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.includes('not found')) return reply.status(404).send({ error: msg });
+      if (msg.includes('Only draft')) return reply.status(409).send({ error: msg });
+      logger.error('Update change request error', { error });
+      return reply.status(500).send({ error: 'Failed to update change request' });
+    }
+  });
+
+  // DELETE /change-requests/:id — delete draft change request
+  fastify.delete('/change-requests/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = request.user!;
+      const { id } = request.params as { id: string };
+      await approvalWorkflowService.deleteChangeRequest(id, user.userId);
+      return { message: 'Change request deleted' };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.includes('not found')) return reply.status(404).send({ error: msg });
+      if (msg.includes('Only draft')) return reply.status(409).send({ error: msg });
+      logger.error('Delete change request error', { error });
+      return reply.status(500).send({ error: 'Failed to delete change request' });
     }
   });
 

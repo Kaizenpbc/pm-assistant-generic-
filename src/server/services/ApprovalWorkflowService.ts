@@ -88,6 +88,50 @@ export class ApprovalWorkflowService {
     return approvalWorkflowRepository.createChangeRequest(projectId, data);
   }
 
+  async updateChangeRequest(crId: string, data: {
+    title?: string;
+    description?: string;
+    category?: string;
+    priority?: string;
+    impactSummary?: string;
+  }, userId?: string): Promise<ChangeRequest> {
+    const existing = await approvalWorkflowRepository.findChangeRequestById(crId);
+    if (!existing) throw new Error('Change request not found');
+    if (existing.status !== 'draft') throw new Error('Only draft change requests can be edited');
+    const updated = await approvalWorkflowRepository.updateChangeRequest(crId, data);
+
+    auditLedgerService.append({
+      actorId: userId || existing.requestedBy,
+      actorType: 'user',
+      action: 'change_request.update',
+      entityType: 'change_request',
+      entityId: crId,
+      projectId: existing.projectId,
+      payload: { before: existing, after: updated },
+      source: 'web',
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
+
+    return updated;
+  }
+
+  async deleteChangeRequest(crId: string, userId?: string): Promise<void> {
+    const existing = await approvalWorkflowRepository.findChangeRequestById(crId);
+    if (!existing) throw new Error('Change request not found');
+    if (existing.status !== 'draft') throw new Error('Only draft change requests can be deleted');
+    await approvalWorkflowRepository.deleteChangeRequest(crId);
+
+    auditLedgerService.append({
+      actorId: userId || existing.requestedBy,
+      actorType: 'user',
+      action: 'change_request.delete',
+      entityType: 'change_request',
+      entityId: crId,
+      projectId: existing.projectId,
+      payload: { deleted: existing },
+      source: 'web',
+    }).catch(err => deadLetterService.capture('audit.append', {}, err));
+  }
+
   async getChangeRequests(projectId: string, status?: string): Promise<ChangeRequest[]> {
     return approvalWorkflowRepository.findChangeRequests(projectId, status);
   }

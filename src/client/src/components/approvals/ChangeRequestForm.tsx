@@ -42,6 +42,9 @@ export function ChangeRequestForm({ projectId, crId, onClose, onSaved }: ChangeR
 
   const saveMutation = useMutation({
     mutationFn: (data: { title: string; description: string; category: string; priority?: string; impactSummary?: string }) => {
+      if (crId) {
+        return apiService.updateChangeRequest(crId, data);
+      }
       return apiService.createChangeRequest(projectId, data);
     },
     onSuccess: () => {

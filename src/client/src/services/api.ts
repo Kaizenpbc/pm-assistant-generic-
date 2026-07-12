@@ -181,8 +181,10 @@ class ApiService {
     return response.data;
   }
 
-  async updateProjectStatus(id: string, status: string) {
-    const response = await this.api.patch(`/projects/${id}/status`, { status });
+  async updateProjectStatus(id: string, status: string, cancellationReason?: string) {
+    const body: Record<string, string> = { status };
+    if (cancellationReason) body.cancellationReason = cancellationReason;
+    const response = await this.api.patch(`/projects/${id}/status`, body);
     return response.data;
   }
 
@@ -1509,6 +1511,16 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
 
   async createChangeRequest(projectId: string, data: { title: string; description: string; category: string; priority?: string; impactSummary?: string }) {
     const response = await this.api.post(`/approvals/change-requests/${projectId}`, data);
+    return response.data;
+  }
+
+  async updateChangeRequest(id: string, data: { title?: string; description?: string; category?: string; priority?: string; impactSummary?: string }) {
+    const response = await this.api.put(`/approvals/change-requests/${id}`, data);
+    return response.data;
+  }
+
+  async deleteChangeRequest(id: string) {
+    const response = await this.api.delete(`/approvals/change-requests/${id}`);
     return response.data;
   }
 
