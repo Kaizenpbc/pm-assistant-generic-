@@ -42,10 +42,18 @@ export class ApiKeyService {
       logger.warn('Failed to update API key last_used_at', { keyId: row.id, error });
     });
 
+    let scopes: string[];
+    try {
+      scopes = JSON.parse(row.scopes);
+    } catch {
+      logger.error('Malformed scopes JSON in API key', { keyId: row.id });
+      return null;
+    }
+
     return {
       userId: row.user_id,
       keyId: row.id,
-      scopes: JSON.parse(row.scopes),
+      scopes,
       rateLimit: row.rate_limit,
       userRole: row.user_role || 'team_member',
     };
@@ -71,17 +79,26 @@ export class ApiKeyService {
   > {
     const rows = await apiKeyRepository.findByUser(userId);
 
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      keyPrefix: row.key_prefix,
-      scopes: JSON.parse(row.scopes),
-      rateLimit: row.rate_limit,
-      isActive: !!row.is_active,
-      lastUsedAt: row.last_used_at,
-      expiresAt: row.expires_at,
-      createdAt: row.created_at,
-    }));
+    return rows.map((row) => {
+      let scopes: string[];
+      try {
+        scopes = JSON.parse(row.scopes);
+      } catch {
+        scopes = ['read'];
+        logger.warn('Malformed scopes JSON in API key listing', { keyId: row.id });
+      }
+      return {
+        id: row.id,
+        name: row.name,
+        keyPrefix: row.key_prefix,
+        scopes,
+        rateLimit: row.rate_limit,
+        isActive: !!row.is_active,
+        lastUsedAt: row.last_used_at,
+        expiresAt: row.expires_at,
+        createdAt: row.created_at,
+      };
+    });
   }
 
   /**

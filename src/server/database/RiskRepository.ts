@@ -234,8 +234,10 @@ class RiskRepository extends BaseRepository<ProjectRisk> {
       params.push(term, term);
     }
 
-    const sort = filters.sort || 'risk_score';
-    const dir = filters.sortDir || 'desc';
+    const ALLOWED_SORT_COLS = ['risk_score', 'severity', 'probability', 'impact', 'created_at', 'title', 'status', 'type', 'category', 'updated_at'];
+    const ALLOWED_DIRS = ['asc', 'desc'];
+    const sort = ALLOWED_SORT_COLS.includes(filters.sort || '') ? filters.sort! : 'risk_score';
+    const dir = ALLOWED_DIRS.includes((filters.sortDir || '').toLowerCase()) ? filters.sortDir!.toLowerCase() : 'desc';
     const orderBy = `${sort} ${dir}, created_at DESC`;
 
     const rows = await this.queryRaw(

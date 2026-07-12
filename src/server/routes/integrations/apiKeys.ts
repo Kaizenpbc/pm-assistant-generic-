@@ -24,6 +24,31 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
 
       const body = createApiKeySchema.parse(request.body);
 
+      // Enforce: requested scopes cannot exceed user's own role scopes
+      const ROLE_SCOPES: Record<string, string[]> = {
+        admin: ['read', 'write', 'admin'],
+        executive: ['read'],
+        project_manager: ['read', 'write'],
+        scrum_master: ['read', 'write'],
+        team_member: ['read'],
+        finance_officer: ['read'],
+        risk_manager: ['read', 'write'],
+        pmo: ['read', 'write'],
+        ba: ['read', 'write'],
+        qa: ['read', 'write'],
+        tester: ['read'],
+        devops: ['read', 'write'],
+        claude_sme: ['read'],
+      };
+      const userScopes = ROLE_SCOPES[user.role ?? ''] ?? ['read'];
+      const disallowed = body.scopes.filter(s => !userScopes.includes(s));
+      if (disallowed.length > 0) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: `Your role (${user.role}) cannot create API keys with scopes: ${disallowed.join(', ')}`,
+        });
+      }
+
       const apiKey = await apiKeyService.createKey(
         user.userId,
         body.name,

@@ -3,6 +3,7 @@ import { scheduleService, Task } from './ScheduleService';
 import { resourceService, Resource } from './ResourceService';
 import { config } from '../config';
 import logger from '../utils/logger';
+import { sanitizeForPrompt } from '../utils/promptSanitizer';
 import { meetingAnalysisRepository } from '../database/MeetingAnalysisRepository';
 import { ragService } from './RagService';
 import {
@@ -119,9 +120,11 @@ When assigning people, use the exact names from the resource list below when pos
 Respond in valid JSON matching the requested schema.`;
 
       const userMessage = `## Meeting Transcript
-${transcript}
+<user-data field="transcript">
+${sanitizeForPrompt(transcript)}
+</user-data>
 
-## Existing Tasks in Schedule${schedule ? ` "${schedule.name}"` : ''}
+## Existing Tasks in Schedule${schedule ? ` "${sanitizeForPrompt(schedule.name)}"` : ''}
 ${taskContext || '(No existing tasks)'}
 
 ## Available Team Resources

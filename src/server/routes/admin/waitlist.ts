@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
+import { timingSafeEqual } from 'crypto';
 import { databaseService } from '../../database/connection';
 import { rateLimiter } from '../../middleware/rateLimiter';
 
@@ -55,7 +56,9 @@ export async function waitlistRoutes(fastify: FastifyInstance) {
     const adminKey = process.env.WAITLIST_ADMIN_KEY;
     if (!adminKey) return reply.status(503).send({ error: 'Waitlist admin not configured' });
     const key = request.headers['x-admin-key'] as string | undefined;
-    if (key !== adminKey) return reply.status(401).send({ error: 'Unauthorized' });
+    if (!key || key.length !== adminKey.length || !timingSafeEqual(Buffer.from(key), Buffer.from(adminKey))) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
     const rows = await databaseService.query<any>(
       'SELECT email, created_at FROM waitlist ORDER BY created_at DESC'
     );
@@ -66,7 +69,9 @@ export async function waitlistRoutes(fastify: FastifyInstance) {
     const adminKey = process.env.WAITLIST_ADMIN_KEY;
     if (!adminKey) return reply.status(503).send({ error: 'Waitlist admin not configured' });
     const key = request.headers['x-admin-key'] as string | undefined;
-    if (key !== adminKey) return reply.status(401).send({ error: 'Unauthorized' });
+    if (!key || key.length !== adminKey.length || !timingSafeEqual(Buffer.from(key), Buffer.from(adminKey))) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
     const rows = await databaseService.query<any>(
       'SELECT email, created_at FROM waitlist ORDER BY created_at ASC'
     );

@@ -22,7 +22,12 @@ function toDateStr(d: Date): string {
 }
 
 function rowToProposal(row: RescheduleProposalRow): RescheduleProposal {
-  const data = JSON.parse(row.proposal_data);
+  let data: any;
+  try {
+    data = JSON.parse(row.proposal_data);
+  } catch {
+    data = { delayedTasks: [], proposedChanges: [], rationale: 'Parse error', estimatedImpact: {} };
+  }
   return {
     id: row.id,
     scheduleId: row.schedule_id,

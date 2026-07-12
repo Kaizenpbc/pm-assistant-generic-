@@ -43,7 +43,15 @@ class DeadLetterService {
     let processed = 0;
     for (const entry of entries) {
       try {
-        await executor(entry.operation, JSON.parse(entry.payload));
+        let payload: any;
+        try {
+          payload = JSON.parse(entry.payload);
+        } catch {
+          // Malformed payload — mark as failed immediately
+          await deadLetterRepository.markFailed(entry.id, entry.max_attempts);
+          continue;
+        }
+        await executor(entry.operation, payload);
         // Success — mark resolved
         await deadLetterRepository.markResolved(entry.id);
         processed++;
@@ -85,18 +93,26 @@ class DeadLetterService {
    */
   async listFailed(limit = 50): Promise<DeadLetterEntry[]> {
     const rows = await deadLetterRepository.findFailed(limit);
-    return rows.map((r: any) => ({
-      id: r.id,
-      operation: r.operation,
-      payload: JSON.parse(r.payload),
-      errorMessage: r.error_message,
-      attempts: r.attempts,
-      maxAttempts: r.max_attempts,
-      status: r.status,
-      nextRetryAt: r.next_retry_at,
-      createdAt: r.created_at,
-      resolvedAt: r.resolved_at,
-    }));
+    return rows.map((r: any) => {
+      let payload: any;
+      try {
+        payload = JSON.parse(r.payload);
+      } catch {
+        payload = r.payload;
+      }
+      return {
+        id: r.id,
+        operation: r.operation,
+        payload,
+        errorMessage: r.error_message,
+        attempts: r.attempts,
+        maxAttempts: r.max_attempts,
+        status: r.status,
+        nextRetryAt: r.next_retry_at,
+        createdAt: r.created_at,
+        resolvedAt: r.resolved_at,
+      };
+    });
   }
 }
 

@@ -34,7 +34,7 @@ export async function killSwitchRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { action } = toggleKillSwitchSchema.parse(request.body);
-      const userId = (request as any).userId ?? 'unknown';
+      const userId = request.user?.userId ?? 'unknown';
       await killSwitchService.setGlobalKillSwitch(action, userId);
       return { success: true, ...killSwitchService.getStatus() };
     } catch (error) {
@@ -51,7 +51,7 @@ export async function killSwitchRoutes(fastify: FastifyInstance) {
     try {
       const { agentId } = request.params as { agentId: string };
       const { disabled } = perAgentSchema.parse(request.body);
-      const userId = (request as any).userId ?? 'unknown';
+      const userId = request.user?.userId ?? 'unknown';
       await killSwitchService.setAgentDisabled(agentId, disabled, userId);
       return { success: true, ...killSwitchService.getStatus() };
     } catch (error) {
@@ -68,7 +68,7 @@ export async function killSwitchRoutes(fastify: FastifyInstance) {
     try {
       const { projectId } = request.params as { projectId: string };
       const { disabled } = perProjectSchema.parse(request.body);
-      const userId = (request as any).userId ?? 'unknown';
+      const userId = request.user?.userId ?? 'unknown';
       await killSwitchService.setProjectDisabled(projectId, disabled, userId);
       return { success: true, ...killSwitchService.getStatus() };
     } catch (error) {

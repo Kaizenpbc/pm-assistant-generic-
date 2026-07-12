@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { AIContextBuilder, ProjectContext } from './aiContextBuilder';
 import { claudeService, PromptTemplate } from './claudeService';
 import { logAIUsage } from './aiUsageLogger';
+import { sanitizeForPrompt } from '../utils/promptSanitizer';
 import { computeEVMMetrics, computeDeterministicRiskScore } from './predictiveIntelligence';
 import type { AIScenarioRequest, AIScenarioResult } from '../schemas/phase5Schemas';
 import { AIScenarioResultSchema } from '../schemas/phase5Schemas';
@@ -227,7 +228,7 @@ export class WhatIfScenarioService {
 
       const result = await claudeService.completeWithJsonSchema({
         systemPrompt,
-        userMessage: `Model this scenario: "${request.scenario}". Return the impact analysis JSON.`,
+        userMessage: `Model this scenario: "${sanitizeForPrompt(request.scenario)}". Return the impact analysis JSON.`,
         schema: AIScenarioResultSchema,
         temperature: 0.4,
       });

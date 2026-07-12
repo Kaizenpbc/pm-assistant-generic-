@@ -90,6 +90,15 @@ export interface ProposalReview {
 // Row mapping
 // ---------------------------------------------------------------------------
 
+function safeJsonParse(value: string | null | undefined): any {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
 function rowToProposal(row: ProposalRow): Proposal {
   return {
     id: row.id,
@@ -102,7 +111,7 @@ function rowToProposal(row: ProposalRow): Proposal {
     reasoning: row.reasoning,
     summary: row.summary,
     confidenceScore: Number(row.confidence_score),
-    confidenceFactors: row.confidence_factors ? JSON.parse(row.confidence_factors) : null,
+    confidenceFactors: safeJsonParse(row.confidence_factors),
     riskLevel: row.risk_level as RiskLevel,
     dataSnapshotVersion: row.data_snapshot_version ?? undefined,
     expiresAt: row.expires_at ?? undefined,
@@ -124,8 +133,8 @@ function rowToAction(row: ActionRow): ProposalAction {
     actionType: row.action_type as ActionType,
     targetEntityType: row.target_entity_type,
     targetEntityId: row.target_entity_id,
-    oldValue: row.old_value ? JSON.parse(row.old_value) : null,
-    newValue: JSON.parse(row.new_value),
+    oldValue: row.old_value ? safeJsonParse(row.old_value) : null,
+    newValue: safeJsonParse(row.new_value),
     reasoning: row.reasoning ?? undefined,
     status: row.status as ActionStatus,
     executedAt: row.executed_at ?? undefined,
