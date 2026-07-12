@@ -161,7 +161,7 @@ export class ApprovalWorkflowRepository extends BaseRepository<ApprovalWorkflow>
     await this.queryRaw(
       `INSERT INTO change_requests (id, project_id, title, description, category, priority, impact_summary, status, requested_by)
        VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
-      [id, projectId, data.title, data.description || null, data.category, data.priority,
+      [id, projectId, data.title, data.description || '', data.category, data.priority,
        data.impactSummary || null, data.requestedBy],
     );
     const rows = await this.queryRaw('SELECT * FROM change_requests WHERE id = ?', [id]);
