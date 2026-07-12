@@ -2074,6 +2074,11 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async updateProfile(data: { fullName?: string; email?: string }) {
+    const response = await this.api.put('/users/me/profile', data);
+    return response.data;
+  }
+
   async updateNotificationPreferences(prefs: {
     emailNotificationsEnabled?: boolean;
     digestFrequency?: 'none' | 'daily' | 'weekly';

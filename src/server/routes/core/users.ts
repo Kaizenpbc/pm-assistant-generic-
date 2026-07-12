@@ -5,6 +5,11 @@ import { requireScope } from '../../middleware/requireScope';
 import { userService } from '../../services/UserService';
 import logger from '../../utils/logger';
 
+const profileUpdateSchema = z.object({
+  fullName: z.string().min(1).max(200).optional(),
+  email: z.string().email().max(255).optional(),
+});
+
 const notificationPrefsSchema = z.object({
   emailNotificationsEnabled: z.boolean().optional(),
   digestFrequency: z.enum(['none', 'daily', 'weekly']).optional(),
@@ -50,6 +55,35 @@ export async function userRoutes(fastify: FastifyInstance) {
     } catch (error) {
       logger.error('Get user profile error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch user profile' });
+    }
+  });
+
+  fastify.put('/me/profile', {
+    preHandler: [requireScope('write')],
+    schema: { description: 'Update profile (full name, email)', tags: ['users'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = request.user!.userId;
+      const parsed = profileUpdateSchema.parse(request.body);
+      const updateData: Record<string, any> = {};
+      if (parsed.fullName !== undefined) updateData.fullName = parsed.fullName;
+      if (parsed.email !== undefined) updateData.email = parsed.email;
+
+      if (Object.keys(updateData).length === 0) {
+        return reply.status(400).send({ error: 'No fields to update' });
+      }
+
+      const updated = await userService.update(userId, updateData);
+      if (!updated) return reply.status(404).send({ error: 'User not found' });
+
+      return {
+        fullName: updated.fullName,
+        email: updated.email,
+      };
+    } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
+      logger.error('Update profile error', { error });
+      return reply.status(500).send({ error: 'Internal server error' });
     }
   });
 

@@ -128,14 +128,26 @@ export const SettingsPage: React.FC = () => {
 /* ─── Profile Tab ──────────────────────────────────────────────── */
 
 const ProfileTab: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const result = await apiService.updateProfile({ fullName, email });
+      if (user) setUser({ ...user, fullName: result.fullName ?? fullName, email: result.email ?? email });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -162,10 +174,11 @@ const ProfileTab: React.FC = () => {
           <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
         </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex items-center gap-3 pt-2">
-          <button onClick={handleSave} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors">
+          <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:opacity-50">
             <Save className="w-4 h-4" />
-            Save Changes
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
           {saved && <span className="text-sm text-green-600">Saved successfully</span>}
         </div>
