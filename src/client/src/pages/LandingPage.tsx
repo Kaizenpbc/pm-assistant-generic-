@@ -78,20 +78,27 @@ const features = [
 
 const pricingTiers = [
   {
-    name: 'Free',
-    price: '$0',
-    period: '/mo',
-    description: 'Get started with basic project management',
-    features: ['Up to 3 projects', 'Basic scheduling', 'Task management', 'Team collaboration'],
-    cta: 'Get Started',
+    name: 'Free Trial',
+    price: 'Free',
+    period: '14 days',
+    description: 'Try every feature — no credit card required',
+    features: [
+      'Unlimited projects',
+      'AI scheduling & risk detection',
+      'Monte Carlo simulations',
+      'Meeting intelligence',
+      'Natural language queries',
+      'Full platform access',
+    ],
+    cta: 'Start Free Trial',
     ctaLink: '/register',
     highlighted: false,
   },
   {
-    name: 'Pro',
-    price: '$19',
+    name: 'Consultant',
+    price: '$25',
     period: '/mo',
-    description: 'AI-powered features for serious project managers',
+    description: 'All features for independent PMs and consultants',
     features: [
       'Unlimited projects',
       'AI scheduling & risk detection',
@@ -100,28 +107,28 @@ const pricingTiers = [
       'Natural language queries',
       'Priority support',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     ctaLink: '/register',
     highlighted: true,
-    badge: '14-day free trial',
+    badge: 'Most Popular',
   },
   {
     name: 'Business',
-    price: '$49',
-    period: '/mo',
-    description: 'Advanced features for teams and organizations',
+    price: '',
+    period: '',
+    description: 'Multi-tenant, teams, and enterprise features',
     features: [
-      'Everything in Pro',
+      'Everything in Consultant',
       'Portfolio management',
       'Advanced analytics',
       'Custom workflows',
       'API access',
       'Dedicated support',
     ],
-    cta: 'Contact Sales',
-    ctaLink: 'mailto:info@kpbc.ca',
+    cta: 'Coming Soon',
+    ctaLink: '#',
     highlighted: false,
-    disabled: false,
+    disabled: true,
   },
 ];
 
@@ -246,7 +253,7 @@ export const LandingPage: React.FC = () => {
                 } ${tier.disabled ? 'opacity-75' : ''}`}
               >
                 {tier.badge && (
-                  <span className="inline-block px-3 py-1 text-xs font-semibold bg-white dark:bg-gray-800/20 text-white rounded-full mb-4 backdrop-blur-sm">
+                  <span className="inline-block px-3 py-1 text-xs font-semibold bg-white/20 text-white rounded-full mb-4 backdrop-blur-sm">
                     {tier.badge}
                   </span>
                 )}
@@ -254,12 +261,20 @@ export const LandingPage: React.FC = () => {
                   {tier.name}
                 </h3>
                 <div className="mt-4 flex items-baseline">
-                  <span className={`text-4xl font-bold ${tier.highlighted ? 'text-white' : 'text-slate-900'}`}>
-                    {tier.price}
-                  </span>
-                  <span className={`ml-1 text-sm ${tier.highlighted ? 'text-primary-200' : 'text-slate-500'}`}>
-                    {tier.period}
-                  </span>
+                  {tier.price ? (
+                    <>
+                      <span className={`text-4xl font-bold ${tier.highlighted ? 'text-white' : 'text-slate-900'}`}>
+                        {tier.price}
+                      </span>
+                      {tier.period && (
+                        <span className={`ml-1 text-sm ${tier.highlighted ? 'text-primary-200' : 'text-slate-500'}`}>
+                          {tier.period}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-2xl font-bold text-slate-400">TBD</span>
+                  )}
                 </div>
                 <p className={`mt-2 text-sm ${tier.highlighted ? 'text-primary-200' : 'text-slate-500'}`}>
                   {tier.description}
