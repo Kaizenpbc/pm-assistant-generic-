@@ -2055,6 +2055,11 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async getAdminOperations() {
+    const response = await this.api.get('/admin/operations');
+    return response.data;
+  }
+
   async getAdminAudit(limit = 100) {
     const response = await this.api.get(`/admin/audit?limit=${limit}`);
     return response.data;

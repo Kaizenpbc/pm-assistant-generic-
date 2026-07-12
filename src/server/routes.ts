@@ -91,6 +91,7 @@ import { metricsRoutes } from './routes/admin/metrics';
 import { logsRoutes } from './routes/admin/logs';
 import { deadLetterRoutes } from './routes/admin/deadLetter';
 import { tenantAdminRoutes } from './routes/admin/tenants';
+import { operationsRoutes } from './routes/admin/operations';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Core
@@ -184,4 +185,5 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(logsRoutes, { prefix: '/api/v1/admin/logs' });
   await fastify.register(deadLetterRoutes, { prefix: '/api/v1/admin/dlq' });
   await fastify.register(tenantAdminRoutes, { prefix: '/api/v1/admin/tenants' });
+  await fastify.register(operationsRoutes, { prefix: '/api/v1/admin/operations' });
 }

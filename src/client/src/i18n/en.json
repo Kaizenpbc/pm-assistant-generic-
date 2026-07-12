@@ -24,6 +24,7 @@
     "adminUsers": "Users",
     "adminTenants": "Tenants",
     "adminAiUsage": "AI Usage",
+    "adminOperations": "Operations",
     "adminSystem": "System Stats",
     "adminAudit": "Audit Trail",
     "switchToAdmin": "Switch to Admin",

@@ -46,6 +46,7 @@ const AdminTenantsPage = lazy(() => import('./pages/admin/AdminTenantsPage').the
 const AdminSystemPage = lazy(() => import('./pages/admin/AdminSystemPage').then(m => ({ default: m.AdminSystemPage })));
 const AdminAiUsagePage = lazy(() => import('./pages/admin/AdminAiUsagePage').then(m => ({ default: m.AdminAiUsagePage })));
 const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage').then(m => ({ default: m.AdminAuditPage })));
+const AdminOperationsPage = lazy(() => import('./pages/admin/AdminOperationsPage').then(m => ({ default: m.AdminOperationsPage })));
 const AgentProposalsPage = lazy(() => import('./pages/AgentProposalsPage').then(m => ({ default: m.AgentProposalsPage })));
 const ChangeRequestsPage = lazy(() => import('./pages/ChangeRequestsPage').then(m => ({ default: m.ChangeRequestsPage })));
 const GoalsPage = lazy(() => import('./pages/GoalsPage').then(m => ({ default: m.GoalsPage })));
@@ -142,6 +143,7 @@ function App() {
         <Route path="/admin/system" element={<PrivateRoute><AdminSystemPage /></PrivateRoute>} />
         <Route path="/admin/ai-usage" element={<PrivateRoute><AdminAiUsagePage /></PrivateRoute>} />
         <Route path="/admin/audit" element={<PrivateRoute><AdminAuditPage /></PrivateRoute>} />
+        <Route path="/admin/operations" element={<PrivateRoute><AdminOperationsPage /></PrivateRoute>} />
         <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
 
         {/* Catch-all */}
