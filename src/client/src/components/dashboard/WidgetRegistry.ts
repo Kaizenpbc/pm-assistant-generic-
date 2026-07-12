@@ -7,6 +7,7 @@ export interface WidgetDef {
 
 // Unified dashboard widgets — fixed layout order, togglable visibility
 export const UNIFIED_WIDGETS: WidgetDef[] = [
+  { id: 'briefing', label: 'Morning Briefing', group: 'Overview', defaultOn: true },
   { id: 'kpi', label: 'KPI Tiles', group: 'Overview', defaultOn: true },
   { id: 'intel', label: 'Portfolio Intelligence', group: 'Overview', defaultOn: true },
   { id: 'projects', label: 'Projects Table', group: 'Overview', defaultOn: true },

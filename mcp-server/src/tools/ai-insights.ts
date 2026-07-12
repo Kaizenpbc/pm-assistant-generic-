@@ -82,4 +82,8 @@ export function registerAIInsightTools(server: McpServer) {
   }, async ({ transcript, projectId, scheduleId }, extra) =>
     jsonResult(await getApiClientFromExtra(extra).post('/meeting-intelligence/analyze', { transcript, projectId, scheduleId }))
   );
+
+  server.tool('get-daily-briefing', 'Get your daily briefing: overdue tasks, pending decisions, risk escalations, project health, budget alerts, and upcoming milestones', {}, async (_args, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).get('/briefing/daily'))
+  );
 }

@@ -24,10 +24,12 @@ import { ActionCenterPM } from '../components/pm/ActionCenterPM';
 import { ActivityFeedPM } from '../components/pm/ActivityFeedPM';
 import { NextBestActionsWidget } from '../components/dashboard/widgets/NextBestActionsWidget';
 import { HealthTrendsWidget } from '../components/dashboard/widgets/HealthTrendsWidget';
+import { MorningBriefingWidget } from '../components/dashboard/widgets/MorningBriefingWidget';
 
 // ─── Widget registry ──────────────────────────────────────────────────────────
 
 const PM_WIDGETS: WidgetDef[] = [
+  { id: 'briefing',    label: 'Morning Briefing',       group: 'Overview', defaultOn: true },
   { id: 'kpi',         label: 'KPI Tiles',              group: 'Overview', defaultOn: true },
   { id: 'intel',       label: 'Portfolio Intelligence', group: 'Overview', defaultOn: true },
   { id: 'projects',    label: 'Projects Table',         group: 'Overview', defaultOn: true },
@@ -237,6 +239,9 @@ export function DashboardPM() {
           />
         </div>
       </div>
+
+      {/* ── Morning Briefing ── */}
+      {show('briefing') && <MorningBriefingWidget scope={scopeParam} />}
 
       {/* ── KPI Tiles ── */}
       {show('kpi') && (

@@ -329,6 +329,16 @@ class ApiService {
   }
 
   // -------------------------------------------------------------------------
+  // Briefing endpoints
+  // -------------------------------------------------------------------------
+
+  async getDailyBriefing(scope?: string) {
+    const params = scope ? `?scope=${scope}` : '';
+    const response = await this.api.get(`/briefing/daily${params}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
   // Predictions endpoints
   // -------------------------------------------------------------------------
 
