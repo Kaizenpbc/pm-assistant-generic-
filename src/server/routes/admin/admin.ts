@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../../middleware/auth';
 import { databaseService } from '../../database/connection';
 import { userService } from '../../services/UserService';
+import { auditLedgerService } from '../../services/AuditLedgerService';
 
 const statusSchema = z.object({
   active: z.boolean(),
@@ -115,6 +116,22 @@ export async function adminRoutes(fastify: FastifyInstance) {
           (SELECT COALESCE(SUM(input_tokens + output_tokens), 0) FROM ai_usage_log) AS total_tokens`
       );
       return { stats: rows[0] ?? {} };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // GET /api/v1/admin/audit — cross-project audit trail (admin only)
+  fastify.get('/audit', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!requireAdmin(request, reply)) return;
+    try {
+      const { limit = '100' } = request.query as { limit?: string };
+      const result = await auditLedgerService.getEntries({
+        limit: Math.min(Number(limit) || 100, 500),
+        offset: 0,
+      });
+      return { entries: result.entries, total: result.total };
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Internal server error' });

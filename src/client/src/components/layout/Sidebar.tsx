@@ -13,7 +13,12 @@ import {
   Bell,
   Gauge,
   Briefcase,
-  ShieldCheck,
+  Users,
+  Building,
+  Cpu,
+  Activity,
+  ScrollText,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -37,7 +42,7 @@ interface NavSection {
   items: NavItem[];
 }
 
-const navSections: NavSection[] = [
+const pmNavSections: NavSection[] = [
   {
     titleKey: 'section.work',
     items: [
@@ -61,15 +66,58 @@ const navSections: NavSection[] = [
       { labelKey: 'nav.timesheets', icon: Clock, path: '/timesheet' },
       { labelKey: 'nav.goals', icon: Target, path: '/goals' },
       { labelKey: 'nav.settings', icon: Settings, path: '/settings', roles: ['admin', 'project_manager', 'pmo'] },
-      { labelKey: 'nav.admin', icon: ShieldCheck, path: '/admin', roles: ['admin'] },
     ],
   },
 ];
+
+const adminNavSections: NavSection[] = [
+  {
+    titleKey: 'section.adminManagement',
+    items: [
+      { labelKey: 'nav.adminUsers', icon: Users, path: '/admin/users' },
+      { labelKey: 'nav.adminTenants', icon: Building, path: '/admin/tenants' },
+    ],
+  },
+  {
+    titleKey: 'section.adminMonitoring',
+    items: [
+      { labelKey: 'nav.adminAiUsage', icon: Cpu, path: '/admin/ai-usage' },
+      { labelKey: 'nav.adminSystem', icon: Activity, path: '/admin/system' },
+      { labelKey: 'nav.adminAudit', icon: ScrollText, path: '/admin/audit' },
+    ],
+  },
+  {
+    titleKey: 'section.adminSystem',
+    items: [
+      { labelKey: 'nav.settings', icon: Settings, path: '/settings' },
+    ],
+  },
+];
+
+const ADMIN_VIEW_KEY = 'pm-admin-view';
+
+function getStoredAdminView(): boolean {
+  try {
+    const stored = localStorage.getItem(ADMIN_VIEW_KEY);
+    return stored === null ? true : stored === 'true';
+  } catch {
+    return true;
+  }
+}
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMobileClose }) => {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const { t } = useTranslation();
+  const isAdmin = user?.role === 'admin';
+
+  const [adminView, setAdminView] = React.useState(() => isAdmin && getStoredAdminView());
+
+  const toggleView = () => {
+    const next = !adminView;
+    setAdminView(next);
+    try { localStorage.setItem(ADMIN_VIEW_KEY, String(next)); } catch {}
+  };
 
   // Close mobile sidebar on route change
   React.useEffect(() => {
@@ -79,9 +127,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
+  const navSections = isAdmin && adminView ? adminNavSections : pmNavSections;
+
   const isActive = (path: string): boolean => {
     if (path === '/dashboard') {
       return location.pathname === '/dashboard';
+    }
+    if (path === '/admin/users') {
+      return location.pathname === '/admin/users' || location.pathname === '/admin';
     }
     return location.pathname.startsWith(path);
   };
@@ -139,7 +192,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
               Kovarti PM
             </h1>
             <p className="text-xs text-sidebar-text/60 whitespace-nowrap leading-none mt-0.5">
-              Project Management
+              {isAdmin && adminView ? 'Administration' : 'Project Management'}
             </p>
           </div>
         </div>
@@ -211,8 +264,33 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
         })}
       </nav>
 
-      {/* User Section */}
+      {/* View Toggle + User Section */}
       <div className="flex-shrink-0 border-t border-white/10">
+        {/* Admin/PM view toggle — only for admin users */}
+        {isAdmin && (
+          <button
+            onClick={toggleView}
+            title={adminView ? t('nav.switchToPm') : t('nav.switchToAdmin')}
+            className={`
+              w-full flex items-center gap-2 px-3 py-2.5
+              text-sidebar-text/70 hover:text-white hover:bg-sidebar-hover
+              transition-colors duration-200 border-b border-white/5
+              ${collapsed ? 'justify-center' : ''}
+            `}
+          >
+            <ArrowLeftRight className="w-4 h-4 flex-shrink-0" />
+            <span
+              className={`
+                text-xs font-medium whitespace-nowrap
+                transition-all duration-300
+                ${collapsed ? 'sr-only' : 'block'}
+              `}
+            >
+              {adminView ? t('nav.switchToPm') : t('nav.switchToAdmin')}
+            </span>
+          </button>
+        )}
+
         <div
           className={`
             flex items-center px-3 py-3

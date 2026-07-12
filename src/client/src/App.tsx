@@ -41,7 +41,11 @@ const ReportBuilderPage = lazy(() => import('./pages/ReportBuilderPage').then(m 
 const IntakeFormsPage = lazy(() => import('./pages/IntakeFormsPage').then(m => ({ default: m.IntakeFormsPage })));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
-const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
+const AdminTenantsPage = lazy(() => import('./pages/admin/AdminTenantsPage').then(m => ({ default: m.AdminTenantsPage })));
+const AdminSystemPage = lazy(() => import('./pages/admin/AdminSystemPage').then(m => ({ default: m.AdminSystemPage })));
+const AdminAiUsagePage = lazy(() => import('./pages/admin/AdminAiUsagePage').then(m => ({ default: m.AdminAiUsagePage })));
+const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage').then(m => ({ default: m.AdminAuditPage })));
 const AgentProposalsPage = lazy(() => import('./pages/AgentProposalsPage').then(m => ({ default: m.AgentProposalsPage })));
 const ChangeRequestsPage = lazy(() => import('./pages/ChangeRequestsPage').then(m => ({ default: m.ChangeRequestsPage })));
 const GoalsPage = lazy(() => import('./pages/GoalsPage').then(m => ({ default: m.GoalsPage })));
@@ -133,7 +137,12 @@ function App() {
         <Route path="/dashboard-pm" element={<Navigate to="/dashboard" replace />} />
         <Route path="/projects-pm" element={<Navigate to="/projects" replace />} />
         <Route path="/agent" element={<PrivateRoute><AgentProposalsPage /></PrivateRoute>} />
-        <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
+        <Route path="/admin/users" element={<PrivateRoute><AdminUsersPage /></PrivateRoute>} />
+        <Route path="/admin/tenants" element={<PrivateRoute><AdminTenantsPage /></PrivateRoute>} />
+        <Route path="/admin/system" element={<PrivateRoute><AdminSystemPage /></PrivateRoute>} />
+        <Route path="/admin/ai-usage" element={<PrivateRoute><AdminAiUsagePage /></PrivateRoute>} />
+        <Route path="/admin/audit" element={<PrivateRoute><AdminAuditPage /></PrivateRoute>} />
+        <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
 
         {/* Catch-all */}
         <Route path="*" element={<NotFoundPage />} />

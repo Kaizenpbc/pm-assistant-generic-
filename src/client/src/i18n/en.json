@@ -21,6 +21,13 @@
     "account": "Account",
     "settings": "Settings",
     "admin": "Admin",
+    "adminUsers": "Users",
+    "adminTenants": "Tenants",
+    "adminAiUsage": "AI Usage",
+    "adminSystem": "System Stats",
+    "adminAudit": "Audit Trail",
+    "switchToAdmin": "Switch to Admin",
+    "switchToPm": "Switch to PM View",
     "help": "Help",
     "resources": "Resources",
     "evm": "EVM Dashboard",
@@ -34,7 +41,10 @@
     "system": "System",
     "work": "Work",
     "insights": "Insights",
-    "myWork": "My Work"
+    "myWork": "My Work",
+    "adminManagement": "Management",
+    "adminMonitoring": "Monitoring",
+    "adminSystem": "System"
   },
   "common": {
     "save": "Save",
