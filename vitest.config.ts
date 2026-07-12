@@ -51,7 +51,8 @@ export default defineConfig({
           name: 'client',
           globals: true,
           environment: 'jsdom',
-          include: ['src/client/**/*.test.tsx'],
+          include: ['src/client/**/*.test.{ts,tsx}'],
+          setupFiles: ['src/client/src/__tests__/setup.ts'],
           testTimeout: 30000,
         },
         resolve: {

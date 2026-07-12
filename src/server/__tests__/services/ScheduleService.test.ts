@@ -17,6 +17,7 @@ vi.mock('../../services/DagWorkflowService', () => ({
 vi.mock('uuid', () => ({ v4: () => 'test-schedule-id' }));
 
 import { ScheduleService } from '../../services/ScheduleService';
+import { taskRepository } from '../../database/TaskRepository';
 import { databaseService } from '../../database/connection';
 
 const mockQuery = databaseService.query as ReturnType<typeof vi.fn>;
@@ -153,21 +154,21 @@ describe('ScheduleService', () => {
     });
   });
 
-  describe('loadDependenciesForTasks', () => {
+  describe('loadDependenciesForTasks (via TaskRepository)', () => {
     it('returns map of dependencies keyed by task id', async () => {
       mockQuery.mockResolvedValueOnce([
         { id: 'd1', task_id: 't1', dependency_id: 't0', dependency_type: 'FS', lag_days: 2 },
         { id: 'd2', task_id: 't2', dependency_id: 't1', dependency_type: 'SS', lag_days: 0 },
       ]);
 
-      const map = await service.loadDependenciesForTasks(['t1', 't2']);
+      const map = await taskRepository.loadDependenciesForTasks(['t1', 't2']);
       expect(map.get('t1')).toHaveLength(1);
       expect(map.get('t1')![0].lagDays).toBe(2);
       expect(map.get('t2')).toHaveLength(1);
     });
 
     it('returns empty map for empty input', async () => {
-      const map = await service.loadDependenciesForTasks([]);
+      const map = await taskRepository.loadDependenciesForTasks([]);
       expect(map.size).toBe(0);
       expect(mockQuery).not.toHaveBeenCalled();
     });

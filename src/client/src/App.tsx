@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary, RouteErrorBoundary } from './components/ErrorBoundary';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import AppLayout from './components/layout/AppLayout';
 
@@ -67,7 +67,7 @@ function PageLoader() {
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? <AppLayout>{children}</AppLayout> : <Navigate to="/login" replace />;
+  return isAuthenticated ? <AppLayout><RouteErrorBoundary>{children}</RouteErrorBoundary></AppLayout> : <Navigate to="/login" replace />;
 }
 
 function App() {

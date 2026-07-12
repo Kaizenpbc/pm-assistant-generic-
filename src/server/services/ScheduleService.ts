@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseService } from '../database/connection';
 import { scheduleRepository } from '../database/ScheduleRepository';
+import { taskRepository, TaskRepository } from '../database/TaskRepository';
 import { auditLedgerService } from './AuditLedgerService';
 import { dagWorkflowService } from './DagWorkflowService';
 import logger from '../utils/logger';
@@ -153,138 +154,14 @@ export class DependencyValidationError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Row mappers
-// ---------------------------------------------------------------------------
-
-function toDateStr(val: any): string | null {
-  if (!val) return null;
-  if (val instanceof Date) return val.toISOString().slice(0, 10);
-  return String(val).slice(0, 10);
-}
-
-function rowToSchedule(row: any): Schedule {
-  return {
-    id: row.id,
-    projectId: row.project_id,
-    name: row.name,
-    description: row.description ?? undefined,
-    startDate: String(row.start_date),
-    endDate: String(row.end_date),
-    status: row.status,
-    createdBy: row.created_by,
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at),
-  };
-}
-
-function rowToTask(row: any): Task {
-  return {
-    id: row.id,
-    scheduleId: row.schedule_id,
-    name: row.name,
-    description: row.description ?? undefined,
-    status: row.status,
-    priority: row.priority,
-    assignedTo: row.assigned_to ?? undefined,
-    dueDate: row.due_date ? String(row.due_date) : undefined,
-    estimatedDays: row.estimated_days != null ? Number(row.estimated_days) : undefined,
-    estimatedDurationHours: row.estimated_duration_hours != null ? Number(row.estimated_duration_hours) : undefined,
-    actualDurationHours: row.actual_duration_hours != null ? Number(row.actual_duration_hours) : undefined,
-    startDate: row.start_date ? String(row.start_date) : undefined,
-    endDate: row.end_date ? String(row.end_date) : undefined,
-    progressPercentage: row.progress_percentage != null ? Number(row.progress_percentage) : undefined,
-    dependency: row.dependency ?? undefined,
-    dependencyType: row.dependency_type ?? undefined,
-    risks: row.risks ?? undefined,
-    issues: row.issues ?? undefined,
-    comments: row.comments ?? undefined,
-    parentTaskId: row.parent_task_id ?? undefined,
-    recurrenceRule: row.recurrence_rule ?? undefined,
-    recurrenceParentId: row.recurrence_parent_id ?? undefined,
-    isRecurrenceTemplate: row.is_recurrence_template === 1 || row.is_recurrence_template === true,
-    isMilestone: row.is_milestone === 1 || row.is_milestone === true,
-    dependencyLagDays: row.dependency_lag_days != null ? Number(row.dependency_lag_days) : 0,
-    sortOrder: row.sort_order != null ? Number(row.sort_order) : 0,
-    createdBy: row.created_by,
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at),
-    dependencies: [],
-  };
-}
-
-function rowToComment(row: any): TaskComment {
-  return {
-    id: row.id,
-    taskId: row.task_id,
-    userId: row.user_id,
-    userName: row.user_name,
-    text: row.text,
-    createdAt: String(row.created_at),
-  };
-}
-
-function rowToActivity(row: any): TaskActivityEntry {
-  return {
-    id: row.id,
-    taskId: row.task_id,
-    userId: row.user_id,
-    userName: row.user_name,
-    action: row.action,
-    field: row.field ?? undefined,
-    oldValue: row.old_value ?? undefined,
-    newValue: row.new_value ?? undefined,
-    createdAt: String(row.created_at),
-  };
-}
-
-// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
 export class ScheduleService {
 
   // -------------------------------------------------------------------------
-  // Multi-dependency helpers (junction table)
+  // Schedule CRUD (delegated to ScheduleRepository)
   // -------------------------------------------------------------------------
-
-  async loadDependenciesForTasks(taskIds: string[]): Promise<Map<string, TaskDependency[]>> {
-    const map = new Map<string, TaskDependency[]>();
-    if (taskIds.length === 0) return map;
-    const placeholders = taskIds.map(() => '?').join(', ');
-    const rows = await databaseService.query(
-      `SELECT id, task_id, dependency_id, dependency_type, lag_days FROM task_dependencies WHERE task_id IN (${placeholders})`,
-      taskIds,
-    );
-    for (const r of rows) {
-      const dep: TaskDependency = {
-        id: r.id,
-        taskId: r.task_id,
-        dependencyId: r.dependency_id,
-        dependencyType: r.dependency_type,
-        lagDays: Number(r.lag_days) || 0,
-      };
-      const tid = r.task_id as string;
-      const arr = map.get(tid) || [];
-      arr.push(dep);
-      map.set(tid, arr);
-    }
-    return map;
-  }
-
-  async attachDependencies(tasks: Task[]): Promise<void> {
-    if (tasks.length === 0) return;
-    const depMap = await this.loadDependenciesForTasks(tasks.map(t => t.id));
-    for (const task of tasks) {
-      task.dependencies = depMap.get(task.id) || [];
-      // Sync legacy fields from first dependency for backward compat
-      if (task.dependencies.length > 0) {
-        const first = task.dependencies[0];
-        task.dependency = first.dependencyId;
-        task.dependencyType = first.dependencyType;
-        task.dependencyLagDays = first.lagDays;
-      }
-    }
-  }
 
   async findByProjectId(projectId: string): Promise<Schedule[]> {
     return scheduleRepository.findByProjectId(projectId);
@@ -301,19 +178,17 @@ export class ScheduleService {
   async update(id: string, data: Partial<Omit<Schedule, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>>): Promise<Schedule | null> {
     const existing = await this.findById(id);
     if (!existing) return null;
-
     const updated = await scheduleRepository.update(id, data as Record<string, any>);
-    if (!updated) return existing; // no fields to update
+    if (!updated) return existing;
     return updated;
   }
 
   async delete(id: string): Promise<boolean> {
-    // Tasks are ON DELETE CASCADE in the schema
     return scheduleRepository.deleteById(id);
   }
 
   // -------------------------------------------------------------------------
-  // Batch lookups (avoid N+1 patterns)
+  // Batch lookups (delegated to repositories)
   // -------------------------------------------------------------------------
 
   async findByProjectIds(projectIds: string[]): Promise<Schedule[]> {
@@ -321,111 +196,60 @@ export class ScheduleService {
   }
 
   async findTasksByScheduleIds(scheduleIds: string[]): Promise<Task[]> {
-    if (scheduleIds.length === 0) return [];
-    const placeholders = scheduleIds.map(() => '?').join(', ');
-    const rows = await databaseService.query(
-      `SELECT * FROM tasks WHERE schedule_id IN (${placeholders}) ORDER BY sort_order, created_at`,
-      scheduleIds,
-    );
-    const tasks = rows.map(rowToTask);
-    await this.attachDependencies(tasks);
-    return tasks;
+    return taskRepository.findByScheduleIds(scheduleIds);
   }
 
   // -------------------------------------------------------------------------
-  // Tasks
+  // Task queries (delegated to TaskRepository)
   // -------------------------------------------------------------------------
 
   async findTasksByScheduleId(scheduleId: string): Promise<Task[]> {
-    const rows = await databaseService.query(
-      'SELECT * FROM tasks WHERE schedule_id = ? ORDER BY sort_order, created_at',
-      [scheduleId],
-    );
-    const tasks = rows.map(rowToTask);
-    await this.attachDependencies(tasks);
-    return tasks;
+    return taskRepository.findByScheduleId(scheduleId);
   }
 
   async findTasksByScheduleIdPaginated(scheduleId: string, limit: number, offset: number): Promise<{ rows: Task[]; total: number }> {
-    const [countResult, rows] = await Promise.all([
-      databaseService.query('SELECT COUNT(*) AS cnt FROM tasks WHERE schedule_id = ?', [scheduleId]),
-      databaseService.query(
-        'SELECT * FROM tasks WHERE schedule_id = ? ORDER BY sort_order, created_at LIMIT ? OFFSET ?',
-        [scheduleId, limit, offset],
-      ),
-    ]);
-    const tasks = rows.map(rowToTask);
-    await this.attachDependencies(tasks);
-    return { rows: tasks, total: Number(countResult[0].cnt) };
+    return taskRepository.findByScheduleIdPaginated(scheduleId, limit, offset);
   }
 
   async findTaskById(id: string): Promise<Task | null> {
-    const rows = await databaseService.query('SELECT * FROM tasks WHERE id = ?', [id]);
-    if (rows.length === 0) return null;
-    const task = rowToTask(rows[0]);
-    await this.attachDependencies([task]);
-    return task;
+    return taskRepository.findById(id);
   }
 
   async findAllTasks(): Promise<Task[]> {
     const MAX_TASKS = 50000;
-    const rows = await databaseService.query(`SELECT * FROM tasks ORDER BY sort_order, created_at LIMIT ${MAX_TASKS}`);
-    if (rows.length === MAX_TASKS) {
+    const tasks = await taskRepository.findAll(MAX_TASKS);
+    if (tasks.length === MAX_TASKS) {
       logger.warn(`findAllTasks() returned ${MAX_TASKS} rows — results may be truncated`);
     }
-    const tasks = rows.map(rowToTask);
-    await this.attachDependencies(tasks);
     return tasks;
   }
 
   async findDependentTasks(taskId: string): Promise<Task[]> {
-    const rows = await databaseService.query(
-      `SELECT t.* FROM tasks t
-       INNER JOIN task_dependencies td ON td.task_id = t.id
-       WHERE td.dependency_id = ?`,
-      [taskId],
-    );
-    const tasks = rows.map(rowToTask);
-    await this.attachDependencies(tasks);
-    return tasks;
+    return taskRepository.findDependentTasks(taskId);
   }
 
   async findAllDownstreamTasks(taskId: string): Promise<Task[]> {
-    // Use recursive CTE instead of N+1 individual queries
-    const rows = await databaseService.query(
-      `WITH RECURSIVE downstream AS (
-        SELECT task_id FROM task_dependencies WHERE dependency_id = ?
-        UNION ALL
-        SELECT td.task_id FROM task_dependencies td
-        JOIN downstream d ON td.dependency_id = d.task_id
-      )
-      SELECT t.* FROM tasks t
-      JOIN downstream d ON d.task_id = t.id`,
-      [taskId],
-    );
-    const tasks = rows.map(rowToTask);
-    await this.attachDependencies(tasks);
-    return tasks;
+    return taskRepository.findAllDownstream(taskId);
   }
 
+  // -------------------------------------------------------------------------
+  // Dependency validation (business logic — stays in service)
+  // -------------------------------------------------------------------------
+
   async validateDependency(taskId: string | null, dependencyId: string, scheduleId: string): Promise<void> {
-    // 1. Self-reference
     if (taskId && dependencyId === taskId) {
       throw new DependencyValidationError('A task cannot depend on itself');
     }
 
-    // 2. Dependency must exist
     const depTask = await this.findTaskById(dependencyId);
     if (!depTask) {
       throw new DependencyValidationError(`Dependency task '${dependencyId}' not found`);
     }
 
-    // 3. Same schedule
     if (depTask.scheduleId !== scheduleId) {
       throw new DependencyValidationError('Dependency must be in the same schedule');
     }
 
-    // 4. Circular detection (skip for new tasks — no downstream possible)
     if (taskId) {
       const downstream = await this.findAllDownstreamTasks(taskId);
       if (downstream.some(d => d.id === dependencyId)) {
@@ -434,8 +258,13 @@ export class ScheduleService {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Task mutations (business logic + transactions — stays in service)
+  // -------------------------------------------------------------------------
+
   async createTask(data: CreateTaskData): Promise<Task> {
     const id = uuidv4();
+    const toDateStr = TaskRepository.toDateStr;
 
     // Normalize dependencies: merge legacy single dep into dependencies array
     let deps = data.dependencies || [];
@@ -446,12 +275,10 @@ export class ScheduleService {
       throw new DependencyValidationError('A task cannot have more than 20 predecessors');
     }
 
-    // Validate all dependencies before insert
     for (const dep of deps) {
       await this.validateDependency(null, dep.dependencyId, data.scheduleId);
     }
 
-    // Sync legacy columns from first dep (backward compat)
     const firstDep = deps[0];
     const legacyDepId = firstDep?.dependencyId || null;
     const legacyDepType = firstDep?.dependencyType || null;
@@ -460,7 +287,6 @@ export class ScheduleService {
     await databaseService.transaction(async (conn) => {
       const q = <T = any>(sql: string, params: any[] = []) => databaseService.queryOn<T>(conn, sql, params);
 
-      // Determine sort_order based on afterTaskId
       let sortOrder = 0;
       if (data.afterTaskId) {
         const afterTask = await this.findTaskById(data.afterTaskId);
@@ -507,7 +333,6 @@ export class ScheduleService {
         ],
       );
 
-      // Insert junction table rows
       for (const dep of deps) {
         const depId = uuidv4();
         await q(
@@ -543,7 +368,6 @@ export class ScheduleService {
     const oldTask = await this.findTaskById(id);
     if (!oldTask) return null;
 
-    // Validate dependencies before entering transaction
     if (data.dependencies !== undefined) {
       const deps = data.dependencies;
       if (deps.length > 20) {
@@ -583,13 +407,13 @@ export class ScheduleService {
       createdBy: 'created_by',
     };
 
+    const toDateStr = TaskRepository.toDateStr;
+
     await databaseService.transaction(async (conn) => {
       const q = <T = any>(sql: string, params: any[] = []) => databaseService.queryOn<T>(conn, sql, params);
 
-      // Handle multi-dependency updates via junction table
       if (data.dependencies !== undefined) {
         const deps = data.dependencies;
-        // Replace strategy: delete all, re-insert
         await q('DELETE FROM task_dependencies WHERE task_id = ?', [id]);
         for (const dep of deps) {
           const depRowId = uuidv4();
@@ -598,13 +422,11 @@ export class ScheduleService {
             [depRowId, id, dep.dependencyId, dep.dependencyType || 'FS', dep.lagDays ?? 0],
           );
         }
-        // Sync legacy columns from first dep
         const first = deps[0];
         data.dependency = first?.dependencyId ?? (null as any);
         data.dependencyType = first?.dependencyType ?? (null as any);
         data.dependencyLagDays = first?.lagDays ?? 0;
       } else if (data.dependency !== undefined) {
-        // Legacy single-dep update — sync to junction table
         await q('DELETE FROM task_dependencies WHERE task_id = ?', [id]);
         if (data.dependency) {
           const depRowId = uuidv4();
@@ -615,7 +437,6 @@ export class ScheduleService {
         }
       }
 
-      // Auto-log field changes as activity
       const trackFields: (keyof Task)[] = ['status', 'priority', 'assignedTo', 'progressPercentage', 'startDate', 'endDate', 'name'];
       for (const field of trackFields) {
         if (field in data && data[field as keyof typeof data] !== undefined) {
@@ -655,7 +476,6 @@ export class ScheduleService {
 
     const updated = (await this.findTaskById(id))!;
 
-    // Fire-and-forget side effects AFTER transaction commit
     const schedule = await this.findById(oldTask.scheduleId);
     auditLedgerService.append({
       actorId: data.createdBy || oldTask.createdBy,
@@ -685,8 +505,6 @@ export class ScheduleService {
       const wasDeleted = (result.affectedRows ?? 0) > 0;
 
       if (wasDeleted) {
-        // Junction table rows are cascade-deleted automatically.
-        // Clear legacy denormalized columns on other tasks that referenced this one.
         await q(
           'UPDATE tasks SET dependency = NULL, dependency_type = NULL, dependency_lag_days = 0 WHERE dependency = ?',
           [id],
@@ -714,35 +532,20 @@ export class ScheduleService {
   }
 
   // -------------------------------------------------------------------------
-  // Comments
+  // Comments & Activities (delegated to TaskRepository)
   // -------------------------------------------------------------------------
 
   async addComment(taskId: string, text: string, userId: string, userName: string): Promise<TaskComment> {
-    const id = uuidv4();
-    await databaseService.query(
-      `INSERT INTO task_comments (id, task_id, user_id, user_name, text) VALUES (?, ?, ?, ?, ?)`,
-      [id, taskId, userId, userName, text],
-    );
-    const rows = await databaseService.query('SELECT * FROM task_comments WHERE id = ?', [id]);
-    return rowToComment(rows[0]);
+    return taskRepository.addComment(taskId, text, userId, userName);
   }
 
   async getComments(taskId: string): Promise<TaskComment[]> {
-    const rows = await databaseService.query(
-      'SELECT * FROM task_comments WHERE task_id = ? ORDER BY created_at DESC',
-      [taskId],
-    );
-    return rows.map(rowToComment);
+    return taskRepository.getComments(taskId);
   }
 
   async deleteComment(commentId: string): Promise<boolean> {
-    const result: any = await databaseService.query('DELETE FROM task_comments WHERE id = ?', [commentId]);
-    return (result.affectedRows ?? 0) > 0;
+    return taskRepository.deleteComment(commentId);
   }
-
-  // -------------------------------------------------------------------------
-  // Activity Feed
-  // -------------------------------------------------------------------------
 
   async logActivity(
     taskId: string,
@@ -753,26 +556,15 @@ export class ScheduleService {
     oldValue?: string,
     newValue?: string,
   ): Promise<TaskActivityEntry> {
-    const id = uuidv4();
-    await databaseService.query(
-      `INSERT INTO task_activities (id, task_id, user_id, user_name, action, field, old_value, new_value)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, taskId, userId, userName, action, field || null, oldValue || null, newValue || null],
-    );
-    const rows = await databaseService.query('SELECT * FROM task_activities WHERE id = ?', [id]);
-    return rowToActivity(rows[0]);
+    return taskRepository.logActivity(taskId, userId, userName, action, field, oldValue, newValue);
   }
 
   async getActivities(taskId: string): Promise<TaskActivityEntry[]> {
-    const rows = await databaseService.query(
-      'SELECT * FROM task_activities WHERE task_id = ? ORDER BY created_at DESC',
-      [taskId],
-    );
-    return rows.map(rowToActivity);
+    return taskRepository.getActivities(taskId);
   }
 
   // -------------------------------------------------------------------------
-  // Auto-Scheduling: Cascade Reschedule
+  // Auto-Scheduling: Cascade Reschedule (business logic — stays in service)
   // -------------------------------------------------------------------------
 
   async cascadeReschedule(taskId: string, oldEndDate: Date, newEndDate: Date): Promise<CascadeResult> {
@@ -782,7 +574,6 @@ export class ScheduleService {
       return { triggeredByTaskId: taskId, deltaDays: 0, affectedTasks: [] };
     }
 
-    // Load trigger task's schedule to get all tasks for multi-dep resolution
     const triggerTask = await this.findTaskById(taskId);
     if (!triggerTask) return { triggeredByTaskId: taskId, deltaDays: 0, affectedTasks: [] };
 
@@ -792,7 +583,6 @@ export class ScheduleService {
     const affectedTasks: CascadeChange[] = [];
 
     for (const task of downstream) {
-      // For multi-dep: compute new start = MAX of all FS predecessors' endDate + lag
       let computedStart: Date | null = null;
       let allFS = true;
       for (const dep of task.dependencies) {
@@ -804,7 +594,7 @@ export class ScheduleService {
         if (!computedStart || start > computedStart) computedStart = start;
       }
 
-      if (!allFS && !computedStart) continue; // skip non-FS-only tasks if no FS deps
+      if (!allFS && !computedStart) continue;
 
       const oldStart = task.startDate ? new Date(task.startDate) : null;
       const oldEnd = task.endDate ? new Date(task.endDate) : null;
@@ -818,14 +608,12 @@ export class ScheduleService {
         newStart = computedStart;
         newEnd = new Date(computedStart.getTime() + duration);
       } else if (oldStart && oldEnd) {
-        // Fallback: simple shift
         const deltaMs = deltaDays * 86_400_000;
         newStart = new Date(oldStart.getTime() + deltaMs);
         newEnd = new Date(oldEnd.getTime() + deltaMs);
       }
 
       if (!newStart && !newEnd) continue;
-      // Only shift if dates actually changed
       if (newStart && oldStart && newStart.getTime() === oldStart.getTime()) continue;
 
       const change: CascadeChange = {
@@ -838,24 +626,17 @@ export class ScheduleService {
         deltaDays: newStart && oldStart ? Math.round((newStart.getTime() - oldStart.getTime()) / 86_400_000) : deltaDays,
       };
 
-      // Apply the shift
-      const updateFields: string[] = [];
-      const updateValues: any[] = [];
-      if (newStart) { updateFields.push('start_date = ?'); updateValues.push(newStart.toISOString().split('T')[0]); }
-      if (newEnd) { updateFields.push('end_date = ?'); updateValues.push(newEnd.toISOString().split('T')[0]); }
+      await taskRepository.updateDates(
+        task.id,
+        newStart?.toISOString().split('T')[0] ?? null,
+        newEnd?.toISOString().split('T')[0] ?? null,
+      );
 
-      if (updateFields.length > 0) {
-        updateValues.push(task.id);
-        await databaseService.query(
-          `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = ?`,
-          updateValues,
-        );
-        // Update the in-memory taskMap so subsequent tasks see the new dates
-        const updated = taskMap.get(task.id);
-        if (updated) {
-          if (newStart) updated.startDate = newStart.toISOString().split('T')[0];
-          if (newEnd) updated.endDate = newEnd.toISOString().split('T')[0];
-        }
+      // Update in-memory taskMap so subsequent tasks see new dates
+      const updated = taskMap.get(task.id);
+      if (updated) {
+        if (newStart) updated.startDate = newStart.toISOString().split('T')[0];
+        if (newEnd) updated.endDate = newEnd.toISOString().split('T')[0];
       }
 
       await this.logActivity(task.id, '1', 'System', 'auto-rescheduled', 'dates',
