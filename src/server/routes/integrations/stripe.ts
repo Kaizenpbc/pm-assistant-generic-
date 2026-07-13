@@ -32,8 +32,9 @@ export async function stripeRoutes(fastify: FastifyInstance) {
   });
 
   // Authenticated routes
+  // Billing routes use 'read' scope — every authenticated user can manage their own subscription
   fastify.post('/create-checkout-session', {
-    preHandler: [authMiddleware, requireScope('write')],
+    preHandler: [authMiddleware, requireScope('read')],
     schema: { description: 'Create Stripe checkout session', tags: ['stripe'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -76,7 +77,7 @@ export async function stripeRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/create-portal-session', {
-    preHandler: [authMiddleware, requireScope('write')],
+    preHandler: [authMiddleware, requireScope('read')],
     schema: { description: 'Create Stripe billing portal session', tags: ['stripe'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

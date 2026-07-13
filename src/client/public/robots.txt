@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /ws
+Disallow: /dashboard
+Disallow: /projects/
+Disallow: /settings
+
+Sitemap: https://pm.kpbc.ca/sitemap.xml

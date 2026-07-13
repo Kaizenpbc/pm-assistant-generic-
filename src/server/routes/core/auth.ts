@@ -202,8 +202,10 @@ export async function authRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Send verification email
-      await emailService.sendVerificationEmail(email, verificationToken);
+      // Send verification email (fire-and-forget — don't block registration if email fails)
+      emailService.sendVerificationEmail(email, verificationToken).catch((emailErr) => {
+        logger.error('Failed to send verification email', { userId: user.id, email, error: emailErr });
+      });
 
       return reply.status(201).send({
         message: 'Registration successful. Please check your email to verify your account.',

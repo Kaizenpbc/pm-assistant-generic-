@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
-import { Check } from 'lucide-react';
+import { Check, AlertCircle } from 'lucide-react';
 
 const features = [
   'Unlimited projects',
@@ -25,6 +25,7 @@ export const PricingPage: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const currentTier = user?.subscriptionTier || 'free';
   const isSubscribed = currentTier === 'consultant' || currentTier === 'pro' || currentTier === 'business';
@@ -35,10 +36,13 @@ export const PricingPage: React.FC = () => {
       return;
     }
     setLoading(true);
+    setError(null);
     try {
       const { url } = await apiService.createCheckoutSession(billing);
       window.location.href = url;
-    } catch {
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to start checkout. Please try again.';
+      setError(msg);
       setLoading(false);
     }
   };
@@ -144,6 +148,12 @@ export const PricingPage: React.FC = () => {
             </div>
 
             {/* CTA */}
+            {error && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {error}
+              </div>
+            )}
             <div className="mb-8">
               {isSubscribed ? (
                 <button
