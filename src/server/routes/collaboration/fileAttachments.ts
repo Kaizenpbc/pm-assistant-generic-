@@ -3,6 +3,7 @@ import { fileAttachmentService } from '../../services/FileAttachmentService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { validateMimeType } from '../../utils/mimeValidator';
+import { config } from '../../config';
 import logger from '../../utils/logger';
 
 export async function fileAttachmentRoutes(fastify: FastifyInstance) {
@@ -54,6 +55,13 @@ export async function fileAttachmentRoutes(fastify: FastifyInstance) {
       if (!attachment) return reply.status(404).send({ error: 'File not found' });
 
       const fs = await import('fs');
+      const path = await import('path');
+      const resolvedPath = path.resolve(attachment.filePath);
+      const uploadDir = path.resolve(config.UPLOAD_DIR);
+      if (!resolvedPath.startsWith(uploadDir)) {
+        logger.error('Path traversal attempt', { filePath: attachment.filePath, resolvedPath });
+        return reply.status(403).send({ error: 'Access denied' });
+      }
       if (!fs.existsSync(attachment.filePath)) {
         return reply.status(404).send({ error: 'File not found on disk' });
       }

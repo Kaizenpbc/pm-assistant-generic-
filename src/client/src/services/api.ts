@@ -123,6 +123,16 @@ class ApiService {
     return response.data;
   }
 
+  async changePassword(currentPassword: string, newPassword: string) {
+    const response = await this.api.post('/auth/change-password', { currentPassword, newPassword });
+    return response.data;
+  }
+
+  async deleteAccount() {
+    const response = await this.api.delete('/auth/delete-account');
+    return response.data;
+  }
+
   async getCurrentUser() {
     const response = await this.api.get('/users/me');
     return response.data;

@@ -26,7 +26,6 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/png',
   'image/gif',
   'image/webp',
-  'image/svg+xml',
   'image/bmp',
 
   // Archives
@@ -73,7 +72,6 @@ const MAGIC_SIGNATURES: Array<{ bytes: number[]; offset?: number; mimes: string[
 const TEXT_MIME_TYPES = new Set([
   'text/plain', 'text/csv', 'text/markdown', 'text/xml',
   'application/json', 'application/xml', 'application/rtf',
-  'image/svg+xml',
 ]);
 
 export interface MimeValidationResult {

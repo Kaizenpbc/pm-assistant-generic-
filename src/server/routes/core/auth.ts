@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { config } from '../../config';
+import { authMiddleware } from '../../middleware/auth';
 import { userService } from '../../services/UserService';
 import { emailService } from '../../services/EmailService';
 import { stripeService } from '../../services/StripeService';
@@ -87,7 +88,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         secure: config.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 15 * 60 * 1000,
+        maxAge: 15 * 60,
       });
 
       reply.setCookie('refresh_token', refreshToken, {
@@ -95,7 +96,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         secure: config.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 60,
       });
 
       // Look up org info if multi-tenant
@@ -177,6 +178,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       await userService.update(user.id, {
         trialStartedAt: now,
         trialEndsAt: trialEnd,
+        subscriptionStatus: 'trialing',
       });
 
       // Multi-tenant: create organization and provision tenant database
@@ -202,6 +204,9 @@ export async function authRoutes(fastify: FastifyInstance) {
         message: 'Registration successful. Please check your email to verify your account.',
       });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ error: 'Validation error', message: error.issues.map((e: z.ZodIssue) => e.message).join(', ') });
+      }
       logger.error('Registration error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Registration failed' });
     }
@@ -387,13 +392,83 @@ export async function authRoutes(fastify: FastifyInstance) {
         secure: config.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 15 * 60 * 1000,
+        maxAge: 15 * 60,
       });
 
       return { message: 'Token refreshed successfully' };
     } catch (error) {
       logger.error('Token refresh error', { error });
       return reply.status(401).send({ error: 'Invalid refresh token', message: 'Refresh token is invalid or expired' });
+    }
+  });
+
+  // POST /change-password — change password (authenticated)
+  const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1),
+    newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+  });
+
+  fastify.post('/change-password', {
+    preHandler: [authMiddleware],
+    schema: { description: 'Change password', tags: ['auth'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { currentPassword, newPassword } = changePasswordSchema.parse(request.body);
+      const userId = (request as any).user?.userId;
+      if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+
+      const user = await userService.findById(userId);
+      if (!user) return reply.status(404).send({ error: 'User not found' });
+
+      const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!valid) return reply.status(400).send({ error: 'Invalid password', message: 'Current password is incorrect' });
+
+      const hash = await bcrypt.hash(newPassword, 12);
+      await userService.update(userId, { passwordHash: hash });
+
+      return { message: 'Password changed successfully' };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ error: 'Validation error', message: error.issues.map((e: z.ZodIssue) => e.message).join(', ') });
+      }
+      logger.error('Change password error', { error });
+      return reply.status(500).send({ error: 'Internal server error', message: 'Failed to change password' });
+    }
+  });
+
+  // DELETE /delete-account — permanently delete own account
+  fastify.delete('/delete-account', {
+    preHandler: [authMiddleware],
+    schema: { description: 'Delete own account', tags: ['auth'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = (request as any).user?.userId;
+      if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+
+      const user = await userService.findById(userId);
+      if (!user) return reply.status(404).send({ error: 'User not found' });
+
+      // Cancel Stripe subscription if active
+      if (user.stripeCustomerId) {
+        try {
+          await stripeService.cancelAllSubscriptions(user.stripeCustomerId);
+        } catch (stripeErr) {
+          logger.warn('Failed to cancel Stripe subscriptions during account deletion', { userId, error: stripeErr });
+        }
+      }
+
+      // Delete user (cascades to most related data via FK constraints)
+      await userService.delete(userId);
+
+      // Clear auth cookies
+      reply.clearCookie('access_token', { path: '/' });
+      reply.clearCookie('refresh_token', { path: '/' });
+
+      logger.info('Account deleted', { userId, username: user.username });
+      return { message: 'Account deleted successfully' };
+    } catch (error) {
+      logger.error('Account deletion error', { error });
+      return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete account' });
     }
   });
 }

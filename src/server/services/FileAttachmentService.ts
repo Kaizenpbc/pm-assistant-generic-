@@ -36,8 +36,17 @@ function rowToDTO(row: FileAttachmentRow): FileAttachment {
   };
 }
 
+const ALLOWED_ENTITY_TYPES = ['project', 'task', 'schedule', 'risk', 'issue', 'decision', 'action', 'sprint', 'goal'];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export class FileAttachmentService {
   private getUploadDir(entityType: string, entityId: string): string {
+    if (!ALLOWED_ENTITY_TYPES.includes(entityType)) {
+      throw new Error(`Invalid entity type: ${entityType}`);
+    }
+    if (!UUID_RE.test(entityId)) {
+      throw new Error(`Invalid entity ID: ${entityId}`);
+    }
     return path.join(config.UPLOAD_DIR, entityType, entityId);
   }
 

@@ -134,6 +134,12 @@ const ProfileTab: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [pwError, setPwError] = useState('');
 
   const handleSave = async () => {
     setSaving(true);
@@ -151,6 +157,7 @@ const ProfileTab: React.FC = () => {
   };
 
   return (
+    <>
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Profile Information</h2>
       <div className="space-y-4 max-w-lg">
@@ -184,6 +191,56 @@ const ProfileTab: React.FC = () => {
         </div>
       </div>
     </div>
+
+    {/* Change Password */}
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 mt-6">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Change Password</h2>
+      <div className="space-y-4 max-w-lg">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Password</label>
+          <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
+          <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Minimum 8 characters</p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm New Password</label>
+          <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+        </div>
+        {pwError && <p className="text-sm text-red-600">{pwError}</p>}
+        {pwSuccess && <p className="text-sm text-green-600">{pwSuccess}</p>}
+        <div className="pt-2">
+          <button
+            onClick={async () => {
+              setPwError('');
+              setPwSuccess('');
+              if (newPassword.length < 8) { setPwError('New password must be at least 8 characters'); return; }
+              if (newPassword !== confirmPassword) { setPwError('Passwords do not match'); return; }
+              setPwSaving(true);
+              try {
+                await apiService.changePassword(currentPassword, newPassword);
+                setPwSuccess('Password changed successfully');
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+              } catch (err: any) {
+                setPwError(err?.response?.data?.message || 'Failed to change password');
+              } finally {
+                setPwSaving(false);
+              }
+            }}
+            disabled={pwSaving || !currentPassword || !newPassword || !confirmPassword}
+            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {pwSaving ? 'Changing...' : 'Change Password'}
+          </button>
+        </div>
+      </div>
+    </div>
+    </>
   );
 };
 
@@ -957,11 +1014,16 @@ const DangerZoneTab: React.FC = () => {
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteInput !== 'DELETE') return;
-    alert('Account deletion would be processed here.');
-    setShowDeleteConfirm(false);
-    setDeleteInput('');
+    try {
+      await apiService.deleteAccount();
+      window.location.href = '/';
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Failed to delete account. Please try again.');
+      setShowDeleteConfirm(false);
+      setDeleteInput('');
+    }
   };
 
   return (

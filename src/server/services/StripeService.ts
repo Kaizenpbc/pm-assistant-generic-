@@ -207,6 +207,17 @@ export class StripeService {
 
     await subscriptionRepository.markCanceled(subscription.id);
   }
+  async cancelAllSubscriptions(stripeCustomerId: string): Promise<void> {
+    if (!this.stripe) return;
+    const subscriptions = await this.stripe.subscriptions.list({ customer: stripeCustomerId, status: 'active' });
+    for (const sub of subscriptions.data) {
+      await this.stripe.subscriptions.cancel(sub.id);
+    }
+    const trialing = await this.stripe.subscriptions.list({ customer: stripeCustomerId, status: 'trialing' });
+    for (const sub of trialing.data) {
+      await this.stripe.subscriptions.cancel(sub.id);
+    }
+  }
 }
 
 export const stripeService = new StripeService();
