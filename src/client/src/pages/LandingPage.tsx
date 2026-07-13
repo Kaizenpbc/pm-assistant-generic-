@@ -77,18 +77,23 @@ const features = [
 ];
 
 const featureTooltips: Record<string, string> = {
+  'Up to 2 projects': 'Create up to 2 projects to explore the full platform during your trial.',
   'Unlimited projects': 'Create and manage as many projects as you need — no caps, no restrictions.',
   'AI scheduling & risk detection': 'Mjuzi, your AI assistant, auto-detects schedule risks, suggests task reordering, and flags delays before they happen.',
   'Monte Carlo simulations': 'Run thousands of schedule simulations to get probabilistic completion dates — know your P50, P80, and P95 delivery dates.',
   'Meeting intelligence': 'Paste or record meeting transcripts and get auto-extracted action items, decisions, and key takeaways.',
   'Natural language queries': 'Ask questions like "which tasks are overdue?" or "show me the critical path" — Mjuzi understands plain English.',
-  'Full platform access': 'Gantt charts, Kanban boards, RAID logs, EVM dashboards, sprint management, stakeholder portals — everything included.',
+  'Gantt, Kanban & calendar views': 'Multiple ways to visualize your schedule — Gantt charts with dependencies, drag-and-drop Kanban boards, and calendar overlays.',
+  'RAID management': 'Track Risks, Actions, Issues, and Decisions in one place with severity levels, owners, and status tracking.',
+  'Everything in Free Trial': 'All features from the Free Trial, plus the advanced capabilities listed below.',
+  'EVM & AI forecasting': 'Earned Value Management dashboard with CPI, SPI, and AI-powered cost and schedule forecasting.',
+  'Custom report builder': 'Build and schedule custom reports with drag-and-drop fields, filters, and automated email delivery.',
   'Priority support': 'Get faster response times and direct access to the team for technical questions and onboarding help.',
-  'Everything in Consultant': 'All features from the Consultant plan, plus enterprise-grade capabilities listed below.',
+  'Everything in Consultant': 'All features from the Consultant plan, plus team and enterprise capabilities.',
+  'Multi-user team access': 'Invite team members with role-based permissions — project managers, team members, executives, and more.',
   'Portfolio management': 'Manage multiple projects in a unified portfolio view with cross-project health tracking and executive dashboards.',
-  'Advanced analytics': 'Deep-dive reports, trend analysis, resource utilization heatmaps, and AI-powered performance forecasting.',
-  'Custom workflows': 'Build automated approval chains, status transitions, and notification rules tailored to your team\'s process.',
-  'API access': 'Full REST API and MCP integration for connecting to your existing tools and building custom automations.',
+  'Custom workflows & approvals': 'Build automated approval chains, status transitions, and notification rules tailored to your team\'s process.',
+  'API access & integrations': 'Full REST API and MCP integration for connecting to your existing tools and building custom automations.',
   'Dedicated support': 'Named account manager, onboarding assistance, and SLA-backed response times.',
 };
 
@@ -97,14 +102,14 @@ const pricingTiers = [
     name: 'Free Trial',
     price: 'Free',
     period: '14 days',
-    description: 'Try every feature — no credit card required',
+    description: 'Explore the platform — no credit card required',
     features: [
-      'Unlimited projects',
+      'Up to 2 projects',
       'AI scheduling & risk detection',
       'Monte Carlo simulations',
+      'Gantt, Kanban & calendar views',
+      'RAID management',
       'Meeting intelligence',
-      'Natural language queries',
-      'Full platform access',
     ],
     cta: 'Start Free Trial',
     ctaLink: '/register',
@@ -117,16 +122,33 @@ const pricingTiers = [
     description: 'All features for independent PMs and consultants',
     features: [
       'Unlimited projects',
-      'AI scheduling & risk detection',
-      'Monte Carlo simulations',
-      'Meeting intelligence',
+      'Everything in Free Trial',
       'Natural language queries',
+      'EVM & AI forecasting',
+      'Custom report builder',
       'Priority support',
     ],
     cta: 'Get Started',
     ctaLink: '/register',
     highlighted: true,
     badge: 'Most Popular',
+  },
+  {
+    name: 'Business',
+    price: '$49',
+    period: '/mo',
+    description: 'For teams and growing organizations',
+    features: [
+      'Everything in Consultant',
+      'Multi-user team access',
+      'Portfolio management',
+      'Custom workflows & approvals',
+      'API access & integrations',
+      'Dedicated support',
+    ],
+    cta: 'Contact Sales',
+    ctaLink: 'mailto:info@kpbc.ca',
+    highlighted: false,
   },
 ];
 
@@ -386,34 +408,38 @@ function FeatureCard({ feature }: { feature: typeof features[number] }) {
 }
 
 function FeatureItem({ feature, highlighted }: { feature: string; highlighted: boolean }) {
-  const [show, setShow] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const tooltip = featureTooltips[feature];
   return (
     <li
-      className="relative flex items-center text-sm cursor-default"
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
+      className={`relative flex items-start text-sm ${tooltip ? 'cursor-pointer' : 'cursor-default'}`}
+      onClick={() => tooltip && setExpanded(!expanded)}
     >
-      <svg
-        className={`w-4 h-4 mr-2.5 flex-shrink-0 ${highlighted ? 'text-cyan-300' : 'text-blue-400'}`}
-        fill="currentColor"
-        viewBox="0 0 20 20"
-      >
-        <path
-          fillRule="evenodd"
-          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-          clipRule="evenodd"
-        />
-      </svg>
-      <span className={`${highlighted ? 'text-blue-100' : 'text-slate-200'} ${tooltip ? `border-b border-dashed ${highlighted ? 'border-cyan-300/40' : 'border-slate-500'}` : ''}`}>
-        {feature}
-      </span>
-      {tooltip && show && (
-        <div className="absolute left-6 top-full mt-2 w-64 p-3 rounded-lg bg-gray-900 text-white text-xs leading-relaxed shadow-xl z-50 pointer-events-none">
-          <div className="absolute left-4 bottom-full w-2 h-2 bg-gray-900 rotate-45 mb-[-4px]" />
-          {tooltip}
-        </div>
+      {!expanded ? (
+        <svg
+          className={`w-4 h-4 mr-2.5 flex-shrink-0 mt-0.5 ${highlighted ? 'text-cyan-300' : 'text-blue-400'}`}
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            fillRule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ) : (
+        <div className="w-4 mr-2.5 flex-shrink-0" />
       )}
+      <div className="flex-1">
+        <span className={`${highlighted ? 'text-blue-100' : 'text-slate-200'} ${tooltip && !expanded ? `border-b border-dashed ${highlighted ? 'border-cyan-300/40' : 'border-slate-500'}` : ''}`}>
+          {feature}
+        </span>
+        {tooltip && expanded && (
+          <p className={`mt-1 text-xs leading-relaxed ${highlighted ? 'text-blue-200/70' : 'text-slate-400'}`}>
+            {tooltip}
+          </p>
+        )}
+      </div>
     </li>
   );
 }
@@ -516,7 +542,7 @@ export const LandingPage: React.FC = () => {
               Start free, upgrade when you need more power
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {pricingTiers.map((tier) => (
               <div
                 key={tier.name}
