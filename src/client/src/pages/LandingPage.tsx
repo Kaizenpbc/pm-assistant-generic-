@@ -172,9 +172,9 @@ function FeatureItem({ feature, highlighted }: { feature: string; highlighted: b
         {feature}
       </span>
       {tooltip && show && (
-        <div className="absolute left-0 bottom-full mb-2 w-64 p-3 rounded-lg bg-gray-900 text-white text-xs leading-relaxed shadow-xl z-50 pointer-events-none animate-in fade-in duration-200">
+        <div className="absolute left-6 top-full mt-2 w-64 p-3 rounded-lg bg-gray-900 text-white text-xs leading-relaxed shadow-xl z-50 pointer-events-none">
+          <div className="absolute left-4 bottom-full w-2 h-2 bg-gray-900 rotate-45 mb-[-4px]" />
           {tooltip}
-          <div className="absolute left-4 top-full w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
         </div>
       )}
     </li>
