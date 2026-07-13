@@ -15,13 +15,13 @@ import logger from '../../utils/logger';
 
 const loginSchema = z.object({
   username: z.string().min(3),
-  password: z.string().min(6),
+  password: z.string().min(1),
 });
 
 const registerSchema = z.object({
   username: z.string().min(3).max(50),
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   fullName: z.string().min(2).max(100),
   organizationName: z.string().min(2).max(255).optional(),
 });
@@ -32,7 +32,7 @@ const forgotPasswordSchema = z.object({
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1),
-  password: z.string().min(6),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 export async function authRoutes(fastify: FastifyInstance) {
@@ -42,14 +42,18 @@ export async function authRoutes(fastify: FastifyInstance) {
     try {
       // Rate limit: 10 attempts per minute per IP
       const ip = request.ip || 'unknown';
-      const rl = rateLimiter.check(`auth:login:${ip}`, 10, 60_000);
+      const rl = await rateLimiter.checkAsync(`auth:login:${ip}`, 10, 60_000);
       if (!rl.allowed) {
         return reply.status(429).send({ error: 'Too many login attempts. Please try again later.' });
       }
 
       const { username, password } = loginSchema.parse(request.body);
 
-      const user = await userService.findByUsername(username);
+      // Allow login by username or email
+      let user = await userService.findByUsername(username);
+      if (!user && username.includes('@')) {
+        user = await userService.findByEmail(username);
+      }
       if (!user) {
         return reply.status(401).send({ error: 'Invalid credentials', message: 'Username or password is incorrect' });
       }
@@ -135,7 +139,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     try {
       // Rate limit: 5 registrations per minute per IP
       const ip = request.ip || 'unknown';
-      const rl = rateLimiter.check(`auth:register:${ip}`, 5, 60_000);
+      const rl = await rateLimiter.checkAsync(`auth:register:${ip}`, 5, 60_000);
       if (!rl.allowed) {
         return reply.status(429).send({ error: 'Too many registration attempts. Please try again later.' });
       }
@@ -218,7 +222,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     try {
       // Rate limit: 10 verifications per minute per IP
       const ip = request.ip || 'unknown';
-      const rl = rateLimiter.check(`auth:verify:${ip}`, 10, 60_000);
+      const rl = await rateLimiter.checkAsync(`auth:verify:${ip}`, 10, 60_000);
       if (!rl.allowed) {
         return reply.status(429).send({ error: 'Too many verification attempts. Please try again later.' });
       }
@@ -256,7 +260,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     try {
       const ip = request.ip || 'unknown';
       // Strict rate limit: 3 resends per 15 minutes per IP
-      const rl = rateLimiter.check(`auth:resend:${ip}`, 3, 15 * 60_000);
+      const rl = await rateLimiter.checkAsync(`auth:resend:${ip}`, 3, 15 * 60_000);
       if (!rl.allowed) {
         return reply.status(429).send({ error: 'Too many resend attempts. Please try again later.' });
       }
@@ -267,7 +271,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const user = await userService.findByEmail(email);
       if (user && !user.emailVerified) {
         // Per-email rate limit: 1 resend per 5 minutes per email address
-        const emailRl = rateLimiter.check(`auth:resend:email:${email}`, 1, 5 * 60_000);
+        const emailRl = await rateLimiter.checkAsync(`auth:resend:email:${email}`, 1, 5 * 60_000);
         if (emailRl.allowed) {
           const verificationToken = crypto.randomUUID();
           const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -294,7 +298,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     try {
       // Rate limit: 5 requests per minute per IP
       const ip = request.ip || 'unknown';
-      const rl = rateLimiter.check(`auth:forgot:${ip}`, 5, 60_000);
+      const rl = await rateLimiter.checkAsync(`auth:forgot:${ip}`, 5, 60_000);
       if (!rl.allowed) {
         return reply.status(429).send({ error: 'Too many password reset requests. Please try again later.' });
       }
@@ -328,7 +332,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     try {
       // Rate limit: 5 requests per minute per IP
       const ip = request.ip || 'unknown';
-      const rl = rateLimiter.check(`auth:reset:${ip}`, 5, 60_000);
+      const rl = await rateLimiter.checkAsync(`auth:reset:${ip}`, 5, 60_000);
       if (!rl.allowed) {
         return reply.status(429).send({ error: 'Too many password reset attempts. Please try again later.' });
       }

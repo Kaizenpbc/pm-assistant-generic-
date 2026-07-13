@@ -96,19 +96,15 @@ process.on('unhandledRejection', (reason) => {
   process.exit(1);
 });
 
-process.on('SIGINT', async () => {
-  console.log('Shutting down server...');
-  agentScheduler.stop();
-  alertService.stop();
-  metricsService.stopRedisSync();
-  await fastify.close();
-  await redisService.disconnect();
-  await databaseService.close();
-  process.exit(0);
-});
+async function gracefulShutdown(signal: string) {
+  console.log(`${signal} received — shutting down server...`);
+  // Force exit after 30s if graceful shutdown hangs (e.g. long AI call)
+  const forceTimer = setTimeout(() => {
+    console.error('Graceful shutdown timed out after 30s — forcing exit');
+    process.exit(1);
+  }, 30_000);
+  forceTimer.unref();
 
-process.on('SIGTERM', async () => {
-  console.log('Shutting down server...');
   agentScheduler.stop();
   alertService.stop();
   metricsService.stopRedisSync();
@@ -116,6 +112,9 @@ process.on('SIGTERM', async () => {
   await redisService.disconnect();
   await databaseService.close();
   process.exit(0);
-});
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 start();

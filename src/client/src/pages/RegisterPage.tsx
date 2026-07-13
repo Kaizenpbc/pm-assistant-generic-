@@ -114,7 +114,7 @@ export const RegisterPage: React.FC = () => {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Password</label>
               <div className="relative">
                 <input id="password" type={showPassword ? 'text' : 'password'} required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="input pr-10" placeholder="Min. 6 characters" minLength={6} />
+                  className="input pr-10" placeholder="Min. 8 characters" minLength={8} />
                 <button type="button" onClick={() => setShowPassword((prev) => !prev)}
                   className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}>
@@ -127,7 +127,7 @@ export const RegisterPage: React.FC = () => {
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Confirm Password</label>
               <div className="relative">
                 <input id="confirmPassword" type={showPassword ? 'text' : 'password'} required autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input pr-10" placeholder="Confirm your password" minLength={6} />
+                  className="input pr-10" placeholder="Confirm your password" minLength={8} />
                 <button type="button" onClick={() => setShowPassword((prev) => !prev)}
                   className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}>

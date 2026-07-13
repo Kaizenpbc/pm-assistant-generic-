@@ -97,7 +97,16 @@ async function storeScanResult(agentId: string, projectId: string, result: Recor
   }
 }
 
+let scanInProgress = false;
+
 export async function runScanImpl(activityLog: AgentActivityLogService, projectId?: string): Promise<ScanStats> {
+  if (scanInProgress) {
+    logger.warn('[Agent] Scan skipped — previous scan still in progress');
+    return emptyStats();
+  }
+  scanInProgress = true;
+
+  try {
   logger.info(`[Agent] Starting scan...${projectId ? ` (project: ${projectId})` : ''}`);
 
   const ksStatus = killSwitchService.getStatus();
@@ -408,4 +417,7 @@ export async function runScanImpl(activityLog: AgentActivityLogService, projectI
   logger.info('[Agent] Scan complete:', stats);
   webhookService.dispatch('agent.scan_completed', { stats }, undefined);
   return stats;
+  } finally {
+    scanInProgress = false;
+  }
 }

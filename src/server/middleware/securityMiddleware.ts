@@ -1,6 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import crypto from 'crypto';
-import { config } from '../config';
 
 export async function securityMiddleware(
   request: FastifyRequest,
@@ -20,18 +19,7 @@ export async function securityMiddleware(
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('X-Frame-Options', 'DENY');
     reply.header('X-XSS-Protection', '1; mode=block');
-
-    const origin = request.headers.origin;
-    const corsOrigin = origin && (
-      config.NODE_ENV === 'development' ||
-      origin === config.CORS_ORIGIN ||
-      origin.startsWith('http://localhost:')
-    ) ? origin : (config.CORS_ORIGIN || '*');
-
-    reply.header('Access-Control-Allow-Origin', corsOrigin);
-    reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
-    reply.header('Access-Control-Allow-Credentials', 'true');
+    // CORS headers are handled by @fastify/cors plugin — do not duplicate here
   }
 }
 

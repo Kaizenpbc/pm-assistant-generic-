@@ -90,7 +90,7 @@ export const LoginPage: React.FC = () => {
 
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                Username
+                Username or Email
               </label>
               <input
                 id="username"
@@ -100,7 +100,7 @@ export const LoginPage: React.FC = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="input"
-                placeholder="Enter your username"
+                placeholder="Enter your username or email"
               />
             </div>
 
