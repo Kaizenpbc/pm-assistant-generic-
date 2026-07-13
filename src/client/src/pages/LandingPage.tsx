@@ -135,8 +135,8 @@ const pricingTiers = [
   },
   {
     name: 'Business',
-    price: '$49',
-    period: '/mo',
+    price: null,
+    period: '',
     description: 'For teams and growing organizations',
     features: [
       'Everything in Consultant',
@@ -146,9 +146,11 @@ const pricingTiers = [
       'API access & integrations',
       'Dedicated support',
     ],
-    cta: 'Contact Sales',
-    ctaLink: 'mailto:info@kpbc.ca',
+    cta: 'Coming Soon',
+    ctaLink: '',
     highlighted: false,
+    disabled: true,
+    badge: 'Coming Soon',
   },
 ];
 
