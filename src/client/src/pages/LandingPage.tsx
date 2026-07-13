@@ -486,7 +486,7 @@ export const LandingPage: React.FC = () => {
           <div className="max-w-5xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-              <span className="text-sm font-medium text-blue-300">AI-Powered Project Intelligence</span>
+              <span className="text-sm font-medium text-blue-300">All the power of MS Project — without the price tag</span>
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
               <span className="text-white">Manage Projects </span>
