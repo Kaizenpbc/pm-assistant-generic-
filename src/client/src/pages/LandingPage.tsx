@@ -408,14 +408,15 @@ function FeatureCard({ feature }: { feature: typeof features[number] }) {
 }
 
 function FeatureItem({ feature, highlighted }: { feature: string; highlighted: boolean }) {
-  const [expanded, setExpanded] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const tooltip = featureTooltips[feature];
   return (
     <li
-      className={`relative flex items-start text-sm ${tooltip ? 'cursor-pointer' : 'cursor-default'}`}
-      onClick={() => tooltip && setExpanded(!expanded)}
+      className="relative flex items-start text-sm cursor-default"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      {!expanded ? (
+      {!(tooltip && hovered) ? (
         <svg
           className={`w-4 h-4 mr-2.5 flex-shrink-0 mt-0.5 ${highlighted ? 'text-cyan-300' : 'text-blue-400'}`}
           fill="currentColor"
@@ -431,10 +432,10 @@ function FeatureItem({ feature, highlighted }: { feature: string; highlighted: b
         <div className="w-4 mr-2.5 flex-shrink-0" />
       )}
       <div className="flex-1">
-        <span className={`${highlighted ? 'text-blue-100' : 'text-slate-200'} ${tooltip && !expanded ? `border-b border-dashed ${highlighted ? 'border-cyan-300/40' : 'border-slate-500'}` : ''}`}>
+        <span className={`${highlighted ? 'text-blue-100' : 'text-slate-200'} ${tooltip && !hovered ? `border-b border-dashed ${highlighted ? 'border-cyan-300/40' : 'border-slate-500'}` : ''}`}>
           {feature}
         </span>
-        {tooltip && expanded && (
+        {tooltip && hovered && (
           <p className={`mt-1 text-xs leading-relaxed ${highlighted ? 'text-blue-200/70' : 'text-slate-400'}`}>
             {tooltip}
           </p>
