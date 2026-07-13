@@ -488,14 +488,13 @@ export const LandingPage: React.FC = () => {
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
               <span className="text-sm font-medium text-blue-300">AI-Powered Project Intelligence</span>
             </div>
-            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95]">
-              <span className="text-white">Manage Projects</span>
-              <br />
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
+              <span className="text-white">Manage Projects </span>
               <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                 Smarter with AI
               </span>
             </h1>
-            <p className="mt-6 text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-5 text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
               Plan smarter, predict risks, and deliver on time with intelligent scheduling,
               Monte Carlo simulations, and natural language project insights.
             </p>
