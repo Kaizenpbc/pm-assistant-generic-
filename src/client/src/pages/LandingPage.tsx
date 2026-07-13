@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const features = [
@@ -147,6 +147,39 @@ const pricingTiers = [
     disabled: true,
   },
 ];
+
+function FeatureItem({ feature, highlighted }: { feature: string; highlighted: boolean }) {
+  const [show, setShow] = useState(false);
+  const tooltip = featureTooltips[feature];
+  return (
+    <li
+      className="relative flex items-center text-sm cursor-default"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <svg
+        className={`w-4 h-4 mr-2.5 flex-shrink-0 ${highlighted ? 'text-primary-300' : 'text-emerald-500'}`}
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path
+          fillRule="evenodd"
+          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+          clipRule="evenodd"
+        />
+      </svg>
+      <span className={`${highlighted ? 'text-primary-100' : 'text-slate-600'} ${tooltip ? `border-b border-dashed ${highlighted ? 'border-primary-300/40' : 'border-slate-300'}` : ''}`}>
+        {feature}
+      </span>
+      {tooltip && show && (
+        <div className="absolute left-0 bottom-full mb-2 w-64 p-3 rounded-lg bg-gray-900 text-white text-xs leading-relaxed shadow-xl z-50 pointer-events-none animate-in fade-in duration-200">
+          {tooltip}
+          <div className="absolute left-4 top-full w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
+        </div>
+      )}
+    </li>
+  );
+}
 
 export const LandingPage: React.FC = () => {
   return (
@@ -297,26 +330,7 @@ export const LandingPage: React.FC = () => {
                 </p>
                 <ul className="mt-6 space-y-3">
                   {tier.features.map((feature) => (
-                    <li key={feature} className="relative group/feat flex items-center text-sm cursor-default">
-                      <svg
-                        className={`w-4 h-4 mr-2.5 flex-shrink-0 ${tier.highlighted ? 'text-primary-300' : 'text-emerald-500'}`}
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span className={`${tier.highlighted ? 'text-primary-100' : 'text-slate-600'} border-b border-dashed ${tier.highlighted ? 'border-primary-300/40' : 'border-slate-300'}`}>{feature}</span>
-                      {featureTooltips[feature] && (
-                        <div className="absolute left-0 bottom-full mb-2 w-64 p-3 rounded-lg bg-gray-900 text-white text-xs leading-relaxed shadow-xl opacity-0 invisible group-hover/feat:opacity-100 group-hover/feat:visible transition-all duration-200 z-50 pointer-events-none">
-                          {featureTooltips[feature]}
-                          <div className="absolute left-4 top-full w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
-                        </div>
-                      )}
-                    </li>
+                    <FeatureItem key={feature} feature={feature} highlighted={tier.highlighted} />
                   ))}
                 </ul>
                 <div className="mt-8">
