@@ -505,12 +505,12 @@ export const LandingPage: React.FC = () => {
               >
                 Start Free Trial
               </Link>
-              <Link
-                to="/pricing"
+              <a
+                href="#pricing"
                 className="px-8 py-3.5 text-base font-semibold text-slate-300 bg-[#1e293b] hover:bg-[#334155] rounded-xl transition-all border border-white/10 hover:border-white/20 hover:-translate-y-0.5"
               >
                 View Pricing
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -534,7 +534,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Pricing Preview */}
-      <section className="py-20 border-t border-white/5">
+      <section id="pricing" className="py-20 border-t border-white/5 scroll-mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <h2 className="text-2xl sm:text-3xl font-bold text-white">Simple, transparent pricing</h2>
