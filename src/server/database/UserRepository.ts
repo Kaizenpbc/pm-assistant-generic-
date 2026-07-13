@@ -27,6 +27,7 @@ function rowToUser(row: any): User {
     lastLoginAt: row.last_login_at ?? null,
     timezone: row.timezone || 'UTC',
     locale: row.locale || 'en',
+    tokenVersion: row.token_version ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -56,6 +57,7 @@ const USER_COLUMN_MAP: Record<string, string> = {
   timezone: 'timezone',
   locale: 'locale',
   organizationId: 'organization_id',
+  tokenVersion: 'token_version',
 };
 
 export class UserRepository extends BaseRepository<User> {

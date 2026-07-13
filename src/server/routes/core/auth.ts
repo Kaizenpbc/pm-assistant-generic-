@@ -75,14 +75,15 @@ export async function authRoutes(fastify: FastifyInstance) {
         logger.warn('Failed to update last login timestamp', { userId: user.id, error });
       });
 
+      const tokenVersion = user.tokenVersion ?? 0;
       const accessToken = jwt.sign(
-        { userId: user.id, username: user.username, role: user.role },
+        { userId: user.id, username: user.username, role: user.role, tv: tokenVersion },
         config.JWT_SECRET,
         { expiresIn: '15m', algorithm: 'HS256' }
       );
 
       const refreshToken = jwt.sign(
-        { userId: user.id, type: 'refresh' },
+        { userId: user.id, type: 'refresh', tv: tokenVersion },
         config.JWT_REFRESH_SECRET,
         { expiresIn: '7d', algorithm: 'HS256' }
       );
@@ -349,6 +350,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         passwordHash,
         passwordResetToken: null,
         passwordResetExpires: null,
+        tokenVersion: (user.tokenVersion ?? 0) + 1,
       });
 
       return { message: 'Password reset successful. You can now log in with your new password.' };
@@ -385,10 +387,25 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'User not found', message: 'User associated with token not found' });
       }
 
+      // Check token version — reject if password was changed or sessions were invalidated
+      const currentVersion = user.tokenVersion ?? 0;
+      if (decoded.tv !== undefined && decoded.tv !== currentVersion) {
+        reply.clearCookie('access_token', { path: '/' });
+        reply.clearCookie('refresh_token', { path: '/' });
+        return reply.status(401).send({ error: 'Session expired', message: 'Your session has been invalidated. Please log in again.' });
+      }
+
       const accessToken = jwt.sign(
-        { userId: user.id, username: user.username, role: user.role },
+        { userId: user.id, username: user.username, role: user.role, tv: currentVersion },
         config.JWT_SECRET,
         { expiresIn: '15m', algorithm: 'HS256' }
+      );
+
+      // Rotate refresh token
+      const newRefreshToken = jwt.sign(
+        { userId: user.id, type: 'refresh', tv: currentVersion },
+        config.JWT_REFRESH_SECRET,
+        { expiresIn: '7d', algorithm: 'HS256' }
       );
 
       reply.setCookie('access_token', accessToken, {
@@ -397,6 +414,14 @@ export async function authRoutes(fastify: FastifyInstance) {
         sameSite: 'lax',
         path: '/',
         maxAge: 15 * 60,
+      });
+
+      reply.setCookie('refresh_token', newRefreshToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60,
       });
 
       return { message: 'Token refreshed successfully' };
@@ -428,7 +453,26 @@ export async function authRoutes(fastify: FastifyInstance) {
       if (!valid) return reply.status(400).send({ error: 'Invalid password', message: 'Current password is incorrect' });
 
       const hash = await bcrypt.hash(newPassword, 12);
-      await userService.update(userId, { passwordHash: hash });
+      const newVersion = (user.tokenVersion ?? 0) + 1;
+      await userService.update(userId, { passwordHash: hash, tokenVersion: newVersion });
+
+      // Issue fresh tokens with new version so current session stays alive
+      const accessToken = jwt.sign(
+        { userId: user.id, username: user.username, role: user.role, tv: newVersion },
+        config.JWT_SECRET,
+        { expiresIn: '15m', algorithm: 'HS256' }
+      );
+      const refreshToken = jwt.sign(
+        { userId: user.id, type: 'refresh', tv: newVersion },
+        config.JWT_REFRESH_SECRET,
+        { expiresIn: '7d', algorithm: 'HS256' }
+      );
+      reply.setCookie('access_token', accessToken, {
+        httpOnly: true, secure: config.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 15 * 60,
+      });
+      reply.setCookie('refresh_token', refreshToken, {
+        httpOnly: true, secure: config.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 7 * 24 * 60 * 60,
+      });
 
       return { message: 'Password changed successfully' };
     } catch (error) {

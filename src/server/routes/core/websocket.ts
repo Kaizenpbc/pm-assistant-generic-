@@ -6,6 +6,8 @@ import { requireScope } from '../../middleware/requireScope';
 export async function websocketRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
+  WebSocketService.startPingInterval();
+
   fastify.get('/', { websocket: true, preHandler: [requireScope('read')] }, (socket, request) => {
     const userInfo = request.user
       ? { userId: request.user.userId, username: request.user.username }

@@ -22,7 +22,7 @@ export const TermsPage: React.FC = () => {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Terms of Service</h1>
         <div className="prose prose-gray max-w-none text-sm text-gray-600 dark:text-gray-300 space-y-6">
-          <p><strong>Last updated:</strong> February 2026</p>
+          <p><strong>Last updated:</strong> July 2026</p>
 
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">1. Acceptance of Terms</h2>
           <p>By accessing or using Kovarti PM Assistant ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>

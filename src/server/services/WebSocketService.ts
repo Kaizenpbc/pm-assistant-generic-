@@ -12,12 +12,45 @@ interface ClientInfo {
   projectId: string | null;
 }
 
+const MAX_CONNECTIONS = 500;
+const PING_INTERVAL_MS = 30_000;
+const PONG_TIMEOUT_MS = 10_000;
+
 export class WebSocketService {
   private static clients: Set<WebSocket> = new Set();
   private static clientInfo: Map<WebSocket, ClientInfo> = new Map();
+  private static pingTimer: ReturnType<typeof setInterval> | null = null;
+
+  static startPingInterval() {
+    if (WebSocketService.pingTimer) return;
+    WebSocketService.pingTimer = setInterval(() => {
+      for (const ws of WebSocketService.clients) {
+        if (ws.readyState !== WebSocket.OPEN) continue;
+        (ws as any).__pongReceived = false;
+        ws.ping();
+        setTimeout(() => {
+          if (!(ws as any).__pongReceived && ws.readyState === WebSocket.OPEN) {
+            logger.info('WebSocket client timed out (no pong) — terminating');
+            ws.terminate();
+          }
+        }, PONG_TIMEOUT_MS);
+      }
+    }, PING_INTERVAL_MS);
+    WebSocketService.pingTimer.unref();
+  }
 
   static addClient(ws: WebSocket, userInfo?: { userId: string; username: string }) {
+    if (WebSocketService.clients.size >= MAX_CONNECTIONS) {
+      logger.warn('WebSocket max connections reached — rejecting new client');
+      ws.close(1013, 'Max connections reached');
+      return;
+    }
+
     WebSocketService.clients.add(ws);
+
+    // Track pong responses for keepalive
+    (ws as any).__pongReceived = true;
+    ws.on('pong', () => { (ws as any).__pongReceived = true; });
 
     if (userInfo) {
       WebSocketService.clientInfo.set(ws, {

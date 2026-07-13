@@ -24,6 +24,7 @@ export interface User {
   lastLoginAt: Date | null;
   timezone: string;
   locale: string;
+  tokenVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
