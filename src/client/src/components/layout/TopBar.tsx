@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, ChevronRight, LogOut, User, Moon, Sun, Menu } from 'lucide-react';
+import { Search, ChevronRight, LogOut, User, Moon, Sun, Menu, HelpCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { useThemeStore } from '../../stores/themeStore';
@@ -287,6 +287,18 @@ const TopBar: React.FC<TopBarProps> = ({ onMobileMenuToggle }) => {
                   <User className="w-4 h-4 text-gray-400" />
                   <span>Profile & Settings</span>
                 </Link>
+              </div>
+
+              <div className="py-1">
+                <a
+                  href="mailto:support@kpbc.ca"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150"
+                  role="menuitem"
+                  onClick={() => setDropdownOpen(false)}
+                >
+                  <HelpCircle className="w-4 h-4 text-gray-400" />
+                  <span>Help & Support</span>
+                </a>
               </div>
 
               {/* Logout */}

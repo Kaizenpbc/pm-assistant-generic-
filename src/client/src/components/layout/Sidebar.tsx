@@ -19,6 +19,7 @@ import {
   Activity,
   ScrollText,
   ArrowLeftRight,
+  HelpCircle,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -291,6 +292,29 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
             </span>
           </button>
         )}
+
+        {/* Help & Support */}
+        <a
+          href="mailto:support@kpbc.ca"
+          className={`
+            flex items-center gap-2 px-3 py-2.5
+            text-sidebar-text/70 hover:text-white hover:bg-sidebar-hover
+            transition-colors duration-200 border-b border-white/5
+            ${collapsed ? 'justify-center' : ''}
+          `}
+          title="Help & Support"
+        >
+          <HelpCircle className="w-4 h-4 flex-shrink-0" />
+          <span
+            className={`
+              text-xs font-medium whitespace-nowrap
+              transition-all duration-300
+              ${collapsed ? 'sr-only' : 'block'}
+            `}
+          >
+            Help & Support
+          </span>
+        </a>
 
         <div
           className={`
