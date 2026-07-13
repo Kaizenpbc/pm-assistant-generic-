@@ -13,7 +13,6 @@ const features = [
     accent: 'from-amber-400 to-orange-500',
     iconBg: 'bg-amber-100 text-amber-600',
     cardBg: 'bg-amber-50 border-amber-200',
-    video: '/videos/ai-scheduling.mp4',
   },
   {
     title: 'Monte Carlo Simulations',
@@ -26,7 +25,6 @@ const features = [
     accent: 'from-emerald-400 to-teal-500',
     iconBg: 'bg-emerald-100 text-emerald-600',
     cardBg: 'bg-emerald-50 border-emerald-200',
-    video: '/videos/monte-carlo.mp4',
   },
   {
     title: 'Smart Risk Detection',
@@ -39,7 +37,6 @@ const features = [
     accent: 'from-rose-400 to-pink-500',
     iconBg: 'bg-rose-100 text-rose-600',
     cardBg: 'bg-rose-50 border-rose-200',
-    video: '/videos/risk-detection.mp4',
   },
   {
     title: 'Meeting Intelligence',
@@ -52,7 +49,6 @@ const features = [
     accent: 'from-violet-400 to-purple-500',
     iconBg: 'bg-violet-100 text-violet-600',
     cardBg: 'bg-violet-50 border-violet-200',
-    video: '/videos/meeting-intelligence.mp4',
   },
   {
     title: 'Portfolio Dashboard',
@@ -65,7 +61,6 @@ const features = [
     accent: 'from-sky-400 to-blue-500',
     iconBg: 'bg-sky-100 text-sky-600',
     cardBg: 'bg-sky-50 border-sky-200',
-    video: '/videos/portfolio-dashboard.mp4',
   },
   {
     title: 'Natural Language Queries',
@@ -78,7 +73,6 @@ const features = [
     accent: 'from-cyan-400 to-primary-500',
     iconBg: 'bg-cyan-100 text-cyan-600',
     cardBg: 'bg-cyan-50 border-cyan-200',
-    video: '/videos/nl-queries.mp4',
   },
 ];
 
@@ -154,26 +148,247 @@ const pricingTiers = [
   },
 ];
 
+/* Animated mockup previews for feature cards */
+function SchedulingMockup() {
+  return (
+    <svg viewBox="0 0 320 180" className="w-full h-full">
+      <rect width="320" height="180" fill="#1e293b" />
+      {/* Header */}
+      <text x="16" y="24" fill="#94a3b8" fontSize="10" fontFamily="system-ui">Project Timeline</text>
+      {/* Task labels */}
+      <text x="16" y="50" fill="#cbd5e1" fontSize="9" fontFamily="system-ui">Design</text>
+      <text x="16" y="74" fill="#cbd5e1" fontSize="9" fontFamily="system-ui">Backend</text>
+      <text x="16" y="98" fill="#cbd5e1" fontSize="9" fontFamily="system-ui">Frontend</text>
+      <text x="16" y="122" fill="#cbd5e1" fontSize="9" fontFamily="system-ui">Testing</text>
+      <text x="16" y="146" fill="#cbd5e1" fontSize="9" fontFamily="system-ui">Deploy</text>
+      {/* Gantt bars with staggered animation */}
+      <rect x="80" y="40" width="0" height="14" rx="3" fill="#f59e0b" opacity="0.9">
+        <animate attributeName="width" from="0" to="80" dur="0.6s" begin="0.2s" fill="freeze" />
+      </rect>
+      <rect x="120" y="64" width="0" height="14" rx="3" fill="#f97316" opacity="0.9">
+        <animate attributeName="width" from="0" to="120" dur="0.7s" begin="0.5s" fill="freeze" />
+      </rect>
+      <rect x="160" y="88" width="0" height="14" rx="3" fill="#fb923c" opacity="0.9">
+        <animate attributeName="width" from="0" to="100" dur="0.6s" begin="0.9s" fill="freeze" />
+      </rect>
+      <rect x="220" y="112" width="0" height="14" rx="3" fill="#fbbf24" opacity="0.9">
+        <animate attributeName="width" from="0" to="60" dur="0.5s" begin="1.3s" fill="freeze" />
+      </rect>
+      <rect x="270" y="136" width="0" height="14" rx="3" fill="#fcd34d" opacity="0.9">
+        <animate attributeName="width" from="0" to="30" dur="0.4s" begin="1.6s" fill="freeze" />
+      </rect>
+      {/* Dependency arrows */}
+      <path d="M160 54 L160 64" stroke="#64748b" strokeWidth="1" fill="none" strokeDasharray="3,2" opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="0.8s" fill="freeze" />
+      </path>
+      <path d="M240 78 L240 88" stroke="#64748b" strokeWidth="1" fill="none" strokeDasharray="3,2" opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.2s" fill="freeze" />
+      </path>
+      {/* AI sparkle */}
+      <text x="280" y="24" fill="#fbbf24" fontSize="11" opacity="0">✦ AI
+        <animate attributeName="opacity" from="0" to="1" dur="0.4s" begin="0.1s" fill="freeze" />
+        <animateTransform attributeName="transform" type="scale" values="0.8;1.1;1" dur="0.5s" begin="0.1s" fill="freeze" />
+      </text>
+    </svg>
+  );
+}
+
+function MonteCarloMockup() {
+  const bars = [8, 15, 28, 45, 60, 80, 95, 78, 55, 35, 20, 10, 5];
+  return (
+    <svg viewBox="0 0 320 180" className="w-full h-full">
+      <rect width="320" height="180" fill="#1e293b" />
+      <text x="16" y="24" fill="#94a3b8" fontSize="10" fontFamily="system-ui">Completion Probability</text>
+      {/* Histogram bars */}
+      {bars.map((h, i) => (
+        <rect key={i} x={30 + i * 21} y={160 - h} width="16" rx="2" fill="#10b981" opacity="0.8" height="0">
+          <animate attributeName="height" from="0" to={String(h)} dur="0.4s" begin={`${0.1 + i * 0.08}s`} fill="freeze" />
+          <animate attributeName="y" from="160" to={String(160 - h)} dur="0.4s" begin={`${0.1 + i * 0.08}s`} fill="freeze" />
+        </rect>
+      ))}
+      {/* P50/P80/P95 lines */}
+      <line x1="135" y1="30" x2="135" y2="160" stroke="#fbbf24" strokeWidth="1" strokeDasharray="4,3" opacity="0">
+        <animate attributeName="opacity" from="0" to="0.8" dur="0.3s" begin="1.2s" fill="freeze" />
+      </line>
+      <text x="137" y="38" fill="#fbbf24" fontSize="8" fontFamily="system-ui" opacity="0">P50
+        <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.2s" fill="freeze" />
+      </text>
+      <line x1="198" y1="30" x2="198" y2="160" stroke="#f97316" strokeWidth="1" strokeDasharray="4,3" opacity="0">
+        <animate attributeName="opacity" from="0" to="0.8" dur="0.3s" begin="1.5s" fill="freeze" />
+      </line>
+      <text x="200" y="38" fill="#f97316" fontSize="8" fontFamily="system-ui" opacity="0">P80
+        <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.5s" fill="freeze" />
+      </text>
+      <line x1="240" y1="30" x2="240" y2="160" stroke="#ef4444" strokeWidth="1" strokeDasharray="4,3" opacity="0">
+        <animate attributeName="opacity" from="0" to="0.8" dur="0.3s" begin="1.8s" fill="freeze" />
+      </line>
+      <text x="242" y="38" fill="#ef4444" fontSize="8" fontFamily="system-ui" opacity="0">P95
+        <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.8s" fill="freeze" />
+      </text>
+    </svg>
+  );
+}
+
+function RiskDetectionMockup() {
+  return (
+    <svg viewBox="0 0 320 180" className="w-full h-full">
+      <rect width="320" height="180" fill="#1e293b" />
+      <text x="16" y="24" fill="#94a3b8" fontSize="10" fontFamily="system-ui">Risk Scanner</text>
+      {/* Scanning line */}
+      <rect x="0" y="30" width="320" height="2" fill="#3b82f6" opacity="0">
+        <animate attributeName="opacity" values="0;0.6;0" dur="1.5s" begin="0.2s" />
+        <animate attributeName="y" from="30" to="170" dur="1.5s" begin="0.2s" fill="freeze" />
+      </rect>
+      {/* Risk items appearing */}
+      {[
+        { y: 45, label: 'Budget overrun risk — Phase 2 spending 23% over forecast', severity: '#ef4444', tag: 'HIGH' },
+        { y: 80, label: 'Resource conflict — 3 developers double-booked next sprint', severity: '#f97316', tag: 'MED' },
+        { y: 115, label: 'Dependency delay — API integration blocked by vendor', severity: '#ef4444', tag: 'HIGH' },
+        { y: 150, label: 'Scope creep — 12 unplanned tasks added this month', severity: '#eab308', tag: 'LOW' },
+      ].map((risk, i) => (
+        <g key={i} opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin={`${0.6 + i * 0.5}s`} fill="freeze" />
+          <rect x="14" y={risk.y} width="6" height="22" rx="2" fill={risk.severity} />
+          <text x="28" y={risk.y + 10} fill="#e2e8f0" fontSize="8" fontFamily="system-ui">{risk.label.slice(0, 52)}</text>
+          <text x="28" y={risk.y + 20} fill="#64748b" fontSize="7" fontFamily="system-ui">{risk.label.slice(52)}</text>
+          <rect x="270" y={risk.y + 2} width="32" height="14" rx="7" fill={risk.severity} opacity="0.2" />
+          <text x="278" y={risk.y + 12} fill={risk.severity} fontSize="7" fontWeight="bold" fontFamily="system-ui">{risk.tag}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function MeetingMockup() {
+  const lines = [
+    { text: 'Sarah: We need to finalize the API spec by Friday', type: 'transcript' },
+    { text: '→ Action: Finalize API spec — assigned Sarah — due Fri', type: 'action' },
+    { text: 'Tom: The client approved the new design direction', type: 'transcript' },
+    { text: '→ Decision: New design direction approved by client', type: 'decision' },
+    { text: 'Lisa: Testing starts next Monday with 3 QA engineers', type: 'transcript' },
+    { text: '→ Action: Begin QA testing — assigned Lisa — due Mon', type: 'action' },
+  ];
+  return (
+    <svg viewBox="0 0 320 180" className="w-full h-full">
+      <rect width="320" height="180" fill="#1e293b" />
+      <text x="16" y="24" fill="#94a3b8" fontSize="10" fontFamily="system-ui">Meeting Analysis</text>
+      {lines.map((line, i) => (
+        <g key={i} opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin={`${0.3 + i * 0.4}s`} fill="freeze" />
+          {line.type === 'action' ? (
+            <>
+              <rect x="14" y={34 + i * 22} width="296" height="18" rx="4" fill="#3b82f6" opacity="0.15" />
+              <text x="20" y={47 + i * 22} fill="#60a5fa" fontSize="8" fontFamily="system-ui">{line.text}</text>
+            </>
+          ) : line.type === 'decision' ? (
+            <>
+              <rect x="14" y={34 + i * 22} width="296" height="18" rx="4" fill="#a855f7" opacity="0.15" />
+              <text x="20" y={47 + i * 22} fill="#c084fc" fontSize="8" fontFamily="system-ui">{line.text}</text>
+            </>
+          ) : (
+            <text x="20" y={47 + i * 22} fill="#94a3b8" fontSize="8" fontFamily="system-ui">{line.text}</text>
+          )}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function PortfolioMockup() {
+  const projects = [
+    { name: 'Website Redesign', health: 92, color: '#10b981', w: 240 },
+    { name: 'Mobile App v2', health: 67, color: '#f97316', w: 175 },
+    { name: 'Data Migration', health: 85, color: '#10b981', w: 222 },
+    { name: 'API Platform', health: 45, color: '#ef4444', w: 118 },
+  ];
+  return (
+    <svg viewBox="0 0 320 180" className="w-full h-full">
+      <rect width="320" height="180" fill="#1e293b" />
+      <text x="16" y="24" fill="#94a3b8" fontSize="10" fontFamily="system-ui">Portfolio Health</text>
+      {projects.map((p, i) => (
+        <g key={i} opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin={`${0.2 + i * 0.3}s`} fill="freeze" />
+          <text x="16" y={50 + i * 38} fill="#e2e8f0" fontSize="9" fontFamily="system-ui">{p.name}</text>
+          <rect x="16" y={55 + i * 38} width="260" height="8" rx="4" fill="#334155" />
+          <rect x="16" y={55 + i * 38} width="0" height="8" rx="4" fill={p.color}>
+            <animate attributeName="width" from="0" to={String(p.w)} dur="0.8s" begin={`${0.4 + i * 0.3}s`} fill="freeze" />
+          </rect>
+          <text x="282" y={63 + i * 38} fill={p.color} fontSize="9" fontWeight="bold" fontFamily="system-ui" opacity="0">
+            {p.health}%
+            <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin={`${0.8 + i * 0.3}s`} fill="freeze" />
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function NLQueryMockup() {
+  return (
+    <svg viewBox="0 0 320 180" className="w-full h-full">
+      <rect width="320" height="180" fill="#1e293b" />
+      {/* User query bubble */}
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="0.3s" fill="freeze" />
+        <rect x="80" y="16" width="224" height="28" rx="14" fill="#3b82f6" />
+        <text x="94" y="34" fill="white" fontSize="9" fontFamily="system-ui">Which tasks are overdue this sprint?</text>
+      </g>
+      {/* Typing indicator */}
+      <g opacity="0">
+        <animate attributeName="opacity" values="0;1;1;0" dur="1s" begin="0.8s" fill="freeze" />
+        <circle cx="28" cy="64" r="3" fill="#64748b"><animate attributeName="opacity" values="0.3;1;0.3" dur="0.6s" repeatCount="2" begin="0.8s" /></circle>
+        <circle cx="38" cy="64" r="3" fill="#64748b"><animate attributeName="opacity" values="0.3;1;0.3" dur="0.6s" repeatCount="2" begin="0.9s" /></circle>
+        <circle cx="48" cy="64" r="3" fill="#64748b"><animate attributeName="opacity" values="0.3;1;0.3" dur="0.6s" repeatCount="2" begin="1.0s" /></circle>
+      </g>
+      {/* AI response */}
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.4s" begin="1.8s" fill="freeze" />
+        <rect x="16" y="54" width="240" height="112" rx="14" fill="#334155" />
+        <text x="28" y="72" fill="#e2e8f0" fontSize="9" fontFamily="system-ui">Found 3 overdue tasks:</text>
+        <text x="28" y="90" fill="#f87171" fontSize="8" fontFamily="system-ui">• API auth module — 3 days overdue</text>
+        <text x="28" y="106" fill="#f87171" fontSize="8" fontFamily="system-ui">• Database schema review — 1 day overdue</text>
+        <text x="28" y="122" fill="#fbbf24" fontSize="8" fontFamily="system-ui">• UI wireframes — due today</text>
+        <text x="28" y="142" fill="#94a3b8" fontSize="8" fontFamily="system-ui">Suggest auto-reschedule?</text>
+        <rect x="28" y="148" width="50" height="14" rx="7" fill="#3b82f6" opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="2.4s" fill="freeze" />
+        </rect>
+        <text x="38" y="158" fill="white" fontSize="7" fontFamily="system-ui" opacity="0">Yes, do it
+          <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="2.4s" fill="freeze" />
+        </text>
+      </g>
+      {/* Mjuzi avatar */}
+      <circle cx="28" cy="80" r="10" fill="#8b5cf6" opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.8s" fill="freeze" />
+      </circle>
+      <text x="23" y="84" fill="white" fontSize="8" fontWeight="bold" fontFamily="system-ui" opacity="0">M
+        <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.8s" fill="freeze" />
+      </text>
+    </svg>
+  );
+}
+
+const featureMockups: Record<string, React.FC> = {
+  'AI-Powered Scheduling': SchedulingMockup,
+  'Monte Carlo Simulations': MonteCarloMockup,
+  'Smart Risk Detection': RiskDetectionMockup,
+  'Meeting Intelligence': MeetingMockup,
+  'Portfolio Dashboard': PortfolioMockup,
+  'Natural Language Queries': NLQueryMockup,
+};
+
 function FeatureCard({ feature }: { feature: typeof features[number] }) {
-  const [showVideo, setShowVideo] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const Mockup = featureMockups[feature.title];
 
   const handleMouseEnter = useCallback(() => {
-    if (!feature.video) return;
-    timeoutRef.current = setTimeout(() => {
-      setShowVideo(true);
-      videoRef.current?.play().catch(() => {});
-    }, 400);
-  }, [feature.video]);
+    if (!Mockup) return;
+    timeoutRef.current = setTimeout(() => setShowPreview(true), 400);
+  }, [Mockup]);
 
   const handleMouseLeave = useCallback(() => {
     clearTimeout(timeoutRef.current);
-    setShowVideo(false);
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
-    }
+    setShowPreview(false);
   }, []);
 
   return (
@@ -189,19 +404,10 @@ function FeatureCard({ feature }: { feature: typeof features[number] }) {
       <h3 className="text-lg font-semibold text-slate-900 mb-2">{feature.title}</h3>
       <p className="text-slate-500 text-sm leading-relaxed">{feature.description}</p>
 
-      {feature.video && showVideo && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 z-50 w-80 rounded-xl overflow-hidden shadow-2xl ring-1 ring-black/10 animate-in fade-in zoom-in-95 duration-200">
-          <div className="absolute left-1/2 -translate-x-1/2 top-full w-3 h-3 bg-gray-900 rotate-45 -mt-1.5" />
-          <video
-            ref={videoRef}
-            src={feature.video}
-            muted
-            playsInline
-            className="w-full h-auto bg-gray-900"
-            onEnded={() => setShowVideo(false)}
-          >
-            <track kind="captions" />
-          </video>
+      {Mockup && showPreview && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 w-80 rounded-xl overflow-hidden shadow-2xl ring-1 ring-black/10">
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-3 h-3 bg-[#1e293b] rotate-45 mb-[-6px]" />
+          <Mockup />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
             <p className="text-white text-xs font-medium">{feature.title}</p>
           </div>
