@@ -76,6 +76,22 @@ const features = [
   },
 ];
 
+const featureTooltips: Record<string, string> = {
+  'Unlimited projects': 'Create and manage as many projects as you need — no caps, no restrictions.',
+  'AI scheduling & risk detection': 'Mjuzi, your AI assistant, auto-detects schedule risks, suggests task reordering, and flags delays before they happen.',
+  'Monte Carlo simulations': 'Run thousands of schedule simulations to get probabilistic completion dates — know your P50, P80, and P95 delivery dates.',
+  'Meeting intelligence': 'Paste or record meeting transcripts and get auto-extracted action items, decisions, and key takeaways.',
+  'Natural language queries': 'Ask questions like "which tasks are overdue?" or "show me the critical path" — Mjuzi understands plain English.',
+  'Full platform access': 'Gantt charts, Kanban boards, RAID logs, EVM dashboards, sprint management, stakeholder portals — everything included.',
+  'Priority support': 'Get faster response times and direct access to the team for technical questions and onboarding help.',
+  'Everything in Consultant': 'All features from the Consultant plan, plus enterprise-grade capabilities listed below.',
+  'Portfolio management': 'Manage multiple projects in a unified portfolio view with cross-project health tracking and executive dashboards.',
+  'Advanced analytics': 'Deep-dive reports, trend analysis, resource utilization heatmaps, and AI-powered performance forecasting.',
+  'Custom workflows': 'Build automated approval chains, status transitions, and notification rules tailored to your team\'s process.',
+  'API access': 'Full REST API and MCP integration for connecting to your existing tools and building custom automations.',
+  'Dedicated support': 'Named account manager, onboarding assistance, and SLA-backed response times.',
+};
+
 const pricingTiers = [
   {
     name: 'Free Trial',
@@ -281,7 +297,7 @@ export const LandingPage: React.FC = () => {
                 </p>
                 <ul className="mt-6 space-y-3">
                   {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-center text-sm">
+                    <li key={feature} className="relative group/feat flex items-center text-sm cursor-default">
                       <svg
                         className={`w-4 h-4 mr-2.5 flex-shrink-0 ${tier.highlighted ? 'text-primary-300' : 'text-emerald-500'}`}
                         fill="currentColor"
@@ -293,7 +309,13 @@ export const LandingPage: React.FC = () => {
                           clipRule="evenodd"
                         />
                       </svg>
-                      <span className={tier.highlighted ? 'text-primary-100' : 'text-slate-600'}>{feature}</span>
+                      <span className={`${tier.highlighted ? 'text-primary-100' : 'text-slate-600'} border-b border-dashed ${tier.highlighted ? 'border-primary-300/40' : 'border-slate-300'}`}>{feature}</span>
+                      {featureTooltips[feature] && (
+                        <div className="absolute left-0 bottom-full mb-2 w-64 p-3 rounded-lg bg-gray-900 text-white text-xs leading-relaxed shadow-xl opacity-0 invisible group-hover/feat:opacity-100 group-hover/feat:visible transition-all duration-200 z-50 pointer-events-none">
+                          {featureTooltips[feature]}
+                          <div className="absolute left-4 top-full w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
