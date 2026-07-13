@@ -10,9 +10,9 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
       </svg>
     ),
-    accent: 'from-amber-400 to-orange-500',
-    iconBg: 'bg-amber-100 text-amber-600',
-    cardBg: 'bg-amber-50 border-amber-200',
+    accent: 'from-primary-400 to-purple-500',
+    iconBg: 'bg-primary-100 text-primary-600',
+    cardBg: 'bg-white border-slate-200',
   },
   {
     title: 'Monte Carlo Simulations',
@@ -22,9 +22,9 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
-    accent: 'from-emerald-400 to-teal-500',
-    iconBg: 'bg-emerald-100 text-emerald-600',
-    cardBg: 'bg-emerald-50 border-emerald-200',
+    accent: 'from-primary-400 to-purple-500',
+    iconBg: 'bg-purple-100 text-purple-600',
+    cardBg: 'bg-white border-slate-200',
   },
   {
     title: 'Smart Risk Detection',
@@ -34,9 +34,9 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
       </svg>
     ),
-    accent: 'from-rose-400 to-pink-500',
-    iconBg: 'bg-rose-100 text-rose-600',
-    cardBg: 'bg-rose-50 border-rose-200',
+    accent: 'from-primary-400 to-purple-500',
+    iconBg: 'bg-primary-100 text-primary-600',
+    cardBg: 'bg-white border-slate-200',
   },
   {
     title: 'Meeting Intelligence',
@@ -46,9 +46,9 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
       </svg>
     ),
-    accent: 'from-violet-400 to-purple-500',
-    iconBg: 'bg-violet-100 text-violet-600',
-    cardBg: 'bg-violet-50 border-violet-200',
+    accent: 'from-primary-400 to-purple-500',
+    iconBg: 'bg-purple-100 text-purple-600',
+    cardBg: 'bg-white border-slate-200',
   },
   {
     title: 'Portfolio Dashboard',
@@ -58,9 +58,9 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
       </svg>
     ),
-    accent: 'from-sky-400 to-blue-500',
-    iconBg: 'bg-sky-100 text-sky-600',
-    cardBg: 'bg-sky-50 border-sky-200',
+    accent: 'from-primary-400 to-purple-500',
+    iconBg: 'bg-primary-100 text-primary-600',
+    cardBg: 'bg-white border-slate-200',
   },
   {
     title: 'Natural Language Queries',
@@ -70,9 +70,9 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
       </svg>
     ),
-    accent: 'from-cyan-400 to-primary-500',
-    iconBg: 'bg-cyan-100 text-cyan-600',
-    cardBg: 'bg-cyan-50 border-cyan-200',
+    accent: 'from-primary-400 to-purple-500',
+    iconBg: 'bg-purple-100 text-purple-600',
+    cardBg: 'bg-white border-slate-200',
   },
 ];
 
@@ -427,7 +427,7 @@ function FeatureItem({ feature, highlighted }: { feature: string; highlighted: b
       onMouseLeave={() => setShow(false)}
     >
       <svg
-        className={`w-4 h-4 mr-2.5 flex-shrink-0 ${highlighted ? 'text-primary-300' : 'text-emerald-500'}`}
+        className={`w-4 h-4 mr-2.5 flex-shrink-0 ${highlighted ? 'text-primary-300' : 'text-primary-500'}`}
         fill="currentColor"
         viewBox="0 0 20 20"
       >
@@ -483,9 +483,8 @@ export const LandingPage: React.FC = () => {
       <section className="relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-br from-primary-100 via-purple-50 to-pink-100 rounded-full blur-3xl opacity-60" />
-          <div className="absolute top-40 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-sky-100 to-cyan-50 rounded-full blur-3xl opacity-40" />
-          <div className="absolute top-60 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-amber-100 to-orange-50 rounded-full blur-3xl opacity-40" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-br from-primary-100 via-purple-50 to-primary-50 rounded-full blur-3xl opacity-60" />
+          <div className="absolute top-40 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-purple-100 to-primary-50 rounded-full blur-3xl opacity-30" />
         </div>
 
         <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8">
@@ -497,7 +496,7 @@ export const LandingPage: React.FC = () => {
             <h1 className="text-5xl sm:text-6xl font-bold tracking-tight">
               <span className="text-slate-900">Manage Projects</span>
               <br />
-              <span className="bg-gradient-to-r from-primary-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary-500 to-purple-600 bg-clip-text text-transparent">
                 Smarter with AI
               </span>
             </h1>
