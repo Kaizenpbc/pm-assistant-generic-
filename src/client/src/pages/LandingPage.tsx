@@ -128,24 +128,6 @@ const pricingTiers = [
     highlighted: true,
     badge: 'Most Popular',
   },
-  {
-    name: 'Business',
-    price: '',
-    period: '',
-    description: 'Multi-tenant, teams, and enterprise features',
-    features: [
-      'Everything in Consultant',
-      'Portfolio management',
-      'Advanced analytics',
-      'Custom workflows',
-      'API access',
-      'Dedicated support',
-    ],
-    cta: 'Coming Soon',
-    ctaLink: '#',
-    highlighted: false,
-    disabled: true,
-  },
 ];
 
 /* Animated mockup previews for feature cards */
@@ -388,7 +370,7 @@ function FeatureCard({ feature }: { feature: typeof features[number] }) {
         {feature.icon}
       </div>
       <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
-      <p className="text-slate-400 text-sm leading-relaxed">{feature.description}</p>
+      <p className="text-slate-300 text-sm leading-relaxed">{feature.description}</p>
 
       {Mockup && showPreview && (
         <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 z-50 w-[360px] rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
@@ -423,7 +405,7 @@ function FeatureItem({ feature, highlighted }: { feature: string; highlighted: b
           clipRule="evenodd"
         />
       </svg>
-      <span className={`${highlighted ? 'text-blue-100' : 'text-slate-300'} ${tooltip ? `border-b border-dashed ${highlighted ? 'border-cyan-300/40' : 'border-slate-500'}` : ''}`}>
+      <span className={`${highlighted ? 'text-blue-100' : 'text-slate-200'} ${tooltip ? `border-b border-dashed ${highlighted ? 'border-cyan-300/40' : 'border-slate-500'}` : ''}`}>
         {feature}
       </span>
       {tooltip && show && (
@@ -473,24 +455,24 @@ export const LandingPage: React.FC = () => {
           <div className="absolute top-40 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-full blur-3xl" />
         </div>
 
-        <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-8">
+        <div className="pt-20 pb-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
               <span className="text-sm font-medium text-blue-300">AI-Powered Project Intelligence</span>
             </div>
-            <h1 className="text-5xl sm:text-6xl font-bold tracking-tight">
+            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95]">
               <span className="text-white">Manage Projects</span>
               <br />
               <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                 Smarter with AI
               </span>
             </h1>
-            <p className="mt-6 text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-6 text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
               Plan smarter, predict risks, and deliver on time with intelligent scheduling,
               Monte Carlo simulations, and natural language project insights.
             </p>
-            <div className="mt-10 flex justify-center gap-4">
+            <div className="mt-8 flex justify-center gap-4">
               <Link
                 to="/register"
                 className="px-8 py-3.5 text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-0.5"
@@ -509,11 +491,11 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Features */}
-      <section className="py-24">
+      <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">Everything you need to manage projects</h2>
-            <p className="mt-4 text-lg text-slate-400">
+          <div className="text-center mb-14">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">Everything you need to manage projects</h2>
+            <p className="mt-3 text-base text-slate-300">
               Powerful AI features built for modern project managers
             </p>
           </div>
@@ -526,22 +508,22 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Pricing Preview */}
-      <section className="py-24 border-t border-white/5">
+      <section className="py-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">Simple, transparent pricing</h2>
-            <p className="mt-4 text-lg text-slate-400">
+          <div className="text-center mb-14">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">Simple, transparent pricing</h2>
+            <p className="mt-3 text-base text-slate-300">
               Start free, upgrade when you need more power
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             {pricingTiers.map((tier) => (
               <div
                 key={tier.name}
                 className={`rounded-2xl p-8 transition-all duration-300 ${
                   tier.highlighted
                     ? 'bg-gradient-to-br from-blue-600 to-cyan-500 text-white ring-4 ring-blue-400/30 ring-offset-2 ring-offset-[#0a0f1a] shadow-2xl shadow-blue-500/20 scale-105'
-                    : 'bg-[#111827]/70 backdrop-blur-sm border border-white/10 hover:border-white/20'
+                    : 'bg-[#111827]/70 backdrop-blur-sm border border-white/10 hover:border-white/15'
                 } ${tier.disabled ? 'opacity-60' : ''}`}
               >
                 {tier.badge && (
@@ -568,7 +550,7 @@ export const LandingPage: React.FC = () => {
                     <span className="text-2xl font-bold text-slate-500">TBD</span>
                   )}
                 </div>
-                <p className={`mt-2 text-sm ${tier.highlighted ? 'text-blue-100' : 'text-slate-400'}`}>
+                <p className={`mt-2 text-sm ${tier.highlighted ? 'text-blue-100' : 'text-slate-300'}`}>
                   {tier.description}
                 </p>
                 <ul className="mt-6 space-y-3">
