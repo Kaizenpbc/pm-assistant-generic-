@@ -391,7 +391,7 @@ function FeatureCard({ feature }: { feature: typeof features[number] }) {
       <div className={`w-12 h-12 ${feature.iconBg} rounded-xl flex items-center justify-center mb-4`}>
         {feature.icon}
       </div>
-      <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
+      <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
       <p className="text-slate-300 text-sm leading-relaxed">{feature.description}</p>
 
       {Mockup && showPreview && (
@@ -507,7 +507,7 @@ export const LandingPage: React.FC = () => {
               </Link>
               <a
                 href="#pricing"
-                className="px-8 py-3.5 text-base font-semibold text-slate-300 bg-[#1e293b] hover:bg-[#334155] rounded-xl transition-all border border-white/10 hover:border-white/20 hover:-translate-y-0.5"
+                className="px-8 py-3.5 text-base font-semibold text-slate-400 bg-[#1e293b] hover:bg-[#334155] hover:text-slate-200 rounded-xl transition-all border border-white/5 hover:border-white/15 hover:-translate-y-0.5"
               >
                 View Pricing
               </a>
@@ -517,7 +517,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Features */}
-      <section className="py-20">
+      <section className="pt-28 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <h2 className="text-2xl sm:text-3xl font-bold text-white">Everything you need to manage projects</h2>
@@ -534,7 +534,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Pricing Preview */}
-      <section id="pricing" className="py-20 border-t border-white/5 scroll-mt-16">
+      <section id="pricing" className="pt-28 pb-20 border-t border-white/5 scroll-mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <h2 className="text-2xl sm:text-3xl font-bold text-white">Simple, transparent pricing</h2>
