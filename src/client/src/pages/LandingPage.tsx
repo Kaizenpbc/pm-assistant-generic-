@@ -405,8 +405,8 @@ function FeatureCard({ feature }: { feature: typeof features[number] }) {
       <p className="text-slate-400 text-sm leading-relaxed">{feature.description}</p>
 
       {Mockup && showPreview && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 w-80 rounded-xl overflow-hidden shadow-2xl ring-1 ring-black/10">
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-3 h-3 bg-[#1e293b] rotate-45 mb-[-6px]" />
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 z-50 w-80 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+          <div className="absolute left-1/2 -translate-x-1/2 top-full w-3 h-3 bg-[#1e293b] rotate-45 -mt-1.5" />
           <Mockup />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
             <p className="text-white text-xs font-medium">{feature.title}</p>
