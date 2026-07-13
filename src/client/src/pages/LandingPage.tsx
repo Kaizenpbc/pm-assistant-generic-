@@ -393,7 +393,7 @@ function FeatureCard({ feature }: { feature: typeof features[number] }) {
 
   return (
     <div
-      className={`group relative rounded-2xl p-6 border hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-300 ${feature.cardBg}`}
+      className={`group relative rounded-2xl p-6 border hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-1 hover:z-40 transition-all duration-300 ${feature.cardBg}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
