@@ -13,7 +13,7 @@ export const PrivacyPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
-              <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">Kovarti PM Assistant</span>
+              <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">Kovarti PM</span>
             </Link>
           </div>
         </div>
@@ -28,53 +28,71 @@ export const PrivacyPage: React.FC = () => {
           <p><strong>Account information:</strong> Name, email address, username, and password (hashed) when you register.</p>
           <p><strong>Project data:</strong> Projects, tasks, schedules, and other content you create within the Service.</p>
           <p><strong>Payment information:</strong> Billing details are processed by Stripe. We do not store your credit card numbers.</p>
-          <p><strong>Usage data:</strong> We collect information about how you use the Service, including pages visited, features used, and interactions with AI features.</p>
+          <p><strong>Usage data:</strong> We collect information about how you use the Service, including pages visited, features used, session duration, device type, browser type, IP address, and referring URL. This data is collected via Google Analytics (see Section 8).</p>
 
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">2. How We Use Your Information</h2>
           <p>We use your information to:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>Provide and maintain the Service</li>
             <li>Process payments and manage subscriptions</li>
-            <li>Send transactional emails (verification, password reset, billing)</li>
-            <li>Improve the Service and AI features</li>
+            <li>Send transactional emails (verification, password reset, billing, trial reminders)</li>
+            <li>Analyze usage patterns to improve the Service</li>
             <li>Respond to support requests</li>
           </ul>
 
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">3. AI Data Processing</h2>
-          <p>When you use AI features, your project data may be sent to third-party AI providers (Anthropic) for processing. AI conversations and generated content may be stored to improve response quality. You can disable AI features via your account settings.</p>
+          <p>When you use AI features, your project data may be sent to Anthropic for processing. AI conversations and generated content may be stored to improve response quality. You can disable AI features via your account settings.</p>
 
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">4. Data Sharing</h2>
-          <p>We do not sell your personal data. We share data only with:</p>
+          <p>We do not sell your personal data. We share data only with the following third-party service providers, all of which are based in the United States:</p>
           <ul className="list-disc pl-6 space-y-1">
-            <li><strong>Stripe:</strong> For payment processing</li>
-            <li><strong>Resend:</strong> For transactional emails</li>
-            <li><strong>Anthropic:</strong> For AI feature processing</li>
+            <li><strong>Stripe</strong> (San Francisco, CA): Payment processing and subscription management</li>
+            <li><strong>Resend</strong> (San Francisco, CA): Transactional email delivery</li>
+            <li><strong>Anthropic</strong> (San Francisco, CA): AI feature processing</li>
+            <li><strong>Google Analytics</strong> (Mountain View, CA): Website usage analytics</li>
           </ul>
+          <p>By using the Service, you consent to the transfer of data to these US-based providers. Each provider is bound by their own privacy policies and data processing agreements.</p>
 
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">5. Data Security</h2>
-          <p>We implement industry-standard security measures including encrypted connections (HTTPS), hashed passwords (bcrypt), secure HTTP-only cookies for authentication, and regular security updates.</p>
+          <p>We implement industry-standard security measures including encrypted connections (HTTPS/TLS), hashed passwords (bcrypt), secure HTTP-only cookies for authentication, rate limiting, and regular security updates.</p>
 
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">6. Data Retention</h2>
-          <p>Your data is retained as long as your account is active. Upon account deletion, your personal data and project data will be permanently deleted within 30 days. Anonymized, aggregated data may be retained indefinitely.</p>
+          <p>Your data is retained as long as your account is active. Upon account deletion, your personal data and project data will be permanently deleted within 30 days. Anonymized, aggregated analytics data may be retained indefinitely.</p>
 
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">7. Your Rights</h2>
           <p>You have the right to:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>Access your personal data</li>
             <li>Correct inaccurate data</li>
-            <li>Export your data</li>
-            <li>Delete your account and data</li>
+            <li>Export your data (via Settings &gt; Data Export)</li>
+            <li>Delete your account and data (via Settings &gt; Account)</li>
             <li>Opt out of non-essential communications</li>
+            <li>Opt out of analytics tracking (see Section 8)</li>
           </ul>
+          <p>To exercise these rights, contact us at privacy@kpbc.ca or use the self-service options in your account settings.</p>
 
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">8. Cookies</h2>
-          <p>We use essential cookies for authentication (HTTP-only, secure cookies for session management). We do not use third-party tracking cookies or advertising cookies.</p>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">8. Cookies and Analytics</h2>
+          <p><strong>Essential cookies:</strong> We use secure, HTTP-only cookies for authentication and session management. These are strictly necessary for the Service to function.</p>
+          <p><strong>Analytics cookies:</strong> We use Google Analytics 4 (GA4) to understand how visitors use our website. GA4 sets the following cookies:</p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li><code>_ga</code> — Distinguishes unique visitors (expires: 2 years)</li>
+            <li><code>_ga_*</code> — Maintains session state (expires: 2 years)</li>
+          </ul>
+          <p>Google Analytics collects anonymized usage data including pages visited, session duration, device type, browser, approximate location (country/city level from IP address), and referring website. This data is processed by Google in the United States.</p>
+          <p><strong>Opting out:</strong> You can opt out of Google Analytics by installing the <a href="https://tools.google.com/dlpage/gaoptout" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:text-primary-300" target="_blank" rel="noopener noreferrer">Google Analytics Opt-out Browser Add-on</a>, or by using your browser's built-in cookie controls to block third-party cookies.</p>
+          <p>We do not use advertising cookies or sell data to advertisers.</p>
 
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">9. Changes to This Policy</h2>
-          <p>We may update this Privacy Policy from time to time. We will notify you of significant changes via email or in-app notification.</p>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">9. International Data Transfers</h2>
+          <p>The Service is hosted in Canada (Oracle Cloud, Toronto region). Your data may be transferred to the United States for processing by our third-party providers (Stripe, Resend, Anthropic, Google). We rely on the service providers' standard contractual clauses and privacy frameworks to protect your data during transfer.</p>
 
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">10. Contact</h2>
-          <p>For privacy-related questions, contact us at privacy@kpbc.ca.</p>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">10. Canadian Privacy Law (PIPEDA)</h2>
+          <p>We comply with the Personal Information Protection and Electronic Documents Act (PIPEDA). We collect, use, and disclose personal information only for the purposes identified in this policy. You may withdraw consent at any time by deleting your account. For privacy inquiries or complaints, contact our Privacy Officer at privacy@kpbc.ca.</p>
+
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">11. Changes to This Policy</h2>
+          <p>We may update this Privacy Policy from time to time. Material changes will be communicated via email or in-app notification at least 14 days before taking effect.</p>
+
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">12. Contact</h2>
+          <p>For privacy-related questions, contact our Privacy Officer at privacy@kpbc.ca.</p>
         </div>
       </div>
 

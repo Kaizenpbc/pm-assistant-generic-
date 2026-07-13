@@ -259,6 +259,72 @@ export class EmailService {
       `,
     });
   }
+  async sendTrialReminderEmail(to: string, name: string, daysLeft: number): Promise<void> {
+    if (!this.isConfigured) {
+      logger.info(`[EmailService] Trial reminder email would be sent to ${maskPii(to)} (${daysLeft} days left)`);
+      return;
+    }
+
+    const subject = daysLeft === 1
+      ? 'Your Kovarti PM trial ends tomorrow'
+      : `Your Kovarti PM trial ends in ${daysLeft} days`;
+
+    const bodyHtml = `
+      <p style="color: #4b5563; line-height: 1.6;">
+        Hi ${escapeHtml(name)}, your free trial ends ${daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`}.
+      </p>
+      <p style="color: #4b5563; line-height: 1.6;">
+        Subscribe to the Consultant plan to keep access to all features — including AI insights, Gantt charts, EVM forecasting, and more.
+      </p>
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${config.APP_URL}/pricing" style="background-color: #4f46e5; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+          View Plans
+        </a>
+      </div>
+      <p style="color: #9ca3af; font-size: 14px;">
+        If you choose not to subscribe, your data will be preserved and you'll retain read-only access.
+      </p>
+    `;
+
+    await this.getClient().emails.send({
+      from: config.RESEND_FROM_EMAIL,
+      to,
+      subject,
+      html: this.wrapHtml(subject, bodyHtml),
+    });
+  }
+
+  async sendTrialExpiredEmail(to: string, name: string): Promise<void> {
+    if (!this.isConfigured) {
+      logger.info(`[EmailService] Trial expired email would be sent to ${maskPii(to)}`);
+      return;
+    }
+
+    const bodyHtml = `
+      <p style="color: #4b5563; line-height: 1.6;">
+        Hi ${escapeHtml(name)}, your 14-day free trial has ended.
+      </p>
+      <p style="color: #4b5563; line-height: 1.6;">
+        Your account is now in read-only mode. Subscribe to restore full access to all features.
+      </p>
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${config.APP_URL}/pricing" style="background-color: #4f46e5; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+          Subscribe Now
+        </a>
+      </div>
+      <p style="color: #9ca3af; font-size: 14px;">
+        Your data is safe — subscribe anytime to pick up where you left off.
+      </p>
+    `;
+
+    await this.getClient().emails.send({
+      from: config.RESEND_FROM_EMAIL,
+      to,
+      subject: 'Your Kovarti PM trial has ended',
+      html: this.wrapHtml('Your trial has ended', bodyHtml),
+    });
+  }
+
   async sendOrgInviteEmail(to: string, orgName: string, inviterName: string): Promise<void> {
     if (!this.isConfigured) {
       logger.info(`[EmailService] Org invite email would be sent to ${maskPii(to)} for org "${orgName}"`);

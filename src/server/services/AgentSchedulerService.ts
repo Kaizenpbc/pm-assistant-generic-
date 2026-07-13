@@ -10,6 +10,7 @@ export class AgentSchedulerService {
     digestTask: null,
     reportScheduleTask: null,
     healthSnapshotTask: null,
+    trialReminderTask: null,
   };
   private flaggedOverdue = new Map<string, Set<string>>();
   private activityLog = new AgentActivityLogService();

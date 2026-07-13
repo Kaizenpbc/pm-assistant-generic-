@@ -18,6 +18,7 @@ export interface CronTasks {
   digestTask: cron.ScheduledTask | null;
   reportScheduleTask: cron.ScheduledTask | null;
   healthSnapshotTask: cron.ScheduledTask | null;
+  trialReminderTask: cron.ScheduledTask | null;
 }
 
 export function startCronTasks(
@@ -31,6 +32,7 @@ export function startCronTasks(
     digestTask: null,
     reportScheduleTask: null,
     healthSnapshotTask: null,
+    trialReminderTask: null,
   };
 
   // Agent-specific jobs: gated by AGENT_ENABLED
@@ -168,6 +170,24 @@ export function startCronTasks(
     });
   });
 
+  // Trial reminder emails — daily at 09:00
+  logger.info('[cron] Starting trial reminder sender (daily at 09:00)');
+  tasks.trialReminderTask = cron.schedule('0 9 * * *', async () => {
+    const start = Date.now();
+    try {
+      const { runTrialReminders } = await import('./trialReminderJob');
+      await runTrialReminders();
+      logger.info('[cron:trial-reminder] completed', {
+        cronJob: 'trial-reminder', durationMs: Date.now() - start,
+      });
+    } catch (error) {
+      logger.error('[cron:trial-reminder] FAILED', {
+        cronJob: 'trial-reminder', durationMs: Date.now() - start,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   return tasks;
 }
 
@@ -178,6 +198,7 @@ export function stopCronTasks(tasks: CronTasks): void {
   if (tasks.digestTask) { tasks.digestTask.stop(); tasks.digestTask = null; }
   if (tasks.reportScheduleTask) { tasks.reportScheduleTask.stop(); tasks.reportScheduleTask = null; }
   if (tasks.healthSnapshotTask) { tasks.healthSnapshotTask.stop(); tasks.healthSnapshotTask = null; }
+  if (tasks.trialReminderTask) { tasks.trialReminderTask.stop(); tasks.trialReminderTask = null; }
   logger.info('[Agent] Stopped agent scheduler');
 }
 
