@@ -1,10 +1,10 @@
 # Kovarti PM — Pre-Subscriber TODO
 
-Status: All items pending | Last updated: July 13, 2026
+Status: 4/7 complete | Last updated: July 13, 2026
 
 ---
 
-## 1. Test Full Stripe Subscriber Flow End-to-End
+## 1. Test Full Stripe Subscriber Flow End-to-End — PENDING (manual)
 
 **Priority:** High | **Type:** Manual verification
 
@@ -28,9 +28,9 @@ Status: All items pending | Last updated: July 13, 2026
 
 ---
 
-## 2. Build Onboarding Flow for New Users
+## 2. ~~Build Onboarding Flow for New Users~~ — DONE
 
-**Priority:** High | **Type:** Feature
+**Deployed:** July 13, 2026 | **Commit:** ea6d7f6
 
 ### Problem
 New users land on a dashboard full of zeros with no guidance. The only "create project" CTA is buried on `/projects` (not the dashboard). No first-login detection exists.
@@ -66,9 +66,9 @@ New users land on a dashboard full of zeros with no guidance. The only "create p
 
 ---
 
-## 3. Mobile Responsiveness Audit
+## 3. ~~Mobile Responsiveness Audit~~ — DONE
 
-**Priority:** High | **Type:** Bug fix / Polish
+**Deployed:** July 13, 2026 | **Commit:** 2e2b055
 
 ### Current State
 The authenticated app is well-handled — sidebar has off-canvas mobile pattern, BottomNav exists for mobile, AppLayout uses breakpoint-aware layout. The main gaps are on the **public pages**.
@@ -104,9 +104,9 @@ The authenticated app is well-handled — sidebar has off-canvas mobile pattern,
 
 ---
 
-## 4. Lighthouse / Core Web Vitals Performance Audit
+## 4. ~~Lighthouse / Core Web Vitals Performance Audit~~ — DONE
 
-**Priority:** Medium | **Type:** Performance
+**Deployed:** July 13, 2026 | **Commit:** ea6d7f6
 
 ### Audit Steps
 1. Run Lighthouse on `https://pm.kpbc.ca/` (landing page) and `/dashboard` (authenticated)
@@ -128,9 +128,9 @@ The authenticated app is well-handled — sidebar has off-canvas mobile pattern,
 
 ---
 
-## 5. Add In-App Feedback/Support Channel
+## 5. ~~Add In-App Feedback/Support Channel~~ — DONE
 
-**Priority:** Medium | **Type:** Feature
+**Deployed:** July 13, 2026 | **Commit:** 2e2b055
 
 ### Current State
 No help/support link exists anywhere in the authenticated app — not in sidebar, TopBar dropdown, BottomNav, or AppLayout footer.
@@ -160,7 +160,7 @@ No help/support link exists anywhere in the authenticated app — not in sidebar
 
 ---
 
-## 6. Verify Resend Email Domain (noreply@kpbc.ca)
+## 6. Verify Resend Email Domain (noreply@kpbc.ca) — PENDING (manual)
 
 **Priority:** Medium | **Type:** Infrastructure / DNS
 
@@ -181,7 +181,7 @@ No help/support link exists anywhere in the authenticated app — not in sidebar
 
 ---
 
-## 7. Create Proper OG Social Sharing Image (1200x630)
+## 7. Create Proper OG Social Sharing Image (1200x630) — PENDING (design)
 
 **Priority:** Low | **Type:** Polish
 
