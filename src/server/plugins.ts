@@ -194,11 +194,16 @@ export async function registerPlugins(fastify: FastifyInstance) {
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         scriptSrc: [
           "'self'",
-          ...(config.NODE_ENV === 'development' ? ["'unsafe-eval'", "'unsafe-inline'"] : ["'unsafe-inline'"])
+          // Inline gtag script hash (see index.html)
+          "'sha256-eCGAeUSA/USJdg+UP79N3fM7LLrSz53WdyTKf6QZipw='",
+          "https://www.googletagmanager.com",
+          ...(config.NODE_ENV === 'development' ? ["'unsafe-eval'", "'unsafe-inline'"] : [])
         ],
         imgSrc: ["'self'", "data:", "blob:", "https:"],
         connectSrc: [
           "'self'",
+          "https://www.google-analytics.com",
+          "https://www.googletagmanager.com",
           ...(config.NODE_ENV === 'development' ? [
             "http://localhost:3001", "ws://localhost:3001", "wss://localhost:3001"
           ] : [
@@ -208,8 +213,12 @@ export async function registerPlugins(fastify: FastifyInstance) {
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
         frameSrc: ["'self'", "https://checkout.stripe.com", "https://js.stripe.com"],
+        workerSrc: ["'self'"],
+        manifestSrc: ["'self'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
       },
-      reportOnly: config.NODE_ENV !== 'production'
     },
     hsts: config.NODE_ENV === 'production' ? {
       maxAge: 31536000, includeSubDomains: true, preload: true

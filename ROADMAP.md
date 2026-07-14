@@ -64,7 +64,7 @@ Hardening, testing, and UX improvements.
 
 | # | Item | Description | Effort |
 |---|------|-------------|--------|
-| 19 | CSP enforcement | Switch Helmet CSP from report-only to enforcing mode with proper allowlists for scripts, styles, fonts, API endpoints. | Small |
+| 19 | CSP enforcement | Done -- Nginx CSP header on all static pages with SHA256 hash for gtag inline script (no `unsafe-inline` for scripts). Helmet CSP tightened: added worker-src, manifest-src, base-uri, form-action, frame-ancestors. Additional headers: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy. | Done |
 | 20 | E2E test suite | Playwright tests for critical flows: login, create project, add tasks, sprint planning, Kanban board. CI-ready. | Large |
 | 21 | Accessibility audit | ARIA labels, keyboard navigation, focus management in modals, screen reader support, color contrast checks. | Medium |
 | 22 | Drag-and-drop Kanban | Replace click-to-move with native HTML drag-and-drop on sprint board and schedule Kanban. Visual drop indicators. | Medium |
