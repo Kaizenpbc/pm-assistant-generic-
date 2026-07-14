@@ -61,6 +61,7 @@ import { SprintList } from '../components/sprints/SprintList';
 import { SprintPlanningPanel } from '../components/sprints/SprintPlanningPanel';
 import { SprintBoard } from '../components/sprints/SprintBoard';
 import { SprintBurndownChart } from '../components/sprints/SprintBurndownChart';
+import { BacklogView } from '../components/backlog/BacklogView';
 import { AvailabilityCalendar } from '../components/resources/AvailabilityCalendar';
 import { usePresence } from '../hooks/usePresence';
 import { useBreakpoint } from '../hooks/useBreakpoint';
@@ -81,7 +82,7 @@ import { OverviewTab } from './ProjectDetailPage/OverviewTab';
 import { Pencil, Zap } from 'lucide-react';
 import { getPrimaryTabs, getDefaultViewMode, type Methodology } from '../utils/methodology';
 
-type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'performance' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources' | 'time' | 'files' | 'budget';
+type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'performance' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'backlog' | 'resources' | 'time' | 'files' | 'budget';
 
 const financialTabs: { id: Tab; label: string }[] = [
   { id: 'budget', label: 'Budget' },
@@ -611,6 +612,7 @@ export function ProjectDetailPage() {
       {activeTab === 'agent-activity' && <AgentActivityTab projectId={id!} />}
       {activeTab === 'change-requests' && <ChangeRequestsTab projectId={id!} />}
       {activeTab === 'sprints' && <SprintsTab projectId={id!} />}
+      {activeTab === 'backlog' && <BacklogView projectId={id!} />}
       {activeTab === 'resources' && <ResourcesTab projectId={id!} />}
       {activeTab === 'time' && <TimeTrackingTab projectId={id!} />}
       {activeTab === 'budget' && <BudgetTab projectId={id!} project={project} />}

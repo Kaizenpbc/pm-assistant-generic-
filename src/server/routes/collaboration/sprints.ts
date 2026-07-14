@@ -167,6 +167,18 @@ export async function sprintRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /backlog/:scheduleId — tasks not assigned to any sprint
+  fastify.get('/backlog/:scheduleId', { preHandler: [requireScope('read'), requireProjectAccess('viewer')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { scheduleId } = request.params as { scheduleId: string };
+      const tasks = await sprintService.getBacklogTasks(scheduleId);
+      return { tasks };
+    } catch (error) {
+      logger.error('Get backlog tasks error', { error });
+      return reply.status(500).send({ error: 'Failed to fetch backlog tasks' });
+    }
+  });
+
   // GET /velocity/:projectId — velocity history
   fastify.get('/velocity/:projectId', { preHandler: [requireScope('read'), requireProjectAccess('viewer')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

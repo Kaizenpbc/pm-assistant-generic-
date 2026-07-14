@@ -1,6 +1,6 @@
 export type Methodology = 'waterfall' | 'agile' | 'hybrid';
 
-type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'performance' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources' | 'time' | 'files' | 'budget';
+type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'performance' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'backlog' | 'resources' | 'time' | 'files' | 'budget';
 
 export function getDefaultViewMode(m: Methodology): string {
   return m === 'agile' ? 'kanban' : 'gantt';
@@ -21,18 +21,18 @@ export function getPrimaryTabs(m: Methodology): { id: Tab; label: string }[] {
   ];
 
   if (m === 'agile') {
-    // Promote Sprints to position 2 (after Overview, before Schedule)
+    // Promote Sprints to position 2 (after Overview), then Backlog
     const withoutSprints = base.filter(t => t.id !== 'sprints');
     const overviewIdx = withoutSprints.findIndex(t => t.id === 'overview');
-    withoutSprints.splice(overviewIdx + 1, 0, { id: 'sprints', label: 'Sprints' });
+    withoutSprints.splice(overviewIdx + 1, 0, { id: 'sprints', label: 'Sprints' }, { id: 'backlog', label: 'Backlog' });
     return withoutSprints;
   }
 
   if (m === 'hybrid') {
-    // Promote Sprints to position 3 (after Schedule, before RAID)
+    // Promote Sprints to position 3 (after Schedule), then Backlog
     const withoutSprints = base.filter(t => t.id !== 'sprints');
     const scheduleIdx = withoutSprints.findIndex(t => t.id === 'schedule');
-    withoutSprints.splice(scheduleIdx + 1, 0, { id: 'sprints', label: 'Sprints' });
+    withoutSprints.splice(scheduleIdx + 1, 0, { id: 'sprints', label: 'Sprints' }, { id: 'backlog', label: 'Backlog' });
     return withoutSprints;
   }
 

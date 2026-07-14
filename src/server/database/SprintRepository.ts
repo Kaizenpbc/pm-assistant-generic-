@@ -188,6 +188,28 @@ export class SprintRepository extends BaseRepository<Sprint> {
     );
   }
 
+  async getBacklogTasks(scheduleId: string): Promise<any[]> {
+    const rows = await this.queryRaw(
+      `SELECT t.id, t.name, t.status, t.priority, t.assigned_to, t.due_date, t.estimated_days, t.progress_percentage
+       FROM tasks t
+       LEFT JOIN sprint_tasks st ON t.id = st.task_id
+       WHERE t.schedule_id = ? AND st.id IS NULL
+       ORDER BY t.sort_order, t.name`,
+      [scheduleId],
+    );
+
+    return rows.map((row: any) => ({
+      id: row.id,
+      name: row.name,
+      status: row.status,
+      priority: row.priority || null,
+      assignedTo: row.assigned_to || null,
+      dueDate: row.due_date || null,
+      estimatedDays: row.estimated_days != null ? Number(row.estimated_days) : null,
+      progressPercentage: row.progress_percentage != null ? Number(row.progress_percentage) : null,
+    }));
+  }
+
   async getVelocityHistory(projectId: string): Promise<Array<{ name: string; velocity: number; commitment: number }>> {
     const rows = await this.queryRaw(
       `SELECT s.*, COALESCE(SUM(CASE WHEN t.status = 'completed' THEN st.story_points ELSE 0 END), 0) as completed_points

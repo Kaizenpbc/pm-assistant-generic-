@@ -28,37 +28,40 @@ describe('getPrimaryTabs', () => {
     expect(ids[3]).toBe('sprints');
   });
 
-  it('agile: sprints promoted to position 2 (after overview)', () => {
+  it('agile: sprints + backlog promoted after overview', () => {
     const tabs = getPrimaryTabs('agile');
     const ids = tabs.map(t => t.id);
     expect(ids[0]).toBe('overview');
     expect(ids[1]).toBe('sprints');
-    expect(ids[2]).toBe('schedule');
+    expect(ids[2]).toBe('backlog');
+    expect(ids[3]).toBe('schedule');
   });
 
-  it('hybrid: sprints promoted to position 3 (after schedule)', () => {
+  it('hybrid: sprints + backlog promoted after schedule', () => {
     const tabs = getPrimaryTabs('hybrid');
     const ids = tabs.map(t => t.id);
     expect(ids[0]).toBe('overview');
     expect(ids[1]).toBe('schedule');
     expect(ids[2]).toBe('sprints');
-    expect(ids[3]).toBe('raid');
+    expect(ids[3]).toBe('backlog');
+    expect(ids[4]).toBe('raid');
   });
 
-  it('all methodologies return the same number of tabs', () => {
+  it('agile and hybrid have backlog tab, waterfall does not', () => {
+    const w = getPrimaryTabs('waterfall').map(t => t.id);
+    const a = getPrimaryTabs('agile').map(t => t.id);
+    const h = getPrimaryTabs('hybrid').map(t => t.id);
+    expect(w).not.toContain('backlog');
+    expect(a).toContain('backlog');
+    expect(h).toContain('backlog');
+  });
+
+  it('agile and hybrid have one more tab than waterfall', () => {
     const w = getPrimaryTabs('waterfall');
     const a = getPrimaryTabs('agile');
     const h = getPrimaryTabs('hybrid');
-    expect(w.length).toBe(a.length);
-    expect(w.length).toBe(h.length);
-  });
-
-  it('all methodologies contain the same tab IDs', () => {
-    const w = new Set(getPrimaryTabs('waterfall').map(t => t.id));
-    const a = new Set(getPrimaryTabs('agile').map(t => t.id));
-    const h = new Set(getPrimaryTabs('hybrid').map(t => t.id));
-    expect(w).toEqual(a);
-    expect(w).toEqual(h);
+    expect(a.length).toBe(w.length + 1);
+    expect(h.length).toBe(w.length + 1);
   });
 });
 

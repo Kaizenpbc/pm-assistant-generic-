@@ -211,6 +211,10 @@ export class SprintService {
     return { dates, ideal, actual, totalPoints };
   }
 
+  async getBacklogTasks(scheduleId: string): Promise<any[]> {
+    return sprintRepository.getBacklogTasks(scheduleId);
+  }
+
   async getVelocityHistory(projectId: string): Promise<{
     sprints: Array<{ name: string; velocity: number; commitment: number }>;
   }> {

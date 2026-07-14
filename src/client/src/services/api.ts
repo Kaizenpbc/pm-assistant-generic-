@@ -1739,6 +1739,11 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async getBacklogTasks(scheduleId: string) {
+    const response = await this.api.get(`/sprints/backlog/${scheduleId}`);
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Custom Report Builder
   // -------------------------------------------------------------------------
