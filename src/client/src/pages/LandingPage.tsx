@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const features = [
@@ -359,6 +359,106 @@ function NLQueryMockup() {
   );
 }
 
+function HeroMockup() {
+  const [health, setHealth] = useState(0);
+  const [bars, setBars] = useState<number[]>([42, 58, 70, 84, 95, 88, 72, 54, 60, 46, 34, 24]);
+
+  useEffect(() => {
+    const target = 82;
+    let v = 0;
+    const ct = setInterval(() => {
+      v = Math.min(target, v + 3);
+      setHealth(v);
+      if (v >= target) clearInterval(ct);
+    }, 28);
+    return () => clearInterval(ct);
+  }, []);
+
+  useEffect(() => {
+    const bt = setInterval(() => {
+      setBars(
+        Array.from({ length: 12 }, (_, i) => {
+          const base = 95 * Math.exp(-Math.pow((i - 5.2) / 3.4, 2));
+          const jitter = Math.random() * 20 - 10;
+          return Math.max(22, Math.min(98, Math.round(base + jitter)));
+        })
+      );
+    }, 3500);
+    return () => clearInterval(bt);
+  }, []);
+
+  return (
+    <div className="relative" style={{ animation: 'hfloat 6s ease-in-out infinite' }}>
+      {/* Glow behind card */}
+      <div className="absolute -inset-8 blur-xl" style={{ background: 'radial-gradient(circle at 60% 40%, rgba(34,211,238,0.18), transparent 60%)' }} />
+
+      <div className="relative rounded-2xl overflow-hidden shadow-2xl" style={{ background: 'linear-gradient(160deg, #111a2e, #0f1626)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 30px 70px rgba(0,0,0,0.5)', padding: 18 }}>
+        {/* Window chrome */}
+        <div className="flex items-center gap-1.5 pb-3.5 px-1">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+          <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+          <span className="ml-2.5 text-xs text-slate-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>portfolio · health</span>
+          <span className="ml-auto inline-flex items-center gap-1.5 text-[10.5px] font-semibold text-green-400 px-2 py-0.5 rounded-full" style={{ background: 'rgba(74,222,128,0.12)' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400" style={{ animation: 'hpulse 1.6s ease-in-out infinite' }} />
+            Live
+          </span>
+        </div>
+
+        {/* KPI row */}
+        <div className="grid grid-cols-3 gap-2.5">
+          {[
+            { label: 'Health', value: `${health}%`, color: '#4ade80' },
+            { label: 'On track', value: '7/10', color: '#f8fafc' },
+            { label: 'CPI', value: '0.94', color: '#fbbf24' },
+          ].map((kpi) => (
+            <div key={kpi.label} className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-[11px] text-slate-500 m-0">{kpi.label}</p>
+              <p className="text-[22px] font-extrabold mt-1 m-0 tabular-nums" style={{ color: kpi.color }}>{kpi.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Monte Carlo chart */}
+        <div className="mt-2.5 rounded-xl p-3.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-slate-300 m-0">Delivery confidence</p>
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-cyan-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              Monte Carlo
+              <span className="w-1 h-1 rounded-full bg-cyan-400" style={{ animation: 'hpulse 1.6s ease-in-out infinite' }} />
+            </span>
+          </div>
+          <div className="flex items-end gap-1.5 h-[88px]">
+            {bars.map((h, i) => (
+              <span
+                key={i}
+                className="flex-1 rounded-t"
+                style={{
+                  background: 'linear-gradient(180deg, #3b82f6, #22d3ee)',
+                  height: `${h}%`,
+                  opacity: 0.4 + 0.6 * (h / 100),
+                  transition: 'height 1s cubic-bezier(0.34,1.2,0.64,1), opacity 1s ease',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* AI insight */}
+        <div className="flex gap-2.5 mt-2.5 rounded-xl p-3" style={{ background: 'rgba(59,130,246,0.14)', border: '1px solid rgba(59,130,246,0.25)' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+            <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
+            <path d="M9 18h6M10 22h4" />
+          </svg>
+          <p className="text-[12.5px] text-blue-100 m-0 leading-snug">
+            <strong className="text-white">AI insight:</strong> City Fiber Rollout is trending 6 days late — reforecast recommended.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const featureMockups: Record<string, React.FC> = {
   'AI-Powered Scheduling': SchedulingMockup,
   'Monte Carlo Simulations': MonteCarloMockup,
@@ -452,6 +552,10 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0f1a] overflow-x-hidden">
+      <style>{`
+        @keyframes hfloat { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-7px) } }
+        @keyframes hpulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74,222,128,0.6) } 50% { opacity: .5; box-shadow: 0 0 0 5px rgba(74,222,128,0) } }
+      `}</style>
       {/* Navbar */}
       <nav className="bg-[#0a0f1a]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -506,43 +610,54 @@ export const LandingPage: React.FC = () => {
       </nav>
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-br from-blue-500/15 via-cyan-500/10 to-transparent rounded-full blur-3xl" />
-          <div className="absolute top-40 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-full blur-3xl" />
-        </div>
-
-        <div className="pt-20 pb-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-5xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
-              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-              <span className="text-sm font-medium text-blue-300">MS Project-grade scheduling — powered by AI</span>
-            </div>
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-              <span className="text-white">Manage Projects </span>
+      <section className="relative overflow-hidden" style={{ background: 'radial-gradient(1200px 600px at 50% -8%, rgba(59,130,246,0.12), transparent 60%)' }}>
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-16 sm:pt-[72px] pb-16 sm:pb-[90px] grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-14 items-center" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+          {/* Left: Copy */}
+          <div>
+            <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-blue-200 px-3.5 py-1.5 rounded-full" style={{ background: 'rgba(59,130,246,0.14)', border: '1px solid rgba(59,130,246,0.3)' }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_theme(colors.cyan.400)]" />
+              MS Project-grade scheduling — powered by AI
+            </span>
+            <h1 className="text-4xl sm:text-5xl lg:text-[60px] font-extrabold text-white mt-5 leading-[1.04] tracking-tight">
+              Manage projects<br />
               <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                Smarter with AI
+                smarter with AI
               </span>
             </h1>
-            <p className="mt-5 text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg text-slate-300 mt-5 leading-relaxed max-w-[520px]">
               Plan smarter, predict risks, and deliver on time with intelligent scheduling,
-              Monte Carlo simulations, and natural language project insights.
+              Monte Carlo simulations, and natural-language project insights.
             </p>
-            <div className="mt-8 flex justify-center gap-4">
+            <div className="flex items-center gap-3.5 mt-8">
               <Link
                 to="/register"
-                className="px-8 py-3.5 text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-0.5"
+                className="text-[15px] font-bold text-white bg-gradient-to-br from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 px-7 py-3.5 rounded-xl transition-all shadow-lg shadow-blue-500/35 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5"
               >
                 Start Free Trial
               </Link>
               <a
                 href="#pricing"
-                className="px-8 py-3.5 text-base font-semibold text-slate-400 bg-[#1e293b] hover:bg-[#334155] hover:text-slate-200 rounded-xl transition-all border border-white/5 hover:border-white/15 hover:-translate-y-0.5"
+                className="text-[15px] font-semibold text-white px-6 py-3.5 rounded-xl transition-all hover:-translate-y-0.5"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
               >
                 View Pricing
               </a>
             </div>
+            <div className="flex items-center gap-5 mt-7 flex-wrap">
+              {['No credit card', '14-day trial', 'Setup in minutes'].map((label) => (
+                <span key={label} className="flex items-center gap-2 text-[13px] text-slate-500">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Product Mockup */}
+          <div className="hidden lg:block">
+            <HeroMockup />
           </div>
         </div>
       </section>
