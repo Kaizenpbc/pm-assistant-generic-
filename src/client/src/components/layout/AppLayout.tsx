@@ -5,6 +5,7 @@ import BottomNav from './BottomNav';
 import { OfflineBanner } from './OfflineBanner';
 import { TrialBanner } from './TrialBanner';
 import { UpgradePrompt } from './UpgradePrompt';
+import { WelcomeModal } from '../onboarding/WelcomeModal';
 import { Bot, X } from 'lucide-react';
 import { AIChatPanel } from '../ai/AIChatPanel';
 import { useUIStore } from '../../stores/uiStore';
@@ -185,6 +186,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       )}
 
       <UpgradePrompt />
+      <WelcomeModal />
     </div>
   );
 };

@@ -21,6 +21,9 @@ export const LoginPage: React.FC = () => {
 
     try {
       const response = await apiService.login(username, password);
+      if (response.user.isFirstLogin) {
+        sessionStorage.setItem('pm-first-login', 'true');
+      }
       setUser(response.user);
       navigate('/dashboard');
     } catch (err: unknown) {

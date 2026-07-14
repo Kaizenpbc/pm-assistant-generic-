@@ -124,6 +124,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           subscriptionTier: user.role === 'admin' ? 'pro' : user.subscriptionTier,
           subscriptionStatus: user.role === 'admin' ? 'active' : user.subscriptionStatus,
           trialEndsAt: user.trialEndsAt ? (user.trialEndsAt instanceof Date ? user.trialEndsAt.toISOString() : String(user.trialEndsAt)) : null,
+          isFirstLogin: !user.lastLoginAt,
           organization,
         },
       };
