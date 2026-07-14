@@ -125,6 +125,35 @@ export function VelocitySparklineWidget({ projects }: VelocitySparklineWidgetPro
         </p>
       ) : (
         <div className="space-y-2">
+          {/* Portfolio aggregate */}
+          {projectsWithData.length > 1 && (() => {
+            const totalCurrent = projectsWithData.reduce((sum, p) => {
+              const v = p.sprints[p.sprints.length - 1]?.velocity ?? 0;
+              return sum + v;
+            }, 0);
+            // Aggregate velocity per sprint index across projects
+            const maxLen = Math.max(...projectsWithData.map(p => p.sprints.length));
+            const aggregated: number[] = [];
+            for (let i = 0; i < maxLen; i++) {
+              let sum = 0;
+              for (const p of projectsWithData) {
+                if (i < p.sprints.length) sum += p.sprints[i].velocity;
+              }
+              aggregated.push(sum);
+            }
+            return (
+              <div className="flex items-center gap-3 p-2 rounded-lg bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30">
+                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 w-28 flex-shrink-0">
+                  Portfolio
+                </span>
+                <Sparkline data={aggregated} />
+                <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200">
+                  {totalCurrent}
+                </span>
+                <TrendArrow values={aggregated} />
+              </div>
+            );
+          })()}
           {projectsWithData.map(({ project, sprints, avg }) => {
             const velocities = sprints.map(s => s.velocity);
             return (

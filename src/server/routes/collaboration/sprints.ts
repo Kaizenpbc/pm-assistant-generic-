@@ -179,6 +179,98 @@ export async function sprintRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // POST /:id/retrospective — AI-generated sprint retrospective
+  fastify.post('/:id/retrospective', { preHandler: [requireScope('read'), requireProjectAccess('viewer')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const sprint = await sprintService.getById(id);
+      if (!sprint) return reply.status(404).send({ error: 'Not found', message: 'Sprint not found' });
+      if (sprint.status !== 'completed') return reply.status(400).send({ error: 'Sprint must be completed to generate retrospective' });
+
+      const board = await sprintService.getSprintBoard(id);
+      const burndown = await sprintService.getSprintBurndown(id);
+      const velocity = await sprintService.getVelocityHistory(sprint.projectId);
+
+      // Build context for Claude
+      const tasks = board.tasks || [];
+      const completed = tasks.filter((t: any) => t.status === 'completed');
+      const incomplete = tasks.filter((t: any) => t.status !== 'completed');
+      const totalPoints = tasks.reduce((s: number, t: any) => s + (t.storyPoints || 0), 0);
+      const completedPoints = completed.reduce((s: number, t: any) => s + (t.storyPoints || 0), 0);
+      const velocities = velocity.sprints.map(s => s.velocity);
+      const avgVelocity = velocities.length > 0 ? Math.round(velocities.reduce((a, b) => a + b, 0) / velocities.length) : 0;
+
+      const prompt = `Generate a sprint retrospective summary for this completed sprint.
+
+Sprint: ${sprint.name}
+Goal: ${sprint.goal || 'No goal set'}
+Dates: ${sprint.startDate} to ${sprint.endDate}
+Velocity Commitment: ${sprint.velocityCommitment || 'Not set'} pts
+Actual Velocity: ${completedPoints} pts (${completed.length}/${tasks.length} tasks completed)
+Incomplete Tasks: ${incomplete.map((t: any) => t.name).join(', ') || 'None'}
+Historical Avg Velocity: ${avgVelocity} pts/sprint (over ${velocities.length} sprints)
+Burndown: ${burndown.totalPoints} total points, final actual: ${burndown.actual?.[burndown.actual.length - 1] ?? 'N/A'}
+
+Provide a structured retrospective with these sections:
+1. **Summary** — one paragraph overview of the sprint
+2. **What Went Well** — 2-3 bullet points
+3. **What Needs Improvement** — 2-3 bullet points
+4. **Velocity Analysis** — compare to commitment and historical average
+5. **Recommendations** — 2-3 actionable items for the next sprint
+
+Keep it concise and actionable. Use markdown formatting.`;
+
+      try {
+        const { claudeService } = await import('../../services/claudeService');
+        const result = await claudeService.complete({
+          systemPrompt: 'You are an agile coach helping a team reflect on their sprint. Be constructive and specific.',
+          userMessage: prompt,
+          temperature: 0.5,
+          maxTokens: 1000,
+        });
+        return { retrospective: result.content, sprint: { id, name: sprint.name, status: sprint.status } };
+      } catch (aiError: any) {
+        logger.warn('AI retrospective generation failed, returning data only', { error: aiError.message });
+        return {
+          retrospective: null,
+          sprint: { id, name: sprint.name, status: sprint.status },
+          stats: { totalTasks: tasks.length, completed: completed.length, completedPoints, totalPoints, avgVelocity },
+        };
+      }
+    } catch (error) {
+      logger.error('Sprint retrospective error', { error });
+      return reply.status(500).send({ error: 'Failed to generate retrospective' });
+    }
+  });
+
+  // GET /:id/cumulative-flow — cumulative flow diagram data
+  fastify.get('/:id/cumulative-flow', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const sprint = await sprintService.getById(id);
+      if (!sprint) return reply.status(404).send({ error: 'Not found', message: 'Sprint not found' });
+      const flow = await sprintService.getCumulativeFlow(id);
+      return { flow };
+    } catch (error) {
+      logger.error('Get cumulative flow error', { error });
+      return reply.status(500).send({ error: 'Failed to fetch cumulative flow data' });
+    }
+  });
+
+  // GET /:id/capacity — capacity recommendation
+  fastify.get('/:id/capacity', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const sprint = await sprintService.getById(id);
+      if (!sprint) return reply.status(404).send({ error: 'Not found', message: 'Sprint not found' });
+      const capacity = await sprintService.getCapacityRecommendation(id);
+      return { capacity };
+    } catch (error) {
+      logger.error('Get capacity recommendation error', { error });
+      return reply.status(500).send({ error: 'Failed to fetch capacity recommendation' });
+    }
+  });
+
   // GET /velocity/:projectId — velocity history
   fastify.get('/velocity/:projectId', { preHandler: [requireScope('read'), requireProjectAccess('viewer')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

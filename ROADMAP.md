@@ -51,10 +51,10 @@ Longer-term features that build on the methodology foundation.
 | # | Item | Description | Effort |
 |---|------|-------------|--------|
 | 14 | Methodology-aware templates | Done -- each template has `defaultMethodology` (IT→agile, Cloud/ERP/Telecom→hybrid, Construction/Roads/Infra→waterfall). Form pre-selects it; user can override. | Done |
-| 15 | Sprint retrospective AI | Mjuzi generates retrospective summaries from completed sprint data — what went well, what didn't, velocity trends, carryover analysis. | Medium |
-| 16 | Cumulative flow diagram | Agile analytics chart showing task state distribution over time. Complements existing burndown and velocity charts. | Medium |
-| 17 | Capacity planning for sprints | Use resource availability data to recommend sprint velocity commitments and flag overallocation before sprint start. | Large |
-| 18 | Cross-project portfolio velocity | Aggregate velocity metrics across multiple agile projects for executive/PMO dashboards. | Medium |
+| 15 | Sprint retrospective AI | Done -- `POST /sprints/:id/retrospective` generates AI retrospective via Claude for completed sprints. BookOpen button on completed sprint cards. Inline display panel with dismiss. | Done |
+| 16 | Cumulative flow diagram | Done -- `GET /sprints/:id/cumulative-flow` returns daily task status distribution. SVG stacked area chart (not_started / in_progress / completed) in Sprints tab "flow" view. | Done |
+| 17 | Capacity planning for sprints | Done -- `GET /sprints/:id/capacity` returns recommended velocity based on historical average + team size. Confidence indicator (low/medium/high based on sprint count). "capacity" view in Sprints tab. | Done |
+| 18 | Cross-project portfolio velocity | Done -- Portfolio aggregate row in VelocitySparklineWidget on PM dashboard. Aggregates velocity across all agile/hybrid projects with sparkline + trend arrow. | Done |
 
 ---
 

@@ -221,6 +221,99 @@ export class SprintService {
     const sprints = await sprintRepository.getVelocityHistory(projectId);
     return { sprints };
   }
+
+  async getCumulativeFlow(id: string): Promise<{
+    dates: string[];
+    series: Record<string, number[]>;
+  }> {
+    const sprint = await this.getById(id);
+    if (!sprint) return { dates: [], series: {} };
+
+    const rows = await sprintRepository.getCumulativeFlowData(id);
+    const startDate = new Date(sprint.startDate);
+    const endDate = new Date(sprint.endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const cutoff = today < endDate ? today : endDate;
+
+    const DAY_MS = 86_400_000;
+    const totalDays = Math.max(1, Math.round((cutoff.getTime() - startDate.getTime()) / DAY_MS));
+    const dates: string[] = [];
+
+    // Determine status groups
+    const statusOrder = ['completed', 'in_progress', 'not_started'];
+    const series: Record<string, number[]> = {};
+    for (const s of statusOrder) series[s] = [];
+
+    // For each day, count tasks in each status
+    // We use updated_at to infer when tasks moved to their current status
+    for (let d = 0; d <= totalDays; d++) {
+      const currentDate = new Date(startDate.getTime() + d * DAY_MS);
+      const dateStr = currentDate.toISOString().slice(0, 10);
+      dates.push(dateStr);
+
+      const counts: Record<string, number> = { completed: 0, in_progress: 0, not_started: 0 };
+
+      for (const row of rows) {
+        const updatedAt = new Date(row.updated_at);
+        updatedAt.setHours(0, 0, 0, 0);
+        const status = row.status || 'not_started';
+
+        if (status === 'completed' && updatedAt <= currentDate) {
+          counts.completed++;
+        } else if (status === 'in_progress' && updatedAt <= currentDate) {
+          counts.in_progress++;
+        } else if (status === 'completed' && updatedAt > currentDate) {
+          // Task was completed after this date — it was likely in_progress or not_started
+          counts.in_progress++;
+        } else {
+          counts.not_started++;
+        }
+      }
+
+      for (const s of statusOrder) series[s].push(counts[s]);
+    }
+
+    return { dates, series };
+  }
+
+  async getCapacityRecommendation(sprintId: string): Promise<{
+    recommendedVelocity: number;
+    avgVelocity: number;
+    teamSize: number;
+    velocityPerMember: number;
+    sprintCount: number;
+    confidence: 'low' | 'medium' | 'high';
+  }> {
+    const sprint = await this.getById(sprintId);
+    if (!sprint) {
+      return { recommendedVelocity: 0, avgVelocity: 0, teamSize: 0, velocityPerMember: 0, sprintCount: 0, confidence: 'low' };
+    }
+
+    const velocity = await this.getVelocityHistory(sprint.projectId);
+    const velocities = velocity.sprints.map(s => s.velocity);
+    const teamSize = await sprintRepository.getProjectResourceCount(sprint.projectId);
+
+    const sprintCount = velocities.length;
+    const avgVelocity = sprintCount > 0
+      ? Math.round(velocities.reduce((a, b) => a + b, 0) / sprintCount)
+      : 0;
+
+    const velocityPerMember = teamSize > 0 && avgVelocity > 0
+      ? Math.round((avgVelocity / teamSize) * 10) / 10
+      : 0;
+
+    // Confidence based on data points
+    const confidence: 'low' | 'medium' | 'high' = sprintCount >= 5 ? 'high' : sprintCount >= 2 ? 'medium' : 'low';
+
+    // Recommendation: use average velocity, adjusted by team size changes
+    // If no history, use team_size * 8 as a rough default (8 pts/person)
+    const recommendedVelocity = avgVelocity > 0
+      ? avgVelocity
+      : teamSize > 0 ? teamSize * 8 : 0;
+
+    return { recommendedVelocity, avgVelocity, teamSize, velocityPerMember, sprintCount, confidence };
+  }
 }
 
 export const sprintService = new SprintService();

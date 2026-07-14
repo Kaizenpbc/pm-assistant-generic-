@@ -1744,6 +1744,21 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async generateSprintRetrospective(sprintId: string) {
+    const response = await this.api.post(`/sprints/${sprintId}/retrospective`);
+    return response.data;
+  }
+
+  async getCumulativeFlow(sprintId: string) {
+    const response = await this.api.get(`/sprints/${sprintId}/cumulative-flow`);
+    return response.data;
+  }
+
+  async getCapacityRecommendation(sprintId: string) {
+    const response = await this.api.get(`/sprints/${sprintId}/capacity`);
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Custom Report Builder
   // -------------------------------------------------------------------------

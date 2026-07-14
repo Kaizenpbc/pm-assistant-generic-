@@ -210,6 +210,25 @@ export class SprintRepository extends BaseRepository<Sprint> {
     }));
   }
 
+  async getCumulativeFlowData(sprintId: string): Promise<{ date: string; status: string; updated_at: string }[]> {
+    return this.queryRaw(
+      `SELECT t.status, t.updated_at, st.story_points
+       FROM sprint_tasks st
+       JOIN tasks t ON t.id = st.task_id
+       WHERE st.sprint_id = ?
+       ORDER BY t.updated_at`,
+      [sprintId],
+    );
+  }
+
+  async getProjectResourceCount(projectId: string): Promise<number> {
+    const rows = await this.queryRaw(
+      `SELECT COUNT(*) as cnt FROM resources WHERE project_id = ?`,
+      [projectId],
+    );
+    return Number(rows[0]?.cnt || 0);
+  }
+
   async getVelocityHistory(projectId: string): Promise<Array<{ name: string; velocity: number; commitment: number }>> {
     const rows = await this.queryRaw(
       `SELECT s.*, COALESCE(SUM(CASE WHEN t.status = 'completed' THEN st.story_points ELSE 0 END), 0) as completed_points

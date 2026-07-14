@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Target, Kanban } from 'lucide-react';
+import { Plus, Target, Kanban, BookOpen } from 'lucide-react';
 import { apiService } from '../../services/api';
 
 interface Sprint {
@@ -17,6 +17,7 @@ interface SprintListProps {
   projectId: string;
   onSelect: (sprintId: string) => void;
   onCreate: () => void;
+  onRetro?: (sprintId: string) => void;
 }
 
 const statusConfig: Record<string, { bg: string; text: string; dot: string; label: string }> = {
@@ -35,7 +36,7 @@ function formatDate(s?: string): string {
   }
 }
 
-export function SprintList({ projectId, onSelect, onCreate }: SprintListProps) {
+export function SprintList({ projectId, onSelect, onCreate, onRetro }: SprintListProps) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['sprints', projectId],
     queryFn: () => apiService.getSprints(projectId),
@@ -121,8 +122,8 @@ export function SprintList({ projectId, onSelect, onCreate }: SprintListProps) {
                     </div>
                   </div>
 
-                  {/* Velocity */}
-                  <div className="text-right flex-shrink-0">
+                  {/* Velocity + Retro */}
+                  <div className="text-right flex-shrink-0 flex items-center gap-2">
                     {sprint.velocity_commitment != null && (
                       <div className="text-xs text-gray-500">
                         <span className="font-medium text-gray-700">
@@ -130,6 +131,15 @@ export function SprintList({ projectId, onSelect, onCreate }: SprintListProps) {
                         </span>
                         <span className="text-gray-400"> / {sprint.velocity_commitment} pts</span>
                       </div>
+                    )}
+                    {sprint.status === 'completed' && onRetro && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onRetro(sprint.id); }}
+                        title="Generate AI Retrospective"
+                        className="p-1.5 rounded-md text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </div>
                 </div>
