@@ -129,6 +129,9 @@ export async function authRoutes(fastify: FastifyInstance) {
         },
       };
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ error: 'Validation error', message: 'Username and password are required' });
+      }
       const err = error instanceof Error ? error : new Error(String(error));
       logger.error('Login error', { errorMessage: err.message, errorStack: err.stack });
       return reply.status(500).send({ error: 'Internal server error', message: 'Login failed' });
