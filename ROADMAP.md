@@ -50,7 +50,7 @@ Longer-term features that build on the methodology foundation.
 
 | # | Item | Description | Effort |
 |---|------|-------------|--------|
-| 14 | Methodology-aware templates | Templates suggest a default methodology based on project type (e.g., IT template defaults to agile, construction to waterfall). User can override at creation time. | Small |
+| 14 | Methodology-aware templates | Done -- each template has `defaultMethodology` (IT→agile, Cloud/ERP/Telecom→hybrid, Construction/Roads/Infra→waterfall). Form pre-selects it; user can override. | Done |
 | 15 | Sprint retrospective AI | Mjuzi generates retrospective summaries from completed sprint data — what went well, what didn't, velocity trends, carryover analysis. | Medium |
 | 16 | Cumulative flow diagram | Agile analytics chart showing task state distribution over time. Complements existing burndown and velocity charts. | Medium |
 | 17 | Capacity planning for sprints | Use resource availability data to recommend sprint velocity commitments and flag overallocation before sprint start. | Large |

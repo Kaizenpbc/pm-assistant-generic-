@@ -29,6 +29,7 @@ export const projectTemplateSchema = z.object({
   tasks: z.array(templateTaskSchema),
   tags: z.array(z.string()).default([]),
   usageCount: z.number().default(0),
+  defaultMethodology: z.enum(['waterfall', 'agile', 'hybrid']).optional(),
 });
 
 export type ProjectTemplate = z.infer<typeof projectTemplateSchema>;

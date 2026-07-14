@@ -383,6 +383,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
               phaseCount={template.tasks.filter((t: any) => t.isSummary).length}
               taskCount={template.tasks.filter((t: any) => !t.isSummary).length}
               tasks={template.tasks}
+              defaultMethodology={template.defaultMethodology}
               onBack={() => setStep('template')}
               onSubmit={handleCustomize}
               isSubmitting={applyMutation.isPending}

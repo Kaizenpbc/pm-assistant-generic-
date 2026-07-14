@@ -15,6 +15,7 @@ const webAppTemplate: ProjectTemplate = {
   estimatedDurationDays: 90,
   tags: ['web', 'fullstack', 'agile'],
   usageCount: 0,
+  defaultMethodology: 'agile',
   tasks: [
     { refId: 'plan', name: 'Planning & Requirements', description: 'Gather requirements and plan architecture', estimatedDays: 10, priority: 'high', parentRefId: null, dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['business-analysis'], isSummary: true, mandatory: true },
     { refId: 'plan-req', name: 'Requirements Gathering', description: 'Stakeholder interviews and requirement docs', estimatedDays: 5, priority: 'high', parentRefId: 'plan', dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['business-analysis'], isSummary: false, mandatory: true },
@@ -45,6 +46,7 @@ const cloudMigrationTemplate: ProjectTemplate = {
   estimatedDurationDays: 120,
   tags: ['cloud', 'aws', 'migration', 'infrastructure'],
   usageCount: 0,
+  defaultMethodology: 'hybrid',
   tasks: [
     { refId: 'assess', name: 'Assessment & Planning', description: 'Audit infrastructure and plan migration', estimatedDays: 20, priority: 'high', parentRefId: null, dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['cloud-architecture'], isSummary: true, mandatory: true },
     { refId: 'assess-audit', name: 'Infrastructure Audit', description: 'Inventory servers, databases, services', estimatedDays: 10, priority: 'high', parentRefId: 'assess', dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['infrastructure'], isSummary: false, mandatory: true },
@@ -74,6 +76,7 @@ const erpUpgradeTemplate: ProjectTemplate = {
   estimatedDurationDays: 150,
   tags: ['erp', 'sap', 'enterprise', 'upgrade'],
   usageCount: 0,
+  defaultMethodology: 'hybrid',
   tasks: [
     { refId: 'disc', name: 'Discovery & Fit-Gap', description: 'Analyze current processes and identify gaps', estimatedDays: 25, priority: 'high', parentRefId: null, dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['business-analysis'], isSummary: true, mandatory: true },
     { refId: 'disc-process', name: 'Business Process Mapping', description: 'Document current AS-IS processes', estimatedDays: 15, priority: 'high', parentRefId: 'disc', dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['business-analysis'], isSummary: false, mandatory: true },
@@ -105,6 +108,7 @@ const commercialBuildingTemplate: ProjectTemplate = {
   estimatedDurationDays: 540,
   tags: ['commercial', 'office', 'multi-story'],
   usageCount: 0,
+  defaultMethodology: 'waterfall',
   tasks: [
     { refId: 'precon', name: 'Pre-Construction', description: 'Planning, design, and permits', estimatedDays: 90, priority: 'high', parentRefId: null, dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['project-management'], isSummary: true, mandatory: true },
     { refId: 'precon-survey', name: 'Site Survey & Geotechnical', description: 'Topographical survey and soil testing', estimatedDays: 30, priority: 'high', parentRefId: 'precon', dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['surveying'], isSummary: false },
@@ -137,6 +141,7 @@ const residentialTemplate: ProjectTemplate = {
   estimatedDurationDays: 180,
   tags: ['residential', 'housing', 'home'],
   usageCount: 0,
+  defaultMethodology: 'waterfall',
   tasks: [
     { refId: 'design', name: 'Design & Permits', description: 'Architectural design and building permits', estimatedDays: 30, priority: 'high', parentRefId: null, dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['architecture'], isSummary: true, mandatory: true },
     { refId: 'design-arch', name: 'Architectural Design', description: 'Floor plans, elevations, specifications', estimatedDays: 15, priority: 'high', parentRefId: 'design', dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['architecture'], isSummary: false },
@@ -167,6 +172,7 @@ const utilitiesTemplate: ProjectTemplate = {
   estimatedDurationDays: 240,
   tags: ['utilities', 'water', 'sewer', 'power'],
   usageCount: 0,
+  defaultMethodology: 'waterfall',
   tasks: [
     { refId: 'plan', name: 'Planning & Engineering', description: 'Engineering design and permits', estimatedDays: 45, priority: 'high', parentRefId: null, dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['civil-engineering'], isSummary: true, mandatory: true },
     { refId: 'plan-survey', name: 'Route Survey & Geotechnical', description: 'Survey proposed route and test soil conditions', estimatedDays: 15, priority: 'high', parentRefId: 'plan', dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['surveying'], isSummary: false },
@@ -196,6 +202,7 @@ const telecomTemplate: ProjectTemplate = {
   estimatedDurationDays: 180,
   tags: ['telecom', '5g', 'fiber', 'network'],
   usageCount: 0,
+  defaultMethodology: 'hybrid',
   tasks: [
     { refId: 'plan', name: 'Network Planning', description: 'RF design and site acquisition', estimatedDays: 30, priority: 'high', parentRefId: null, dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['rf-engineering'], isSummary: true, mandatory: true },
     { refId: 'plan-rf', name: 'RF Design & Coverage Planning', description: 'Radio frequency design and coverage maps', estimatedDays: 15, priority: 'high', parentRefId: 'plan', dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['rf-engineering'], isSummary: false },
@@ -225,6 +232,7 @@ const highwayTemplate: ProjectTemplate = {
   estimatedDurationDays: 540,
   tags: ['highway', 'road', 'transportation', 'dot'],
   usageCount: 0,
+  defaultMethodology: 'waterfall',
   tasks: [
     { refId: 'env', name: 'Environmental & Permits', description: 'Environmental studies and permit acquisition', estimatedDays: 90, priority: 'high', parentRefId: null, dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['environmental'], isSummary: true, mandatory: true },
     { refId: 'env-eis', name: 'Environmental Impact Study', description: 'Complete EIS per federal requirements', estimatedDays: 60, priority: 'high', parentRefId: 'env', dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['environmental'], isSummary: false, mandatory: true },
@@ -258,6 +266,7 @@ const bridgeTemplate: ProjectTemplate = {
   estimatedDurationDays: 720,
   tags: ['bridge', 'structure', 'transportation'],
   usageCount: 0,
+  defaultMethodology: 'waterfall',
   tasks: [
     { refId: 'design', name: 'Design & Engineering', description: 'Detailed bridge design and engineering', estimatedDays: 120, priority: 'high', parentRefId: null, dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['structural-engineering'], isSummary: true, mandatory: true },
     { refId: 'design-geo', name: 'Geotechnical Investigation', description: 'Soil borings and foundation design', estimatedDays: 30, priority: 'high', parentRefId: 'design', dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['geotechnical'], isSummary: false, mandatory: true },
@@ -290,6 +299,7 @@ const genericTemplate: ProjectTemplate = {
   estimatedDurationDays: 60,
   tags: ['pmi', 'generic', 'standard'],
   usageCount: 0,
+  defaultMethodology: 'waterfall',
   tasks: [
     { refId: 'init', name: 'Initiation', description: 'Project charter and stakeholder identification', estimatedDays: 5, priority: 'high', parentRefId: null, dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['project-management'], isSummary: true, mandatory: true },
     { refId: 'init-charter', name: 'Project Charter', description: 'Define objectives, scope, and constraints', estimatedDays: 3, priority: 'high', parentRefId: 'init', dependencyRefId: null, dependencyType: 'FS', offsetDays: 0, skills: ['project-management'], isSummary: false, mandatory: true },

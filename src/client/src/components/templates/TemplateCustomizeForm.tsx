@@ -19,6 +19,7 @@ interface TemplateCustomizeFormProps {
   taskCount: number;
   tasks: TemplateTask[];
   onBack: () => void;
+  defaultMethodology?: string;
   onSubmit: (data: {
     projectName: string;
     startDate: string;
@@ -38,6 +39,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
   phaseCount,
   taskCount,
   tasks,
+  defaultMethodology,
   onBack,
   onSubmit,
   isSubmitting,
@@ -48,7 +50,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
   const [startDate, setStartDate] = useState(today);
   const [budget, setBudget] = useState('');
   const [priority, setPriority] = useState('medium');
-  const [methodology, setMethodology] = useState('waterfall');
+  const [methodology, setMethodology] = useState(defaultMethodology || 'waterfall');
   const [location, setLocation] = useState('');
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set(tasks.map(t => t.refId)));
   const [taskSectionExpanded, setTaskSectionExpanded] = useState(false);
