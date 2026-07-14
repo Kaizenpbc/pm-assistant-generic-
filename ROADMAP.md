@@ -65,7 +65,7 @@ Hardening, testing, and UX improvements.
 | # | Item | Description | Effort |
 |---|------|-------------|--------|
 | 19 | CSP enforcement | Done -- Nginx CSP header on all static pages with SHA256 hash for gtag inline script (no `unsafe-inline` for scripts). Helmet CSP tightened: added worker-src, manifest-src, base-uri, form-action, frame-ancestors. Additional headers: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy. | Done |
-| 20 | E2E test suite | Playwright tests for critical flows: login, create project, add tasks, sprint planning, Kanban board. CI-ready. | Large |
+| 20 | E2E test suite | Done -- Playwright tests for 5 critical flows: auth (login, invalid creds, redirect, password toggle), project CRUD (navigate, create blank project, view detail), task management (add task from schedule tab), sprint planning (sprints tab, board view), navigation (dashboard, sidebar, 404). Config at `playwright.config.ts`, tests in `e2e/`. Run with `npm run test:e2e`. | Done |
 | 21 | Accessibility audit | ARIA labels, keyboard navigation, focus management in modals, screen reader support, color contrast checks. | Medium |
 | 22 | Drag-and-drop Kanban | Replace click-to-move with native HTML drag-and-drop on sprint board and schedule Kanban. Visual drop indicators. | Medium |
 | 23 | Gantt dependency arrows | Visualize task dependencies as SVG arrows between bars on the Gantt chart. Click arrow to edit/remove dependency. | Medium |

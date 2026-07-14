@@ -19,7 +19,9 @@
     "db:migrate": "tsx src/server/database/migrate.ts",
     "db:seed": "tsx src/server/database/seed.ts",
     "db:backup": "bash scripts/backup-db.sh",
-    "db:restore": "bash scripts/restore-db.sh"
+    "db:restore": "bash scripts/restore-db.sh",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "keywords": [
     "project-management",
@@ -59,6 +61,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
@@ -70,6 +73,6 @@
     "jsdom": "^29.1.1",
     "nodemon": "^3.1.10",
     "tsx": "^4.20.5",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.7"
   }
 }

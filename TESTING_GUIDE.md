@@ -869,6 +869,47 @@ Alternatively, in the browser DevTools → Network tab, block requests to `js.st
 
 ---
 
+### 9f. E2E Tests (Playwright)
+
+Playwright end-to-end tests cover critical user flows in the browser. Tests live in the `e2e/` directory and run against a local dev server.
+
+**Prerequisites:**
+
+1. Start the dev server: `npm run dev` (server on port 3001, client on port 5173)
+2. Ensure a test user exists in the database (default: `admin` / `admin123`)
+3. Install Playwright browsers (first time only): `npx playwright install chromium`
+
+**Run all E2E tests:**
+
+```bash
+npm run test:e2e
+```
+
+**Run with UI (interactive mode):**
+
+```bash
+npm run test:e2e:ui
+```
+
+**Test files:**
+
+| File | Flows Covered |
+|------|---------------|
+| `e2e/auth.spec.ts` | Login form, invalid credentials error, successful login + redirect, unauthenticated redirect, password visibility toggle |
+| `e2e/project-crud.spec.ts` | Navigate to projects, create blank project from scratch, view project detail with tabs |
+| `e2e/tasks.spec.ts` | Add a task from the schedule tab |
+| `e2e/sprints.spec.ts` | Sprints tab navigation, sprint board (Kanban) view |
+| `e2e/navigation.spec.ts` | Dashboard loads, sidebar navigation, 404 handling |
+
+**Configuration:** `playwright.config.ts` — Chromium only, headless, screenshots on failure, traces retained on failure.
+
+**Notes:**
+- Tests skip gracefully when required data doesn't exist (e.g., no projects in the database)
+- Test user credentials are in `e2e/helpers.ts` — update if your dev environment uses different credentials
+- HTML test report generated at `playwright-report/` after each run
+
+---
+
 ## Verification Checklist
 
 ### Build
