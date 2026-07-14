@@ -20,6 +20,11 @@ import {
   ScrollText,
   ArrowLeftRight,
   HelpCircle,
+  UserCog,
+  MessageSquare,
+  BookOpen,
+  GitPullRequest,
+  TrendingUp,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -53,9 +58,19 @@ const pmNavSections: NavSection[] = [
     ],
   },
   {
+    titleKey: 'section.manage',
+    items: [
+      { labelKey: 'nav.resources', icon: UserCog, path: '/resources' },
+      { labelKey: 'nav.meetings', icon: MessageSquare, path: '/meetings' },
+      { labelKey: 'nav.lessons', icon: BookOpen, path: '/lessons' },
+      { labelKey: 'nav.changeRequests', icon: GitPullRequest, path: '/change-requests' },
+    ],
+  },
+  {
     titleKey: 'section.insights',
     items: [
       { labelKey: 'nav.analytics', icon: BarChart3, path: '/analytics' },
+      { labelKey: 'nav.evm', icon: TrendingUp, path: '/evm' },
       { labelKey: 'nav.reports', icon: FileText, path: '/reports' },
       { labelKey: 'nav.askAi', icon: Search, path: '/query' },
     ],
