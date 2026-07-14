@@ -4,16 +4,16 @@ Last updated: 2026-07-14
 
 ---
 
-## Tier 1: Cleanup (Finish Methodology Feature)
+## Tier 1: Cleanup (Finish Methodology Feature) -- DONE
 
-These items are incomplete work from the methodology-aware projects feature. They should be done before any new feature work.
+Completed 2026-07-14 in commit `6d5689c`.
 
-| # | Item | Description | Effort |
-|---|------|-------------|--------|
-| 1 | Wire `getDefaultViewMode()` | Schedule tab should initialize to Kanban for agile projects. The utility exists but is not connected to the Schedule tab's view state. | Small |
-| 2 | Delete `getContextCardConfig()` | Dead code in `src/client/src/utils/methodology.ts`. Exported but never imported or used anywhere. | Trivial |
-| 3 | Unit tests for `methodology.ts` | `getPrimaryTabs`, `getReadinessSteps`, `getDefaultViewMode` are pure functions with no dependencies. Cover all three methodologies. | Small |
-| 4 | Methodology badge on project cards | Dashboard project cards show no indication of methodology. Add a small W/A/H pill badge so PMs can distinguish at a glance. | Small |
+| # | Item | Status |
+|---|------|--------|
+| 1 | Wire `getDefaultViewMode()` | Done -- agile projects open Kanban by default |
+| 2 | Delete `getContextCardConfig()` | Done -- removed dead code |
+| 3 | Unit tests for `methodology.ts` | Done -- 13 tests covering all 3 functions x 3 methodologies |
+| 4 | Methodology badge on project cards | Done -- Agile/Hybrid pill badge on dashboard cards |
 
 ---
 
