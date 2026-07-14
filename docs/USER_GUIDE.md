@@ -136,6 +136,7 @@ The bell icon in the top bar shows unread notifications. Click it to view alerts
    - **Description** -- Overview of the project scope.
    - **Status** -- Planning, Active, On Hold, Completed, or Cancelled.
    - **Priority** -- Low, Medium, High, or Urgent.
+   - **Methodology** -- Waterfall (default), Agile, or Hybrid. This controls the default view, tab ordering, readiness bar steps, and context cards (see below).
    - **Budget Allocated** -- The total budget for the project.
    - **Start Date / End Date** -- Planned project timeline.
    - **Assigned PM** -- The project manager responsible.
@@ -143,7 +144,7 @@ The bell icon in the top bar shows unread notifications. Click it to view alerts
 
 ### Editing a Project
 
-Open a project from the Dashboard or Projects page. Edit any field (name, description, status, priority, budget, dates, assigned PM) and save your changes.
+Open a project from the Dashboard or Projects page. Edit any field (name, description, status, priority, methodology, budget, dates, assigned PM) and save your changes. Changing the methodology immediately updates the tab ordering, readiness bar, and context cards.
 
 ### Deleting a Project
 
@@ -151,13 +152,40 @@ From the project detail view, use the delete option. This action requires approp
 
 ### Project Detail View
 
-The project detail page shows 5 context cards at the top: **Progress**, **Budget**, **Timeline**, **Risks** (open risk count with critical alert), and **Status**.
+#### Methodology-Aware Layout
 
-Tabs are organized into 7 primary tabs shown directly and 6 secondary tabs accessible via a **More** dropdown:
+The project detail page adapts its layout based on the project's **methodology** setting:
 
-**Primary tabs:** Overview, Schedule, RAID, Sprints, Team, AI Insights, EVM Forecast
+| Aspect | Waterfall (default) | Agile | Hybrid |
+|--------|-------------------|-------|--------|
+| **Default view** | Gantt | Kanban | Gantt |
+| **Tab order** | Overview, Schedule, RAID, Sprints... | Overview, **Sprints**, Schedule, RAID... | Overview, Schedule, **Sprints**, RAID... |
+| **Context card 1** | Progress % | Velocity (avg pts/sprint) | Progress % |
+| **Context card 5** | Status | Sprint count | Velocity (avg pts/sprint) |
 
-**More dropdown:** Change Requests, Resource Leveling, Network Diagram, Burndown, What-If, Agent Activity
+#### Context Cards
+
+The project detail page shows 5 context cards at the top: the first and last cards adapt to methodology (see above), while cards 2-4 are always **Budget**, **Timeline**, and **Risks** (open risk count with critical alert).
+
+#### Readiness Bar
+
+Below the context cards, a **readiness bar** guides new project setup. The steps change per methodology:
+
+- **Waterfall:** Tasks, Dependencies, Resources, Critical Path, Simulation
+- **Agile:** Backlog, Sprint, Team, Velocity, Burndown
+- **Hybrid:** Tasks, Sprint, Resources, Critical Path, Velocity
+
+Each step turns green when complete. Data-driven steps (tasks, dependencies, resources, sprints) auto-detect completion. Click-driven steps (critical path, simulation, velocity, burndown) mark complete on first click. Dismiss the bar with the X button.
+
+#### Tabs
+
+Tabs are organized into primary tabs shown directly, plus **Financials** and **More** dropdowns:
+
+**Primary tabs:** Overview, Schedule, RAID, Sprints, Team, Time, Files, Performance, AI Insights, Changes (order varies by methodology)
+
+**Financials dropdown:** Budget, What-If
+
+**More dropdown:** Resources, Agent Activity
 
 The **Overview** tab includes:
 

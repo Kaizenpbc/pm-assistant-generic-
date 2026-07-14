@@ -79,6 +79,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 
 ### Project & Schedule Management
 - Full CRUD for projects, tasks, and schedules
+- **Methodology-aware projects** (Waterfall / Agile / Hybrid) -- controls default view, tab ordering, readiness bar steps, and context cards
 - Multiple views: Gantt chart, Kanban board, Calendar, Table (with MS Project-style column picker and saved views)
 - Gantt drag-and-drop rescheduling (move and resize task bars)
 - Gantt interactive dependency drawing: drag from connector dots on task bar edges to another task to create FS/SS/FF/SF links visually (MS Project-style)

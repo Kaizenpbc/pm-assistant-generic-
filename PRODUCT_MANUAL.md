@@ -14,6 +14,7 @@ Full CRUD lifecycle for projects with the following attributes:
 
 - **Status tracking**: planning, active, on_hold, completed, cancelled
 - **Priority levels**: low, medium, high, urgent
+- **Methodology**: waterfall (default), agile, or hybrid. Controls the presentation layer — tab ordering, readiness bar steps, context cards, and default view mode. Does not restrict feature access (e.g., waterfall projects can still use sprints).
 - **Budget management**: allocated budget, spent budget, budget variance
 - **Date management**: start date, end date, auto-calculated duration
 - **Team assignment**: project members with role-based access (owner, manager, editor, viewer). Only members can access a project; non-members get 404. Creator is auto-added as owner. Admin/pmo bypass membership; executive gets read-only bypass.
@@ -1376,6 +1377,23 @@ New users see a **WelcomeModal** on their first login after registration. The mo
 First-login detection uses `sessionStorage` (set once per browser session after registration). Dismissal — by choosing any option or closing the modal — is persisted in `localStorage` so the modal does not reappear on subsequent logins from the same browser.
 
 Component: `src/client/src/components/onboarding/WelcomeModal.tsx`
+
+### Project Readiness Bar
+
+A methodology-aware progress bar displayed above the tabs on the project detail page. It guides new project setup with 5 sequential steps that vary by methodology:
+
+| Waterfall | Agile | Hybrid |
+|-----------|-------|--------|
+| Tasks | Backlog | Tasks |
+| Dependencies | Sprint | Sprint |
+| Resources | Team | Resources |
+| Critical Path | Velocity | Critical Path |
+| Simulation | Burndown | Velocity |
+
+Data-driven steps (tasks, dependencies, resources, sprints) auto-detect completion from existing data. Click-driven steps (critical path, simulation, velocity, burndown) mark complete on first click and persist via `localStorage`. The bar can be dismissed per project.
+
+Component: `src/client/src/components/onboarding/ProjectReadinessBar.tsx`
+Step configurations: `src/client/src/utils/methodology.ts`
 
 ### Empty-State CTA
 

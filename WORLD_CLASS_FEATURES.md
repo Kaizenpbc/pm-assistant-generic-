@@ -320,6 +320,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - **Benchmark:** MS Project, Primavera P6
 
 ### 5.5 Sprint Planning / Agile Mode
+- **Methodology-aware projects** -- Waterfall, Agile, or Hybrid methodology per project. Controls default view (Gantt vs Kanban), tab ordering (Sprints promoted for Agile/Hybrid), readiness bar steps, and context cards (velocity/sprint progress for Agile).
 - Scrum board with sprint cycles
 - Backlog grooming and prioritization
 - Story points and velocity tracking
