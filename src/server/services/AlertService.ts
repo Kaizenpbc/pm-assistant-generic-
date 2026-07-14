@@ -45,7 +45,7 @@ class AlertService {
     }
   }
 
-  private async runChecks(): Promise<void> {
+  async runChecks(): Promise<void> {
     try {
       await Promise.allSettled([
         this.checkErrorRate(),

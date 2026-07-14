@@ -40,7 +40,7 @@ New user-facing capabilities.
 | 10 | Backlog view | Done -- dedicated Backlog tab for agile/hybrid projects. Shows unassigned tasks with priority filter, bulk select, and assign-to-sprint. Backend endpoint `GET /sprints/backlog/:scheduleId`. | Done |
 | 11 | Story points on Kanban cards | Done -- column point totals, total sprint points in header, WIP limits with localStorage persistence and amber warning ring. | Done |
 | 12 | MariaDB 11.8 vector upgrade | Done -- Upgraded MariaDB 10.11→11.8.8 on Oracle Cloud. Embeddings column converted from JSON to BLOB (native vector storage). `EmbeddingRepository.searchSimilar()` uses `VEC_DISTANCE_COSINE()` + `VEC_FromText()` for SQL-level similarity search. In-memory cache removed. | Done |
-| 13 | External Cron Scheduler (Audit Item 13) | Last open item from the July 2026 architecture audit. Move scheduled jobs from in-process `node-cron` to an external scheduler for reliability. | Large |
+| 13 | External Cron Scheduler (Audit Item 13) | Done -- All 8 cron jobs moved from in-process `node-cron` to systemd timers. Standalone runner `scripts/runCronJob.ts` executes any job by name. Jobs survive app restarts, have independent failure domains, and log to systemd journal. | Done |
 
 ---
 

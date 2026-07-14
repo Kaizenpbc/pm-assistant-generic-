@@ -7,10 +7,8 @@ import { databaseService } from './database/connection';
 import { runMigrations } from './database/migrationRunner';
 import { runAllTenantMigrations } from './database/tenantMigrationRunner';
 import './services/agentCapabilities';
-import { agentScheduler } from './services/AgentSchedulerService';
 import { redisService } from './services/RedisService';
 import { metricsService } from './services/MetricsService';
-import { alertService } from './services/AlertService';
 import { serviceContainer } from './container';
 
 const fastify = Fastify({
@@ -67,16 +65,12 @@ async function start() {
     console.log(`API Documentation: http://${config.HOST}:${config.PORT}/documentation`);
     console.log(`Health Check: http://${config.HOST}:${config.PORT}/health`);
 
-    // Start agent scheduler (no-op if AGENT_ENABLED is false)
-    agentScheduler.start();
-
     // Start Redis metrics sync if connected
     if (redisService.isConnected()) {
       metricsService.startRedisSync();
     }
 
-    // Start alert monitoring (no-op if ALERT_ENABLED is false)
-    alertService.start();
+    console.log('Cron jobs managed externally via systemd timers (see /etc/systemd/system/pm-cron-*.timer)');
 
   } catch (err) {
     console.error('Failed to start server:', err);
@@ -105,8 +99,6 @@ async function gracefulShutdown(signal: string) {
   }, 30_000);
   forceTimer.unref();
 
-  agentScheduler.stop();
-  alertService.stop();
   metricsService.stopRedisSync();
   await fastify.close();
   await redisService.disconnect();
