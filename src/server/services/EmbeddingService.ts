@@ -11,7 +11,7 @@ export interface EmbeddingRow {
   document_type: 'lesson' | 'meeting';
   document_id: string;
   content_hash: string;
-  embedding: string; // JSON string from DB
+  embedding: string; // BLOB from DB
   model: string;
   dimensions: number;
   created_at: string;
@@ -28,24 +28,6 @@ export interface SimilarityResult {
 // ---------------------------------------------------------------------------
 
 export class EmbeddingService {
-  private static readonly MAX_CACHE_ENTRIES = 100;
-  private cache: Map<string, { vector: number[]; documentType: string; documentId: string }[]> = new Map();
-  private cacheTimestamps: Map<string, number> = new Map();
-  private readonly cacheTtlMs = 5 * 60 * 1000; // 5 minutes
-
-  /** Enforce max cache size by evicting the oldest entry. */
-  private enforceCacheLimit(): void {
-    while (this.cache.size > EmbeddingService.MAX_CACHE_ENTRIES) {
-      let oldestKey: string | null = null;
-      let oldestTime = Infinity;
-      for (const [key, ts] of this.cacheTimestamps) {
-        if (ts < oldestTime) { oldestTime = ts; oldestKey = key; }
-      }
-      if (oldestKey) { this.cache.delete(oldestKey); this.cacheTimestamps.delete(oldestKey); }
-      else break;
-    }
-  }
-
   isAvailable(): boolean {
     return !!(config.EMBEDDING_ENABLED && config.OPENAI_API_KEY);
   }
@@ -115,12 +97,11 @@ export class EmbeddingService {
       config.EMBEDDING_DIMENSIONS,
     );
 
-    this.clearCacheForType(documentType);
     return { id, skipped: false };
   }
 
   // -------------------------------------------------------------------------
-  // Search for similar documents
+  // Search for similar documents (SQL-based via VEC_DISTANCE_COSINE)
   // -------------------------------------------------------------------------
 
   async searchSimilar(
@@ -134,41 +115,18 @@ export class EmbeddingService {
 
     const queryVector = await this.embed(query);
 
-    // Check cache for parsed embeddings
-    const cacheKey = documentType ?? 'all';
-    let entries = this.getCachedEntries(cacheKey);
+    const rows = await embeddingRepository.searchSimilar(
+      JSON.stringify(queryVector),
+      documentType,
+      k,
+      minScore,
+    );
 
-    if (!entries) {
-      // Cache miss — load from DB and parse JSON
-      const rows = await embeddingRepository.findAll(documentType);
-
-      entries = rows.map(row => ({
-        vector: typeof row.embedding === 'string' ? JSON.parse(row.embedding) : row.embedding,
-        documentType: row.document_type,
-        documentId: row.document_id,
-      }));
-
-      this.cache.set(cacheKey, entries);
-      this.cacheTimestamps.set(cacheKey, Date.now());
-      this.enforceCacheLimit();
-    }
-
-    // Compute cosine similarity in JS
-    const scored: SimilarityResult[] = [];
-    for (const entry of entries) {
-      const score = EmbeddingService.cosineSimilarity(queryVector, entry.vector);
-      if (score >= minScore) {
-        scored.push({
-          documentType: entry.documentType as 'lesson' | 'meeting',
-          documentId: entry.documentId,
-          score,
-        });
-      }
-    }
-
-    // Sort descending by score, take top-K
-    scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, k);
+    return rows.map(row => ({
+      documentType: row.document_type as 'lesson' | 'meeting',
+      documentId: row.document_id,
+      score: row.score,
+    }));
   }
 
   // -------------------------------------------------------------------------
@@ -177,38 +135,10 @@ export class EmbeddingService {
 
   async deleteEmbedding(documentType: 'lesson' | 'meeting', documentId: string): Promise<void> {
     await embeddingRepository.delete(documentType, documentId);
-    this.clearCacheForType(documentType);
   }
 
   // -------------------------------------------------------------------------
-  // Cache helpers
-  // -------------------------------------------------------------------------
-
-  private getCachedEntries(key: string): { vector: number[]; documentType: string; documentId: string }[] | null {
-    const ts = this.cacheTimestamps.get(key);
-    if (ts == null || Date.now() - ts > this.cacheTtlMs) {
-      this.cache.delete(key);
-      this.cacheTimestamps.delete(key);
-      return null;
-    }
-    return this.cache.get(key) ?? null;
-  }
-
-  private clearCache(): void {
-    this.cache.clear();
-    this.cacheTimestamps.clear();
-  }
-
-  /** Invalidate cache only for the affected document type (and 'all' key). */
-  private clearCacheForType(documentType: string): void {
-    this.cache.delete(documentType);
-    this.cacheTimestamps.delete(documentType);
-    this.cache.delete('all');
-    this.cacheTimestamps.delete('all');
-  }
-
-  // -------------------------------------------------------------------------
-  // Cosine similarity (exported for testing)
+  // Cosine similarity (kept for tests and potential offline use)
   // -------------------------------------------------------------------------
 
   static cosineSimilarity(a: number[], b: number[]): number {

@@ -39,7 +39,7 @@ New user-facing capabilities.
 | 9 | Sprint velocity widget on dashboard | Done -- sparkline chart per agile/hybrid project on PM dashboard, shows velocity trend + average + trend arrow. Toggleable via Customize dropdown. | Done |
 | 10 | Backlog view | Done -- dedicated Backlog tab for agile/hybrid projects. Shows unassigned tasks with priority filter, bulk select, and assign-to-sprint. Backend endpoint `GET /sprints/backlog/:scheduleId`. | Done |
 | 11 | Story points on Kanban cards | Done -- column point totals, total sprint points in header, WIP limits with localStorage persistence and amber warning ring. | Done |
-| 12 | MariaDB 11.6 vector upgrade | Upgrade from MariaDB 10.11 to 11.6+ on Oracle Cloud. Refactor `EmbeddingService.searchSimilar()` to use native `VECTOR` column type and `VEC_DISTANCE_COSINE()`. Remove in-memory cosine similarity cache. | Large |
+| 12 | MariaDB 11.8 vector upgrade | Done -- Upgraded MariaDB 10.11→11.8.8 on Oracle Cloud. Embeddings column converted from JSON to BLOB (native vector storage). `EmbeddingRepository.searchSimilar()` uses `VEC_DISTANCE_COSINE()` + `VEC_FromText()` for SQL-level similarity search. In-memory cache removed. | Done |
 | 13 | External Cron Scheduler (Audit Item 13) | Last open item from the July 2026 architecture audit. Move scheduled jobs from in-process `node-cron` to an external scheduler for reliability. | Large |
 
 ---

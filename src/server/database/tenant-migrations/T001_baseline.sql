@@ -815,7 +815,7 @@ CREATE TABLE IF NOT EXISTS embeddings (
   document_type ENUM('lesson','meeting') NOT NULL,
   document_id VARCHAR(64) NOT NULL,
   content_hash VARCHAR(64) NOT NULL,
-  embedding JSON NOT NULL,
+  embedding BLOB NOT NULL,
   model VARCHAR(50) NOT NULL DEFAULT 'text-embedding-3-small',
   dimensions SMALLINT UNSIGNED NOT NULL DEFAULT 1536,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
