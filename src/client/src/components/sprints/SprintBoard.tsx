@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Kanban } from 'lucide-react';
+import { Kanban, Settings } from 'lucide-react';
 import { apiService } from '../../services/api';
 
 interface BoardTask {
@@ -43,9 +43,23 @@ function getPoints(task: BoardTask): number {
   return task.story_points ?? task.storyPoints ?? 0;
 }
 
+const WIP_STORAGE_KEY = 'pm-sprint-wip-limits';
+
+function loadWipLimits(sprintId: string): Record<string, number> {
+  try {
+    const stored = localStorage.getItem(`${WIP_STORAGE_KEY}-${sprintId}`);
+    return stored ? JSON.parse(stored) : {};
+  } catch { return {}; }
+}
+
+function saveWipLimits(sprintId: string, limits: Record<string, number>) {
+  localStorage.setItem(`${WIP_STORAGE_KEY}-${sprintId}`, JSON.stringify(limits));
+}
+
 export function SprintBoard({ sprintId }: SprintBoardProps) {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [localTaskOverrides, setLocalTaskOverrides] = useState<Record<string, string>>({});
+  const [wipLimits, setWipLimits] = useState<Record<string, number>>(() => loadWipLimits(sprintId));
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
@@ -126,43 +140,81 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
     );
   }
 
+  const handleSetWipLimit = (columnId: string) => {
+    const current = wipLimits[columnId];
+    const input = prompt(`WIP limit for this column${current ? ` (current: ${current})` : ''}.\nEnter a number or leave blank to remove:`, current?.toString() || '');
+    if (input === null) return;
+    const val = parseInt(input, 10);
+    const next = { ...wipLimits };
+    if (!input.trim() || isNaN(val) || val <= 0) {
+      delete next[columnId];
+    } else {
+      next[columnId] = val;
+    }
+    setWipLimits(next);
+    saveWipLimits(sprintId, next);
+  };
+
   // Group by status
   const grouped: Record<string, BoardTask[]> = {};
   for (const col of COLUMNS) {
     grouped[col.id] = tasks.filter((t) => t.status === col.id);
   }
 
+  // Compute total story points across all tasks
+  const totalPoints = tasks.reduce((sum, t) => sum + getPoints(t), 0);
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
         <Kanban className="w-4 h-4 text-primary-500" />
         <h3 className="text-sm font-semibold text-gray-800">Sprint Board</h3>
-        <span className="text-xs text-gray-400">({tasks.length} tasks)</span>
+        <span className="text-xs text-gray-400">
+          {tasks.length} task{tasks.length !== 1 ? 's' : ''}
+          {totalPoints > 0 && <> · {totalPoints} pts</>}
+        </span>
       </div>
 
       <div className="flex gap-3 p-4 overflow-x-auto" style={{ minHeight: '400px' }}>
         {COLUMNS.map((col) => {
           const columnTasks = grouped[col.id] || [];
           const isOver = dragOverColumn === col.id;
+          const colPoints = columnTasks.reduce((sum, t) => sum + getPoints(t), 0);
+          const wipLimit = wipLimits[col.id];
+          const overWip = wipLimit != null && columnTasks.length >= wipLimit;
 
           return (
             <div
               key={col.id}
               className={`flex-1 min-w-[240px] rounded-lg border ${col.border} ${col.bg} transition-all ${
                 isOver ? 'ring-2 ring-primary-400 ring-opacity-50' : ''
-              }`}
+              } ${overWip ? 'ring-2 ring-amber-400' : ''}`}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, col.id)}
             >
               {/* Column header */}
               <div className={`flex items-center justify-between px-3 py-2.5 ${col.headerBg} rounded-t-lg`}>
-                <span className={`text-xs font-semibold uppercase tracking-wide ${col.headerText}`}>
-                  {col.label}
-                </span>
-                <span className="text-xs font-bold text-gray-500 bg-white rounded-full w-5 h-5 flex items-center justify-center">
-                  {columnTasks.length}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-xs font-semibold uppercase tracking-wide ${col.headerText}`}>
+                    {col.label}
+                  </span>
+                  {colPoints > 0 && (
+                    <span className="text-[10px] font-medium text-gray-500">{colPoints} pts</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className={`text-xs font-bold bg-white rounded-full w-5 h-5 flex items-center justify-center ${overWip ? 'text-amber-600' : 'text-gray-500'}`}>
+                    {wipLimit != null ? `${columnTasks.length}/${wipLimit}` : columnTasks.length}
+                  </span>
+                  <button
+                    onClick={() => handleSetWipLimit(col.id)}
+                    className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Set WIP limit"
+                  >
+                    <Settings className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
 
               {/* Cards */}
