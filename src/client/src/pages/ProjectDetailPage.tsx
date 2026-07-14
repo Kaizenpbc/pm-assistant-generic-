@@ -72,6 +72,7 @@ import { useUndoRedo } from '../hooks/useUndoRedo';
 import { TimeTrackingTab } from '../components/project/TimeTrackingTab';
 import { BudgetTab } from '../components/project/BudgetTab';
 import { SetupChecklist } from '../components/project/SetupChecklist';
+import { ProjectReadinessBar } from '../components/onboarding/ProjectReadinessBar';
 import { EditProjectModal } from '../components/project/EditProjectModal';
 import { AIInsightsTab, StatusReportModal } from './ProjectDetailPage/AIInsightsTab';
 import { ScenariosTab } from './ProjectDetailPage/ScenariosTab';
@@ -163,6 +164,31 @@ export function ProjectDetailPage() {
   });
 
   const riskStats = riskStatsData?.data || riskStatsData;
+
+  // Readiness bar data — shares cache with ScheduleTab / ResourcesTab
+  const { data: readinessSchedulesData } = useQuery({
+    queryKey: ['schedules', id],
+    queryFn: () => apiService.getSchedules(id!),
+    enabled: !!id,
+    staleTime: 120_000,
+  });
+  const readinessSchedules: any[] = readinessSchedulesData?.schedules || [];
+  const firstScheduleId = readinessSchedules[0]?.id;
+
+  const { data: readinessTasksData } = useQuery({
+    queryKey: ['tasks', firstScheduleId],
+    queryFn: () => apiService.getTasks(firstScheduleId),
+    enabled: !!firstScheduleId,
+    staleTime: 120_000,
+  });
+  const readinessTasks: any[] = readinessTasksData?.data || readinessTasksData?.tasks || [];
+
+  const { data: readinessResourcesData } = useQuery({
+    queryKey: ['resources'],
+    queryFn: () => apiService.getResources(),
+    staleTime: 120_000,
+  });
+  const readinessResources: any[] = readinessResourcesData?.resources || [];
 
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -492,6 +518,15 @@ export function ProjectDetailPage() {
           color={status.color}
         />
       </div>
+
+      {/* Readiness Bar */}
+      <ProjectReadinessBar
+        projectId={id!}
+        tasks={readinessTasks}
+        resources={readinessResources}
+        scheduleId={firstScheduleId}
+        onTabChange={(tab) => setActiveTab(tab as Tab)}
+      />
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700 overflow-visible">

@@ -116,7 +116,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       onClose();
       resetState();
-      navigate(`/project/${result.project.id}`);
+      navigate(`/project/${result.project.id}`, { state: { showReadiness: true } });
     },
     onError: () => {
       setErrorMessage('Failed to create project from template. Please try again.');
@@ -225,7 +225,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       onClose();
       resetState();
-      if (projectId) navigate(`/project/${projectId}`);
+      if (projectId) navigate(`/project/${projectId}`, { state: { showReadiness: true } });
     } catch {
       setErrorMessage('Failed to create project. Please try again.');
     } finally {
