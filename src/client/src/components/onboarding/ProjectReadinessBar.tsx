@@ -42,7 +42,7 @@ export function ProjectReadinessBar({ projectId, tasks, resources, scheduleId, o
   if (dismissed) return null;
 
   const hasTasks = tasks.length > 0;
-  const hasDependencies = tasks.some((t: any) => t.predecessors?.length > 0 || t.predecessor_ids?.length > 0);
+  const hasDependencies = tasks.some((t: any) => t.dependency || t.predecessors?.length > 0);
   const hasResources = resources.length > 0;
   const criticalPathClicked = !!clickedSteps['critical-path'];
   const simulationClicked = !!clickedSteps['simulation'];
