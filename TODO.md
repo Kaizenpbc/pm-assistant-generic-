@@ -1,6 +1,6 @@
 # Kovarti PM — Pre-Subscriber TODO
 
-Status: 4/7 complete | Last updated: July 13, 2026
+Status: 5/7 complete | Last updated: July 13, 2026
 
 ---
 
@@ -160,9 +160,9 @@ No help/support link exists anywhere in the authenticated app — not in sidebar
 
 ---
 
-## 6. Verify Resend Email Domain (noreply@kpbc.ca) — PENDING (manual)
+## 6. ~~Verify Resend Email Domain (noreply@kpbc.ca)~~ — DONE
 
-**Priority:** Medium | **Type:** Infrastructure / DNS
+**Completed:** July 13, 2026 | SPF updated to `include:amazonses.com`, DKIM + DMARC already configured
 
 ### Steps
 1. Log into Resend dashboard (resend.com) — check if `kpbc.ca` domain is verified
