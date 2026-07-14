@@ -168,6 +168,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     startDate: string;
     budget?: number;
     priority: string;
+    methodology?: string;
     location?: string;
     selectedTaskRefIds?: string[];
   }) => {
@@ -184,6 +185,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     startDate: string;
     budget?: number;
     priority: string;
+    methodology?: string;
     location?: string;
   }) => {
     setErrorMessage(null);
@@ -194,6 +196,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
         name: data.projectName,
         status: 'planning',
         priority: data.priority,
+        methodology: data.methodology,
         budgetAllocated: data.budget,
         startDate: data.startDate,
         location: data.location,

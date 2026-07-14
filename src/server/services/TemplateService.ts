@@ -377,6 +377,7 @@ export class TemplateService {
     startDate: string;
     budget?: number;
     priority: 'low' | 'medium' | 'high' | 'urgent';
+    methodology?: 'waterfall' | 'agile' | 'hybrid';
     location?: string;
     selectedTaskRefIds?: string[];
     userId: string;
@@ -400,6 +401,7 @@ export class TemplateService {
       category: template.category,
       status: 'planning',
       priority: input.priority,
+      methodology: input.methodology,
       budgetAllocated: input.budget,
       location: input.location,
       startDate,

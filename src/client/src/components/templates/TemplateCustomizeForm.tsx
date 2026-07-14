@@ -24,6 +24,7 @@ interface TemplateCustomizeFormProps {
     startDate: string;
     budget?: number;
     priority: string;
+    methodology?: string;
     location?: string;
     selectedTaskRefIds?: string[];
   }) => void;
@@ -47,6 +48,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
   const [startDate, setStartDate] = useState(today);
   const [budget, setBudget] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [methodology, setMethodology] = useState('waterfall');
   const [location, setLocation] = useState('');
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set(tasks.map(t => t.refId)));
   const [taskSectionExpanded, setTaskSectionExpanded] = useState(false);
@@ -173,6 +175,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
       startDate,
       budget: budget ? parseFloat(budget) : undefined,
       priority,
+      methodology,
       location: location || undefined,
       selectedTaskRefIds: allSelected ? undefined : [...selectedRefIds],
     });
@@ -242,18 +245,32 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
-          <select
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Methodology</label>
+            <select
+              value={methodology}
+              onChange={(e) => setMethodology(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
+            >
+              <option value="waterfall">Waterfall</option>
+              <option value="agile">Agile</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </div>
         </div>
 
         <div>

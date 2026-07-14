@@ -29,6 +29,7 @@ export interface ProjectDTO {
   description?: string;
   category?: string;
   projectType: string;
+  methodology: string;
   status: string;
   priority: string;
   budgetAllocated?: number;
@@ -52,6 +53,7 @@ export function toProjectDTO(row: Record<string, any>): ProjectDTO {
     description: row.description ?? undefined,
     category: row.category ?? undefined,
     projectType: row.projectType ?? row.project_type,
+    methodology: row.methodology ?? 'waterfall',
     status: row.status,
     priority: row.priority,
     budgetAllocated: row.budgetAllocated ?? row.budget_allocated ?? undefined,

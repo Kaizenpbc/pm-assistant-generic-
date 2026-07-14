@@ -39,6 +39,7 @@ export const createFromTemplateSchema = z.object({
   startDate: z.string(),
   budget: z.number().positive().optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+  methodology: z.enum(['waterfall', 'agile', 'hybrid']).default('waterfall'),
   location: z.string().optional(),
   selectedTaskRefIds: z.array(z.string()).min(1).optional(),
 });

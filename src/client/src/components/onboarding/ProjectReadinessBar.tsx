@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, X } from 'lucide-react';
+import { getReadinessSteps, type Methodology } from '../../utils/methodology';
 
 interface ReadinessStep {
   key: string;
@@ -15,13 +16,15 @@ interface ProjectReadinessBarProps {
   tasks: any[];
   resources: any[];
   scheduleId?: string;
+  methodology?: Methodology;
+  sprintCount?: number;
   onTabChange: (tab: string) => void;
 }
 
 const STORAGE_PREFIX = 'readiness-dismissed-';
 const STEP_PREFIX = 'readiness-step-';
 
-export function ProjectReadinessBar({ projectId, tasks, resources, scheduleId, onTabChange }: ProjectReadinessBarProps) {
+export function ProjectReadinessBar({ projectId, tasks, resources, scheduleId, methodology = 'waterfall', sprintCount = 0, onTabChange }: ProjectReadinessBarProps) {
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(() =>
     localStorage.getItem(`${STORAGE_PREFIX}${projectId}`) === '1'
@@ -44,56 +47,35 @@ export function ProjectReadinessBar({ projectId, tasks, resources, scheduleId, o
   const hasTasks = tasks.length > 0;
   const hasDependencies = tasks.some((t: any) => t.dependency || t.predecessors?.length > 0);
   const hasResources = resources.length > 0;
-  const criticalPathClicked = !!clickedSteps['critical-path'];
-  const simulationClicked = !!clickedSteps['simulation'];
+  const hasSprints = sprintCount > 0;
 
-  const steps: ReadinessStep[] = [
-    {
-      key: 'tasks',
-      label: 'Tasks',
-      tooltip: 'Import or create tasks to build your schedule',
-      done: hasTasks,
-      action: () => onTabChange('schedule'),
-    },
-    {
-      key: 'dependencies',
-      label: 'Dependencies',
-      tooltip: 'Link tasks to reveal your critical path',
-      done: hasDependencies,
-      action: () => onTabChange('schedule'),
-    },
-    {
-      key: 'resources',
-      label: 'Resources',
-      tooltip: 'Add team members for workload and cost forecasting',
-      done: hasResources,
-      action: () => onTabChange('resources'),
-    },
-    {
-      key: 'critical-path',
-      label: 'Critical Path',
-      tooltip: 'See which tasks drive your finish date',
-      done: criticalPathClicked,
-      action: () => {
-        setClickedSteps(prev => ({ ...prev, 'critical-path': true }));
-        onTabChange('schedule');
-      },
-    },
-    {
-      key: 'simulation',
-      label: 'Simulation',
-      tooltip: 'Run Monte Carlo to quantify schedule risk',
-      done: simulationClicked,
-      action: () => {
-        setClickedSteps(prev => ({ ...prev, simulation: true }));
+  const stepConfigs = getReadinessSteps(methodology);
+
+  const steps: ReadinessStep[] = stepConfigs.map((cfg) => {
+    let done = false;
+    if (cfg.doneKey === 'tasks') done = hasTasks;
+    else if (cfg.doneKey === 'dependencies') done = hasDependencies;
+    else if (cfg.doneKey === 'resources') done = hasResources;
+    else if (cfg.doneKey === 'sprints') done = hasSprints;
+    else if (cfg.doneKey === 'clicked') done = !!clickedSteps[cfg.clickedStepKey!];
+
+    const action = () => {
+      if (cfg.clickedStepKey) {
+        setClickedSteps(prev => ({ ...prev, [cfg.clickedStepKey!]: true }));
+      }
+      if (cfg.targetTab === 'simulation') {
         if (scheduleId) {
           navigate(`/monte-carlo/${scheduleId}`);
         } else {
           navigate(`/monte-carlo`);
         }
-      },
-    },
-  ];
+      } else {
+        onTabChange(cfg.targetTab);
+      }
+    };
+
+    return { key: cfg.key, label: cfg.label, tooltip: cfg.tooltip, done, action };
+  });
 
   const completedCount = steps.filter(s => s.done).length;
 

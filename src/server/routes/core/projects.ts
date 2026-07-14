@@ -15,6 +15,7 @@ const createProjectSchema = z.object({
   description: z.string().optional(),
   category: z.string().optional(),
   projectType: z.enum(['it', 'construction', 'infrastructure', 'roads', 'other']).default('other'),
+  methodology: z.enum(['waterfall', 'agile', 'hybrid']).default('waterfall'),
   status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).default('planning'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   budgetAllocated: z.number().positive().optional(),

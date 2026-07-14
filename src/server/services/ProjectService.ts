@@ -19,6 +19,7 @@ export interface Project {
   description?: string;
   category?: string;
   projectType: 'it' | 'construction' | 'infrastructure' | 'roads' | 'other';
+  methodology: 'waterfall' | 'agile' | 'hybrid';
   status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   budgetAllocated?: number;
@@ -40,6 +41,7 @@ export interface CreateProjectData {
   description?: string;
   category?: string;
   projectType?: 'it' | 'construction' | 'infrastructure' | 'roads' | 'other';
+  methodology?: 'waterfall' | 'agile' | 'hybrid';
   status?: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   budgetAllocated?: number;

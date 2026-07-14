@@ -6,6 +6,7 @@ interface ProjectData {
   description?: string;
   category?: string;
   projectType?: string;
+  methodology?: string;
   status?: string;
   priority?: string;
   budgetAllocated?: number | null;
@@ -27,6 +28,7 @@ export function EditProjectModal({ project, onSave, onClose, saving }: EditProje
   const [description, setDescription] = useState(project.description || '');
   const [category, setCategory] = useState(project.category || '');
   const [projectType, setProjectType] = useState(project.projectType || project.project_type || 'other');
+  const [methodology, setMethodology] = useState(project.methodology || 'waterfall');
   const [priority, setPriority] = useState(project.priority || 'medium');
   const [budgetAllocated, setBudgetAllocated] = useState(
     project.budgetAllocated || project.budget_allocated || ''
@@ -56,6 +58,7 @@ export function EditProjectModal({ project, onSave, onClose, saving }: EditProje
     if (description !== (project.description || '')) data.description = description;
     if (category !== (project.category || '')) data.category = category;
     if (projectType !== (project.projectType || project.project_type || 'other')) data.projectType = projectType;
+    if (methodology !== (project.methodology || 'waterfall')) data.methodology = methodology;
     if (priority !== (project.priority || 'medium')) data.priority = priority;
 
     const origBudget = project.budgetAllocated || project.budget_allocated || '';
@@ -125,6 +128,15 @@ export function EditProjectModal({ project, onSave, onClose, saving }: EditProje
                 <option value="other">Other</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Methodology</label>
+            <select value={methodology} onChange={(e) => setMethodology(e.target.value)} className={inputClass}>
+              <option value="waterfall">Waterfall</option>
+              <option value="agile">Agile</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
           </div>
 
           <div>

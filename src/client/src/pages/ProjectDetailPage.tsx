@@ -78,22 +78,10 @@ import { AIInsightsTab, StatusReportModal } from './ProjectDetailPage/AIInsights
 import { ScenariosTab } from './ProjectDetailPage/ScenariosTab';
 import { AgentActivityTab } from './ProjectDetailPage/AgentActivityTab';
 import { OverviewTab } from './ProjectDetailPage/OverviewTab';
-import { Pencil } from 'lucide-react';
+import { Pencil, Zap } from 'lucide-react';
+import { getPrimaryTabs, type Methodology } from '../utils/methodology';
 
 type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'performance' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources' | 'time' | 'files' | 'budget';
-
-const primaryTabs: { id: Tab; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'schedule', label: 'Schedule' },
-  { id: 'raid', label: 'RAID' },
-  { id: 'sprints', label: 'Sprints' },
-  { id: 'team', label: 'Team' },
-  { id: 'time', label: 'Time' },
-  { id: 'files', label: 'Files' },
-  { id: 'performance', label: 'Performance' },
-  { id: 'ai-insights', label: 'AI Insights' },
-  { id: 'change-requests', label: 'Changes' },
-];
 
 const financialTabs: { id: Tab; label: string }[] = [
   { id: 'budget', label: 'Budget' },
@@ -189,6 +177,29 @@ export function ProjectDetailPage() {
     staleTime: 120_000,
   });
   const readinessResources: any[] = readinessResourcesData?.resources || [];
+
+  // Sprint count for readiness bar (agile/hybrid)
+  const methodology: Methodology = (project?.methodology || 'waterfall') as Methodology;
+  const { data: sprintsData } = useQuery({
+    queryKey: ['sprints', id],
+    queryFn: () => apiService.getSprints(id!),
+    enabled: !!id && methodology !== 'waterfall',
+    staleTime: 120_000,
+  });
+  const sprintCount = (sprintsData?.sprints || sprintsData?.data || []).length;
+
+  // Velocity data for agile/hybrid context cards
+  const { data: velocityData } = useQuery({
+    queryKey: ['sprint-velocity', id],
+    queryFn: () => apiService.getVelocityHistory(id!),
+    enabled: !!id && methodology !== 'waterfall',
+    staleTime: 120_000,
+  });
+
+  const velocitySprints: any[] = velocityData?.velocity?.sprints || [];
+  const avgVelocity = velocitySprints.length > 0
+    ? Math.round(velocitySprints.reduce((a: number, v: any) => a + (v.velocity || 0), 0) / velocitySprints.length)
+    : null;
 
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -454,20 +465,30 @@ export function ProjectDetailPage() {
 
       {/* Context Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <ContextCard
-          label="Progress"
-          value={`${progress}%`}
-          icon={TrendingUp}
-          color="bg-blue-50 text-blue-600"
-          detail={
-            <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
-              <div
-                className="h-full rounded-full bg-blue-500 transition-all"
-                style={{ width: `${Math.min(progress, 100)}%` }}
-              />
-            </div>
-          }
-        />
+        {methodology === 'agile' ? (
+          <ContextCard
+            label="Velocity"
+            value={avgVelocity != null ? `${avgVelocity} pts` : '--'}
+            icon={Zap}
+            color="bg-purple-50 text-purple-600"
+            detail={<p className="mt-1 text-xs text-gray-500">avg pts/sprint</p>}
+          />
+        ) : (
+          <ContextCard
+            label="Progress"
+            value={`${progress}%`}
+            icon={TrendingUp}
+            color="bg-blue-50 text-blue-600"
+            detail={
+              <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                <div
+                  className="h-full rounded-full bg-blue-500 transition-all"
+                  style={{ width: `${Math.min(progress, 100)}%` }}
+                />
+              </div>
+            }
+          />
+        )}
         <ContextCard
           label="Budget"
           value={`$${(budgetSpent / 1000).toFixed(0)}K / $${(budgetAllocated / 1000).toFixed(0)}K`}
@@ -511,12 +532,29 @@ export function ProjectDetailPage() {
             <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">{riskStats.critical} critical</p>
           ) : undefined}
         />
-        <ContextCard
-          label="Status"
-          value={status.label}
-          icon={Calendar}
-          color={status.color}
-        />
+        {methodology === 'agile' ? (
+          <ContextCard
+            label="Sprint"
+            value={sprintCount > 0 ? `${sprintCount} sprint${sprintCount !== 1 ? 's' : ''}` : 'No sprints'}
+            icon={Zap}
+            color="bg-purple-50 text-purple-600"
+          />
+        ) : methodology === 'hybrid' ? (
+          <ContextCard
+            label="Velocity"
+            value={avgVelocity != null ? `${avgVelocity} pts` : '--'}
+            icon={Zap}
+            color="bg-purple-50 text-purple-600"
+            detail={<p className="mt-1 text-xs text-gray-500">avg pts/sprint</p>}
+          />
+        ) : (
+          <ContextCard
+            label="Status"
+            value={status.label}
+            icon={Calendar}
+            color={status.color}
+          />
+        )}
       </div>
 
       {/* Readiness Bar */}
@@ -525,13 +563,15 @@ export function ProjectDetailPage() {
         tasks={readinessTasks}
         resources={readinessResources}
         scheduleId={firstScheduleId}
+        methodology={methodology}
+        sprintCount={sprintCount}
         onTabChange={(tab) => setActiveTab(tab as Tab)}
       />
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700 overflow-visible">
         <nav className="-mb-px flex gap-4 md:gap-6 flex-wrap">
-          {primaryTabs.map((tab) => (
+          {getPrimaryTabs(methodology).map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}

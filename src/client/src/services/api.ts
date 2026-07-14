@@ -177,6 +177,7 @@ class ApiService {
     description?: string;
     status?: string;
     priority?: string;
+    methodology?: string;
     budgetAllocated?: number;
     startDate?: string;
     endDate?: string;
@@ -1040,6 +1041,7 @@ class ApiService {
     startDate: string;
     budget?: number;
     priority?: string;
+    methodology?: string;
     location?: string;
     selectedTaskRefIds?: string[];
   }) {

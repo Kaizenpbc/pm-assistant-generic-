@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS projects (
   description TEXT DEFAULT NULL,
   category VARCHAR(100) DEFAULT NULL,
   project_type ENUM('it','construction','infrastructure','roads','other') NOT NULL DEFAULT 'other',
+  methodology ENUM('waterfall','agile','hybrid') NOT NULL DEFAULT 'waterfall',
   status ENUM('planning','active','on_hold','completed','cancelled') NOT NULL DEFAULT 'planning',
   priority ENUM('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
   budget_allocated DECIMAL(15,2) DEFAULT NULL,
