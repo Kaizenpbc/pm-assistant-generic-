@@ -23,8 +23,9 @@ A comprehensive reference for the security architecture of the PM Assistant appl
 15. [Stakeholder Portal Access](#15-stakeholder-portal-access)
 16. [Development vs Production](#16-development-vs-production)
 17. [Deployment Checklist](#17-deployment-checklist)
-18. [Testing](#18-testing)
-19. [Related Files](#19-related-files)
+18. [Privacy Policy and Third-Party Data Processors](#18-privacy-policy-and-third-party-data-processors)
+19. [Testing](#19-testing)
+20. [Related Files](#20-related-files)
 
 ---
 
@@ -38,6 +39,10 @@ The application uses a dual-token JWT strategy:
 Both tokens are configured with `secure: true` in production and `sameSite: 'lax'` to prevent CSRF while allowing standard navigation flows.
 
 Authentication is enforced by the `authMiddleware` pre-handler hook, which verifies the JWT from the cookie and attaches the decoded user to `request.user`.
+
+### Registration Email — Fire-and-Forget
+
+After a user registers, the verification email is sent in a **fire-and-forget** manner (`.catch()` swallows delivery errors). Registration succeeds and a 201 response is returned regardless of whether the email is delivered. This design prevents email service outages (Resend downtime, DNS issues, etc.) from blocking new user signups. If a user does not receive their verification email, they can request a new one via `POST /api/v1/auth/resend-verification` (rate-limited to prevent abuse).
 
 ---
 
@@ -87,6 +92,10 @@ Usage in a route:
 fastify.get('/projects', { preHandler: [authMiddleware, requireScope('read')] }, handler);
 fastify.post('/projects', { preHandler: [authMiddleware, requireScope('write')] }, handler);
 ```
+
+### Stripe Billing Routes — Intentional Read Scope
+
+`POST /stripe/create-checkout-session` and `POST /stripe/billing-portal` are gated with `requireScope('read')` rather than `requireScope('write')`. This is intentional: all authenticated users, including those whose API keys carry only the `read` scope (e.g., the default `team_member` role), need to be able to manage their own billing and subscription without requiring elevated write access. These routes do not modify project data, so the lower scope is appropriate.
 
 ---
 
@@ -337,7 +346,19 @@ Before deploying to production, verify the following:
 
 ---
 
-## 18. Testing
+## 18. Privacy Policy and Third-Party Data Processors
+
+The **Privacy Policy** page (`/privacy`) discloses the application's use of third-party services that may process user data:
+
+- **Google Analytics (GA4)** -- The application uses GA4 for usage analytics. GA4 sets the cookies `_ga` and `_ga_*` in the user's browser. Data collected (page views, session duration, events) is transferred to Google's servers, which may be located outside the user's country of residence.
+- **International data transfers** -- By using the application, users acknowledge that their data may be transferred to and processed in jurisdictions with different data protection laws than their own.
+- **Google as a data processor** -- Google is listed as a third-party data processor in the Privacy Policy. Users can review Google's own privacy policy and opt out of GA4 tracking via standard browser mechanisms (e.g., browser settings, GA opt-out browser add-on).
+
+The CSP `connect-src` directive does **not** need to be widened for GA4 — GA4 uses its own measurement protocol and loads via the `script-src` allowlist. Verify that `https://www.google-analytics.com` and `https://www.googletagmanager.com` are included in the production CSP `script-src` if GA4 is active.
+
+---
+
+## 19. Testing
 
 ### Security Headers
 
@@ -380,7 +401,7 @@ curl -X POST -H "Authorization: Bearer kpm_read_only_key" \
 
 ---
 
-## 19. Related Files
+## 20. Related Files
 
 | File | Purpose |
 |---|---|

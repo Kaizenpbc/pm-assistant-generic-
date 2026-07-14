@@ -100,6 +100,7 @@ Key variables in `.env` (never commit secrets):
 - Static assets are served directly by LiteSpeed; API routes proxy to Fastify.
 - CSP headers are managed by Helmet (currently in report-only mode).
 - **Health Snapshot Cron** — When `AGENT_ENABLED=true`, a daily cron job runs at 03:00 to snapshot each active project's health score into the `project_health_history` table (migration 038). This data powers the Health Trends sparklines on the dashboard. A manual trigger is available at `POST /api/v1/predictions/health/snapshot` (admin only).
+- **Trial Reminder Cron** — When `AGENT_ENABLED=true`, a daily cron job runs at 09:00 to send trial expiry reminder emails. It sends emails at the 3-day warning, 1-day warning, and expiry events. Redis-backed deduplication prevents repeat sends: each reminder is keyed as `trial-reminder:{userId}:{type}` with a 30-day TTL. Implementation: `src/server/services/scheduling/trialReminderJob.ts`.
 
 ---
 
@@ -117,6 +118,10 @@ Key variables in `.env` (never commit secrets):
 ### Stripe Dashboard
 - Use the Stripe Dashboard for invoice management, refunds, and payment method issues.
 - Ensure `STRIPE_WEBHOOK_SECRET` is set for webhook signature verification.
+
+### Billing Route Scope
+- The billing routes (`create-checkout-session`, `billing-portal`) use `requireScope('read')` so that all authenticated users — including those with the `team_member` role — can manage their own subscriptions.
+- This is intentional. Do not change these routes to require `write` scope.
 
 ---
 
@@ -504,7 +509,17 @@ All endpoints require admin role authentication.
 
 ---
 
-## 20. Backup and Maintenance
+## 20. Analytics
+
+### Google Analytics (GA4)
+- GA4 tracking is embedded directly in `src/client/index.html` using measurement ID **G-F99Q92ED7M**.
+- Page views are tracked automatically on all pages via the standard GA4 script tag.
+- No environment variable or server-side configuration is needed.
+- To disable analytics, remove the GA4 script block from `index.html` and rebuild.
+
+---
+
+## 21. Backup and Maintenance
 
 ### Database Backups
 - Use your hosting provider's backup tools (e.g., cPanel MySQL backup) or `mysqldump` via SSH.

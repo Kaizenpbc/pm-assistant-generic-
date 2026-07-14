@@ -898,6 +898,22 @@ The `StripeService` manages subscription billing:
 - **Webhook handling**: processes Stripe events for subscription lifecycle (created, updated, cancelled, payment succeeded/failed)
 - **Tier support**: free, pro, business plans mapped to Stripe price IDs
 
+### Trial Reminder Emails
+
+The `EmailService` sends automated reminder emails to users approaching the end of their 14-day free trial:
+
+| Days Before Expiry | Email Sent |
+|--------------------|------------|
+| 3 days | "Your trial ends in 3 days" reminder |
+| 1 day | "Your trial ends tomorrow" reminder |
+| 0 days (expiry day) | "Your trial has expired" notice |
+
+A daily cron job runs at **09:00** to scan for trials expiring within the relevant windows and dispatch the appropriate email. Redis-backed deduplication prevents the same reminder from being sent more than once per user per trigger window — if the cron runs multiple times or a user is picked up on consecutive days for the same window, only one email is delivered.
+
+### Pricing Page — Checkout Error Display
+
+When a Stripe Checkout session fails to initialize (network error, invalid price ID, Stripe API error), the Pricing page now displays an **inline error banner** above the plan's CTA button. The banner shows the error message in a styled red alert box. Previously, checkout errors failed silently with no user-visible feedback.
+
 ---
 
 ## 23. Dashboard
@@ -941,6 +957,10 @@ Additionally, `GET /api/v1/projects` and `GET /api/v1/analytics/summary` now acc
 ## 24. Mobile-Optimized Views
 
 The application includes mobile-optimized layouts that activate automatically on screens narrower than 768px (the `useBreakpoint()` hook, shared across all pages).
+
+### Landing Page Mobile Navigation
+
+On the public landing page, the horizontal navigation link row is replaced by a **hamburger menu** on mobile viewports (below 768px). Tapping the hamburger icon opens a vertical nav overlay with the same links. This prevents the nav from wrapping or overflowing on small screens.
 
 ### Bottom Navigation Bar
 
@@ -1343,6 +1363,24 @@ A monitoring cockpit with read-only scope toggle:
 - **Project Cards** — Grid layout with left border colored by health band, health pill, status/priority chips, progress meter, and inline action buttons. Clicking a card navigates to `/project/:id`.
 - **New Project** — Template picker integration for creating projects from templates.
 
+### Onboarding — Welcome Modal
+
+New users see a **WelcomeModal** on their first login after registration. The modal presents three options:
+
+| Option | Action |
+|--------|--------|
+| **Create a Project** | Navigates to `/projects` with the new-project dialog open |
+| **Import a Schedule** | Navigates to the bulk import flow |
+| **I'll explore on my own** | Dismisses the modal without navigation |
+
+First-login detection uses `sessionStorage` (set once per browser session after registration). Dismissal — by choosing any option or closing the modal — is persisted in `localStorage` so the modal does not reappear on subsequent logins from the same browser.
+
+Component: `src/client/src/components/onboarding/WelcomeModal.tsx`
+
+### Empty-State CTA
+
+When a user has **zero projects**, the Projects Table on the dashboard renders a "New Project" button in place of the empty table body. Clicking it links to `/projects`, where the project creation flow can be started. This replaces the blank table that previously appeared for new accounts.
+
 ### Navigation
 
 Accessible via the "Plan" section in the sidebar:
@@ -1610,6 +1648,28 @@ All API routes are prefixed with `/api/v1/` and organized by domain:
 | `DB_CONNECT_TIMEOUT` | DB connection establishment timeout in ms (default: 5000) |
 | `DB_IDLE_TIMEOUT` | Idle connection cleanup timeout in ms (default: 30000) |
 | `DB_QUEUE_LIMIT` | Max queued connection requests (default: 50) |
+
+---
+
+## Legal Pages
+
+### Terms of Service
+
+The Terms of Service (`/terms`) has been updated to include the following provisions:
+
+- **Trial conversion clause** — describes how the 14-day free trial converts to a paid subscription at the end of the trial period if a payment method is on file.
+- **Refund policy** — monthly plan fees are non-refundable. Annual plan fees are pro-rated and refundable within 30 days of the billing date.
+- **Governing law** — disputes are governed by the laws of British Columbia, Canada.
+- **Dispute resolution** — parties agree to attempt informal resolution before pursuing formal legal proceedings.
+
+### Privacy Policy
+
+The Privacy Policy (`/privacy`) has been updated to include:
+
+- **Google Analytics GA4 disclosure** — the application uses Google Analytics 4. Cookies set by GA4 include `_ga` (2-year expiry, identifies unique visitors) and `_ga_*` (session tracking). Users may opt out via browser settings or the Google Analytics opt-out browser add-on.
+- **International data transfer** — user data may be processed outside Canada by third-party service providers (e.g., Anthropic, Stripe, Resend, Google). Transfers are subject to standard contractual clauses or equivalent safeguards.
+- **PIPEDA compliance** — the policy affirms compliance with Canada's Personal Information Protection and Electronic Documents Act (PIPEDA).
+- **Google as a third-party processor** — Google is identified as a data processor for analytics purposes, governed by Google's own privacy and data processing terms.
 
 ---
 

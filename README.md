@@ -236,6 +236,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Configurable notification preferences
 - Email notifications for critical/high severity events
 - Daily and weekly email digests (overdue tasks, upcoming deadlines, unread count)
+- Trial reminder emails: daily cron at 09:00 sends 3-day, 1-day, and expired-trial notices via Resend; Redis-backed dedup prevents duplicate sends
 
 ### Client / Stakeholder Portal
 - External-facing read-only project views with progress, budget, milestones, and recent activity
@@ -295,6 +296,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Mobile-friendly timesheet with day-by-day card layout
 - Responsive schedule views (auto-switches to mobile on small screens)
 - Touch-gesture support for Gantt chart: bar drag (move/resize), progress drag, and drag-to-create via single-finger touch events
+- Hamburger menu on the public landing page for mobile navigation
 
 ### Styled Confirmation Modals
 - Reusable `ConfirmModal` component replaces all native `window.confirm()` calls
@@ -418,8 +420,9 @@ This starts both the Fastify API server and the Vite dev server concurrently.
  (MariaDB)  (AI)   (Billing)
 ```
 
-- **Frontend** is a Vite-built React SPA served as static files by LiteSpeed.
+- **Frontend** is a Vite-built React SPA served as static files by LiteSpeed. Production bundle uses manual chunk splitting (`vendor-react`, `vendor-query`) defined in `vite.config.ts` to improve cache efficiency.
 - **Backend** is a Fastify app running under Passenger, handling all `/api/v1/` routes.
+- **Analytics & SEO** — GA4 (measurement ID `G-F99Q92ED7M`) is loaded in `index.html` (hardcoded, no env var). `index.html` also includes Open Graph and Twitter Card meta tags. `public/robots.txt` and `public/sitemap.xml` are included for search engine indexing.
 - **Repository layer** (`BaseRepository` + entity repos) centralizes SQL and row mapping for core entities; services keep business logic.
 - **Structured metrics** via `MetricsService` (request counts, latency percentiles, AI token usage). Admin endpoint: `GET /api/v1/metrics`.
 - **Request context** propagated via `AsyncLocalStorage` — request ID included in all log entries.

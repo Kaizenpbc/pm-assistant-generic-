@@ -1,14 +1,30 @@
 # Kovarti PM — Pre-Subscriber TODO
 
-Status: 5/7 complete | Last updated: July 13, 2026
+Status: 5/7 complete | Last updated: July 13, 2026 | Blocked: #1 needs Stripe setup
 
 ---
 
-## 1. Test Full Stripe Subscriber Flow End-to-End — PENDING (manual)
+## 1. Test Full Stripe Subscriber Flow End-to-End — BLOCKED (Stripe not configured)
 
 **Priority:** High | **Type:** Manual verification
 
-### Test Checklist (on production)
+### Blocker: Stripe env vars missing from production
+No `STRIPE_*` variables exist in `/opt/pm-app/.env`. Before testing, complete these steps:
+
+1. **Get Stripe API keys** — stripe.com → Developers → API keys (use test mode)
+2. **Create products/prices** — Consultant Monthly ($25/mo) and Annual ($250/yr), copy `price_...` IDs
+3. **Set up webhook** — endpoint `https://pm.kpbc.ca/api/v1/stripe/webhook`, events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
+4. **Add to `/opt/pm-app/.env`:**
+   ```
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_PUBLISHABLE_KEY=pk_test_...
+   STRIPE_WEBHOOK_SECRET=whsec_...
+   STRIPE_PRICE_MONTHLY=price_...
+   STRIPE_PRICE_ANNUAL=price_...
+   ```
+5. Restart the app after adding env vars
+
+### Test Checklist (after Stripe is configured)
 1. Register a new test account on pm.kpbc.ca
 2. Check email — verify the verification email arrives (not in spam)
 3. Click verify link — confirm "Welcome" email arrives
@@ -19,12 +35,6 @@ Status: 5/7 complete | Last updated: July 13, 2026
 8. Verify webhook fires — user's `subscriptionStatus` updates to `active`
 9. Verify dashboard shows full access (no TrialBanner, no UpgradePrompt)
 10. Test cancellation via billing portal
-
-### Prerequisite
-- Ensure Stripe is in **test mode** for this, or use a separate test account
-- Check if production Stripe keys are test or live: `grep STRIPE /opt/pm-app/.env`
-
-### No code changes expected — this is a manual verification task
 
 ---
 

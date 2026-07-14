@@ -744,6 +744,131 @@ The file `src/server/services/aiContextBuilder.ts` has 3 pre-existing type error
 
 ---
 
+## 9. Testing Recent Features (July 2026)
+
+### 9a. Trial Reminder Cron
+
+The trial reminder cron sends emails to users approaching or past their trial expiration. It deduplicates sends using Redis keys of the form `trial-reminder:{userId}:{type}`.
+
+**Invoke directly (SSH to server):**
+
+```bash
+ssh ubuntu@147.5.127.99
+node -e "
+  const { runTrialReminders } = require('./dist/server/cron/trialReminders');
+  runTrialReminders().then(() => { console.log('done'); process.exit(0); });
+"
+```
+
+**Verify the cron schedule is registered:**
+
+```bash
+# Check server logs for the cron registration line on startup
+sudo journalctl -u pm-app --since today | grep -i 'trial'
+```
+
+**Check Redis dedup keys:**
+
+```bash
+redis-cli keys 'trial-reminder:*'
+# Expected: one key per user+type combination that was already emailed today
+# TTL should be ~24 h
+redis-cli ttl 'trial-reminder:USER_ID:expiring-soon'
+```
+
+**Verify emails sent:**
+
+Open the Resend dashboard (resend.com) and filter by the sending domain. Confirm delivery records appear for users in the trial-expiry window. No duplicate sends should appear for the same user+type within the cooldown period.
+
+---
+
+### 9b. Onboarding WelcomeModal
+
+The WelcomeModal appears on first login for new users. It is suppressed for returning users via two storage keys.
+
+**Trigger the modal:**
+
+1. Open browser DevTools (F12) → Application → Local Storage → delete the key `pm-generic-onboarding-seen`.
+2. Application → Session Storage → delete the key `pm-first-login`.
+3. In the database, ensure the test user has `lastLoginAt = null` (or has no projects):
+
+```sql
+UPDATE users SET last_login_at = NULL WHERE username = 'testuser';
+```
+
+4. Log in as that user. The WelcomeModal should appear automatically.
+
+**Verify modal behaviour:**
+
+- Three options are presented (e.g., "Create a project", "Import data", "Take a tour" — exact labels depend on implementation).
+- Selecting an option dismisses the modal and navigates or initiates the chosen flow.
+- After dismissal, refreshing the page must NOT show the modal again (`pm-generic-onboarding-seen` will be set in localStorage).
+- Logging in again in the same browser session must NOT show the modal (`pm-first-login` session key is set).
+
+---
+
+### 9c. Google Analytics (GA4)
+
+GA4 is injected via the standard gtag.js script. Verify it fires without a backend call.
+
+**Browser Network tab check:**
+
+1. Open the app in an incognito window (clears cached scripts).
+2. Open DevTools → Network → filter by `google`.
+3. Load any page (e.g., the dashboard).
+4. Confirm a request to `https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX` appears with status 200.
+5. Confirm subsequent `collect` or `g/collect` requests to `https://www.google-analytics.com/` appear as page-view events.
+
+**GA4 real-time dashboard check:**
+
+1. Log in to Google Analytics → select the PM Assistant property.
+2. Navigate to **Reports → Realtime**.
+3. Load a page in the app.
+4. Within 30 seconds, confirm the page view appears in the Realtime report with the correct page path.
+
+---
+
+### 9d. Mobile Landing Page — Hamburger Menu
+
+The landing page collapses its navigation into a hamburger menu below the `md` breakpoint (768 px).
+
+**Test steps:**
+
+1. Open `https://pm.kpbc.ca` (unauthenticated).
+2. Open DevTools → toggle device toolbar (Ctrl+Shift+M / Cmd+Shift+M) and set width to 375 px.
+3. Confirm the desktop nav links are hidden and a hamburger icon (three-line or equivalent) is visible.
+4. Click the hamburger icon. A dropdown or slide-in menu should appear containing the same nav links (e.g., Features, Pricing, Login).
+5. Click a nav link. The menu should close and the page should scroll or navigate correctly.
+6. Resize the browser above 768 px. The hamburger icon should disappear and the full nav bar should reappear without a page reload.
+
+---
+
+### 9e. PricingPage Checkout Error Banner
+
+When a Stripe checkout call fails (e.g., missing publishable key, network error, or server-side failure), the PricingPage must display an error banner above the Subscribe button rather than a blank screen or unhandled exception.
+
+**Trigger the error (development):**
+
+Set `VITE_STRIPE_PUBLISHABLE_KEY` to an invalid value (or leave it empty) in `src/client/.env.local`, then rebuild the client:
+
+```bash
+cd src/client
+echo "VITE_STRIPE_PUBLISHABLE_KEY=pk_test_invalid" >> .env.local
+npm run build
+```
+
+Alternatively, in the browser DevTools → Network tab, block requests to `js.stripe.com` (right-click → Block request domain) to simulate Stripe being unavailable.
+
+**Verify the error banner:**
+
+1. Navigate to the Pricing page.
+2. Click a Subscribe button.
+3. An error banner should appear above the button with a user-readable message (e.g., "Something went wrong. Please try again or contact support.").
+4. The banner must not be a raw JavaScript exception or an empty page.
+5. Dismissing the banner (if closeable) should hide it without reloading the page.
+
+---
+
 ## Verification Checklist
 
 ### Build
@@ -788,3 +913,36 @@ The file `src/server/services/aiContextBuilder.ts` has 3 pre-existing type error
 - [ ] `wf_definitions`, `wf_nodes`, `wf_edges`, `wf_executions`, `wf_execution_nodes` tables exist
 - [ ] `agent_proposals`, `agent_proposal_actions`, `agent_feedback`, `agent_cost_ledger`, `agent_confidence_log` tables exist
 - [ ] Execution records match API responses
+
+### Trial Reminder Cron
+
+- [ ] `runTrialReminders()` completes without error when invoked directly on the server
+- [ ] Redis keys `trial-reminder:{userId}:{type}` are created after a run
+- [ ] Re-running within the cooldown window does NOT send a second email (key already exists)
+- [ ] Resend dashboard shows delivery records for users in the trial-expiry window
+
+### Onboarding WelcomeModal
+
+- [ ] Modal appears after clearing `pm-generic-onboarding-seen` (localStorage) and `pm-first-login` (sessionStorage) for a user with `lastLoginAt = null`
+- [ ] All three onboarding options are rendered and functional
+- [ ] Modal does not reappear on page refresh or subsequent login after being dismissed
+- [ ] Users with `lastLoginAt` set (returning users) never see the modal
+
+### Google Analytics
+
+- [ ] Network tab shows a 200 request to `googletagmanager.com/gtag/js` on page load
+- [ ] `google-analytics.com/g/collect` (or `collect`) requests fire for each page navigation
+- [ ] GA4 Realtime dashboard shows the page view within 30 seconds
+
+### Mobile Landing Page
+
+- [ ] At viewport width < 768 px, desktop nav links are hidden and hamburger icon is visible
+- [ ] Clicking the hamburger opens the mobile menu with all nav links present
+- [ ] Clicking a nav link closes the menu and navigates correctly
+- [ ] At viewport width >= 768 px, full nav bar is shown and hamburger is hidden
+
+### PricingPage Error Banner
+
+- [ ] Triggering a checkout error (invalid Stripe key or blocked network) displays a readable error banner above the Subscribe button
+- [ ] No unhandled exception or blank page on Stripe failure
+- [ ] Error banner is dismissible (if applicable) without reloading the page

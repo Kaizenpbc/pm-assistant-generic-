@@ -128,6 +128,11 @@ ssh -i "~/.ssh/ssh-key-2026-07-08 (1).key" ubuntu@147.5.127.99 \
   "rm -rf /opt/pm-app/client-dist/assets && tar xzf /tmp/client-dist.tar.gz -C /opt/pm-app/client-dist"
 ```
 
+**Notes on the client build output:**
+- `robots.txt` and `sitemap.xml` live in `src/client/public/` and are copied into `src/client/dist/` automatically by Vite at build time. No separate deployment step is needed for these files.
+- The build produces separate `vendor-react` and `vendor-query` chunks (configured in `src/client/vite.config.ts`) to improve browser caching of third-party libraries between deploys.
+- Google Analytics (GA4, measurement ID G-F99Q92ED7M) is embedded in `index.html`. No server-side configuration is required.
+
 ### 4. Restart the Application
 
 ```bash

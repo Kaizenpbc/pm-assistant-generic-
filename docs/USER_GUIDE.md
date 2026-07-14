@@ -56,13 +56,23 @@ A comprehensive guide for using PM Assistant, an AI-powered enterprise project m
 3. If your session expires, you will be returned to the login page automatically.
 4. Use **Forgot Password** if you need to reset your credentials.
 
+### First Login — Welcome Modal
+
+On your very first login, a **Welcome modal** appears to help you get oriented. It offers three quick-start actions:
+
+- **Create a project** — jump directly to the new project form.
+- **Import a schedule** — open a project and go straight to the CSV/Excel import flow.
+- **Explore the dashboard** — dismiss the modal and browse the application freely.
+
+The modal only appears once. After you dismiss or choose an action it will not show again.
+
 ### Dashboard Overview
 
 All users see a single **Unified Dashboard** with customizable widgets:
 
 - **KPI Tiles** -- 6 tiles showing Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, and Budget Utilization.
 - **Portfolio Intelligence** -- AI-generated health score, risk summary, budget status, and key insights.
-- **Projects Table** -- Sortable table with health score, status, priority, progress, budget, and end date. Click any row to open the project.
+- **Projects Table** -- Sortable table with health score, status, priority, progress, budget, and end date. Click any row to open the project. If you have no projects yet, the table shows a **New Project** button in place of the empty list — click it to create your first project.
 - **Issues Trend** -- Chart showing issues created vs resolved per week.
 - **Milestones** -- Upcoming milestones with days-until badges.
 - **Budget Watch** -- Top 5 projects by budget spend percentage.
@@ -1436,6 +1446,7 @@ AI Scan does not overwrite or modify existing records — it only proposes new o
 
 ## Need Help?
 
-- **In-app help** -- Navigate to the Help page from the sidebar.
+- **In-app help** -- Navigate to the **Help** page from the sidebar, or open the **TopBar user dropdown** (your avatar/name in the top-right corner) and click **Help & Support**. Both links open the same support resources.
+- **Email support** -- Contact the support team directly at [support@kpbc.ca](mailto:support@kpbc.ca).
 - **Administrators** -- See the [Admin Manual](./ADMIN_MANUAL.md) for system configuration and deployment.
 - **API access** -- Generate an API key in Settings to integrate with external tools.
