@@ -56,6 +56,7 @@ export function ProjectsPM() {
     status: p.status || '',
     priority: p.priority || '',
     projectType: p.projectType || p.type || '',
+    methodology: p.methodology || 'waterfall',
     healthScore: healthMap.get(p.id) ?? p.healthScore ?? 0,
     progress: p.progressPercentage ?? p.progress ?? 0,
     budgetAllocated: p.budgetAllocated ?? p.budget ?? 0,

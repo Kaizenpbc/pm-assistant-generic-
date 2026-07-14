@@ -79,7 +79,7 @@ import { ScenariosTab } from './ProjectDetailPage/ScenariosTab';
 import { AgentActivityTab } from './ProjectDetailPage/AgentActivityTab';
 import { OverviewTab } from './ProjectDetailPage/OverviewTab';
 import { Pencil, Zap } from 'lucide-react';
-import { getPrimaryTabs, type Methodology } from '../utils/methodology';
+import { getPrimaryTabs, getDefaultViewMode, type Methodology } from '../utils/methodology';
 
 type Tab = 'overview' | 'schedule' | 'raid' | 'ai-insights' | 'performance' | 'scenarios' | 'team' | 'agent-activity' | 'change-requests' | 'sprints' | 'resources' | 'time' | 'files' | 'budget';
 
@@ -603,7 +603,7 @@ export function ProjectDetailPage() {
       {/* Tab Content */}
       {activeTab === 'overview' && <OverviewTab project={project} />}
       {activeTab === 'raid' && <RAIDTab projectId={id!} />}
-      {activeTab === 'schedule' && <ScheduleTab projectId={id!} projectName={project.name} projectStartDate={project.startDate || project.start_date} />}
+      {activeTab === 'schedule' && <ScheduleTab projectId={id!} projectName={project.name} projectStartDate={project.startDate || project.start_date} defaultViewMode={getDefaultViewMode(methodology)} />}
       {activeTab === 'ai-insights' && <AIInsightsTab projectId={id!} />}
       {activeTab === 'performance' && <PerformancePanel projectId={id!} onNavigate={(tab) => setActiveTab(tab as Tab)} />}
       {activeTab === 'scenarios' && <ScenariosTab projectId={id!} />}
@@ -1222,11 +1222,11 @@ function RAIDTab({ projectId }: { projectId: string }) {
 // Schedule Tab
 // ---------------------------------------------------------------------------
 
-function ScheduleTab({ projectId, projectName, projectStartDate }: { projectId: string; projectName?: string; projectStartDate?: string }) {
+function ScheduleTab({ projectId, projectName, projectStartDate, defaultViewMode = 'gantt' }: { projectId: string; projectName?: string; projectStartDate?: string; defaultViewMode?: string }) {
   const queryClient = useQueryClient();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
-  const [viewMode, setViewMode] = useState<'gantt' | 'kanban' | 'table' | 'calendar' | 'network' | 'burndown'>('gantt');
+  const [viewMode, setViewMode] = useState<'gantt' | 'kanban' | 'table' | 'calendar' | 'network' | 'burndown'>(defaultViewMode as any);
   const [uploadingSchedule, setUploadingSchedule] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const scheduleFileRef = useRef<HTMLInputElement>(null);

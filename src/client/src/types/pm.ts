@@ -24,6 +24,7 @@ export interface ProjectSummaryPM {
   status: string;
   priority: string;
   projectType?: string;
+  methodology?: string;
   healthScore: number;
   progress: number;
   budgetAllocated: number;

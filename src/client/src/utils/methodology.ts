@@ -80,13 +80,3 @@ export function getReadinessSteps(m: Methodology): ReadinessStepConfig[] {
   ];
 }
 
-export interface ContextCardSwap {
-  card1?: 'velocity';
-  card5?: 'sprint-progress' | 'velocity';
-}
-
-export function getContextCardConfig(m: Methodology): ContextCardSwap {
-  if (m === 'agile') return { card1: 'velocity', card5: 'sprint-progress' };
-  if (m === 'hybrid') return { card5: 'velocity' };
-  return {};
-}
