@@ -78,11 +78,31 @@ export function ProjectReadinessBar({ projectId, tasks, resources, scheduleId, m
   });
 
   const completedCount = steps.filter(s => s.done).length;
+  const allComplete = completedCount === steps.length;
+
+  // Auto-dismiss after 3 seconds when all steps are complete
+  useEffect(() => {
+    if (!allComplete) return;
+    const timer = setTimeout(() => {
+      localStorage.setItem(`${STORAGE_PREFIX}${projectId}`, '1');
+      setDismissed(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [allComplete, projectId]);
 
   const handleDismiss = () => {
     localStorage.setItem(`${STORAGE_PREFIX}${projectId}`, '1');
     setDismissed(true);
   };
+
+  if (allComplete) {
+    return (
+      <div className="flex items-center justify-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-400 text-xs font-medium">
+        <CheckCircle2 className="w-4 h-4" />
+        All set! Your project is fully configured.
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-1 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">

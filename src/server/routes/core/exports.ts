@@ -68,6 +68,7 @@ export async function exportRoutes(fastify: FastifyInstance) {
             id: project.id,
             name: project.name,
             status: project.status,
+            methodology: project.methodology || 'waterfall',
             budgetAllocated: project.budgetAllocated,
             budgetSpent: project.budgetSpent,
             progressPercentage: avgProgress,

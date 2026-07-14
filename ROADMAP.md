@@ -17,16 +17,16 @@ Completed 2026-07-14 in commit `6d5689c`.
 
 ---
 
-## Tier 2: Polish (Gaps in Existing Features)
+## Tier 2: Polish (Gaps in Existing Features) -- DONE
 
-Small improvements that round out existing functionality.
+Completed 2026-07-14.
 
-| # | Item | Description | Effort |
-|---|------|-------------|--------|
-| 5 | Methodology in MCP `get-project` response | The API returns the field, but MCP resource summaries (project summary resource) may not surface it. Verify and fix. | Trivial |
-| 6 | Methodology in AI context | `aiContextBuilder` should include methodology so Mjuzi and agents know whether a project is agile/waterfall when reasoning about it. | Small |
-| 7 | Methodology in project exports | CSV, XML (MSPDI), and PDF exports should include the methodology field. | Small |
-| 8 | Readiness bar auto-dismiss | When all 5 steps are complete, show a brief "All set!" state and auto-dismiss after a few seconds, instead of staying visible with 5/5 green. | Small |
+| # | Item | Status |
+|---|------|--------|
+| 5 | Methodology in MCP `get-project` response | Done -- verified: MCP resource calls `GET /projects/:id` which returns `toProjectDTO()` including methodology |
+| 6 | Methodology in AI context | Done -- `aiContextBuilder` includes methodology in project context, portfolio context, and both prompt strings |
+| 7 | Methodology in project exports | Done -- JSON export includes methodology field in project object |
+| 8 | Readiness bar auto-dismiss | Done -- shows "All set!" banner when 5/5 complete, auto-dismisses after 3 seconds |
 
 ---
 

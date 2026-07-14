@@ -11,6 +11,7 @@ export interface ProjectContext {
     status: string;
     priority: string;
     projectType: string;
+    methodology?: string;
     budgetAllocated?: number;
     budgetSpent?: number;
     startDate?: string;
@@ -45,6 +46,7 @@ export interface PortfolioContext {
     status: string;
     priority: string;
     projectType: string;
+    methodology?: string;
     budgetAllocated?: number;
     budgetSpent?: number;
     startDate?: string;
@@ -114,6 +116,7 @@ export class AIContextBuilder {
         status: project.status,
         priority: project.priority,
         projectType: project.projectType || 'other',
+        methodology: project.methodology || 'waterfall',
         budgetAllocated: project.budgetAllocated,
         budgetSpent: project.budgetSpent,
         startDate: project.startDate,
@@ -150,6 +153,7 @@ export class AIContextBuilder {
         status: p.status,
         priority: p.priority,
         projectType: p.projectType || 'other',
+        methodology: p.methodology || 'waterfall',
         budgetAllocated: p.budgetAllocated,
         budgetSpent: p.budgetSpent,
         startDate: p.startDate?.toISOString?.() || p.startDate,
@@ -169,7 +173,9 @@ export class AIContextBuilder {
 
   toPromptString(ctx: ProjectContext): string {
     let s = `Project: ${sanitizeForPrompt(ctx.project.name)}\n`;
-    s += `Type: ${ctx.project.projectType}\n`;
+    s += `Type: ${ctx.project.projectType}`;
+    if (ctx.project.methodology) s += ` | Methodology: ${ctx.project.methodology}`;
+    s += '\n';
     s += `Status: ${ctx.project.status} | Priority: ${ctx.project.priority}\n`;
     if (ctx.project.description) s += `Description: ${sanitizeForPrompt(ctx.project.description)}\n`;
     if (ctx.project.budgetAllocated) s += `Budget: $${ctx.project.budgetAllocated.toLocaleString()} allocated, $${(ctx.project.budgetSpent || 0).toLocaleString()} spent\n`;
@@ -201,7 +207,9 @@ export class AIContextBuilder {
     s += `By Priority: ${Object.entries(ctx.summary.byPriority).map(([k, v]) => `${k}=${v}`).join(', ')}\n\n`;
 
     for (const p of ctx.projects) {
-      s += `- ${sanitizeForPrompt(p.name)} [${p.status}] type=${p.projectType} priority=${p.priority}`;
+      s += `- ${sanitizeForPrompt(p.name)} [${p.status}] type=${p.projectType}`;
+      if (p.methodology && p.methodology !== 'waterfall') s += ` methodology=${p.methodology}`;
+      s += ` priority=${p.priority}`;
       if (p.budgetAllocated) s += ` budget=$${p.budgetAllocated.toLocaleString()}`;
       if (p.completionPercentage !== undefined) s += ` completion=${p.completionPercentage}%`;
       s += '\n';
