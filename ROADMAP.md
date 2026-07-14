@@ -36,7 +36,7 @@ New user-facing capabilities.
 
 | # | Item | Description | Effort |
 |---|------|-------------|--------|
-| 9 | Sprint velocity widget on dashboard | Sparkline chart on PM dashboard showing velocity trend for agile projects. Reuses existing `GET /sprints/velocity/:projectId` endpoint. | Medium |
+| 9 | Sprint velocity widget on dashboard | Done -- sparkline chart per agile/hybrid project on PM dashboard, shows velocity trend + average + trend arrow. Toggleable via Customize dropdown. | Done |
 | 10 | Backlog view | Dedicated view for tasks not assigned to any sprint. Useful for agile projects to manage the product backlog separately from sprint work. | Medium |
 | 11 | Story points on Kanban cards | Done -- column point totals, total sprint points in header, WIP limits with localStorage persistence and amber warning ring. | Done |
 | 12 | MariaDB 11.6 vector upgrade | Upgrade from MariaDB 10.11 to 11.6+ on Oracle Cloud. Refactor `EmbeddingService.searchSimilar()` to use native `VECTOR` column type and `VEC_DISTANCE_COSINE()`. Remove in-memory cosine similarity cache. | Large |

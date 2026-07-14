@@ -25,6 +25,7 @@ import { ActivityFeedPM } from '../components/pm/ActivityFeedPM';
 import { NextBestActionsWidget } from '../components/dashboard/widgets/NextBestActionsWidget';
 import { HealthTrendsWidget } from '../components/dashboard/widgets/HealthTrendsWidget';
 import { MorningBriefingWidget } from '../components/dashboard/widgets/MorningBriefingWidget';
+import { VelocitySparklineWidget } from '../components/dashboard/widgets/VelocitySparklineWidget';
 
 // ─── Widget registry ──────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ const PM_WIDGETS: WidgetDef[] = [
   { id: 'next-actions', label: 'Next Best Actions',     group: 'Overview', defaultOn: true },
   { id: 'trend',       label: 'Issues Trend',           group: 'Charts',   defaultOn: true },
   { id: 'health-trends', label: 'Health Trends',        group: 'Charts',   defaultOn: true },
+  { id: 'velocity',      label: 'Sprint Velocity',       group: 'Charts',   defaultOn: true },
   { id: 'milestones',  label: 'Milestones',             group: 'Details',  defaultOn: true },
   { id: 'budget',      label: 'Budget Watch',           group: 'Details',  defaultOn: true },
   { id: 'activity',    label: 'Activity Feed',          group: 'Details',  defaultOn: true },
@@ -314,6 +316,9 @@ export function DashboardPM() {
 
       {/* ── Health Trends ── */}
       {show('health-trends') && <HealthTrendsWidget projects={projectsWithHealth} />}
+
+      {/* ── Sprint Velocity ── */}
+      {show('velocity') && <VelocitySparklineWidget projects={projectsWithHealth} />}
 
       {/* ── 3-column grid ── */}
       {(show('milestones') || show('budget') || show('activity')) && (
