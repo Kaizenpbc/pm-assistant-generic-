@@ -171,7 +171,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/me/accessibility', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('write')],
     schema: { description: 'Update accessibility preferences', tags: ['users'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

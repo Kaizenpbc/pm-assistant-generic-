@@ -230,7 +230,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/projects/:projectId/risks/:riskId/comments — Add comment
   fastify.post('/:projectId/risks/:riskId/comments', {
-    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId, riskId } = request.params as { projectId: string; riskId: string };

@@ -19,20 +19,30 @@ export async function autonomyRoutes(fastify: FastifyInstance) {
   fastify.get('/', {
     preHandler: [requireScope('read')],
     schema: { description: 'List active autonomy configurations', tags: ['agent'] },
-  }, async (_request: FastifyRequest, _reply: FastifyReply) => {
-    const configs = await autonomyService.listConfigs();
-    return { configs };
+  }, async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const configs = await autonomyService.listConfigs();
+      return { configs };
+    } catch (error) {
+      fastify.log.error({ err: error }, 'Failed to list autonomy configs');
+      return reply.status(500).send({ error: 'Failed to list autonomy configs' });
+    }
   });
 
   // Get eligibility stats for an agent
   fastify.get('/:agentId/eligibility', {
     preHandler: [requireScope('read')],
     schema: { description: 'Get autonomy promotion eligibility for an agent', tags: ['agent'] },
-  }, async (request: FastifyRequest, _reply: FastifyReply) => {
-    const { agentId } = request.params as { agentId: string };
-    const query = request.query as { projectId?: string };
-    const stats = await autonomyService.getEligibilityStats(agentId, query.projectId);
-    return { eligibility: stats };
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { agentId } = request.params as { agentId: string };
+      const query = request.query as { projectId?: string };
+      const stats = await autonomyService.getEligibilityStats(agentId, query.projectId);
+      return { eligibility: stats };
+    } catch (error) {
+      fastify.log.error({ err: error }, 'Failed to get eligibility stats');
+      return reply.status(500).send({ error: 'Failed to get eligibility stats' });
+    }
   });
 
   // Promote agent to Tier 3 (admin only)

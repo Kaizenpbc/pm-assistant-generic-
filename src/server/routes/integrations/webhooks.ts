@@ -28,7 +28,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
       const { url, events } = createWebhookSchema.parse(request.body);
 
       const webhook = await webhookService.register(user.userId, url, events);
-      return { webhook };
+      return reply.status(201).send({ webhook });
     } catch (error) {
       logger.error('Register webhook error', { error });
       return reply.status(500).send({ error: 'Failed to register webhook' });

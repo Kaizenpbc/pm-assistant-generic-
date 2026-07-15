@@ -160,7 +160,8 @@ class WorkflowRepository {
     if (filters?.entityId) { sql += ' AND entity_id = ?'; params.push(filters.entityId); }
     if (filters?.status) { sql += ' AND status = ?'; params.push(filters.status); }
     sql += ' ORDER BY started_at DESC';
-    sql += ` LIMIT ${filters?.limit ?? 50}`;
+    sql += ' LIMIT ?';
+    params.push(filters?.limit ?? 50);
     const rows = await databaseService.query(sql, params);
     return rows.map(rowToExecution);
   }

@@ -14,6 +14,7 @@ import {
   RescheduleAIResponseSchema,
   RescheduleAIResponse,
 } from '../schemas/autoRescheduleSchemas';
+import { sanitizeForPrompt } from '../utils/promptSanitizer';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -155,7 +156,7 @@ export class AutoRescheduleService {
     // Build task summary for AI context
     const taskSummary = allTasks.map((t) => ({
       id: t.id,
-      name: t.name,
+      name: sanitizeForPrompt(t.name),
       status: t.status,
       priority: t.priority,
       startDate: t.startDate ? toDateStr(new Date(t.startDate)) : null,

@@ -29,7 +29,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
       const user = request.user!;
       const { provider, config, projectId } = createIntegrationSchema.parse(request.body);
       const integration = await integrationService.create(user.userId, provider, config, projectId);
-      return { integration };
+      return reply.status(201).send({ integration });
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       logger.error('Create integration error', { error });
@@ -54,6 +54,7 @@ export async function integrationRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string };
       const integration = await integrationService.getById(id);
+      if (!integration) return reply.status(404).send({ error: 'Not found', message: 'Integration not found' });
       return { integration };
     } catch (error) {
       logger.error('Get integration error', { error });

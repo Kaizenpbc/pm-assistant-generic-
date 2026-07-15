@@ -57,7 +57,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
         body.expiresAt,
       );
 
-      return { apiKey };
+      return reply.status(201).send({ apiKey });
     } catch (error) {
       logger.error('Create API key error', { error });
       return reply.status(500).send({ error: 'Failed to create API key' });

@@ -104,7 +104,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const { taskId, storyPoints } = request.body as { taskId: string; storyPoints?: number };
       const result = await sprintService.addTask(id, taskId, storyPoints);
-      return { result };
+      return reply.status(201).send({ result });
     } catch (error) {
       logger.error('Add task to sprint error', { error });
       return reply.status(500).send({ error: 'Failed to add task to sprint' });

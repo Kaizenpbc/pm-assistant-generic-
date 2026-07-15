@@ -26,15 +26,20 @@ export async function proposalRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('read')],
     schema: { description: 'List agent proposals', tags: ['agent'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const query = request.query as { projectId?: string; status?: string; agentId?: string; limit?: string; offset?: string };
-    const result = await actionProposalService.list({
-      projectId: query.projectId,
-      status: query.status as any,
-      agentId: query.agentId,
-      limit: query.limit ? Number(query.limit) : undefined,
-      offset: query.offset ? Number(query.offset) : undefined,
-    });
-    return result;
+    try {
+      const query = request.query as { projectId?: string; status?: string; agentId?: string; limit?: string; offset?: string };
+      const result = await actionProposalService.list({
+        projectId: query.projectId,
+        status: query.status as any,
+        agentId: query.agentId,
+        limit: query.limit ? Number(query.limit) : undefined,
+        offset: query.offset ? Number(query.offset) : undefined,
+      });
+      return result;
+    } catch (error) {
+      fastify.log.error({ err: error }, 'Failed to list proposals');
+      return reply.status(500).send({ error: 'Failed to list proposals' });
+    }
   });
 
   // Get proposal by ID
@@ -42,12 +47,17 @@ export async function proposalRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('read')],
     schema: { description: 'Get agent proposal by ID', tags: ['agent'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const proposal = await actionProposalService.getById(id);
-    if (!proposal) {
-      return reply.status(404).send({ error: 'Not found', message: 'Proposal not found' });
+    try {
+      const { id } = request.params as { id: string };
+      const proposal = await actionProposalService.getById(id);
+      if (!proposal) {
+        return reply.status(404).send({ error: 'Not found', message: 'Proposal not found' });
+      }
+      return { proposal };
+    } catch (error) {
+      fastify.log.error({ err: error }, 'Failed to get proposal');
+      return reply.status(500).send({ error: 'Failed to get proposal' });
     }
-    return { proposal };
   });
 
   // Approve proposal
@@ -137,9 +147,14 @@ export async function proposalRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('read')],
     schema: { description: 'Get actions for an agent proposal', tags: ['agent'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const actions = await actionProposalService.getActions(id);
-    return { actions };
+    try {
+      const { id } = request.params as { id: string };
+      const actions = await actionProposalService.getActions(id);
+      return { actions };
+    } catch (error) {
+      fastify.log.error({ err: error }, 'Failed to get proposal actions');
+      return reply.status(500).send({ error: 'Failed to get proposal actions' });
+    }
   });
 
   // Submit feedback on executed proposal

@@ -49,7 +49,7 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 | # | Finding | File:Line | Fix |
 |---|---|---|---|
 | S2 | `orderBy` parameter interpolated raw in AuditLedgerRepository | `AuditLedgerRepository.ts:71` | Validate is 'ASC' or 'DESC' |
-| S3 | `BaseRepository.queryPaginated` accepts caller-supplied `orderBy` string | `BaseRepository.ts:59` | Document restriction or accept typed enum |
+| S3 | ~~`BaseRepository.queryPaginated` accepts caller-supplied `orderBy` string~~ | `BaseRepository.ts:59` | **N/A** — All callers pass hardcoded strings (e.g., `'created_at DESC'`), never user input |
 | S4 | Timing-unsafe string comparison for waitlist admin key | `waitlist.ts:58` | Use `crypto.timingSafeEqual` + rate limit |
 | S5 | Meeting transcript passed to Claude without `sanitizeForPrompt()` | `MeetingIntelligenceService.ts:121` | Wrap in XML `<user-data>` tags |
 | S6 | What-if scenario description injected raw into userMessage | `whatIfScenarioService.ts:230` | Apply `sanitizeForPrompt()` |
@@ -58,11 +58,11 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 
 | # | Finding | File:Line | Fix |
 |---|---|---|---|
-| S7 | `WorkflowRepository` LIMIT from caller without numeric cast | `WorkflowRepository.ts:163` | Use parameterized `?` with bounded int |
+| S7 | ~~`WorkflowRepository` LIMIT from caller without numeric cast~~ | `WorkflowRepository.ts:163` | **FIXED** — Changed to parameterized `?` placeholder |
 | S8 | `EmbeddingRepository` LIMIT can be NaN | `EmbeddingRepository.ts:31` | Add `\|\| 100` fallback |
 | S9 | EmailService interpolates unsanitized user data into HTML | `EmailService.ts:106-131` | HTML-encode all values |
 | S10 | ~~CORS permits all localhost origins on any port~~ | `plugins.ts:225` | **FIXED** — Removed unrestricted dev CORS catch-all; only `localhost:5173` is allowed |
-| S11 | AutoRescheduleService passes unsanitized task names to AI | `AutoRescheduleService.ts:182` | Apply `sanitizeForPrompt()` |
+| S11 | ~~AutoRescheduleService passes unsanitized task names to AI~~ | `AutoRescheduleService.ts:182` | **FIXED** — Task names wrapped in `sanitizeForPrompt()` |
 
 ### Low
 
@@ -100,8 +100,8 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 | A7 | Logout does not invalidate tokens server-side | `auth.ts:352` | Redis blacklist for refresh tokens |
 | A8 | Refresh token: no `isActive` check, no rotation | `auth.ts:374` | Add check + implement rotation |
 | A9 | ~~Portal link update has no ownership check~~ | `portal.ts:119` | **FIXED** — Added ownership check (creator or admin) to PUT/DELETE portal link routes |
-| A10 | `PUT /me/accessibility` gated at read scope (should be write) | `users.ts:125` | Change to `requireScope('write')` |
-| A11 | Adding RAID comments gated at read scope | `risks.ts:228` | Change to `requireScope('write')` |
+| A10 | ~~`PUT /me/accessibility` gated at read scope (should be write)~~ | `users.ts:125` | **FIXED** — Changed to `requireScope('write')` |
+| A11 | ~~Adding RAID comments gated at read scope~~ | `risks.ts:228` | **FIXED** — Changed to `requireScope('write')` with `requireProjectAccess('editor')` |
 | A12 | API key usage stats has no ownership filter | `apiKeys.ts:72` | Filter by userId |
 | A13 | Alert routes expose all-projects data to any user | `alerts.ts:21` | Filter by user's accessible projects |
 | A14 | Kill switch audit always records actor as 'unknown' | `killSwitch.ts:37` | Fix: `request.user?.userId` |
@@ -167,7 +167,7 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 | E6 | `killSwitch.ts` — wrong userId path (`request.userId` vs `request.user?.userId`) | `killSwitch.ts:37,54,71` | Fix property path |
 | E7 | ~~`unhandledRejection` handler does not exit process~~ | `index.ts:88-91` | **FIXED** — Already has `process.exit(1)` |
 | E8 | `operations.ts` silent catch blocks hide DB failures | `operations.ts:187,216` | Log at warn level |
-| E9 | `proposals.ts`, `autonomy.ts` GET handlers — no try/catch | Multiple | Add try/catch |
+| E9 | ~~`proposals.ts`, `autonomy.ts` GET handlers — no try/catch~~ | Multiple | **FIXED** — All 5 handlers (3 proposals + 2 autonomy) wrapped in try/catch |
 | E10 | `throw error` in catch blocks bypasses app-level logging | `proposals.ts:75,101,159` | Log + return 500 |
 
 ---
@@ -250,8 +250,8 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 
 | Category | Count | Examples | Fix |
 |---|---|---|---|
-| Missing 201 on POST endpoints | 9 | sprints, workflows, change-requests, intake, integrations, webhooks, apiKeys, report-templates | Add `reply.status(201)` |
-| Missing 404 on GET endpoints | 5 | sprints (x3), intake forms (x2), integrations | Add null check |
+| ~~Missing 201 on POST endpoints~~ | 9 | sprints, workflows, change-requests, intake, integrations, webhooks, apiKeys, report-templates | **FIXED** — Added `reply.status(201)` to sprint tasks, approval workflows, change requests, API keys, webhooks, integrations, report templates |
+| ~~Missing 404 on GET endpoints~~ | 5 | sprints (x3), intake forms (x2), integrations | **PARTIALLY FIXED** — Added 404 to integrations GET /:id (sprints already had 404s) |
 | Missing pagination | 3 | risks, notifications, admin/users | Add `parsePagination()` |
 | Missing Zod validation on POST | 3 | sprints tasks, rag search, custom fields | Add Zod schemas |
 | Response shape inconsistency | 2 | `PATCH /projects/:id/status` raw (no DTO), admin routes expose snake_case | Apply DTOs |

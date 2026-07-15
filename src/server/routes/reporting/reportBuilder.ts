@@ -44,7 +44,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
       const user = request.user!;
       const body = createTemplateSchema.parse(request.body);
       const template = await reportBuilderService.createTemplate(user.userId, body);
-      return { template };
+      return reply.status(201).send({ template });
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       logger.error('Create report template error', { error });

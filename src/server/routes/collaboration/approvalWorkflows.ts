@@ -52,7 +52,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       const { projectId } = request.params as { projectId: string };
       const body = createWorkflowSchema.parse(request.body);
       const workflow = await approvalWorkflowService.createWorkflow(projectId, { ...body, createdBy: user.userId });
-      return { workflow };
+      return reply.status(201).send({ workflow });
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       logger.error('Create workflow error', { error });
@@ -106,7 +106,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       const body = createChangeRequestSchema.parse(request.body);
       const changeRequest = await approvalWorkflowService.createChangeRequest(projectId, { ...body, requestedBy: user.userId });
       webhookService.dispatch('change_request.created', { changeRequest, projectId }, user.userId);
-      return { changeRequest };
+      return reply.status(201).send({ changeRequest });
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       logger.error('Create change request error', { error });
