@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { webhookRepository, Webhook } from '../database/WebhookRepository';
+import { webhookDeliveryRepository } from '../database/WebhookDeliveryRepository';
 import logger from '../utils/logger';
 
 export type { Webhook } from '../database/WebhookRepository';
@@ -90,7 +91,11 @@ export class WebhookService {
     }
   }
 
-  private async deliverWebhook(webhook: Webhook, event: string, payload: object): Promise<void> {
+  async getDeliveries(webhookId: string, limit: number, offset: number) {
+    return webhookDeliveryRepository.findByWebhookPaginated(webhookId, limit, offset);
+  }
+
+  private async deliverWebhook(webhook: Webhook, event: string, payload: object, isRetry = false): Promise<void> {
     if (isPrivateUrl(webhook.url)) {
       logger.warn('Blocked webhook delivery to private URL', { webhookId: webhook.id, url: webhook.url });
       return;
@@ -100,6 +105,7 @@ export class WebhookService {
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const start = Date.now();
 
     try {
       const response = await fetch(webhook.url, {
@@ -113,12 +119,26 @@ export class WebhookService {
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      const responseTimeMs = Date.now() - start;
       await webhookRepository.recordSuccess(webhook.id, response.status);
+      webhookDeliveryRepository.insert(webhook.id, event, payload, response.status, responseTimeMs, null).catch(() => {});
     } catch (error: any) {
       clearTimeout(timeoutId);
-      logger.error(`Webhook delivery error for ${webhook.id}:`, error.message || error);
+      const responseTimeMs = Date.now() - start;
+      const errMsg = error.message || String(error);
+      logger.error(`Webhook delivery error for ${webhook.id}:`, errMsg);
       const newFailureCount = webhook.failureCount + 1;
       await webhookRepository.recordFailure(webhook.id, newFailureCount, newFailureCount >= 5);
+      webhookDeliveryRepository.insert(webhook.id, event, payload, null, responseTimeMs, errMsg).catch(() => {});
+
+      // Schedule one retry after 60s (no infinite chains)
+      if (!isRetry) {
+        setTimeout(() => {
+          this.deliverWebhook(webhook, event, payload, true).catch(err => {
+            logger.error(`Webhook retry failed for ${webhook.id}:`, err);
+          });
+        }, 60_000);
+      }
     }
   }
 

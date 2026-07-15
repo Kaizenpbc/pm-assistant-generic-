@@ -62,7 +62,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
   // -----------------------------------------------------------------------
   // POST /tasks — Bulk create tasks
   // -----------------------------------------------------------------------
-  fastify.post('/tasks', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/tasks', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
@@ -115,7 +115,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
   // -----------------------------------------------------------------------
   // PUT /tasks — Bulk update tasks
   // -----------------------------------------------------------------------
-  fastify.put('/tasks', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.put('/tasks', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
@@ -180,7 +180,7 @@ export async function bulkRoutes(fastify: FastifyInstance) {
   // -----------------------------------------------------------------------
   // PUT /tasks/status — Batch status update
   // -----------------------------------------------------------------------
-  fastify.put('/tasks/status', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.put('/tasks/status', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });

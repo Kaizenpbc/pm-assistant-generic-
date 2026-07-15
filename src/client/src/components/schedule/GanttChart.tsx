@@ -1,8 +1,9 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Download } from 'lucide-react';
 import type { ColumnState } from '../../hooks/useColumnState';
 import { SavedViewsDropdown } from './SavedViewsDropdown';
 import type { SavedView } from './SavedViewsDropdown';
+import { exportTasksCSV } from '../../utils/exportUtils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -2212,6 +2213,14 @@ export function GanttChart({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               PDF
+            </button>
+            <button
+              onClick={() => exportTasksCSV(tasks, scheduleName || 'schedule')}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors print:hidden"
+              title="Export to CSV"
+            >
+              <Download className="w-3.5 h-3.5" />
+              CSV
             </button>
             {/* Resource overallocation toggle */}
             <button

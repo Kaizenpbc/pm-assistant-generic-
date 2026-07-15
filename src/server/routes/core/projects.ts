@@ -45,11 +45,12 @@ export async function projectRoutes(fastify: FastifyInstance) {
     try {
       const user = request.user!;
       const { limit, offset } = parsePagination(request.query as Record<string, unknown>);
-      const { scope } = request.query as { scope?: string };
+      const { scope, includeArchived } = request.query as { scope?: string; includeArchived?: string };
+      const archived = includeArchived === 'true';
       const globalRoles = ['admin', 'executive', 'pmo'];
       const { rows, total } = globalRoles.includes(user.role)
-        ? await projectService.findAllPaginated(limit, offset)
-        : await projectService.findByUserIdPaginated(user.userId, limit, offset);
+        ? await projectService.findAllPaginated(limit, offset, archived)
+        : await projectService.findByUserIdPaginated(user.userId, limit, offset, archived);
       const projectDTOs = rows.map(toProjectDTO);
       const projectIds = projectDTOs.map((p: any) => p.id);
       const favMap = await favouriteProjectRepository.isFavouriteMap(user.userId, projectIds);
@@ -178,6 +179,42 @@ export async function projectRoutes(fastify: FastifyInstance) {
     } catch (error) {
       logger.error('Delete project error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete project' });
+    }
+  });
+
+  // ── Archive / Unarchive ────────────────────────────────────────────────
+
+  fastify.post('/:id/archive', {
+    preHandler: [requireScope('write'), requireProjectAccess('manager')],
+    schema: { description: 'Archive a project', tags: ['projects'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const archived = await projectService.archiveProject(id);
+      if (!archived) {
+        return reply.status(404).send({ error: 'Not found', message: 'Project not found or already archived' });
+      }
+      return { message: 'Project archived' };
+    } catch (error) {
+      logger.error('Archive project error', { error });
+      return reply.status(500).send({ error: 'Internal server error', message: 'Failed to archive project' });
+    }
+  });
+
+  fastify.post('/:id/unarchive', {
+    preHandler: [requireScope('write'), requireProjectAccess('manager')],
+    schema: { description: 'Unarchive a project', tags: ['projects'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const unarchived = await projectService.unarchiveProject(id);
+      if (!unarchived) {
+        return reply.status(404).send({ error: 'Not found', message: 'Project not found or not archived' });
+      }
+      return { message: 'Project unarchived' };
+    } catch (error) {
+      logger.error('Unarchive project error', { error });
+      return reply.status(500).send({ error: 'Internal server error', message: 'Failed to unarchive project' });
     }
   });
 

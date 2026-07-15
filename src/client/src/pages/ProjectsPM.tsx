@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, FolderKanban } from 'lucide-react';
+import { Plus, FolderKanban, Archive } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { FilterBarPM } from '../components/pm/FilterBarPM';
@@ -25,11 +25,12 @@ export function ProjectsPM() {
   const [search, setSearch] = useState('');
   const [healthFilter, setHealthFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showArchived, setShowArchived] = useState(false);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
 
   const { data: allProjectsData, isLoading } = useQuery({
-    queryKey: ['pm-all-projects'],
-    queryFn: () => apiService.getProjects('portfolio'),
+    queryKey: ['pm-all-projects', showArchived],
+    queryFn: () => apiService.getProjects('portfolio', showArchived),
     staleTime: 120_000,
   });
 
@@ -62,6 +63,7 @@ export function ProjectsPM() {
     budgetAllocated: p.budgetAllocated ?? p.budget ?? 0,
     budgetSpent: p.budgetSpent ?? p.spent ?? 0,
     endDate: p.endDate || p.plannedEndDate || '',
+    archivedAt: p.archivedAt ?? undefined,
     daysLeft: p.daysLeft ?? (() => {
       if (!p.endDate && !p.plannedEndDate) return undefined;
       try {
@@ -135,14 +137,24 @@ export function ProjectsPM() {
             )}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setTemplatePickerOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          New Project
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowArchived(v => !v)}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${showArchived ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+          >
+            <Archive className="w-4 h-4" />
+            {showArchived ? 'Hide Archived' : 'Show Archived'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTemplatePickerOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            New Project
+          </button>
+        </div>
       </div>
 
       {/* Filter bar */}

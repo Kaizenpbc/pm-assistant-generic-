@@ -34,6 +34,7 @@ export interface Project {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  archivedAt?: string;
 }
 
 export interface CreateProjectData {
@@ -66,12 +67,12 @@ export class ProjectService {
     return projectRepository.findByUserId(userId);
   }
 
-  async findByUserIdPaginated(userId: string, limit: number, offset: number): Promise<{ rows: Project[]; total: number }> {
-    return projectRepository.findByUserIdPaginated(userId, limit, offset);
+  async findByUserIdPaginated(userId: string, limit: number, offset: number, includeArchived = false): Promise<{ rows: Project[]; total: number }> {
+    return projectRepository.findByUserIdPaginated(userId, limit, offset, includeArchived);
   }
 
-  async findAllPaginated(limit: number, offset: number): Promise<{ rows: Project[]; total: number }> {
-    return projectRepository.findAllPaginated(limit, offset);
+  async findAllPaginated(limit: number, offset: number, includeArchived = false): Promise<{ rows: Project[]; total: number }> {
+    return projectRepository.findAllPaginated(limit, offset, includeArchived);
   }
 
   async findAll(): Promise<Project[]> {
@@ -209,6 +210,18 @@ export class ProjectService {
     }
 
     return deleted;
+  }
+
+  async archiveProject(id: string): Promise<boolean> {
+    const result = await projectRepository.archiveProject(id);
+    if (result) cachedProject.invalidate(id).catch(() => {});
+    return result;
+  }
+
+  async unarchiveProject(id: string): Promise<boolean> {
+    const result = await projectRepository.unarchiveProject(id);
+    if (result) cachedProject.invalidate(id).catch(() => {});
+    return result;
   }
 }
 

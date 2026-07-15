@@ -31,6 +31,7 @@ export interface ProjectSummaryPM {
   budgetSpent: number;
   endDate?: string;
   daysLeft?: number;
+  archivedAt?: string;
 }
 
 export interface TaskPM {

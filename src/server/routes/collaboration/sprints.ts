@@ -4,6 +4,7 @@ import { sprintService } from '../../services/SprintService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
+import { webhookService } from '../../services/WebhookService';
 import { paginate } from '../../dto/responses';
 import { parsePagination } from '../../schemas/paginationSchema';
 import logger from '../../utils/logger';
@@ -29,6 +30,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const user = request.user!;
       const body = createSprintSchema.parse(request.body);
       const sprint = await sprintService.create(body.projectId, body.scheduleId, body, user.userId);
+      webhookService.dispatch('sprint.created', { sprint }, user.userId);
       return reply.status(201).send({ sprint });
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
@@ -126,6 +128,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string };
       const sprint = await sprintService.startSprint(id);
+      webhookService.dispatch('sprint.started', { sprint }, request.user!.userId);
       return { sprint };
     } catch (error) {
       logger.error('Start sprint error', { error });
@@ -138,6 +141,7 @@ export async function sprintRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string };
       const sprint = await sprintService.completeSprint(id);
+      webhookService.dispatch('sprint.completed', { sprint }, request.user!.userId);
       return { sprint };
     } catch (error) {
       logger.error('Complete sprint error', { error });

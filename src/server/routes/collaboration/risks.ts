@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { riskService } from '../../services/RiskService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { webhookService } from '../../services/WebhookService';
 import { PredictiveIntelligenceService } from '../../services/predictiveIntelligence';
 import { lessonsLearnedService } from '../../services/LessonsLearnedService';
 import { projectService } from '../../services/ProjectService';
@@ -139,6 +140,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
       }
 
       const risk = await riskService.create({ ...body, projectId, createdBy: userId }, userRole);
+      webhookService.dispatch('risk.created', { risk, projectId }, userId);
       return reply.status(201).send({ data: risk });
     } catch (err) {
       if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });
@@ -158,6 +160,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
       const userId = request.user!.userId;
       const risk = await riskService.update(riskId, body, userId);
       if (!risk) return reply.status(404).send({ error: 'RAID item not found' });
+      webhookService.dispatch('risk.updated', { risk }, userId);
       return reply.send({ data: risk });
     } catch (err) {
       if (err instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: err.issues });

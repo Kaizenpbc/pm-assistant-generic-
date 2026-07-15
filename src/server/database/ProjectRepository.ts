@@ -30,6 +30,7 @@ function rowToProject(row: any): Project {
     createdBy: row.created_by,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
+    archivedAt: row.archived_at ? String(row.archived_at) : undefined,
   };
 }
 
@@ -67,8 +68,9 @@ export class ProjectRepository extends BaseRepository<Project> {
     return rows.length > 0 ? rowToProject(rows[0]) : null;
   }
 
-  async findAllPaginated(limit: number, offset: number): Promise<{ rows: Project[]; total: number }> {
-    return this.queryPaginated('1=1', [], 'created_at DESC', limit, offset);
+  async findAllPaginated(limit: number, offset: number, includeArchived = false): Promise<{ rows: Project[]; total: number }> {
+    const where = includeArchived ? '1=1' : 'archived_at IS NULL';
+    return this.queryPaginated(where, [], 'created_at DESC', limit, offset);
   }
 
   async findByUserId(userId: string): Promise<Project[]> {
@@ -82,18 +84,19 @@ export class ProjectRepository extends BaseRepository<Project> {
     return this.mapRows(rows);
   }
 
-  async findByUserIdPaginated(userId: string, limit: number, offset: number): Promise<{ rows: Project[]; total: number }> {
+  async findByUserIdPaginated(userId: string, limit: number, offset: number, includeArchived = false): Promise<{ rows: Project[]; total: number }> {
+    const archiveFilter = includeArchived ? '' : ' AND p.archived_at IS NULL';
     const countRows = await this.queryRaw(
       `SELECT COUNT(DISTINCT p.id) as count FROM projects p
        LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = ?
-       WHERE p.created_by = ? OR pm.user_id IS NOT NULL`,
+       WHERE (p.created_by = ? OR pm.user_id IS NOT NULL)${archiveFilter}`,
       [userId, userId],
     );
     const total = Number(countRows[0]?.count ?? 0);
     const rows = await this.queryRaw(
       `SELECT DISTINCT p.* FROM projects p
        LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = ?
-       WHERE p.created_by = ? OR pm.user_id IS NOT NULL
+       WHERE (p.created_by = ? OR pm.user_id IS NOT NULL)${archiveFilter}
        ORDER BY p.created_at DESC
        LIMIT ? OFFSET ?`,
       [userId, userId, limit, offset],
@@ -142,6 +145,22 @@ export class ProjectRepository extends BaseRepository<Project> {
     result.values.push(id);
     await this.queryRaw(result.sql, result.values);
     return (await this.findById(id))!;
+  }
+
+  async archiveProject(id: string): Promise<boolean> {
+    const rows = await this.queryRaw(
+      'UPDATE projects SET archived_at = NOW() WHERE id = ? AND archived_at IS NULL',
+      [id],
+    );
+    return (rows as any)?.affectedRows > 0;
+  }
+
+  async unarchiveProject(id: string): Promise<boolean> {
+    const rows = await this.queryRaw(
+      'UPDATE projects SET archived_at = NULL WHERE id = ? AND archived_at IS NOT NULL',
+      [id],
+    );
+    return (rows as any)?.affectedRows > 0;
   }
 
   async deleteForUser(id: string, userId: string): Promise<boolean> {

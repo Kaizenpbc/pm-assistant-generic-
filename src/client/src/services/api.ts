@@ -167,9 +167,12 @@ class ApiService {
   // Project endpoints
   // -------------------------------------------------------------------------
 
-  async getProjects(scope?: 'portfolio') {
-    const params = scope ? `?scope=${scope}` : '';
-    const response = await this.api.get(`/projects${params}`);
+  async getProjects(scope?: 'portfolio', includeArchived = false) {
+    const qp = new URLSearchParams();
+    if (scope) qp.set('scope', scope);
+    if (includeArchived) qp.set('includeArchived', 'true');
+    const qs = qp.toString();
+    const response = await this.api.get(`/projects${qs ? `?${qs}` : ''}`);
     return response.data;
   }
 
@@ -207,6 +210,16 @@ class ApiService {
 
   async deleteProject(id: string) {
     const response = await this.api.delete(`/projects/${id}`);
+    return response.data;
+  }
+
+  async archiveProject(id: string) {
+    const response = await this.api.post(`/projects/${id}/archive`);
+    return response.data;
+  }
+
+  async unarchiveProject(id: string) {
+    const response = await this.api.post(`/projects/${id}/unarchive`);
     return response.data;
   }
 
@@ -1993,6 +2006,15 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
 
   async bulkUpdateTaskStatus(scheduleId: string, taskIds: string[], status: string) {
     const response = await this.api.put('/bulk/tasks/status', { scheduleId, taskIds, status });
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Webhook Deliveries
+  // -------------------------------------------------------------------------
+
+  async getWebhookDeliveries(webhookId: string, page = 1, limit = 20) {
+    const response = await this.api.get(`/webhooks/${webhookId}/deliveries`, { params: { page, limit } });
     return response.data;
   }
 

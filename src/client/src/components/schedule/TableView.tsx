@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Pencil, Check, Loader2, X, Trash2, CheckSquare } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Pencil, Check, Loader2, X, Trash2, CheckSquare, Download } from 'lucide-react';
 import type { GanttTask } from './GanttChart';
 import { apiService } from '../../services/api';
 import { SavedViewsDropdown, type SavedView } from './SavedViewsDropdown';
+import { exportTasksCSV } from '../../utils/exportUtils';
 import type { ColumnKey, ColumnDef } from './tableColumns';
 import type { ColumnState } from '../../hooks/useColumnState';
 
@@ -552,11 +553,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     if (!value || selectedIds.size === 0) return;
     setBulkLoading(true);
     try {
-      await Promise.all(
-        Array.from(selectedIds).map(taskId =>
-          apiService.updateTask(scheduleId, taskId, { [field]: value })
-        )
-      );
+      const taskIds = Array.from(selectedIds);
+      if (field === 'status') {
+        await apiService.bulkUpdateTaskStatus(scheduleId, taskIds, value);
+      } else {
+        await apiService.bulkUpdateTasks(
+          taskIds.map(id => ({ id, scheduleId, [field]: value }))
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ['tasks', scheduleId] });
       showBulkSuccess(`Updated ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''}`);
       clearBulkState();
@@ -989,6 +993,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
       {/* Saved views header */}
       <div className="flex items-center justify-end gap-1.5 px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+        <button
+          onClick={() => exportTasksCSV(sorted, 'tasks')}
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          title="Export to CSV"
+        >
+          <Download className="w-3.5 h-3.5" />
+          CSV
+        </button>
         <SavedViewsDropdown
           scheduleId={scheduleId}
           currentColumns={visibleKeys}

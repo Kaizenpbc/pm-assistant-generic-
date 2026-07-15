@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { webhookService } from '../../services/WebhookService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { parsePagination } from '../../schemas/paginationSchema';
 import logger from '../../utils/logger';
 
 const createWebhookSchema = z.object({
@@ -81,6 +82,26 @@ export async function webhookRoutes(fastify: FastifyInstance) {
     } catch (error) {
       logger.error('Delete webhook error', { error });
       return reply.status(500).send({ error: 'Failed to delete webhook' });
+    }
+  });
+
+  // GET /:id/deliveries — Delivery log
+  fastify.get('/:id/deliveries', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = request.user!;
+      if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
+
+      const { id } = request.params as { id: string };
+      // Verify webhook belongs to user
+      const webhook = await webhookService.getById(user.userId, id);
+      if (!webhook) return reply.status(404).send({ error: 'Webhook not found' });
+
+      const { limit, offset } = parsePagination(request.query as Record<string, unknown>);
+      const deliveries = await webhookService.getDeliveries(id, limit, offset);
+      return deliveries;
+    } catch (error) {
+      logger.error('Get webhook deliveries error', { error });
+      return reply.status(500).send({ error: 'Failed to fetch webhook deliveries' });
     }
   });
 

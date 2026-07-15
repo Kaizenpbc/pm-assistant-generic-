@@ -4,6 +4,7 @@ import { approvalWorkflowService } from '../../services/ApprovalWorkflowService'
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
+import { webhookService } from '../../services/WebhookService';
 import logger from '../../utils/logger';
 
 const workflowStepSchema = z.object({
@@ -104,6 +105,7 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       const { projectId } = request.params as { projectId: string };
       const body = createChangeRequestSchema.parse(request.body);
       const changeRequest = await approvalWorkflowService.createChangeRequest(projectId, { ...body, requestedBy: user.userId });
+      webhookService.dispatch('change_request.created', { changeRequest, projectId }, user.userId);
       return { changeRequest };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
@@ -192,6 +194,8 @@ export async function approvalWorkflowRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const { action, comment } = actOnStepSchema.parse(request.body);
       const result = await approvalWorkflowService.actOnStep(id, user.userId, action, comment);
+      const eventName = action === 'approve' ? 'change_request.approved' : 'change_request.rejected';
+      webhookService.dispatch(eventName, { changeRequestId: id, action, comment }, user.userId);
       return { result };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Calendar, ExternalLink, BarChart2, Star } from 'lucide-react';
+import { Calendar, ExternalLink, BarChart2, Star, Archive, ArchiveRestore } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../../services/api';
 import type { ProjectSummaryPM } from '../../types/pm';
@@ -81,12 +81,20 @@ export function ProjectCardPM({ project, isFavourite = false }: ProjectCardPMPro
     daysLeft,
   } = project;
 
+  const isArchived = !!project.archivedAt;
+
   const queryClient = useQueryClient();
   const toggleFav = useMutation({
     mutationFn: () => isFavourite ? apiService.unfavouriteProject(id) : apiService.favouriteProject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pm-all-projects'] });
       queryClient.invalidateQueries({ queryKey: ['favourite-projects'] });
+    },
+  });
+  const toggleArchive = useMutation({
+    mutationFn: () => isArchived ? apiService.unarchiveProject(id) : apiService.archiveProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pm-all-projects'] });
     },
   });
 
@@ -143,6 +151,11 @@ export function ProjectCardPM({ project, isFavourite = false }: ProjectCardPMPro
             {methodology === 'agile' ? 'Agile' : 'Hybrid'}
           </span>
         )}
+        {isArchived && (
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
+            Archived
+          </span>
+        )}
       </div>
 
       {/* Progress */}
@@ -188,6 +201,13 @@ export function ProjectCardPM({ project, isFavourite = false }: ProjectCardPMPro
         >
           <BarChart2 className="w-3.5 h-3.5" />
         </Link>
+        <button
+          onClick={() => toggleArchive.mutate()}
+          title={isArchived ? 'Unarchive project' : 'Archive project'}
+          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          {isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+        </button>
       </div>
     </div>
   );

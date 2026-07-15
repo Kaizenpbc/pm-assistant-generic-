@@ -103,6 +103,9 @@ export interface CreateTaskData {
   createdBy: string;
   /** Multi-dependency support */
   dependencies?: Array<{ dependencyId: string; dependencyType?: 'FS' | 'SS' | 'FF' | 'SF'; lagDays?: number }>;
+  recurrenceRule?: string;
+  recurrenceParentId?: string;
+  isRecurrenceTemplate?: boolean;
 }
 
 export interface TaskComment {
@@ -303,8 +306,9 @@ export class ScheduleService {
         `INSERT INTO tasks (id, schedule_id, name, description, status, priority, assigned_to,
           due_date, estimated_days, estimated_duration_hours, actual_duration_hours,
           start_date, end_date, progress_percentage, dependency, dependency_type,
-          risks, issues, comments, parent_task_id, is_milestone, dependency_lag_days, sort_order, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          risks, issues, comments, parent_task_id, is_milestone, dependency_lag_days, sort_order, created_by,
+          recurrence_rule, recurrence_parent_id, is_recurrence_template)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           data.scheduleId,
@@ -330,6 +334,9 @@ export class ScheduleService {
           legacyLag,
           sortOrder,
           data.createdBy,
+          data.recurrenceRule || null,
+          data.recurrenceParentId || null,
+          data.isRecurrenceTemplate ? 1 : 0,
         ],
       );
 
