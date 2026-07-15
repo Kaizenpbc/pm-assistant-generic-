@@ -70,6 +70,7 @@ Hardening, testing, and UX improvements.
 | 22 | Drag-and-drop Kanban | Done -- Both `SprintBoard.tsx` and `KanbanBoard.tsx` use native HTML5 DnD API with `draggable` cards, `onDragStart`/`onDragOver`/`onDragLeave`/`onDrop` handlers, `ring-2 ring-primary-400` visual highlight on target column, "Drop here" text in empty columns, `cursor-grab`/`active:cursor-grabbing` on cards, and optimistic local state updates (`localTaskOverrides` in SprintBoard). | Done |
 | 23 | Gantt dependency arrows | Done -- SVG overlay renders arrows between dependent tasks for all 4 dependency types (FS/SS/FF/SF). Color-coded by health: green (satisfied), yellow (in progress), red (violated). Click-drag from bar edge to create dependencies with blue dashed preview line. Edit/remove via inline Pred column. | Done |
 | 24 | Notification preferences | Per-user settings for which notifications to receive (overdue, mentions, approvals, digests) and channel (email vs in-app). | Medium |
+| 25 | User support & admin troubleshooting | Done -- Support mailto links (pre-filled subject/body with context) on login page, 404 page, and both error boundaries. Admin Users page: login status badges (verified/unverified/pending/expired), "Unlock" button to clear stuck login tokens. `POST /admin/users/:id/clear-login-token` endpoint. | Done |
 
 ---
 
@@ -79,10 +80,10 @@ Server-side hardening and optimization.
 
 | # | Item | Description | Effort |
 |---|------|-------------|--------|
-| 25 | API response compression | Enable gzip/brotli compression on Fastify API responses. Nginx handles static files but API JSON payloads are uncompressed. | Small |
-| 26 | Database connection pool tuning | Profile and tune MariaDB pool size, idle timeout, and queue limits for the 1GB Oracle Cloud VM. | Small |
-| 27 | Log rotation | Configure Winston file transport with daily rotation, max file size, and retention policy. Prevent unbounded log growth. | Small |
-| 28 | Sprint goal tracking | Visual progress indicator on sprint cards showing goal completion based on linked task statuses. | Small |
+| 26 | API response compression | Enable gzip/brotli compression on Fastify API responses. Nginx handles static files but API JSON payloads are uncompressed. | Small |
+| 27 | Database connection pool tuning | Profile and tune MariaDB pool size, idle timeout, and queue limits for the 1GB Oracle Cloud VM. | Small |
+| 28 | Log rotation | Configure Winston file transport with daily rotation, max file size, and retention policy. Prevent unbounded log growth. | Small |
+| 29 | Sprint goal tracking | Visual progress indicator on sprint cards showing goal completion based on linked task statuses. | Small |
 
 ---
 
@@ -92,8 +93,8 @@ AI-powered features building on Claude and RAG infrastructure.
 
 | # | Item | Description | Effort |
 |---|------|-------------|--------|
-| 29 | RAG auto-indexing | Auto-index lessons and meetings on create/update instead of requiring manual backfill. Hook into service layer. | Small |
-| 30 | AI task estimation | Use historical task data (estimated vs actual days by project type, category) to suggest estimated_days for new tasks via Claude. | Medium |
+| 30 | RAG auto-indexing | Auto-index lessons and meetings on create/update instead of requiring manual backfill. Hook into service layer. | Small |
+| 31 | AI task estimation | Use historical task data (estimated vs actual days by project type, category) to suggest estimated_days for new tasks via Claude. | Medium |
 
 ---
 
