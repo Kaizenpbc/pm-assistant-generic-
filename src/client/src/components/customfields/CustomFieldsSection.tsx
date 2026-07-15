@@ -61,10 +61,10 @@ export function CustomFieldsSection({ entityType, entityId, projectId }: CustomF
 
   return (
     <div className="space-y-3">
-      <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Custom Fields</h4>
+      <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Custom Fields</h4>
       {fields.map((field: any) => (
         <div key={field.id}>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
             {field.fieldLabel}
             {field.isRequired && <span className="text-red-500 ml-0.5">*</span>}
           </label>
@@ -112,7 +112,7 @@ export function CustomFieldsSection({ entityType, entityId, projectId }: CustomF
             </select>
           )}
           {field.fieldType === 'checkbox' && (
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <input
                 type="checkbox"
                 checked={!!values[field.id]}

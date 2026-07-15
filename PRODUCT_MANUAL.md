@@ -1019,7 +1019,7 @@ Touch support is added to all Gantt chart drag interactions, enabling full use o
 
 A global dark theme is available throughout the application. The user toggles it via the **dark mode button** in the TopBar. The selected theme is persisted in `themeStore` (localStorage) and applied immediately by adding the `dark` class to the root `<html>` element. All UI components and pages use Tailwind `dark:` variant classes so colours, borders, and backgrounds switch automatically.
 
-**Full coverage:** Every page in the application has `dark:` companion classes — including all auth pages (Login, Register, Forgot/Reset Password, Verify Email), public pages (Landing, Pricing, Privacy, Terms), dashboard pages (Executive, Portfolio, Analytics), tool pages (Report Builder, Workflow, Monte Carlo, Scenario Modeling), admin pages, and all shared components (report designer/preview, lessons cards, etc.).
+**Full coverage:** Every page in the application has `dark:` companion classes — including all auth pages (Login, Register, Forgot/Reset Password, Verify Email), public pages (Landing, Pricing, Privacy, Terms), dashboard pages (Executive, Portfolio, Analytics), tool pages (Report Builder, Workflow, Monte Carlo, Scenario Modeling), admin pages, and all shared components (report designer/preview, lessons cards, task form modal, notification bell, time tracking, custom fields, attachments, templates, timesheet grid, etc.).
 
 ---
 
@@ -1777,3 +1777,41 @@ The **Admin > Users** page displays a **Login status** badge per user:
 When a user has a pending or expired token, an **Unlock** button appears in the Actions column. Clicking it clears the `login_verification_token` and `login_verification_expires` fields so the user can retry login.
 
 **API endpoint:** `POST /api/v1/admin/users/:id/clear-login-token` (admin role required). Returns `{ message: "Login verification token cleared" }`.
+
+---
+
+## 48. WebSocket Reconnection with Exponential Backoff
+
+The WebSocket connection in `useWebSocket.ts` uses exponential backoff with jitter for automatic reconnection. When the connection drops, it retries with increasing delays (1s base, doubling each attempt, max 30s, +/-30% jitter) up to 20 attempts. A `ConnectionStatus` indicator in the TopBar shows the current state:
+
+- **Connected:** Tiny green dot, auto-fades after 3 seconds
+- **Connecting:** Amber pulsing dot with "Reconnecting..." tooltip
+- **Disconnected:** Red dot with a clickable "Reconnect" link that resets attempts and triggers immediate reconnection
+
+Exported hooks: `useConnectionState()` returns the current `WsConnectionState` (`'connected' | 'connecting' | 'disconnected'`). `reconnectNow()` forces an immediate reconnect attempt.
+
+---
+
+## 49. Favourite / Pinned Projects
+
+Users can favourite (star) projects for quick access. Favourited projects appear at the top of the Projects page and in a "Pinned" section in the sidebar (up to 5).
+
+### Database
+
+`user_favourite_projects` table with composite PK `(user_id, project_id)` and FK cascade on project delete (migration 058).
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/projects/favourites` | Get user's favourite projects (full objects) |
+| `POST` | `/api/v1/projects/:id/favourite` | Add project to favourites |
+| `DELETE` | `/api/v1/projects/:id/favourite` | Remove project from favourites |
+
+The `GET /api/v1/projects` response now includes an `isFavourite` boolean flag per project.
+
+### UI
+
+- **Project cards** show a star icon in the header — filled amber when favourited, outline when not. Click toggles the state.
+- **Projects page** sorts favourited projects to the top of the grid.
+- **Sidebar** shows a "Pinned" section below the main navigation (PM view only) with up to 5 favourite projects as direct links.

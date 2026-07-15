@@ -8,6 +8,7 @@ import { webhookService } from '../../services/WebhookService';
 import { auditLedgerService } from '../../services/AuditLedgerService';
 import { toProjectDTO, paginate } from '../../dto/responses';
 import { parsePagination } from '../../schemas/paginationSchema';
+import { favouriteProjectRepository } from '../../database/FavouriteProjectRepository';
 import logger from '../../utils/logger';
 
 const createProjectSchema = z.object({
@@ -49,8 +50,12 @@ export async function projectRoutes(fastify: FastifyInstance) {
       const { rows, total } = globalRoles.includes(user.role)
         ? await projectService.findAllPaginated(limit, offset)
         : await projectService.findByUserIdPaginated(user.userId, limit, offset);
+      const projectDTOs = rows.map(toProjectDTO);
+      const projectIds = projectDTOs.map((p: any) => p.id);
+      const favMap = await favouriteProjectRepository.isFavouriteMap(user.userId, projectIds);
+      const enriched = projectDTOs.map((p: any) => ({ ...p, isFavourite: !!favMap[p.id] }));
       const page = Math.floor(offset / limit) + 1;
-      return paginate(rows.map(toProjectDTO), total, page, limit);
+      return paginate(enriched, total, page, limit);
     } catch (error) {
       logger.error('Get projects error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch projects' });
@@ -173,6 +178,56 @@ export async function projectRoutes(fastify: FastifyInstance) {
     } catch (error) {
       logger.error('Delete project error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to delete project' });
+    }
+  });
+
+  // ── Favourites ──────────────────────────────────────────────────────────
+
+  fastify.get('/favourites', {
+    preHandler: [requireScope('read')],
+    schema: { description: 'Get favourite projects', tags: ['projects'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = request.user!.userId;
+      const projectIds = await favouriteProjectRepository.getByUserId(userId);
+      if (projectIds.length === 0) return { projects: [] };
+      const projects = await Promise.all(
+        projectIds.map((id) => projectService.findById(id)),
+      );
+      return { projects: projects.filter(Boolean).map((p) => ({ ...toProjectDTO(p!), isFavourite: true })) };
+    } catch (error) {
+      logger.error('Get favourite projects error', { error });
+      return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch favourite projects' });
+    }
+  });
+
+  fastify.post('/:id/favourite', {
+    preHandler: [requireScope('read')],
+    schema: { description: 'Add project to favourites', tags: ['projects'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const userId = request.user!.userId;
+      await favouriteProjectRepository.add(userId, id);
+      return { message: 'Project added to favourites' };
+    } catch (error) {
+      logger.error('Add favourite error', { error });
+      return reply.status(500).send({ error: 'Internal server error', message: 'Failed to add favourite' });
+    }
+  });
+
+  fastify.delete('/:id/favourite', {
+    preHandler: [requireScope('read')],
+    schema: { description: 'Remove project from favourites', tags: ['projects'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const userId = request.user!.userId;
+      await favouriteProjectRepository.remove(userId, id);
+      return { message: 'Project removed from favourites' };
+    } catch (error) {
+      logger.error('Remove favourite error', { error });
+      return reply.status(500).send({ error: 'Internal server error', message: 'Failed to remove favourite' });
     }
   });
 }

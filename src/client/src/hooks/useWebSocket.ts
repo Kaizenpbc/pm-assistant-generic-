@@ -4,7 +4,16 @@ import { useQueryClient } from '@tanstack/react-query';
 const WS_URL = import.meta.env.DEV
   ? 'ws://localhost:3001/api/v1/ws'
   : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v1/ws`;
-const RECONNECT_DELAY = 3000;
+
+const BACKOFF_BASE = 1000;
+const BACKOFF_MAX = 30000;
+const MAX_ATTEMPTS = 20;
+
+function getBackoffDelay(attempt: number): number {
+  const base = Math.min(BACKOFF_BASE * Math.pow(2, attempt), BACKOFF_MAX);
+  const jitter = base * 0.3 * (Math.random() * 2 - 1); // ±30%
+  return Math.round(base + jitter);
+}
 
 // Module-level WebSocket reference for sending messages from anywhere
 let globalWs: WebSocket | null = null;
@@ -45,6 +54,41 @@ export function usePresenceViewers(projectId: string | undefined): { userId: str
   return viewers;
 }
 
+// Module-level connection state with custom event dispatch
+export type WsConnectionState = 'connected' | 'connecting' | 'disconnected';
+const CONNECTION_STATE_EVENT = 'ws:connection_state';
+let connectionState: WsConnectionState = 'disconnected';
+let reconnectAttempts = 0;
+let pendingReconnect: ReturnType<typeof setTimeout> | null = null;
+let connectFn: (() => void) | null = null;
+
+function setConnectionState(state: WsConnectionState) {
+  connectionState = state;
+  window.dispatchEvent(new CustomEvent(CONNECTION_STATE_EVENT, { detail: { state } }));
+}
+
+export function useConnectionState(): WsConnectionState {
+  const [state, setState] = useState<WsConnectionState>(connectionState);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setState((e as CustomEvent).detail.state);
+    };
+    window.addEventListener(CONNECTION_STATE_EVENT, handler);
+    return () => window.removeEventListener(CONNECTION_STATE_EVENT, handler);
+  }, []);
+
+  return state;
+}
+
+export function reconnectNow() {
+  if (pendingReconnect) clearTimeout(pendingReconnect);
+  pendingReconnect = null;
+  reconnectAttempts = 0;
+  setConnectionState('connecting');
+  connectFn?.();
+}
+
 export function useWebSocket() {
   const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
@@ -53,12 +97,15 @@ export function useWebSocket() {
   useEffect(() => {
     function connect() {
       try {
+        setConnectionState('connecting');
         const ws = new WebSocket(WS_URL);
         wsRef.current = ws;
         globalWs = ws;
 
         ws.onopen = () => {
           console.log('[WS] Connected');
+          reconnectAttempts = 0;
+          setConnectionState('connected');
         };
 
         ws.onmessage = (event) => {
@@ -93,20 +140,39 @@ export function useWebSocket() {
         };
 
         ws.onclose = () => {
-          console.log('[WS] Disconnected, reconnecting...');
+          console.log('[WS] Disconnected');
           wsRef.current = null;
           if (globalWs === ws) globalWs = null;
-          reconnectTimeoutRef.current = setTimeout(connect, RECONNECT_DELAY);
+          reconnectAttempts++;
+          if (reconnectAttempts < MAX_ATTEMPTS) {
+            const delay = getBackoffDelay(reconnectAttempts);
+            console.log(`[WS] Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_ATTEMPTS})`);
+            setConnectionState('connecting');
+            pendingReconnect = setTimeout(connect, delay);
+            reconnectTimeoutRef.current = pendingReconnect;
+          } else {
+            console.log('[WS] Max reconnect attempts reached');
+            setConnectionState('disconnected');
+          }
         };
 
         ws.onerror = () => {
           ws.close();
         };
       } catch {
-        reconnectTimeoutRef.current = setTimeout(connect, RECONNECT_DELAY);
+        reconnectAttempts++;
+        if (reconnectAttempts < MAX_ATTEMPTS) {
+          const delay = getBackoffDelay(reconnectAttempts);
+          setConnectionState('connecting');
+          pendingReconnect = setTimeout(connect, delay);
+          reconnectTimeoutRef.current = pendingReconnect;
+        } else {
+          setConnectionState('disconnected');
+        }
       }
     }
 
+    connectFn = connect;
     connect();
 
     return () => {

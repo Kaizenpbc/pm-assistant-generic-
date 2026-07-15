@@ -259,11 +259,11 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={handleClose} aria-hidden="true" />
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={stepTitles[step]} onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-full sm:max-w-2xl mx-2 sm:mx-4 max-h-[85vh] flex flex-col">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={stepTitles[step]} onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-full sm:max-w-2xl mx-2 sm:mx-4 max-h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">{stepTitles[step]}</h2>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{stepTitles[step]}</h2>
             <div className="flex items-center gap-2 mt-1.5">
               {stepIndicators.map((s, i) => (
                 <React.Fragment key={s.label}>
@@ -271,10 +271,10 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
                   <span
                     className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                       s.active
-                        ? 'bg-primary-100 text-primary-700'
+                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
                         : s.completed
-                          ? 'bg-green-100 text-green-700'
-                          : 'text-gray-400'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          : 'text-gray-400 dark:text-gray-500'
                     }`}
                   >
                     {s.label}
@@ -285,7 +285,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
           </div>
           <button
             onClick={handleClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -295,9 +295,9 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
         <div className="flex-1 overflow-y-auto p-6">
           {/* Error banner */}
           {errorMessage && (
-            <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <span className="text-xs text-red-700">{errorMessage}</span>
+              <span className="text-xs text-red-700 dark:text-red-400">{errorMessage}</span>
             </div>
           )}
 
@@ -319,7 +319,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
               })}
               <button
                 onClick={() => handleCategorySelect('scratch')}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-500 transition-all"
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-500 transition-all"
               >
                 <FileText className="w-8 h-8" />
                 <span className="text-sm font-medium">Start from Scratch</span>
@@ -332,17 +332,17 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
             <div>
               <button
                 onClick={() => { setStep('category'); setSelectedCategory(null); }}
-                className="text-xs text-gray-500 hover:text-gray-700 mb-3 flex items-center gap-1"
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-3 flex items-center gap-1"
               >
                 &larr; Back to categories
               </button>
               {isTemplatesError ? (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
                   Failed to load templates. Please try again.
                 </div>
               ) : templates.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-sm text-gray-500">No templates found for this category.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No templates found for this category.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -361,7 +361,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
 
           {/* Template detail error */}
           {(step === 'preview' || step === 'customize') && isTemplateDetailError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
               Failed to load template details. Please try again.
             </div>
           )}

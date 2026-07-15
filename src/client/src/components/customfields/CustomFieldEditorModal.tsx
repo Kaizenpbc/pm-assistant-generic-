@@ -70,17 +70,17 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-md mx-4 bg-white rounded-xl shadow-2xl" role="dialog" aria-modal="true">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
-          <h3 className="text-sm font-bold text-gray-900">{isEdit ? 'Edit Field' : 'Add Custom Field'}</h3>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+      <div className="relative w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl" role="dialog" aria-modal="true">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{isEdit ? 'Edit Field' : 'Add Custom Field'}</h3>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Label <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Label <span className="text-red-500">*</span></label>
             <input
               type="text"
               value={form.fieldLabel}
@@ -93,7 +93,7 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Type</label>
             <select
               value={form.fieldType}
               onChange={(e) => setForm(p => ({ ...p, fieldType: e.target.value }))}
@@ -109,11 +109,11 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
 
           {form.fieldType === 'dropdown' && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Options</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Options</label>
               <div className="space-y-1 mb-2">
                 {form.options.map((opt: string, i: number) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="text-sm text-gray-700 flex-1">{opt}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{opt}</span>
                     <button
                       type="button"
                       onClick={() => setForm(p => ({ ...p, options: p.options.filter((_: string, j: number) => j !== i) }))}
@@ -140,7 +140,7 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
             </div>
           )}
 
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <input
               type="checkbox"
               checked={form.isRequired}
@@ -151,7 +151,7 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
           </label>
 
           <div className="flex items-center justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
               Cancel
             </button>
             <button

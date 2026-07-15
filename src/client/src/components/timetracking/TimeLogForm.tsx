@@ -47,13 +47,13 @@ export function TimeLogForm({ taskId, scheduleId, projectId }: TimeLogFormProps)
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50">
-      <h5 className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2 bg-gray-50 dark:bg-gray-800/50">
+      <h5 className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
         <Clock className="w-3.5 h-3.5" /> Log Time
       </h5>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-0.5">Date</label>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Date</label>
           <input
             type="date"
             value={form.date}
@@ -62,7 +62,7 @@ export function TimeLogForm({ taskId, scheduleId, projectId }: TimeLogFormProps)
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-0.5">Hours</label>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Hours</label>
           <input
             type="number"
             step="0.25"
@@ -75,7 +75,7 @@ export function TimeLogForm({ taskId, scheduleId, projectId }: TimeLogFormProps)
         </div>
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-0.5">Description</label>
+        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Description</label>
         <input
           type="text"
           value={form.description}
@@ -84,7 +84,7 @@ export function TimeLogForm({ taskId, scheduleId, projectId }: TimeLogFormProps)
           className="input w-full text-xs"
         />
       </div>
-      <label className="flex items-center gap-1.5 text-xs text-gray-600">
+      <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
         <input
           type="checkbox"
           checked={form.billable}
@@ -102,7 +102,7 @@ export function TimeLogForm({ taskId, scheduleId, projectId }: TimeLogFormProps)
           <Plus className="w-3 h-3" />
           {createMutation.isPending ? 'Saving...' : 'Log'}
         </button>
-        <button onClick={() => setExpanded(false)} className="text-xs text-gray-500 hover:text-gray-700">
+        <button onClick={() => setExpanded(false)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
           Cancel
         </button>
       </div>

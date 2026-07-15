@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Calendar, ExternalLink, BarChart2 } from 'lucide-react';
+import { Calendar, ExternalLink, BarChart2, Star } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiService } from '../../services/api';
 import type { ProjectSummaryPM } from '../../types/pm';
 
 interface ProjectCardPMProps {
   project: ProjectSummaryPM;
+  isFavourite?: boolean;
 }
 
 function healthLabel(score: number): string {
@@ -64,7 +67,7 @@ function formatDate(dateStr?: string): string {
   }
 }
 
-export function ProjectCardPM({ project }: ProjectCardPMProps) {
+export function ProjectCardPM({ project, isFavourite = false }: ProjectCardPMProps) {
   const {
     id,
     name,
@@ -78,6 +81,15 @@ export function ProjectCardPM({ project }: ProjectCardPMProps) {
     daysLeft,
   } = project;
 
+  const queryClient = useQueryClient();
+  const toggleFav = useMutation({
+    mutationFn: () => isFavourite ? apiService.unfavouriteProject(id) : apiService.favouriteProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pm-all-projects'] });
+      queryClient.invalidateQueries({ queryKey: ['favourite-projects'] });
+    },
+  });
+
   const label = healthLabel(healthScore);
   const pct = Math.max(0, Math.min(100, Math.round(progress)));
 
@@ -90,9 +102,16 @@ export function ProjectCardPM({ project }: ProjectCardPMProps) {
         transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg
       `}
     >
-      {/* Top: name + health pill */}
+      {/* Top: name + star + health pill */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex items-center gap-1">
+          <button
+            onClick={() => toggleFav.mutate()}
+            className="flex-shrink-0 p-0.5 -ml-0.5 hover:scale-110 transition-transform"
+            aria-label={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+          >
+            <Star className={`w-3.5 h-3.5 ${isFavourite ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600 hover:text-amber-400'}`} />
+          </button>
           <Link
             to={`/project/${id}`}
             className="text-sm font-semibold text-gray-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors line-clamp-1"

@@ -210,6 +210,21 @@ class ApiService {
     return response.data;
   }
 
+  async getFavouriteProjects() {
+    const response = await this.api.get('/projects/favourites');
+    return response.data;
+  }
+
+  async favouriteProject(projectId: string) {
+    const response = await this.api.post(`/projects/${projectId}/favourite`);
+    return response.data;
+  }
+
+  async unfavouriteProject(projectId: string) {
+    const response = await this.api.delete(`/projects/${projectId}/favourite`);
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Schedule endpoints
   // -------------------------------------------------------------------------

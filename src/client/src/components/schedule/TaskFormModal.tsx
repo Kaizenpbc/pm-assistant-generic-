@@ -214,15 +214,15 @@ export function TaskFormModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl flex flex-col max-h-[90vh]" role="dialog" aria-modal="true" aria-labelledby="task-form-title">
+      <div className="relative w-full max-w-lg mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl flex flex-col max-h-[90vh]" role="dialog" aria-modal="true" aria-labelledby="task-form-title">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 id="task-form-title" className="text-base font-bold text-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 id="task-form-title" className="text-base font-bold text-gray-900 dark:text-gray-100">
             {isEdit ? 'Edit Task' : 'Add Task'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -232,7 +232,7 @@ export function TaskFormModal({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {/* Task Name */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
               Task Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -249,7 +249,7 @@ export function TaskFormModal({
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
               Description
             </label>
             <textarea
@@ -265,7 +265,7 @@ export function TaskFormModal({
           {/* Status + Priority row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Status</label>
               <select
                 name="status"
                 value={form.status}
@@ -278,7 +278,7 @@ export function TaskFormModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Priority</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Priority</label>
               <select
                 name="priority"
                 value={form.priority}
@@ -296,7 +296,7 @@ export function TaskFormModal({
           {/* Dates row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Start Date</label>
               <input
                 type="date"
                 name="startDate"
@@ -306,7 +306,7 @@ export function TaskFormModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">End Date</label>
               <input
                 type="date"
                 name="endDate"
@@ -320,7 +320,7 @@ export function TaskFormModal({
           {/* Progress + Estimated Days */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                 Progress: {form.progressPercentage}%
               </label>
               <input
@@ -330,7 +330,7 @@ export function TaskFormModal({
                 step="5"
                 value={form.progressPercentage}
                 onChange={handleProgressChange}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-primary-600"
               />
               <div className="flex justify-between text-xs text-gray-400 mt-0.5">
                 <span>0%</span>
@@ -339,7 +339,7 @@ export function TaskFormModal({
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                 Est. Duration (days)
               </label>
               <div className="flex gap-1.5">
@@ -360,7 +360,7 @@ export function TaskFormModal({
                     disabled={estimating || !form.name.trim()}
                     title="AI Estimate"
                     aria-label="AI Estimate duration"
-                    className="px-2 py-1.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                    className="px-2 py-1.5 rounded-md text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                   >
                     {estimating ? (
                       <div className="w-3.5 h-3.5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
@@ -371,14 +371,14 @@ export function TaskFormModal({
                 )}
               </div>
               {estimationHint && (
-                <p className="text-[10px] text-gray-500 mt-1 leading-tight">{estimationHint}</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-tight">{estimationHint}</p>
               )}
             </div>
           </div>
 
           {/* Assigned To */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Assigned To</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Assigned To</label>
             <input
               type="text"
               name="assignedTo"
@@ -391,7 +391,7 @@ export function TaskFormModal({
 
           {/* Parent Task */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Parent Task</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Parent Task</label>
             <select
               name="parentTaskId"
               value={form.parentTaskId}
@@ -411,7 +411,7 @@ export function TaskFormModal({
 
           {/* Multi-predecessor list */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
               Predecessors ({form.predecessors.length}/20)
             </label>
             {form.predecessors.map((pred, idx) => (
@@ -492,7 +492,7 @@ export function TaskFormModal({
               onChange={(e) => setForm((prev) => ({ ...prev, isMilestone: e.target.checked }))}
               className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
             />
-            <span className="text-xs font-medium text-gray-600">Mark as Milestone</span>
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Mark as Milestone</span>
           </label>
 
           {/* Recurrence */}
@@ -520,7 +520,7 @@ export function TaskFormModal({
         </form>
 
         {/* Footer buttons */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
           <div>
             {isEdit && onDelete && (
               <button
@@ -530,7 +530,7 @@ export function TaskFormModal({
                     onDelete(task.id);
                   }
                 }}
-                className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1.5 rounded-lg transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Delete
@@ -541,7 +541,7 @@ export function TaskFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -621,8 +621,8 @@ function RecurrenceSection({
 
   if (isRecurringInstance) {
     return (
-      <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
-        <span className="text-xs text-blue-700 font-medium">This is a recurring task instance</span>
+      <div className="rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 px-3 py-2">
+        <span className="text-xs text-blue-700 dark:text-blue-400 font-medium">This is a recurring task instance</span>
       </div>
     );
   }
@@ -646,7 +646,7 @@ function RecurrenceSection({
 
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">Recurrence</label>
+      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Recurrence</label>
       <div className="flex items-center gap-3">
         <select
           value={freq}
@@ -670,7 +670,7 @@ function RecurrenceSection({
                 className={`px-1.5 py-0.5 text-[10px] rounded font-medium transition-colors ${
                   selectedDays.includes(d.key)
                     ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 {d.label}

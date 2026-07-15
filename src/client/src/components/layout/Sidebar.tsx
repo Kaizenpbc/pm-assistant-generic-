@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   FileText,
   Settings,
@@ -25,9 +26,11 @@ import {
   BookOpen,
   GitPullRequest,
   TrendingUp,
+  Star,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { apiService } from '../../services/api';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -143,6 +146,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
+
+  const { data: favData } = useQuery({
+    queryKey: ['favourite-projects'],
+    queryFn: () => apiService.getFavouriteProjects(),
+    staleTime: 60_000,
+  });
+  const pinnedProjects: { id: string; name: string }[] = (favData?.projects || []).slice(0, 5);
 
   const navSections = isAdmin && adminView ? adminNavSections : pmNavSections;
 
@@ -279,6 +289,55 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
             </div>
           );
         })}
+
+        {/* Pinned / Favourite Projects */}
+        {pinnedProjects.length > 0 && !adminView && (
+          <div className="mb-1">
+            {!collapsed && (
+              <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-sidebar-text/40">
+                Pinned
+              </p>
+            )}
+            {collapsed && <div className="h-2" />}
+            {pinnedProjects.map((proj) => {
+              const active = location.pathname === `/project/${proj.id}`;
+              return (
+                <Link
+                  key={proj.id}
+                  to={`/project/${proj.id}`}
+                  title={collapsed ? proj.name : undefined}
+                  className={`
+                    group flex items-center rounded-lg
+                    transition-all duration-200 ease-in-out
+                    ${collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2'}
+                    ${
+                      active
+                        ? 'bg-sidebar-active text-sidebar-text-active shadow-lg shadow-primary-500/20'
+                        : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white'
+                    }
+                  `}
+                >
+                  <Star
+                    className={`
+                      flex-shrink-0 transition-colors duration-200
+                      ${collapsed ? 'w-5 h-5' : 'w-[18px] h-[18px]'}
+                      ${active ? 'fill-amber-400 text-amber-400' : 'fill-amber-400/60 text-amber-400/60 group-hover:fill-amber-400 group-hover:text-amber-400'}
+                    `}
+                  />
+                  <span
+                    className={`
+                      ml-3 text-sm font-medium whitespace-nowrap truncate
+                      transition-all duration-300
+                      ${collapsed ? 'sr-only' : 'block'}
+                    `}
+                  >
+                    {proj.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       {/* View Toggle + User Section */}

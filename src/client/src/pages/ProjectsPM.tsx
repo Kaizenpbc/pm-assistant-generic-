@@ -82,6 +82,12 @@ export function ProjectsPM() {
       p.createdBy === user?.id
   ).length;
 
+  // Build favourite set from API response
+  const favouriteSet = new Set<string>();
+  for (const p of rawProjects) {
+    if ((p as any).isFavourite) favouriteSet.add(p.id);
+  }
+
   // Apply filters
   const filtered = projects.filter((p) => {
     if (search.trim()) {
@@ -179,8 +185,12 @@ export function ProjectsPM() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((project) => (
-            <ProjectCardPM key={project.id} project={project} />
+          {[...filtered].sort((a, b) => {
+            const af = favouriteSet.has(a.id) ? 1 : 0;
+            const bf = favouriteSet.has(b.id) ? 1 : 0;
+            return bf - af;
+          }).map((project) => (
+            <ProjectCardPM key={project.id} project={project} isFavourite={favouriteSet.has(project.id)} />
           ))}
         </div>
       )}

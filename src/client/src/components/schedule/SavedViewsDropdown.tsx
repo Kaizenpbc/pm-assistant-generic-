@@ -119,7 +119,7 @@ export function SavedViewsDropdown({ scheduleId, currentColumns, currentSortFiel
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+        className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
         title="Saved views"
       >
         <BookmarkPlus className="w-3.5 h-3.5" />
@@ -129,18 +129,18 @@ export function SavedViewsDropdown({ scheduleId, currentColumns, currentSortFiel
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+        <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
           {/* Saved views list */}
           {views.length > 0 && (
             <div className="px-1 mb-1">
               <div className="px-2 py-1">
-                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Saved Views</span>
+                <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Saved Views</span>
               </div>
               {views.map(view => (
                 <div
                   key={view.id}
                   className={`flex items-center gap-1 px-2 py-1.5 rounded cursor-pointer group ${
-                    activeViewId === view.id ? 'bg-primary-50 text-primary-700' : 'hover:bg-gray-50 text-gray-700'
+                    activeViewId === view.id ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <button
@@ -150,7 +150,7 @@ export function SavedViewsDropdown({ scheduleId, currentColumns, currentSortFiel
                   >
                     {view.name}
                   </button>
-                  <span className="text-[10px] text-gray-400">{view.columns.length} cols</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500">{view.columns.length} cols</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDelete(view.id); }}
                     className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 transition-opacity"
@@ -182,7 +182,7 @@ export function SavedViewsDropdown({ scheduleId, currentColumns, currentSortFiel
                 type="text"
                 placeholder="View name..."
                 aria-label="View name"
-                className="flex-1 text-xs px-2 py-1 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
+                className="flex-1 text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}

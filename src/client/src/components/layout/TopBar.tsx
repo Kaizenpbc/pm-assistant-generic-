@@ -6,6 +6,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useThemeStore } from '../../stores/themeStore';
 import { apiService } from '../../services/api';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { ConnectionStatus } from './ConnectionStatus';
 import CommandPalette from './CommandPalette';
 
 interface Breadcrumb {
@@ -219,6 +220,9 @@ const TopBar: React.FC<TopBarProps> = ({ onMobileMenuToggle }) => {
         >
           {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
+
+        {/* Connection Status */}
+        <ConnectionStatus />
 
         {/* Notification Bell */}
         <NotificationBell />

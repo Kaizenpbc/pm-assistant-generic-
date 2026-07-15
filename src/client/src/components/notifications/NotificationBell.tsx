@@ -247,7 +247,7 @@ export function NotificationBell() {
       {/* Bell Button */}
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="relative p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+        className="relative p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
         aria-label={`Notifications${displayBadge ? `, ${unreadCount} unread` : ''}`}
         aria-expanded={open}
         aria-haspopup="true"
@@ -260,7 +260,7 @@ export function NotificationBell() {
               min-w-[18px] h-[18px] px-1
               text-xs font-bold text-white
               bg-red-500 rounded-full
-              ring-2 ring-white
+              ring-2 ring-white dark:ring-gray-800
               animate-fade-in
             "
           >
@@ -274,18 +274,18 @@ export function NotificationBell() {
         <div
           className="
             absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto
-            bg-white border border-gray-200 shadow-lg rounded-xl
+            bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl
             z-50 animate-fade-in
           "
           role="menu"
           aria-label="Notifications"
         >
           {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between z-10">
-            <h3 className="text-sm font-semibold text-gray-900">
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center justify-between z-10">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               Notifications
               {unreadCount > 0 && (
-                <span className="ml-2 text-xs font-medium text-gray-500">
+                <span className="ml-2 text-xs font-medium text-gray-500 dark:text-gray-400">
                   ({unreadCount} unread)
                 </span>
               )}
@@ -304,8 +304,8 @@ export function NotificationBell() {
           {/* Notification List */}
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No notifications yet</p>
+              <Bell className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
             </div>
           ) : (
             <div className="py-1">
@@ -339,8 +339,8 @@ export function NotificationBell() {
                       },
                     } : {})}
                     className={`
-                      flex items-start gap-3 px-4 py-3 border-b border-gray-50
-                      hover:bg-gray-50 transition-colors duration-150 relative
+                      flex items-start gap-3 px-4 py-3 border-b border-gray-50 dark:border-gray-700
+                      hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 relative
                       ${notification.read ? 'opacity-60' : ''}
                       ${isClickable ? 'cursor-pointer' : ''}
                     `}
@@ -360,7 +360,7 @@ export function NotificationBell() {
                       <div className="flex items-start justify-between gap-2">
                         <p
                           className={`text-sm leading-tight truncate ${
-                            notification.read ? 'text-gray-600' : 'text-gray-900 font-medium'
+                            notification.read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100 font-medium'
                           }`}
                         >
                           {notification.title}
@@ -370,17 +370,17 @@ export function NotificationBell() {
                             e.stopPropagation();
                             dismissNotification(notification.id);
                           }}
-                          className="flex-shrink-0 p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150"
+                          className="flex-shrink-0 p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                           aria-label="Dismiss notification"
                         >
                           <X className="w-3 h-3" />
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                         {notification.message}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
                           {timeAgo(notification.createdAt)}
                         </span>
                         {notification.projectName && (
@@ -397,7 +397,7 @@ export function NotificationBell() {
           )}
 
           {/* Footer */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-4 py-2.5">
+          <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-2.5">
             <button
               onClick={() => {
                 setOpen(false);

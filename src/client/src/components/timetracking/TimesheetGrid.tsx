@@ -56,13 +56,13 @@ export function TimesheetGrid() {
     <div className="space-y-4">
       {/* Week navigation */}
       <div className="flex items-center justify-between">
-        <button onClick={() => navigateWeek(-1)} className="p-2 rounded-lg hover:bg-gray-100">
+        <button onClick={() => navigateWeek(-1)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <div className="text-sm font-semibold text-gray-900">
+        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           Week of {new Date(weekStart + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
         </div>
-        <button onClick={() => navigateWeek(1)} className="p-2 rounded-lg hover:bg-gray-100">
+        <button onClick={() => navigateWeek(1)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -75,20 +75,20 @@ export function TimesheetGrid() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">Task</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Task</th>
                 {days.map(d => (
-                  <th key={d} className="text-center py-2 px-2 text-xs font-medium text-gray-500 min-w-[80px]">
+                  <th key={d} className="text-center py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 min-w-[80px]">
                     {formatDay(d)}
                   </th>
                 ))}
-                <th className="text-center py-2 px-2 text-xs font-medium text-gray-500">Total</th>
+                <th className="text-center py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400">Total</th>
               </tr>
             </thead>
             <tbody>
               {taskRows.length === 0 ? (
                 <tr>
-                  <td colSpan={days.length + 2} className="text-center py-8 text-gray-400 text-sm">
+                  <td colSpan={days.length + 2} className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
                     No time entries for this week
                   </td>
                 </tr>
@@ -100,15 +100,15 @@ export function TimesheetGrid() {
                   });
                   const rowTotal = dayTotals.reduce((s, d) => s + d.hours, 0);
                   return (
-                    <tr key={taskId} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-2 px-3 text-sm font-medium text-gray-900">
+                    <tr key={taskId} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="py-2 px-3 text-sm font-medium text-gray-900 dark:text-gray-100">
                         {taskEntries[0]?.description || taskId}
                       </td>
                       {dayTotals.map((d, i) => (
                         <td key={days[i]} className="text-center py-2 px-2">
                           {d.hours > 0 ? (
                             <div className="group relative">
-                              <span className="text-sm font-medium text-gray-900">{d.hours}</span>
+                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{d.hours}</span>
                               <button
                                 className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 text-red-400 hover:text-red-600"
                                 onClick={() => { d.entries.forEach((e: any) => deleteMutation.mutate(e.id)); }}
@@ -117,7 +117,7 @@ export function TimesheetGrid() {
                               </button>
                             </div>
                           ) : (
-                            <span className="text-gray-300">-</span>
+                            <span className="text-gray-300 dark:text-gray-600">-</span>
                           )}
                         </td>
                       ))}
@@ -128,12 +128,12 @@ export function TimesheetGrid() {
               )}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-gray-300">
-                <td className="py-2 px-3 text-sm font-bold text-gray-900">Total</td>
+              <tr className="border-t-2 border-gray-300 dark:border-gray-600">
+                <td className="py-2 px-3 text-sm font-bold text-gray-900 dark:text-gray-100">Total</td>
                 {days.map(d => {
                   const dayTotal = entries.filter((e: any) => e.date === d).reduce((s: number, e: any) => s + e.hours, 0);
                   return (
-                    <td key={d} className="text-center py-2 px-2 font-semibold text-gray-700">
+                    <td key={d} className="text-center py-2 px-2 font-semibold text-gray-700 dark:text-gray-300">
                       {dayTotal > 0 ? `${dayTotal}` : '-'}
                     </td>
                   );

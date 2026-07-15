@@ -38,9 +38,9 @@ export function AlertActionButton({ toolName, params, label, onComplete }: Alert
         disabled={loading}
         className="
           inline-flex items-center gap-1.5 px-2.5 py-1
-          text-xs font-medium text-primary-700 bg-primary-50
-          border border-primary-200 rounded-md
-          hover:bg-primary-100 hover:border-primary-300
+          text-xs font-medium text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20
+          border border-primary-200 dark:border-primary-800 rounded-md
+          hover:bg-primary-100 dark:hover:bg-primary-900/30 hover:border-primary-300 dark:hover:border-primary-700
           disabled:opacity-50 disabled:cursor-not-allowed
           transition-colors duration-150
         "

@@ -54,7 +54,7 @@ export function ActualVsEstimatedChart({ tasks, height = 300 }: ActualVsEstimate
   }, [filtered, height]);
 
   if (filtered.length === 0) {
-    return <p className="text-sm text-gray-400 text-center py-8">No data to compare</p>;
+    return <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">No data to compare</p>;
   }
 
   return (
@@ -104,15 +104,15 @@ export function ActualVsEstimatedChart({ tasks, height = 300 }: ActualVsEstimate
       <div className="flex items-center gap-5 justify-center mt-2 text-xs">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded bg-primary-300" />
-          <span className="text-gray-600">Estimated</span>
+          <span className="text-gray-600 dark:text-gray-400">Estimated</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded bg-emerald-400" />
-          <span className="text-gray-600">Actual (under)</span>
+          <span className="text-gray-600 dark:text-gray-400">Actual (under)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded bg-red-400" />
-          <span className="text-gray-600">Actual (over)</span>
+          <span className="text-gray-600 dark:text-gray-400">Actual (over)</span>
         </div>
       </div>
 

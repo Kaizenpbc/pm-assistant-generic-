@@ -188,7 +188,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={onBack}
-          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
@@ -196,9 +196,9 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
       </div>
 
       {templateName && (
-        <div className="bg-primary-50 rounded-lg p-3 mb-4">
-          <p className="text-xs font-medium text-primary-700">Template: {templateName}</p>
-          <p className="text-xs text-primary-500 mt-0.5">
+        <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3 mb-4">
+          <p className="text-xs font-medium text-primary-700 dark:text-primary-400">Template: {templateName}</p>
+          <p className="text-xs text-primary-500 dark:text-primary-400/70 mt-0.5">
             {phaseCount} phases, {taskCount} tasks, ~{estimatedDurationDays} days
           </p>
         </div>
@@ -206,19 +206,19 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
 
       <form onSubmit={handleSubmit} className="flex-1 space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Project Name *</label>
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Project Name *</label>
           <input
             type="text"
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
             required
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             placeholder="My Project"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             <Calendar className="w-3 h-3 inline mr-1" />
             Start Date *
           </label>
@@ -227,12 +227,12 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             required
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             <DollarSign className="w-3 h-3 inline mr-1" />
             Budget (USD)
           </label>
@@ -242,18 +242,18 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
             onChange={(e) => setBudget(e.target.value)}
             min="0"
             step="1000"
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             placeholder="Optional"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 bg-white"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -262,11 +262,11 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Methodology</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Methodology</label>
             <select
               value={methodology}
               onChange={(e) => setMethodology(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 bg-white"
             >
               <option value="waterfall">Waterfall</option>
               <option value="agile">Agile</option>
@@ -276,7 +276,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             <MapPin className="w-3 h-3 inline mr-1" />
             Location
           </label>
@@ -284,20 +284,20 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
             type="text"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             placeholder="e.g. New York, NY"
           />
         </div>
 
         {/* Task Selection (only shown when template has tasks) */}
         {tasks.length > 0 && (
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <button
               type="button"
               onClick={() => setTaskSectionExpanded(!taskSectionExpanded)}
-              className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
-              <span className="text-xs font-medium text-gray-700">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                 Tasks: {selectedCount}/{totalTasks} selected
               </span>
               <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${taskSectionExpanded ? 'rotate-180' : ''}`} />
@@ -314,7 +314,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
                     <label
                       key={t.refId}
                       className={`flex items-center gap-2 px-1 py-1.5 ${indent} hover:bg-gray-50 cursor-pointer ${
-                        t.isSummary ? 'bg-gray-50/50' : ''
+                        t.isSummary ? 'bg-gray-50/50 dark:bg-gray-700/30' : ''
                       }`}
                     >
                       {isMandatory ? (
@@ -329,7 +329,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
                       )}
                       <span
                         className={`text-xs flex-1 ${
-                          !isSelected ? 'line-through text-gray-400' : t.isSummary ? 'font-medium text-gray-800' : 'text-gray-700'
+                          !isSelected ? 'line-through text-gray-400 dark:text-gray-500' : t.isSummary ? 'font-medium text-gray-800 dark:text-gray-200' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         {t.name}
@@ -339,7 +339,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
                           Required
                         </span>
                       )}
-                      <span className="text-xs text-gray-400 flex-shrink-0">
+                      <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
                         {t.estimatedDays}d
                       </span>
                     </label>
@@ -350,7 +350,7 @@ export const TemplateCustomizeForm: React.FC<TemplateCustomizeFormProps> = ({
 
             {/* Cascade warning toast */}
             {cascadeWarning && (
-              <div className="px-3 py-2 bg-amber-50 border-t border-amber-200 text-xs text-amber-700">
+              <div className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-400">
                 {cascadeWarning}
               </div>
             )}

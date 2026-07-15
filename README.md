@@ -373,6 +373,17 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Flesch-Kincaid reading level analysis (algorithmic, no LLM required)
 - ReadingLevelBadge component for visual reading difficulty indicators
 
+### Favourite / Pinned Projects
+- Star icon on project cards to toggle favourites; favourited projects sort to top
+- "Pinned" sidebar section showing up to 5 favourite projects as quick-access links
+- `user_favourite_projects` junction table (migration 058), `GET/POST/DELETE` API endpoints
+- `GET /api/v1/projects` enriched with `isFavourite` flag per project
+
+### WebSocket Reconnection
+- Exponential backoff with jitter (1s base, 30s max, +/-30%, 20 max attempts)
+- `ConnectionStatus` indicator in TopBar: green (connected, auto-fades), amber (reconnecting), red (disconnected + Reconnect button)
+- `useConnectionState()` hook and `reconnectNow()` exported for programmatic use
+
 ### Unified Dashboard
 - Single customizable dashboard replaces 5 role-based dashboards (Executive, PM, ScrumMaster, Finance, Risk)
 - Scope toggle: "My Projects" vs "All Projects" (appears when user has fewer projects than portfolio total)
