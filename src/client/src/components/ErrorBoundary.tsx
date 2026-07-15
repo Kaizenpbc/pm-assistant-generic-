@@ -48,12 +48,20 @@ export class ErrorBoundary extends React.Component<
                   {this.state.error.message}
                 </p>
               )}
-              <button
-                onClick={() => window.location.reload()}
-                className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
-              >
-                Reload Page
-              </button>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                >
+                  Reload Page
+                </button>
+                <a
+                  href={`mailto:support@kpbc.ca?subject=${encodeURIComponent('Bug Report: ' + (this.state.error?.message || 'Unknown error'))}&body=${encodeURIComponent(`An error occurred in the application.\n\nError: ${this.state.error?.message || 'Unknown'}\nPage: ${window.location.href}\nTime: ${new Date().toISOString()}`)}`}
+                  className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  Report this issue
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -105,7 +113,7 @@ export class RouteErrorBoundary extends React.Component<
                   {this.state.error.message}
                 </p>
               )}
-              <div className="flex gap-3 justify-center">
+              <div className="flex gap-3 justify-center flex-wrap">
                 <button
                   onClick={this.handleRetry}
                   className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors"
@@ -119,6 +127,14 @@ export class RouteErrorBoundary extends React.Component<
                   Go Back
                 </button>
               </div>
+              <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
+                <a
+                  href={`mailto:support@kpbc.ca?subject=${encodeURIComponent('Bug Report: ' + (this.state.error?.message || 'Unknown error'))}&body=${encodeURIComponent(`An error occurred.\n\nError: ${this.state.error?.message || 'Unknown'}\nPage: ${window.location.href}\nTime: ${new Date().toISOString()}`)}`}
+                  className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                >
+                  Report this issue
+                </a>
+              </p>
             </div>
           </div>
         </div>

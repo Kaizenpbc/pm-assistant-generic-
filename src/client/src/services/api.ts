@@ -2068,6 +2068,11 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async adminClearLoginToken(userId: string) {
+    const response = await this.api.post(`/admin/users/${userId}/clear-login-token`, {});
+    return response.data;
+  }
+
   async getAdminTenants() {
     const response = await this.api.get('/admin/tenants');
     return response.data;

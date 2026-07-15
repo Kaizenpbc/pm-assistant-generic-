@@ -34,6 +34,9 @@ export async function adminRoutes(fastify: FastifyInstance) {
         `SELECT
           u.id, u.username, u.email, u.full_name, u.role, u.is_active,
           u.created_at, u.last_login_at, u.subscription_tier,
+          u.email_verified,
+          u.login_verification_token IS NOT NULL AS has_pending_login,
+          u.login_verification_expires,
           COUNT(DISTINCT p.id) AS project_count
         FROM users u
         LEFT JOIN projects p ON p.created_by = u.id
@@ -96,6 +99,29 @@ export async function adminRoutes(fastify: FastifyInstance) {
       });
 
       return { message: 'Password reset token generated', resetToken };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // POST /api/v1/admin/users/:id/clear-login-token
+  fastify.post('/users/:id/clear-login-token', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!requireAdmin(request, reply)) return;
+    const { id } = request.params as { id: string };
+
+    try {
+      const user = await userService.findById(id);
+      if (!user) {
+        return reply.status(404).send({ error: 'Not found', message: 'User not found' });
+      }
+
+      await userService.update(id, {
+        loginVerificationToken: null,
+        loginVerificationExpires: null,
+      });
+
+      return { message: 'Login verification token cleared' };
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Internal server error' });

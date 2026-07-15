@@ -7,6 +7,7 @@ import {
   ToggleRight,
   KeyRound,
   Check,
+  Unlock,
 } from 'lucide-react';
 
 interface AdminUser {
@@ -20,6 +21,9 @@ interface AdminUser {
   last_login_at: string | null;
   subscription_tier: string;
   project_count: number;
+  email_verified: number | boolean;
+  has_pending_login: number | boolean;
+  login_verification_expires: string | null;
 }
 
 function fmt(date: string | null) {
@@ -56,6 +60,11 @@ export function AdminUsersPage() {
     },
   });
 
+  const clearLoginToken = useMutation({
+    mutationFn: (id: string) => apiService.adminClearLoginToken(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
+  });
+
   return (
     <AdminPageWrapper title="Users" subtitle="Manage platform users">
       {isLoading && <div className="text-center py-12 text-gray-500 dark:text-gray-400">Loading users...</div>}
@@ -74,6 +83,7 @@ export function AdminUsersPage() {
                 <th className="pb-3 pr-4">User</th>
                 <th className="pb-3 pr-4">Role</th>
                 <th className="pb-3 pr-4">Signed up</th>
+                <th className="pb-3 pr-4">Login status</th>
                 <th className="pb-3 pr-4">Last login</th>
                 <th className="pb-3 pr-4 text-right">Projects</th>
                 <th className="pb-3 text-center">Status</th>
@@ -83,6 +93,9 @@ export function AdminUsersPage() {
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {(data?.users ?? []).map((u: AdminUser) => {
                 const active = Boolean(u.is_active);
+                const hasPendingLogin = Boolean(u.has_pending_login);
+                const loginExpired = hasPendingLogin && u.login_verification_expires && new Date(u.login_verification_expires) < new Date();
+                const emailVerified = Boolean(u.email_verified);
                 return (
                   <tr key={u.id} className="hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700">
                     <td className="py-3 pr-4">
@@ -100,6 +113,17 @@ export function AdminUsersPage() {
                       </span>
                     </td>
                     <td className="py-3 pr-4 text-gray-600 dark:text-gray-300">{fmt(u.created_at)}</td>
+                    <td className="py-3 pr-4">
+                      {loginExpired ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Expired token</span>
+                      ) : hasPendingLogin ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Pending login</span>
+                      ) : !emailVerified ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Unverified</span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Verified</span>
+                      )}
+                    </td>
                     <td className="py-3 pr-4 text-gray-600 dark:text-gray-300">{fmt(u.last_login_at)}</td>
                     <td className="py-3 pr-4 text-right font-medium text-gray-700 dark:text-gray-200">{u.project_count}</td>
                     <td className="py-3 text-center">
@@ -120,15 +144,28 @@ export function AdminUsersPage() {
                       </button>
                     </td>
                     <td className="py-3 pl-4">
-                      <button
-                        onClick={() => resetPassword.mutate(u.id)}
-                        disabled={resetPassword.isPending}
-                        title="Generate password reset token"
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors"
-                      >
-                        <KeyRound className="w-3.5 h-3.5" />
-                        Reset PW
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => resetPassword.mutate(u.id)}
+                          disabled={resetPassword.isPending}
+                          title="Generate password reset token"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors"
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                          Reset PW
+                        </button>
+                        {hasPendingLogin && (
+                          <button
+                            onClick={() => clearLoginToken.mutate(u.id)}
+                            disabled={clearLoginToken.isPending}
+                            title="Clear login verification token so user can retry login"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+                          >
+                            <Unlock className="w-3.5 h-3.5" />
+                            Unlock
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

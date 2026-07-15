@@ -205,10 +205,19 @@ export const LoginPage: React.FC = () => {
               )}
             </button>
 
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Don't have an account?{' '}
                 <Link to="/register" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:text-primary-300 font-medium">Sign up</Link>
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Need help?{' '}
+                <a
+                  href={`mailto:support@kpbc.ca?subject=${encodeURIComponent('Login Help')}&body=${encodeURIComponent(`I need help logging in.\n\nPage: ${window.location.href}\nTime: ${new Date().toISOString()}`)}`}
+                  className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                >
+                  Contact support
+                </a>
               </p>
             </div>
           </form>

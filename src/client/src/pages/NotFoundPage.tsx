@@ -17,6 +17,15 @@ export function NotFoundPage() {
           <Home className="w-4 h-4" />
           Back to Home
         </Link>
+        <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
+          Need help?{' '}
+          <a
+            href={`mailto:support@kpbc.ca?subject=${encodeURIComponent('Help - Page Not Found')}&body=${encodeURIComponent(`I couldn't find the page I was looking for.\n\nPage: ${window.location.href}\nTime: ${new Date().toISOString()}`)}`}
+            className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+          >
+            Contact support
+          </a>
+        </p>
       </div>
     </div>
   );
