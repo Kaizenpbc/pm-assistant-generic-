@@ -94,7 +94,7 @@ AI-powered features building on Claude and RAG infrastructure.
 | # | Item | Description | Effort |
 |---|------|-------------|--------|
 | 30 | RAG auto-indexing | Done -- Lessons and meetings were already auto-indexed on create via `persistLesson()`/`persistAnalysis()`. Added re-indexing on lesson update and embedding deletion on lesson delete. All RAG indexing is now fully automatic. | Done |
-| 31 | AI task estimation | Use historical task data (estimated vs actual days by project type, category) to suggest estimated_days for new tasks via Claude. | Medium |
+| 31 | AI task estimation | Done -- `POST /api/v1/ai/estimate-task` uses historical completed-task data + Claude to suggest `estimated_days` for new tasks. Fallback to average actual days when AI unavailable. Sparkles button in TaskFormModal next to Est. Duration field. 5 unit tests. | Done |
 
 ---
 

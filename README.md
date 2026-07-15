@@ -173,6 +173,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Natural Language Workflow Builder** -- Describe automations in plain English, AI generates a complete DAG workflow definition for review and editing
 - **Meeting Intelligence** -- Automated meeting minutes and action item extraction
 - **Lessons Learned** -- AI-assisted capture, edit, delete, and retrieval of project lessons; edit opens pre-filled modal, delete uses a styled confirmation modal; "Load More" pagination on the Lessons Learned page
+- **AI Task Estimation** -- Suggests estimated duration for new tasks using historical completed-task data + Claude reasoning; sparkles button in task form
 - **Task Prioritization** -- Intelligent priority scoring
 - **Predictive Intelligence** -- Forecast delays, cost overruns, and risks
 - **Task Slip Predictor** -- Identifies which tasks are likely to slip with confidence scores and reasons
@@ -572,6 +573,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Report Builder | `/api/v1/report-builder` | Custom report templates |
 | AI Reports | `/api/v1/ai-reports` | AI-generated narrative reports |
 | AI Budget | `/api/v1/ai/budget` | Per-user AI token budget and usage |
+| AI Task Estimation | `/api/v1/ai/estimate-task` | AI-powered task duration estimation |
 | Stripe | `/api/v1/stripe` | Billing and subscriptions |
 | API Keys | `/api/v1/api-keys` | API key management |
 | Audit | `/api/v1/audit` | Immutable audit ledger |

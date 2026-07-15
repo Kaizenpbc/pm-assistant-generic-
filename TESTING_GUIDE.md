@@ -1056,3 +1056,35 @@ curl -s -b cookies.txt -X PUT https://pm.kpbc.ca/api/v1/users/me/notification-pr
 
 - [ ] `npx vitest run src/server/__tests__/services/NotificationService.test.ts` — 27 tests pass
 - [ ] Tests cover: category suppression (in-app skip, email skip), admin system_alert override, user lookup error resilience
+
+## 27. AI Task Estimation (Item 31)
+
+### API Tests
+
+```bash
+# Estimate a task duration (requires authentication)
+curl -s -b cookies.txt -X POST https://pm.kpbc.ca/api/v1/ai/estimate-task \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "taskName": "Design database schema for reporting module",
+    "taskDescription": "Create normalized schema with fact and dimension tables for project metrics",
+    "projectId": "<your-project-id>"
+  }' | jq .
+
+# Expected response shape:
+# { "estimation": { "estimatedDays": 3.5, "confidence": 72, "reasoning": "...", "historicalDataPoints": 15, "aiPowered": true } }
+```
+
+### UI Tests
+
+- [ ] Open a project schedule → click "Add Task" → the Est. Duration field has a sparkles (AI) button next to it
+- [ ] Enter a task name → click the sparkles button → spinner appears → estimated days is filled in
+- [ ] A hint line appears below the field showing confidence and reasoning
+- [ ] Button is disabled when task name is empty
+- [ ] Button only appears when `projectId` is available (within a project context)
+- [ ] When AI is unavailable, fallback estimate is returned (based on historical average)
+
+### Unit Tests
+
+- [ ] `npx vitest run src/server/__tests__/services/AiTaskEstimationService.test.ts` — 5 tests pass
+- [ ] Tests cover: no-data fallback (3 days), average-based fallback, AI estimate, AI error fallback, rounding to 0.5

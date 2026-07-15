@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Trash2 } from 'lucide-react';
+import { X, Save, Trash2, Sparkles } from 'lucide-react';
 import type { GanttTask } from './GanttChart';
 import { TaskActivityPanel } from './TaskActivityPanel';
 import { TimeLogForm } from '../timetracking/TimeLogForm';
 import { CustomFieldsSection } from '../customfields/CustomFieldsSection';
 import { AttachmentPanel } from '../attachments/AttachmentPanel';
+import { apiService } from '../../services/api';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -162,6 +163,30 @@ export function TaskFormModal({
     // If active task is a top-level leaf, no parent pre-fill
   }, [isEdit, activeTaskId, allTasks]);
 
+  const [estimating, setEstimating] = useState(false);
+  const [estimationHint, setEstimationHint] = useState<string | null>(null);
+
+  const handleAiEstimate = async () => {
+    if (!form.name.trim() || !projectId) return;
+    setEstimating(true);
+    setEstimationHint(null);
+    try {
+      const res = await apiService.estimateTaskDuration({
+        taskName: form.name,
+        taskDescription: form.description || undefined,
+        projectId,
+        scheduleId: scheduleId || undefined,
+      });
+      const est = res.estimation;
+      setForm((prev) => ({ ...prev, estimatedDays: String(est.estimatedDays) }));
+      setEstimationHint(`${est.estimatedDays}d (${est.confidence}% confidence) — ${est.reasoning}`);
+    } catch {
+      setEstimationHint('Estimation failed. Try again later.');
+    } finally {
+      setEstimating(false);
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -317,15 +342,37 @@ export function TaskFormModal({
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 Est. Duration (days)
               </label>
-              <input
-                type="number"
-                name="estimatedDays"
-                value={form.estimatedDays}
-                onChange={handleChange}
-                min="1"
-                placeholder="—"
-                className="input w-full"
-              />
+              <div className="flex gap-1.5">
+                <input
+                  type="number"
+                  name="estimatedDays"
+                  value={form.estimatedDays}
+                  onChange={handleChange}
+                  min="0.25"
+                  step="0.25"
+                  placeholder="—"
+                  className="input flex-1"
+                />
+                {projectId && (
+                  <button
+                    type="button"
+                    onClick={handleAiEstimate}
+                    disabled={estimating || !form.name.trim()}
+                    title="AI Estimate"
+                    aria-label="AI Estimate duration"
+                    className="px-2 py-1.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                  >
+                    {estimating ? (
+                      <div className="w-3.5 h-3.5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+              {estimationHint && (
+                <p className="text-[10px] text-gray-500 mt-1 leading-tight">{estimationHint}</p>
+              )}
             </div>
           </div>
 

@@ -398,6 +398,26 @@ Persistent learning from user feedback on AI suggestions.
 
 ---
 
+## AI Task Estimation
+
+**Service:** `AiTaskEstimationService` (`AiTaskEstimationService.ts`)
+**Route:** `POST /api/v1/ai/estimate-task`
+
+Suggests estimated duration (in working days) for new tasks using historical data and Claude reasoning.
+
+**How it works:**
+1. Queries up to 200 most recent completed tasks with actual vs estimated days
+2. Sends task name, description, and historical context to Claude with a structured JSON schema
+3. Claude returns: `estimatedDays` (fractional), `confidence` (0-100), and `reasoning`
+4. Falls back to simple average of historical actual days when AI is unavailable
+
+**Frontend integration:**
+- Sparkles button next to the "Est. Duration (days)" field in TaskFormModal
+- Populates the field with the AI estimate and shows a hint with confidence and reasoning
+- Requires a task name and project context to be available
+
+---
+
 ## Architecture: Supporting Infrastructure
 
 ### Claude Service (`claudeService.ts`)

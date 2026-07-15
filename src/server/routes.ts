@@ -35,6 +35,7 @@ import { ragRoutes } from './routes/ai/rag';
 import { aiBudgetRoutes } from './routes/ai/aiBudget';
 import { narrativeRoutes } from './routes/ai/narratives';
 import { accessibilityRoutes } from './routes/ai/accessibility';
+import { aiTaskEstimationRoutes } from './routes/ai/aiTaskEstimation';
 
 // Resources
 import { resourceRoutes } from './routes/resources/resources';
@@ -129,6 +130,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(aiBudgetRoutes, { prefix: '/api/v1/ai/budget' });
   await fastify.register(narrativeRoutes, { prefix: '/api/v1/narratives' });
   await fastify.register(accessibilityRoutes, { prefix: '/api/v1/accessibility' });
+  await fastify.register(aiTaskEstimationRoutes, { prefix: '/api/v1/ai/estimate-task' });
 
   // Resources
   await fastify.register(resourceRoutes, { prefix: '/api/v1/resources' });

@@ -2271,6 +2271,15 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  // -------------------------------------------------------------------------
+  // AI Task Estimation
+  // -------------------------------------------------------------------------
+
+  async estimateTaskDuration(data: { taskName: string; taskDescription?: string; projectId: string; scheduleId?: string }) {
+    const response = await this.api.post('/ai/estimate-task', data);
+    return response.data;
+  }
+
 }
 
 export const apiService = new ApiService();
