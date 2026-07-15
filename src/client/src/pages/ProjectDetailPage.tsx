@@ -1775,6 +1775,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           onTaskClick={(task) => setEditingTask(task)}
           activeTaskId={activeTaskId}
           onTaskUpdate={(taskId, data) => updateMutation.mutate({ taskId, data })}
+          onTaskReorder={handleTaskReorder}
           columnState={columnState}
           cpmData={cpmData}
           baselineData={comparison}

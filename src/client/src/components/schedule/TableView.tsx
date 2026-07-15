@@ -49,6 +49,7 @@ interface TableViewProps {
   onTaskSelect?: (task: GanttTask) => void;
   activeTaskId?: string | null;
   onTaskUpdate: (taskId: string, data: Record<string, unknown>) => void;
+  onTaskReorder?: (updates: Array<{ taskId: string; sortOrder: number }>) => void;
   columnState: ColumnState;
   cpmData?: { tasks: CpmTaskData[]; criticalPathTaskIds: string[] };
   baselineData?: { taskVariances: BaselineTaskVariance[] };
@@ -66,7 +67,7 @@ function addDaysToDate(baseDate: string, days: number): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, activeTaskId, onTaskUpdate, columnState, cpmData, baselineData, scheduleStartDate }: TableViewProps) {
+export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, activeTaskId, onTaskUpdate, onTaskReorder, columnState, cpmData, baselineData, scheduleStartDate }: TableViewProps) {
   const { visibleKeys, visibleColumns, colWidths, setColWidths, moveColumn } = columnState;
   const queryClient = useQueryClient();
   const [sortField, setSortField] = useState<ColumnKey>('startDate');
@@ -260,6 +261,63 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     flatten(null);
     return result;
   }, [tasks, sortField, sortDir, getSortValue]);
+
+  // Row drag reorder state
+  const [rowDrag, setRowDrag] = useState<{
+    taskId: string;
+    parentTaskId: string | null;
+    startIdx: number;
+    targetIdx: number;
+  } | null>(null);
+
+  const handleRowDragStart = useCallback((e: React.DragEvent, task: GanttTask, rowIdx: number) => {
+    if (editingCell || !onTaskReorder) return;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', task.id);
+    setRowDrag({
+      taskId: task.id,
+      parentTaskId: task.parentTaskId || null,
+      startIdx: rowIdx,
+      targetIdx: rowIdx,
+    });
+  }, [editingCell, onTaskReorder]);
+
+  const handleRowDragOver = useCallback((e: React.DragEvent, task: GanttTask, rowIdx: number) => {
+    if (!rowDrag || !onTaskReorder) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const draggedParent = rowDrag.parentTaskId;
+    const targetParent = task.parentTaskId || null;
+    if (draggedParent !== targetParent) return;
+    setRowDrag(prev => prev ? { ...prev, targetIdx: rowIdx } : null);
+  }, [rowDrag, onTaskReorder]);
+
+  const handleRowDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    if (!rowDrag || !onTaskReorder || rowDrag.startIdx === rowDrag.targetIdx) {
+      setRowDrag(null);
+      return;
+    }
+    const parentId = rowDrag.parentTaskId;
+    const siblings = sorted
+      .map((t, idx) => ({ task: t, rowIdx: idx }))
+      .filter(r => (r.task.parentTaskId || null) === parentId);
+    const draggedSibIdx = siblings.findIndex(s => s.task.id === rowDrag.taskId);
+    const targetSibIdx = siblings.findIndex(s => s.rowIdx === rowDrag.targetIdx);
+    if (draggedSibIdx === -1 || targetSibIdx === -1) { setRowDrag(null); return; }
+    const reordered = [...siblings];
+    const [removed] = reordered.splice(draggedSibIdx, 1);
+    reordered.splice(targetSibIdx, 0, removed);
+    const updates = reordered.map((s, i) => ({ taskId: s.task.id, sortOrder: (i + 1) * 10 }));
+    onTaskReorder(updates);
+    setRowDrag(null);
+  }, [rowDrag, onTaskReorder, sorted]);
+
+  const handleRowDragEnd = useCallback(() => {
+    setRowDrag(null);
+  }, []);
+
+  const canDragRows = !!onTaskReorder && !editingCell && selectedIds.size === 0;
 
   // Row number map: taskId → sequential row number (1-based)
   const rowNumMap = useMemo(() => {
@@ -1109,21 +1167,32 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
             </tr>
           </thead>
           <tbody>
-            {sorted.map(task => {
+            {sorted.map((task, rowIdx) => {
               const isSelected = selectedIds.has(task.id);
+              const isDragTarget = rowDrag && rowDrag.targetIdx === rowIdx && rowDrag.taskId !== task.id && (task.parentTaskId || null) === rowDrag.parentTaskId;
               return (
                 <tr
                   key={task.id}
-                  className={`border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors group cursor-pointer ${isSelected ? 'bg-primary-50/40 dark:bg-primary-900/20' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 dark:ring-primary-700 bg-primary-50/60 dark:bg-primary-900/30' : ''}`}
+                  className={`border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors group cursor-pointer ${isSelected ? 'bg-primary-50/40 dark:bg-primary-900/20' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 dark:ring-primary-700 bg-primary-50/60 dark:bg-primary-900/30' : ''} ${isDragTarget ? 'border-t-2 border-t-primary-400' : ''} ${rowDrag?.taskId === task.id ? 'opacity-40' : ''}`}
                   onClick={() => onTaskSelect?.(task)}
+                  draggable={canDragRows}
+                  onDragStart={(e) => handleRowDragStart(e, task, rowIdx)}
+                  onDragOver={(e) => handleRowDragOver(e, task, rowIdx)}
+                  onDrop={handleRowDrop}
+                  onDragEnd={handleRowDragEnd}
                 >
                   <td className="px-2 py-2">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelect(task.id)}
-                      className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
-                    />
+                    <div className="flex items-center gap-1">
+                      {canDragRows && (
+                        <span className="hidden group-hover:inline cursor-grab text-gray-400 flex-shrink-0" title="Drag to reorder">&#x2807;</span>
+                      )}
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(task.id)}
+                        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
+                      />
+                    </div>
                   </td>
 
                   {visibleColumns.map(col => renderCell(task, col))}
