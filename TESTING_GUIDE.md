@@ -987,3 +987,28 @@ npm run test:e2e:ui
 - [ ] Triggering a checkout error (invalid Stripe key or blocked network) displays a readable error banner above the Subscribe button
 - [ ] No unhandled exception or blank page on Stripe failure
 - [ ] Error banner is dismissible (if applicable) without reloading the page
+
+### User Support & Admin Troubleshooting
+
+**Support contact links (client-side mailto):**
+
+- [ ] Visit `/login` — "Need help? Contact support" link visible below "Don't have an account?"
+- [ ] Click the login support link — email client opens with subject "Login Help", body contains page URL and timestamp
+- [ ] Visit a non-existent route (e.g. `/nonexistent-page`) — "Need help? Contact support" link visible below "Back to Home"
+- [ ] Click the 404 support link — email client opens with subject "Help - Page Not Found", body contains attempted URL and timestamp
+- [ ] Trigger a full-page crash (ErrorBoundary) — "Report this issue" button appears alongside "Reload Page"
+- [ ] Click "Report this issue" on ErrorBoundary — email client opens with error message in subject, error details + URL + timestamp in body
+- [ ] Trigger a section crash (RouteErrorBoundary) — "Report this issue" link appears below "Try Again" / "Go Back"
+
+**Admin user login status and unlock (requires admin role):**
+
+- [ ] Login as admin, visit `/admin/users` — "Login status" column is visible in the users table
+- [ ] Users with verified email and no pending token show a green "Verified" badge
+- [ ] Users with unverified email show a gray "Unverified" badge
+- [ ] Users with a pending (non-expired) login token show a yellow "Pending login" badge
+- [ ] Users with an expired login token show a red "Expired token" badge
+- [ ] Users with a pending or expired token have a blue "Unlock" button in the Actions column
+- [ ] Users without a pending token do NOT show the "Unlock" button — only "Reset PW"
+- [ ] Click "Unlock" on a user with an expired token — badge updates (no longer red), user can retry login
+- [ ] `POST /api/v1/admin/users/:id/clear-login-token` returns 404 for non-existent user ID
+- [ ] `POST /api/v1/admin/users/:id/clear-login-token` returns 403 for non-admin callers
