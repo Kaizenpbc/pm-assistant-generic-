@@ -83,7 +83,7 @@ Server-side hardening and optimization.
 | 26 | API response compression | Done -- @fastify/compress with gzip/deflate, 1KB threshold. Brotli excluded (too CPU-heavy for 1-OCPU VM). Nginx handles static files; this covers API JSON payloads. | Done |
 | 27 | Database connection pool tuning | Done -- Added `DB_CONNECTION_LIMIT` (default: 5), `DB_MAX_IDLE` (default: 2) env vars. Changed idle timeout default from 30s to 60s. Pool config logged at startup. Tuned for 1GB Oracle VM. | Done |
 | 28 | Log rotation | Done -- Already implemented via `winston-daily-rotate-file`: daily rotation, 20MB max per file, 14-day retention (app) / 30-day (error), gzip compression of old files. Verified operational in production. | Done |
-| 29 | Sprint goal tracking | Visual progress indicator on sprint cards showing goal completion based on linked task statuses. | Small |
+| 29 | Sprint goal tracking | Done -- Sprint cards show progress bar with task completion (X/Y done), points (if set), and color-coded bar (green=100%, blue>=50%, amber<50%). Backend fetches stats in single batch query per sprint list. | Done |
 
 ---
 
