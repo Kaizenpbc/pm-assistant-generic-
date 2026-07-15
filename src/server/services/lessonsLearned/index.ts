@@ -1,5 +1,6 @@
 import { databaseService } from '../../database/connection';
 import { ragService } from '../RagService';
+import { embeddingService } from '../EmbeddingService';
 import logger from '../../utils/logger';
 import {
   type LessonLearned,
@@ -173,12 +174,33 @@ export class LessonsLearnedService {
     if (fields.length === 0) return false;
     values.push(id);
     const result = await databaseService.query<any>(`UPDATE lessons_learned SET ${fields.join(', ')} WHERE id = ?`, values);
-    return (result as any).affectedRows > 0;
+    const updated = (result as any).affectedRows > 0;
+
+    // Re-index embedding with updated content (fire-and-forget)
+    if (updated) {
+      const rows = await databaseService.query<any>('SELECT * FROM lessons_learned WHERE id = ?', [id]);
+      if (rows.length > 0) {
+        ragService.indexLesson(rowToLesson(rows[0])).catch((err) => {
+          logger.error(`[RAG] Failed to re-index lesson ${id}:`, (err as Error).message);
+        });
+      }
+    }
+
+    return updated;
   }
 
   async deleteLesson(id: string): Promise<boolean> {
     const result = await databaseService.query<any>('DELETE FROM lessons_learned WHERE id = ?', [id]);
-    return (result as any).affectedRows > 0;
+    const deleted = (result as any).affectedRows > 0;
+
+    // Remove embedding (fire-and-forget)
+    if (deleted) {
+      embeddingService.deleteEmbedding('lesson', id).catch((err) => {
+        logger.error(`[RAG] Failed to delete embedding for lesson ${id}:`, (err as Error).message);
+      });
+    }
+
+    return deleted;
   }
 }
 
