@@ -10,6 +10,7 @@ export interface DatabaseConfig {
   database: string;
   waitForConnections: boolean;
   connectionLimit: number;
+  maxIdle: number;
   connectTimeout: number;
   idleTimeout: number;
   queueLimit: number;
@@ -32,7 +33,8 @@ class DatabaseService {
         password: config.DB_PASSWORD,
         database: config.DB_NAME,
         waitForConnections: true,
-        connectionLimit: 10,
+        connectionLimit: config.DB_CONNECTION_LIMIT,
+        maxIdle: config.DB_MAX_IDLE,
         connectTimeout: config.DB_CONNECT_TIMEOUT,
         idleTimeout: config.DB_IDLE_TIMEOUT,
         queueLimit: config.DB_QUEUE_LIMIT,
@@ -40,7 +42,12 @@ class DatabaseService {
 
       this.pool = mysql.createPool({ ...dbConfig, dateStrings: true, charset: 'utf8mb4' });
       this.isConnected = true;
-      logger.info('Database connection pool initialized');
+      logger.info('Database connection pool initialized', {
+        connectionLimit: dbConfig.connectionLimit,
+        maxIdle: dbConfig.maxIdle,
+        idleTimeout: dbConfig.idleTimeout,
+        queueLimit: dbConfig.queueLimit,
+      });
     } catch (error) {
       logger.error('Failed to initialize database connection pool', { error });
       this.isConnected = false;
