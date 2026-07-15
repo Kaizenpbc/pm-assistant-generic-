@@ -93,7 +93,7 @@ AI-powered features building on Claude and RAG infrastructure.
 
 | # | Item | Description | Effort |
 |---|------|-------------|--------|
-| 30 | RAG auto-indexing | Auto-index lessons and meetings on create/update instead of requiring manual backfill. Hook into service layer. | Small |
+| 30 | RAG auto-indexing | Done -- Lessons and meetings were already auto-indexed on create via `persistLesson()`/`persistAnalysis()`. Added re-indexing on lesson update and embedding deletion on lesson delete. All RAG indexing is now fully automatic. | Done |
 | 31 | AI task estimation | Use historical task data (estimated vs actual days by project type, category) to suggest estimated_days for new tasks via Claude. | Medium |
 
 ---
