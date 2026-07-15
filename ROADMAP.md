@@ -80,7 +80,7 @@ Server-side hardening and optimization.
 
 | # | Item | Description | Effort |
 |---|------|-------------|--------|
-| 26 | API response compression | Enable gzip/brotli compression on Fastify API responses. Nginx handles static files but API JSON payloads are uncompressed. | Small |
+| 26 | API response compression | Done -- @fastify/compress with gzip/deflate, 1KB threshold. Brotli excluded (too CPU-heavy for 1-OCPU VM). Nginx handles static files; this covers API JSON payloads. | Done |
 | 27 | Database connection pool tuning | Profile and tune MariaDB pool size, idle timeout, and queue limits for the 1GB Oracle Cloud VM. | Small |
 | 28 | Log rotation | Configure Winston file transport with daily rotation, max file size, and retention policy. Prevent unbounded log growth. | Small |
 | 29 | Sprint goal tracking | Visual progress indicator on sprint cards showing goal completion based on linked task statuses. | Small |
