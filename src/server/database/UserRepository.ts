@@ -27,6 +27,8 @@ function rowToUser(row: any): User {
     lastLoginAt: row.last_login_at ?? null,
     timezone: row.timezone || 'UTC',
     locale: row.locale || 'en',
+    loginVerificationToken: row.login_verification_token ?? null,
+    loginVerificationExpires: row.login_verification_expires ?? null,
     tokenVersion: row.token_version ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -57,6 +59,8 @@ const USER_COLUMN_MAP: Record<string, string> = {
   timezone: 'timezone',
   locale: 'locale',
   organizationId: 'organization_id',
+  loginVerificationToken: 'login_verification_token',
+  loginVerificationExpires: 'login_verification_expires',
   tokenVersion: 'token_version',
 };
 
@@ -91,6 +95,14 @@ export class UserRepository extends BaseRepository<User> {
   async findByResetToken(token: string): Promise<User | null> {
     const rows = await this.queryRaw(
       'SELECT * FROM users WHERE password_reset_token = ? AND password_reset_expires > NOW()',
+      [token],
+    );
+    return rows.length > 0 ? rowToUser(rows[0]) : null;
+  }
+
+  async findByLoginVerificationToken(token: string): Promise<User | null> {
+    const rows = await this.queryRaw(
+      'SELECT * FROM users WHERE login_verification_token = ? AND login_verification_expires > NOW()',
       [token],
     );
     return rows.length > 0 ? rowToUser(rows[0]) : null;

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, Mail } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
 
@@ -10,9 +10,20 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   const { setUser, setError: setAuthError } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'invalid_login_token') {
+      setError('Login link is invalid or expired. Please sign in again.');
+    } else if (errorParam === 'rate_limited') {
+      setError('Too many attempts. Please try again later.');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,13 +32,27 @@ export const LoginPage: React.FC = () => {
 
     try {
       const response = await apiService.login(username, password);
-      if (response.user.isFirstLogin) {
+
+      // 202: email verification required
+      if (response.requiresVerification) {
+        setAwaitingVerification(true);
+        return;
+      }
+
+      if (response.user?.isFirstLogin) {
         sessionStorage.setItem('pm-first-login', 'true');
       }
       setUser(response.user);
       navigate('/dashboard');
     } catch (err: unknown) {
-      const axiosError = err as { response?: { status?: number; data?: { message?: string } } };
+      const axiosError = err as { response?: { status?: number; data?: { message?: string; requiresVerification?: boolean } } };
+
+      // Handle 202 from fetch fallback
+      if (axiosError.response?.status === 202 || axiosError.response?.data?.requiresVerification) {
+        setAwaitingVerification(true);
+        return;
+      }
+
       let errorMessage = 'Login failed';
       if (axiosError.response?.status === 403) {
         errorMessage = 'Please verify your email address before logging in. Check your inbox for the verification link.';
@@ -40,6 +65,33 @@ export const LoginPage: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  if (awaitingVerification) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-center">
+            <div className="mx-auto w-16 h-16 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mb-6">
+              <Mail className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Check your email</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              We sent a login confirmation link to your email address. Click the link to complete sign-in.
+            </p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">
+              The link expires in 10 minutes.
+            </p>
+            <button
+              onClick={() => { setAwaitingVerification(false); setError(null); }}
+              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:text-primary-300 font-medium"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 py-12 px-4 sm:px-6 lg:px-8">

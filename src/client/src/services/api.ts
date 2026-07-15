@@ -36,7 +36,8 @@ class ApiService {
           !originalRequest._retry &&
           !originalRequest.url?.includes('/auth/refresh') &&
           !originalRequest.url?.includes('/auth/login') &&
-          !originalRequest.url?.includes('/auth/register')
+          !originalRequest.url?.includes('/auth/register') &&
+          !originalRequest.url?.includes('/auth/me')
         ) {
           originalRequest._retry = true;
 
@@ -135,6 +136,11 @@ class ApiService {
 
   async getCurrentUser() {
     const response = await this.api.get('/users/me');
+    return response.data;
+  }
+
+  async getMe() {
+    const response = await this.api.get('/auth/me');
     return response.data;
   }
 

@@ -227,6 +227,37 @@ export class EmailService {
     });
   }
 
+  async sendLoginVerificationEmail(to: string, token: string, username: string): Promise<void> {
+    if (!this.isConfigured) {
+      logger.warn(`[EmailService] RESEND_API_KEY not set — skipping login verification email to ${maskPii(to)}`);
+      return;
+    }
+    logger.info(`[EmailService] Sending login verification email to ${maskPii(to)}`);
+
+    const verifyUrl = `${config.APP_URL}/api/v1/auth/verify-login?token=${token}`;
+
+    const bodyHtml = `
+      <p style="color: #4b5563; line-height: 1.6;">
+        Hi ${escapeHtml(username)}, someone is trying to sign in to your account. Click the button below to confirm this login.
+      </p>
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${verifyUrl}" style="background-color: #4f46e5; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+          Confirm Login
+        </a>
+      </div>
+      <p style="color: #9ca3af; font-size: 14px;">
+        This link expires in 10 minutes. If you didn't try to log in, you can safely ignore this email.
+      </p>
+    `;
+
+    await this.getClient().emails.send({
+      from: config.RESEND_FROM_EMAIL,
+      to,
+      subject: 'Confirm your Kovarti PM login',
+      html: this.wrapHtml('Confirm your login', bodyHtml),
+    });
+  }
+
   async sendWelcomeEmail(to: string, name: string): Promise<void> {
     if (!this.isConfigured) {
       logger.info(`[EmailService] Welcome email would be sent to ${maskPii(to)}`);

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuthStore } from './stores/authStore';
 import { ErrorBoundary, RouteErrorBoundary } from './components/ErrorBoundary';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
+import { apiService } from './services/api';
 import AppLayout from './components/layout/AppLayout';
 
 // Eagerly loaded (part of initial bundle — needed immediately)
@@ -71,12 +72,26 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { isAuthenticated, isLoading, setLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 100);
-    return () => clearTimeout(timer);
-  }, [setLoading]);
+    // Try to hydrate auth from cookies (handles verify-login redirect + page refresh)
+    if (!isAuthenticated) {
+      apiService.getMe()
+        .then((data) => {
+          if (data.user) {
+            setUser(data.user);
+          } else {
+            setLoading(false);
+          }
+        })
+        .catch(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isLoading) {
     return (

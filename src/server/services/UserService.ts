@@ -24,6 +24,8 @@ export interface User {
   lastLoginAt: Date | null;
   timezone: string;
   locale: string;
+  loginVerificationToken: string | null;
+  loginVerificationExpires: Date | null;
   tokenVersion: number;
   createdAt: Date;
   updatedAt: Date;
@@ -60,6 +62,10 @@ export class UserService {
 
   async findByResetToken(token: string): Promise<User | null> {
     return userRepository.findByResetToken(token);
+  }
+
+  async findByLoginVerificationToken(token: string): Promise<User | null> {
+    return userRepository.findByLoginVerificationToken(token);
   }
 
   async findByStripeCustomerId(customerId: string): Promise<User | null> {

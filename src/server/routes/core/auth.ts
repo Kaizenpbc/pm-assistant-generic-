@@ -70,64 +70,23 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Fire-and-forget: update last login timestamp
-      userService.update(user.id, { lastLoginAt: new Date() }).catch((error) => {
-        logger.warn('Failed to update last login timestamp', { userId: user.id, error });
+      // Generate login verification token (10-min expiry)
+      const loginToken = crypto.randomUUID();
+      const loginExpires = new Date(Date.now() + 10 * 60 * 1000);
+      await userService.update(user.id, {
+        loginVerificationToken: loginToken,
+        loginVerificationExpires: loginExpires,
       });
 
-      const tokenVersion = user.tokenVersion ?? 0;
-      const accessToken = jwt.sign(
-        { userId: user.id, username: user.username, role: user.role, tv: tokenVersion },
-        config.JWT_SECRET,
-        { expiresIn: '15m', algorithm: 'HS256' }
-      );
-
-      const refreshToken = jwt.sign(
-        { userId: user.id, type: 'refresh', tv: tokenVersion },
-        config.JWT_REFRESH_SECRET,
-        { expiresIn: '7d', algorithm: 'HS256' }
-      );
-
-      reply.setCookie('access_token', accessToken, {
-        httpOnly: true,
-        secure: config.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 15 * 60,
+      // Send verification email (fire-and-forget)
+      emailService.sendLoginVerificationEmail(user.email, loginToken, user.username).catch((err) => {
+        logger.error('Failed to send login verification email', { userId: user.id, error: err });
       });
 
-      reply.setCookie('refresh_token', refreshToken, {
-        httpOnly: true,
-        secure: config.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 7 * 24 * 60 * 60,
+      return reply.status(202).send({
+        message: 'Please check your email to confirm this login.',
+        requiresVerification: true,
       });
-
-      // Look up org info if multi-tenant
-      let organization: { id: string; name: string; slug: string } | null = null;
-      if (config.MULTI_TENANT_ENABLED) {
-        const org = await organizationService.findByUserId(user.id);
-        if (org) {
-          organization = { id: org.id, name: org.name, slug: org.slug };
-        }
-      }
-
-      return {
-        message: 'Login successful',
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          subscriptionTier: user.role === 'admin' ? 'pro' : user.subscriptionTier,
-          subscriptionStatus: user.role === 'admin' ? 'active' : user.subscriptionStatus,
-          trialEndsAt: user.trialEndsAt ? (user.trialEndsAt instanceof Date ? user.trialEndsAt.toISOString() : String(user.trialEndsAt)) : null,
-          isFirstLogin: !user.lastLoginAt,
-          organization,
-        },
-      };
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.status(400).send({ error: 'Validation error', message: 'Username and password are required' });
@@ -257,6 +216,112 @@ export async function authRoutes(fastify: FastifyInstance) {
     } catch (error) {
       logger.error('Email verification error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Email verification failed' });
+    }
+  });
+
+  // Verify login — clicked from email link
+  fastify.get('/verify-login', {
+    schema: { description: 'Verify login via email link', tags: ['auth'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      // Rate limit: 10/min per IP
+      const ip = request.ip || 'unknown';
+      const rl = await rateLimiter.checkAsync(`auth:verify-login:${ip}`, 10, 60_000);
+      if (!rl.allowed) {
+        return reply.redirect('/login?error=rate_limited');
+      }
+
+      const { token } = request.query as { token?: string };
+      if (!token) {
+        return reply.redirect('/login?error=invalid_login_token');
+      }
+
+      const user = await userService.findByLoginVerificationToken(token);
+      if (!user) {
+        return reply.redirect('/login?error=invalid_login_token');
+      }
+
+      // Increment tokenVersion to invalidate all prior sessions
+      const newVersion = (user.tokenVersion ?? 0) + 1;
+      await userService.update(user.id, {
+        tokenVersion: newVersion,
+        loginVerificationToken: null,
+        loginVerificationExpires: null,
+        lastLoginAt: new Date(),
+      });
+
+      // Issue JWT cookies
+      const accessToken = jwt.sign(
+        { userId: user.id, username: user.username, role: user.role, tv: newVersion },
+        config.JWT_SECRET,
+        { expiresIn: '15m', algorithm: 'HS256' }
+      );
+
+      const refreshToken = jwt.sign(
+        { userId: user.id, type: 'refresh', tv: newVersion },
+        config.JWT_REFRESH_SECRET,
+        { expiresIn: '24h', algorithm: 'HS256' }
+      );
+
+      reply.setCookie('access_token', accessToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 15 * 60,
+      });
+
+      reply.setCookie('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 24 * 60 * 60,
+      });
+
+      return reply.redirect('/');
+    } catch (error) {
+      logger.error('Login verification error', { error });
+      return reply.redirect('/login?error=invalid_login_token');
+    }
+  });
+
+  // GET /me — hydrate auth store from cookies (used after verify-login redirect and page refresh)
+  fastify.get('/me', {
+    preHandler: [authMiddleware],
+    schema: { description: 'Get current authenticated user', tags: ['auth'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = (request as any).user?.userId;
+      if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+
+      const user = await userService.findById(userId);
+      if (!user) return reply.status(401).send({ error: 'User not found' });
+
+      let organization: { id: string; name: string; slug: string } | null = null;
+      if (config.MULTI_TENANT_ENABLED) {
+        const org = await organizationService.findByUserId(user.id);
+        if (org) {
+          organization = { id: org.id, name: org.name, slug: org.slug };
+        }
+      }
+
+      return {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          subscriptionTier: user.role === 'admin' ? 'pro' : user.subscriptionTier,
+          subscriptionStatus: user.role === 'admin' ? 'active' : user.subscriptionStatus,
+          trialEndsAt: user.trialEndsAt ? (user.trialEndsAt instanceof Date ? user.trialEndsAt.toISOString() : String(user.trialEndsAt)) : null,
+          organization,
+        },
+      };
+    } catch (error) {
+      logger.error('Auth /me error', { error });
+      return reply.status(500).send({ error: 'Internal server error' });
     }
   });
 
@@ -411,7 +476,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const newRefreshToken = jwt.sign(
         { userId: user.id, type: 'refresh', tv: currentVersion },
         config.JWT_REFRESH_SECRET,
-        { expiresIn: '7d', algorithm: 'HS256' }
+        { expiresIn: '24h', algorithm: 'HS256' }
       );
 
       reply.setCookie('access_token', accessToken, {
@@ -427,7 +492,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         secure: config.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 7 * 24 * 60 * 60,
+        maxAge: 24 * 60 * 60,
       });
 
       return { message: 'Token refreshed successfully' };
@@ -471,13 +536,13 @@ export async function authRoutes(fastify: FastifyInstance) {
       const refreshToken = jwt.sign(
         { userId: user.id, type: 'refresh', tv: newVersion },
         config.JWT_REFRESH_SECRET,
-        { expiresIn: '7d', algorithm: 'HS256' }
+        { expiresIn: '24h', algorithm: 'HS256' }
       );
       reply.setCookie('access_token', accessToken, {
         httpOnly: true, secure: config.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 15 * 60,
       });
       reply.setCookie('refresh_token', refreshToken, {
-        httpOnly: true, secure: config.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 7 * 24 * 60 * 60,
+        httpOnly: true, secure: config.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 24 * 60 * 60,
       });
 
       return { message: 'Password changed successfully' };
