@@ -124,7 +124,21 @@ Bulk operations fix, recurring task bug fix, project archiving, CSV export, and 
 
 ---
 
+## Tier 10: Security Hardening, Data Hygiene & Reliability -- DONE
+
+Closes remaining audit findings, adds data retention, enhances digest emails, and documents env vars.
+
+| # | Item | Description | Status |
+|---|------|-------------|--------|
+| 54 | Audit batch 1 — project access guards | Done -- Added `requireProjectAccess` to all 13 RAID/risk routes (viewer for GET, editor for POST/PUT). Added `requireProjectAccess('manager')` to project member mutation routes (add/update member) and `owner` for delete. Wrapped all 4 agent memory route handlers in try/catch. Allowlisted `orderBy` param in AuditLedgerRepository to prevent SQL injection. | Done |
+| 55 | Data retention crons | Done -- New `DataRetentionService` purges stale data from 5 tables: webhook_deliveries (30d), dead_letter_queue resolved/failed (30d), agent_memory expired, notifications read (90d), api_key_usage_log (90d). All retention periods configurable via env vars. Migration 061 adds indexes for efficient cleanup queries. New `data-retention` cron job case. | Done |
+| 56 | Digest email enhancement | Done -- `buildDigest()` now queries `audit_ledger` for recent changes on user's projects since last digest. Changes grouped by category (Tasks, Risks, Sprints, Approvals, Projects). Email template renders categorized "Recent Activity" section. Replaced hardcoded `recentChanges: 0` stub. All 12 existing digest tests updated. | Done |
+| 57 | .env.example & config validation | Done -- Updated `.env.example` with missing vars (DB_CONNECTION_LIMIT, DB_MAX_IDLE, data retention vars). Added `logConfigSummary()` to config.ts — logs enabled features and warns about missing recommended vars (REDIS_URL, RESEND_API_KEY, ALERT config) at startup. | Done |
+| 58 | Auth guards & route hardening | Done -- Added `isActive` check to auth middleware after JWT validation (Redis-cached, 5-min TTL) — deactivated users get 401 immediately even with valid JWT/API key. Added ownership check to portal link PUT/DELETE routes. Removed unrestricted dev CORS catch-all (S10). E6/E7 already fixed in current code. | Done |
+
+---
+
 ## Prioritization Notes
 
-- **Tiers 1-9 are complete** — all 39 items shipped. Tiers 1-4 on July 14, Tiers 5-7 on July 14-15, Tier 8 on July 15, Tier 9 on July 15, 2026.
-- **Tier 9** addressed bulk operations (scope fix + API wiring), a recurring task bug fix, project archiving with full UI, CSV export from table/Gantt views, and webhook delivery logging with retry + 8 new events.
+- **Tiers 1-10 are complete** — all 44 items shipped. Tiers 1-4 on July 14, Tiers 5-7 on July 14-15, Tier 8-9 on July 15, Tier 10 on July 15, 2026.
+- **Tier 10** closed remaining audit findings: RAID project access guards, deactivated user JWT revocation, data retention crons for unbounded table growth, digest email real content, and config documentation.

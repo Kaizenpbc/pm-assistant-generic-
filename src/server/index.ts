@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
-import { config } from './config';
+import { config, logConfigSummary } from './config';
 import { registerPlugins } from './plugins';
 import { registerRoutes } from './routes';
 import { databaseService } from './database/connection';
@@ -20,6 +20,7 @@ const fastify = Fastify({
 async function start() {
   try {
     console.log('Initializing Kovarti PM Assistant...');
+    logConfigSummary();
 
     console.log('Testing database connection...');
     const isConnected = await databaseService.testConnection();

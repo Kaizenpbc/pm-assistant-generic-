@@ -247,7 +247,6 @@ export async function registerPlugins(fastify: FastifyInstance) {
       if (originHost === 'claude.ai' || originHost.endsWith('.anthropic.com') || originHost.endsWith('.claude.ai')) {
         return callback(null, true);
       }
-      if (config.NODE_ENV === 'development') return callback(null, true);
       callback(new Error('Not allowed by CORS'), false);
     },
     credentials: true,

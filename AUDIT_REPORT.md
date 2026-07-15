@@ -61,7 +61,7 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 | S7 | `WorkflowRepository` LIMIT from caller without numeric cast | `WorkflowRepository.ts:163` | Use parameterized `?` with bounded int |
 | S8 | `EmbeddingRepository` LIMIT can be NaN | `EmbeddingRepository.ts:31` | Add `\|\| 100` fallback |
 | S9 | EmailService interpolates unsanitized user data into HTML | `EmailService.ts:106-131` | HTML-encode all values |
-| S10 | CORS permits all localhost origins on any port | `plugins.ts:225` | Restrict to dev port or `NODE_ENV=development` only |
+| S10 | ~~CORS permits all localhost origins on any port~~ | `plugins.ts:225` | **FIXED** — Removed unrestricted dev CORS catch-all; only `localhost:5173` is allowed |
 | S11 | AutoRescheduleService passes unsanitized task names to AI | `AutoRescheduleService.ts:182` | Apply `sanitizeForPrompt()` |
 
 ### Low
@@ -87,10 +87,10 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 
 | # | Finding | File:Line | Fix |
 |---|---|---|---|
-| A2 | Deactivated users remain authenticated via existing JWTs | `auth.ts` middleware | Check `isActive` on each request (cached) |
+| A2 | ~~Deactivated users remain authenticated via existing JWTs~~ | `auth.ts` middleware | **FIXED** — `isActive` check after JWT/API key validation with Redis cache (5-min TTL) |
 | A3 | Audit trail readable by any user for any project | `auditTrail.ts:26` | Add `requireProjectAccess('viewer')` |
-| A4 | Project membership mutations lack project access check | `projectMembers.ts` | Add `requireProjectAccess('manager')` |
-| A5 | RAID/Risk routes have no project membership enforcement | `risks.ts` | Add project access guards |
+| A4 | ~~Project membership mutations lack project access check~~ | `projectMembers.ts` | **FIXED** — Added `requireProjectAccess('manager')` to add/update, `owner` to delete |
+| A5 | ~~RAID/Risk routes have no project membership enforcement~~ | `risks.ts` | **FIXED** — Added `requireProjectAccess` to all 13 RAID routes (viewer for GET, editor for write) |
 | A6 | Agent activity log readable for any project | `agentActivityLog.ts:13` | Add `requireProjectAccess('viewer')` |
 
 ### Low
@@ -99,7 +99,7 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 |---|---|---|---|
 | A7 | Logout does not invalidate tokens server-side | `auth.ts:352` | Redis blacklist for refresh tokens |
 | A8 | Refresh token: no `isActive` check, no rotation | `auth.ts:374` | Add check + implement rotation |
-| A9 | Portal link update has no ownership check | `portal.ts:119` | Verify ownership before mutation |
+| A9 | ~~Portal link update has no ownership check~~ | `portal.ts:119` | **FIXED** — Added ownership check (creator or admin) to PUT/DELETE portal link routes |
 | A10 | `PUT /me/accessibility` gated at read scope (should be write) | `users.ts:125` | Change to `requireScope('write')` |
 | A11 | Adding RAID comments gated at read scope | `risks.ts:228` | Change to `requireScope('write')` |
 | A12 | API key usage stats has no ownership filter | `apiKeys.ts:72` | Filter by userId |
@@ -157,7 +157,7 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 |---|---|---|---|
 | E2 | `agentHealthRoutes` — bare Promise.all, no try/catch | `agentHealth.ts:17-48` | Add try/catch or Promise.allSettled |
 | E3 | `briefingRoutes` — no try/catch | `briefing.ts:9` | Add try/catch |
-| E4 | `agentMemoryRoutes` — all 4 handlers missing try/catch | `memory.ts:15-127` | Add try/catch |
+| E4 | ~~`agentMemoryRoutes` — all 4 handlers missing try/catch~~ | `memory.ts:15-127` | **FIXED** — All 4 handlers wrapped in try/catch with proper error responses |
 | E5 | `bulk.ts` — partial-success in transaction returns rolled-back IDs | `bulk.ts:75-106` | Use allSettled outside transaction |
 
 ### Medium
@@ -165,7 +165,7 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 | # | Finding | File:Line | Fix |
 |---|---|---|---|
 | E6 | `killSwitch.ts` — wrong userId path (`request.userId` vs `request.user?.userId`) | `killSwitch.ts:37,54,71` | Fix property path |
-| E7 | `unhandledRejection` handler does not exit process | `index.ts:94-96` | Add `process.exit(1)` |
+| E7 | ~~`unhandledRejection` handler does not exit process~~ | `index.ts:88-91` | **FIXED** — Already has `process.exit(1)` |
 | E8 | `operations.ts` silent catch blocks hide DB failures | `operations.ts:187,216` | Log at warn level |
 | E9 | `proposals.ts`, `autonomy.ts` GET handlers — no try/catch | Multiple | Add try/catch |
 | E10 | `throw error` in catch blocks bypasses app-level logging | `proposals.ts:75,101,159` | Log + return 500 |

@@ -66,9 +66,10 @@ class AuditLedgerRepository {
   }
 
   async findAll(orderBy = 'ASC', conditions: string[] = [], params: any[] = []): Promise<any[]> {
+    const safeOrder = orderBy.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
     let sql = 'SELECT * FROM audit_ledger';
     if (conditions.length > 0) sql += ' WHERE ' + conditions.join(' AND ');
-    sql += ` ORDER BY id ${orderBy}`;
+    sql += ` ORDER BY id ${safeOrder}`;
     return databaseService.query(sql, params);
   }
 

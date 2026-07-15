@@ -124,6 +124,12 @@ export async function portalRoutes(fastify: FastifyInstance) {
       const existing = await portalService.getLinkById(id);
       if (!existing) return reply.status(404).send({ error: 'Portal link not found' });
 
+      // Ownership check: only creator or admin can update
+      const user = request.user!;
+      if ((existing as any).createdBy !== user.userId && user.role !== 'admin') {
+        return reply.status(403).send({ error: 'Only the link creator or an admin can modify this portal link' });
+      }
+
       const body = updateLinkSchema.parse(request.body);
       const link = await portalService.updateLink(id, body);
       return { link };
@@ -142,6 +148,12 @@ export async function portalRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const existing = await portalService.getLinkById(id);
       if (!existing) return reply.status(404).send({ error: 'Portal link not found' });
+
+      // Ownership check: only creator or admin can delete
+      const user = request.user!;
+      if ((existing as any).createdBy !== user.userId && user.role !== 'admin') {
+        return reply.status(403).send({ error: 'Only the link creator or an admin can delete this portal link' });
+      }
 
       await portalService.deleteLink(id);
       return { message: 'Portal link deleted' };

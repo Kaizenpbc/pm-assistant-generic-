@@ -13,6 +13,7 @@
  *   health-snapshot  — Record daily project health scores
  *   trial-reminder   — Send trial expiry reminder emails
  *   alert-check      — Run infrastructure health checks
+ *   data-retention   — Purge stale data from webhook_deliveries, dead_letter_queue, etc.
  */
 
 import { databaseService } from '../database/connection';
@@ -24,7 +25,7 @@ const JOB_NAME = process.argv[2];
 
 if (!JOB_NAME) {
   console.error('Usage: node dist/server/scripts/runCronJob.js <job-name>');
-  console.error('Jobs: agent-scan, overdue-scan, recurrence, digest, reports, health-snapshot, trial-reminder, alert-check');
+  console.error('Jobs: agent-scan, overdue-scan, recurrence, digest, reports, health-snapshot, trial-reminder, alert-check, data-retention');
   process.exit(1);
 }
 
@@ -118,6 +119,13 @@ async function run() {
         const { alertService } = await import('../services/AlertService');
         await (alertService as any).runChecks();
         console.log('[cron-runner] Alert checks completed');
+        break;
+      }
+
+      case 'data-retention': {
+        const { dataRetentionService } = await import('../services/DataRetentionService');
+        const results = await dataRetentionService.purgeStaleData();
+        console.log('[cron-runner] Data retention purge completed', results);
         break;
       }
 

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { projectMemberService } from '../../services/ProjectMemberService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import logger from '../../utils/logger';
 
 const addMemberSchema = z.object({
@@ -36,7 +37,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/projects/:projectId/members
   fastify.post('/:projectId/members', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('manager')],
     schema: { description: 'Add a project member', tags: ['members'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -70,7 +71,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
 
   // PUT /api/v1/projects/:projectId/members/:memberId
   fastify.put('/:projectId/members/:memberId', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('manager')],
     schema: { description: 'Update member role', tags: ['members'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -87,7 +88,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
 
   // DELETE /api/v1/projects/:projectId/members/:memberId
   fastify.delete('/:projectId/members/:memberId', {
-    preHandler: [requireScope('admin')],
+    preHandler: [requireScope('admin'), requireProjectAccess('owner')],
     schema: { description: 'Remove a project member', tags: ['members'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

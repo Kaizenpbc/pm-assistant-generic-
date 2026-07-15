@@ -40,6 +40,10 @@ Both tokens are configured with `secure: true` in production and `sameSite: 'lax
 
 Authentication is enforced by the `authMiddleware` pre-handler hook, which verifies the JWT from the cookie and attaches the decoded user to `request.user`.
 
+### Deactivated User Rejection
+
+After JWT validation (or API key validation), the middleware checks the user's `is_active` status in the database. Deactivated users receive a `401 Account deactivated` response immediately, even if their JWT or API key is otherwise valid. This check uses Redis caching (5-minute TTL) to avoid a database query on every request.
+
 ### Registration Email — Fire-and-Forget
 
 After a user registers, the verification email is sent in a **fire-and-forget** manner (`.catch()` swallows delivery errors). Registration succeeds and a 201 response is returned regardless of whether the email is delivered. This design prevents email service outages (Resend downtime, DNS issues, etc.) from blocking new user signups. If a user does not receive their verification email, they can request a new one via `POST /api/v1/auth/resend-verification` (rate-limited to prevent abuse).
@@ -147,7 +151,7 @@ owner  >  manager  >  editor  >  viewer
 
 ### Protected Routes
 
-The middleware is applied to all project-scoped routes across schedules, sprints, approval workflows, resources, and project CRUD endpoints. Routes without a project context (e.g., `GET /projects` list) are not affected — the middleware skips when no projectId can be extracted.
+The middleware is applied to all project-scoped routes across schedules, sprints, approval workflows, resources, RAID/risk items, project member management, portal links, and project CRUD endpoints. Routes without a project context (e.g., `GET /projects` list) are not affected — the middleware skips when no projectId can be extracted.
 
 ---
 

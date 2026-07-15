@@ -207,3 +207,30 @@ export function validateConfiguration() {
 }
 
 export const config = validateConfiguration();
+
+export function logConfigSummary(): void {
+  const features: string[] = [];
+  const warnings: string[] = [];
+
+  features.push(`AI: ${config.AI_ENABLED ? 'ON' : 'OFF'}`);
+  features.push(`Agents: ${config.AGENT_ENABLED ? 'ON' : 'OFF'}`);
+  features.push(`Embeddings: ${config.EMBEDDING_ENABLED ? 'ON' : 'OFF'}`);
+  features.push(`Multi-tenant: ${config.MULTI_TENANT_ENABLED ? 'ON' : 'OFF'}`);
+  features.push(`Metrics: ${config.METRICS_ENABLED ? 'ON' : 'OFF'}`);
+  features.push(`Alerts: ${config.ALERT_ENABLED ? 'ON' : 'OFF'}`);
+  features.push(`AI Fallback: ${config.AI_FALLBACK_ENABLED ? 'ON' : 'OFF'}`);
+
+  if (!config.REDIS_URL) warnings.push('REDIS_URL not set — using in-memory fallback for rate limiting and caching');
+  if (!config.RESEND_API_KEY) warnings.push('RESEND_API_KEY not set — transactional emails disabled');
+  if (!config.ANTHROPIC_API_KEY && config.AI_ENABLED) warnings.push('AI_ENABLED=true but ANTHROPIC_API_KEY is empty');
+  if (config.ALERT_ENABLED && !config.ALERT_EMAIL && !config.ALERT_WEBHOOK_URL) {
+    warnings.push('ALERT_ENABLED=true but no ALERT_EMAIL or ALERT_WEBHOOK_URL configured');
+  }
+  if (!config.STRIPE_SECRET_KEY) warnings.push('STRIPE_SECRET_KEY not set — billing disabled');
+
+  console.log(`[config] Environment: ${config.NODE_ENV} | Port: ${config.PORT}`);
+  console.log(`[config] Features: ${features.join(', ')}`);
+  for (const w of warnings) {
+    console.warn(`[config] WARNING: ${w}`);
+  }
+}

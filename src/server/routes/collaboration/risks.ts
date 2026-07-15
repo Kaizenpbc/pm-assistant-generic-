@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { riskService } from '../../services/RiskService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import { webhookService } from '../../services/WebhookService';
 import { PredictiveIntelligenceService } from '../../services/predictiveIntelligence';
 import { lessonsLearnedService } from '../../services/LessonsLearnedService';
@@ -82,7 +83,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/projects/:projectId/risks — List risks with filters
   fastify.get('/:projectId/risks', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
@@ -98,7 +99,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/projects/:projectId/risks/stats — Summary counts
   fastify.get('/:projectId/risks/stats', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
@@ -112,7 +113,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/projects/:projectId/risks/:riskId — Get single risk
   fastify.get('/:projectId/risks/:riskId', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { riskId } = request.params as { projectId: string; riskId: string };
@@ -127,7 +128,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/projects/:projectId/risks — Create RAID item
   fastify.post('/:projectId/risks', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
@@ -152,7 +153,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // PUT /api/v1/projects/:projectId/risks/:riskId — Update RAID item
   fastify.put('/:projectId/risks/:riskId', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { riskId } = request.params as { projectId: string; riskId: string };
@@ -172,7 +173,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/projects/:projectId/risks/:riskId/cancel — Cancel RAID item
   fastify.post('/:projectId/risks/:riskId/cancel', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { riskId } = request.params as { projectId: string; riskId: string };
@@ -190,7 +191,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/projects/:projectId/risks/:riskId/reverse — Reverse decision
   fastify.post('/:projectId/risks/:riskId/reverse', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { riskId } = request.params as { projectId: string; riskId: string };
@@ -215,7 +216,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/projects/:projectId/risks/:riskId/activity — Activity log
   fastify.get('/:projectId/risks/:riskId/activity', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { riskId } = request.params as { projectId: string; riskId: string };
@@ -229,7 +230,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/projects/:projectId/risks/:riskId/comments — Add comment
   fastify.post('/:projectId/risks/:riskId/comments', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId, riskId } = request.params as { projectId: string; riskId: string };
@@ -250,7 +251,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/projects/:projectId/risks/ai-scan — Scan only, return candidates
   fastify.post('/:projectId/risks/ai-scan', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
@@ -313,7 +314,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/:projectId/risks/batch', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requireProjectAccess('editor')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
@@ -349,7 +350,7 @@ export async function riskRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/projects/:projectId/risks/:riskId/suggest-mitigation — AI mitigation suggestions
   fastify.post('/:projectId/risks/:riskId/suggest-mitigation', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId, riskId } = request.params as { projectId: string; riskId: string };

@@ -151,7 +151,7 @@ export class EmailService {
     overdueTasks: Array<{ name: string; dueDate: string }>;
     upcomingDeadlines: Array<{ name: string; dueDate: string }>;
     unreadCount: number;
-    recentChanges: number;
+    recentChanges: Array<{ category: string; action: string; count: number }> | number;
   }): Promise<void> {
     if (!this.isConfigured) {
       logger.info(`[EmailService] Digest email would be sent to ${maskPii(to)}`);
@@ -174,6 +174,29 @@ export class EmailService {
         bodyHtml += `<li>${escapeHtml(t.name)} (due ${escapeHtml(t.dueDate)})</li>`;
       }
       bodyHtml += '</ul>';
+    }
+
+    // Recent changes section
+    const changes = Array.isArray(digest.recentChanges) ? digest.recentChanges : [];
+    if (changes.length > 0) {
+      // Group by category
+      const grouped = new Map<string, Array<{ action: string; count: number }>>();
+      for (const c of changes) {
+        const cat = c.category;
+        if (!grouped.has(cat)) grouped.set(cat, []);
+        grouped.get(cat)!.push({ action: c.action, count: c.count });
+      }
+
+      bodyHtml += `<h3 style="color: #2563eb; margin-top: 24px;">Recent Activity</h3>`;
+      for (const [category, items] of grouped) {
+        const total = items.reduce((s, i) => s + i.count, 0);
+        bodyHtml += `<p style="color: #4b5563; margin: 8px 0 4px 0;"><strong>${escapeHtml(category)}</strong> (${total} change${total > 1 ? 's' : ''})</p>`;
+        bodyHtml += `<ul style="color: #6b7280; margin-top: 0;">`;
+        for (const item of items.slice(0, 5)) {
+          bodyHtml += `<li>${escapeHtml(item.action)}: ${item.count}</li>`;
+        }
+        bodyHtml += '</ul>';
+      }
     }
 
     if (digest.unreadCount > 0) {
