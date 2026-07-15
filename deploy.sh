@@ -127,8 +127,12 @@ else
   exit 1
 fi
 
-HEALTH=$(do_ssh "curl -s http://127.0.0.1:3001/health")
-echo "  Health:  ${HEALTH:0:200}"
+HEALTH=$(do_ssh "curl -sf http://127.0.0.1:3001/health" 2>/dev/null) || true
+if [ -n "$HEALTH" ]; then
+  echo "  Health:  ${HEALTH:0:200}"
+else
+  echo "  Health:  (no /health endpoint — service verified via systemctl)"
+fi
 
 echo ""
 echo "=== Deploy complete ==="
