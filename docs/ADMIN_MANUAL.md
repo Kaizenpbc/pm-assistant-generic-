@@ -32,6 +32,24 @@ Admins can manage all aspects of the platform. Managers operate within projects 
 - Admins can trigger a password reset email or set a temporary password.
 - Enforce password complexity via `PASSWORD_MIN_LENGTH` and `PASSWORD_REQUIRE_SPECIAL` env vars.
 
+### Login Status & Unlock
+
+The **Admin > Users** page shows a **Login status** column for each user:
+
+| Status | Meaning |
+|---|---|
+| **Verified** | Email verified, no pending login token. Normal state. |
+| **Unverified** | Email address not yet verified. |
+| **Pending login** | A login verification token has been issued and is awaiting confirmation via email link. |
+| **Expired token** | The login verification token has expired. The user cannot complete login until the token is cleared. |
+
+When a user has a pending or expired login token, an **Unlock** button appears in the Actions column. Clicking it clears the login verification token so the user can attempt login again. This is useful when:
+- A user's login confirmation email was lost or delayed past the 10-minute expiry.
+- A user accidentally closed the verification email and the token expired.
+- A user contacts support saying they cannot log in after entering correct credentials.
+
+**API:** `POST /api/v1/admin/users/:id/clear-login-token` (admin only).
+
 ### Deleting Users
 - Deactivate accounts before deletion to preserve audit history.
 - Deleted users are soft-deleted; their audit trail entries remain intact.
@@ -547,7 +565,7 @@ All endpoints require admin role authentication.
 
 | Issue                        | Resolution                                                    |
 |------------------------------|---------------------------------------------------------------|
-| Users cannot log in          | Check credentials, token expiry, cookie domain, HTTPS config. |
+| Users cannot log in          | Check credentials, token expiry, cookie domain, HTTPS config. If a user is stuck with an expired login token, use the **Unlock** button on Admin > Users or call `POST /api/v1/admin/users/:id/clear-login-token`. |
 | API returns 503              | Verify Fastify is running; check Passenger logs.              |
 | AI features not working      | Confirm `AI_ENABLED=true` and valid `ANTHROPIC_API_KEY`.      |
 | Agents not running           | Check `AGENT_ENABLED=true`; check kill switch state via `GET /api/v1/agent/kill-switch`. |

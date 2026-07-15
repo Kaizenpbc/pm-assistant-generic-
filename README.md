@@ -609,6 +609,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Task Import | `/api/v1/schedules/:id/import` | Bulk CSV task import |
 | User Preferences | `/api/v1/users/me/preferences` | Timezone and locale preferences |
 | Admin Tenants | `/api/v1/admin/tenants` | Multi-tenant org management (list, update, provision, migrate) |
+| Admin Users | `/api/v1/admin/users` | User listing with login status, unlock stuck login tokens |
 
 ---
 

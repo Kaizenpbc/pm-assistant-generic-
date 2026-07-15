@@ -1730,3 +1730,35 @@ npm run build
 ```
 
 The build produces a `dist/` directory with compiled server and optimized client assets. In production, static files are served by the web server (e.g., LiteSpeed, Nginx) and API requests are proxied to the Fastify process.
+
+---
+
+## 47. User Support & Admin Troubleshooting
+
+### Support Contact Links
+
+Contextual "Need help?" and "Report this issue" mailto links appear on pages where users are most likely to be stuck:
+
+| Page | Link Text | Pre-filled Context |
+|------|-----------|-------------------|
+| **Login page** | "Need help? Contact support" | Subject: "Login Help", body includes page URL and timestamp |
+| **404 page** | "Need help? Contact support" | Subject: "Help - Page Not Found", body includes attempted URL and timestamp |
+| **ErrorBoundary** (full-page crash) | "Report this issue" | Subject includes error message, body includes error details, URL, and timestamp |
+| **RouteErrorBoundary** (section crash) | "Report this issue" | Same as ErrorBoundary |
+
+All links use `mailto:support@kpbc.ca`. No backend or database changes required — purely client-side mailto links.
+
+### Admin User Unlock Tool
+
+The **Admin > Users** page displays a **Login status** badge per user:
+
+| Badge | Meaning |
+|-------|---------|
+| **Verified** (green) | Email verified, no pending login token |
+| **Unverified** (gray) | Email not yet verified |
+| **Pending login** (yellow) | Login verification email sent, awaiting confirmation |
+| **Expired token** (red) | Login verification token has expired |
+
+When a user has a pending or expired token, an **Unlock** button appears in the Actions column. Clicking it clears the `login_verification_token` and `login_verification_expires` fields so the user can retry login.
+
+**API endpoint:** `POST /api/v1/admin/users/:id/clear-login-token` (admin role required). Returns `{ message: "Login verification token cleared" }`.
