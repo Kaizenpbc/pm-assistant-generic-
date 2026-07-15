@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+vi.mock('../../database/connection', () => ({
+  databaseService: { query: vi.fn().mockResolvedValue([]) },
+}));
+
+vi.mock('../../utils/logger', () => ({
+  default: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
+
 vi.mock('../../database/WebhookRepository', () => {
   const mockRepo = {
     insert: vi.fn(),
