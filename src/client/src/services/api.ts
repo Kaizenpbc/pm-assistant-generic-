@@ -2125,6 +2125,7 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
   async updateNotificationPreferences(prefs: {
     emailNotificationsEnabled?: boolean;
     digestFrequency?: 'none' | 'daily' | 'weekly';
+    typePreferences?: Record<string, { inApp: boolean; email: boolean }>;
   }) {
     const response = await this.api.put('/users/me/notification-preferences', prefs);
     return response.data;

@@ -29,6 +29,11 @@ function rowToUser(row: any): User {
     locale: row.locale || 'en',
     loginVerificationToken: row.login_verification_token ?? null,
     loginVerificationExpires: row.login_verification_expires ?? null,
+    notificationTypePreferences: row.notification_type_preferences
+      ? (typeof row.notification_type_preferences === 'string'
+        ? JSON.parse(row.notification_type_preferences)
+        : row.notification_type_preferences)
+      : null,
     tokenVersion: row.token_version ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -61,6 +66,7 @@ const USER_COLUMN_MAP: Record<string, string> = {
   organizationId: 'organization_id',
   loginVerificationToken: 'login_verification_token',
   loginVerificationExpires: 'login_verification_expires',
+  notificationTypePreferences: 'notification_type_preferences',
   tokenVersion: 'token_version',
 };
 
@@ -136,7 +142,10 @@ export class UserRepository extends BaseRepository<User> {
   }
 
   async update(id: string, data: Record<string, any>): Promise<User | null> {
-    const result = this.buildUpdate(data, USER_COLUMN_MAP);
+    const result = this.buildUpdate(data, USER_COLUMN_MAP, (key, val) => {
+      if (key === 'notificationTypePreferences' && val != null) return JSON.stringify(val);
+      return val;
+    });
     if (!result) return this.findById(id);
 
     result.values.push(id);

@@ -650,7 +650,22 @@ Critical and high-severity notifications are automatically sent via email (Resen
 - **Upcoming deadlines** (next 3 days)
 - **Unread notification count**
 
-Preferences are stored in the database (`users.email_notifications_enabled`, `users.digest_frequency`, `users.digest_last_sent_at`) and managed via `PUT /api/v1/users/me/notification-preferences`.
+Preferences are stored in the database (`users.email_notifications_enabled`, `users.digest_frequency`, `users.digest_last_sent_at`, `users.notification_type_preferences`) and managed via `PUT /api/v1/users/me/notification-preferences`.
+
+#### Per-Category Notification Preferences
+
+Users can control which categories of notifications they receive, with independent toggles for in-app and email delivery:
+
+| Category | Notification types covered |
+|----------|---------------------------|
+| Agent & Proposals | agent_proposal, agent_low_confidence, agent_execution_complete/failed, agent_notification, agent_rollback |
+| Risks & Issues | raid_item, reschedule_proposal |
+| Budget & Finance | budget_alert, ai_budget_warning, monte_carlo_alert |
+| Meetings & Followups | meeting_followup |
+| System Alerts | system_alert, workflow_action (always ON for admins) |
+| Deadlines & Overdue | Reserved for future deadline notification types |
+
+When a category's in-app toggle is off, notifications of that type are not inserted into the database or broadcast via WebSocket. When the email toggle is off, emails are suppressed even for critical/high severity. System alerts are never suppressed for admin users. New users (NULL preferences) default to all categories ON.
 
 ### Scheduled Report Delivery
 

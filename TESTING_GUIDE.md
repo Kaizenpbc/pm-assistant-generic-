@@ -1012,3 +1012,47 @@ npm run test:e2e:ui
 - [ ] Click "Unlock" on a user with an expired token — badge updates (no longer red), user can retry login
 - [ ] `POST /api/v1/admin/users/:id/clear-login-token` returns 404 for non-existent user ID
 - [ ] `POST /api/v1/admin/users/:id/clear-login-token` returns 403 for non-admin callers
+
+---
+
+## 26. Notification Preferences (Item 24)
+
+### API Tests
+
+```bash
+# Get current preferences (should include notificationTypePreferences)
+curl -s -b cookies.txt https://pm.kpbc.ca/api/v1/users/me | jq '.user.notificationTypePreferences'
+
+# Save per-category preferences
+curl -s -b cookies.txt -X PUT https://pm.kpbc.ca/api/v1/users/me/notification-preferences \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "emailNotificationsEnabled": true,
+    "digestFrequency": "daily",
+    "typePreferences": {
+      "agent_proposals": { "inApp": true, "email": true },
+      "risks_issues": { "inApp": true, "email": true },
+      "budget_finance": { "inApp": true, "email": false },
+      "meetings": { "inApp": true, "email": false },
+      "system_alerts": { "inApp": true, "email": true },
+      "deadlines": { "inApp": true, "email": true }
+    }
+  }' | jq .
+```
+
+### UI Tests
+
+- [ ] Settings > Notifications shows 6 category rows: Agent & Proposals, Risks & Issues, Budget & Finance, Meetings & Followups, System Alerts, Deadlines & Overdue
+- [ ] Each category has an In-App toggle and an Email toggle
+- [ ] Email master toggle and Digest Frequency dropdown are still present
+- [ ] Toggling a category off and saving persists to the server (verify via `GET /users/me`)
+- [ ] After disabling in-app for a category, notifications of that type no longer appear in the bell dropdown
+- [ ] After disabling email for a category, no emails are sent for that category even at critical severity
+- [ ] System Alerts toggles are locked ON for admin users (cannot be toggled off)
+- [ ] New user with no saved preferences sees all toggles defaulting to ON
+- [ ] No localStorage key `pm-settings-notifications` is used (old mechanism removed)
+
+### Unit Tests
+
+- [ ] `npx vitest run src/server/__tests__/services/NotificationService.test.ts` — 27 tests pass
+- [ ] Tests cover: category suppression (in-app skip, email skip), admin system_alert override, user lookup error resilience

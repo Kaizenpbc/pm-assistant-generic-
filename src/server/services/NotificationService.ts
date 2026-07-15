@@ -2,11 +2,31 @@ import { v4 as uuidv4 } from 'uuid';
 import { notificationRepository, NotificationDTO } from '../database/NotificationRepository';
 import { WebSocketService } from './WebSocketService';
 import { emailService } from './EmailService';
-import { userService } from './UserService';
+import { userService, NotificationCategoryPref } from './UserService';
 import logger from '../utils/logger';
 import { config } from '../config';
 
 export type { NotificationDTO } from '../database/NotificationRepository';
+
+/** Maps notification type → user-facing category key */
+const NOTIFICATION_TYPE_TO_CATEGORY: Record<string, string> = {
+  agent_proposal: 'agent_proposals',
+  agent_low_confidence: 'agent_proposals',
+  agent_execution_complete: 'agent_proposals',
+  agent_execution_failed: 'agent_proposals',
+  agent_notification: 'agent_proposals',
+  agent_rollback: 'agent_proposals',
+  raid_item: 'risks_issues',
+  reschedule_proposal: 'risks_issues',
+  budget_alert: 'budget_finance',
+  ai_budget_warning: 'budget_finance',
+  monte_carlo_alert: 'budget_finance',
+  meeting_followup: 'meetings',
+  system_alert: 'system_alerts',
+  workflow_action: 'system_alerts',
+};
+
+const DEFAULT_CATEGORY_PREF: NotificationCategoryPref = { inApp: true, email: true };
 
 export interface CreateNotificationData {
   userId: string;
@@ -27,11 +47,20 @@ export class NotificationService {
     const type = data.type || 'info';
     const severity = data.severity || 'medium';
 
-    await notificationRepository.insert(
-      id, data.userId, type, severity, data.title, data.message,
-      data.projectId || null, data.scheduleId || null,
-      data.linkType || null, data.linkId || null, now,
-    );
+    // Look up user preferences to decide whether to deliver in-app / email
+    let user;
+    try {
+      user = await userService.findById(data.userId);
+    } catch (err) {
+      logger.error('[NotificationService] Failed to look up user preferences:', err);
+    }
+    const category = NOTIFICATION_TYPE_TO_CATEGORY[type];
+    const catPref = user?.notificationTypePreferences?.[category] ?? DEFAULT_CATEGORY_PREF;
+
+    // system_alert for admin users is never suppressed
+    const isAdminSystemAlert = type === 'system_alert' && user?.role === 'admin';
+    const shouldInApp = isAdminSystemAlert || !category || catPref.inApp;
+    const shouldEmail = isAdminSystemAlert || !category || catPref.email;
 
     const dto: NotificationDTO = {
       id, userId: data.userId, type, severity, title: data.title,
@@ -40,12 +69,18 @@ export class NotificationService {
       linkId: data.linkId || null, isRead: false, createdAt: now,
     };
 
-    WebSocketService.broadcast({ type: 'notification', payload: dto });
+    if (shouldInApp) {
+      await notificationRepository.insert(
+        id, data.userId, type, severity, data.title, data.message,
+        data.projectId || null, data.scheduleId || null,
+        data.linkType || null, data.linkId || null, now,
+      );
+      WebSocketService.broadcast({ type: 'notification', payload: dto });
+    }
 
-    if (data.severity === 'critical' || data.severity === 'high') {
+    if ((data.severity === 'critical' || data.severity === 'high') && shouldEmail) {
       (async () => {
         try {
-          const user = await userService.findById(data.userId);
           if (user && user.emailNotificationsEnabled && user.emailVerified && user.email) {
             const ctaUrl = data.linkType && data.linkId
               ? `${config.APP_URL}/${data.linkType}s/${data.linkId}`

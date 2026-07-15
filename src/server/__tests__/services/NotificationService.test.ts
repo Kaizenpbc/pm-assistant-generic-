@@ -191,7 +191,7 @@ describe('NotificationService', () => {
         message: 'Not urgent',
       });
 
-      expect(mockUserService.findById).not.toHaveBeenCalled();
+      expect(mockEmail.sendNotificationEmail).not.toHaveBeenCalled();
     });
 
     it('does not send email for low severity', async () => {
@@ -202,7 +202,7 @@ describe('NotificationService', () => {
         message: 'Informational',
       });
 
-      expect(mockUserService.findById).not.toHaveBeenCalled();
+      expect(mockEmail.sendNotificationEmail).not.toHaveBeenCalled();
     });
 
     it('sends email for critical severity when user has email enabled', async () => {
@@ -340,23 +340,95 @@ describe('NotificationService', () => {
       expect(mockEmail.sendNotificationEmail).not.toHaveBeenCalled();
     });
 
-    it('swallows email errors without affecting notification creation', async () => {
+    it('swallows user lookup errors without affecting notification creation', async () => {
       mockUserService.findById.mockRejectedValueOnce(new Error('DB down'));
       const result = await service.create({
         userId: 'user-1',
         severity: 'critical',
         title: 'Critical',
-        message: 'Email will fail',
+        message: 'Lookup will fail',
+      });
+
+      // Notification was still created and returned (defaults to all-on when lookup fails)
+      expect(result.id).toBe('test-uuid-1234');
+      expect(mockRepo.insert).toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalledWith(
+        '[NotificationService] Failed to look up user preferences:',
+        expect.any(Error),
+      );
+    });
+
+    it('skips in-app insert when category inApp is disabled', async () => {
+      mockUserService.findById.mockResolvedValueOnce({
+        id: 'user-1',
+        notificationTypePreferences: {
+          agent_proposals: { inApp: false, email: false },
+        },
+      });
+
+      const result = await service.create({
+        userId: 'user-1',
+        type: 'agent_proposal',
+        severity: 'medium',
+        title: 'Proposal',
+        message: 'New proposal',
+      });
+
+      expect(mockRepo.insert).not.toHaveBeenCalled();
+      expect(mockWs.broadcast).not.toHaveBeenCalled();
+      expect(result.id).toBe('test-uuid-1234');
+    });
+
+    it('skips email when category email is disabled but still inserts in-app', async () => {
+      mockUserService.findById.mockResolvedValueOnce({
+        id: 'user-1',
+        email: 'user@example.com',
+        emailNotificationsEnabled: true,
+        emailVerified: true,
+        notificationTypePreferences: {
+          budget_finance: { inApp: true, email: false },
+        },
+      });
+
+      await service.create({
+        userId: 'user-1',
+        type: 'budget_alert',
+        severity: 'critical',
+        title: 'Budget Alert',
+        message: 'Over budget',
       });
 
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      // Notification was still created and returned
-      expect(result.id).toBe('test-uuid-1234');
-      expect(logger.error).toHaveBeenCalledWith(
-        '[NotificationService] Failed to send email notification:',
-        expect.any(Error),
-      );
+      expect(mockRepo.insert).toHaveBeenCalled();
+      expect(mockEmail.sendNotificationEmail).not.toHaveBeenCalled();
+    });
+
+    it('never suppresses system_alert for admin users', async () => {
+      mockUserService.findById.mockResolvedValueOnce({
+        id: 'user-1',
+        role: 'admin',
+        email: 'admin@example.com',
+        emailNotificationsEnabled: true,
+        emailVerified: true,
+        notificationTypePreferences: {
+          system_alerts: { inApp: false, email: false },
+        },
+      });
+
+      await service.create({
+        userId: 'user-1',
+        type: 'system_alert',
+        severity: 'critical',
+        title: 'System Down',
+        message: 'Critical system alert',
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      expect(mockRepo.insert).toHaveBeenCalled();
+      expect(mockWs.broadcast).toHaveBeenCalled();
+      expect(mockEmail.sendNotificationEmail).toHaveBeenCalled();
     });
 
     it('omits ctaUrl when linkId is missing', async () => {

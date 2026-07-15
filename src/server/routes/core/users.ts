@@ -10,9 +10,18 @@ const profileUpdateSchema = z.object({
   email: z.string().email().max(255).optional(),
 });
 
+const categoryPrefSchema = z.object({
+  inApp: z.boolean(),
+  email: z.boolean(),
+});
+
 const notificationPrefsSchema = z.object({
   emailNotificationsEnabled: z.boolean().optional(),
   digestFrequency: z.enum(['none', 'daily', 'weekly']).optional(),
+  typePreferences: z.record(
+    z.enum(['agent_proposals', 'risks_issues', 'budget_finance', 'meetings', 'system_alerts', 'deadlines']),
+    categoryPrefSchema,
+  ).optional(),
 });
 
 const accessibilityPrefsSchema = z.object({
@@ -48,6 +57,7 @@ export async function userRoutes(fastify: FastifyInstance) {
           fullName: dbUser?.fullName,
           emailNotificationsEnabled: dbUser?.emailNotificationsEnabled ?? true,
           digestFrequency: dbUser?.digestFrequency ?? 'none',
+          notificationTypePreferences: dbUser?.notificationTypePreferences ?? null,
           timezone: dbUser?.timezone ?? 'UTC',
           locale: dbUser?.locale ?? 'en',
         },
@@ -102,11 +112,15 @@ export async function userRoutes(fastify: FastifyInstance) {
       if (parsed.digestFrequency !== undefined) {
         updateData.digestFrequency = parsed.digestFrequency;
       }
+      if (parsed.typePreferences !== undefined) {
+        updateData.notificationTypePreferences = parsed.typePreferences;
+      }
 
       const updated = await userService.update(userId, updateData);
       return {
         emailNotificationsEnabled: updated?.emailNotificationsEnabled ?? true,
         digestFrequency: updated?.digestFrequency ?? 'none',
+        notificationTypePreferences: updated?.notificationTypePreferences ?? null,
       };
     } catch (error) {
       logger.error('Update notification preferences error', { error });

@@ -1,5 +1,12 @@
 import { userRepository } from '../database/UserRepository';
 
+export interface NotificationCategoryPref {
+  inApp: boolean;
+  email: boolean;
+}
+
+export type NotificationTypePreferences = Record<string, NotificationCategoryPref>;
+
 export interface User {
   id: string;
   username: string;
@@ -26,6 +33,7 @@ export interface User {
   locale: string;
   loginVerificationToken: string | null;
   loginVerificationExpires: Date | null;
+  notificationTypePreferences: NotificationTypePreferences | null;
   tokenVersion: number;
   createdAt: Date;
   updatedAt: Date;

@@ -1145,7 +1145,7 @@ Navigate to **Settings** to configure:
 - **API keys** -- Generate and manage API keys for programmatic access. Revoking a key shows a styled confirmation modal before the key is deleted.
 - **Webhooks** -- Configure outbound webhook endpoints. Deleting a webhook shows a styled confirmation modal.
 - **Custom fields** -- Define organization-wide custom fields that appear on tasks and projects.
-- **Notifications** -- Configure notification preferences and channels.
+- **Notifications** -- Configure notification preferences per category (Agent & Proposals, Risks & Issues, Budget & Finance, Meetings, System Alerts, Deadlines) with independent in-app and email toggles. Includes email master toggle and digest frequency. System alerts are always delivered to admin users.
 - **Language** -- Select your preferred display language (English, French, or Spanish). The change applies instantly without a page reload.
 - **Time Zone** -- Set your IANA timezone (e.g., `America/Toronto`). All dates in the application are displayed in this timezone.
 

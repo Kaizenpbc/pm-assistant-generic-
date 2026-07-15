@@ -234,8 +234,8 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Full-page Notifications Center (`/notifications`) with severity summary cards (Critical, High, Medium, Low), type/severity filters, and full notification list with mark-read controls; "Load More" pagination for large notification lists
 - Individual mark-as-read calls the server API so read state persists across page refreshes
 - Real-time WebSocket push notifications
-- Configurable notification preferences
-- Email notifications for critical/high severity events
+- Server-persisted per-category notification preferences with independent in-app and email toggles (6 categories: Agent & Proposals, Risks & Issues, Budget & Finance, Meetings, System Alerts, Deadlines)
+- Email notifications for critical/high severity events (respects per-category email preference)
 - Daily and weekly email digests (overdue tasks, upcoming deadlines, unread count)
 - Trial reminder emails: daily cron at 09:00 sends 3-day, 1-day, and expired-trial notices via Resend; Redis-backed dedup prevents duplicate sends
 

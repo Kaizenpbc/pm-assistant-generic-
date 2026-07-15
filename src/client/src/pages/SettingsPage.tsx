@@ -37,15 +37,12 @@ const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'danger', label: 'Danger Zone', icon: <AlertTriangle className="w-4 h-4" /> },
 ];
 
-interface NotificationPreferences {
-  emailEnabled: boolean;
-  inAppEnabled: boolean;
-  taskAssignments: boolean;
-  statusChanges: boolean;
-  mentions: boolean;
-  deadlines: boolean;
-  approvalRequests: boolean;
+interface CategoryPref {
+  inApp: boolean;
+  email: boolean;
 }
+
+type TypePreferences = Record<string, CategoryPref>;
 
 interface DisplayPreferences {
   theme: 'light' | 'dark';
@@ -55,24 +52,20 @@ interface DisplayPreferences {
   language: string;
 }
 
-const NOTIFICATION_STORAGE_KEY = 'pm-settings-notifications';
 const DISPLAY_STORAGE_KEY = 'pm-settings-display';
 
-function loadNotificationPrefs(): NotificationPreferences {
-  try {
-    const stored = localStorage.getItem(NOTIFICATION_STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return {
-    emailEnabled: true,
-    inAppEnabled: true,
-    taskAssignments: true,
-    statusChanges: true,
-    mentions: true,
-    deadlines: true,
-    approvalRequests: true,
-  };
-}
+const NOTIFICATION_CATEGORIES: { key: string; label: string; description: string }[] = [
+  { key: 'agent_proposals', label: 'Agent & Proposals', description: 'Agent proposals, execution results, rollbacks, and low-confidence alerts' },
+  { key: 'risks_issues', label: 'Risks & Issues', description: 'RAID items and reschedule proposals' },
+  { key: 'budget_finance', label: 'Budget & Finance', description: 'Budget alerts, AI budget warnings, and Monte Carlo alerts' },
+  { key: 'meetings', label: 'Meetings & Followups', description: 'Meeting follow-up actions and reminders' },
+  { key: 'system_alerts', label: 'System Alerts', description: 'System alerts and workflow actions (always on for admins)' },
+  { key: 'deadlines', label: 'Deadlines & Overdue', description: 'Deadline reminders and overdue task notifications' },
+];
+
+const DEFAULT_TYPE_PREFS: TypePreferences = Object.fromEntries(
+  NOTIFICATION_CATEGORIES.map((c) => [c.key, { inApp: true, email: true }]),
+);
 
 function loadDisplayPrefs(): DisplayPreferences {
   try {
@@ -247,12 +240,13 @@ const ProfileTab: React.FC = () => {
 /* ─── Notifications Tab ────────────────────────────────────────── */
 
 const NotificationsTab: React.FC = () => {
-  const [prefs, setPrefs] = useState<NotificationPreferences>(loadNotificationPrefs);
-  const [saved, setSaved] = useState(false);
+  const { user } = useAuthStore();
+  const [emailEnabled, setEmailEnabled] = useState(true);
   const [digestFrequency, setDigestFrequency] = useState<'none' | 'daily' | 'weekly'>('none');
+  const [typePrefs, setTypePrefs] = useState<TypePreferences>({ ...DEFAULT_TYPE_PREFS });
+  const [saved, setSaved] = useState(false);
   const [serverSaving, setServerSaving] = useState(false);
 
-  // Fetch server-side notification preferences
   const { data: serverPrefs } = useQuery({
     queryKey: ['notification-preferences'],
     queryFn: () => apiService.getNotificationPreferences(),
@@ -260,87 +254,113 @@ const NotificationsTab: React.FC = () => {
 
   useEffect(() => {
     if (serverPrefs?.user) {
-      setPrefs((prev) => ({
-        ...prev,
-        emailEnabled: serverPrefs.user.emailNotificationsEnabled ?? prev.emailEnabled,
-      }));
+      setEmailEnabled(serverPrefs.user.emailNotificationsEnabled ?? true);
       setDigestFrequency(serverPrefs.user.digestFrequency || 'none');
+      if (serverPrefs.user.notificationTypePreferences) {
+        setTypePrefs((prev) => ({ ...prev, ...serverPrefs.user.notificationTypePreferences }));
+      }
     }
   }, [serverPrefs]);
 
-  const toggle = (key: keyof NotificationPreferences) => {
-    setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleCategoryChannel = (categoryKey: string, channel: 'inApp' | 'email') => {
+    setTypePrefs((prev) => ({
+      ...prev,
+      [categoryKey]: {
+        ...(prev[categoryKey] ?? { inApp: true, email: true }),
+        [channel]: !(prev[categoryKey]?.[channel] ?? true),
+      },
+    }));
   };
 
   const handleSave = async () => {
-    localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(prefs));
     setServerSaving(true);
     try {
       await apiService.updateNotificationPreferences({
-        emailNotificationsEnabled: prefs.emailEnabled,
+        emailNotificationsEnabled: emailEnabled,
         digestFrequency,
+        typePreferences: typePrefs,
       });
     } catch (err) {
-      console.error('Failed to save server notification prefs:', err);
+      console.error('Failed to save notification prefs:', err);
     }
     setServerSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const Toggle: React.FC<{ checked: boolean; onChange: () => void; label: string; description?: string }> = ({
-    checked,
-    onChange,
-    label,
-    description,
-  }) => (
-    <div className="flex items-center justify-between py-3">
-      <div>
-        <p className="text-sm font-medium text-gray-900">{label}</p>
-        {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
-      </div>
-      <button
-        type="button"
-        onClick={onChange}
-        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-          checked ? 'bg-primary-600' : 'bg-gray-200'
-        }`}
-      >
-        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
-      </button>
-    </div>
+  const MiniToggle: React.FC<{ checked: boolean; onChange: () => void; label: string }> = ({ checked, onChange, label }) => (
+    <button
+      type="button"
+      onClick={onChange}
+      className="flex items-center gap-1.5"
+      title={label}
+    >
+      <span className="text-xs text-gray-500">{label}</span>
+      <span className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${checked ? 'bg-primary-600' : 'bg-gray-200'}`}>
+        <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
+      </span>
+    </button>
   );
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Notification Channels</h2>
-        <div className="divide-y divide-gray-100">
-          <Toggle checked={prefs.emailEnabled} onChange={() => toggle('emailEnabled')} label="Email Notifications" description="Receive notifications via email" />
-          <Toggle checked={prefs.inAppEnabled} onChange={() => toggle('inAppEnabled')} label="In-App Notifications" description="Show notifications inside the application" />
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Email Notifications</h2>
+        <div className="flex items-center justify-between py-3">
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email Notifications</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Master toggle for all email notifications</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEmailEnabled(!emailEnabled)}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${emailEnabled ? 'bg-primary-600' : 'bg-gray-200'}`}
+          >
+            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${emailEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
         </div>
       </div>
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Email Digest</h2>
-        <p className="text-sm text-gray-500 mb-3">Receive a summary of overdue tasks, upcoming deadlines, and unread notifications.</p>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Email Digest</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Receive a summary of overdue tasks, upcoming deadlines, and unread notifications.</p>
         <select
           value={digestFrequency}
           onChange={(e) => setDigestFrequency(e.target.value as 'none' | 'daily' | 'weekly')}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >
           <option value="none">None</option>
           <option value="daily">Daily (7:00 AM)</option>
           <option value="weekly">Weekly (Monday 7:00 AM)</option>
         </select>
       </div>
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Notification Types</h2>
-        <div className="divide-y divide-gray-100">
-          <SettingsCheckbox checked={prefs.taskAssignments} onChange={() => toggle('taskAssignments')} label="Task Assignments" />
-          <SettingsCheckbox checked={prefs.statusChanges} onChange={() => toggle('statusChanges')} label="Status Changes" />
-          <SettingsCheckbox checked={prefs.mentions} onChange={() => toggle('mentions')} label="Mentions" />
-          <SettingsCheckbox checked={prefs.deadlines} onChange={() => toggle('deadlines')} label="Deadlines" />
-          <SettingsCheckbox checked={prefs.approvalRequests} onChange={() => toggle('approvalRequests')} label="Approval Requests" />
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Notification Categories</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Control which types of notifications you receive in-app and via email.</p>
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          {NOTIFICATION_CATEGORIES.map((cat) => {
+            const pref = typePrefs[cat.key] ?? { inApp: true, email: true };
+            const isSystemForAdmin = cat.key === 'system_alerts' && user?.role === 'admin';
+            return (
+              <div key={cat.key} className="flex items-center justify-between py-3 gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{cat.label}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{cat.description}</p>
+                </div>
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  <MiniToggle
+                    checked={isSystemForAdmin ? true : pref.inApp}
+                    onChange={() => { if (!isSystemForAdmin) toggleCategoryChannel(cat.key, 'inApp'); }}
+                    label="In-App"
+                  />
+                  <MiniToggle
+                    checked={isSystemForAdmin ? true : pref.email}
+                    onChange={() => { if (!isSystemForAdmin) toggleCategoryChannel(cat.key, 'email'); }}
+                    label="Email"
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
       <div className="flex items-center gap-3">
@@ -353,13 +373,6 @@ const NotificationsTab: React.FC = () => {
     </div>
   );
 };
-
-const SettingsCheckbox: React.FC<{ checked: boolean; onChange: () => void; label: string }> = ({ checked, onChange, label }) => (
-  <label className="flex items-center gap-3 py-3 cursor-pointer">
-    <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-    <span className="text-sm text-gray-900">{label}</span>
-  </label>
-);
 
 /* ─── Display Tab ──────────────────────────────────────────────── */
 
