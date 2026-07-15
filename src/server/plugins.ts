@@ -1,6 +1,7 @@
 import path from 'path';
 import { FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
+import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -33,6 +34,10 @@ const HTTP_STATUS_TEXT: Record<number, string> = {
 };
 
 export async function registerPlugins(fastify: FastifyInstance) {
+  await fastify.register(compress, {
+    threshold: 1024,           // Only compress responses >= 1 KB
+    encodings: ['gzip', 'deflate'],  // brotli excluded — too CPU-heavy for 1-OCPU VM
+  });
   await fastify.register(websocket);
   await fastify.register(rawBody, { field: 'rawBody', global: false, runFirst: true });
   await fastify.register(multipart, { limits: { fileSize: config.MAX_UPLOAD_SIZE_MB * 1024 * 1024 } });
