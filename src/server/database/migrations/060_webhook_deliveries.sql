@@ -1,7 +1,7 @@
 -- Webhook delivery log for audit trail and retry tracking
 CREATE TABLE webhook_deliveries (
-  id CHAR(36) PRIMARY KEY,
-  webhook_id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  webhook_id VARCHAR(36) NOT NULL,
   event VARCHAR(100) NOT NULL,
   payload JSON,
   status_code INT NULL,
@@ -9,7 +9,5 @@ CREATE TABLE webhook_deliveries (
   error TEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_deliveries_webhook (webhook_id),
-  INDEX idx_deliveries_created (created_at),
-  CONSTRAINT fk_deliveries_webhook FOREIGN KEY (webhook_id)
-    REFERENCES webhooks(id) ON DELETE CASCADE
-);
+  INDEX idx_deliveries_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
