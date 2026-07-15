@@ -50,6 +50,8 @@ const READ_TOOLS = new Set([
   'list-lessons', 'get-knowledge-base', 'find-relevant-lessons', 'find-similar-lessons',
   // resource optimizer (read)
   'get-resource-availability', 'forecast-resource-bottlenecks',
+  // ai estimation
+  'ai-estimate-task',
   // briefing
   'get-daily-briefing',
   // admin (read-safe)

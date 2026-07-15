@@ -86,4 +86,13 @@ export function registerAIInsightTools(server: McpServer) {
   server.tool('get-daily-briefing', 'Get your daily briefing: overdue tasks, pending decisions, risk escalations, project health, budget alerts, and upcoming milestones', {}, async (_args, extra) =>
     jsonResult(await getApiClientFromExtra(extra).get('/briefing/daily'))
   );
+
+  server.tool('ai-estimate-task', 'Estimate task duration using historical data and AI reasoning. Returns estimated days, confidence score, and explanation.', {
+    taskName: z.string().describe('Name of the task to estimate'),
+    taskDescription: z.string().optional().describe('Optional description for better estimation accuracy'),
+    projectId: z.string().describe('Project ID (used to gather historical task data)'),
+    scheduleId: z.string().optional().describe('Schedule ID for additional context'),
+  }, async ({ taskName, taskDescription, projectId, scheduleId }, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).post('/ai/estimate-task', { taskName, taskDescription, projectId, scheduleId }))
+  );
 }
