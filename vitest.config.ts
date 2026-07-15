@@ -50,7 +50,7 @@ export default defineConfig({
         test: {
           name: 'client',
           globals: true,
-          environment: 'jsdom',
+          environment: 'happy-dom',
           include: ['src/client/**/*.test.{ts,tsx}'],
           setupFiles: ['src/client/src/__tests__/setup.ts'],
           testTimeout: 30000,
