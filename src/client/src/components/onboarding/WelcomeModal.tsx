@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, FolderPlus, Upload, ArrowRight } from 'lucide-react';
+import { useModal } from '../../hooks/useModal';
 
 const ONBOARDING_KEY = 'pm-generic-onboarding-seen';
 
@@ -31,11 +32,13 @@ export function WelcomeModal() {
     navigate('/projects');
   };
 
+  const { dialogRef, handleKeyDown } = useModal(visible, dismiss);
+
   if (!visible) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-lg mx-4 w-full">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Welcome to Kovarti PM" onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-lg mx-4 w-full">
         <div className="text-center mb-6">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
             <Sparkles className="w-7 h-7 text-white" />

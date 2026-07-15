@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { X, Save, Plug, Check, RefreshCw } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { useModal } from '../../hooks/useModal';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -258,16 +259,12 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
     testMutation.mutate(integrationId);
   };
 
+  const { dialogRef, handleKeyDown } = useModal(true, onClose);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={`Configure ${provider}`} onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3">

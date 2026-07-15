@@ -19,6 +19,7 @@ import { TemplateCard } from './TemplateCard';
 import { TemplatePreview } from './TemplatePreview';
 import { TemplateCustomizeForm } from './TemplateCustomizeForm';
 import { cleanCsvForImport } from '../../utils/csvCleaner';
+import { useModal } from '../../hooks/useModal';
 
 interface TemplatePickerProps {
   isOpen: boolean;
@@ -253,13 +254,12 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     { label: 'Create', active: step === 'customize' || step === 'scratch', completed: false },
   ];
 
+  const { dialogRef, handleKeyDown } = useModal(isOpen, handleClose);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-full sm:max-w-2xl mx-2 sm:mx-4 max-h-[85vh] flex flex-col">
+      <div className="absolute inset-0 bg-black/40" onClick={handleClose} aria-hidden="true" />
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={stepTitles[step]} onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-full sm:max-w-2xl mx-2 sm:mx-4 max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>

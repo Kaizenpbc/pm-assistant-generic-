@@ -1974,20 +1974,22 @@ export function GanttChart({
                 <button
                   onClick={expandAll}
                   disabled={collapsedIds.size === 0}
+                  aria-label="Expand all"
                   className={`px-1.5 py-0.5 text-xs rounded-l-md transition-colors ${collapsedIds.size > 0 ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
                   title="Expand all"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-3.5 h-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 <button
                   onClick={collapseAll}
                   disabled={collapsedIds.size === parentTaskIds.size}
+                  aria-label="Collapse all"
                   className={`px-1.5 py-0.5 text-xs rounded-r-md transition-colors ${collapsedIds.size < parentTaskIds.size ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
                   title="Collapse all"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-3.5 h-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -2014,10 +2016,11 @@ export function GanttChart({
           {/* Zoom-to-Fit button */}
           <button
             onClick={handleZoomToFit}
+            aria-label="Zoom to fit all tasks"
             className="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-500 transition-colors"
             title="Zoom to fit all tasks"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-3.5 h-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
             </svg>
           </button>
@@ -2027,20 +2030,22 @@ export function GanttChart({
               <button
                 onClick={onUndo}
                 disabled={!canUndo}
+                aria-label={canUndo ? `Undo: ${undoDescription || ''}` : 'Nothing to undo'}
                 className={`px-2 py-1 text-xs rounded-l-md transition-colors ${canUndo ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
                 title={canUndo ? `Undo: ${undoDescription || ''}` : 'Nothing to undo'}
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-3.5 h-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
                 </svg>
               </button>
               <button
                 onClick={onRedo}
                 disabled={!canRedo}
+                aria-label={canRedo ? `Redo: ${redoDescription || ''}` : 'Nothing to redo'}
                 className={`px-2 py-1 text-xs rounded-r-md transition-colors ${canRedo ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
                 title={canRedo ? `Redo: ${redoDescription || ''}` : 'Nothing to redo'}
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-3.5 h-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
                 </svg>
               </button>
@@ -2049,12 +2054,13 @@ export function GanttChart({
           <div className="flex items-center gap-2">
             {/* Quick search */}
             <div className="relative">
-              <svg className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
               </svg>
               <input
                 ref={searchInputRef}
                 type="text"
+                aria-label="Search tasks"
                 placeholder="Search tasks... (Ctrl+F)"
                 className="text-xs pl-7 pr-6 py-1.5 w-44 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
                 value={searchQuery}
@@ -2063,10 +2069,11 @@ export function GanttChart({
               />
               {searchQuery && (
                 <button
+                  aria-label="Clear search"
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
                 >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-3 h-3" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -2294,6 +2301,7 @@ export function GanttChart({
             <span className="text-[10px] font-semibold text-gray-400 uppercase">Assignee</span>
             <input
               type="text"
+              aria-label="Filter by assignee"
               placeholder="Name..."
               className="text-xs px-2 py-1 w-24 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={filters.assignee}
@@ -2306,6 +2314,7 @@ export function GanttChart({
             <span className="text-[10px] font-semibold text-gray-400 uppercase">Start</span>
             <input
               type="date"
+              aria-label="Start after"
               className="text-xs px-1.5 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={filters.startAfter}
               onChange={e => setFilters(prev => ({ ...prev, startAfter: e.target.value }))}
@@ -2314,6 +2323,7 @@ export function GanttChart({
             <span className="text-xs text-gray-400">to</span>
             <input
               type="date"
+              aria-label="Start before"
               className="text-xs px-1.5 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={filters.startBefore}
               onChange={e => setFilters(prev => ({ ...prev, startBefore: e.target.value }))}
@@ -2328,6 +2338,7 @@ export function GanttChart({
               type="number"
               min="0"
               max="100"
+              aria-label="Minimum progress"
               placeholder="Min%"
               className="text-xs px-1.5 py-1 w-14 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={filters.progressMin ?? ''}
@@ -2338,6 +2349,7 @@ export function GanttChart({
               type="number"
               min="0"
               max="100"
+              aria-label="Maximum progress"
               placeholder="Max%"
               className="text-xs px-1.5 py-1 w-14 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={filters.progressMax ?? ''}
@@ -2367,6 +2379,7 @@ export function GanttChart({
           <div className="h-4 w-px bg-primary-200" />
           <div className="flex items-center gap-1">
             <select
+              aria-label="Bulk set status"
               className="text-xs px-2 py-1 rounded border border-primary-200 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={bulkStatus}
               onChange={e => setBulkStatus(e.target.value)}
@@ -2381,6 +2394,7 @@ export function GanttChart({
           </div>
           <div className="flex items-center gap-1">
             <select
+              aria-label="Bulk set priority"
               className="text-xs px-2 py-1 rounded border border-primary-200 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
               value={bulkPriority}
               onChange={e => setBulkPriority(e.target.value)}
@@ -2396,6 +2410,7 @@ export function GanttChart({
           <div className="flex items-center gap-1">
             <input
               type="text"
+              aria-label="Bulk assign to"
               placeholder="Assign to..."
               className="text-xs px-2 py-1 rounded border border-primary-200 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400 w-28"
               value={bulkAssignee}
@@ -2486,6 +2501,7 @@ export function GanttChart({
                       type="checkbox"
                       checked={allSelected}
                       onChange={toggleSelectAll}
+                      aria-label="Select all tasks"
                       className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                       title="Select all"
                     />

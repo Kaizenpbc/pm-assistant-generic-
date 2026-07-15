@@ -98,7 +98,10 @@ export function SprintList({ projectId, onSelect, onCreate, onRetro }: SprintLis
             return (
               <div
                 key={sprint.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelect(sprint.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(sprint.id); } }}
                 className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${
                   isActive ? 'bg-blue-50/40 border-l-4 border-l-blue-500' : ''
                 }`}
@@ -135,6 +138,7 @@ export function SprintList({ projectId, onSelect, onCreate, onRetro }: SprintLis
                     {sprint.status === 'completed' && onRetro && (
                       <button
                         onClick={(e) => { e.stopPropagation(); onRetro(sprint.id); }}
+                        aria-label="Generate AI Retrospective"
                         title="Generate AI Retrospective"
                         className="p-1.5 rounded-md text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                       >

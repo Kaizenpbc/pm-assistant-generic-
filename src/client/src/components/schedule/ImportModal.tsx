@@ -3,6 +3,7 @@ import { X, Upload, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { apiService } from '../../services/api';
 import { cleanCsvForImport } from '../../utils/csvCleaner';
+import { useModal } from '../../hooks/useModal';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -225,13 +226,16 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
   const previewRows = parsed?.rows.slice(0, 10) ?? [];
   const mappedCount = Object.values(columnMap).filter(Boolean).length;
 
+  const { dialogRef, handleKeyDown } = useModal(isOpen, onClose);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Import Tasks" onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Import Tasks from CSV / Excel</h2>
-          <button onClick={handleClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
+          <button onClick={handleClose} aria-label="Close" className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
             <X size={20} />
           </button>
         </div>

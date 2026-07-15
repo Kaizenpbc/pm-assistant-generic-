@@ -92,6 +92,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Skip to content link for keyboard navigation */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-primary-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-medium">
+        Skip to main content
+      </a>
       <OfflineBanner />
       <TrialBanner />
       {/* Sidebar */}
@@ -114,9 +118,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <TopBar onMobileMenuToggle={isMobile ? handleMobileSidebarToggle : undefined} />
 
         {/* Main Content */}
-        <main className={`flex-1 p-4 lg:p-6 overflow-y-auto ${isMobile ? 'pb-20' : ''}`} id="main-content">
+        <main className={`flex-1 p-4 lg:p-6 overflow-y-auto ${isMobile ? 'pb-20' : ''}`} id="main-content" role="main">
           {children}
         </main>
+
+        {/* Screen reader live region for dynamic announcements */}
+        <div aria-live="polite" aria-atomic="true" className="sr-only" id="sr-announcements" />
       </div>
 
       {/* AI Panel (right side) */}

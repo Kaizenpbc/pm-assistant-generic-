@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X, Clock, Trash2 } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { useModal } from '../../hooks/useModal';
 
 interface ReportScheduleModalProps {
   templateId: string;
@@ -93,10 +94,12 @@ export const ReportScheduleModal: React.FC<ReportScheduleModalProps> = ({
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
   const recipientList = recipients.split(',').map((r) => r.trim()).filter(Boolean);
+  const { dialogRef, handleKeyDown } = useModal(true, onClose);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg mx-4">
+      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Schedule Report" onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg mx-4">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -104,7 +107,7 @@ export const ReportScheduleModal: React.FC<ReportScheduleModalProps> = ({
               {existingId ? 'Edit Schedule' : 'Schedule Report'}
             </h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700">
+          <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700">
             <X className="w-5 h-5" />
           </button>
         </div>

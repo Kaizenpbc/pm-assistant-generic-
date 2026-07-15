@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Sparkles, Loader2 } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { useModal } from '../../hooks/useModal';
 
 interface RiskFormModalProps {
   isOpen: boolean;
@@ -226,17 +227,19 @@ export function RiskFormModal({ isOpen, onClose, onSaved, projectId, editRisk, d
   const labelClass = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1';
 
   const typeLabel = RAID_TYPES.find(t => t.value === form.type)?.label || 'Item';
+  const { dialogRef, handleKeyDown } = useModal(isOpen, onClose);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={`${editRisk ? 'Edit' : 'Add'} ${typeLabel}`} onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {editRisk ? 'Edit' : 'Add'} {typeLabel}
             {editRisk?.recordId && <span className="ml-2 text-sm font-mono text-gray-400">{editRisk.recordId}</span>}
           </h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+          <button onClick={onClose} aria-label="Close" className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>

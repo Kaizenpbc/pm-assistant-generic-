@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { X, Save, Tag } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { useModal } from '../../hooks/useModal';
 
 interface SaveAsTemplateModalProps {
   isOpen: boolean;
@@ -46,20 +47,22 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
     setTags(tags.filter(t => t !== tag));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       addTag();
     }
   };
 
+  const { dialogRef, handleKeyDown } = useModal(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Save as Template" onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Save className="w-4 h-4 text-primary-600" />
@@ -112,7 +115,7 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
                 type="text"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleKeyDown}
+                onKeyDown={handleTagKeyDown}
                 className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
                 placeholder="Add tag and press Enter"
               />

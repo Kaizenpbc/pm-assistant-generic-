@@ -210,6 +210,7 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
                   <button
                     onClick={() => handleSetWipLimit(col.id)}
                     className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Set WIP limit"
                     title="Set WIP limit"
                   >
                     <Settings className="w-3 h-3" />
