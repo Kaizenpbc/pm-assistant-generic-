@@ -110,7 +110,21 @@ Dark mode completion, user personalization, and connection resilience.
 
 ---
 
+## Tier 9: Bulk Operations, Archiving & Webhooks -- DONE
+
+Bulk operations fix, recurring task bug fix, project archiving, CSV export, and webhook expansion.
+
+| # | Item | Description | Status |
+|---|------|-------------|--------|
+| 49 | Bulk operations UI | Done -- Changed bulk route scope from `admin` to `write`. Wired TableView to use `bulkUpdateTaskStatus()` and `bulkUpdateTasks()` API endpoints instead of Promise.all of individual calls. MCP permissions already included project_manager. | Done |
+| 50 | Recurring tasks fix | Done -- Added `recurrence_rule`, `recurrence_parent_id`, `is_recurrence_template` to `createTask()` INSERT statement in ScheduleService. UI, cron job, and DB columns already existed — only the INSERT was missing the columns. | Done |
+| 51 | Project archiving | Done -- Migration 059 adds `archived_at` column + index. Archive/unarchive API routes (`POST /:id/archive`, `POST /:id/unarchive`). Default project queries exclude archived. UI: "Show Archived" toggle on Projects page, "Archived" badge on cards, archive/unarchive button per card. | Done |
+| 52 | CSV export from views | Done -- New `exportUtils.ts` with `downloadCSV()` and `exportTasksCSV()` (proper CSV escaping for commas, quotes, newlines). Export buttons added to TableView toolbar and GanttChart header. Columns: Name, Status, Priority, Assigned To, Start/End Date, Progress %. | Done |
+| 53 | Webhook event expansion | Done -- Migration 060 adds `webhook_deliveries` table. Delivery logging with timing, status codes, and error messages. One automatic retry after 60s on failure. `GET /webhooks/:id/deliveries` endpoint. 8 new events: `sprint.created/started/completed`, `risk.created/updated`, `change_request.created/approved/rejected`. | Done |
+
+---
+
 ## Prioritization Notes
 
-- **Tiers 1-8 are complete** — all 34 items shipped. Tiers 1-4 on July 14, Tiers 5-7 on July 14-15, Tier 8 on July 15, 2026.
-- **Tier 8** addressed UX polish (dark mode gaps, favourite projects) and reliability (WebSocket reconnection with backoff).
+- **Tiers 1-9 are complete** — all 39 items shipped. Tiers 1-4 on July 14, Tiers 5-7 on July 14-15, Tier 8 on July 15, Tier 9 on July 15, 2026.
+- **Tier 9** addressed bulk operations (scope fix + API wiring), a recurring task bug fix, project archiving with full UI, CSV export from table/Gantt views, and webhook delivery logging with retry + 8 new events.
