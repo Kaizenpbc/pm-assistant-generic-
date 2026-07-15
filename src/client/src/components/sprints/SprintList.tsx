@@ -2,6 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus, Target, Kanban, BookOpen } from 'lucide-react';
 import { apiService } from '../../services/api';
 
+interface SprintTaskStats {
+  totalTasks: number;
+  completedTasks: number;
+  totalPoints: number;
+  completedPoints: number;
+}
+
 interface Sprint {
   id: string;
   name: string;
@@ -11,6 +18,7 @@ interface Sprint {
   end_date?: string;
   velocity_commitment?: number;
   velocity_actual?: number;
+  taskStats?: SprintTaskStats;
 }
 
 interface SprintListProps {
@@ -123,6 +131,30 @@ export function SprintList({ projectId, onSelect, onCreate, onRetro }: SprintLis
                     <div className="flex items-center gap-3 text-xs text-gray-400">
                       <span>{formatDate(sprint.start_date)} - {formatDate(sprint.end_date)}</span>
                     </div>
+                    {sprint.taskStats && sprint.taskStats.totalTasks > 0 && (() => {
+                      const { totalTasks, completedTasks, totalPoints, completedPoints } = sprint.taskStats;
+                      const pct = Math.round((completedTasks / totalTasks) * 100);
+                      return (
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                            <span>{completedTasks}/{totalTasks} tasks done</span>
+                            <span>
+                              {totalPoints > 0
+                                ? `${completedPoints}/${totalPoints} pts`
+                                : `${pct}%`}
+                            </span>
+                          </div>
+                          <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                pct === 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-amber-500'
+                              }`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Velocity + Retro */}

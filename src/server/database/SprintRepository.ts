@@ -229,6 +229,33 @@ export class SprintRepository extends BaseRepository<Sprint> {
     return Number(rows[0]?.cnt || 0);
   }
 
+  async getTaskStatsBySprintIds(sprintIds: string[]): Promise<Record<string, { totalTasks: number; completedTasks: number; totalPoints: number; completedPoints: number }>> {
+    if (sprintIds.length === 0) return {};
+    const placeholders = sprintIds.map(() => '?').join(',');
+    const rows = await this.queryRaw(
+      `SELECT st.sprint_id,
+              COUNT(*) AS total_tasks,
+              SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) AS completed_tasks,
+              COALESCE(SUM(st.story_points), 0) AS total_points,
+              COALESCE(SUM(CASE WHEN t.status = 'completed' THEN st.story_points ELSE 0 END), 0) AS completed_points
+       FROM sprint_tasks st
+       JOIN tasks t ON t.id = st.task_id
+       WHERE st.sprint_id IN (${placeholders})
+       GROUP BY st.sprint_id`,
+      sprintIds,
+    );
+    const result: Record<string, { totalTasks: number; completedTasks: number; totalPoints: number; completedPoints: number }> = {};
+    for (const row of rows) {
+      result[row.sprint_id] = {
+        totalTasks: Number(row.total_tasks),
+        completedTasks: Number(row.completed_tasks),
+        totalPoints: Number(row.total_points),
+        completedPoints: Number(row.completed_points),
+      };
+    }
+    return result;
+  }
+
   async getVelocityHistory(projectId: string): Promise<Array<{ name: string; velocity: number; commitment: number }>> {
     const rows = await this.queryRaw(
       `SELECT s.*, COALESCE(SUM(CASE WHEN t.status = 'completed' THEN st.story_points ELSE 0 END), 0) as completed_points

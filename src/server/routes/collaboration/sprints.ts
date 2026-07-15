@@ -43,8 +43,14 @@ export async function sprintRoutes(fastify: FastifyInstance) {
       const { projectId } = request.params as { projectId: string };
       const { limit, offset } = parsePagination(request.query as Record<string, unknown>);
       const { rows, total } = await sprintService.getByProjectPaginated(projectId, limit, offset);
+      const sprintIds = rows.map((s) => s.id);
+      const taskStats = sprintIds.length > 0 ? await sprintService.getTaskStatsBySprintIds(sprintIds) : {};
+      const enriched = rows.map((s) => ({
+        ...s,
+        taskStats: taskStats[s.id] || { totalTasks: 0, completedTasks: 0, totalPoints: 0, completedPoints: 0 },
+      }));
       const page = Math.floor(offset / limit) + 1;
-      return paginate(rows, total, page, limit);
+      return paginate(enriched, total, page, limit);
     } catch (error) {
       logger.error('Get sprints error', { error });
       return reply.status(500).send({ error: 'Failed to fetch sprints' });

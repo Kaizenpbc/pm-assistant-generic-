@@ -70,6 +70,10 @@ export class SprintService {
     return sprintRepository.findByProjectPaginated(projectId, limit, offset);
   }
 
+  async getTaskStatsBySprintIds(sprintIds: string[]): Promise<Record<string, { totalTasks: number; completedTasks: number; totalPoints: number; completedPoints: number }>> {
+    return sprintRepository.getTaskStatsBySprintIds(sprintIds);
+  }
+
   async getBySchedule(scheduleId: string): Promise<Sprint[]> {
     return sprintRepository.findBySchedule(scheduleId);
   }
