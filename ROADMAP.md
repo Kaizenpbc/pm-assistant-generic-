@@ -98,9 +98,19 @@ AI-powered features building on Claude and RAG infrastructure.
 
 ---
 
+## Tier 8: UX & Reliability
+
+Dark mode completion, user personalization, and connection resilience.
+
+| # | Item | Description | Effort |
+|---|------|-------------|--------|
+| 32 | Dark mode gaps | Done -- Added `dark:` Tailwind classes to all 18 components that had zero dark mode support (modals, forms, templates, notifications, time tracking, attachments, custom fields). Full coverage now across entire UI. | Done |
+| 35 | Favourite / pinned projects | Done -- `user_favourite_projects` junction table (migration 058). Star toggle on project cards, favourites sorted to top in project list. Sidebar "Pinned" section shows up to 5 favourite projects as direct links. API: `POST/DELETE /:id/favourite`, `GET /favourites`. | Done |
+| 48 | WebSocket reconnection | Done -- Exponential backoff (1s→30s, ±30% jitter, max 20 attempts) replaces constant 3s delay. Connection state indicator in TopBar: green dot (auto-fades), amber pulse (reconnecting), red dot + "Reconnect" button (disconnected). `useConnectionState()` hook + `reconnectNow()` export. | Done |
+
+---
+
 ## Prioritization Notes
 
-- **Tiers 1-4 are complete** — all 18 original items shipped on July 14, 2026.
-- **Tier 5 before Tier 6** — user-facing quality improvements before infrastructure tuning.
-- **Tier 6 items are small and independent** — can be knocked out quickly in any order.
-- **Tier 7 builds on existing AI infrastructure** — RAG auto-indexing is low-hanging fruit; task estimation is more ambitious.
+- **Tiers 1-8 are complete** — all 34 items shipped. Tiers 1-4 on July 14, Tiers 5-7 on July 14-15, Tier 8 on July 15, 2026.
+- **Tier 8** addressed UX polish (dark mode gaps, favourite projects) and reliability (WebSocket reconnection with backoff).
