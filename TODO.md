@@ -1,6 +1,6 @@
 # Kovarti PM — Pre-Subscriber TODO
 
-Status: 5/7 complete | Last updated: July 13, 2026 | Blocked: #1 needs Stripe setup
+Status: 6/7 complete | Last updated: July 16, 2026 | Blocked: #1 needs Stripe setup
 
 ---
 
@@ -191,23 +191,11 @@ No help/support link exists anywhere in the authenticated app — not in sidebar
 
 ---
 
-## 7. Create Proper OG Social Sharing Image (1200x630) — PENDING (design)
+## 7. ~~Create Proper OG Social Sharing Image (1200x630)~~ — DONE
 
-**Priority:** Low | **Type:** Polish
+**Deployed:** July 16, 2026
 
-### Design
-- Create a 1200x630px image for social sharing (LinkedIn, Twitter, Slack previews)
-- Content: Kovarti PM logo (indigo), tagline "MS Project-grade scheduling — powered by AI", dark or gradient background, clean/professional
-- Format: PNG, optimized (<200KB)
-
-### Steps
-1. Design the image (Figma, Canva, or code-generated SVG to PNG)
-2. Save as `src/client/public/og-image.png`
-3. Update `src/client/index.html`:
-   - `og:image` — `https://pm.kpbc.ca/og-image.png`
-   - `twitter:image` — `https://pm.kpbc.ca/og-image.png`
-   - Add `og:image:width` = 1200, `og:image:height` = 630
-4. Rebuild and deploy client
-5. Test with Twitter Card Validator and Facebook Sharing Debugger
-
-### Owner: Needs design input from user (or generate programmatically)
+- Generated 1200x630 PNG programmatically (SVG → sharp → PNG, 91KB)
+- Indigo gradient background, "K" logo mark, headline, feature pills, CTA
+- Updated `index.html`: `og:image`, `og:image:width`/`height`, `twitter:card` → `summary_large_image`
+- Generator script: `scripts/generate-og-image.mjs`
