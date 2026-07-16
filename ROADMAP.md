@@ -138,7 +138,24 @@ Closes remaining audit findings, adds data retention, enhances digest emails, an
 
 ---
 
+## Tier 11: Audit Quick Wins -- DONE
+
+Remaining audit findings: scope corrections, SQL parameterization, prompt injection, API contract fixes, error handling.
+
+| # | Item | Description | Status |
+|---|------|-------------|--------|
+| 59 | SQL parameterization (S7) | Done -- WorkflowRepository `LIMIT` changed from string interpolation to parameterized `?` placeholder. | Done |
+| 60 | AI prompt sanitization (S11) | Done -- AutoRescheduleService task names wrapped in `sanitizeForPrompt()` before passing to Claude. | Done |
+| 61 | Auth scope corrections (A10, A11) | Done -- `PUT /me/accessibility` changed from `requireScope('read')` to `write`. RAID comments POST changed from `read`/`viewer` to `write`/`editor`. | Done |
+| 62 | HTTP 201 on creation endpoints | Done -- Added `reply.status(201)` to 7 POST endpoints: sprint tasks, approval workflows, change requests, API keys, webhooks, integrations, report templates. | Done |
+| 63 | Missing 404 checks | Done -- Added null check + 404 response to integrations `GET /:id`. | Done |
+| 64 | Route error handling (E9) | Done -- Added try/catch to 5 unprotected route handlers: proposals (list, get, actions), autonomy (list, eligibility). | Done |
+| 65 | WebhookService test fix | Done -- Added `vi.mock` for `database/connection` and `utils/logger` to prevent config validation error at import time. All 66 test files now pass (909 tests). | Done |
+| 66 | Deploy script fix | Done -- `deploy.sh` health check curl failure no longer causes exit code 7 under `set -e`. Gracefully handles missing `/health` endpoint. | Done |
+
+---
+
 ## Prioritization Notes
 
-- **Tiers 1-10 are complete** — all 44 items shipped. Tiers 1-4 on July 14, Tiers 5-7 on July 14-15, Tier 8-9 on July 15, Tier 10 on July 15, 2026.
-- **Tier 10** closed remaining audit findings: RAID project access guards, deactivated user JWT revocation, data retention crons for unbounded table growth, digest email real content, and config documentation.
+- **Tiers 1-11 are complete** — all 52 items shipped. Tiers 1-4 on July 14, Tiers 5-7 on July 14-15, Tiers 8-10 on July 15, Tier 11 on July 15, 2026.
+- **Tier 11** closed remaining audit quick wins: SQL injection fix, prompt sanitization, scope corrections, API contract compliance (201 status codes, 404 checks), route error handling, and test/deploy fixes.
