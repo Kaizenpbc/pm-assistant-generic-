@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { execSync } from 'child_process';
+import os from 'os';
 import { authMiddleware } from '../../middleware/auth';
 import { databaseService } from '../../database/connection';
 import { metricsService } from '../../services/MetricsService';
@@ -31,6 +32,7 @@ function computeWarnings(data: {
   aiBudgetPercent: number;
   redisConnected: boolean;
   diskPercent: number | null;
+  swapPercent: number | null;
 }): Warning[] {
   const warnings: Warning[] = [];
 
@@ -84,6 +86,15 @@ function computeWarnings(data: {
     }
   }
 
+  // Swap
+  if (data.swapPercent !== null) {
+    if (data.swapPercent > 80) {
+      warnings.push({ severity: 'critical', title: 'Swap Usage Critical', message: `Swap at ${data.swapPercent.toFixed(0)}%`, advice: 'Server is under heavy memory pressure — consider adding RAM or reducing load' });
+    } else if (data.swapPercent > 50) {
+      warnings.push({ severity: 'warning', title: 'Swap Usage Elevated', message: `Swap at ${data.swapPercent.toFixed(0)}%`, advice: 'Monitor memory usage; performance may degrade' });
+    }
+  }
+
   return warnings;
 }
 
@@ -101,6 +112,24 @@ function getDiskUsage(): { usedGB: number; totalGB: number; percentUsed: number 
       usedGB: Math.round((usedKB / 1048576) * 100) / 100,
       totalGB: Math.round((totalKB / 1048576) * 100) / 100,
       percentUsed: Math.round((usedKB / totalKB) * 100 * 10) / 10,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getSwapUsage(): { usedMB: number; totalMB: number; percentUsed: number } | null {
+  try {
+    const output = execSync('free -b 2>/dev/null | grep -i swap || true', { encoding: 'utf8', timeout: 3000 });
+    const parts = output.trim().split(/\s+/);
+    if (parts.length < 3) return null;
+    const totalBytes = parseInt(parts[1], 10);
+    const usedBytes = parseInt(parts[2], 10);
+    if (isNaN(totalBytes) || isNaN(usedBytes) || totalBytes === 0) return null;
+    return {
+      usedMB: Math.round(usedBytes / 1048576),
+      totalMB: Math.round(totalBytes / 1048576),
+      percentUsed: Math.round((usedBytes / totalBytes) * 100 * 10) / 10,
     };
   } catch {
     return null;
@@ -239,6 +268,15 @@ export async function operationsRoutes(fastify: FastifyInstance) {
       const rssMB = Math.round(mem.rss / 1048576 * 100) / 100;
       const memoryPercent = heapTotalMB > 0 ? Math.round((heapUsedMB / heapTotalMB) * 100 * 10) / 10 : 0;
 
+      // OS-level memory
+      const osTotalMB = Math.round(os.totalmem() / 1048576);
+      const osFreeMB = Math.round(os.freemem() / 1048576);
+      const osUsedMB = osTotalMB - osFreeMB;
+      const osMemoryPercent = Math.round((osUsedMB / osTotalMB) * 100 * 10) / 10;
+
+      // Swap
+      const swap = getSwapUsage();
+
       const cpuUsage = process.cpuUsage();
       const uptimeMs = process.uptime() * 1000000; // microseconds
       const userPercent = uptimeMs > 0 ? Math.round((cpuUsage.user / uptimeMs) * 100 * 10) / 10 : 0;
@@ -270,7 +308,7 @@ export async function operationsRoutes(fastify: FastifyInstance) {
 
       // Compute warnings
       const warnings = computeWarnings({
-        memoryPercent,
+        memoryPercent: osMemoryPercent,
         poolActive,
         poolTotal,
         p99Ms: metrics.latency.p99Ms,
@@ -278,12 +316,23 @@ export async function operationsRoutes(fastify: FastifyInstance) {
         aiBudgetPercent: aiBudget.budgetUsedPercent,
         redisConnected: redisService.isConnected(),
         diskPercent: disk?.percentUsed ?? null,
+        swapPercent: swap?.percentUsed ?? null,
       });
+
+      // Summary aggregates
+      const totalTenants = tenants.length;
+      const totalUsers = tenants.reduce((sum, t) => sum + t.totalUsers, 0);
+      const availableRAM = osFreeMB;
+      const estimatedHeadroom = Math.max(0, Math.floor(availableRAM / 15));
 
       return {
         system: {
           uptime: Math.floor(process.uptime()),
-          memory: { heapUsedMB, heapTotalMB, rssMB, percentUsed: memoryPercent },
+          memory: {
+            heapUsedMB, heapTotalMB, rssMB, percentUsed: memoryPercent,
+            osTotalMB, osUsedMB, osAvailableMB: osFreeMB, osPercent: osMemoryPercent,
+          },
+          swap,
           cpu: { userPercent, systemPercent },
           db: {
             poolActive,
@@ -307,6 +356,7 @@ export async function operationsRoutes(fastify: FastifyInstance) {
           ai: aiBudget,
           disk,
         },
+        summary: { totalTenants, totalUsers, estimatedHeadroom },
         warnings,
         tenants,
       };

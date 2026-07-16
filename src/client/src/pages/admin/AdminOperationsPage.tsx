@@ -8,11 +8,15 @@ import {
   Info,
   RefreshCw,
   ArrowUpDown,
+  Users,
+  Building2,
+  TrendingUp,
 } from 'lucide-react';
 
 interface SystemData {
   uptime: number;
-  memory: { heapUsedMB: number; heapTotalMB: number; rssMB: number; percentUsed: number };
+  memory: { heapUsedMB: number; heapTotalMB: number; rssMB: number; percentUsed: number; osTotalMB: number; osUsedMB: number; osAvailableMB: number; osPercent: number };
+  swap: { usedMB: number; totalMB: number; percentUsed: number } | null;
   cpu: { userPercent: number; systemPercent: number };
   db: { poolActive: number; poolIdle: number; poolTotal: number; poolWaiting: number; latencyP50: number; latencyP95: number; latencyP99: number; totalQueries: number };
   redis: { connected: boolean; memoryUsedMB: number | null };
@@ -39,6 +43,7 @@ interface TenantRow {
 
 interface OperationsData {
   system: SystemData;
+  summary: { totalTenants: number; totalUsers: number; estimatedHeadroom: number };
   warnings: Warning[];
   tenants: TenantRow[];
 }
@@ -149,12 +154,47 @@ export function AdminOperationsPage() {
             </div>
           )}
 
+          {/* Capacity Summary */}
+          <div className="mb-6">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Capacity Summary</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+                <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg"><Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Tenants</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{data.summary.totalTenants}</p>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+                <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg"><Users className="w-5 h-5 text-purple-600 dark:text-purple-400" /></div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Total Users</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{data.summary.totalUsers}</p>
+                </div>
+              </div>
+              <GaugeCard
+                label="OS RAM"
+                value={`${data.system.memory.osUsedMB}`}
+                max={`${data.system.memory.osTotalMB} MB`}
+                unit="MB"
+                percent={data.system.memory.osPercent}
+              />
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg"><TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /></div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Estimated Headroom</p>
+                  <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">~{data.summary.estimatedHeadroom} <span className="text-sm font-normal">users</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* System Health Gauges */}
           <div className="mb-6">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">System Health</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <GaugeCard
-                label="Memory (Heap)"
+                label="Node.js Heap"
                 value={data.system.memory.heapUsedMB.toFixed(0)}
                 max={`${data.system.memory.heapTotalMB.toFixed(0)} MB`}
                 unit="MB"
@@ -203,6 +243,15 @@ export function AdminOperationsPage() {
                   max={`${data.system.disk.totalGB.toFixed(1)} GB`}
                   unit="GB"
                   percent={data.system.disk.percentUsed}
+                />
+              )}
+              {data.system.swap && (
+                <GaugeCard
+                  label="Swap"
+                  value={`${data.system.swap.usedMB}`}
+                  max={`${data.system.swap.totalMB} MB`}
+                  unit="MB"
+                  percent={data.system.swap.percentUsed}
                 />
               )}
             </div>
