@@ -251,7 +251,7 @@ The PM Assistant codebase has a strong foundation — parameterized queries in m
 | Category | Count | Examples | Fix |
 |---|---|---|---|
 | ~~Missing 201 on POST endpoints~~ | 9 | sprints, workflows, change-requests, intake, integrations, webhooks, apiKeys, report-templates | **FIXED** — Added `reply.status(201)` to sprint tasks, approval workflows, change requests, API keys, webhooks, integrations, report templates |
-| ~~Missing 404 on GET endpoints~~ | 5 | sprints (x3), intake forms (x2), integrations | **PARTIALLY FIXED** — Added 404 to integrations GET /:id (sprints already had 404s) |
+| ~~Missing 404 on GET/PUT/DELETE endpoints~~ | 5 | sprints (x3), intake forms (x2), integrations | **FIXED** — Added 404 to integrations GET/PUT/DELETE, report templates GET/PUT/DELETE (sprints already had 404s) |
 | Missing pagination | 3 | risks, notifications, admin/users | Add `parsePagination()` |
 | Missing Zod validation on POST | 3 | sprints tasks, rag search, custom fields | Add Zod schemas |
 | Response shape inconsistency | 2 | `PATCH /projects/:id/status` raw (no DTO), admin routes expose snake_case | Apply DTOs |

@@ -2,13 +2,14 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { customFieldService } from '../../services/CustomFieldService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import logger from '../../utils/logger';
 
 export async function customFieldRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // GET /project/:projectId — list field definitions
-  fastify.get('/project/:projectId', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/project/:projectId', { preHandler: [requireScope('read'), requireProjectAccess('viewer')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
       const { entityType } = request.query as { entityType?: string };
@@ -21,7 +22,7 @@ export async function customFieldRoutes(fastify: FastifyInstance) {
   });
 
   // POST /project/:projectId — create field
-  fastify.post('/project/:projectId', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/project/:projectId', { preHandler: [requireScope('write'), requireProjectAccess('editor')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       const { projectId } = request.params as { projectId: string };

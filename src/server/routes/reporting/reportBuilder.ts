@@ -69,6 +69,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string };
       const template = await reportBuilderService.getTemplateById(id);
+      if (!template) return reply.status(404).send({ error: 'Not found', message: 'Report template not found' });
       return { template };
     } catch (error) {
       logger.error('Get report template error', { error });
@@ -79,7 +80,13 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   // PUT /templates/:id — update template
   fastify.put('/templates/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const user = request.user!;
       const { id } = request.params as { id: string };
+      const existing = await reportBuilderService.getTemplateById(id);
+      if (!existing) return reply.status(404).send({ error: 'Not found', message: 'Report template not found' });
+      if (existing.userId !== user.userId && user.role !== 'admin') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'You can only update your own templates' });
+      }
       const body = updateTemplateSchema.parse(request.body);
       const template = await reportBuilderService.updateTemplate(id, body);
       return { template };
@@ -93,7 +100,13 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   // DELETE /templates/:id — delete template
   fastify.delete('/templates/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const user = request.user!;
       const { id } = request.params as { id: string };
+      const existing = await reportBuilderService.getTemplateById(id);
+      if (!existing) return reply.status(404).send({ error: 'Not found', message: 'Report template not found' });
+      if (existing.userId !== user.userId && user.role !== 'admin') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'You can only delete your own templates' });
+      }
       await reportBuilderService.deleteTemplate(id);
       return { message: 'Report template deleted' };
     } catch (error) {

@@ -66,6 +66,8 @@ export async function integrationRoutes(fastify: FastifyInstance) {
   fastify.put('/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
+      const existing = await integrationService.getById(id);
+      if (!existing) return reply.status(404).send({ error: 'Not found', message: 'Integration not found' });
       const body = updateIntegrationSchema.parse(request.body);
       const integration = await integrationService.update(id, body);
       return { integration };
@@ -80,6 +82,8 @@ export async function integrationRoutes(fastify: FastifyInstance) {
   fastify.delete('/:id', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
+      const existing = await integrationService.getById(id);
+      if (!existing) return reply.status(404).send({ error: 'Not found', message: 'Integration not found' });
       await integrationService.delete(id);
       return { message: 'Integration deleted' };
     } catch (error) {

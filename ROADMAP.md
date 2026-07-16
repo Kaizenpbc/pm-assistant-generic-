@@ -155,7 +155,20 @@ Remaining audit findings: scope corrections, SQL parameterization, prompt inject
 
 ---
 
+## Tier 12: Final Audit Sweep -- DONE
+
+Ownership checks, project access guards, and 404 responses on remaining routes.
+
+| # | Item | Description | Status |
+|---|------|-------------|--------|
+| 67 | Report template ownership (A8) | Done -- PUT/DELETE `/templates/:id` now verify the template belongs to the requesting user (admins exempt). GET returns 404 for missing templates. | Done |
+| 68 | Custom field project access (A12) | Done -- Added `requireProjectAccess('viewer')` to GET and `requireProjectAccess('editor')` to POST on `/project/:projectId` custom field routes. | Done |
+| 69 | Integration 404 checks (C5, C6) | Done -- PUT and DELETE `/integrations/:id` now return 404 when integration not found. | Done |
+
+---
+
 ## Prioritization Notes
 
-- **Tiers 1-11 are complete** — all 52 items shipped. Tiers 1-4 on July 14, Tiers 5-7 on July 14-15, Tiers 8-10 on July 15, Tier 11 on July 15, 2026.
-- **Tier 11** closed remaining audit quick wins: SQL injection fix, prompt sanitization, scope corrections, API contract compliance (201 status codes, 404 checks), route error handling, and test/deploy fixes.
+- **Tiers 1-12 are complete** — all 55 items shipped. Tiers 1-4 on July 14, Tiers 5-7 on July 14-15, Tiers 8-11 on July 15, Tier 12 on July 16, 2026.
+- **Tier 12** closed the final audit items: report template ownership checks, custom field project access guards, and integration 404 responses.
+- **Remaining audit items not fixed (by design):** A6/A7 (attachment project access — entity-based routes have no projectId, risk is low with UUID + scope gating), V2 (text field max lengths — already handled by Zod schemas on all input routes).
