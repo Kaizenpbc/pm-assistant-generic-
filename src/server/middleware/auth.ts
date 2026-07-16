@@ -12,7 +12,7 @@ async function isUserActive(userId: string): Promise<boolean> {
   const cached = await redisService.get(cacheKey);
   if (cached !== null) return cached === '1';
 
-  const rows = await databaseService.query<{ is_active: number }>(
+  const rows = await databaseService.queryControlPlane<{ is_active: number }>(
     'SELECT is_active FROM users WHERE id = ? LIMIT 1',
     [userId],
   );
