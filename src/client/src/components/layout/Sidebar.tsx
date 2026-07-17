@@ -17,7 +17,6 @@ import {
   Users,
   Building,
   Cpu,
-  Activity,
   ScrollText,
   ArrowLeftRight,
   HelpCircle,
@@ -105,7 +104,7 @@ const adminNavSections: NavSection[] = [
     items: [
       { labelKey: 'nav.adminOperations', icon: Gauge, path: '/admin/operations' },
       { labelKey: 'nav.adminAiUsage', icon: Cpu, path: '/admin/ai-usage' },
-      { labelKey: 'nav.adminSystem', icon: Activity, path: '/admin/system' },
+      { labelKey: 'nav.adminSystem', icon: Settings, path: '/admin/system' },
       { labelKey: 'nav.adminAudit', icon: ScrollText, path: '/admin/audit' },
     ],
   },

@@ -2090,6 +2090,11 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async getAdminConfig() {
+    const response = await this.api.get('/admin/config');
+    return response.data;
+  }
+
   async getAdminAiUsage() {
     const response = await this.api.get('/admin/ai-usage');
     return response.data;

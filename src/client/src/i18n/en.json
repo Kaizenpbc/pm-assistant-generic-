@@ -25,7 +25,7 @@
     "adminTenants": "Tenants",
     "adminAiUsage": "AI Usage",
     "adminOperations": "Operations",
-    "adminSystem": "System Stats",
+    "adminSystem": "Configuration",
     "adminAudit": "Audit Trail",
     "switchToAdmin": "Switch to Admin",
     "switchToPm": "Switch to PM View",

@@ -1,10 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import crypto from 'crypto';
+import os from 'os';
 import { z } from 'zod';
 import { authMiddleware } from '../../middleware/auth';
 import { databaseService } from '../../database/connection';
 import { userService } from '../../services/UserService';
 import { auditLedgerService } from '../../services/AuditLedgerService';
+import { redisService } from '../../services/RedisService';
+import { config } from '../../config';
 
 const statusSchema = z.object({
   active: z.boolean(),
@@ -181,6 +184,116 @@ export async function adminRoutes(fastify: FastifyInstance) {
         ORDER BY total_cost DESC`
       );
       return { usage: rows };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // GET /api/v1/admin/config — System configuration overview
+  fastify.get('/config', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!requireAdmin(request, reply)) return;
+    try {
+      // Feature flags
+      const features = [
+        { key: 'AI_ENABLED', label: 'AI / Claude', enabled: config.AI_ENABLED, detail: config.AI_ENABLED ? config.AI_MODEL : undefined },
+        { key: 'AI_FALLBACK_ENABLED', label: 'AI Fallback', enabled: config.AI_FALLBACK_ENABLED, detail: config.AI_FALLBACK_ENABLED ? config.AI_FALLBACK_MODEL : undefined },
+        { key: 'AGENT_ENABLED', label: 'Autonomous Agents', enabled: config.AGENT_ENABLED },
+        { key: 'EMBEDDING_ENABLED', label: 'Embeddings / RAG', enabled: config.EMBEDDING_ENABLED, detail: config.EMBEDDING_ENABLED ? config.EMBEDDING_MODEL : undefined },
+        { key: 'MULTI_TENANT_ENABLED', label: 'Multi-Tenant', enabled: config.MULTI_TENANT_ENABLED },
+        { key: 'METRICS_ENABLED', label: 'Metrics Collection', enabled: config.METRICS_ENABLED },
+        { key: 'ALERT_ENABLED', label: 'Alerting', enabled: config.ALERT_ENABLED, detail: config.ALERT_ENABLED ? (config.ALERT_EMAIL || 'No email set') : undefined },
+      ];
+
+      // Service connectivity
+      const services = [
+        { key: 'redis', label: 'Redis', connected: redisService.isConnected(), detail: config.REDIS_URL ? 'Configured' : 'Not configured (in-memory fallback)' },
+        { key: 'email', label: 'Email (Resend)', connected: !!config.RESEND_API_KEY, detail: config.RESEND_API_KEY ? `From: ${config.RESEND_FROM_EMAIL}` : 'RESEND_API_KEY not set' },
+        { key: 'stripe', label: 'Stripe Billing', connected: !!config.STRIPE_SECRET_KEY, detail: config.STRIPE_SECRET_KEY ? 'Configured' : 'Not configured' },
+        { key: 'anthropic', label: 'Anthropic API', connected: !!config.ANTHROPIC_API_KEY, detail: config.ANTHROPIC_API_KEY ? 'Key set' : 'Key not set' },
+        { key: 'openai', label: 'OpenAI (Embeddings)', connected: !!config.OPENAI_API_KEY, detail: config.OPENAI_API_KEY ? 'Key set' : 'Key not set' },
+      ];
+
+      // Database connectivity check
+      let dbConnected = false;
+      let dbVersion = '';
+      try {
+        const vRows = await databaseService.queryControlPlane<{ version: string }>(`SELECT VERSION() as version`);
+        dbConnected = true;
+        dbVersion = vRows[0]?.version || '';
+      } catch { /* */ }
+
+      // Migration count
+      let migrationCount = 0;
+      try {
+        const mRows = await databaseService.queryControlPlane<{ cnt: number }>(`SELECT COUNT(*) as cnt FROM _migrations`);
+        migrationCount = Number(mRows[0]?.cnt || 0);
+      } catch { /* table may not exist */ }
+
+      // Agent counts
+      let agentTotal = 0, agentEnabled = 0;
+      try {
+        const aRows = await databaseService.queryControlPlane<{ total: number; enabled: number }>(
+          `SELECT COUNT(*) as total, SUM(CASE WHEN is_enabled = 1 THEN 1 ELSE 0 END) as enabled FROM agents`
+        );
+        agentTotal = Number(aRows[0]?.total || 0);
+        agentEnabled = Number(aRows[0]?.enabled || 0);
+      } catch { /* */ }
+
+      // Environment info
+      const environment = {
+        nodeVersion: process.version,
+        platform: `${os.type()} ${os.release()} (${os.arch()})`,
+        env: config.NODE_ENV,
+        port: config.PORT,
+        appUrl: config.APP_URL,
+        corsOrigin: config.CORS_ORIGIN,
+        logLevel: config.LOG_LEVEL,
+        dbHost: config.DB_HOST,
+        dbName: config.DB_NAME,
+        dbConnected,
+        dbVersion,
+        dbPoolSize: config.DB_CONNECTION_LIMIT,
+        migrationCount,
+      };
+
+      // AI configuration
+      const aiConfig = {
+        model: config.AI_MODEL,
+        fallbackModel: config.AI_FALLBACK_MODEL,
+        temperature: config.AI_TEMPERATURE,
+        maxTokens: config.AI_MAX_TOKENS,
+        monthlyTokenBudget: config.AI_MONTHLY_TOKEN_BUDGET,
+        pricingInput: config.AI_PRICING_INPUT,
+        pricingOutput: config.AI_PRICING_OUTPUT,
+      };
+
+      // Agent configuration
+      const agentConfig = {
+        cronSchedule: config.AGENT_CRON_SCHEDULE,
+        delayThresholdDays: config.AGENT_DELAY_THRESHOLD_DAYS,
+        budgetCpiThreshold: config.AGENT_BUDGET_CPI_THRESHOLD,
+        budgetOverrunThreshold: config.AGENT_BUDGET_OVERRUN_THRESHOLD,
+        mcConfidenceLevel: config.AGENT_MC_CONFIDENCE_LEVEL,
+        overdueScanMinutes: config.AGENT_OVERDUE_SCAN_MINUTES,
+        totalAgents: agentTotal,
+        enabledAgents: agentEnabled,
+      };
+
+      // Upload / storage config
+      const storageConfig = {
+        uploadDir: config.UPLOAD_DIR,
+        maxUploadSizeMB: config.MAX_UPLOAD_SIZE_MB,
+      };
+
+      return {
+        features,
+        services,
+        environment,
+        aiConfig,
+        agentConfig,
+        storageConfig,
+      };
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Internal server error' });
