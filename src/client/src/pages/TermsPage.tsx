@@ -42,6 +42,21 @@ export const TermsPage: React.FC = () => {
           <p><strong>Refunds:</strong> Monthly subscriptions are non-refundable. Annual subscriptions may be refunded on a pro-rated basis if requested within 30 days of the billing date. After 30 days, annual subscriptions are non-refundable. To request a refund, contact support@kpbc.ca.</p>
           <p><strong>Price changes:</strong> We may adjust pricing with at least 30 days' written notice. Price changes take effect at the start of your next billing period.</p>
 
+          <div className="mt-8 rounded-lg border-2 border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-900/20 p-5">
+            <h2 className="text-lg font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              5A. AI Usage Limits and Token Budgets
+            </h2>
+            <div className="mt-3 space-y-3 text-sm text-amber-900 dark:text-amber-200">
+              <p><strong>Monthly Token Allowances.</strong> Each subscription tier includes a monthly AI token budget: <strong>Pro</strong> — 500,000 tokens; <strong>Business</strong> — 1,500,000 tokens; <strong>Consultant</strong> — 3,000,000 tokens. Free trial accounts receive 25,000 tokens per month. Token budgets reset on the first day of each calendar month (UTC).</p>
+              <p><strong>Budget Exhaustion.</strong> When your monthly AI token budget is fully consumed, all AI-powered features (including the Mjuzi assistant, AI risk scanning, AI forecasting, and AI-generated reports) will be temporarily unavailable until your budget resets or you purchase additional tokens. <strong>All non-AI features of the Service remain fully operational</strong> — scheduling, task management, reporting, collaboration, and data access are unaffected.</p>
+              <p><strong>Token Top-Ups.</strong> You may purchase additional token packs at any time. Top-up tokens are added instantly to your available balance and <strong>do not expire</strong>. Top-up purchases are one-time payments, non-refundable, and are consumed only after your monthly tier allowance is exhausted. Current pricing: 500,000 tokens for $5 USD per pack.</p>
+              <p><strong>Per-User Overrides.</strong> Kovarti may, at its discretion, adjust individual token budgets (higher or lower) based on usage patterns, enterprise agreements, or promotional offers. Any per-user override takes precedence over the tier default.</p>
+              <p><strong>No Carry-Over.</strong> Unused monthly tier tokens do not carry over to the following month. Purchased top-up tokens are the only tokens that persist across billing cycles.</p>
+              <p><strong>Fair Use.</strong> Token budgets are designed for normal project management workflows. Automated or programmatic consumption of AI tokens beyond reasonable use may result in temporary throttling or account review.</p>
+            </div>
+          </div>
+
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mt-8">6. Acceptable Use</h2>
           <p>You agree not to misuse the Service, including but not limited to: reverse engineering, unauthorized access attempts, distributing malware, or using the Service for illegal purposes.</p>
 

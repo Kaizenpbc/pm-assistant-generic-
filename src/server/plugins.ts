@@ -135,6 +135,10 @@ export async function registerPlugins(fastify: FastifyInstance) {
     if (body.details !== undefined) normalized.details = body.details;
     if (body.retryAfter !== undefined) normalized.retryAfter = body.retryAfter;
     if (body.retryAfterMs !== undefined) normalized.retryAfterMs = body.retryAfterMs;
+    if (body.code !== undefined) normalized.code = body.code;
+    if (body.resetDate !== undefined) normalized.resetDate = body.resetDate;
+    if (body.used !== undefined) normalized.used = body.used;
+    if (body.budget !== undefined) normalized.budget = body.budget;
 
     return JSON.stringify(normalized);
   });
@@ -298,13 +302,22 @@ export async function registerPlugins(fastify: FastifyInstance) {
       error: error.message, url: request.url, method: request.method
     });
 
-    reply.status(statusCode).send({
+    const response: Record<string, unknown> = {
       statusCode,
       error: statusCode === 500 ? 'Internal Server Error' : error.name || 'Error',
       message: statusCode === 500 ? 'Internal Server Error' : error.message,
       timestamp: new Date().toISOString(),
-      path: request.url
-    });
+      path: request.url,
+    };
+
+    // Preserve structured error fields (code, resetDate, etc.)
+    const errAny = error as unknown as Record<string, unknown>;
+    if (errAny.code) response.code = errAny.code;
+    if (errAny.resetDate) response.resetDate = errAny.resetDate;
+    if (errAny.used !== undefined) response.used = errAny.used;
+    if (errAny.budget !== undefined) response.budget = errAny.budget;
+
+    reply.status(statusCode).send(response);
   });
 
   // Serve static client build in production

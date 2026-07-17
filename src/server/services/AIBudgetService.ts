@@ -5,9 +5,16 @@ import { notificationService } from './NotificationService';
 import { deadLetterService } from './DeadLetterService';
 
 export class AIBudgetExceededError extends Error {
+  public statusCode = 429;
+  public code = 'AI_BUDGET_EXCEEDED';
+  public resetDate: string;
+
   constructor(public used: number, public budget: number) {
     super(`AI token budget exceeded: used ${used} of ${budget} tokens this month`);
     this.name = 'AIBudgetExceededError';
+    // First day of next month
+    const now = new Date();
+    this.resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().substring(0, 10);
   }
 }
 
