@@ -155,10 +155,16 @@ export async function adminRoutes(fastify: FastifyInstance) {
   fastify.get('/audit', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!requireAdmin(request, reply)) return;
     try {
-      const { limit = '100' } = request.query as { limit?: string };
+      const q = request.query as {
+        limit?: string; offset?: string;
+        action?: string; entityType?: string; since?: string;
+      };
       const result = await auditLedgerService.getEntries({
-        limit: Math.min(Number(limit) || 100, 500),
-        offset: 0,
+        limit: Math.min(Number(q.limit) || 100, 500),
+        offset: Math.max(Number(q.offset) || 0, 0),
+        action: q.action || undefined,
+        entityType: q.entityType || undefined,
+        since: q.since || undefined,
       });
       return { entries: result.entries, total: result.total };
     } catch (error) {
@@ -171,6 +177,11 @@ export async function adminRoutes(fastify: FastifyInstance) {
   fastify.get('/ai-usage', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!requireAdmin(request, reply)) return;
     try {
+      const q = request.query as { since?: string };
+      const sinceClause = q.since ? 'AND a.created_at >= ?' : '';
+      const sinceParams = q.since ? [q.since] : [];
+
+      // Per-user breakdown
       const rows = await databaseService.queryControlPlane(
         `SELECT
           u.username, u.email, u.full_name,
@@ -179,11 +190,39 @@ export async function adminRoutes(fastify: FastifyInstance) {
           COALESCE(SUM(a.cost_estimate), 0) AS total_cost,
           MAX(a.created_at) AS last_used
         FROM users u
-        LEFT JOIN ai_usage_log a ON a.user_id = u.id
+        LEFT JOIN ai_usage_log a ON a.user_id = u.id ${sinceClause}
         GROUP BY u.id
-        ORDER BY total_cost DESC`
+        ORDER BY total_cost DESC`,
+        sinceParams
       );
-      return { usage: rows };
+
+      // Summary totals (respecting same filter)
+      const summaryRows = await databaseService.queryControlPlane(
+        `SELECT
+          COUNT(*) AS total_calls,
+          COALESCE(SUM(input_tokens + output_tokens), 0) AS total_tokens,
+          COALESCE(SUM(cost_estimate), 0) AS total_cost
+        FROM ai_usage_log ${q.since ? 'WHERE created_at >= ?' : ''}`,
+        sinceParams
+      );
+
+      // Daily trend (last 30 days)
+      const dailyRows = await databaseService.queryControlPlane(
+        `SELECT
+          DATE(created_at) AS day,
+          COUNT(*) AS calls,
+          COALESCE(SUM(cost_estimate), 0) AS cost
+        FROM ai_usage_log
+        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        GROUP BY DATE(created_at)
+        ORDER BY day`
+      );
+
+      return {
+        usage: rows,
+        summary: summaryRows[0] ?? { total_calls: 0, total_tokens: 0, total_cost: 0 },
+        dailyTrend: dailyRows,
+      };
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Internal server error' });

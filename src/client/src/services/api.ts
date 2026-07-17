@@ -2095,8 +2095,9 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
-  async getAdminAiUsage() {
-    const response = await this.api.get('/admin/ai-usage');
+  async getAdminAiUsage(since?: string) {
+    const params = since ? `?since=${encodeURIComponent(since)}` : '';
+    const response = await this.api.get(`/admin/ai-usage${params}`);
     return response.data;
   }
 
@@ -2145,8 +2146,14 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
-  async getAdminAudit(limit = 100) {
-    const response = await this.api.get(`/admin/audit?limit=${limit}`);
+  async getAdminAudit(params: { limit?: number; offset?: number; action?: string; entityType?: string; since?: string } = {}) {
+    const qs = new URLSearchParams();
+    if (params.limit) qs.set('limit', String(params.limit));
+    if (params.offset) qs.set('offset', String(params.offset));
+    if (params.action) qs.set('action', params.action);
+    if (params.entityType) qs.set('entityType', params.entityType);
+    if (params.since) qs.set('since', params.since);
+    const response = await this.api.get(`/admin/audit?${qs.toString()}`);
     return response.data;
   }
 
