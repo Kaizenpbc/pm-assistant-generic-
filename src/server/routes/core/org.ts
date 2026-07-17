@@ -130,4 +130,100 @@ export async function orgRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to list members' });
     }
   });
+
+  // Update a member's role
+  const updateMemberSchema = z.object({
+    role: z.enum([
+      'admin', 'executive', 'project_manager', 'team_member', 'scrum_master',
+      'finance_officer', 'risk_manager', 'pmo', 'ba', 'qa', 'tester', 'devops', 'claude_sme', 'viewer',
+    ]),
+  });
+
+  fastify.patch('/members/:memberId', {
+    schema: { description: 'Update a member role', tags: ['org'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { memberId } = request.params as { memberId: string };
+      const { role } = updateMemberSchema.parse(request.body);
+      const requesterId = request.user!.userId;
+
+      const org = await organizationService.findByUserId(requesterId);
+      if (!org) {
+        return reply.status(403).send({ error: 'No organization' });
+      }
+
+      // Only org owner or admin can change roles
+      const requester = await userService.findById(requesterId);
+      if (org.ownerUserId !== requesterId && requester?.role !== 'admin') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only the organization owner or an admin can change roles.' });
+      }
+
+      // Verify target user is in same org
+      const targetOrg = await organizationService.findByUserId(memberId);
+      if (!targetOrg || targetOrg.id !== org.id) {
+        return reply.status(404).send({ error: 'Member not found in your organization' });
+      }
+
+      // Cannot change own role (prevent locking yourself out)
+      if (memberId === requesterId) {
+        return reply.status(400).send({ error: 'Cannot change your own role' });
+      }
+
+      await userService.update(memberId, { role } as any);
+      organizationService.invalidateUserCache(memberId);
+
+      return { message: 'Role updated', memberId, role };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ error: 'Validation error', message: error.issues[0]?.message || 'Invalid input' });
+      }
+      logger.error('Update member role error', { error });
+      return reply.status(500).send({ error: 'Failed to update member role' });
+    }
+  });
+
+  // Remove a member from the organization
+  fastify.delete('/members/:memberId', {
+    schema: { description: 'Remove a member from the organization', tags: ['org'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { memberId } = request.params as { memberId: string };
+      const requesterId = request.user!.userId;
+
+      const org = await organizationService.findByUserId(requesterId);
+      if (!org) {
+        return reply.status(403).send({ error: 'No organization' });
+      }
+
+      const requester = await userService.findById(requesterId);
+      if (org.ownerUserId !== requesterId && requester?.role !== 'admin') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Only the organization owner or an admin can remove members.' });
+      }
+
+      // Cannot remove yourself
+      if (memberId === requesterId) {
+        return reply.status(400).send({ error: 'Cannot remove yourself from the organization' });
+      }
+
+      // Cannot remove the org owner
+      if (memberId === org.ownerUserId) {
+        return reply.status(400).send({ error: 'Cannot remove the organization owner' });
+      }
+
+      // Verify target is in same org
+      const targetOrg = await organizationService.findByUserId(memberId);
+      if (!targetOrg || targetOrg.id !== org.id) {
+        return reply.status(404).send({ error: 'Member not found in your organization' });
+      }
+
+      // Remove org association (set organization_id to NULL)
+      await userService.update(memberId, { organizationId: null } as any);
+      organizationService.invalidateUserCache(memberId);
+
+      return { message: 'Member removed', memberId };
+    } catch (error) {
+      logger.error('Remove member error', { error });
+      return reply.status(500).send({ error: 'Failed to remove member' });
+    }
+  });
 }
