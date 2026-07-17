@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
-import { Check, AlertCircle, Zap } from 'lucide-react';
+import { Check, AlertCircle, Zap, X } from 'lucide-react';
 
 interface PlanDef {
   tier: string;
@@ -10,6 +10,7 @@ interface PlanDef {
   monthly: number;
   annual: number;
   tokens: string;
+  tokensEquiv: string;
   highlight?: boolean;
   features: string[];
 }
@@ -21,6 +22,7 @@ const PLANS: PlanDef[] = [
     monthly: 15,
     annual: 150,
     tokens: '500K',
+    tokensEquiv: '~100 AI chats, 50 risk scans, or 25 reports/mo',
     features: [
       'Unlimited projects',
       'Mjuzi AI assistant (500K tokens/mo)',
@@ -37,6 +39,7 @@ const PLANS: PlanDef[] = [
     monthly: 35,
     annual: 350,
     tokens: '1.5M',
+    tokensEquiv: '~300 AI chats, 150 risk scans, or 75 reports/mo',
     highlight: true,
     features: [
       'Everything in Pro, plus:',
@@ -55,6 +58,7 @@ const PLANS: PlanDef[] = [
     monthly: 59,
     annual: 590,
     tokens: '3M',
+    tokensEquiv: '~600 AI chats, 300 risk scans, or 150 reports/mo',
     features: [
       'Everything in Business, plus:',
       'AI tokens: 3M/mo (6x Pro)',
@@ -66,6 +70,39 @@ const PLANS: PlanDef[] = [
       '5GB file storage',
     ],
   },
+];
+
+interface FeatureRow {
+  feature: string;
+  free: boolean | string;
+  pro: boolean | string;
+  business: boolean | string;
+  consultant: boolean | string;
+}
+
+const COMPARISON: FeatureRow[] = [
+  { feature: 'Projects', free: '3', pro: 'Unlimited', business: 'Unlimited', consultant: 'Unlimited' },
+  { feature: 'AI tokens/month', free: '25K', pro: '500K', business: '1.5M', consultant: '3M' },
+  { feature: 'Mjuzi AI Assistant', free: true, pro: true, business: true, consultant: true },
+  { feature: 'Gantt Charts & Critical Path', free: true, pro: true, business: true, consultant: true },
+  { feature: 'Kanban Boards', free: true, pro: true, business: true, consultant: true },
+  { feature: 'Sprint / Agile Management', free: true, pro: true, business: true, consultant: true },
+  { feature: 'RAID Management', free: true, pro: true, business: true, consultant: true },
+  { feature: 'Export (CSV, PDF, XML)', free: false, pro: true, business: true, consultant: true },
+  { feature: 'API Access', free: false, pro: true, business: true, consultant: true },
+  { feature: 'EVM Dashboard & AI Forecasting', free: false, pro: false, business: true, consultant: true },
+  { feature: 'Monte Carlo Simulation', free: false, pro: false, business: true, consultant: true },
+  { feature: 'Resource Management & Heatmaps', free: false, pro: false, business: true, consultant: true },
+  { feature: 'Custom Report Builder', free: false, pro: false, business: true, consultant: true },
+  { feature: 'DAG Workflow Automation', free: false, pro: false, business: true, consultant: true },
+  { feature: 'Stakeholder Portal', free: false, pro: false, business: true, consultant: true },
+  { feature: 'Cross-Project Intelligence', free: false, pro: false, business: false, consultant: true },
+  { feature: 'AI Auto-Reschedule', free: false, pro: false, business: false, consultant: true },
+  { feature: 'Meeting Intelligence & Voice', free: false, pro: false, business: false, consultant: true },
+  { feature: 'NL Query Engine', free: false, pro: false, business: false, consultant: true },
+  { feature: 'MCP Integration', free: false, pro: false, business: false, consultant: true },
+  { feature: 'File Storage', free: '100MB', pro: '1GB', business: '2GB', consultant: '5GB' },
+  { feature: 'Token Top-Up Packs', free: false, pro: true, business: true, consultant: true },
 ];
 
 export const PricingPage: React.FC = () => {
@@ -236,6 +273,9 @@ export const PricingPage: React.FC = () => {
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                       {plan.tokens} AI tokens/month
                     </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                      {plan.tokensEquiv}
+                    </p>
                   </div>
 
                   <div className="mb-6">
@@ -310,6 +350,47 @@ export const PricingPage: React.FC = () => {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+
+          {/* Feature Comparison Matrix */}
+          <div className="mt-20 mb-16">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-8">
+              Compare plans
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-3 pr-4 font-semibold text-gray-900 dark:text-white">Feature</th>
+                    <th className="text-center py-3 px-3 font-semibold text-gray-500 dark:text-gray-400 w-24">Free</th>
+                    <th className="text-center py-3 px-3 font-semibold text-gray-900 dark:text-white w-24">Pro</th>
+                    <th className="text-center py-3 px-3 font-semibold text-primary-600 dark:text-primary-400 w-24">Business</th>
+                    <th className="text-center py-3 px-3 font-semibold text-gray-900 dark:text-white w-24">Consultant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARISON.map((row, i) => (
+                    <tr key={row.feature} className={`border-b border-gray-100 dark:border-gray-700/50 ${i % 2 === 0 ? 'bg-gray-50/50 dark:bg-gray-800/50' : ''}`}>
+                      <td className="py-2.5 pr-4 text-gray-700 dark:text-gray-300">{row.feature}</td>
+                      {(['free', 'pro', 'business', 'consultant'] as const).map((tier) => {
+                        const val = row[tier];
+                        return (
+                          <td key={tier} className="py-2.5 px-3 text-center">
+                            {val === true ? (
+                              <Check className="w-4 h-4 text-primary-500 mx-auto" />
+                            ) : val === false ? (
+                              <X className="w-4 h-4 text-gray-300 dark:text-gray-600 mx-auto" />
+                            ) : (
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">{val}</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 

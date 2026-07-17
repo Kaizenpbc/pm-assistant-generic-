@@ -163,6 +163,14 @@ class ApiService {
     return response.data;
   }
 
+  async getAiBudget(): Promise<{
+    totalInputTokens: number; totalOutputTokens: number; totalTokens: number;
+    totalCost: number; requestCount: number; budget: number; remaining: number; percentUsed: number;
+  }> {
+    const response = await this.api.get('/ai/budget');
+    return response.data;
+  }
+
   async createPortalSession() {
     const response = await this.api.post('/stripe/create-portal-session');
     return response.data;
