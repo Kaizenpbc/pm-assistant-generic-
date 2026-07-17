@@ -190,8 +190,8 @@ async function getTenantStats(): Promise<any[]> {
 
   if (config.MULTI_TENANT_ENABLED) {
     try {
-      const orgs = await databaseService.queryControlPlane<{ id: string; name: string; slug: string; status: string }>(
-        `SELECT id, name, slug, status FROM organizations WHERE status = 'active'`
+      const orgs = await databaseService.queryControlPlane<{ id: string; name: string; slug: string }>(
+        `SELECT id, name, slug FROM organizations WHERE is_active = 1`
       );
       for (const org of orgs) {
         const userRows = await databaseService.queryControlPlane<{ total: number; active: number }>(
@@ -324,7 +324,7 @@ export async function operationsRoutes(fastify: FastifyInstance) {
       let totalUsers = 0;
       try {
         if (config.MULTI_TENANT_ENABLED) {
-          const orgRows = await databaseService.queryControlPlane<{ cnt: number }>(`SELECT COUNT(*) as cnt FROM organizations WHERE status = 'active'`);
+          const orgRows = await databaseService.queryControlPlane<{ cnt: number }>(`SELECT COUNT(*) as cnt FROM organizations WHERE is_active = 1`);
           totalTenants = Number(orgRows[0]?.cnt || 0);
         } else {
           totalTenants = 1;
