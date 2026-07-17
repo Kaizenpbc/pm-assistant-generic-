@@ -1,12 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../database/connection', () => ({
-  databaseService: { query: vi.fn().mockResolvedValue([]) },
+  databaseService: {
+    query: vi.fn().mockResolvedValue([]),
+    queryControlPlane: vi.fn().mockResolvedValue([]),
+  },
 }));
 
 vi.mock('../../config', () => ({
   config: {
     AI_MONTHLY_TOKEN_BUDGET: 500000,
+  },
+  getTierBudget: (tier: string) => {
+    const map: Record<string, number> = { free: 25000, pro: 500000, business: 1500000, consultant: 3000000 };
+    return map[tier] ?? 500000;
   },
 }));
 
@@ -14,16 +21,23 @@ vi.mock('../../services/NotificationService', () => ({
   notificationService: { create: vi.fn().mockResolvedValue({}) },
 }));
 
+vi.mock('../../database/TokenTopUpRepository', () => ({
+  tokenTopUpRepository: { getRemainingTokens: vi.fn().mockResolvedValue(0) },
+}));
+
 import { aiBudgetService, AIBudgetExceededError } from '../../services/AIBudgetService';
 import { databaseService } from '../../database/connection';
 import { notificationService } from '../../services/NotificationService';
 
 const mockQuery = databaseService.query as ReturnType<typeof vi.fn>;
+const mockQueryCP = databaseService.queryControlPlane as ReturnType<typeof vi.fn>;
 const mockCreate = notificationService.create as ReturnType<typeof vi.fn>;
 
 describe('AIBudgetService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: user is on 'pro' tier (500k budget) — matches legacy test expectations
+    mockQueryCP.mockResolvedValue([{ subscription_tier: 'pro' }]);
   });
 
   describe('getMonthlyUsage', () => {
