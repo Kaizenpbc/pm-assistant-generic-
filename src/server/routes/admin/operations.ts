@@ -6,6 +6,7 @@ import { databaseService } from '../../database/connection';
 import { metricsService } from '../../services/MetricsService';
 import { redisService } from '../../services/RedisService';
 import { config } from '../../config';
+import { EmailService } from '../../services/EmailService';
 
 function requireAdmin(request: FastifyRequest, reply: FastifyReply): boolean {
   const user = request.user!;
@@ -254,6 +255,157 @@ async function getTenantStats(): Promise<any[]> {
   return tenants;
 }
 
+// ── Security & Auth ──
+async function getSecurityStats(): Promise<{
+  deactivatedAccounts: number; activeApiKeys: number; totalApiKeys: number;
+  recentLogins24h: number; usersNeverLoggedIn: number;
+}> {
+  try {
+    const [deactivated, apiKeys, recentLogins, neverLogged] = await Promise.all([
+      databaseService.queryControlPlane<{ cnt: number }>(`SELECT COUNT(*) as cnt FROM users WHERE is_active = 0`),
+      databaseService.queryControlPlane<{ total: number; active: number }>(
+        `SELECT COUNT(*) as total, SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active FROM api_keys`
+      ),
+      databaseService.queryControlPlane<{ cnt: number }>(
+        `SELECT COUNT(*) as cnt FROM users WHERE last_login_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)`
+      ),
+      databaseService.queryControlPlane<{ cnt: number }>(
+        `SELECT COUNT(*) as cnt FROM users WHERE last_login_at IS NULL AND is_active = 1`
+      ),
+    ]);
+    return {
+      deactivatedAccounts: Number(deactivated[0]?.cnt || 0),
+      activeApiKeys: Number(apiKeys[0]?.active || 0),
+      totalApiKeys: Number(apiKeys[0]?.total || 0),
+      recentLogins24h: Number(recentLogins[0]?.cnt || 0),
+      usersNeverLoggedIn: Number(neverLogged[0]?.cnt || 0),
+    };
+  } catch {
+    return { deactivatedAccounts: 0, activeApiKeys: 0, totalApiKeys: 0, recentLogins24h: 0, usersNeverLoggedIn: 0 };
+  }
+}
+
+// ── Cron Jobs ──
+const CRON_JOBS = ['agent-scan', 'overdue-scan', 'recurrence', 'digest', 'reports', 'health-snapshot', 'trial-reminder', 'alert-check', 'data-retention'];
+
+async function getCronStats(): Promise<{ name: string; status: string; durationMs: number | null; finishedAt: string | null }[]> {
+  if (!redisService.isConnected()) {
+    return CRON_JOBS.map(name => ({ name, status: 'unknown', durationMs: null, finishedAt: null }));
+  }
+  const results = await Promise.all(
+    CRON_JOBS.map(async (name) => {
+      const raw = await redisService.get(`cron:last:${name}`);
+      if (!raw) return { name, status: 'never_run', durationMs: null, finishedAt: null };
+      try {
+        const info = JSON.parse(raw);
+        return { name, status: info.status || 'unknown', durationMs: info.durationMs ?? null, finishedAt: info.finishedAt ?? null };
+      } catch {
+        return { name, status: 'unknown', durationMs: null, finishedAt: null };
+      }
+    })
+  );
+  return results;
+}
+
+// ── Database Growth ──
+async function getDbGrowth(): Promise<{ tableName: string; rows: number; sizeMB: number }[]> {
+  try {
+    const dbName = config.MULTI_TENANT_ENABLED ? 'pmassist' : config.DB_NAME || 'pmassist';
+    const rows = await databaseService.queryControlPlane<{ TABLE_NAME: string; TABLE_ROWS: number; data_size: number; index_size: number }>(
+      `SELECT TABLE_NAME, TABLE_ROWS, DATA_LENGTH as data_size, INDEX_LENGTH as index_size
+       FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? ORDER BY (DATA_LENGTH + INDEX_LENGTH) DESC LIMIT 20`,
+      [dbName]
+    );
+    return rows.map(r => ({
+      tableName: r.TABLE_NAME,
+      rows: Number(r.TABLE_ROWS || 0),
+      sizeMB: Math.round((Number(r.data_size || 0) + Number(r.index_size || 0)) / 1048576 * 100) / 100,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ── Email Delivery ──
+async function getEmailStats(): Promise<{ sentThisMonth: number; failedThisMonth: number }> {
+  const stats = await EmailService.getMonthlyStats();
+  return { sentThisMonth: stats.sent, failedThisMonth: stats.failed };
+}
+
+// ── User Activity ──
+async function getUserActivity(): Promise<{ dau: number; wau: number; mau: number; lastSeenUsers: { username: string; fullName: string; lastLogin: string }[] }> {
+  try {
+    const [dauRows, wauRows, mauRows, recentRows] = await Promise.all([
+      databaseService.queryControlPlane<{ cnt: number }>(
+        `SELECT COUNT(*) as cnt FROM users WHERE last_login_at >= DATE_SUB(NOW(), INTERVAL 1 DAY) AND is_active = 1`
+      ),
+      databaseService.queryControlPlane<{ cnt: number }>(
+        `SELECT COUNT(*) as cnt FROM users WHERE last_login_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND is_active = 1`
+      ),
+      databaseService.queryControlPlane<{ cnt: number }>(
+        `SELECT COUNT(*) as cnt FROM users WHERE last_login_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND is_active = 1`
+      ),
+      databaseService.queryControlPlane<{ username: string; full_name: string; last_login_at: string }>(
+        `SELECT username, full_name, last_login_at FROM users WHERE last_login_at IS NOT NULL AND is_active = 1 ORDER BY last_login_at DESC LIMIT 10`
+      ),
+    ]);
+    return {
+      dau: Number(dauRows[0]?.cnt || 0),
+      wau: Number(wauRows[0]?.cnt || 0),
+      mau: Number(mauRows[0]?.cnt || 0),
+      lastSeenUsers: recentRows.map(r => ({ username: r.username, fullName: r.full_name, lastLogin: r.last_login_at })),
+    };
+  } catch {
+    return { dau: 0, wau: 0, mau: 0, lastSeenUsers: [] };
+  }
+}
+
+// ── Agent Performance ──
+async function getAgentStats(): Promise<{ agentId: string; totalRuns: number; lastRun: string | null }[]> {
+  try {
+    const rows = await databaseService.queryControlPlane<{ agent_id: string; total_runs: number; last_run: string }>(
+      `SELECT agent_id, COUNT(*) as total_runs, MAX(created_at) as last_run
+       FROM agent_memory WHERE memory_type = 'reflection'
+       GROUP BY agent_id ORDER BY total_runs DESC`
+    );
+    return rows.map(r => ({ agentId: r.agent_id, totalRuns: Number(r.total_runs), lastRun: r.last_run }));
+  } catch {
+    return [];
+  }
+}
+
+// ── Webhook / Dead Letter ──
+async function getWebhookStats(): Promise<{
+  totalDeliveries: number; successDeliveries: number; failedDeliveries: number;
+  dlqPending: number; dlqFailed: number; dlqResolved: number;
+}> {
+  try {
+    const [deliveries, dlq] = await Promise.all([
+      databaseService.queryControlPlane<{ total: number; success: number; failed: number }>(
+        `SELECT COUNT(*) as total,
+                SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 1 ELSE 0 END) as success,
+                SUM(CASE WHEN status_code IS NULL OR status_code >= 400 THEN 1 ELSE 0 END) as failed
+         FROM webhook_deliveries WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
+      ),
+      databaseService.queryControlPlane<{ status: string; cnt: number }>(
+        `SELECT status, COUNT(*) as cnt FROM dead_letter_queue GROUP BY status`
+      ),
+    ]);
+    const dlqMap: Record<string, number> = {};
+    dlq.forEach(r => { dlqMap[r.status] = Number(r.cnt); });
+    return {
+      totalDeliveries: Number(deliveries[0]?.total || 0),
+      successDeliveries: Number(deliveries[0]?.success || 0),
+      failedDeliveries: Number(deliveries[0]?.failed || 0),
+      dlqPending: dlqMap['pending'] || 0,
+      dlqFailed: dlqMap['failed'] || 0,
+      dlqResolved: dlqMap['resolved'] || 0,
+    };
+  } catch {
+    return { totalDeliveries: 0, successDeliveries: 0, failedDeliveries: 0, dlqPending: 0, dlqFailed: 0, dlqResolved: 0 };
+  }
+}
+
 export async function operationsRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
@@ -299,11 +451,18 @@ export async function operationsRoutes(fastify: FastifyInstance) {
       const errorRate5xx = totalReqs > 0 ? (metrics.errors.total5xx / totalReqs) * 100 : 0;
 
       // Async data
-      const [redisMemory, aiBudget, disk, tenants] = await Promise.all([
+      const [redisMemory, aiBudget, disk, tenants, security, cronJobs, dbGrowth, emailStats, userActivity, agentPerf, webhookStats] = await Promise.all([
         getRedisMemory(),
         getAiBudgetInfo(),
         Promise.resolve(getDiskUsage()),
         getTenantStats(),
+        getSecurityStats(),
+        getCronStats(),
+        getDbGrowth(),
+        getEmailStats(),
+        getUserActivity(),
+        getAgentStats(),
+        getWebhookStats(),
       ]);
 
       // Compute warnings
@@ -322,6 +481,8 @@ export async function operationsRoutes(fastify: FastifyInstance) {
       // Summary aggregates — query directly, don't rely on tenants array
       let totalTenants = 0;
       let totalUsers = 0;
+      let roleBreakdown: { role: string; count: number }[] = [];
+      let aiDailyUsage: { date: string; requests: number; inputTokens: number; outputTokens: number; cost: number }[] = [];
       try {
         if (config.MULTI_TENANT_ENABLED) {
           const orgRows = await databaseService.queryControlPlane<{ cnt: number }>(`SELECT COUNT(*) as cnt FROM organizations WHERE is_active = 1`);
@@ -331,6 +492,30 @@ export async function operationsRoutes(fastify: FastifyInstance) {
         }
         const userRows = await databaseService.queryControlPlane<{ cnt: number }>(`SELECT COUNT(*) as cnt FROM users WHERE is_active = 1`);
         totalUsers = Number(userRows[0]?.cnt || 0);
+
+        // Role breakdown
+        const roleRows = await databaseService.queryControlPlane<{ role: string; cnt: number }>(
+          `SELECT role, COUNT(*) as cnt FROM users WHERE is_active = 1 GROUP BY role ORDER BY cnt DESC`
+        );
+        roleBreakdown = roleRows.map(r => ({ role: r.role, count: Number(r.cnt) }));
+
+        // AI daily usage for current month
+        const now = new Date();
+        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        const pricingInput = config.AI_PRICING_INPUT;
+        const pricingOutput = config.AI_PRICING_OUTPUT;
+        const dailyRows = await databaseService.queryControlPlane<{ day: string; reqs: number; inp: number; outp: number }>(
+          `SELECT DATE(created_at) as day, COUNT(*) as reqs, COALESCE(SUM(input_tokens),0) as inp, COALESCE(SUM(output_tokens),0) as outp
+           FROM ai_usage_log WHERE created_at >= ? GROUP BY DATE(created_at) ORDER BY day`,
+          [monthStart]
+        );
+        aiDailyUsage = dailyRows.map(r => ({
+          date: String(r.day),
+          requests: Number(r.reqs),
+          inputTokens: Number(r.inp),
+          outputTokens: Number(r.outp),
+          cost: Math.round(((Number(r.inp) / 1_000_000) * pricingInput + (Number(r.outp) / 1_000_000) * pricingOutput) * 10000) / 10000,
+        }));
       } catch { /* fall back to tenant-derived counts */
         totalTenants = tenants.length || (config.MULTI_TENANT_ENABLED ? 0 : 1);
         totalUsers = tenants.reduce((sum, t) => sum + t.totalUsers, 0);
@@ -370,8 +555,28 @@ export async function operationsRoutes(fastify: FastifyInstance) {
           disk,
         },
         summary: { totalTenants, totalUsers, estimatedHeadroom },
+        drilldown: {
+          roleBreakdown,
+          aiDailyUsage,
+          headroom: {
+            osTotalMB,
+            osUsedMB,
+            osAvailableMB: osFreeMB,
+            heapUsedMB,
+            rssMB,
+            perUserEstimateMB: 15,
+            estimatedHeadroom,
+          },
+        },
         warnings,
         tenants,
+        security,
+        cronJobs,
+        dbGrowth,
+        emailStats,
+        userActivity,
+        agentPerf,
+        webhookStats,
       };
     } catch (error) {
       fastify.log.error(error);

@@ -136,8 +136,20 @@ async function run() {
 
     const elapsed = Date.now() - start;
     console.log(`[cron-runner] Job "${JOB_NAME}" finished in ${elapsed}ms`);
+
+    // Track in Redis for ops dashboard
+    if (redisService.isConnected()) {
+      const info = JSON.stringify({ status: 'ok', durationMs: elapsed, finishedAt: new Date().toISOString() });
+      redisService.set(`cron:last:${JOB_NAME}`, info, 86400 * 7).catch(() => {});
+    }
   } catch (error) {
     console.error(`[cron-runner] Job "${JOB_NAME}" FAILED:`, error);
+
+    // Track failure in Redis
+    if (redisService.isConnected()) {
+      const info = JSON.stringify({ status: 'failed', error: String(error).slice(0, 200), finishedAt: new Date().toISOString() });
+      redisService.set(`cron:last:${JOB_NAME}`, info, 86400 * 7).catch(() => {});
+    }
     process.exit(1);
   } finally {
     await redisService.disconnect();

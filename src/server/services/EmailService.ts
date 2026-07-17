@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { config } from '../config';
 import logger, { maskPii } from '../utils/logger';
+import { redisService } from './RedisService';
 
 function escapeHtml(str: string): string {
   return str
@@ -13,6 +14,8 @@ function escapeHtml(str: string): string {
 
 export class EmailService {
   private resend: Resend | null = null;
+  private sentCount = 0;
+  private failedCount = 0;
 
   private getClient(): Resend {
     if (!this.resend) {
@@ -24,8 +27,42 @@ export class EmailService {
     return this.resend;
   }
 
+  private async sendEmail(params: { from: string; to: string | string[]; subject: string; html: string; attachments?: any[] }): Promise<void> {
+    try {
+      await this.getClient().emails.send(params as any);
+      this.trackSend(true);
+    } catch (err) {
+      this.trackSend(false);
+      throw err;
+    }
+  }
+
   private get isConfigured(): boolean {
     return !!config.RESEND_API_KEY;
+  }
+
+  private async trackSend(success: boolean): Promise<void> {
+    if (success) this.sentCount++; else this.failedCount++;
+    if (redisService.isConnected()) {
+      const month = new Date().toISOString().slice(0, 7);
+      const key = success ? `email:sent:${month}` : `email:failed:${month}`;
+      redisService.getClient()?.incr(key).catch(() => {});
+      redisService.getClient()?.expire(key, 86400 * 60).catch(() => {});
+    }
+  }
+
+  getStats(): { sent: number; failed: number } {
+    return { sent: this.sentCount, failed: this.failedCount };
+  }
+
+  static async getMonthlyStats(): Promise<{ sent: number; failed: number }> {
+    if (!redisService.isConnected()) return { sent: 0, failed: 0 };
+    const month = new Date().toISOString().slice(0, 7);
+    const [sent, failed] = await Promise.all([
+      redisService.get(`email:sent:${month}`),
+      redisService.get(`email:failed:${month}`),
+    ]);
+    return { sent: parseInt(sent || '0', 10), failed: parseInt(failed || '0', 10) };
   }
 
   async sendVerificationEmail(to: string, token: string): Promise<void> {
@@ -37,7 +74,7 @@ export class EmailService {
 
     const verifyUrl = `${config.APP_URL}/verify-email?token=${token}`;
 
-    await this.getClient().emails.send({
+    await this.sendEmail({
       from: config.RESEND_FROM_EMAIL,
       to,
       subject: 'Verify your Kovarti PM Assistant account',
@@ -76,7 +113,7 @@ export class EmailService {
 
     const resetUrl = `${config.APP_URL}/reset-password?token=${token}`;
 
-    await this.getClient().emails.send({
+    await this.sendEmail({
       from: config.RESEND_FROM_EMAIL,
       to,
       subject: 'Reset your Kovarti PM Assistant password',
@@ -139,7 +176,7 @@ export class EmailService {
       `;
     }
 
-    await this.getClient().emails.send({
+    await this.sendEmail({
       from: config.RESEND_FROM_EMAIL,
       to,
       subject,
@@ -211,7 +248,7 @@ export class EmailService {
       </div>
     `;
 
-    await this.getClient().emails.send({
+    await this.sendEmail({
       from: config.RESEND_FROM_EMAIL,
       to,
       subject: `Your PM Assistant Digest`,
@@ -236,7 +273,7 @@ export class EmailService {
       </div>
     `;
 
-    await this.getClient().emails.send({
+    await this.sendEmail({
       from: config.RESEND_FROM_EMAIL,
       to: recipients,
       subject: `Scheduled Report: ${reportName}`,
@@ -273,7 +310,7 @@ export class EmailService {
       </p>
     `;
 
-    await this.getClient().emails.send({
+    await this.sendEmail({
       from: config.RESEND_FROM_EMAIL,
       to,
       subject: 'Confirm your Kovarti PM login',
@@ -287,7 +324,7 @@ export class EmailService {
       return;
     }
 
-    await this.getClient().emails.send({
+    await this.sendEmail({
       from: config.RESEND_FROM_EMAIL,
       to,
       subject: 'Welcome to Kovarti PM Assistant!',
@@ -340,7 +377,7 @@ export class EmailService {
       </p>
     `;
 
-    await this.getClient().emails.send({
+    await this.sendEmail({
       from: config.RESEND_FROM_EMAIL,
       to,
       subject,
@@ -371,7 +408,7 @@ export class EmailService {
       </p>
     `;
 
-    await this.getClient().emails.send({
+    await this.sendEmail({
       from: config.RESEND_FROM_EMAIL,
       to,
       subject: 'Your Kovarti PM trial has ended',
@@ -385,7 +422,7 @@ export class EmailService {
       return;
     }
 
-    await this.getClient().emails.send({
+    await this.sendEmail({
       from: config.RESEND_FROM_EMAIL,
       to,
       subject: `You've been invited to join ${orgName} on Kovarti PM`,
