@@ -70,6 +70,43 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // Admin users bypass login email verification
+      if (user.role === 'admin') {
+        const newVersion = (user.tokenVersion ?? 0) + 1;
+        await userService.update(user.id, {
+          tokenVersion: newVersion,
+          lastLoginAt: new Date(),
+        });
+
+        const accessToken = jwt.sign(
+          { userId: user.id, username: user.username, role: user.role, tv: newVersion },
+          config.JWT_SECRET,
+          { expiresIn: '15m', algorithm: 'HS256' }
+        );
+        const refreshToken = jwt.sign(
+          { userId: user.id, type: 'refresh', tv: newVersion },
+          config.JWT_REFRESH_SECRET,
+          { expiresIn: '24h', algorithm: 'HS256' }
+        );
+
+        reply.setCookie('access_token', accessToken, {
+          httpOnly: true,
+          secure: config.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 15 * 60,
+        });
+        reply.setCookie('refresh_token', refreshToken, {
+          httpOnly: true,
+          secure: config.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 24 * 60 * 60,
+        });
+
+        return { token: accessToken, user: { id: user.id, username: user.username, email: user.email, fullName: user.fullName, role: user.role } };
+      }
+
       // Generate login verification token (10-min expiry)
       const loginToken = crypto.randomUUID();
       const loginExpires = new Date(Date.now() + 10 * 60 * 1000);
