@@ -27,10 +27,12 @@ import {
   GitPullRequest,
   TrendingUp,
   Star,
+  MessageCircleHeart,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { apiService } from '../../services/api';
+import { FeedbackModal } from '../feedback/FeedbackModal';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -95,6 +97,7 @@ const adminNavSections: NavSection[] = [
     items: [
       { labelKey: 'nav.adminUsers', icon: Users, path: '/admin/users' },
       { labelKey: 'nav.adminTenants', icon: Building, path: '/admin/tenants' },
+      { labelKey: 'nav.adminFeedback', icon: MessageCircleHeart, path: '/admin/feedback' },
     ],
   },
   {
@@ -132,6 +135,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
   const isAdmin = user?.role === 'admin';
 
   const [adminView, setAdminView] = React.useState(() => isAdmin && getStoredAdminView());
+  const [feedbackOpen, setFeedbackOpen] = React.useState(false);
 
   const toggleView = () => {
     const next = !adminView;
@@ -390,6 +394,29 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
           </span>
         </a>
 
+        {/* Feedback */}
+        <button
+          onClick={() => setFeedbackOpen(true)}
+          className={`
+            w-full flex items-center gap-2 px-3 py-2.5
+            text-sidebar-text/70 hover:text-white hover:bg-sidebar-hover
+            transition-colors duration-200 border-b border-white/5
+            ${collapsed ? 'justify-center' : ''}
+          `}
+          title="Share Feedback"
+        >
+          <MessageCircleHeart className="w-4 h-4 flex-shrink-0" />
+          <span
+            className={`
+              text-xs font-medium whitespace-nowrap
+              transition-all duration-300
+              ${collapsed ? 'sr-only' : 'block'}
+            `}
+          >
+            Feedback
+          </span>
+        </button>
+
         <div
           className={`
             flex items-center px-3 py-3
@@ -443,6 +470,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
         </button>
       </div>
       </aside>
+      {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
     </>
   );
 };

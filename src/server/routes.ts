@@ -11,6 +11,7 @@ import { orgRoutes } from './routes/core/org';
 import { websocketRoutes } from './routes/core/websocket';
 import { exportRoutes } from './routes/core/exports';
 import { bulkRoutes } from './routes/core/bulk';
+import { feedbackRoutes } from './routes/core/feedback';
 
 // Scheduling
 import { scheduleRoutes } from './routes/scheduling/schedules';
@@ -106,6 +107,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(exportRoutes, { prefix: '/api/v1/exports' });
   await fastify.register(bulkRoutes, { prefix: '/api/v1/bulk' });
   await fastify.register(orgRoutes, { prefix: '/api/v1/org' });
+  await fastify.register(feedbackRoutes, { prefix: '/api/v1/feedback' });
 
   // Scheduling
   await fastify.register(scheduleRoutes, { prefix: '/api/v1/schedules' });
