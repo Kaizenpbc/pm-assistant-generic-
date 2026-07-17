@@ -169,7 +169,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - MCP tool permission matrix: 83 tools filtered by user role at registration time (agents only see permitted tools)
 - Append-only chained audit ledger with API search, filter, and pagination
 - Data encryption at rest and in transit
-- Per-user AI token budget enforcement (`AIBudgetService`) — monthly limits, custom per-user overrides, `GET /api/v1/ai/budget` usage endpoint, automatic enforcement before every AI call, proactive 80% threshold warning notification (daily-deduped)
+- Per-tier AI token budget enforcement (`AIBudgetService`) — tier-aware limits (Free: 25K, Pro: 500K, Business: 1.5M, Consultant: 3M), per-user admin overrides, purchasable token top-ups (500K/$5, FIFO consumption, no expiry), graceful degradation on exhaustion (HTTP 429 with reset date, non-AI features unaffected), `GET /api/v1/ai/budget` usage endpoint, automatic enforcement before every AI call, proactive 80% threshold warning notification (daily-deduped)
 - Zod validation on 24 route files covering all critical API inputs
 - **Benchmark:** Enterprise tools
 
@@ -459,7 +459,7 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 | Load More Pagination (Notifications Center, Lessons Learned, Agent Proposals pages) | Done | Enhancement |
 | Report Builder Data Shape Fixes (KPI/chart/table sections, groupBy SQL injection guard, user-owned template delete, designer section persistence) | Done | Bug Fix |
 | Shared Pagination Schema (paginationSchema.ts + PaginatedResponse on projects, schedule tasks, sprints, templates) | Done | Enhancement |
-| Per-User AI Token Budget (AIBudgetService, ai_usage_log table, GET /ai/budget endpoint, enforcement in claudeService) | Done | Enhancement |
+| Per-Tier AI Token Budget (tier-aware budgets, token top-ups, graceful degradation, admin override, Stripe multi-tier checkout) | Done | Enhancement |
 | Zod Validation Expansion (9 additional route files: users, bulk, sprints, timeEntries, aiChat, apiKeys, webhooks, intakeForms, goals) | Done | Enhancement |
 | Repository Layer (BaseRepository + ProjectRepository, UserRepository, ScheduleRepository — centralized SQL/row mapping, services keep business logic) | Done | Architecture |
 | Structured Metrics (MetricsService with request counts, latency p50/p95/p99, AI token usage, DB query counts; GET /api/v1/metrics admin endpoint) | Done | Observability |

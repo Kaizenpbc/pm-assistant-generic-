@@ -583,9 +583,9 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Approvals | `/api/v1/approvals` | Change request approval chains |
 | Report Builder | `/api/v1/report-builder` | Custom report templates |
 | AI Reports | `/api/v1/ai-reports` | AI-generated narrative reports |
-| AI Budget | `/api/v1/ai/budget` | Per-user AI token budget and usage |
+| AI Budget | `/api/v1/ai/budget` | Per-tier AI token budget, usage, and top-up balance |
 | AI Task Estimation | `/api/v1/ai/estimate-task` | AI-powered task duration estimation |
-| Stripe | `/api/v1/stripe` | Billing and subscriptions |
+| Stripe | `/api/v1/stripe` | Multi-tier billing, subscriptions, and token top-ups |
 | API Keys | `/api/v1/api-keys` | API key management |
 | Audit | `/api/v1/audit` | Immutable audit ledger |
 | Policies | `/api/v1/policies` | Policy engine rules |

@@ -840,15 +840,18 @@ The `PolicyEngineService` enforces configurable governance rules:
 
 ### AI Token Budget
 
-The `AIBudgetService` enforces per-user monthly AI token limits:
+The `AIBudgetService` enforces per-user monthly AI token limits with tier-aware budget resolution:
 
+- **Per-tier defaults**: Free — 25,000 tokens/mo; Pro — 500,000; Business — 1,500,000; Consultant — 3,000,000. Configurable via `AI_TIER_BUDGET_FREE`, `AI_TIER_BUDGET_PRO`, `AI_TIER_BUDGET_BUSINESS`, `AI_TIER_BUDGET_CONSULTANT` env vars.
+- **Budget resolution chain**: per-user override (`users.ai_monthly_token_budget`) → subscription tier default → global fallback (`AI_MONTHLY_TOKEN_BUDGET`)
+- **Token top-ups**: Users can purchase additional token packs ($5 per 500K tokens) via Stripe one-time payment. Top-up tokens are added instantly, do not expire, and are consumed only after the monthly tier allowance is exhausted. FIFO consumption (oldest packs first). Managed by `TokenTopUpRepository`.
 - Tracks all AI usage in the `ai_usage_log` table (input/output tokens, cost, latency, feature, model)
-- System-wide default budget configurable via `AI_MONTHLY_TOKEN_BUDGET` env var (default 500k tokens/month)
-- Per-user custom budgets via `users.ai_monthly_token_budget` column (overrides system default)
-- Budget checked before every AI call in `claudeService` — throws `AIBudgetExceededError` when exceeded
+- Budget checked before every AI call in `claudeService` — throws `AIBudgetExceededError` (HTTP 429) with `code: 'AI_BUDGET_EXCEEDED'`, `resetDate`, `used`, and `budget` fields when exceeded
+- **Graceful degradation**: When the budget is exhausted, AI features are blocked but all non-AI features (scheduling, task management, reporting, collaboration) remain fully operational. The Mjuzi chat displays an actionable message with the reset date and a link to purchase more tokens.
 - **80% threshold warning**: When usage reaches 80%, a daily-deduped `ai_budget_warning` notification is automatically created (severity: high) informing the user of tokens remaining and days left in the month
 - **Circuit breaker**: After 5 consecutive transient failures (rate limit, timeout, API overload), the AI circuit breaker opens and returns HTTP 503 immediately for 60 seconds instead of making doomed API calls. Recovers automatically after cooldown.
 - `GET /api/v1/ai/budget` returns current month's usage summary: `totalInputTokens`, `totalOutputTokens`, `totalTokens`, `totalCost`, `requestCount`, `budget`, `remaining`, `percentUsed`
+- **Admin override**: Admins can set per-user custom budgets via `PATCH /api/v1/admin/users/:id/budget`. The Admin Users page shows an inline-editable "AI Budget" column — set a custom value or clear to use tier default.
 
 ### Prompt Injection Mitigation
 
@@ -909,10 +912,11 @@ The main application also exposes an `/mcp` reverse proxy route for HTTP-based M
 The `StripeService` manages subscription billing:
 
 - **Customer creation**: linked to user accounts
-- **Checkout sessions**: redirect-based Stripe Checkout with 14-day free trial
+- **Multi-tier checkout**: Pro ($15/mo or $150/yr), Business ($35/mo or $350/yr), Consultant ($59/mo or $590/yr). Price IDs configured via `STRIPE_PRO_MONTHLY_PRICE_ID`, `STRIPE_BUSINESS_MONTHLY_PRICE_ID`, `STRIPE_CONSULTANT_MONTHLY_PRICE_ID` (and annual variants).
+- **Token top-up checkout**: One-time payment for 500K token packs ($5 each, 1-20 packs per purchase). Price ID via `STRIPE_TOPUP_PRICE_ID`. Webhook prevents double-processing via `findByStripeSession()`.
 - **Billing portal**: self-service subscription management via Stripe's portal
-- **Webhook handling**: processes Stripe events for subscription lifecycle (created, updated, cancelled, payment succeeded/failed)
-- **Tier support**: free, pro, business plans mapped to Stripe price IDs
+- **Webhook handling**: processes Stripe events for subscription lifecycle (created, updated, cancelled, payment succeeded/failed) and top-up completion
+- **Tier resolution**: `resolveTierFromPriceId()` maps Stripe price IDs to app tiers (free, pro, business, consultant) with legacy fallback support
 
 ### Trial Reminder Emails
 
@@ -1691,7 +1695,8 @@ All API routes are prefixed with `/api/v1/` and organized by domain:
 The Terms of Service (`/terms`) has been updated to include the following provisions:
 
 - **Trial conversion clause** — describes how the 14-day free trial converts to a paid subscription at the end of the trial period if a payment method is on file.
-- **Refund policy** — monthly plan fees are non-refundable. Annual plan fees are pro-rated and refundable within 30 days of the billing date.
+- **Refund policy** — monthly plan fees are non-refundable. Annual plan fees are pro-rated and refundable within 30 days of the billing date. Token top-ups are non-refundable.
+- **AI Usage Limits (Section 5A)** — highlighted section covering per-tier monthly token allowances (Pro: 500K, Business: 1.5M, Consultant: 3M, Free: 25K), budget exhaustion behavior (AI features blocked, non-AI features unaffected), token top-up terms (non-refundable, no expiry), no carry-over of unused monthly tokens, per-user overrides, and fair use policy.
 - **Governing law** — disputes are governed by the laws of British Columbia, Canada.
 - **Dispute resolution** — parties agree to attempt informal resolution before pursuing formal legal proceedings.
 
@@ -1777,6 +1782,17 @@ The **Admin > Users** page displays a **Login status** badge per user:
 When a user has a pending or expired token, an **Unlock** button appears in the Actions column. Clicking it clears the `login_verification_token` and `login_verification_expires` fields so the user can retry login.
 
 **API endpoint:** `POST /api/v1/admin/users/:id/clear-login-token` (admin role required). Returns `{ message: "Login verification token cleared" }`.
+
+### Admin AI Budget Override
+
+The **Admin > Users** table includes an **AI Budget** column showing each user's current token budget. If a per-user override is set, the value is displayed; otherwise, the column shows "(tier default)" in italics.
+
+Admins can click the budget value to inline-edit it:
+- Enter a custom token budget and press **Enter** or click the check icon to save.
+- Press **Escape** or click the X icon to cancel.
+- Clear the field and save to remove the override and revert to the tier default.
+
+**API endpoint:** `PATCH /api/v1/admin/users/:id/budget` (admin role required). Body: `{ budget: number | null }`. Returns `{ message: "AI budget updated", ai_monthly_token_budget: number | null }`.
 
 ---
 

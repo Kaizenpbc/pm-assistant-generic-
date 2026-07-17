@@ -1133,9 +1133,10 @@ Each proposal has a risk level that determines its approval requirements:
 
 Navigate to **Account** in the sidebar to manage:
 
-- Subscription plan and billing details.
-- Payment method.
-- Usage and limits.
+- **Subscription plan**: Choose from Pro ($15/mo), Business ($35/mo), or Consultant ($59/mo). Annual billing saves ~17%.
+- **Payment method**: Managed via Stripe's secure billing portal.
+- **AI token usage**: View your monthly AI token consumption, remaining budget, and percentage used. Each tier includes a monthly AI token allowance (Pro: 500K, Business: 1.5M, Consultant: 3M).
+- **Token top-ups**: If you exhaust your monthly AI tokens, purchase additional packs (500K tokens for $5). Top-up tokens are added instantly and do not expire. When your monthly budget is exhausted, AI features are temporarily unavailable but all other features (scheduling, tasks, reports, collaboration) continue working normally. Your budget resets on the first of each month.
 
 ### Settings (Admin/Manager)
 

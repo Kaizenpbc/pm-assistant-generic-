@@ -125,13 +125,43 @@ Key variables in `.env` (never commit secrets):
 ## 5. Billing and Subscriptions (Stripe)
 
 ### Plans
-- Define subscription plans (Free, Pro, Enterprise) in the Stripe Dashboard.
-- Map Stripe price IDs to app tiers via `STRIPE_PRICE_*` env vars.
+
+Three paid tiers are available, each with monthly and annual billing:
+
+| Tier | Monthly | Annual | AI Tokens/mo |
+|------|---------|--------|--------------|
+| Pro | $15 | $150 | 500,000 |
+| Business | $35 | $350 | 1,500,000 |
+| Consultant | $59 | $590 | 3,000,000 |
+
+Free trial accounts receive 25,000 AI tokens/month. Annual billing saves ~17%.
+
+Map Stripe price IDs to app tiers via env vars:
+- `STRIPE_PRO_MONTHLY_PRICE_ID`, `STRIPE_PRO_ANNUAL_PRICE_ID`
+- `STRIPE_BUSINESS_MONTHLY_PRICE_ID`, `STRIPE_BUSINESS_ANNUAL_PRICE_ID`
+- `STRIPE_CONSULTANT_MONTHLY_PRICE_ID`, `STRIPE_CONSULTANT_ANNUAL_PRICE_ID`
+
+### Token Top-Ups
+
+Users can purchase additional AI token packs at any time: **500,000 tokens for $5** per pack (1-20 packs per purchase). Top-up tokens are added instantly, do not expire, and are consumed only after the monthly tier allowance is exhausted. Configure via `STRIPE_TOPUP_PRICE_ID`.
+
+**Endpoints:**
+- `POST /api/v1/stripe/create-topup-session` — creates Stripe checkout for token purchase
+- `GET /api/v1/stripe/topup-balance` — returns remaining top-up tokens and purchase history
 
 ### Managing Subscriptions
 - View active subscriptions under **Settings > Billing**.
-- Upgrade, downgrade, or cancel subscriptions from the admin panel.
-- Stripe webhooks (`/api/webhooks/stripe`) handle payment events automatically.
+- Upgrade, downgrade, or cancel subscriptions from the Stripe billing portal.
+- Stripe webhooks (`/api/webhooks/stripe`) handle payment events and top-up fulfillment automatically.
+
+### AI Budget Administration
+
+Admins can override per-user AI token budgets from the **Admin > Users** page:
+- The **AI Budget** column shows each user's current budget (custom override or "tier default").
+- Click the value to inline-edit. Set a custom budget or clear to revert to tier default.
+- **API:** `PATCH /api/v1/admin/users/:id/budget` with body `{ budget: number | null }`.
+
+Tier budget defaults are displayed on the **Admin > Configuration** page under "Tier Budget Defaults". These are configured via env vars (`AI_TIER_BUDGET_FREE`, `AI_TIER_BUDGET_PRO`, `AI_TIER_BUDGET_BUSINESS`, `AI_TIER_BUDGET_CONSULTANT`).
 
 ### Stripe Dashboard
 - Use the Stripe Dashboard for invoice management, refunds, and payment method issues.

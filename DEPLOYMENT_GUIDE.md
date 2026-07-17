@@ -86,6 +86,12 @@ ALERT_ENABLED=true
 | `AI_FALLBACK_ENABLED` | `false` | Enable AI fallback |
 | `AI_PRICING_INPUT` | `3.0` | Input token price per million |
 | `AI_PRICING_OUTPUT` | `15.0` | Output token price per million |
+| `AI_TIER_BUDGET_FREE` | `25000` | Monthly AI token budget for free tier |
+| `AI_TIER_BUDGET_PRO` | `500000` | Monthly AI token budget for pro tier |
+| `AI_TIER_BUDGET_BUSINESS` | `1500000` | Monthly AI token budget for business tier |
+| `AI_TIER_BUDGET_CONSULTANT` | `3000000` | Monthly AI token budget for consultant tier |
+| `AI_TOPUP_TOKENS` | `500000` | Tokens per top-up pack |
+| `AI_TOPUP_PRICE_CENTS` | `500` | Price per top-up pack in cents |
 | `AGENT_ENABLED` | `false` | Enable autonomous agent scheduler |
 | `AGENT_CRON_SCHEDULE` | `0 2 * * *` | Cron schedule for agent runs |
 | `RESEND_API_KEY` | _(empty)_ | Resend email service API key |
@@ -94,8 +100,15 @@ ALERT_ENABLED=true
 | `STRIPE_SECRET_KEY` | _(empty)_ | Stripe billing secret key |
 | `STRIPE_PUBLISHABLE_KEY` | _(empty)_ | Stripe publishable key |
 | `STRIPE_WEBHOOK_SECRET` | _(empty)_ | Stripe webhook signing secret |
-| `STRIPE_MONTHLY_PRICE_ID` | _(empty)_ | Stripe monthly price ID |
-| `STRIPE_ANNUAL_PRICE_ID` | _(empty)_ | Stripe annual price ID |
+| `STRIPE_MONTHLY_PRICE_ID` | _(empty)_ | Stripe monthly price ID (legacy) |
+| `STRIPE_ANNUAL_PRICE_ID` | _(empty)_ | Stripe annual price ID (legacy) |
+| `STRIPE_PRO_MONTHLY_PRICE_ID` | _(empty)_ | Stripe Pro monthly price ID |
+| `STRIPE_PRO_ANNUAL_PRICE_ID` | _(empty)_ | Stripe Pro annual price ID |
+| `STRIPE_BUSINESS_MONTHLY_PRICE_ID` | _(empty)_ | Stripe Business monthly price ID |
+| `STRIPE_BUSINESS_ANNUAL_PRICE_ID` | _(empty)_ | Stripe Business annual price ID |
+| `STRIPE_CONSULTANT_MONTHLY_PRICE_ID` | _(empty)_ | Stripe Consultant monthly price ID |
+| `STRIPE_CONSULTANT_ANNUAL_PRICE_ID` | _(empty)_ | Stripe Consultant annual price ID |
+| `STRIPE_TOPUP_PRICE_ID` | _(empty)_ | Stripe token top-up price ID |
 | `REDIS_URL` | _(empty)_ | Redis URL (empty = disabled) |
 | `ALERT_ENABLED` | `false` | Enable health monitoring alerts |
 | `ALERT_EMAIL` | _(empty)_ | Alert notification email |

@@ -99,7 +99,7 @@ fastify.post('/projects', { preHandler: [authMiddleware, requireScope('write')] 
 
 ### Stripe Billing Routes — Intentional Read Scope
 
-`POST /stripe/create-checkout-session` and `POST /stripe/billing-portal` are gated with `requireScope('read')` rather than `requireScope('write')`. This is intentional: all authenticated users, including those whose API keys carry only the `read` scope (e.g., the default `team_member` role), need to be able to manage their own billing and subscription without requiring elevated write access. These routes do not modify project data, so the lower scope is appropriate.
+`POST /stripe/create-checkout-session`, `POST /stripe/create-topup-session`, and `POST /stripe/billing-portal` are gated with `requireScope('read')` rather than `requireScope('write')`. This is intentional: all authenticated users, including those whose API keys carry only the `read` scope (e.g., the default `team_member` role), need to be able to manage their own billing, subscription, and token top-up purchases without requiring elevated write access. These routes do not modify project data, so the lower scope is appropriate.
 
 ---
 
