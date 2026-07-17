@@ -12,6 +12,24 @@ import {
   Bot,
   HardDrive,
   RefreshCw,
+  Globe,
+  Terminal,
+  Layers,
+  Link,
+  FileText,
+  Database,
+  Thermometer,
+  Hash,
+  Coins,
+  DollarSign,
+  Calendar,
+  Clock,
+  AlertTriangle,
+  TrendingUp,
+  Target,
+  Timer,
+  Upload,
+  FolderOpen,
 } from 'lucide-react';
 
 interface Feature {
@@ -53,11 +71,20 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
   );
 }
 
-function ConfigRow({ label, value, mono }: { label: string; value: string | number; mono?: boolean }) {
+function ConfigCard({ icon: Icon, label, value, color, mono }: {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  color: string;
+  mono?: boolean;
+}) {
   return (
-    <div className="flex items-center justify-between py-2 px-3 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
-      <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
-      <span className={`text-sm font-medium text-gray-900 dark:text-white ${mono ? 'font-mono' : ''}`}>{value}</span>
+    <div className={`bg-white dark:bg-gray-800 rounded-xl border-l-4 ${color} border border-gray-200 dark:border-gray-700 p-3 shadow-sm`}>
+      <div className="flex items-center gap-2 mb-1">
+        <Icon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+        <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+      </div>
+      <p className={`text-sm font-bold text-gray-900 dark:text-white truncate ${mono ? 'font-mono' : ''}`}>{value}</p>
     </div>
   );
 }
@@ -176,52 +203,52 @@ export function AdminSystemPage() {
           {/* Environment */}
           <div>
             <SectionHeader icon={Server} title="Environment" />
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              <ConfigRow label="Node.js" value={data.environment.nodeVersion} mono />
-              <ConfigRow label="Platform" value={data.environment.platform} mono />
-              <ConfigRow label="Environment" value={data.environment.env} />
-              <ConfigRow label="Port" value={data.environment.port} mono />
-              <ConfigRow label="App URL" value={data.environment.appUrl} mono />
-              <ConfigRow label="CORS Origin" value={data.environment.corsOrigin} mono />
-              <ConfigRow label="Log Level" value={data.environment.logLevel} />
-              <ConfigRow label="Migrations Applied" value={data.environment.migrationCount} />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <ConfigCard icon={Terminal} label="Node.js" value={data.environment.nodeVersion} color="border-l-emerald-500" mono />
+              <ConfigCard icon={Server} label="Platform" value={data.environment.platform} color="border-l-sky-500" mono />
+              <ConfigCard icon={Layers} label="Environment" value={data.environment.env} color="border-l-indigo-500" />
+              <ConfigCard icon={Hash} label="Port" value={data.environment.port} color="border-l-violet-500" mono />
+              <ConfigCard icon={Globe} label="App URL" value={data.environment.appUrl} color="border-l-blue-500" mono />
+              <ConfigCard icon={Link} label="CORS Origin" value={data.environment.corsOrigin} color="border-l-cyan-500" mono />
+              <ConfigCard icon={FileText} label="Log Level" value={data.environment.logLevel} color="border-l-amber-500" />
+              <ConfigCard icon={Database} label="Migrations Applied" value={data.environment.migrationCount} color="border-l-purple-500" />
             </div>
           </div>
 
           {/* AI Configuration */}
           <div>
             <SectionHeader icon={Brain} title="AI Configuration" />
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              <ConfigRow label="Primary Model" value={data.aiConfig.model} mono />
-              <ConfigRow label="Fallback Model" value={data.aiConfig.fallbackModel} mono />
-              <ConfigRow label="Temperature" value={data.aiConfig.temperature} />
-              <ConfigRow label="Max Tokens" value={data.aiConfig.maxTokens.toLocaleString()} />
-              <ConfigRow label="Monthly Token Budget" value={data.aiConfig.monthlyTokenBudget.toLocaleString()} />
-              <ConfigRow label="Input Pricing" value={`$${data.aiConfig.pricingInput}/M tokens`} />
-              <ConfigRow label="Output Pricing" value={`$${data.aiConfig.pricingOutput}/M tokens`} />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <ConfigCard icon={Brain} label="Primary Model" value={data.aiConfig.model} color="border-l-pink-500" mono />
+              <ConfigCard icon={Brain} label="Fallback Model" value={data.aiConfig.fallbackModel} color="border-l-rose-400" mono />
+              <ConfigCard icon={Thermometer} label="Temperature" value={data.aiConfig.temperature} color="border-l-orange-500" />
+              <ConfigCard icon={Hash} label="Max Tokens" value={data.aiConfig.maxTokens.toLocaleString()} color="border-l-amber-500" />
+              <ConfigCard icon={Coins} label="Monthly Token Budget" value={data.aiConfig.monthlyTokenBudget.toLocaleString()} color="border-l-yellow-500" />
+              <ConfigCard icon={DollarSign} label="Input Pricing" value={`$${data.aiConfig.pricingInput}/M tokens`} color="border-l-emerald-500" />
+              <ConfigCard icon={DollarSign} label="Output Pricing" value={`$${data.aiConfig.pricingOutput}/M tokens`} color="border-l-teal-500" />
             </div>
           </div>
 
           {/* Agent Configuration */}
           <div>
             <SectionHeader icon={Bot} title="Agent Configuration" />
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              <ConfigRow label="Registered Agents" value={`${data.agentConfig.enabledAgents} enabled / ${data.agentConfig.totalAgents} total`} />
-              <ConfigRow label="Cron Schedule" value={data.agentConfig.cronSchedule} mono />
-              <ConfigRow label="Delay Threshold" value={`${data.agentConfig.delayThresholdDays} days`} />
-              <ConfigRow label="Budget CPI Threshold" value={data.agentConfig.budgetCpiThreshold} />
-              <ConfigRow label="Budget Overrun Threshold" value={`${data.agentConfig.budgetOverrunThreshold}%`} />
-              <ConfigRow label="Monte Carlo Confidence" value={`${data.agentConfig.mcConfidenceLevel}%`} />
-              <ConfigRow label="Overdue Scan Interval" value={`${data.agentConfig.overdueScanMinutes} min`} />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <ConfigCard icon={Bot} label="Registered Agents" value={`${data.agentConfig.enabledAgents} / ${data.agentConfig.totalAgents}`} color="border-l-purple-500" />
+              <ConfigCard icon={Calendar} label="Cron Schedule" value={data.agentConfig.cronSchedule} color="border-l-indigo-500" mono />
+              <ConfigCard icon={Clock} label="Delay Threshold" value={`${data.agentConfig.delayThresholdDays} days`} color="border-l-blue-500" />
+              <ConfigCard icon={AlertTriangle} label="Budget CPI Threshold" value={data.agentConfig.budgetCpiThreshold} color="border-l-amber-500" />
+              <ConfigCard icon={TrendingUp} label="Budget Overrun" value={`${data.agentConfig.budgetOverrunThreshold}%`} color="border-l-red-500" />
+              <ConfigCard icon={Target} label="Monte Carlo Confidence" value={`${data.agentConfig.mcConfidenceLevel}%`} color="border-l-emerald-500" />
+              <ConfigCard icon={Timer} label="Overdue Scan Interval" value={`${data.agentConfig.overdueScanMinutes} min`} color="border-l-sky-500" />
             </div>
           </div>
 
           {/* Storage */}
           <div>
             <SectionHeader icon={HardDrive} title="Storage & Uploads" />
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              <ConfigRow label="Upload Directory" value={data.storageConfig.uploadDir} mono />
-              <ConfigRow label="Max Upload Size" value={`${data.storageConfig.maxUploadSizeMB} MB`} />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <ConfigCard icon={FolderOpen} label="Upload Directory" value={data.storageConfig.uploadDir} color="border-l-cyan-500" mono />
+              <ConfigCard icon={Upload} label="Max Upload Size" value={`${data.storageConfig.maxUploadSizeMB} MB`} color="border-l-violet-500" />
             </div>
           </div>
 
