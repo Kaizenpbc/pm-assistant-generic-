@@ -1,5 +1,5 @@
 import { aiBudgetRepository } from '../database/AIBudgetRepository';
-import { config } from '../config';
+import { config, getTierBudget } from '../config';
 import { notificationService } from './NotificationService';
 import { deadLetterService } from './DeadLetterService';
 
@@ -70,8 +70,12 @@ class AIBudgetService {
   }
 
   private async getBudget(userId: string): Promise<number> {
+    // Priority: per-user override → tier default → global fallback
     const userBudget = await aiBudgetRepository.getUserBudget(userId);
-    return userBudget ?? config.AI_MONTHLY_TOKEN_BUDGET;
+    if (userBudget != null) return userBudget;
+
+    const tier = await aiBudgetRepository.getUserTier(userId);
+    return getTierBudget(tier);
   }
 }
 

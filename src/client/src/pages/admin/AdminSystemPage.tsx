@@ -61,6 +61,9 @@ interface ConfigData {
   storageConfig: {
     uploadDir: string; maxUploadSizeMB: number;
   };
+  tierBudgets?: {
+    free: number; pro: number; business: number; consultant: number;
+  };
 }
 
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
@@ -228,6 +231,19 @@ export function AdminSystemPage() {
               <ConfigCard icon={DollarSign} label="Output Pricing" value={`$${data.aiConfig.pricingOutput}/M tokens`} color="border-l-teal-500" />
             </div>
           </div>
+
+          {/* Tier Budget Defaults */}
+          {data.tierBudgets && (
+            <div>
+              <SectionHeader icon={Coins} title="Tier Budget Defaults (tokens/month)" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <ConfigCard icon={Coins} label="Free" value={data.tierBudgets.free.toLocaleString()} color="border-l-gray-400" />
+                <ConfigCard icon={Coins} label="Pro" value={data.tierBudgets.pro.toLocaleString()} color="border-l-blue-500" />
+                <ConfigCard icon={Coins} label="Business" value={data.tierBudgets.business.toLocaleString()} color="border-l-purple-500" />
+                <ConfigCard icon={Coins} label="Consultant" value={data.tierBudgets.consultant.toLocaleString()} color="border-l-amber-500" />
+              </div>
+            </div>
+          )}
 
           {/* Agent Configuration */}
           <div>

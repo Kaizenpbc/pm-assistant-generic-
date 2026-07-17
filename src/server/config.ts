@@ -72,6 +72,12 @@ const configSchema = z.object({
   AI_PRICING_INPUT: z.coerce.number().min(0).default(3.0),
   AI_PRICING_OUTPUT: z.coerce.number().min(0).default(15.0),
 
+  // Per-tier AI budget defaults (tokens/month)
+  AI_TIER_BUDGET_FREE: z.coerce.number().min(0).default(25000),
+  AI_TIER_BUDGET_PRO: z.coerce.number().min(0).default(250000),
+  AI_TIER_BUDGET_BUSINESS: z.coerce.number().min(0).default(500000),
+  AI_TIER_BUDGET_CONSULTANT: z.coerce.number().min(0).default(1000000),
+
   // Metrics
   METRICS_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true || val === undefined, z.boolean().default(true)),
   REDIS_URL: z.string().optional().default(''),
@@ -167,6 +173,10 @@ export function validateConfiguration() {
       RAG_TOP_K: process.env['RAG_TOP_K'],
       RAG_SIMILARITY_THRESHOLD: process.env['RAG_SIMILARITY_THRESHOLD'],
       AI_MONTHLY_TOKEN_BUDGET: process.env['AI_MONTHLY_TOKEN_BUDGET'],
+      AI_TIER_BUDGET_FREE: process.env['AI_TIER_BUDGET_FREE'],
+      AI_TIER_BUDGET_PRO: process.env['AI_TIER_BUDGET_PRO'],
+      AI_TIER_BUDGET_BUSINESS: process.env['AI_TIER_BUDGET_BUSINESS'],
+      AI_TIER_BUDGET_CONSULTANT: process.env['AI_TIER_BUDGET_CONSULTANT'],
       METRICS_ENABLED: process.env['METRICS_ENABLED'],
       REDIS_URL: process.env['REDIS_URL'],
       ALERT_ENABLED: process.env['ALERT_ENABLED'],
@@ -207,6 +217,19 @@ export function validateConfiguration() {
 }
 
 export const config = validateConfiguration();
+
+const TIER_BUDGET_MAP: Record<string, keyof typeof config> = {
+  free: 'AI_TIER_BUDGET_FREE',
+  pro: 'AI_TIER_BUDGET_PRO',
+  business: 'AI_TIER_BUDGET_BUSINESS',
+  consultant: 'AI_TIER_BUDGET_CONSULTANT',
+};
+
+export function getTierBudget(tier: string): number {
+  const key = TIER_BUDGET_MAP[tier];
+  if (key) return config[key] as number;
+  return config.AI_MONTHLY_TOKEN_BUDGET;
+}
 
 export function logConfigSummary(): void {
   const features: string[] = [];

@@ -7,7 +7,7 @@ import { databaseService } from '../../database/connection';
 import { userService } from '../../services/UserService';
 import { auditLedgerService } from '../../services/AuditLedgerService';
 import { redisService } from '../../services/RedisService';
-import { config } from '../../config';
+import { config, getTierBudget } from '../../config';
 
 const statusSchema = z.object({
   active: z.boolean(),
@@ -37,6 +37,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         `SELECT
           u.id, u.username, u.email, u.full_name, u.role, u.is_active,
           u.created_at, u.last_login_at, u.subscription_tier,
+          u.ai_monthly_token_budget,
           u.email_verified,
           u.login_verification_token IS NOT NULL AS has_pending_login,
           u.login_verification_expires,
@@ -125,6 +126,32 @@ export async function adminRoutes(fastify: FastifyInstance) {
       });
 
       return { message: 'Login verification token cleared' };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // PATCH /api/v1/admin/users/:id/budget
+  fastify.patch('/users/:id/budget', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!requireAdmin(request, reply)) return;
+    const { id } = request.params as { id: string };
+    const body = request.body as { budget?: number | null };
+
+    if (body.budget !== null && body.budget !== undefined) {
+      if (typeof body.budget !== 'number' || body.budget < 0 || !Number.isFinite(body.budget)) {
+        return reply.status(400).send({ error: 'Bad request', message: 'budget must be a non-negative number or null' });
+      }
+    }
+
+    try {
+      const updated = await userService.update(id, {
+        aiMonthlyTokenBudget: body.budget ?? null,
+      });
+      if (!updated) {
+        return reply.status(404).send({ error: 'Not found', message: 'User not found' });
+      }
+      return { message: 'AI budget updated', ai_monthly_token_budget: body.budget ?? null };
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Internal server error' });
@@ -325,6 +352,14 @@ export async function adminRoutes(fastify: FastifyInstance) {
         maxUploadSizeMB: config.MAX_UPLOAD_SIZE_MB,
       };
 
+      // Tier budget defaults
+      const tierBudgets = {
+        free: config.AI_TIER_BUDGET_FREE,
+        pro: config.AI_TIER_BUDGET_PRO,
+        business: config.AI_TIER_BUDGET_BUSINESS,
+        consultant: config.AI_TIER_BUDGET_CONSULTANT,
+      };
+
       return {
         features,
         services,
@@ -332,6 +367,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         aiConfig,
         agentConfig,
         storageConfig,
+        tierBudgets,
       };
     } catch (error) {
       fastify.log.error(error);

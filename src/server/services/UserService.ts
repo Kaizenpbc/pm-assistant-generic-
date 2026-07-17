@@ -35,6 +35,7 @@ export interface User {
   loginVerificationExpires: Date | null;
   notificationTypePreferences: NotificationTypePreferences | null;
   tokenVersion: number;
+  aiMonthlyTokenBudget: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

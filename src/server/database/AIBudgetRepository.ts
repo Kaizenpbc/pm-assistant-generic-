@@ -27,6 +27,14 @@ class AIBudgetRepository {
     return null;
   }
 
+  async getUserTier(userId: string): Promise<string> {
+    const rows = await databaseService.queryControlPlane<{ subscription_tier: string }>(
+      'SELECT subscription_tier FROM users WHERE id = ?',
+      [userId],
+    );
+    return rows.length > 0 ? (rows[0].subscription_tier || 'free') : 'free';
+  }
+
   async findBudgetWarningToday(userId: string, today: string): Promise<boolean> {
     const rows = await databaseService.query<{ id: string }>(
       `SELECT id FROM notifications

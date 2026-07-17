@@ -2116,6 +2116,11 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async updateAdminUserBudget(userId: string, budget: number | null) {
+    const response = await this.api.patch(`/admin/users/${userId}/budget`, { budget });
+    return response.data;
+  }
+
   async getAdminTenants() {
     const response = await this.api.get('/admin/tenants');
     return response.data;

@@ -12,6 +12,8 @@ import {
   Users,
   UserCheck,
   UserX,
+  Pencil,
+  X,
 } from 'lucide-react';
 
 interface AdminUser {
@@ -28,6 +30,7 @@ interface AdminUser {
   email_verified: number | boolean;
   has_pending_login: number | boolean;
   login_verification_expires: string | null;
+  ai_monthly_token_budget: number | null;
 }
 
 function fmt(date: string | null) {
@@ -51,6 +54,8 @@ export function AdminUsersPage() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
+  const [budgetInput, setBudgetInput] = useState('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-users'],
@@ -107,6 +112,27 @@ export function AdminUsersPage() {
     mutationFn: (id: string) => apiService.adminClearLoginToken(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
   });
+
+  const updateBudget = useMutation({
+    mutationFn: ({ id, budget }: { id: string; budget: number | null }) =>
+      apiService.updateAdminUserBudget(id, budget),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setEditingBudgetId(null);
+    },
+  });
+
+  function handleBudgetSave(userId: string) {
+    const trimmed = budgetInput.trim();
+    if (trimmed === '') {
+      updateBudget.mutate({ id: userId, budget: null });
+    } else {
+      const num = parseInt(trimmed, 10);
+      if (!isNaN(num) && num >= 0) {
+        updateBudget.mutate({ id: userId, budget: num });
+      }
+    }
+  }
 
   return (
     <AdminPageWrapper title="Users" subtitle="Manage platform users">
@@ -191,6 +217,7 @@ export function AdminUsersPage() {
                   <th className="pb-3 pr-4">Login status</th>
                   <th className="pb-3 pr-4">Last login</th>
                   <th className="pb-3 pr-4 text-right">Projects</th>
+                  <th className="pb-3 pr-4">AI Budget</th>
                   <th className="pb-3 text-center">Status</th>
                   <th className="pb-3 pl-4">Actions</th>
                 </tr>
@@ -228,6 +255,40 @@ export function AdminUsersPage() {
                       </td>
                       <td className="py-3 pr-4 text-gray-600 dark:text-gray-300">{fmt(u.last_login_at)}</td>
                       <td className="py-3 pr-4 text-right font-medium text-gray-700 dark:text-gray-200">{u.project_count}</td>
+                      <td className="py-3 pr-4">
+                        {editingBudgetId === u.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={budgetInput}
+                              onChange={e => setBudgetInput(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') handleBudgetSave(u.id); if (e.key === 'Escape') setEditingBudgetId(null); }}
+                              placeholder="tier default"
+                              className="w-24 px-1.5 py-0.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+                              autoFocus
+                            />
+                            <button onClick={() => handleBudgetSave(u.id)} className="text-emerald-600 hover:text-emerald-700" title="Save">
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => setEditingBudgetId(null)} className="text-gray-400 hover:text-gray-600" title="Cancel">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setEditingBudgetId(u.id); setBudgetInput(u.ai_monthly_token_budget != null ? String(u.ai_monthly_token_budget) : ''); }}
+                            className="inline-flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                            title="Click to edit AI budget"
+                          >
+                            {u.ai_monthly_token_budget != null ? (
+                              <span className="font-mono">{u.ai_monthly_token_budget.toLocaleString()}</span>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-500 italic">tier default</span>
+                            )}
+                            <Pencil className="w-3 h-3 opacity-50" />
+                          </button>
+                        )}
+                      </td>
                       <td className="py-3 text-center">
                         <button
                           onClick={() => toggleStatus.mutate({ id: u.id, active: !active })}
@@ -274,7 +335,7 @@ export function AdminUsersPage() {
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-gray-500 dark:text-gray-400">No users match your filters.</td>
+                    <td colSpan={9} className="py-12 text-center text-gray-500 dark:text-gray-400">No users match your filters.</td>
                   </tr>
                 )}
               </tbody>

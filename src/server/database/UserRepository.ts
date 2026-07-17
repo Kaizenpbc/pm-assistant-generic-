@@ -35,6 +35,7 @@ function rowToUser(row: any): User {
         : row.notification_type_preferences)
       : null,
     tokenVersion: row.token_version ?? 0,
+    aiMonthlyTokenBudget: row.ai_monthly_token_budget != null ? Number(row.ai_monthly_token_budget) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -68,6 +69,7 @@ const USER_COLUMN_MAP: Record<string, string> = {
   loginVerificationExpires: 'login_verification_expires',
   notificationTypePreferences: 'notification_type_preferences',
   tokenVersion: 'token_version',
+  aiMonthlyTokenBudget: 'ai_monthly_token_budget',
 };
 
 export class UserRepository extends BaseRepository<User> {
