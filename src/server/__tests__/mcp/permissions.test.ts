@@ -3,7 +3,7 @@ import { isToolAllowed, getAllowedRoles, type Role } from '../../../../mcp-serve
 
 const ALL_ROLES: Role[] = [
   'admin', 'executive', 'project_manager', 'team_member', 'scrum_master', 'finance_officer',
-  'risk_manager', 'pmo', 'ba', 'qa', 'tester', 'devops', 'claude_sme',
+  'risk_manager', 'pmo', 'ba', 'qa', 'tester', 'devops', 'claude_sme', 'viewer',
 ];
 
 describe('MCP Permission Matrix', () => {

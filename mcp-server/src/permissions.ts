@@ -7,11 +7,11 @@
 
 export type Role =
   | 'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer'
-  | 'risk_manager' | 'pmo' | 'ba' | 'qa' | 'tester' | 'devops' | 'claude_sme';
+  | 'risk_manager' | 'pmo' | 'ba' | 'qa' | 'tester' | 'devops' | 'claude_sme' | 'viewer';
 
 const ALL_ROLES: readonly Role[] = [
   'admin', 'executive', 'project_manager', 'team_member', 'scrum_master', 'finance_officer',
-  'risk_manager', 'pmo', 'ba', 'qa', 'tester', 'devops', 'claude_sme',
+  'risk_manager', 'pmo', 'ba', 'qa', 'tester', 'devops', 'claude_sme', 'viewer',
 ];
 
 // Read-only tools: all roles can access
@@ -262,6 +262,10 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
   claude_sme: (tool) =>
     READ_TOOLS.has(tool) ||
     FINANCE_TOOLS.has(tool),
+
+  viewer: (tool) =>
+    READ_TOOLS.has(tool) ||
+    tool === 'update-raid-item',
 };
 
 /**

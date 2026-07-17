@@ -43,7 +43,7 @@ interface NavItem {
   labelKey: string;
   icon: React.ElementType;
   path: string;
-  roles?: Array<'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer' | 'risk_manager' | 'pmo' | 'ba' | 'qa' | 'tester' | 'devops' | 'claude_sme'>;
+  roles?: Array<'admin' | 'executive' | 'project_manager' | 'team_member' | 'scrum_master' | 'finance_officer' | 'risk_manager' | 'pmo' | 'ba' | 'qa' | 'tester' | 'devops' | 'claude_sme' | 'viewer'>;
 }
 
 interface NavSection {

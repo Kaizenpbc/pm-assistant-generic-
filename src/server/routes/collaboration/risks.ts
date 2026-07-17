@@ -72,6 +72,7 @@ function canPerformRaidAction(role: string, itemType: string, action: string): b
   if (role === 'admin') return true;
   if (action === 'comment') return true;
   if (action === 'reverse') return false; // admin only
+  if (role === 'viewer') return action === 'update'; // ownership checked at endpoint level
   if (role === 'team_member') return action === 'create' && ['issue', 'action'].includes(itemType);
   if (role === 'risk_manager') return ['risk', 'issue'].includes(itemType);
   if (['project_manager', 'scrum_master', 'pmo', 'ba'].includes(role)) return true;
@@ -152,13 +153,39 @@ export async function riskRoutes(fastify: FastifyInstance) {
   });
 
   // PUT /api/v1/projects/:projectId/risks/:riskId — Update RAID item
+  // Viewers can update RAID items assigned to them (owner_id); all other write roles use standard scope check
   fastify.put('/:projectId/risks/:riskId', {
-    preHandler: [requireScope('write'), requireProjectAccess('editor')],
+    preHandler: [
+      async (request: FastifyRequest, reply: FastifyReply) => {
+        const role = request.user?.role;
+        if (role === 'viewer') {
+          // Viewer only needs read scope (which they have) + viewer-level project access
+          await requireScope('read')(request, reply);
+          if (reply.sent) return;
+          await requireProjectAccess('viewer')(request, reply);
+        } else {
+          await requireScope('write')(request, reply);
+          if (reply.sent) return;
+          await requireProjectAccess('editor')(request, reply);
+        }
+      },
+    ],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { riskId } = request.params as { projectId: string; riskId: string };
       const body = updateRiskSchema.parse(request.body);
       const userId = request.user!.userId;
+      const userRole = request.user!.role;
+
+      // Viewer ownership check: must be the item's owner
+      if (userRole === 'viewer') {
+        const existing = await riskService.findById(riskId);
+        if (!existing) return reply.status(404).send({ error: 'RAID item not found' });
+        if (existing.ownerId !== userId) {
+          return reply.status(403).send({ error: 'Viewers can only update RAID items assigned to them' });
+        }
+      }
+
       const risk = await riskService.update(riskId, body, userId);
       if (!risk) return reply.status(404).send({ error: 'RAID item not found' });
       webhookService.dispatch('risk.updated', { risk }, userId);

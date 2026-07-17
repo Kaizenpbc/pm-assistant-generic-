@@ -127,7 +127,7 @@ describe('requireScope', () => {
     });
   });
 
-  describe('all 13 roles have correct scope mappings', () => {
+  describe('all 14 roles have correct scope mappings', () => {
     const roleScopeExpectations: Record<string, { read: boolean; write: boolean; admin: boolean }> = {
       admin: { read: true, write: true, admin: true },
       executive: { read: true, write: false, admin: false },
@@ -142,6 +142,7 @@ describe('requireScope', () => {
       tester: { read: true, write: false, admin: false },
       devops: { read: true, write: true, admin: false },
       claude_sme: { read: true, write: false, admin: false },
+      viewer: { read: true, write: false, admin: false },
     };
 
     for (const [role, expected] of Object.entries(roleScopeExpectations)) {

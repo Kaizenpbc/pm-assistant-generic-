@@ -11,7 +11,7 @@ const inviteSchema = z.object({
   email: z.string().email(),
   role: z.enum([
     'admin', 'executive', 'project_manager', 'team_member', 'scrum_master',
-    'finance_officer', 'risk_manager', 'pmo', 'ba', 'qa', 'tester', 'devops', 'claude_sme',
+    'finance_officer', 'risk_manager', 'pmo', 'ba', 'qa', 'tester', 'devops', 'claude_sme', 'viewer',
   ]).default('team_member'),
 });
 

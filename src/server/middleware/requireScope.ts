@@ -22,6 +22,7 @@ const ROLE_SCOPES: Record<string, Scope[]> = {
   tester: ['read'],
   devops: ['read', 'write'],
   claude_sme: ['read'],
+  viewer: ['read'],
 };
 
 /**

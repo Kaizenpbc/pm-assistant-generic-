@@ -39,6 +39,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
         tester: ['read'],
         devops: ['read', 'write'],
         claude_sme: ['read'],
+        viewer: ['read'],
       };
       const userScopes = ROLE_SCOPES[user.role ?? ''] ?? ['read'];
       const disallowed = body.scopes.filter(s => !userScopes.includes(s));
