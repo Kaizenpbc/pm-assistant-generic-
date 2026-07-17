@@ -48,19 +48,50 @@ interface OperationsData {
   tenants: TenantRow[];
 }
 
-function GaugeCard({ label, value, max, unit, percent }: { label: string; value: string; max?: string; unit?: string; percent: number }) {
-  const color = percent > 90 ? 'bg-red-500' : percent > 70 ? 'bg-amber-500' : 'bg-emerald-500';
-  const textColor = percent > 90 ? 'text-red-600 dark:text-red-400' : percent > 70 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
+function getGaugeColor(percent: number): { stroke: string; text: string; border: string; bg: string; glow: string } {
+  if (percent > 90) return { stroke: '#ef4444', text: 'text-red-600 dark:text-red-400', border: 'border-red-300 dark:border-red-800', bg: 'bg-red-50 dark:bg-red-900/10', glow: 'shadow-red-200/50 dark:shadow-red-900/30' };
+  if (percent > 70) return { stroke: '#f59e0b', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-300 dark:border-amber-800', bg: 'bg-amber-50 dark:bg-amber-900/10', glow: 'shadow-amber-200/50 dark:shadow-amber-900/30' };
+  return { stroke: '#10b981', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-300 dark:border-emerald-800', bg: 'bg-emerald-50/50 dark:bg-emerald-900/5', glow: '' };
+}
+
+function RadialGauge({ percent, size = 72, strokeWidth = 6 }: { percent: number; size?: number; strokeWidth?: number }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(percent, 100) / 100) * circumference;
+  const { stroke } = getGaugeColor(percent);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
-      <p className={`text-xl font-bold mt-1 ${textColor}`}>
-        {value}{unit && <span className="text-sm font-normal ml-0.5">{unit}</span>}
-      </p>
-      {max && <p className="text-xs text-gray-400 dark:text-gray-500">/ {max}</p>}
-      <div className="mt-2 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${Math.min(percent, 100)}%` }} />
+    <svg width={size} height={size} className="transform -rotate-90 flex-shrink-0">
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} className="text-gray-200 dark:text-gray-700" />
+      <circle
+        cx={size / 2} cy={size / 2} r={radius} fill="none"
+        stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round"
+        strokeDasharray={circumference} strokeDashoffset={offset}
+        className="transition-all duration-700 ease-out"
+      />
+    </svg>
+  );
+}
+
+function GaugeCard({ label, value, max, unit, percent }: { label: string; value: string; max?: string; unit?: string; percent: number }) {
+  const colors = getGaugeColor(percent);
+
+  return (
+    <div className={`${colors.bg} rounded-xl border ${colors.border} p-4 shadow-sm ${colors.glow} transition-all`}>
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <RadialGauge percent={percent} />
+          <span className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${colors.text} rotate-0`}>
+            {Math.round(percent)}%
+          </span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
+          <p className={`text-lg font-bold mt-0.5 ${colors.text}`}>
+            {value}{unit && <span className="text-sm font-normal ml-0.5">{unit}</span>}
+          </p>
+          {max && <p className="text-xs text-gray-400 dark:text-gray-500">of {max}</p>}
+        </div>
       </div>
     </div>
   );
@@ -158,18 +189,18 @@ export function AdminOperationsPage() {
           <div className="mb-6">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Capacity Summary</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
-                <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg"><Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-blue-500 border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3 shadow-sm">
+                <div className="p-2.5 bg-blue-100 dark:bg-blue-900/40 rounded-full"><Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div>
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Tenants</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">{data.summary.totalTenants}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.summary.totalTenants}</p>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
-                <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg"><Users className="w-5 h-5 text-purple-600 dark:text-purple-400" /></div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-purple-500 border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3 shadow-sm">
+                <div className="p-2.5 bg-purple-100 dark:bg-purple-900/40 rounded-full"><Users className="w-5 h-5 text-purple-600 dark:text-purple-400" /></div>
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Total Users</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">{data.summary.totalUsers}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.summary.totalUsers}</p>
                 </div>
               </div>
               <GaugeCard
@@ -179,11 +210,11 @@ export function AdminOperationsPage() {
                 unit="MB"
                 percent={data.system.memory.osPercent}
               />
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
-                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg"><TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /></div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-emerald-500 border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3 shadow-sm">
+                <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-full"><TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /></div>
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Estimated Headroom</p>
-                  <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">~{data.summary.estimatedHeadroom} <span className="text-sm font-normal">users</span></p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Headroom</p>
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">~{data.summary.estimatedHeadroom} <span className="text-sm font-normal">users</span></p>
                 </div>
               </div>
             </div>
@@ -257,22 +288,17 @@ export function AdminOperationsPage() {
             </div>
             {/* Extra stats row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Uptime</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatUptime(data.system.uptime)}</p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Total Requests</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">{data.system.api.totalRequests.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
-                <p className="text-xs text-gray-500 dark:text-gray-400">DB Queries</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">{data.system.db.totalQueries.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
-                <p className="text-xs text-gray-500 dark:text-gray-400">AI Requests</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">{data.system.ai.totalRequests.toLocaleString()}</p>
-              </div>
+              {[
+                { label: 'Uptime', value: formatUptime(data.system.uptime), color: 'border-l-sky-500' },
+                { label: 'Total Requests', value: data.system.api.totalRequests.toLocaleString(), color: 'border-l-indigo-500' },
+                { label: 'DB Queries', value: data.system.db.totalQueries.toLocaleString(), color: 'border-l-violet-500' },
+                { label: 'AI Requests', value: data.system.ai.totalRequests.toLocaleString(), color: 'border-l-pink-500' },
+              ].map((s) => (
+                <div key={s.label} className={`bg-white dark:bg-gray-800 rounded-xl border-l-4 ${s.color} border border-gray-200 dark:border-gray-700 p-3 shadow-sm`}>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{s.label}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white mt-0.5">{s.value}</p>
+                </div>
+              ))}
             </div>
           </div>
 
