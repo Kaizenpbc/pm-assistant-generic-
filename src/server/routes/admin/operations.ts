@@ -319,9 +319,22 @@ export async function operationsRoutes(fastify: FastifyInstance) {
         swapPercent: swap?.percentUsed ?? null,
       });
 
-      // Summary aggregates
-      const totalTenants = tenants.length;
-      const totalUsers = tenants.reduce((sum, t) => sum + t.totalUsers, 0);
+      // Summary aggregates — query directly, don't rely on tenants array
+      let totalTenants = 0;
+      let totalUsers = 0;
+      try {
+        if (config.MULTI_TENANT_ENABLED) {
+          const orgRows = await databaseService.queryControlPlane<{ cnt: number }>(`SELECT COUNT(*) as cnt FROM organizations WHERE status = 'active'`);
+          totalTenants = Number(orgRows[0]?.cnt || 0);
+        } else {
+          totalTenants = 1;
+        }
+        const userRows = await databaseService.queryControlPlane<{ cnt: number }>(`SELECT COUNT(*) as cnt FROM users WHERE is_active = 1`);
+        totalUsers = Number(userRows[0]?.cnt || 0);
+      } catch { /* fall back to tenant-derived counts */
+        totalTenants = tenants.length || (config.MULTI_TENANT_ENABLED ? 0 : 1);
+        totalUsers = tenants.reduce((sum, t) => sum + t.totalUsers, 0);
+      }
       const availableRAM = osFreeMB;
       const estimatedHeadroom = Math.max(0, Math.floor(availableRAM / 15));
 
