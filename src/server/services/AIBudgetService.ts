@@ -1,4 +1,5 @@
 import { aiBudgetRepository } from '../database/AIBudgetRepository';
+import { tokenTopUpRepository } from '../database/TokenTopUpRepository';
 import { config, getTierBudget } from '../config';
 import { notificationService } from './NotificationService';
 import { deadLetterService } from './DeadLetterService';
@@ -72,10 +73,11 @@ class AIBudgetService {
   private async getBudget(userId: string): Promise<number> {
     // Priority: per-user override → tier default → global fallback
     const userBudget = await aiBudgetRepository.getUserBudget(userId);
-    if (userBudget != null) return userBudget;
+    const baseBudget = userBudget ?? getTierBudget(await aiBudgetRepository.getUserTier(userId));
 
-    const tier = await aiBudgetRepository.getUserTier(userId);
-    return getTierBudget(tier);
+    // Add any purchased top-up tokens
+    const topUpTokens = await tokenTopUpRepository.getRemainingTokens(userId);
+    return baseBudget + topUpTokens;
   }
 }
 

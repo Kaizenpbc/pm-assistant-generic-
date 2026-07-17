@@ -44,6 +44,13 @@ const configSchema = z.object({
   STRIPE_PRO_PRICE_ID: z.string().optional().default(''),
   STRIPE_MONTHLY_PRICE_ID: z.string().optional().default(''),
   STRIPE_ANNUAL_PRICE_ID: z.string().optional().default(''),
+  STRIPE_PRO_MONTHLY_PRICE_ID: z.string().optional().default(''),
+  STRIPE_PRO_ANNUAL_PRICE_ID: z.string().optional().default(''),
+  STRIPE_BUSINESS_MONTHLY_PRICE_ID: z.string().optional().default(''),
+  STRIPE_BUSINESS_ANNUAL_PRICE_ID: z.string().optional().default(''),
+  STRIPE_CONSULTANT_MONTHLY_PRICE_ID: z.string().optional().default(''),
+  STRIPE_CONSULTANT_ANNUAL_PRICE_ID: z.string().optional().default(''),
+  STRIPE_TOPUP_PRICE_ID: z.string().optional().default(''),
 
   // Weather Configuration
   WEATHER_API_PROVIDER: z.enum(['openweathermap', 'weatherapi', 'accuweather', 'mock']).default('mock'),
@@ -74,9 +81,13 @@ const configSchema = z.object({
 
   // Per-tier AI budget defaults (tokens/month)
   AI_TIER_BUDGET_FREE: z.coerce.number().min(0).default(25000),
-  AI_TIER_BUDGET_PRO: z.coerce.number().min(0).default(250000),
-  AI_TIER_BUDGET_BUSINESS: z.coerce.number().min(0).default(500000),
-  AI_TIER_BUDGET_CONSULTANT: z.coerce.number().min(0).default(1000000),
+  AI_TIER_BUDGET_PRO: z.coerce.number().min(0).default(500000),
+  AI_TIER_BUDGET_BUSINESS: z.coerce.number().min(0).default(1500000),
+  AI_TIER_BUDGET_CONSULTANT: z.coerce.number().min(0).default(3000000),
+
+  // Token top-up pricing
+  AI_TOPUP_TOKENS: z.coerce.number().min(0).default(500000),
+  AI_TOPUP_PRICE_CENTS: z.coerce.number().min(0).default(500),
 
   // Metrics
   METRICS_ENABLED: z.preprocess((val) => val === 'true' || val === '1' || val === true || val === undefined, z.boolean().default(true)),
@@ -156,6 +167,13 @@ export function validateConfiguration() {
       STRIPE_PRO_PRICE_ID: process.env['STRIPE_PRO_PRICE_ID'],
       STRIPE_MONTHLY_PRICE_ID: process.env['STRIPE_MONTHLY_PRICE_ID'],
       STRIPE_ANNUAL_PRICE_ID: process.env['STRIPE_ANNUAL_PRICE_ID'],
+      STRIPE_PRO_MONTHLY_PRICE_ID: process.env['STRIPE_PRO_MONTHLY_PRICE_ID'],
+      STRIPE_PRO_ANNUAL_PRICE_ID: process.env['STRIPE_PRO_ANNUAL_PRICE_ID'],
+      STRIPE_BUSINESS_MONTHLY_PRICE_ID: process.env['STRIPE_BUSINESS_MONTHLY_PRICE_ID'],
+      STRIPE_BUSINESS_ANNUAL_PRICE_ID: process.env['STRIPE_BUSINESS_ANNUAL_PRICE_ID'],
+      STRIPE_CONSULTANT_MONTHLY_PRICE_ID: process.env['STRIPE_CONSULTANT_MONTHLY_PRICE_ID'],
+      STRIPE_CONSULTANT_ANNUAL_PRICE_ID: process.env['STRIPE_CONSULTANT_ANNUAL_PRICE_ID'],
+      STRIPE_TOPUP_PRICE_ID: process.env['STRIPE_TOPUP_PRICE_ID'],
       WEATHER_API_PROVIDER: process.env['WEATHER_API_PROVIDER'],
       WEATHER_API_KEY: process.env['WEATHER_API_KEY'],
       WEATHER_CACHE_MINUTES: process.env['WEATHER_CACHE_MINUTES'],
@@ -177,6 +195,8 @@ export function validateConfiguration() {
       AI_TIER_BUDGET_PRO: process.env['AI_TIER_BUDGET_PRO'],
       AI_TIER_BUDGET_BUSINESS: process.env['AI_TIER_BUDGET_BUSINESS'],
       AI_TIER_BUDGET_CONSULTANT: process.env['AI_TIER_BUDGET_CONSULTANT'],
+      AI_TOPUP_TOKENS: process.env['AI_TOPUP_TOKENS'],
+      AI_TOPUP_PRICE_CENTS: process.env['AI_TOPUP_PRICE_CENTS'],
       METRICS_ENABLED: process.env['METRICS_ENABLED'],
       REDIS_URL: process.env['REDIS_URL'],
       ALERT_ENABLED: process.env['ALERT_ENABLED'],

@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 import { config } from '../config';
 import { UserService } from './UserService';
 import { subscriptionRepository } from '../database/SubscriptionRepository';
+import { tokenTopUpRepository } from '../database/TokenTopUpRepository';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
 
@@ -53,6 +54,24 @@ export class StripeService {
     return session.url!;
   }
 
+  async createTopUpSession(customerId: string, userId: string, quantity: number): Promise<string> {
+    const priceId = config.STRIPE_TOPUP_PRICE_ID;
+    if (!priceId) {
+      throw new Error('STRIPE_TOPUP_PRICE_ID is not configured');
+    }
+
+    const session = await this.getClient().checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity }],
+      mode: 'payment',
+      metadata: { userId, type: 'token_topup', quantity: String(quantity) },
+      success_url: `${config.APP_URL}/settings?topup=success`,
+      cancel_url: `${config.APP_URL}/settings?topup=canceled`,
+    });
+    return session.url!;
+  }
+
   async createBillingPortalSession(customerId: string): Promise<string> {
     const session = await this.getClient().billingPortal.sessions.create({
       customer: customerId,
@@ -82,6 +101,8 @@ export class StripeService {
         if (session.mode === 'subscription' && session.subscription) {
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
           await this.upsertSubscription(subscription);
+        } else if (session.mode === 'payment' && session.metadata?.type === 'token_topup') {
+          await this.handleTopUpCompleted(session);
         }
         break;
       }
@@ -121,6 +142,54 @@ export class StripeService {
     };
   }
 
+  private async handleTopUpCompleted(session: Stripe.Checkout.Session): Promise<void> {
+    const userId = session.metadata?.userId;
+    const quantity = parseInt(session.metadata?.quantity || '1', 10);
+    if (!userId) {
+      logger.error('[StripeService] Top-up session missing userId metadata');
+      return;
+    }
+
+    // Prevent double-processing
+    const existing = await tokenTopUpRepository.findByStripeSession(session.id);
+    if (existing) return;
+
+    const tokensPerPack = config.AI_TOPUP_TOKENS;
+    const totalTokens = tokensPerPack * quantity;
+    const totalCents = config.AI_TOPUP_PRICE_CENTS * quantity;
+
+    await tokenTopUpRepository.create(userId, totalTokens, totalCents, session.id);
+    logger.info(`[StripeService] Top-up credited: ${totalTokens} tokens for user ${userId}`);
+  }
+
+  private resolveTierFromPriceId(priceId: string | undefined): 'free' | 'pro' | 'business' | 'consultant' {
+    if (!priceId) return 'free';
+
+    const proPriceIds = [
+      config.STRIPE_PRO_MONTHLY_PRICE_ID,
+      config.STRIPE_PRO_ANNUAL_PRICE_ID,
+    ].filter(Boolean);
+    if (proPriceIds.includes(priceId)) return 'pro';
+
+    const businessPriceIds = [
+      config.STRIPE_BUSINESS_MONTHLY_PRICE_ID,
+      config.STRIPE_BUSINESS_ANNUAL_PRICE_ID,
+    ].filter(Boolean);
+    if (businessPriceIds.includes(priceId)) return 'business';
+
+    const consultantPriceIds = [
+      config.STRIPE_CONSULTANT_MONTHLY_PRICE_ID,
+      config.STRIPE_CONSULTANT_ANNUAL_PRICE_ID,
+      // Legacy single-plan price IDs map to consultant
+      config.STRIPE_MONTHLY_PRICE_ID,
+      config.STRIPE_ANNUAL_PRICE_ID,
+      config.STRIPE_PRO_PRICE_ID,
+    ].filter(Boolean);
+    if (consultantPriceIds.includes(priceId)) return 'consultant';
+
+    return 'free';
+  }
+
   private async upsertSubscription(subscription: Stripe.Subscription): Promise<void> {
     const customerId = subscription.customer as string;
     const user = await this.userService.findByStripeCustomerId(customerId);
@@ -132,13 +201,7 @@ export class StripeService {
     // Determine tier from price ID
     const item = subscription.items.data[0];
     const priceId = item?.price?.id;
-    const consultantPriceIds = [
-      config.STRIPE_MONTHLY_PRICE_ID,
-      config.STRIPE_ANNUAL_PRICE_ID,
-      config.STRIPE_PRO_PRICE_ID, // legacy fallback
-    ].filter(Boolean);
-    let tier: 'free' | 'pro' | 'business' | 'consultant' = 'free';
-    if (priceId && consultantPriceIds.includes(priceId)) tier = 'consultant';
+    const tier = this.resolveTierFromPriceId(priceId);
 
     // Map Stripe status
     const statusMap: Record<string, 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none'> = {

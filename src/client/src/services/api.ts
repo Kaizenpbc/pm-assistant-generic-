@@ -148,8 +148,18 @@ class ApiService {
   // Stripe / Subscription endpoints
   // -------------------------------------------------------------------------
 
-  async createCheckoutSession(plan: 'monthly' | 'annual' = 'monthly') {
-    const response = await this.api.post('/stripe/create-checkout-session', { plan });
+  async createCheckoutSession(plan: 'monthly' | 'annual' = 'monthly', tier: string = 'consultant') {
+    const response = await this.api.post('/stripe/create-checkout-session', { plan, tier });
+    return response.data;
+  }
+
+  async createTopUpSession(quantity: number = 1) {
+    const response = await this.api.post('/stripe/create-topup-session', { quantity });
+    return response.data;
+  }
+
+  async getTopUpBalance() {
+    const response = await this.api.get('/stripe/topup-balance');
     return response.data;
   }
 

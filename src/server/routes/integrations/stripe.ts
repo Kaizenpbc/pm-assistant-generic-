@@ -4,7 +4,29 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { userService } from '../../services/UserService';
 import { stripeService } from '../../services/StripeService';
+import { tokenTopUpRepository } from '../../database/TokenTopUpRepository';
 import logger from '../../utils/logger';
+
+function resolvePriceId(tier: string, billing: string): string | undefined {
+  // Try new tier-specific price IDs first, then fall back to legacy
+  if (tier === 'pro') {
+    if (billing === 'annual' && config.STRIPE_PRO_ANNUAL_PRICE_ID) return config.STRIPE_PRO_ANNUAL_PRICE_ID;
+    if (config.STRIPE_PRO_MONTHLY_PRICE_ID) return config.STRIPE_PRO_MONTHLY_PRICE_ID;
+  }
+  if (tier === 'business') {
+    if (billing === 'annual' && config.STRIPE_BUSINESS_ANNUAL_PRICE_ID) return config.STRIPE_BUSINESS_ANNUAL_PRICE_ID;
+    if (config.STRIPE_BUSINESS_MONTHLY_PRICE_ID) return config.STRIPE_BUSINESS_MONTHLY_PRICE_ID;
+  }
+  if (tier === 'consultant') {
+    if (billing === 'annual' && config.STRIPE_CONSULTANT_ANNUAL_PRICE_ID) return config.STRIPE_CONSULTANT_ANNUAL_PRICE_ID;
+    if (config.STRIPE_CONSULTANT_MONTHLY_PRICE_ID) return config.STRIPE_CONSULTANT_MONTHLY_PRICE_ID;
+  }
+
+  // Legacy fallback (single-plan era)
+  if (billing === 'annual' && config.STRIPE_ANNUAL_PRICE_ID) return config.STRIPE_ANNUAL_PRICE_ID;
+  if (config.STRIPE_MONTHLY_PRICE_ID) return config.STRIPE_MONTHLY_PRICE_ID;
+  return config.STRIPE_PRO_PRICE_ID || undefined;
+}
 
 export async function stripeRoutes(fastify: FastifyInstance) {
   // Stripe webhook — must receive raw body, no auth
@@ -32,14 +54,13 @@ export async function stripeRoutes(fastify: FastifyInstance) {
   });
 
   // Authenticated routes
-  // Billing routes use 'read' scope — every authenticated user can manage their own subscription
   fastify.post('/create-checkout-session', {
     preHandler: [authMiddleware, requireScope('read')],
     schema: { description: 'Create Stripe checkout session', tags: ['stripe'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
-      const { plan } = (request.body as { plan?: string }) || {};
+      const { plan, tier } = (request.body as { plan?: string; tier?: string }) || {};
       const user = await userService.findById(userId);
       if (!user) {
         return reply.status(404).send({ error: 'User not found' });
@@ -49,15 +70,9 @@ export async function stripeRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'No Stripe customer', message: 'Please contact support' });
       }
 
-      // Resolve price ID from plan parameter
-      let priceId: string | undefined;
-      if (plan === 'annual' && config.STRIPE_ANNUAL_PRICE_ID) {
-        priceId = config.STRIPE_ANNUAL_PRICE_ID;
-      } else if (config.STRIPE_MONTHLY_PRICE_ID) {
-        priceId = config.STRIPE_MONTHLY_PRICE_ID;
-      } else {
-        priceId = config.STRIPE_PRO_PRICE_ID; // legacy fallback
-      }
+      const billing = plan || 'monthly';
+      const selectedTier = tier || 'consultant'; // default to consultant for legacy clients
+      const priceId = resolvePriceId(selectedTier, billing);
 
       if (!priceId) {
         return reply.status(500).send({ error: 'Stripe not configured', message: 'Pricing is not configured' });
@@ -73,6 +88,61 @@ export async function stripeRoutes(fastify: FastifyInstance) {
     } catch (error) {
       logger.error('Create checkout session error', { error });
       return reply.status(500).send({ error: 'Failed to create checkout session' });
+    }
+  });
+
+  // Token top-up purchase
+  fastify.post('/create-topup-session', {
+    preHandler: [authMiddleware, requireScope('read')],
+    schema: { description: 'Create Stripe checkout for token top-up', tags: ['stripe'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = request.user!.userId;
+      const { quantity } = (request.body as { quantity?: number }) || {};
+      const qty = Math.max(1, Math.min(quantity || 1, 20)); // 1-20 packs
+
+      const user = await userService.findById(userId);
+      if (!user) {
+        return reply.status(404).send({ error: 'User not found' });
+      }
+
+      if (!user.stripeCustomerId) {
+        return reply.status(400).send({ error: 'No Stripe customer', message: 'Please contact support' });
+      }
+
+      const url = await stripeService.createTopUpSession(
+        user.stripeCustomerId,
+        userId,
+        qty,
+      );
+
+      return { url };
+    } catch (error) {
+      logger.error('Create top-up session error', { error });
+      return reply.status(500).send({ error: 'Failed to create top-up session' });
+    }
+  });
+
+  // Get token top-up balance and history
+  fastify.get('/topup-balance', {
+    preHandler: [authMiddleware, requireScope('read')],
+    schema: { description: 'Get token top-up balance', tags: ['stripe'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = request.user!.userId;
+      const remaining = await tokenTopUpRepository.getRemainingTokens(userId);
+      const history = await tokenTopUpRepository.getPurchaseHistory(userId);
+      return {
+        remainingTopUpTokens: remaining,
+        topUpConfig: {
+          tokensPerPack: config.AI_TOPUP_TOKENS,
+          pricePerPack: config.AI_TOPUP_PRICE_CENTS,
+        },
+        history,
+      };
+    } catch (error) {
+      logger.error('Get top-up balance error', { error });
+      return reply.status(500).send({ error: 'Failed to get balance' });
     }
   });
 

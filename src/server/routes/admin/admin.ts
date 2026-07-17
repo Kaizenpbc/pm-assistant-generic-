@@ -358,6 +358,8 @@ export async function adminRoutes(fastify: FastifyInstance) {
         pro: config.AI_TIER_BUDGET_PRO,
         business: config.AI_TIER_BUDGET_BUSINESS,
         consultant: config.AI_TIER_BUDGET_CONSULTANT,
+        topUpTokens: config.AI_TOPUP_TOKENS,
+        topUpPriceCents: config.AI_TOPUP_PRICE_CENTS,
       };
 
       return {

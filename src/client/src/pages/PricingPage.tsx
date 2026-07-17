@@ -2,48 +2,95 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
-import { Check, AlertCircle } from 'lucide-react';
+import { Check, AlertCircle, Zap } from 'lucide-react';
 
-const features = [
-  'Unlimited projects',
-  'All AI features (Mjuzi, NL queries, auto-reschedule, meeting intelligence)',
-  'EVM dashboard & AI forecasting',
-  'Monte Carlo simulation',
-  'Gantt charts with dependencies, critical path & baselines',
-  'Sprint/Agile + Kanban boards',
-  'DAG workflow automation + NL builder',
-  'Resource management & workload heatmaps',
-  'Stakeholder portal',
-  'Custom report builder & scheduled delivery',
-  'RAID management',
-  'All export formats (CSV, PDF, MSPDI XML)',
-  'API access & MCP integration',
-  '5GB file storage',
+interface PlanDef {
+  tier: string;
+  name: string;
+  monthly: number;
+  annual: number;
+  tokens: string;
+  highlight?: boolean;
+  features: string[];
+}
+
+const PLANS: PlanDef[] = [
+  {
+    tier: 'pro',
+    name: 'Pro',
+    monthly: 15,
+    annual: 150,
+    tokens: '500K',
+    features: [
+      'Unlimited projects',
+      'Mjuzi AI assistant (500K tokens/mo)',
+      'Gantt charts with dependencies & critical path',
+      'Sprint/Agile + Kanban boards',
+      'RAID management',
+      'All export formats (CSV, PDF, XML)',
+      'API access',
+    ],
+  },
+  {
+    tier: 'business',
+    name: 'Business',
+    monthly: 35,
+    annual: 350,
+    tokens: '1.5M',
+    highlight: true,
+    features: [
+      'Everything in Pro, plus:',
+      'AI tokens: 1.5M/mo (3x Pro)',
+      'EVM dashboard & AI forecasting',
+      'Monte Carlo simulation',
+      'Resource management & workload heatmaps',
+      'Custom report builder & scheduled delivery',
+      'DAG workflow automation',
+      'Stakeholder portal',
+    ],
+  },
+  {
+    tier: 'consultant',
+    name: 'Consultant',
+    monthly: 59,
+    annual: 590,
+    tokens: '3M',
+    features: [
+      'Everything in Business, plus:',
+      'AI tokens: 3M/mo (6x Pro)',
+      'Cross-project intelligence',
+      'AI task prioritization & auto-reschedule',
+      'Meeting intelligence & voice recording',
+      'NL project creation & query engine',
+      'MCP integration',
+      '5GB file storage',
+    ],
+  },
 ];
 
 export const PricingPage: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const currentTier = user?.subscriptionTier || 'free';
   const isSubscribed = currentTier === 'consultant' || currentTier === 'pro' || currentTier === 'business';
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = async (tier: string) => {
     if (!isAuthenticated) {
       window.location.href = '/register';
       return;
     }
-    setLoading(true);
+    setLoading(tier);
     setError(null);
     try {
-      const { url } = await apiService.createCheckoutSession(billing);
+      const { url } = await apiService.createCheckoutSession(billing, tier);
       window.location.href = url;
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to start checkout. Please try again.';
       setError(msg);
-      setLoading(false);
+      setLoading(null);
     }
   };
 
@@ -53,6 +100,23 @@ export const PricingPage: React.FC = () => {
       window.location.href = url;
     } catch {
       // ignore
+    }
+  };
+
+  const handleBuyTokens = async () => {
+    if (!isAuthenticated) {
+      window.location.href = '/register';
+      return;
+    }
+    setLoading('topup');
+    setError(null);
+    try {
+      const { url } = await apiService.createTopUpSession(1);
+      window.location.href = url;
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to start checkout.';
+      setError(msg);
+      setLoading(null);
     }
   };
 
@@ -90,16 +154,16 @@ export const PricingPage: React.FC = () => {
 
       {/* Pricing */}
       <section className="py-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Simple, transparent pricing</h1>
             <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
-              14-day free trial. All features included. No credit card required.
+              14-day free trial on any plan. No credit card required.
             </p>
           </div>
 
           {/* Billing toggle */}
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-10">
             <div className="inline-flex items-center bg-gray-100 dark:bg-gray-700 rounded-full p-1">
               <button
                 onClick={() => setBilling('monthly')}
@@ -125,78 +189,135 @@ export const PricingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Plan card */}
-          <div className="bg-white dark:bg-gray-800 border-2 border-primary-500 rounded-2xl shadow-xl shadow-primary-500/10 p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Consultant</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Everything you need to manage projects like a pro</p>
-              </div>
-              <div className="text-right">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                    {billing === 'monthly' ? '$25' : '$250'}
-                  </span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    /{billing === 'monthly' ? 'mo' : 'yr'}
-                  </span>
-                </div>
-                {billing === 'annual' && (
-                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">~$20.83/mo</p>
-                )}
-              </div>
+          {error && (
+            <div className="max-w-xl mx-auto mb-6 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
             </div>
+          )}
 
-            {/* CTA */}
-            {error && (
-              <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-300">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {error}
-              </div>
-            )}
-            <div className="mb-8">
-              {isSubscribed ? (
-                <button
-                  onClick={handleManageBilling}
-                  className="w-full py-3 px-4 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          {/* Plan cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            {PLANS.map((plan) => {
+              const isCurrent = currentTier === plan.tier;
+              const price = billing === 'monthly' ? plan.monthly : plan.annual;
+              const perMonth = billing === 'annual' ? (plan.annual / 12).toFixed(2) : null;
+
+              return (
+                <div
+                  key={plan.tier}
+                  className={`relative rounded-2xl border-2 p-6 shadow-sm transition-all ${
+                    plan.highlight
+                      ? 'border-primary-500 shadow-xl shadow-primary-500/10'
+                      : 'border-gray-200 dark:border-gray-700'
+                  } bg-white dark:bg-gray-800`}
                 >
-                  Manage Subscription
-                </button>
-              ) : (
-                <button
-                  onClick={handleSubscribe}
-                  disabled={loading}
-                  className="w-full py-3 px-4 text-sm font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center">
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                      Loading...
-                    </span>
-                  ) : isAuthenticated ? (
-                    'Subscribe Now'
-                  ) : (
-                    'Start 14-Day Free Trial'
+                  {plan.highlight && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                        Most Popular
+                      </span>
+                    </div>
                   )}
-                </button>
-              )}
-            </div>
 
-            {/* Features */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {features.map((feature) => (
-                <div key={feature} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
-                  <Check className="w-4 h-4 text-primary-500 flex-shrink-0 mt-0.5" />
-                  <span>{feature}</span>
+                  <div className="mb-4">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{plan.name}</h2>
+                    <div className="mt-3 flex items-baseline gap-1">
+                      <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                        ${price}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        /{billing === 'monthly' ? 'mo' : 'yr'}
+                      </span>
+                    </div>
+                    {perMonth && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">~${perMonth}/mo</p>
+                    )}
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                      {plan.tokens} AI tokens/month
+                    </p>
+                  </div>
+
+                  <div className="mb-6">
+                    {isCurrent ? (
+                      <button
+                        onClick={handleManageBilling}
+                        className="w-full py-2.5 px-4 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        Current Plan
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSubscribe(plan.tier)}
+                        disabled={loading === plan.tier}
+                        className={`w-full py-2.5 px-4 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 ${
+                          plan.highlight
+                            ? 'bg-primary-600 text-white hover:bg-primary-700'
+                            : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
+                        }`}
+                      >
+                        {loading === plan.tier ? (
+                          <span className="flex items-center justify-center">
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                            Loading...
+                          </span>
+                        ) : isAuthenticated ? (
+                          isSubscribed ? 'Switch Plan' : 'Subscribe'
+                        ) : (
+                          'Start Free Trial'
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  <ul className="space-y-2.5">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
+                        <Check className="w-4 h-4 text-primary-500 flex-shrink-0 mt-0.5" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+
+          {/* Token top-up */}
+          <div className="max-w-xl mx-auto">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 text-center">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Need more AI tokens?</h3>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Top up anytime. <strong>500K tokens for $5</strong> — added instantly to your balance.
+              </p>
+              <button
+                onClick={handleBuyTokens}
+                disabled={loading === 'topup'}
+                className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors disabled:opacity-50"
+              >
+                {loading === 'topup' ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    Buy Token Pack — $5
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
           {/* Refund policy */}
-          <div className="mt-8 text-center text-xs text-gray-400 dark:text-gray-500 space-y-1">
+          <div className="mt-12 text-center text-xs text-gray-400 dark:text-gray-500 space-y-1">
             <p>Monthly subscriptions are non-refundable. Cancel anytime.</p>
             <p>Annual subscriptions: pro-rated refund within 30 days, non-refundable after.</p>
+            <p>Token top-ups are non-refundable and do not expire.</p>
             <p>Questions? <a href="mailto:support@kpbc.ca" className="text-primary-500 hover:underline">support@kpbc.ca</a></p>
           </div>
         </div>
