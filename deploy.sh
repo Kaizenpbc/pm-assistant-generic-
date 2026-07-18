@@ -85,26 +85,31 @@ else
 fi
 echo "  OK"
 
-# --- Step 4: Copy migration SQL files (not included in tsc output) ---
+# --- Step 4: Copy non-tsc files into dist (SQL migrations, tenant migrations) ---
 echo "[4/7] Copying migration SQL files to dist..."
 cp src/server/database/migrations/*.sql dist/server/database/migrations/ 2>/dev/null || true
+mkdir -p dist/server/database/tenant-migrations
+cp src/server/database/tenant-migrations/*.sql dist/server/database/tenant-migrations/ 2>/dev/null || true
 echo "  OK"
 
-# --- Step 5: Upload server ---
+# --- Step 5: Upload server (tar + sudo to handle www-data ownership) ---
 if [ "$CLIENT_ONLY" = false ]; then
   echo "[5/7] Uploading server dist..."
-  do_scp -r dist/server "$SSH_HOST":/opt/pm-app/dist/
+  tar czf /tmp/server-dist.tar.gz -C dist/server .
+  do_scp /tmp/server-dist.tar.gz "$SSH_HOST":/tmp/
+  do_ssh "sudo tar xzf /tmp/server-dist.tar.gz -C /opt/pm-app/dist/server/ && sudo chown -R www-data:www-data /opt/pm-app/dist/server/ && rm /tmp/server-dist.tar.gz"
+  rm -f /tmp/server-dist.tar.gz
   echo "  OK"
 else
   echo "[5/7] Server upload skipped (--client-only)"
 fi
 
-# --- Step 6: Upload client ---
+# --- Step 6: Upload client (tar + sudo to handle www-data ownership) ---
 if [ "$SERVER_ONLY" = false ]; then
   echo "[6/7] Uploading client dist..."
   tar czf /tmp/client-dist.tar.gz -C src/client/dist .
   do_scp /tmp/client-dist.tar.gz "$SSH_HOST":/tmp/
-  do_ssh "rm -rf /opt/pm-app/client-dist/assets && tar xzf /tmp/client-dist.tar.gz -C /opt/pm-app/client-dist"
+  do_ssh "sudo rm -rf /opt/pm-app/client-dist/assets && sudo tar xzf /tmp/client-dist.tar.gz -C /opt/pm-app/client-dist && sudo chown -R www-data:www-data /opt/pm-app/client-dist/ && rm /tmp/client-dist.tar.gz"
   rm -f /tmp/client-dist.tar.gz
   echo "  OK"
 else
