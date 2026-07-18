@@ -41,15 +41,32 @@ export async function adminRoutes(fastify: FastifyInstance) {
           u.email_verified,
           u.login_verification_token IS NOT NULL AS has_pending_login,
           u.login_verification_expires,
-          COUNT(DISTINCT p.id) AS project_count
+          u.organization_id,
+          o.name AS organization_name,
+          COUNT(DISTINCT p.id) AS project_count,
+          COALESCE(ai.tokens_used, 0) AS ai_tokens_used
         FROM users u
         LEFT JOIN projects p ON p.created_by = u.id
+        LEFT JOIN organizations o ON o.id = u.organization_id
+        LEFT JOIN (
+          SELECT user_id, SUM(input_tokens + output_tokens) AS tokens_used
+          FROM ai_usage_log
+          WHERE created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+          GROUP BY user_id
+        ) ai ON ai.user_id = u.id
         GROUP BY u.id
         ORDER BY u.created_at DESC
         LIMIT ? OFFSET ?`,
         [limit, offset]
       );
-      return { users: rows };
+
+      // Compute tier budgets for each user so the frontend can show usage %
+      const usersWithBudget = rows.map((u: any) => ({
+        ...u,
+        ai_tier_budget: getTierBudget(u.subscription_tier || 'free'),
+      }));
+
+      return { users: usersWithBudget };
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Internal server error' });

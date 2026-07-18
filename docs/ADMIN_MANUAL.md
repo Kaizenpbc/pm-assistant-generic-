@@ -32,21 +32,39 @@ Admins can manage all aspects of the platform. Managers operate within projects 
 - Admins can trigger a password reset email or set a temporary password.
 - Enforce password complexity via `PASSWORD_MIN_LENGTH` and `PASSWORD_REQUIRE_SPECIAL` env vars.
 
+### Users Table Columns
+
+The **Admin > Users** table displays 12 sortable columns. Click any column header to sort ascending/descending.
+
+| Column | Description |
+|--------|-------------|
+| User | Full name, email, username |
+| Role | Color-coded role badge |
+| Tier | Subscription tier badge (Free, Pro, Business, Consultant) |
+| Organization | Multi-tenant organization name (or "none") |
+| Signed up | Account creation date |
+| Login status | Verified / Unverified / Pending login / Expired token |
+| Last login | Most recent login timestamp |
+| Projects | Number of projects owned |
+| AI Usage | Token consumption progress bar with percentage (current month vs budget) |
+| AI Budget | Per-user override or "tier default" (inline-editable) |
+| Status | Active/Inactive toggle |
+| Actions | Reset PW, Unlock (for stuck login tokens) |
+
+**Filters:** Text search (name, email, username, organization), role dropdown, tier dropdown, status dropdown.
+
 ### Login Status & Unlock
 
-The **Admin > Users** page shows a **Login status** column for each user:
+Login status badges indicate email verification and login token state:
 
 | Status | Meaning |
 |---|---|
-| **Verified** | Email verified, no pending login token. Normal state. |
-| **Unverified** | Email address not yet verified. |
-| **Pending login** | A login verification token has been issued and is awaiting confirmation via email link. |
-| **Expired token** | The login verification token has expired. The user cannot complete login until the token is cleared. |
+| **Verified** (green) | Email verified, no pending login token. Normal state. |
+| **Unverified** (gray) | Email address not yet verified. |
+| **Pending login** (yellow) | A login verification token has been issued and is awaiting confirmation. |
+| **Expired token** (red) | The login verification token has expired. User cannot complete login. |
 
-When a user has a pending or expired login token, an **Unlock** button appears in the Actions column. Clicking it clears the login verification token so the user can attempt login again. This is useful when:
-- A user's login confirmation email was lost or delayed past the 10-minute expiry.
-- A user accidentally closed the verification email and the token expired.
-- A user contacts support saying they cannot log in after entering correct credentials.
+When a user has a pending or expired login token, an **Unlock** button appears in the Actions column. Clicking it clears the login verification token so the user can attempt login again.
 
 **API:** `POST /api/v1/admin/users/:id/clear-login-token` (admin only).
 

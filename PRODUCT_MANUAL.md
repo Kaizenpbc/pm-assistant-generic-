@@ -1779,31 +1779,36 @@ Contextual "Need help?" and "Report this issue" mailto links appear on pages whe
 
 All links use `mailto:support@kpbc.ca`. No backend or database changes required — purely client-side mailto links.
 
-### Admin User Unlock Tool
+### Admin Users Table
 
-The **Admin > Users** page displays a **Login status** badge per user:
+The **Admin > Users** page provides a comprehensive user management table with 12 columns, all sortable by clicking the column header (ascending/descending toggle with arrow indicators):
 
-| Badge | Meaning |
-|-------|---------|
-| **Verified** (green) | Email verified, no pending login token |
-| **Unverified** (gray) | Email not yet verified |
-| **Pending login** (yellow) | Login verification email sent, awaiting confirmation |
-| **Expired token** (red) | Login verification token has expired |
+| Column | Description |
+|--------|-------------|
+| **User** | Full name, email, and username |
+| **Role** | Color-coded role badge (admin, project_manager, executive, pmo, etc.) |
+| **Tier** | Subscription tier badge: Free (gray), Pro (blue), Business (green), Consultant (amber) |
+| **Organization** | Organization name (multi-tenant), or "none" if unassigned |
+| **Signed up** | Account creation date |
+| **Login status** | Email/login state badge — Verified (green), Unverified (gray), Pending login (yellow), Expired token (red). Sortable by urgency (expired first). |
+| **Last login** | Most recent login timestamp |
+| **Projects** | Number of projects created by the user |
+| **AI Usage** | Color-coded progress bar showing current month's token consumption vs budget (green <70%, amber 70-90%, red >90%), with used/total token counts |
+| **AI Budget** | Per-user budget override (inline-editable) or "tier default" |
+| **Status** | Active/Inactive toggle. Sortable. |
+| **Actions** | Reset PW button; Unlock button (shown when login token is pending/expired) |
 
-When a user has a pending or expired token, an **Unlock** button appears in the Actions column. Clicking it clears the `login_verification_token` and `login_verification_expires` fields so the user can retry login.
+**Filters:** Search by name/email/username/organization. Dropdown filters for Role, Tier, and Status (active/inactive). Showing count updates in real time.
 
-**API endpoint:** `POST /api/v1/admin/users/:id/clear-login-token` (admin role required). Returns `{ message: "Login verification token cleared" }`.
+**AI Usage column:** The backend query JOINs `ai_usage_log` (current month) and computes `ai_tokens_used` per user. The frontend calculates usage percentage against the effective budget (per-user override or tier default) and renders a mini progress bar.
 
-### Admin AI Budget Override
+**Organization column:** The backend query LEFT JOINs `organizations` on `users.organization_id` to display the org name.
 
-The **Admin > Users** table includes an **AI Budget** column showing each user's current token budget. If a per-user override is set, the value is displayed; otherwise, the column shows "(tier default)" in italics.
-
-Admins can click the budget value to inline-edit it:
-- Enter a custom token budget and press **Enter** or click the check icon to save.
-- Press **Escape** or click the X icon to cancel.
-- Clear the field and save to remove the override and revert to the tier default.
-
-**API endpoint:** `PATCH /api/v1/admin/users/:id/budget` (admin role required). Body: `{ budget: number | null }`. Returns `{ message: "AI budget updated", ai_monthly_token_budget: number | null }`.
+**API endpoints:**
+- `POST /api/v1/admin/users/:id/clear-login-token` — clears stuck login verification tokens
+- `PATCH /api/v1/admin/users/:id/budget` — sets or clears per-user AI token budget override
+- `PATCH /api/v1/admin/users/:id/status` — activates or deactivates a user account
+- `POST /api/v1/admin/users/:id/reset-password` — generates a password reset token
 
 ---
 
