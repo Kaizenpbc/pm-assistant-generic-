@@ -2164,6 +2164,16 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async getAdminRevenue() {
+    const response = await this.api.get('/admin/revenue');
+    return response.data;
+  }
+
+  async getAdminUserSubscriptionEvents(userId: string) {
+    const response = await this.api.get(`/admin/users/${userId}/subscription-events`);
+    return response.data;
+  }
+
   async getAdminOperations() {
     const response = await this.api.get('/admin/operations');
     return response.data;

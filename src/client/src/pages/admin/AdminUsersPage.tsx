@@ -17,6 +17,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  History,
 } from 'lucide-react';
 
 interface AdminUser {
@@ -29,6 +30,8 @@ interface AdminUser {
   created_at: string;
   last_login_at: string | null;
   subscription_tier: string;
+  subscription_status: string | null;
+  subscription_period_end: string | null;
   project_count: number;
   email_verified: number | boolean;
   has_pending_login: number | boolean;
@@ -40,7 +43,16 @@ interface AdminUser {
   organization_name: string | null;
 }
 
-type SortKey = 'full_name' | 'role' | 'subscription_tier' | 'created_at' | 'login_status' | 'last_login_at' | 'project_count' | 'ai_usage' | 'organization_name' | 'is_active';
+interface SubscriptionEvent {
+  id: string;
+  event_type: string;
+  previous_tier: string | null;
+  new_tier: string | null;
+  amount_cents: number | null;
+  created_at: string;
+}
+
+type SortKey = 'full_name' | 'role' | 'subscription_tier' | 'subscription_status' | 'created_at' | 'login_status' | 'last_login_at' | 'project_count' | 'ai_usage' | 'organization_name' | 'is_active';
 type SortDir = 'asc' | 'desc';
 
 function fmt(date: string | null) {
@@ -81,6 +93,25 @@ const TIER_COLORS: Record<string, string> = {
   consultant: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
 };
 
+const SUB_STATUS_COLORS: Record<string, string> = {
+  active: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+  trialing: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+  past_due: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+  canceled: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+};
+
+const EVENT_LABELS: Record<string, string> = {
+  subscription_created: 'Created',
+  tier_changed: 'Tier Change',
+  subscription_renewed: 'Renewed',
+  subscription_canceled: 'Canceled',
+  payment_failed: 'Payment Failed',
+  payment_succeeded: 'Payment OK',
+  trial_started: 'Trial Start',
+  trial_expired: 'Trial Expired',
+  topup_purchased: 'Top-up',
+};
+
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
@@ -88,10 +119,19 @@ export function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [tierFilter, setTierFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [subStatusFilter, setSubStatusFilter] = useState('');
   const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
   const [budgetInput, setBudgetInput] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [historyUserId, setHistoryUserId] = useState<string | null>(null);
+  const [historyUserName, setHistoryUserName] = useState('');
+
+  const { data: historyData, isLoading: historyLoading } = useQuery({
+    queryKey: ['admin-user-sub-events', historyUserId],
+    queryFn: () => apiService.getAdminUserSubscriptionEvents(historyUserId!),
+    enabled: !!historyUserId,
+  });
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-users'],
@@ -118,6 +158,7 @@ export function AdminUsersPage() {
     if (tierFilter) result = result.filter(u => (u.subscription_tier || 'free') === tierFilter);
     if (statusFilter === 'active') result = result.filter(u => Boolean(u.is_active));
     if (statusFilter === 'inactive') result = result.filter(u => !Boolean(u.is_active));
+    if (subStatusFilter) result = result.filter(u => (u.subscription_status || '') === subStatusFilter);
     if (searchText) {
       const q = searchText.toLowerCase();
       result = result.filter(u =>
@@ -128,7 +169,7 @@ export function AdminUsersPage() {
       );
     }
     return result;
-  }, [allUsers, roleFilter, tierFilter, statusFilter, searchText]);
+  }, [allUsers, roleFilter, tierFilter, statusFilter, subStatusFilter, searchText]);
 
   // Sort
   const sorted = useMemo(() => {
@@ -139,6 +180,7 @@ export function AdminUsersPage() {
         case 'full_name': return dir * a.full_name.localeCompare(b.full_name);
         case 'role': return dir * a.role.localeCompare(b.role);
         case 'subscription_tier': return dir * (a.subscription_tier || 'free').localeCompare(b.subscription_tier || 'free');
+        case 'subscription_status': return dir * (a.subscription_status || '').localeCompare(b.subscription_status || '');
         case 'created_at': return dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         case 'last_login_at': {
           const aT = a.last_login_at ? new Date(a.last_login_at).getTime() : 0;
@@ -303,6 +345,18 @@ export function AdminUsersPage() {
               <option value="inactive">Inactive</option>
             </select>
 
+            <select
+              value={subStatusFilter}
+              onChange={e => setSubStatusFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+            >
+              <option value="">All subscriptions</option>
+              <option value="active">Sub: Active</option>
+              <option value="trialing">Sub: Trialing</option>
+              <option value="past_due">Sub: Past Due</option>
+              <option value="canceled">Sub: Canceled</option>
+            </select>
+
             <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
               Showing {sorted.length} of {totalUsers}
             </span>
@@ -334,6 +388,12 @@ export function AdminUsersPage() {
                       Tier <SortIcon col="subscription_tier" />
                     </button>
                   </th>
+                  <th className="pb-3 pr-3">
+                    <button onClick={() => handleSort('subscription_status')} className="inline-flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200">
+                      Sub Status <SortIcon col="subscription_status" />
+                    </button>
+                  </th>
+                  <th className="pb-3 pr-3">Period End</th>
                   <th className="pb-3 pr-3">
                     <button onClick={() => handleSort('organization_name')} className="inline-flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200">
                       Organization <SortIcon col="organization_name" />
@@ -401,6 +461,18 @@ export function AdminUsersPage() {
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${tierColor}`}>
                           {u.subscription_tier || 'free'}
                         </span>
+                      </td>
+                      <td className="py-3 pr-3">
+                        {u.subscription_status ? (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${SUB_STATUS_COLORS[u.subscription_status] || 'bg-gray-100 text-gray-600'}`}>
+                            {u.subscription_status.replace('_', ' ')}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500 text-xs italic">none</span>
+                        )}
+                      </td>
+                      <td className="py-3 pr-3 text-gray-600 dark:text-gray-300 whitespace-nowrap text-xs">
+                        {fmt(u.subscription_period_end)}
                       </td>
                       <td className="py-3 pr-3 text-gray-600 dark:text-gray-300 text-xs">
                         {u.organization_name || <span className="text-gray-400 dark:text-gray-500 italic">none</span>}
@@ -495,6 +567,14 @@ export function AdminUsersPage() {
                             <KeyRound className="w-3.5 h-3.5" />
                             Reset PW
                           </button>
+                          <button
+                            onClick={() => { setHistoryUserId(u.id); setHistoryUserName(u.full_name); }}
+                            title="View subscription history"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 transition-colors"
+                          >
+                            <History className="w-3.5 h-3.5" />
+                            History
+                          </button>
                           {hasPendingLogin && (
                             <button
                               onClick={() => clearLoginToken.mutate(u.id)}
@@ -513,13 +593,48 @@ export function AdminUsersPage() {
                 })}
                 {sorted.length === 0 && (
                   <tr>
-                    <td colSpan={12} className="py-12 text-center text-gray-500 dark:text-gray-400">No users match your filters.</td>
+                    <td colSpan={14} className="py-12 text-center text-gray-500 dark:text-gray-400">No users match your filters.</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
         </>
+      )}
+
+      {/* Subscription History Modal */}
+      {historyUserId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setHistoryUserId(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-lg mx-4 max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Subscription History &mdash; {historyUserName}</h3>
+              <button onClick={() => setHistoryUserId(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              {historyLoading && <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>}
+              {historyData?.events?.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No subscription events found.</p>}
+              {historyData?.events?.map((ev: SubscriptionEvent) => (
+                <div key={ev.id} className="flex items-start gap-3 py-2 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
+                  <div className="flex-shrink-0 mt-0.5 w-2 h-2 rounded-full bg-primary-500" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">
+                      {EVENT_LABELS[ev.event_type] || ev.event_type}
+                    </p>
+                    {ev.previous_tier && ev.new_tier && ev.previous_tier !== ev.new_tier && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{ev.previous_tier} → {ev.new_tier}</p>
+                    )}
+                    {ev.amount_cents != null && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">${(ev.amount_cents / 100).toFixed(2)}</p>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">{fmt(ev.created_at)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </AdminPageWrapper>
   );

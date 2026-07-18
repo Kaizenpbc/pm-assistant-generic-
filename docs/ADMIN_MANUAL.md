@@ -34,7 +34,7 @@ Admins can manage all aspects of the platform. Managers operate within projects 
 
 ### Users Table Columns
 
-The **Admin > Users** table displays 12 sortable columns. Click any column header to sort ascending/descending.
+The **Admin > Users** table displays 14 sortable columns. Click any column header to sort ascending/descending.
 
 | Column | Description |
 |--------|-------------|
@@ -48,10 +48,24 @@ The **Admin > Users** table displays 12 sortable columns. Click any column heade
 | Projects | Number of projects owned |
 | AI Usage | Token consumption progress bar with percentage (current month vs budget) |
 | AI Budget | Per-user override or "tier default" (inline-editable) |
+| Subscription | Current subscription status badge (active, trialing, past_due, canceled, none) and period-end date |
 | Status | Active/Inactive toggle |
-| Actions | Reset PW, Unlock (for stuck login tokens) |
+| Actions | Reset PW, Unlock (for stuck login tokens), View subscription event history |
 
-**Filters:** Text search (name, email, username, organization), role dropdown, tier dropdown, status dropdown.
+**Filters:** Text search (name, email, username, organization), role dropdown, tier dropdown, status dropdown, subscription status dropdown.
+
+### Subscription Event History
+
+Click the **history icon** in a user's Actions column to open the **Subscription Event History** modal. It lists every subscription lifecycle event for that user in reverse-chronological order:
+
+| Field | Description |
+|-------|-------------|
+| Event | Type of event (tier_change, cancellation, renewal, payment_failure, topup_purchase, trial_started, trial_converted) |
+| From → To | Previous tier and new tier (where applicable) |
+| Amount | Revenue amount in the account currency (for payment events) |
+| Date | Timestamp of the event |
+
+**API:** `GET /api/v1/admin/users/:id/subscription-events` (admin only).
 
 ### Login Status & Unlock
 
@@ -180,6 +194,43 @@ Admins can override per-user AI token budgets from the **Admin > Users** page:
 - **API:** `PATCH /api/v1/admin/users/:id/budget` with body `{ budget: number | null }`.
 
 Tier budget defaults are displayed on the **Admin > Configuration** page under "Tier Budget Defaults". These are configured via env vars (`AI_TIER_BUDGET_FREE`, `AI_TIER_BUDGET_PRO`, `AI_TIER_BUDGET_BUSINESS`, `AI_TIER_BUDGET_CONSULTANT`).
+
+### Revenue Dashboard
+
+Navigate to **Admin > Revenue** (`/admin/revenue`) for a real-time financial overview of all subscriptions and billing activity. This page is visible to admin users only.
+
+**Key Metrics (top row):**
+
+| Metric | Description |
+|--------|-------------|
+| MRR | Monthly Recurring Revenue — sum of all active monthly subscriptions plus annuals normalized to monthly |
+| Subscribers by Tier | Counts of active subscribers at Free, Pro, Business, and Consultant tiers |
+| Churn Rate | Percentage of subscribers who cancelled in the current calendar month |
+| Top-Up Revenue | Total one-time revenue from AI token top-up purchases (current month) |
+| Trial Conversion | Percentage of trials that converted to a paid subscription |
+
+**Revenue Trend Chart:** A 12-month bar chart showing MRR by month, broken down by tier, powered by `subscription_events` data.
+
+**Recent Events Feed:** A live feed of the latest subscription lifecycle events across all users — tier upgrades/downgrades, cancellations, renewals, payment failures, and top-up purchases — with user name, event type, amount, and timestamp.
+
+**API:** `GET /api/v1/admin/revenue` (admin only). Returns MRR, subscriber counts by tier, churn rate, top-up revenue, trial conversion rate, monthly trend data, and recent events.
+
+### subscription_events Table
+
+Every subscription lifecycle event is persisted to the `subscription_events` table by `StripeService`. This drives both the Revenue Dashboard and the per-user event history modal.
+
+| Column | Description |
+|--------|-------------|
+| `id` | UUID primary key |
+| `user_id` | FK to users table |
+| `event_type` | `tier_change`, `cancellation`, `renewal`, `payment_failure`, `topup_purchase`, `trial_started`, `trial_converted` |
+| `from_tier` | Previous subscription tier (nullable) |
+| `to_tier` | New subscription tier (nullable) |
+| `amount_cents` | Revenue amount in cents (0 for non-payment events) |
+| `currency` | ISO 4217 currency code (e.g., `usd`) |
+| `stripe_event_id` | Stripe event ID for deduplication |
+| `metadata` | JSON blob for additional context |
+| `created_at` | Timestamp of the event |
 
 ### Stripe Dashboard
 - Use the Stripe Dashboard for invoice management, refunds, and payment method issues.

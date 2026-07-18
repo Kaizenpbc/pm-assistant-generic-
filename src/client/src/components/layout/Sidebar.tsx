@@ -28,6 +28,7 @@ import {
   Star,
   MessageCircleHeart,
   Zap,
+  DollarSign,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -104,6 +105,7 @@ const adminNavSections: NavSection[] = [
     titleKey: 'section.adminMonitoring',
     items: [
       { labelKey: 'nav.adminOperations', icon: Gauge, path: '/admin/operations' },
+      { labelKey: 'nav.adminRevenue', icon: DollarSign, path: '/admin/revenue' },
       { labelKey: 'nav.adminAiUsage', icon: Cpu, path: '/admin/ai-usage' },
       { labelKey: 'nav.adminSystem', icon: Settings, path: '/admin/system' },
       { labelKey: 'nav.adminAudit', icon: ScrollText, path: '/admin/audit' },

@@ -3,6 +3,8 @@ import { config } from '../config';
 import { UserService } from './UserService';
 import { subscriptionRepository } from '../database/SubscriptionRepository';
 import { tokenTopUpRepository } from '../database/TokenTopUpRepository';
+import { subscriptionEventRepository } from '../database/SubscriptionEventRepository';
+import { auditLedgerService } from './AuditLedgerService';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
 
@@ -84,35 +86,63 @@ export class StripeService {
     const stripe = this.getClient();
     const event = stripe.webhooks.constructEvent(payload, signature, config.STRIPE_WEBHOOK_SECRET);
 
+    const stripeEventId = event.id;
+
     switch (event.type) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        await this.upsertSubscription(subscription);
+        await this.upsertSubscription(subscription, stripeEventId);
         break;
       }
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        await this.handleSubscriptionDeleted(subscription);
+        await this.handleSubscriptionDeleted(subscription, stripeEventId);
         break;
       }
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode === 'subscription' && session.subscription) {
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-          await this.upsertSubscription(subscription);
+          await this.upsertSubscription(subscription, stripeEventId);
         } else if (session.mode === 'payment' && session.metadata?.type === 'token_topup') {
-          await this.handleTopUpCompleted(session);
+          await this.handleTopUpCompleted(session, stripeEventId);
         }
         break;
       }
-      case 'invoice.payment_failed':
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as any;
+        const subId = invoice.subscription as string | undefined;
+        if (subId) {
+          const subscription = await stripe.subscriptions.retrieve(subId);
+          const customerId = subscription.customer as string;
+          const user = await this.userService.findByStripeCustomerId(customerId);
+          if (user) {
+            subscriptionEventRepository.create(
+              user.id, 'payment_failed', null, null,
+              invoice.amount_due ?? null, stripeEventId,
+              { invoiceId: invoice.id },
+            ).catch(e => logger.error('[StripeService] Failed to log payment_failed event', e));
+          }
+          await this.upsertSubscription(subscription, stripeEventId);
+        }
+        break;
+      }
       case 'invoice.paid': {
         const invoice = event.data.object as any;
         const subId = invoice.subscription as string | undefined;
         if (subId) {
           const subscription = await stripe.subscriptions.retrieve(subId);
-          await this.upsertSubscription(subscription);
+          const customerId = subscription.customer as string;
+          const user = await this.userService.findByStripeCustomerId(customerId);
+          if (user) {
+            subscriptionEventRepository.create(
+              user.id, 'payment_succeeded', null, null,
+              invoice.amount_paid ?? null, stripeEventId,
+              { invoiceId: invoice.id },
+            ).catch(e => logger.error('[StripeService] Failed to log payment_succeeded event', e));
+          }
+          await this.upsertSubscription(subscription, stripeEventId);
         }
         break;
       }
@@ -142,7 +172,7 @@ export class StripeService {
     };
   }
 
-  private async handleTopUpCompleted(session: Stripe.Checkout.Session): Promise<void> {
+  private async handleTopUpCompleted(session: Stripe.Checkout.Session, stripeEventId: string): Promise<void> {
     const userId = session.metadata?.userId;
     const quantity = parseInt(session.metadata?.quantity || '1', 10);
     if (!userId) {
@@ -160,6 +190,11 @@ export class StripeService {
 
     await tokenTopUpRepository.create(userId, totalTokens, totalCents, session.id);
     logger.info(`[StripeService] Top-up credited: ${totalTokens} tokens for user ${userId}`);
+
+    subscriptionEventRepository.create(
+      userId, 'topup_purchased', null, null, totalCents, stripeEventId,
+      { tokens: totalTokens, quantity },
+    ).catch(e => logger.error('[StripeService] Failed to log topup_purchased event', e));
   }
 
   private resolveTierFromPriceId(priceId: string | undefined): 'free' | 'pro' | 'business' | 'consultant' {
@@ -190,7 +225,7 @@ export class StripeService {
     return 'free';
   }
 
-  private async upsertSubscription(subscription: Stripe.Subscription): Promise<void> {
+  private async upsertSubscription(subscription: Stripe.Subscription, stripeEventId: string): Promise<void> {
     const customerId = subscription.customer as string;
     const user = await this.userService.findByStripeCustomerId(customerId);
     if (!user) {
@@ -202,6 +237,12 @@ export class StripeService {
     const item = subscription.items.data[0];
     const priceId = item?.price?.id;
     const tier = this.resolveTierFromPriceId(priceId);
+    const previousTier = user.subscriptionTier || 'free';
+
+    // Extract revenue data
+    const amountCents = item?.price?.unit_amount ?? null;
+    const currency = item?.price?.currency ?? 'usd';
+    const interval = item?.price?.recurring?.interval as 'month' | 'year' | undefined;
 
     // Map Stripe status
     const statusMap: Record<string, 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none'> = {
@@ -241,6 +282,13 @@ export class StripeService {
         subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
         subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
       );
+
+      // Log tier change event if tier actually changed
+      if (previousTier !== tier) {
+        subscriptionEventRepository.create(
+          user.id, 'tier_changed', previousTier, tier, amountCents, stripeEventId,
+        ).catch(e => logger.error('[StripeService] Failed to log tier_changed event', e));
+      }
     } else {
       await subscriptionRepository.insert(
         uuidv4(),
@@ -255,13 +303,38 @@ export class StripeService {
         subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
         subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
       );
+
+      // Log subscription created event
+      subscriptionEventRepository.create(
+        user.id, 'subscription_created', previousTier, tier, amountCents, stripeEventId,
+      ).catch(e => logger.error('[StripeService] Failed to log subscription_created event', e));
     }
+
+    // Update revenue columns
+    if (amountCents != null && interval) {
+      subscriptionRepository.updateRevenueColumns(
+        subscription.id, amountCents, currency, interval,
+      ).catch(e => logger.error('[StripeService] Failed to update revenue columns', e));
+    }
+
+    // Fire-and-forget audit entry
+    auditLedgerService.append({
+      actorId: user.id,
+      actorType: 'system',
+      action: 'subscription.updated',
+      entityType: 'subscription',
+      entityId: subscription.id,
+      payload: { tier, status, amountCents, interval },
+      source: 'system',
+    }).catch(e => logger.error('[StripeService] Failed to append audit entry', e));
   }
 
-  private async handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
+  private async handleSubscriptionDeleted(subscription: Stripe.Subscription, stripeEventId: string): Promise<void> {
     const customerId = subscription.customer as string;
     const user = await this.userService.findByStripeCustomerId(customerId);
     if (!user) return;
+
+    const previousTier = user.subscriptionTier || 'free';
 
     await this.userService.update(user.id, {
       subscriptionTier: 'free',
@@ -269,6 +342,20 @@ export class StripeService {
     });
 
     await subscriptionRepository.markCanceled(subscription.id);
+
+    subscriptionEventRepository.create(
+      user.id, 'subscription_canceled', previousTier, 'free', null, stripeEventId,
+    ).catch(e => logger.error('[StripeService] Failed to log subscription_canceled event', e));
+
+    auditLedgerService.append({
+      actorId: user.id,
+      actorType: 'system',
+      action: 'subscription.canceled',
+      entityType: 'subscription',
+      entityId: subscription.id,
+      payload: { previousTier },
+      source: 'system',
+    }).catch(e => logger.error('[StripeService] Failed to append audit entry', e));
   }
   async cancelAllSubscriptions(stripeCustomerId: string): Promise<void> {
     if (!this.stripe) return;

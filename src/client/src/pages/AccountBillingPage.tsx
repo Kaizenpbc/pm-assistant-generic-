@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Zap,
   XCircle,
+  Plus,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 
@@ -54,21 +55,69 @@ function getStatusBadge(status: string, cancelAtPeriodEnd: boolean) {
   }
 }
 
-const PLAN_FEATURES = [
-  'Unlimited projects',
-  'All AI features',
-  'EVM forecasting & Monte Carlo simulation',
-  'Workflow automation & NL builder',
-  'Stakeholder portal & reports',
-  'API access & MCP integration',
-];
+const TIER_LABELS: Record<string, string> = {
+  free: 'Free Plan',
+  pro: 'Pro Plan',
+  business: 'Business Plan',
+  consultant: 'Consultant Plan',
+};
+
+const TIER_FEATURES: Record<string, string[]> = {
+  free: [
+    'Up to 2 projects',
+    'Basic task management',
+    'Limited AI features',
+  ],
+  pro: [
+    'Up to 10 projects',
+    'All AI features',
+    'EVM forecasting',
+    'Workflow automation',
+    'API access',
+  ],
+  business: [
+    'Unlimited projects',
+    'All AI features',
+    'EVM forecasting & Monte Carlo simulation',
+    'Workflow automation & NL builder',
+    'Stakeholder portal & reports',
+    'API access & MCP integration',
+    'Priority support',
+  ],
+  consultant: [
+    'Unlimited projects',
+    'All AI features',
+    'EVM forecasting & Monte Carlo simulation',
+    'Workflow automation & NL builder',
+    'Stakeholder portal & reports',
+    'API access & MCP integration',
+  ],
+};
+
+function formatTokens(n: number) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return String(n);
+}
 
 export const AccountBillingPage: React.FC = () => {
   const [portalLoading, setPortalLoading] = useState(false);
+  const [topUpLoading, setTopUpLoading] = useState(false);
 
   const { data, isLoading, error } = useQuery<SubscriptionStatus>({
     queryKey: ['subscription-status'],
     queryFn: () => apiService.getSubscriptionStatus(),
+  });
+
+  const { data: topUpData } = useQuery({
+    queryKey: ['topup-balance'],
+    queryFn: () => apiService.getTopUpBalance(),
+  });
+
+  const { data: budgetData } = useQuery({
+    queryKey: ['ai-budget'],
+    queryFn: () => apiService.getAiBudget(),
+    staleTime: 5 * 60_000,
   });
 
   const handleManageBilling = async () => {
@@ -78,6 +127,16 @@ export const AccountBillingPage: React.FC = () => {
       window.location.href = result.url;
     } catch {
       setPortalLoading(false);
+    }
+  };
+
+  const handleBuyTopUp = async () => {
+    setTopUpLoading(true);
+    try {
+      const result = await apiService.createTopUpSession(1);
+      window.location.href = result.url;
+    } catch {
+      setTopUpLoading(false);
     }
   };
 
@@ -108,6 +167,8 @@ export const AccountBillingPage: React.FC = () => {
   const trialDays = daysUntil(data.trialEndsAt);
   const badge = getStatusBadge(data.status, data.cancelAtPeriodEnd);
   const BadgeIcon = badge.icon;
+  const planLabel = TIER_LABELS[data.tier] || `${data.tier.charAt(0).toUpperCase() + data.tier.slice(1)} Plan`;
+  const planFeatures = TIER_FEATURES[data.tier] || TIER_FEATURES.consultant;
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -127,7 +188,7 @@ export const AccountBillingPage: React.FC = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-lg font-semibold text-gray-900 dark:text-white">Consultant Plan</span>
+                  <span className="text-lg font-semibold text-gray-900 dark:text-white">{planLabel}</span>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
                     <BadgeIcon className="w-3 h-3" />
                     {badge.label}
@@ -169,11 +230,60 @@ export const AccountBillingPage: React.FC = () => {
             </div>
           </div>
 
+          {/* AI Usage Meter */}
+          {budgetData && (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6 mb-4">
+              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">AI Usage This Month</h2>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  {formatTokens(budgetData.totalTokens)} of {formatTokens(budgetData.budget)} tokens used
+                </span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">{budgetData.percentUsed}%</span>
+              </div>
+              <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    budgetData.percentUsed >= 90 ? 'bg-red-500' : budgetData.percentUsed >= 70 ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.min(budgetData.percentUsed, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {formatTokens(budgetData.remaining)} tokens remaining &middot; {budgetData.requestCount} API calls this month
+              </p>
+            </div>
+          )}
+
+          {/* Top-up Balance */}
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6 mb-4">
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Token Top-ups</h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {topUpData ? formatTokens(topUpData.remainingTokens ?? 0) : '...'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Bonus tokens remaining</p>
+              </div>
+              <button
+                onClick={handleBuyTopUp}
+                disabled={topUpLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white text-sm font-medium rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50"
+              >
+                {topUpLoading ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                Buy More Tokens
+              </button>
+            </div>
+          </div>
+
           {/* Plan Details */}
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6">
-            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Plan Details</h2>
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Plan Features</h2>
             <ul className="space-y-3">
-              {PLAN_FEATURES.map((feature) => (
+              {planFeatures.map((feature) => (
                 <li key={feature} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                   <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
                   {feature}
@@ -189,24 +299,12 @@ export const AccountBillingPage: React.FC = () => {
             <div className="w-14 h-14 rounded-2xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center mx-auto mb-4">
               <Zap className="w-7 h-7 text-primary-600 dark:text-primary-400" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Subscribe to Consultant Plan</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Upgrade Your Plan</h2>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
               {trialDays !== null && trialDays > 0
                 ? `Your trial ends in ${trialDays} day${trialDays !== 1 ? 's' : ''}. Subscribe to keep full access.`
                 : 'Your trial has ended. Subscribe to restore full access to all features.'}
             </p>
-
-            <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">$25<span className="text-sm font-normal text-gray-500 dark:text-gray-400">/mo</span></div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">or $250/yr (save 17%)</p>
-
-            <ul className="text-left space-y-2 mb-6">
-              {PLAN_FEATURES.map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                  <CheckCircle2 className="w-4 h-4 text-primary-500 flex-shrink-0" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
 
             <Link
               to="/pricing"

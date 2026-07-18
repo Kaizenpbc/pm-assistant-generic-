@@ -6,6 +6,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { databaseService } from '../../database/connection';
 import { userService } from '../../services/UserService';
 import { auditLedgerService } from '../../services/AuditLedgerService';
+import { subscriptionEventRepository } from '../../database/SubscriptionEventRepository';
 import { redisService } from '../../services/RedisService';
 import { config, getTierBudget } from '../../config';
 
@@ -29,9 +30,16 @@ export async function adminRoutes(fastify: FastifyInstance) {
   fastify.get('/users', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!requireAdmin(request, reply)) return;
     try {
-      const query = request.query as { limit?: string; offset?: string };
+      const query = request.query as { limit?: string; offset?: string; subscriptionStatus?: string };
       const limit = Math.min(Math.max(parseInt(query.limit || '100', 10) || 100, 1), 500);
       const offset = Math.max(parseInt(query.offset || '0', 10) || 0, 0);
+
+      const validSubStatuses = ['active', 'trialing', 'past_due', 'canceled'];
+      const subStatusFilter = query.subscriptionStatus && validSubStatuses.includes(query.subscriptionStatus)
+        ? query.subscriptionStatus : null;
+
+      const subStatusClause = subStatusFilter ? 'HAVING subscription_status = ?' : '';
+      const subStatusParams = subStatusFilter ? [subStatusFilter] : [];
 
       const rows = await databaseService.queryControlPlane(
         `SELECT
@@ -44,7 +52,9 @@ export async function adminRoutes(fastify: FastifyInstance) {
           u.organization_id,
           o.name AS organization_name,
           COUNT(DISTINCT p.id) AS project_count,
-          COALESCE(ai.tokens_used, 0) AS ai_tokens_used
+          COALESCE(ai.tokens_used, 0) AS ai_tokens_used,
+          s.status AS subscription_status,
+          s.current_period_end AS subscription_period_end
         FROM users u
         LEFT JOIN projects p ON p.created_by = u.id
         LEFT JOIN organizations o ON o.id = u.organization_id
@@ -54,10 +64,19 @@ export async function adminRoutes(fastify: FastifyInstance) {
           WHERE created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
           GROUP BY user_id
         ) ai ON ai.user_id = u.id
+        LEFT JOIN (
+          SELECT s1.user_id, s1.status, s1.current_period_end
+          FROM subscriptions s1
+          INNER JOIN (
+            SELECT user_id, MAX(created_at) AS max_created
+            FROM subscriptions GROUP BY user_id
+          ) s2 ON s1.user_id = s2.user_id AND s1.created_at = s2.max_created
+        ) s ON s.user_id = u.id
         GROUP BY u.id
+        ${subStatusClause}
         ORDER BY u.created_at DESC
         LIMIT ? OFFSET ?`,
-        [limit, offset]
+        [...subStatusParams, limit, offset]
       );
 
       // Compute tier budgets for each user so the frontend can show usage %
@@ -67,6 +86,19 @@ export async function adminRoutes(fastify: FastifyInstance) {
       }));
 
       return { users: usersWithBudget };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // GET /api/v1/admin/users/:id/subscription-events
+  fastify.get('/users/:id/subscription-events', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!requireAdmin(request, reply)) return;
+    const { id } = request.params as { id: string };
+    try {
+      const events = await subscriptionEventRepository.findByUser(id);
+      return { events };
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Internal server error' });
