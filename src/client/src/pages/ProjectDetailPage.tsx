@@ -1555,13 +1555,28 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     if (!task) return;
     const oldStart = task.startDate;
     const oldEnd = task.endDate;
+
+    // Optimistically update the cache so the bar doesn't snap back
+    queryClient.setQueryData(['tasks', schedule.id], (old: any) => {
+      if (!old) return old;
+      const list = old.data || old.tasks || old;
+      if (!Array.isArray(list)) return old;
+      const updated = list.map((t: any) =>
+        t.id === taskId ? { ...t, startDate: newStart, endDate: newEnd } : t
+      );
+      // Preserve the original wrapper structure
+      if (old.data) return { ...old, data: updated };
+      if (old.tasks) return { ...old, tasks: updated };
+      return updated;
+    });
+
     pushAction({
       description: `Move ${task.name}`,
       undo: () => updateMutation.mutate({ taskId, data: { startDate: oldStart, endDate: oldEnd } }),
       redo: () => updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } }),
     });
     updateMutation.mutate({ taskId, data: { startDate: newStart, endDate: newEnd } });
-  }, [tasks, updateMutation, pushAction]);
+  }, [tasks, updateMutation, pushAction, queryClient, schedule.id]);
 
   // Row reorder with undo
   const handleTaskReorder = useCallback((updates: Array<{ taskId: string; sortOrder: number }>) => {

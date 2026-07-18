@@ -1024,6 +1024,7 @@ export function GanttChart({
     origEndDate: Date;
     dayDelta: number;
   } | null>(null);
+  const dragDidCompleteRef = useRef(false);
 
   // -----------------------------------------------------------------------
   // Bar progress drag state
@@ -1775,6 +1776,7 @@ export function GanttChart({
     const handleMouseUp = () => {
       stopAutoScroll();
       if (drag && drag.dayDelta !== 0 && onTaskDragEnd) {
+        dragDidCompleteRef.current = true;
         const fmt = (d: Date) => d.toISOString().split('T')[0];
         if (drag.mode === 'move') {
           // If dragged bar is selected, move all selected bars together
@@ -2988,7 +2990,7 @@ export function GanttChart({
         <div
           ref={timelineRef}
           className="flex-1 overflow-x-auto overflow-y-auto"
-          style={depDraw ? { cursor: 'crosshair' } : onCreateTaskWithDates && !drag && !progressDrag ? { cursor: 'crosshair' } : undefined}
+          style={depDraw ? { cursor: 'crosshair' } : drag ? { cursor: 'grabbing', userSelect: 'none' } : onCreateTaskWithDates && !progressDrag ? { cursor: 'crosshair' } : undefined}
         >
           <div style={{ width: timelineWidth, position: 'relative' }} onMouseDown={handleTimelineMouseDown} onTouchStart={handleTimelineTouchStart}>
             {/* Timeline header — two-tier timescale */}
@@ -3161,8 +3163,8 @@ export function GanttChart({
               const canDrag = !!onTaskDragEnd;
 
               const handleBarClick = (e: React.MouseEvent) => {
-                // Skip if a drag occurred
-                if (drag && drag.dayDelta !== 0) return;
+                // Skip if a drag just completed (ref survives across renders)
+                if (dragDidCompleteRef.current) { dragDidCompleteRef.current = false; return; }
                 e.stopPropagation();
                 if (e.ctrlKey || e.metaKey) {
                   toggleSelect(task.id, false);
