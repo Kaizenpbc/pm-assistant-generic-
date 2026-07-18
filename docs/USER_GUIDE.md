@@ -1135,9 +1135,10 @@ Each proposal has a risk level that determines its approval requirements:
 
 Navigate to **Account** in the sidebar to manage:
 
-- **Subscription plan**: Choose from Pro ($15/mo), Business ($35/mo), or Consultant ($59/mo). Annual billing saves ~17%. Visit the **Pricing** page to see a full feature comparison matrix across all tiers, with practical usage equivalents explaining what each token budget means (e.g., "~100 AI chats, 50 risk scans").
+- **Subscription plan**: The billing page displays your current plan name based on your actual subscription tier (e.g., "Free Plan", "Pro Plan", "Business Plan", or "Consultant Plan"). Choose from Pro ($15/mo), Business ($35/mo), or Consultant ($59/mo). Annual billing saves ~17%. Visit the **Pricing** page to see a full feature comparison matrix across all tiers, with practical usage equivalents explaining what each token budget means (e.g., "~100 AI chats, 50 risk scans").
 - **Payment method**: Managed via Stripe's secure billing portal.
-- **AI token usage**: View your monthly AI token consumption, remaining budget, and percentage used. Each tier includes a monthly AI token allowance (Pro: 500K, Business: 1.5M, Consultant: 3M). Your current usage is also visible at a glance in the sidebar's AI token indicator.
+- **AI usage meter**: A progress bar shows your current-month token consumption vs your effective budget (tier allowance plus any purchased top-up balance), color-coded green (<70%), amber (70–90%), or red (>90%).
+- **Top-up balance**: Your remaining purchased token balance is displayed below the usage meter. Click **Buy More** to purchase additional packs instantly.
 - **Token top-ups**: If you exhaust your monthly AI tokens, purchase additional packs (500K tokens for $5). Top-up tokens are added instantly and do not expire. When your monthly budget is exhausted, AI features are temporarily unavailable but all other features (scheduling, tasks, reports, collaboration) continue working normally. Your budget resets on the first of each month.
 
 ### Settings (Admin/Manager)

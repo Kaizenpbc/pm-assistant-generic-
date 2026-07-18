@@ -915,8 +915,26 @@ The `StripeService` manages subscription billing:
 - **Multi-tier checkout**: Pro ($15/mo or $150/yr), Business ($35/mo or $350/yr), Consultant ($59/mo or $590/yr). Price IDs configured via `STRIPE_PRO_MONTHLY_PRICE_ID`, `STRIPE_BUSINESS_MONTHLY_PRICE_ID`, `STRIPE_CONSULTANT_MONTHLY_PRICE_ID` (and annual variants).
 - **Token top-up checkout**: One-time payment for 500K token packs ($5 each, 1-20 packs per purchase). Price ID via `STRIPE_TOPUP_PRICE_ID`. Webhook prevents double-processing via `findByStripeSession()`.
 - **Billing portal**: self-service subscription management via Stripe's portal
-- **Webhook handling**: processes Stripe events for subscription lifecycle (created, updated, cancelled, payment succeeded/failed) and top-up completion
+- **Webhook handling**: processes Stripe events for subscription lifecycle (created, updated, cancelled, payment succeeded/failed) and top-up completion. Every event is written to the `subscription_events` table and logged to the audit ledger.
 - **Tier resolution**: `resolveTierFromPriceId()` maps Stripe price IDs to app tiers (free, pro, business, consultant) with legacy fallback support
+- **Revenue capture**: `amount_cents`, `currency`, and `billing_interval` are extracted from Stripe webhook payloads and stored on the `subscriptions` row so revenue figures are always queryable without a Stripe API call.
+
+### Subscription Events
+
+Every subscription lifecycle change is persisted to the `subscription_events` table:
+
+- **Event types**: `tier_change`, `cancellation`, `renewal`, `payment_failure`, `topup_purchase`, `trial_started`, `trial_converted`
+- **Revenue data**: `amount_cents` and `currency` recorded for all payment events
+- **Deduplication**: `stripe_event_id` prevents double-writes on webhook retries
+- Powers the Admin Revenue Dashboard and the per-user subscription event history modal
+
+### Account Billing Page
+
+The `AccountBillingPage` (`/account/billing`) shows:
+
+- **Plan name**: dynamically resolved from the user's actual subscription tier — never hardcoded. Free tier shows "Free Plan", paid tiers show "Pro Plan", "Business Plan", or "Consultant Plan" accordingly.
+- **Top-up balance**: remaining purchased token balance with a **Buy More** button linking to the token top-up Stripe checkout.
+- **AI usage meter**: progress bar showing current-month token consumption vs the effective budget (tier allowance + top-up balance), color-coded green/amber/red.
 
 ### Trial Reminder Emails
 
@@ -1795,20 +1813,24 @@ The **Admin > Users** page provides a comprehensive user management table with 1
 | **Projects** | Number of projects created by the user |
 | **AI Usage** | Color-coded progress bar showing current month's token consumption vs budget (green <70%, amber 70-90%, red >90%), with used/total token counts |
 | **AI Budget** | Per-user budget override (inline-editable) or "tier default" |
+| **Subscription** | Subscription status badge (active, trialing, past_due, canceled, none) and current period end date |
 | **Status** | Active/Inactive toggle. Sortable. |
-| **Actions** | Reset PW button; Unlock button (shown when login token is pending/expired) |
+| **Actions** | Reset PW button; Unlock button (shown when login token is pending/expired); subscription event history button |
 
-**Filters:** Search by name/email/username/organization. Dropdown filters for Role, Tier, and Status (active/inactive). Showing count updates in real time.
+**Filters:** Search by name/email/username/organization. Dropdown filters for Role, Tier, Status (active/inactive), and Subscription Status. Showing count updates in real time.
 
 **AI Usage column:** The backend query JOINs `ai_usage_log` (current month) and computes `ai_tokens_used` per user. The frontend calculates usage percentage against the effective budget (per-user override or tier default) and renders a mini progress bar.
 
 **Organization column:** The backend query LEFT JOINs `organizations` on `users.organization_id` to display the org name.
+
+**Subscription column:** Joined from the `subscriptions` control-plane table. Status badge is color-coded: active (green), trialing (blue), past_due (amber), canceled (red), none (gray).
 
 **API endpoints:**
 - `POST /api/v1/admin/users/:id/clear-login-token` — clears stuck login verification tokens
 - `PATCH /api/v1/admin/users/:id/budget` — sets or clears per-user AI token budget override
 - `PATCH /api/v1/admin/users/:id/status` — activates or deactivates a user account
 - `POST /api/v1/admin/users/:id/reset-password` — generates a password reset token
+- `GET /api/v1/admin/users/:id/subscription-events` — returns the subscription event history for a user (admin only)
 
 ---
 

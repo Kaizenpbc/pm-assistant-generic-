@@ -622,7 +622,9 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Task Import | `/api/v1/schedules/:id/import` | Bulk CSV task import |
 | User Preferences | `/api/v1/users/me/preferences` | Timezone and locale preferences |
 | Admin Tenants | `/api/v1/admin/tenants` | Multi-tenant org management (list, update, provision, migrate) |
-| Admin Users | `/api/v1/admin/users` | User listing with login status, unlock stuck login tokens |
+| Admin Users | `/api/v1/admin/users` | User listing with login status, unlock stuck login tokens, subscription status |
+| Admin Revenue | `/api/v1/admin/revenue` | MRR, subscriber counts by tier, churn, top-up revenue, trial conversion, trend data (admin only) |
+| Admin Subscription Events | `/api/v1/admin/users/:id/subscription-events` | Per-user subscription lifecycle event history (admin only) |
 
 ---
 
