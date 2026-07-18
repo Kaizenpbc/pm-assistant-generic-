@@ -1,29 +1,28 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { userService } from '../services/UserService';
+import { createError } from '@fastify/error';
+
+const UpgradeRequiredError = createError('UPGRADE_REQUIRED', 'This feature requires a paid subscription.', 403);
+const AuthRequiredError = createError('AUTH_REQUIRED', 'Authentication required', 401);
 
 export function requireTier(...allowedTiers: string[]) {
-  return async (request: FastifyRequest, reply: FastifyReply) => {
+  return async (request: FastifyRequest, _reply: FastifyReply) => {
     if (request.user?.role === 'admin') return;
     if (request.user?.role === 'viewer') return;
 
     const userId = request.user?.userId;
     if (!userId) {
-      return reply.status(401).send({ error: 'Authentication required' });
+      throw new AuthRequiredError();
     }
 
     const user = await userService.findById(userId);
     if (!user) {
-      return reply.status(401).send({ error: 'User not found' });
+      throw new AuthRequiredError();
     }
 
     const tier = user.subscriptionTier;
     if (!allowedTiers.includes(tier)) {
-      return reply.status(403).send({
-        error: 'Upgrade required',
-        message: 'This feature requires a paid subscription.',
-        upgradeUrl: '/pricing',
-        currentTier: tier,
-      });
+      throw new UpgradeRequiredError();
     }
   };
 }
