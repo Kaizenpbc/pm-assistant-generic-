@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { PricingCards } from '../components/pricing/PricingCards';
 
 const features = [
   {
@@ -76,73 +77,7 @@ const features = [
   },
 ];
 
-const featureTooltips: Record<string, string> = {
-  'Up to 3 projects': 'Create up to 3 projects to explore the full platform during your 14-day trial.',
-  'Unlimited projects': 'Create and manage as many projects as you need — no caps, no restrictions.',
-  'AI scheduling & risk detection': 'Mjuzi, your AI assistant, auto-detects schedule risks, suggests task reordering, and flags delays before they happen.',
-  'Gantt, Kanban & calendar views': 'Multiple ways to visualize your schedule — Gantt charts with dependencies, drag-and-drop Kanban boards, and calendar overlays.',
-  'RAID management': 'Track Risks, Actions, Issues, and Decisions in one place with severity levels, owners, and status tracking.',
-  'All features included': 'Every paid plan includes all features — Monte Carlo, EVM, meeting intelligence, NL queries, reports, and more.',
-  '500K AI tokens/month': '500,000 AI tokens per month for Mjuzi chat, risk scanning, report generation, and all AI features.',
-  '5 viewer invites': 'Invite up to 5 client stakeholders as free viewer accounts to see project progress and update their RAID items.',
-  '1.5M AI tokens/month': '1,500,000 AI tokens per month — 3x more than Consultant for heavier AI usage.',
-  '20 viewer invites': 'Invite up to 20 client stakeholders as free viewers across all your projects.',
-  'Portfolio management': 'Manage multiple projects in a unified portfolio view with cross-project health tracking and executive dashboards.',
-  '5M AI tokens/month': '5,000,000 AI tokens per month — ideal for large teams with heavy AI usage.',
-  'Unlimited viewer invites': 'No limit on viewer invitations — invite your entire client organization.',
-  'API access & integrations': 'Full REST API and MCP integration for connecting to your existing tools and building custom automations.',
-  'Priority support': 'Get faster response times and direct access to the team for technical questions and onboarding help.',
-};
 
-const pricingTiers = [
-  {
-    name: 'Free Trial',
-    price: 'Free',
-    period: '14 days',
-    description: 'Explore the platform — no credit card required',
-    features: [
-      'Up to 3 projects',
-      'AI scheduling & risk detection',
-      'Gantt, Kanban & calendar views',
-      'RAID management',
-    ],
-    cta: 'Start Free Trial',
-    ctaLink: '/register',
-    highlighted: false,
-  },
-  {
-    name: 'Consultant',
-    price: '$19',
-    period: '/mo',
-    description: 'All features for independent PMs and consultants',
-    features: [
-      'Unlimited projects',
-      'All features included',
-      '500K AI tokens/month',
-      '5 viewer invites',
-    ],
-    cta: 'Get Started',
-    ctaLink: '/register',
-    highlighted: false,
-  },
-  {
-    name: 'SME',
-    price: '$33',
-    period: '/seat/mo',
-    description: '3-seat minimum — starting at $99/mo',
-    features: [
-      'Unlimited projects',
-      'All features included',
-      '500K AI tokens per seat',
-      'Unlimited viewer invites',
-      'Portfolio management',
-    ],
-    cta: 'Get Started',
-    ctaLink: '/register',
-    highlighted: true,
-    badge: 'Most Popular',
-  },
-];
 
 /* Animated mockup previews for feature cards */
 function SchedulingMockup() {
@@ -499,43 +434,6 @@ function FeatureCard({ feature }: { feature: typeof features[number] }) {
   );
 }
 
-function FeatureItem({ feature, highlighted }: { feature: string; highlighted: boolean }) {
-  const [hovered, setHovered] = useState(false);
-  const tooltip = featureTooltips[feature];
-  return (
-    <li
-      className="relative flex items-start text-sm cursor-default"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {!(tooltip && hovered) ? (
-        <svg
-          className={`w-4 h-4 mr-2.5 flex-shrink-0 mt-0.5 ${highlighted ? 'text-cyan-300' : 'text-blue-400'}`}
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path
-            fillRule="evenodd"
-            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-            clipRule="evenodd"
-          />
-        </svg>
-      ) : (
-        <div className="w-4 mr-2.5 flex-shrink-0" />
-      )}
-      <div className="flex-1">
-        <span className={`${highlighted ? 'text-blue-100' : 'text-slate-200'} ${tooltip && !hovered ? `border-b border-dashed ${highlighted ? 'border-cyan-300/40' : 'border-slate-500'}` : ''}`}>
-          {feature}
-        </span>
-        {tooltip && hovered && (
-          <p className={`mt-1 text-xs leading-relaxed ${highlighted ? 'text-blue-200/70' : 'text-slate-400'}`}>
-            {tooltip}
-          </p>
-        )}
-      </div>
-    </li>
-  );
-}
 
 export const LandingPage: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -671,69 +569,15 @@ export const LandingPage: React.FC = () => {
 
       {/* Pricing Preview */}
       <section id="pricing" className="pt-28 pb-20 border-t border-white/5 scroll-mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <h2 className="text-2xl sm:text-3xl font-bold text-white">Simple, transparent pricing</h2>
             <p className="mt-3 text-base text-slate-300">
               Start free, upgrade when you need more power
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {pricingTiers.map((tier) => (
-              <div
-                key={tier.name}
-                className={`rounded-2xl p-6 transition-all duration-300 ${
-                  tier.highlighted
-                    ? 'bg-gradient-to-br from-blue-600 to-cyan-500 text-white ring-4 ring-blue-400/30 ring-offset-2 ring-offset-[#0a0f1a] shadow-2xl shadow-blue-500/20'
-                    : 'bg-[#111827]/70 backdrop-blur-sm border border-white/10 hover:border-white/15'
-                }`}
-              >
-                {tier.badge && (
-                  <span className="inline-block px-3 py-1 text-xs font-semibold bg-white/20 text-white rounded-full mb-4 backdrop-blur-sm">
-                    {tier.badge}
-                  </span>
-                )}
-                <h3 className={`text-lg font-semibold ${tier.highlighted ? 'text-white' : 'text-white'}`}>
-                  {tier.name}
-                </h3>
-                <div className="mt-4 flex items-baseline">
-                  {tier.price ? (
-                    <>
-                      <span className="text-4xl font-bold text-white">
-                        {tier.price}
-                      </span>
-                      {tier.period && (
-                        <span className={`ml-1 text-sm ${tier.highlighted ? 'text-blue-100' : 'text-slate-400'}`}>
-                          {tier.period}
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <span className="text-2xl font-bold text-slate-500">TBD</span>
-                  )}
-                </div>
-                <p className={`mt-2 text-sm ${tier.highlighted ? 'text-blue-100' : 'text-slate-300'}`}>
-                  {tier.description}
-                </p>
-                <ul className="mt-6 space-y-3">
-                  {tier.features.map((feature) => (
-                    <FeatureItem key={feature} feature={feature} highlighted={tier.highlighted} />
-                  ))}
-                </ul>
-                <div className="mt-8">
-                  <Link
-                    to={tier.ctaLink}
-                    className={`block w-full text-center py-2.5 px-4 text-sm font-semibold rounded-lg transition-all ${
-                      tier.highlighted
-                        ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-md'
-                        : 'bg-gradient-to-r from-blue-500 to-cyan-400 text-white hover:from-blue-600 hover:to-cyan-500 shadow-md shadow-blue-500/20'
-                    }`}
-                  >
-                    {tier.cta}
-                  </Link>
-                </div>
-              </div>
-            ))}
+          <div className="dark">
+            <PricingCards mode="link" />
           </div>
         </div>
       </section>
