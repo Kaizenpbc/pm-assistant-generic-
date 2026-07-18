@@ -81,26 +81,6 @@ const PLANS: PlanDef[] = [
       'DAG workflow automation',
     ],
   },
-  {
-    tier: 'enterprise',
-    name: 'Enterprise',
-    monthly: 79,
-    annual: 790,
-    tokens: '5M',
-    tokensEquiv: '~1000 AI chats, 500 risk scans, or 250 reports/mo',
-    storage: '10GB',
-    viewerInvites: 'Unlimited',
-    features: [
-      'Everything in SME, plus:',
-      'AI tokens: 5M/mo (10x Consultant)',
-      '10GB file storage',
-      'Unlimited viewer invites',
-      'Cross-project intelligence',
-      'AI auto-reschedule & prioritization',
-      'Meeting intelligence & voice',
-      'MCP integration',
-    ],
-  },
 ];
 
 interface FeatureRow {
@@ -108,34 +88,33 @@ interface FeatureRow {
   trial: boolean | string;
   consultant: boolean | string;
   sme: boolean | string;
-  enterprise: boolean | string;
 }
 
 const COMPARISON: FeatureRow[] = [
-  { feature: 'Projects', trial: '3', consultant: 'Unlimited', sme: 'Unlimited', enterprise: 'Unlimited' },
-  { feature: 'AI tokens/month', trial: '25K', consultant: '500K', sme: '500K/seat', enterprise: '5M' },
-  { feature: 'File Storage', trial: '100MB', consultant: '1GB', sme: '5GB', enterprise: '10GB' },
-  { feature: 'Viewer Invites', trial: '0', consultant: '5', sme: 'Unlimited', enterprise: 'Unlimited' },
-  { feature: 'Duration', trial: '14 days', consultant: 'Unlimited', sme: 'Unlimited', enterprise: 'Unlimited' },
-  { feature: 'Mjuzi AI Assistant', trial: true, consultant: true, sme: true, enterprise: true },
-  { feature: 'Gantt Charts & Critical Path', trial: true, consultant: true, sme: true, enterprise: true },
-  { feature: 'Kanban Boards', trial: true, consultant: true, sme: true, enterprise: true },
-  { feature: 'Sprint / Agile Management', trial: true, consultant: true, sme: true, enterprise: true },
-  { feature: 'RAID Management', trial: true, consultant: true, sme: true, enterprise: true },
-  { feature: 'Export (CSV, PDF, XML)', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'API Access', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'EVM Dashboard & AI Forecasting', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'Monte Carlo Simulation', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'Resource Management & Heatmaps', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'Custom Report Builder', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'DAG Workflow Automation', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'Stakeholder Portal', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'Cross-Project Intelligence', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'AI Auto-Reschedule', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'Meeting Intelligence & Voice', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'NL Query Engine', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'MCP Integration', trial: false, consultant: true, sme: true, enterprise: true },
-  { feature: 'Token Top-Up Packs', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'Projects', trial: '3', consultant: 'Unlimited', sme: 'Unlimited' },
+  { feature: 'AI tokens/month', trial: '25K', consultant: '500K', sme: '500K/seat' },
+  { feature: 'File Storage', trial: '100MB', consultant: '1GB', sme: '5GB' },
+  { feature: 'Viewer Invites', trial: '0', consultant: '5', sme: 'Unlimited' },
+  { feature: 'Duration', trial: '14 days', consultant: 'Unlimited', sme: 'Unlimited' },
+  { feature: 'Mjuzi AI Assistant', trial: true, consultant: true, sme: true },
+  { feature: 'Gantt Charts & Critical Path', trial: true, consultant: true, sme: true },
+  { feature: 'Kanban Boards', trial: true, consultant: true, sme: true },
+  { feature: 'Sprint / Agile Management', trial: true, consultant: true, sme: true },
+  { feature: 'RAID Management', trial: true, consultant: true, sme: true },
+  { feature: 'Export (CSV, PDF, XML)', trial: false, consultant: true, sme: true },
+  { feature: 'API Access', trial: false, consultant: true, sme: true },
+  { feature: 'EVM Dashboard & AI Forecasting', trial: false, consultant: true, sme: true },
+  { feature: 'Monte Carlo Simulation', trial: false, consultant: true, sme: true },
+  { feature: 'Resource Management & Heatmaps', trial: false, consultant: true, sme: true },
+  { feature: 'Custom Report Builder', trial: false, consultant: true, sme: true },
+  { feature: 'DAG Workflow Automation', trial: false, consultant: true, sme: true },
+  { feature: 'Stakeholder Portal', trial: false, consultant: true, sme: true },
+  { feature: 'Cross-Project Intelligence', trial: false, consultant: true, sme: true },
+  { feature: 'AI Auto-Reschedule', trial: false, consultant: true, sme: true },
+  { feature: 'Meeting Intelligence & Voice', trial: false, consultant: true, sme: true },
+  { feature: 'NL Query Engine', trial: false, consultant: true, sme: true },
+  { feature: 'MCP Integration', trial: false, consultant: true, sme: true },
+  { feature: 'Token Top-Up Packs', trial: false, consultant: true, sme: true },
 ];
 
 export const PricingPage: React.FC = () => {
@@ -146,7 +125,7 @@ export const PricingPage: React.FC = () => {
   const [smeSeats, setSmeSeats] = useState(3);
 
   const currentTier = user?.subscriptionTier || 'trial';
-  const isSubscribed = currentTier === 'consultant' || currentTier === 'sme' || currentTier === 'enterprise';
+  const isSubscribed = currentTier === 'consultant' || currentTier === 'sme';
 
   const handleSubscribe = async (tier: string) => {
     if (!isAuthenticated) {
@@ -269,7 +248,7 @@ export const PricingPage: React.FC = () => {
           )}
 
           {/* Plan cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
             {PLANS.map((plan) => {
               const isCurrent = currentTier === plan.tier;
               const seats = plan.perSeat ? smeSeats : 1;
@@ -459,14 +438,13 @@ export const PricingPage: React.FC = () => {
                     <th className="text-center py-3 px-3 font-semibold text-gray-500 dark:text-gray-400 w-24">Trial</th>
                     <th className="text-center py-3 px-3 font-semibold text-gray-900 dark:text-white w-24">Consultant</th>
                     <th className="text-center py-3 px-3 font-semibold text-primary-600 dark:text-primary-400 w-24">SME</th>
-                    <th className="text-center py-3 px-3 font-semibold text-gray-900 dark:text-white w-24">Enterprise</th>
                   </tr>
                 </thead>
                 <tbody>
                   {COMPARISON.map((row, i) => (
                     <tr key={row.feature} className={`border-b border-gray-100 dark:border-gray-700/50 ${i % 2 === 0 ? 'bg-gray-50/50 dark:bg-gray-800/50' : ''}`}>
                       <td className="py-2.5 pr-4 text-gray-700 dark:text-gray-300">{row.feature}</td>
-                      {(['trial', 'consultant', 'sme', 'enterprise'] as const).map((tier) => {
+                      {(['trial', 'consultant', 'sme'] as const).map((tier) => {
                         const val = row[tier];
                         return (
                           <td key={tier} className="py-2.5 px-3 text-center">

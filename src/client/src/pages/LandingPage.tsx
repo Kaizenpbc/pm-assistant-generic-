@@ -142,23 +142,6 @@ const pricingTiers = [
     highlighted: true,
     badge: 'Most Popular',
   },
-  {
-    name: 'Enterprise',
-    price: '$79',
-    period: '/mo',
-    description: 'For large teams with advanced needs',
-    features: [
-      'Unlimited projects',
-      'All features included',
-      '5M AI tokens/month',
-      'Unlimited viewer invites',
-      'API access & integrations',
-      'Priority support',
-    ],
-    cta: 'Get Started',
-    ctaLink: '/register',
-    highlighted: false,
-  },
 ];
 
 /* Animated mockup previews for feature cards */
@@ -695,7 +678,7 @@ export const LandingPage: React.FC = () => {
               Start free, upgrade when you need more power
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {pricingTiers.map((tier) => (
               <div
                 key={tier.name}
