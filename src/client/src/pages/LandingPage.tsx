@@ -595,7 +595,7 @@ export const LandingPage: React.FC = () => {
                   className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors"
                 >
                   <Zap className="w-4 h-4" />
-                  Buy Token Pack — $5
+                  View Token Packs
                 </Link>
               </div>
             </div>
