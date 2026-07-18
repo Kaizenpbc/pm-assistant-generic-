@@ -2,6 +2,8 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, X, Zap } from 'lucide-react';
 import { PricingCards, COMPARISON } from '../components/pricing/PricingCards';
+import { useAuthStore } from '../stores/authStore';
+import { apiService } from '../services/api';
 
 const features = [
   {
@@ -438,6 +440,22 @@ function FeatureCard({ feature }: { feature: typeof features[number] }) {
 
 export const LandingPage: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [topUpLoading, setTopUpLoading] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+
+  const handleBuyTokens = async () => {
+    if (!isAuthenticated) {
+      window.location.href = '/register';
+      return;
+    }
+    setTopUpLoading(true);
+    try {
+      const { url } = await apiService.createTopUpSession(1);
+      window.location.href = url;
+    } catch {
+      setTopUpLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0f1a] overflow-x-hidden">
@@ -590,13 +608,23 @@ export const LandingPage: React.FC = () => {
                 <p className="text-sm text-gray-300 mb-4">
                   Top up anytime. <strong className="text-white">500K tokens for $5</strong> — added instantly to your balance.
                 </p>
-                <Link
-                  to="/pricing"
-                  className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+                <button
+                  onClick={handleBuyTokens}
+                  disabled={topUpLoading}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors disabled:opacity-50"
                 >
-                  <Zap className="w-4 h-4" />
-                  View Token Packs
-                </Link>
+                  {topUpLoading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4" />
+                      Buy Token Pack — $5
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
