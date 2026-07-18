@@ -1024,6 +1024,8 @@ export function GanttChart({
     origEndDate: Date;
     dayDelta: number;
   } | null>(null);
+  const dragRef = useRef(drag);
+  dragRef.current = drag;
   const dragDidCompleteRef = useRef(false);
 
   // -----------------------------------------------------------------------
@@ -1749,13 +1751,43 @@ export function GanttChart({
   const autoScrollRef = useRef<number | null>(null);
   const lastMouseXRef = useRef<number>(0);
 
+  // Refs for stable access from document listeners (avoids teardown/reattach race)
+  const onTaskDragEndRef = useRef(onTaskDragEnd);
+  onTaskDragEndRef.current = onTaskDragEnd;
+  const dayPxRef = useRef(dayPx);
+  dayPxRef.current = dayPx;
+  const selectedIdsRef = useRef(selectedIds);
+  selectedIdsRef.current = selectedIds;
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
+
   useEffect(() => {
     if (!drag) return;
 
+    // Capture startX once — it doesn't change during drag
+    const startX = drag.startX;
+
+    function startAutoScroll(speed: number) {
+      if (autoScrollRef.current != null) return;
+      const tick = () => {
+        const tl = timelineRef.current;
+        if (tl) tl.scrollLeft += speed;
+        autoScrollRef.current = requestAnimationFrame(tick);
+      };
+      autoScrollRef.current = requestAnimationFrame(tick);
+    }
+
+    function stopAutoScroll() {
+      if (autoScrollRef.current != null) {
+        cancelAnimationFrame(autoScrollRef.current);
+        autoScrollRef.current = null;
+      }
+    }
+
     const handleMouseMove = (e: MouseEvent) => {
       lastMouseXRef.current = e.clientX;
-      const deltaX = e.clientX - drag.startX;
-      const dayDelta = Math.round(deltaX / dayPx);
+      const deltaX = e.clientX - startX;
+      const dayDelta = Math.round(deltaX / dayPxRef.current);
       setDrag(prev => prev ? { ...prev, dayDelta } : null);
 
       // Auto-scroll when near timeline edges
@@ -1775,54 +1807,39 @@ export function GanttChart({
 
     const handleMouseUp = () => {
       stopAutoScroll();
-      if (drag && drag.dayDelta !== 0 && onTaskDragEnd) {
+      const d = dragRef.current;
+      const callback = onTaskDragEndRef.current;
+      if (d && d.dayDelta !== 0 && callback) {
         dragDidCompleteRef.current = true;
-        const fmt = (d: Date) => d.toISOString().split('T')[0];
-        if (drag.mode === 'move') {
-          // If dragged bar is selected, move all selected bars together
-          const idsToMove = selectedIds.has(drag.taskId) && selectedIds.size > 1
-            ? Array.from(selectedIds)
-            : [drag.taskId];
+        const fmt = (dt: Date) => dt.toISOString().split('T')[0];
+        if (d.mode === 'move') {
+          const sIds = selectedIdsRef.current;
+          const allTasks = tasksRef.current;
+          const idsToMove = sIds.has(d.taskId) && sIds.size > 1
+            ? Array.from(sIds)
+            : [d.taskId];
           for (const id of idsToMove) {
-            const t = tasks.find(tk => tk.id === id);
+            const t = allTasks.find(tk => tk.id === id);
             if (!t) continue;
             const s = toDate(t.startDate);
             const e = toDate(t.endDate);
             if (!s || !e) continue;
             const newStart = new Date(s);
-            newStart.setDate(newStart.getDate() + drag.dayDelta);
+            newStart.setDate(newStart.getDate() + d.dayDelta);
             const newEnd = new Date(e);
-            newEnd.setDate(newEnd.getDate() + drag.dayDelta);
-            onTaskDragEnd(id, fmt(newStart), fmt(newEnd));
+            newEnd.setDate(newEnd.getDate() + d.dayDelta);
+            callback(id, fmt(newStart), fmt(newEnd));
           }
         } else {
-          // resize: only change end date, minimum 1 day duration
-          const newEnd = new Date(drag.origEndDate);
-          newEnd.setDate(newEnd.getDate() + drag.dayDelta);
-          if (newEnd > drag.origStartDate) {
-            onTaskDragEnd(drag.taskId, fmt(drag.origStartDate), fmt(newEnd));
+          const newEnd = new Date(d.origEndDate);
+          newEnd.setDate(newEnd.getDate() + d.dayDelta);
+          if (newEnd > d.origStartDate) {
+            callback(d.taskId, fmt(d.origStartDate), fmt(newEnd));
           }
         }
       }
       setDrag(null);
     };
-
-    function startAutoScroll(speed: number) {
-      if (autoScrollRef.current != null) return;
-      const tick = () => {
-        const tl = timelineRef.current;
-        if (tl) tl.scrollLeft += speed;
-        autoScrollRef.current = requestAnimationFrame(tick);
-      };
-      autoScrollRef.current = requestAnimationFrame(tick);
-    }
-
-    function stopAutoScroll() {
-      if (autoScrollRef.current != null) {
-        cancelAnimationFrame(autoScrollRef.current);
-        autoScrollRef.current = null;
-      }
-    }
 
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
@@ -1842,7 +1859,9 @@ export function GanttChart({
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [drag, onTaskDragEnd, dayPx, selectedIds, tasks]);
+    // Only attach/detach when drag starts/ends (null → object or object → null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!drag]);
 
   // Compute drag visual offset for the dragged bar (and all selected bars during move)
   const getDragOffset = useCallback(
