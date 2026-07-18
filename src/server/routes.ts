@@ -12,6 +12,7 @@ import { websocketRoutes } from './routes/core/websocket';
 import { exportRoutes } from './routes/core/exports';
 import { bulkRoutes } from './routes/core/bulk';
 import { feedbackRoutes } from './routes/core/feedback';
+import { inviteRoutes } from './routes/core/invites';
 
 // Scheduling
 import { scheduleRoutes } from './routes/scheduling/schedules';
@@ -109,6 +110,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(bulkRoutes, { prefix: '/api/v1/bulk' });
   await fastify.register(orgRoutes, { prefix: '/api/v1/org' });
   await fastify.register(feedbackRoutes, { prefix: '/api/v1/feedback' });
+  await fastify.register(inviteRoutes, { prefix: '/api/v1/invites' });
 
   // Scheduling
   await fastify.register(scheduleRoutes, { prefix: '/api/v1/schedules' });

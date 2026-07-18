@@ -99,6 +99,7 @@ class ApiService {
     password: string;
     fullName: string;
     organizationName?: string;
+    inviteToken?: string;
   }) {
     const response = await this.api.post('/auth/register', userData);
     return response.data;
@@ -2359,6 +2360,30 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
 
   async estimateTaskDuration(data: { taskName: string; taskDescription?: string; projectId: string; scheduleId?: string }) {
     const response = await this.api.post('/ai/estimate-task', data);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Invites
+  // -------------------------------------------------------------------------
+
+  async createInvite(data: { email: string; projectId?: string; role?: string }) {
+    const response = await this.api.post('/invites', data);
+    return response.data;
+  }
+
+  async listInvites() {
+    const response = await this.api.get('/invites');
+    return response.data;
+  }
+
+  async validateInvite(token: string) {
+    const response = await this.api.get(`/invites/${token}/validate`);
+    return response.data;
+  }
+
+  async revokeInvite(id: string) {
+    const response = await this.api.delete(`/invites/${id}`);
     return response.data;
   }
 

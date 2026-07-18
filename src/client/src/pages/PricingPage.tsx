@@ -11,98 +11,109 @@ interface PlanDef {
   annual: number;
   tokens: string;
   tokensEquiv: string;
+  storage: string;
+  viewerInvites: string;
   highlight?: boolean;
   features: string[];
 }
 
 const PLANS: PlanDef[] = [
   {
-    tier: 'pro',
-    name: 'Pro',
-    monthly: 15,
-    annual: 150,
-    tokens: '500K',
-    tokensEquiv: '~100 AI chats, 50 risk scans, or 25 reports/mo',
-    features: [
-      'Unlimited projects',
-      'Mjuzi AI assistant (500K tokens/mo)',
-      'Gantt charts with dependencies & critical path',
-      'Sprint/Agile + Kanban boards',
-      'RAID management',
-      'All export formats (CSV, PDF, XML)',
-      'API access',
-    ],
-  },
-  {
-    tier: 'business',
-    name: 'Business',
-    monthly: 35,
-    annual: 350,
-    tokens: '1.5M',
-    tokensEquiv: '~300 AI chats, 150 risk scans, or 75 reports/mo',
-    highlight: true,
-    features: [
-      'Everything in Pro, plus:',
-      'AI tokens: 1.5M/mo (3x Pro)',
-      'EVM dashboard & AI forecasting',
-      'Monte Carlo simulation',
-      'Resource management & workload heatmaps',
-      'Custom report builder & scheduled delivery',
-      'DAG workflow automation',
-      'Stakeholder portal',
-    ],
-  },
-  {
     tier: 'consultant',
     name: 'Consultant',
-    monthly: 59,
-    annual: 590,
-    tokens: '3M',
-    tokensEquiv: '~600 AI chats, 300 risk scans, or 150 reports/mo',
+    monthly: 19,
+    annual: 190,
+    tokens: '500K',
+    tokensEquiv: '~100 AI chats, 50 risk scans, or 25 reports/mo',
+    storage: '1GB',
+    viewerInvites: '5',
     features: [
-      'Everything in Business, plus:',
-      'AI tokens: 3M/mo (6x Pro)',
-      'Cross-project intelligence',
-      'AI task prioritization & auto-reschedule',
-      'Meeting intelligence & voice recording',
-      'NL project creation & query engine',
-      'MCP integration',
+      'Unlimited projects',
+      'All PM features included',
+      'Mjuzi AI assistant (500K tokens/mo)',
+      'Gantt, Kanban, Sprint boards',
+      'RAID management & risk scans',
+      'All exports (CSV, PDF, XML)',
+      'API access & integrations',
+      '5 free viewer invites for clients',
+    ],
+  },
+  {
+    tier: 'sme',
+    name: 'SME',
+    monthly: 39,
+    annual: 390,
+    tokens: '1.5M',
+    tokensEquiv: '~300 AI chats, 150 risk scans, or 75 reports/mo',
+    storage: '5GB',
+    viewerInvites: '20',
+    highlight: true,
+    features: [
+      'Everything in Consultant, plus:',
+      'AI tokens: 1.5M/mo (3x Consultant)',
       '5GB file storage',
+      '20 viewer invites for clients',
+      'EVM dashboard & Monte Carlo',
+      'Resource management & heatmaps',
+      'Custom report builder',
+      'DAG workflow automation',
+    ],
+  },
+  {
+    tier: 'enterprise',
+    name: 'Enterprise',
+    monthly: 79,
+    annual: 790,
+    tokens: '5M',
+    tokensEquiv: '~1000 AI chats, 500 risk scans, or 250 reports/mo',
+    storage: '10GB',
+    viewerInvites: 'Unlimited',
+    features: [
+      'Everything in SME, plus:',
+      'AI tokens: 5M/mo (10x Consultant)',
+      '10GB file storage',
+      'Unlimited viewer invites',
+      'Cross-project intelligence',
+      'AI auto-reschedule & prioritization',
+      'Meeting intelligence & voice',
+      'MCP integration',
     ],
   },
 ];
 
 interface FeatureRow {
   feature: string;
-  free: boolean | string;
-  pro: boolean | string;
-  business: boolean | string;
+  trial: boolean | string;
   consultant: boolean | string;
+  sme: boolean | string;
+  enterprise: boolean | string;
 }
 
 const COMPARISON: FeatureRow[] = [
-  { feature: 'Projects', free: '3', pro: 'Unlimited', business: 'Unlimited', consultant: 'Unlimited' },
-  { feature: 'AI tokens/month', free: '25K', pro: '500K', business: '1.5M', consultant: '3M' },
-  { feature: 'Mjuzi AI Assistant', free: true, pro: true, business: true, consultant: true },
-  { feature: 'Gantt Charts & Critical Path', free: true, pro: true, business: true, consultant: true },
-  { feature: 'Kanban Boards', free: true, pro: true, business: true, consultant: true },
-  { feature: 'Sprint / Agile Management', free: true, pro: true, business: true, consultant: true },
-  { feature: 'RAID Management', free: true, pro: true, business: true, consultant: true },
-  { feature: 'Export (CSV, PDF, XML)', free: false, pro: true, business: true, consultant: true },
-  { feature: 'API Access', free: false, pro: true, business: true, consultant: true },
-  { feature: 'EVM Dashboard & AI Forecasting', free: false, pro: false, business: true, consultant: true },
-  { feature: 'Monte Carlo Simulation', free: false, pro: false, business: true, consultant: true },
-  { feature: 'Resource Management & Heatmaps', free: false, pro: false, business: true, consultant: true },
-  { feature: 'Custom Report Builder', free: false, pro: false, business: true, consultant: true },
-  { feature: 'DAG Workflow Automation', free: false, pro: false, business: true, consultant: true },
-  { feature: 'Stakeholder Portal', free: false, pro: false, business: true, consultant: true },
-  { feature: 'Cross-Project Intelligence', free: false, pro: false, business: false, consultant: true },
-  { feature: 'AI Auto-Reschedule', free: false, pro: false, business: false, consultant: true },
-  { feature: 'Meeting Intelligence & Voice', free: false, pro: false, business: false, consultant: true },
-  { feature: 'NL Query Engine', free: false, pro: false, business: false, consultant: true },
-  { feature: 'MCP Integration', free: false, pro: false, business: false, consultant: true },
-  { feature: 'File Storage', free: '100MB', pro: '1GB', business: '2GB', consultant: '5GB' },
-  { feature: 'Token Top-Up Packs', free: false, pro: true, business: true, consultant: true },
+  { feature: 'Projects', trial: '3', consultant: 'Unlimited', sme: 'Unlimited', enterprise: 'Unlimited' },
+  { feature: 'AI tokens/month', trial: '25K', consultant: '500K', sme: '1.5M', enterprise: '5M' },
+  { feature: 'File Storage', trial: '100MB', consultant: '1GB', sme: '5GB', enterprise: '10GB' },
+  { feature: 'Viewer Invites', trial: '0', consultant: '5', sme: '20', enterprise: 'Unlimited' },
+  { feature: 'Duration', trial: '14 days', consultant: 'Unlimited', sme: 'Unlimited', enterprise: 'Unlimited' },
+  { feature: 'Mjuzi AI Assistant', trial: true, consultant: true, sme: true, enterprise: true },
+  { feature: 'Gantt Charts & Critical Path', trial: true, consultant: true, sme: true, enterprise: true },
+  { feature: 'Kanban Boards', trial: true, consultant: true, sme: true, enterprise: true },
+  { feature: 'Sprint / Agile Management', trial: true, consultant: true, sme: true, enterprise: true },
+  { feature: 'RAID Management', trial: true, consultant: true, sme: true, enterprise: true },
+  { feature: 'Export (CSV, PDF, XML)', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'API Access', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'EVM Dashboard & AI Forecasting', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'Monte Carlo Simulation', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'Resource Management & Heatmaps', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'Custom Report Builder', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'DAG Workflow Automation', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'Stakeholder Portal', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'Cross-Project Intelligence', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'AI Auto-Reschedule', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'Meeting Intelligence & Voice', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'NL Query Engine', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'MCP Integration', trial: false, consultant: true, sme: true, enterprise: true },
+  { feature: 'Token Top-Up Packs', trial: false, consultant: true, sme: true, enterprise: true },
 ];
 
 export const PricingPage: React.FC = () => {
@@ -111,8 +122,8 @@ export const PricingPage: React.FC = () => {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const currentTier = user?.subscriptionTier || 'free';
-  const isSubscribed = currentTier === 'consultant' || currentTier === 'pro' || currentTier === 'business';
+  const currentTier = user?.subscriptionTier || 'trial';
+  const isSubscribed = currentTier === 'consultant' || currentTier === 'sme' || currentTier === 'enterprise';
 
   const handleSubscribe = async (tier: string) => {
     if (!isAuthenticated) {
@@ -195,7 +206,7 @@ export const PricingPage: React.FC = () => {
           <div className="text-center mb-10">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Simple, transparent pricing</h1>
             <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
-              14-day free trial on any plan. No credit card required.
+              14-day free trial. All paid plans include every feature.
             </p>
           </div>
 
@@ -271,7 +282,7 @@ export const PricingPage: React.FC = () => {
                       <p className="text-xs text-green-600 dark:text-green-400 mt-1">~${perMonth}/mo</p>
                     )}
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                      {plan.tokens} AI tokens/month
+                      {plan.tokens} AI tokens/month | {plan.storage} storage
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                       {plan.tokensEquiv}
@@ -363,17 +374,17 @@ export const PricingPage: React.FC = () => {
                 <thead>
                   <tr className="border-b-2 border-gray-200 dark:border-gray-700">
                     <th className="text-left py-3 pr-4 font-semibold text-gray-900 dark:text-white">Feature</th>
-                    <th className="text-center py-3 px-3 font-semibold text-gray-500 dark:text-gray-400 w-24">Free</th>
-                    <th className="text-center py-3 px-3 font-semibold text-gray-900 dark:text-white w-24">Pro</th>
-                    <th className="text-center py-3 px-3 font-semibold text-primary-600 dark:text-primary-400 w-24">Business</th>
+                    <th className="text-center py-3 px-3 font-semibold text-gray-500 dark:text-gray-400 w-24">Trial</th>
                     <th className="text-center py-3 px-3 font-semibold text-gray-900 dark:text-white w-24">Consultant</th>
+                    <th className="text-center py-3 px-3 font-semibold text-primary-600 dark:text-primary-400 w-24">SME</th>
+                    <th className="text-center py-3 px-3 font-semibold text-gray-900 dark:text-white w-24">Enterprise</th>
                   </tr>
                 </thead>
                 <tbody>
                   {COMPARISON.map((row, i) => (
                     <tr key={row.feature} className={`border-b border-gray-100 dark:border-gray-700/50 ${i % 2 === 0 ? 'bg-gray-50/50 dark:bg-gray-800/50' : ''}`}>
                       <td className="py-2.5 pr-4 text-gray-700 dark:text-gray-300">{row.feature}</td>
-                      {(['free', 'pro', 'business', 'consultant'] as const).map((tier) => {
+                      {(['trial', 'consultant', 'sme', 'enterprise'] as const).map((tier) => {
                         const val = row[tier];
                         return (
                           <td key={tier} className="py-2.5 px-3 text-center">

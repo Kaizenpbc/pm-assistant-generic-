@@ -68,10 +68,11 @@ export class OrganizationService {
       dbName: finalDbName,
       ownerUserId,
       stripeCustomerId: stripeCustomerId || null,
-      subscriptionTier: 'free',
+      subscriptionTier: 'trial',
       subscriptionStatus: 'trialing',
       trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' '),
       maxUsers: 10,
+      viewerLimit: 5,
       isActive: true,
       isProvisioned: false,
     });

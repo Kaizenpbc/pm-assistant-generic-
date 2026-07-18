@@ -416,6 +416,43 @@ export class EmailService {
     });
   }
 
+  async sendViewerInviteEmail(to: string, orgName: string, inviterName: string, projectName: string | null, token: string): Promise<void> {
+    if (!this.isConfigured) {
+      logger.info(`[EmailService] Viewer invite email would be sent to ${maskPii(to)} for org "${orgName}"`);
+      return;
+    }
+
+    const registerUrl = `${config.APP_URL}/register?invite=${token}`;
+    const projectLine = projectName
+      ? `<p style="color: #4b5563; line-height: 1.6;">You'll have access to the project: <strong>${escapeHtml(projectName)}</strong></p>`
+      : '';
+
+    const bodyHtml = `
+      <p style="color: #4b5563; line-height: 1.6;">
+        ${escapeHtml(inviterName)} has invited you to view projects on <strong>${escapeHtml(orgName)}</strong>.
+      </p>
+      ${projectLine}
+      <p style="color: #4b5563; line-height: 1.6;">
+        As a viewer, you can see project status, timelines, and update items assigned to you — all at no cost.
+      </p>
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${registerUrl}" style="background-color: #4f46e5; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+          Accept Invitation
+        </a>
+      </div>
+      <p style="color: #9ca3af; font-size: 14px;">
+        This invitation expires in 7 days.
+      </p>
+    `;
+
+    await this.sendEmail({
+      from: config.RESEND_FROM_EMAIL,
+      to,
+      subject: `${escapeHtml(inviterName)} invited you to ${escapeHtml(orgName)} on Kovarti PM`,
+      html: this.wrapHtml('You\'re invited!', bodyHtml),
+    });
+  }
+
   async sendOrgInviteEmail(to: string, orgName: string, inviterName: string): Promise<void> {
     if (!this.isConfigured) {
       logger.info(`[EmailService] Org invite email would be sent to ${maskPii(to)} for org "${orgName}"`);

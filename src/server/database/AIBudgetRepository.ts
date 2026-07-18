@@ -32,7 +32,7 @@ class AIBudgetRepository {
       'SELECT subscription_tier FROM users WHERE id = ?',
       [userId],
     );
-    return rows.length > 0 ? (rows[0].subscription_tier || 'free') : 'free';
+    return rows.length > 0 ? (rows[0].subscription_tier || 'trial') : 'trial';
   }
 
   async findBudgetWarningToday(userId: string, today: string): Promise<boolean> {

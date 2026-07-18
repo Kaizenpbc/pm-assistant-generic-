@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, Users } from 'lucide-react';
 import { apiService } from '../services/api';
 
 export const RegisterPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite') || undefined;
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -15,6 +18,29 @@ export const RegisterPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Invite context
+  const [inviteValid, setInviteValid] = useState<boolean | null>(null);
+  const [inviteOrgName, setInviteOrgName] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (inviteToken) {
+      apiService.validateInvite(inviteToken).then((result) => {
+        setInviteValid(result.valid);
+        if (result.valid) {
+          setInviteOrgName(result.orgName || null);
+          if (result.email) {
+            setInviteEmail(result.email);
+            setEmail(result.email);
+          }
+        }
+      }).catch(() => {
+        setInviteValid(false);
+      });
+    }
+  }, [inviteToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +58,15 @@ export const RegisterPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await apiService.register({ fullName, email, username, password, organizationName: organizationName || undefined });
+      const result = await apiService.register({
+        fullName,
+        email,
+        username,
+        password,
+        organizationName: inviteToken ? undefined : (organizationName || undefined),
+        inviteToken,
+      });
+      setSuccessMessage(result.message || 'Registration successful. Please check your email to verify your account.');
       setSuccess(true);
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
@@ -52,9 +86,7 @@ export const RegisterPage: React.FC = () => {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Check your email</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            We've sent a verification link to <strong>{email}</strong>. Please click the link to verify your account.
-          </p>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">{successMessage}</p>
           <Link to="/login" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:text-primary-300 font-medium text-sm">
             Back to Sign In
           </Link>
@@ -63,19 +95,40 @@ export const RegisterPage: React.FC = () => {
     );
   }
 
+  const isInviteFlow = inviteToken && inviteValid;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
           <div className="text-center mb-8">
             <div className="mx-auto w-12 h-12 bg-primary-100 dark:bg-primary-900/40 rounded-xl flex items-center justify-center mb-4">
-              <svg className="w-7 h-7 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
+              {isInviteFlow ? (
+                <Users className="w-7 h-7 text-primary-600 dark:text-primary-400" />
+              ) : (
+                <svg className="w-7 h-7 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+              )}
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create your account</h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Start managing projects with AI</p>
+            {isInviteFlow ? (
+              <>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Join {inviteOrgName}</h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">You've been invited as a viewer</p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create your account</h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Start managing projects with AI</p>
+              </>
+            )}
           </div>
+
+          {inviteToken && inviteValid === false && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-red-700">This invitation link is invalid or has expired.</p>
+            </div>
+          )}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
@@ -93,7 +146,7 @@ export const RegisterPage: React.FC = () => {
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
               <input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="input" placeholder="john@example.com" />
+                className="input" placeholder="john@example.com" readOnly={!!inviteEmail} />
             </div>
 
             <div>
@@ -102,13 +155,15 @@ export const RegisterPage: React.FC = () => {
                 className="input" placeholder="johndoe" minLength={3} />
             </div>
 
-            <div>
-              <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                Organization Name <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <input id="organizationName" type="text" autoComplete="organization" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)}
-                className="input" placeholder="Your company name (we'll use your name if blank)" />
-            </div>
+            {!isInviteFlow && (
+              <div>
+                <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  Organization Name <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input id="organizationName" type="text" autoComplete="organization" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)}
+                  className="input" placeholder="Your company name (we'll use your name if blank)" />
+              </div>
+            )}
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Password</label>
@@ -152,6 +207,8 @@ export const RegisterPage: React.FC = () => {
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                   Creating account...
                 </div>
+              ) : isInviteFlow ? (
+                'Accept Invitation'
               ) : (
                 'Create Account'
               )}

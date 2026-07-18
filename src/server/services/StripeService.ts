@@ -164,7 +164,7 @@ export class StripeService {
     const sub = await subscriptionRepository.findLatestByUser(userId);
     const isAdmin = user.role === 'admin';
     return {
-      tier: isAdmin ? 'consultant' : user.subscriptionTier,
+      tier: isAdmin ? 'enterprise' : user.subscriptionTier,
       status: isAdmin ? 'active' : user.subscriptionStatus,
       trialEndsAt: user.trialEndsAt,
       currentPeriodEnd: sub ? sub.current_period_end : null,
@@ -197,32 +197,42 @@ export class StripeService {
     ).catch(e => logger.error('[StripeService] Failed to log topup_purchased event', e));
   }
 
-  private resolveTierFromPriceId(priceId: string | undefined): 'free' | 'pro' | 'business' | 'consultant' {
-    if (!priceId) return 'free';
+  private resolveTierFromPriceId(priceId: string | undefined): 'trial' | 'consultant' | 'sme' | 'enterprise' {
+    if (!priceId) return 'trial';
 
-    const proPriceIds = [
+    // New tier price IDs
+    const consultantPriceIds = [
+      config.STRIPE_CONSULTANT_NEW_MONTHLY_PRICE_ID,
+      config.STRIPE_CONSULTANT_NEW_ANNUAL_PRICE_ID,
+      // Legacy pro price IDs map to consultant
       config.STRIPE_PRO_MONTHLY_PRICE_ID,
       config.STRIPE_PRO_ANNUAL_PRICE_ID,
     ].filter(Boolean);
-    if (proPriceIds.includes(priceId)) return 'pro';
+    if (consultantPriceIds.includes(priceId)) return 'consultant';
 
-    const businessPriceIds = [
+    const smePriceIds = [
+      config.STRIPE_SME_MONTHLY_PRICE_ID,
+      config.STRIPE_SME_ANNUAL_PRICE_ID,
+      // Legacy business price IDs map to sme
       config.STRIPE_BUSINESS_MONTHLY_PRICE_ID,
       config.STRIPE_BUSINESS_ANNUAL_PRICE_ID,
     ].filter(Boolean);
-    if (businessPriceIds.includes(priceId)) return 'business';
+    if (smePriceIds.includes(priceId)) return 'sme';
 
-    const consultantPriceIds = [
+    const enterprisePriceIds = [
+      config.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID,
+      config.STRIPE_ENTERPRISE_ANNUAL_PRICE_ID,
+      // Legacy consultant price IDs map to enterprise
       config.STRIPE_CONSULTANT_MONTHLY_PRICE_ID,
       config.STRIPE_CONSULTANT_ANNUAL_PRICE_ID,
-      // Legacy single-plan price IDs map to consultant
+      // Legacy single-plan price IDs map to enterprise
       config.STRIPE_MONTHLY_PRICE_ID,
       config.STRIPE_ANNUAL_PRICE_ID,
       config.STRIPE_PRO_PRICE_ID,
     ].filter(Boolean);
-    if (consultantPriceIds.includes(priceId)) return 'consultant';
+    if (enterprisePriceIds.includes(priceId)) return 'enterprise';
 
-    return 'free';
+    return 'trial';
   }
 
   private async upsertSubscription(subscription: Stripe.Subscription, stripeEventId: string): Promise<void> {
@@ -237,7 +247,7 @@ export class StripeService {
     const item = subscription.items.data[0];
     const priceId = item?.price?.id;
     const tier = this.resolveTierFromPriceId(priceId);
-    const previousTier = user.subscriptionTier || 'free';
+    const previousTier = user.subscriptionTier || 'trial';
 
     // Extract revenue data
     const amountCents = item?.price?.unit_amount ?? null;
@@ -334,17 +344,17 @@ export class StripeService {
     const user = await this.userService.findByStripeCustomerId(customerId);
     if (!user) return;
 
-    const previousTier = user.subscriptionTier || 'free';
+    const previousTier = user.subscriptionTier || 'trial';
 
     await this.userService.update(user.id, {
-      subscriptionTier: 'free',
+      subscriptionTier: 'trial',
       subscriptionStatus: 'canceled',
     });
 
     await subscriptionRepository.markCanceled(subscription.id);
 
     subscriptionEventRepository.create(
-      user.id, 'subscription_canceled', previousTier, 'free', null, stripeEventId,
+      user.id, 'subscription_canceled', previousTier, 'trial', null, stripeEventId,
     ).catch(e => logger.error('[StripeService] Failed to log subscription_canceled event', e));
 
     auditLedgerService.append({

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { portalService } from '../../services/PortalService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requirePaidTier } from '../../middleware/requireTier';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import logger from '../../utils/logger';
 import { rateLimiter } from '../../middleware/rateLimiter';
@@ -86,7 +87,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
 
   // POST /links/:projectId — create portal link
   fastify.post('/links/:projectId', {
-    preHandler: [authMiddleware, requireScope('write'), requireProjectAccess('editor')],
+    preHandler: [authMiddleware, requireScope('write'), requirePaidTier, requireProjectAccess('editor')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
@@ -103,7 +104,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
 
   // GET /links/:projectId — list portal links
   fastify.get('/links/:projectId', {
-    preHandler: [authMiddleware, requireScope('read'), requireProjectAccess('viewer')],
+    preHandler: [authMiddleware, requireScope('read'), requirePaidTier, requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
@@ -117,7 +118,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
 
   // PUT /links/:id — update portal link
   fastify.put('/links/:id', {
-    preHandler: [authMiddleware, requireScope('write')],
+    preHandler: [authMiddleware, requireScope('write'), requirePaidTier],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
@@ -142,7 +143,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
 
   // DELETE /links/:id — delete portal link
   fastify.delete('/links/:id', {
-    preHandler: [authMiddleware, requireScope('admin')],
+    preHandler: [authMiddleware, requireScope('admin'), requirePaidTier],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
@@ -165,7 +166,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
 
   // GET /comments/:projectId — get portal comments
   fastify.get('/comments/:projectId', {
-    preHandler: [authMiddleware, requireScope('read'), requireProjectAccess('viewer')],
+    preHandler: [authMiddleware, requireScope('read'), requirePaidTier, requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };

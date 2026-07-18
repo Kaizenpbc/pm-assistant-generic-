@@ -196,7 +196,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - **Dependency Risk Agent** -- Analyzes task dependency graphs to detect blocked chains, bottleneck tasks (3+ dependents), and long dependency chains (depth > 5)
 - **Lessons Learned Agent** -- Auto-extracts lessons when projects reach 90%+ completion or are completed; stores lessons for RAG retrieval and future project improvement
 - **Predictive Alerting Agent** -- Pattern-based early warnings using velocity trends, progress-vs-time trajectory, risk accumulation, and similar project comparison
-- **Autonomous Execution (Tier 3)** -- Agents with proven track records (30+ days, 20+ proposals, 80%+ acceptance, zero rollbacks) can be promoted to auto-execute low-risk, high-confidence proposals
+- **Autonomous Execution (SME/Enterprise)** -- Agents with proven track records (30+ days, 20+ proposals, 80%+ acceptance, zero rollbacks) can be promoted to auto-execute low-risk, high-confidence proposals
 - **Confidence Scoring** -- Weighted confidence (data quality + historical accuracy + model certainty) controls what agents can propose
 - **Proposal Lifecycle** -- pending -> approved/rejected -> executed/rolled_back with full audit trail
 - **Emergency Kill Switch** -- Global, per-agent, and per-project agent shutdown via API with audit logging
@@ -239,6 +239,8 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Email notifications for critical/high severity events (respects per-category email preference)
 - Daily and weekly email digests (overdue tasks, upcoming deadlines, unread count)
 - Trial reminder emails: daily cron at 09:00 sends 3-day, 1-day, and expired-trial notices via Resend; Redis-backed dedup prevents duplicate sends
+- **Viewer Invite Flow** — Consultant/SME/Enterprise users can invite client stakeholders as free viewer accounts (5 / 20 / unlimited invites per tier respectively); viewers get read-only access scoped to the inviting user's projects
+- **Feature gating** — Trial accounts are restricted from advanced features (exports, EVM, Monte Carlo, etc.); `requireTier`/`requirePaidTier` middleware enforces tier checks server-side on protected routes
 
 ### Client / Stakeholder Portal
 - External-facing read-only project views with progress, budget, milestones, and recent activity
@@ -280,7 +282,11 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Automated enforcement of organizational standards
 
 ### Billing (Stripe)
-- Subscription management with tiered pricing (Pro/Business/Consultant), feature comparison matrix, usage equivalents, and sidebar token usage indicator
+- Subscription management with tiered pricing (Trial / Consultant / SME / Enterprise), feature comparison matrix, usage equivalents, and sidebar token usage indicator
+  - **Trial:** Free, 14 days, 3 projects, 25K AI tokens/month, basic PM features only
+  - **Consultant:** $19/mo ($190/yr), unlimited projects, 500K AI tokens/month, all features, 5 viewer invites
+  - **SME:** $39/mo ($390/yr), unlimited projects, 1.5M AI tokens/month, all features, 20 viewer invites
+  - **Enterprise:** $79/mo ($790/yr), unlimited projects, 5M AI tokens/month, all features, unlimited viewer invites
 - Usage-based billing support
 - Stripe Checkout and customer portal integration
 
@@ -623,7 +629,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | User Preferences | `/api/v1/users/me/preferences` | Timezone and locale preferences |
 | Admin Tenants | `/api/v1/admin/tenants` | Multi-tenant org management (list, update, provision, migrate) |
 | Admin Users | `/api/v1/admin/users` | User listing with login status, unlock stuck login tokens, subscription status |
-| Admin Revenue | `/api/v1/admin/revenue` | MRR, subscriber counts by tier, churn, top-up revenue, trial conversion, trend data (admin only) |
+| Admin Revenue | `/api/v1/admin/revenue` | MRR, subscriber counts by tier (Trial/Consultant/SME/Enterprise), churn, top-up revenue, trial conversion, trend data (admin only) |
 | Admin Subscription Events | `/api/v1/admin/users/:id/subscription-events` | Per-user subscription lifecycle event history (admin only) |
 
 ---

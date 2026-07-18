@@ -8,16 +8,25 @@ import { tokenTopUpRepository } from '../../database/TokenTopUpRepository';
 import logger from '../../utils/logger';
 
 function resolvePriceId(tier: string, billing: string): string | undefined {
-  // Try new tier-specific price IDs first, then fall back to legacy
-  if (tier === 'pro') {
+  // New tier price IDs
+  if (tier === 'consultant') {
+    if (billing === 'annual' && config.STRIPE_CONSULTANT_NEW_ANNUAL_PRICE_ID) return config.STRIPE_CONSULTANT_NEW_ANNUAL_PRICE_ID;
+    if (config.STRIPE_CONSULTANT_NEW_MONTHLY_PRICE_ID) return config.STRIPE_CONSULTANT_NEW_MONTHLY_PRICE_ID;
+    // Legacy pro fallback
     if (billing === 'annual' && config.STRIPE_PRO_ANNUAL_PRICE_ID) return config.STRIPE_PRO_ANNUAL_PRICE_ID;
     if (config.STRIPE_PRO_MONTHLY_PRICE_ID) return config.STRIPE_PRO_MONTHLY_PRICE_ID;
   }
-  if (tier === 'business') {
+  if (tier === 'sme') {
+    if (billing === 'annual' && config.STRIPE_SME_ANNUAL_PRICE_ID) return config.STRIPE_SME_ANNUAL_PRICE_ID;
+    if (config.STRIPE_SME_MONTHLY_PRICE_ID) return config.STRIPE_SME_MONTHLY_PRICE_ID;
+    // Legacy business fallback
     if (billing === 'annual' && config.STRIPE_BUSINESS_ANNUAL_PRICE_ID) return config.STRIPE_BUSINESS_ANNUAL_PRICE_ID;
     if (config.STRIPE_BUSINESS_MONTHLY_PRICE_ID) return config.STRIPE_BUSINESS_MONTHLY_PRICE_ID;
   }
-  if (tier === 'consultant') {
+  if (tier === 'enterprise') {
+    if (billing === 'annual' && config.STRIPE_ENTERPRISE_ANNUAL_PRICE_ID) return config.STRIPE_ENTERPRISE_ANNUAL_PRICE_ID;
+    if (config.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID) return config.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID;
+    // Legacy consultant fallback
     if (billing === 'annual' && config.STRIPE_CONSULTANT_ANNUAL_PRICE_ID) return config.STRIPE_CONSULTANT_ANNUAL_PRICE_ID;
     if (config.STRIPE_CONSULTANT_MONTHLY_PRICE_ID) return config.STRIPE_CONSULTANT_MONTHLY_PRICE_ID;
   }

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { resourceService } from '../../services/ResourceService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requirePaidTier } from '../../middleware/requireTier';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
 import logger from '../../utils/logger';
 
@@ -39,7 +40,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // POST /resources - Create a resource
-  fastify.post('/', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/', { preHandler: [requireScope('write'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createResourceSchema.parse(request.body);
       const resource = await resourceService.createResource(data);
@@ -51,7 +52,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // PUT /resources/:id - Update a resource
-  fastify.put('/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.put('/:id', { preHandler: [requireScope('write'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       const data = createResourceSchema.partial().parse(request.body);
@@ -65,7 +66,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // DELETE /resources/:id
-  fastify.delete('/:id', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.delete('/:id', { preHandler: [requireScope('admin'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
     const deleted = await resourceService.deleteResource(id);
     if (!deleted) return reply.status(404).send({ error: 'Resource not found' });
@@ -80,7 +81,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // POST /resources/assignments
-  fastify.post('/assignments', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/assignments', { preHandler: [requireScope('write'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const data = createAssignmentSchema.parse(request.body);
       const assignment = await resourceService.createAssignment(data);
@@ -92,7 +93,7 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   });
 
   // DELETE /resources/assignments/:id
-  fastify.delete('/assignments/:id', { preHandler: [requireScope('admin')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.delete('/assignments/:id', { preHandler: [requireScope('admin'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
     const deleted = await resourceService.deleteAssignment(id);
     if (!deleted) return reply.status(404).send({ error: 'Assignment not found' });

@@ -203,7 +203,7 @@ export function toUserDTO(row: Record<string, any>): UserDTO {
     username: row.username,
     email: row.email,
     role: row.role,
-    subscriptionTier: row.subscriptionTier ?? row.subscription_tier ?? 'free',
+    subscriptionTier: row.subscriptionTier ?? row.subscription_tier ?? 'trial',
     emailVerified: row.emailVerified ?? row.email_verified ?? false,
     createdAt: String(row.createdAt ?? row.created_at),
   };

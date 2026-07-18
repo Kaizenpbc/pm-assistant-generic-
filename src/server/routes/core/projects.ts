@@ -9,6 +9,7 @@ import { auditLedgerService } from '../../services/AuditLedgerService';
 import { toProjectDTO, paginate } from '../../dto/responses';
 import { parsePagination } from '../../schemas/paginationSchema';
 import { favouriteProjectRepository } from '../../database/FavouriteProjectRepository';
+import { userService } from '../../services/UserService';
 import logger from '../../utils/logger';
 
 const createProjectSchema = z.object({
@@ -87,6 +88,20 @@ export async function projectRoutes(fastify: FastifyInstance) {
     try {
       const data = createProjectSchema.parse(request.body);
       const userId = request.user!.userId;
+
+      // Trial users: max 3 projects
+      const user = await userService.findById(userId);
+      if (user && user.subscriptionTier === 'trial' && user.role !== 'admin') {
+        const projectCount = await projectService.countByUser(userId);
+        if (projectCount >= 3) {
+          return reply.status(403).send({
+            error: 'Project limit reached',
+            message: 'Trial accounts are limited to 3 projects. Upgrade to create more.',
+            upgradeUrl: '/pricing',
+          });
+        }
+      }
+
       const project = await projectService.create({
         ...data,
         startDate: data.startDate || undefined,

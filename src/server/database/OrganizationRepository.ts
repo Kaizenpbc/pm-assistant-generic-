@@ -7,10 +7,11 @@ export interface Organization {
   dbName: string;
   ownerUserId: string;
   stripeCustomerId: string | null;
-  subscriptionTier: 'free' | 'pro' | 'business' | 'consultant';
+  subscriptionTier: 'trial' | 'consultant' | 'sme' | 'enterprise';
   subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
   trialEndsAt: string | null;
   maxUsers: number;
+  viewerLimit: number;
   isActive: boolean;
   isProvisioned: boolean;
   createdAt: string;
@@ -29,6 +30,7 @@ function mapRow(row: any): Organization {
     subscriptionStatus: row.subscription_status,
     trialEndsAt: row.trial_ends_at,
     maxUsers: row.max_users,
+    viewerLimit: row.viewer_limit ?? 5,
     isActive: !!row.is_active,
     isProvisioned: !!row.is_provisioned,
     createdAt: row.created_at,

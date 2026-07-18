@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { reportBuilderService } from '../../services/ReportBuilderService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requirePaidTier } from '../../middleware/requireTier';
 import logger from '../../utils/logger';
 
 const reportSectionSchema = z.object({
@@ -39,7 +40,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // POST /templates — create template
-  fastify.post('/templates', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/templates', { preHandler: [requireScope('write'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       const body = createTemplateSchema.parse(request.body);
@@ -53,7 +54,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   });
 
   // GET /templates — list templates
-  fastify.get('/templates', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/templates', { preHandler: [requireScope('read'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       const templates = await reportBuilderService.getTemplates(user.userId);
@@ -65,7 +66,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   });
 
   // GET /templates/:id — get template by id
-  fastify.get('/templates/:id', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/templates/:id', { preHandler: [requireScope('read'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       const template = await reportBuilderService.getTemplateById(id);
@@ -78,7 +79,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   });
 
   // PUT /templates/:id — update template
-  fastify.put('/templates/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.put('/templates/:id', { preHandler: [requireScope('write'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       const { id } = request.params as { id: string };
@@ -98,7 +99,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   });
 
   // DELETE /templates/:id — delete template
-  fastify.delete('/templates/:id', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.delete('/templates/:id', { preHandler: [requireScope('write'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       const { id } = request.params as { id: string };
@@ -116,7 +117,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   });
 
   // POST /templates/:id/generate — generate report
-  fastify.post('/templates/:id/generate', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/templates/:id/generate', { preHandler: [requireScope('write'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       const body = generateReportParamsSchema.parse(request.body);
@@ -130,7 +131,7 @@ export async function reportBuilderRoutes(fastify: FastifyInstance) {
   });
 
   // POST /templates/:id/export — export report
-  fastify.post('/templates/:id/export', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/templates/:id/export', { preHandler: [requireScope('write'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       const { format } = exportReportSchema.parse(request.body);

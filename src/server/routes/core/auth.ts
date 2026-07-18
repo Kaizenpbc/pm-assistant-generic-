@@ -10,6 +10,7 @@ import { emailService } from '../../services/EmailService';
 import { stripeService } from '../../services/StripeService';
 import { organizationService } from '../../services/OrganizationService';
 import { provisionTenantDatabase } from '../../database/tenantProvisioner';
+import { inviteService } from '../../services/InviteService';
 import { rateLimiter } from '../../middleware/rateLimiter';
 import logger from '../../utils/logger';
 
@@ -24,6 +25,7 @@ const registerSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
   fullName: z.string().min(2).max(100),
   organizationName: z.string().min(2).max(255).optional(),
+  inviteToken: z.string().optional(),
 });
 
 const forgotPasswordSchema = z.object({
@@ -145,7 +147,16 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(429).send({ error: 'Too many registration attempts. Please try again later.' });
       }
 
-      const { username, email, password, fullName, organizationName } = registerSchema.parse(request.body);
+      const { username, email, password, fullName, organizationName, inviteToken } = registerSchema.parse(request.body);
+
+      // Validate invite token if provided
+      let inviteData: { valid: boolean; email?: string; orgName?: string; projectId?: string | null } | null = null;
+      if (inviteToken) {
+        inviteData = await inviteService.validateToken(inviteToken);
+        if (!inviteData.valid) {
+          return reply.status(400).send({ error: 'Invalid invite', message: 'This invitation link is invalid or has expired.' });
+        }
+      }
 
       const existingUsername = await userService.findByUsername(username);
       if (existingUsername) {
@@ -162,43 +173,57 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       const passwordHash = await bcrypt.hash(password, 12);
 
-      // Create Stripe customer (if configured)
-      const stripeCustomerId = await stripeService.createCustomer(email, fullName, 'pending');
+      const isInvitedViewer = inviteData?.valid;
+
+      // Create Stripe customer (if configured) — skip for invited viewers
+      const stripeCustomerId = isInvitedViewer ? null : await stripeService.createCustomer(email, fullName, 'pending');
 
       const user = await userService.create({
         username,
         email,
         passwordHash,
         fullName,
-        role: 'team_member',
+        role: isInvitedViewer ? 'viewer' : 'team_member',
         emailVerified: false,
         emailVerificationToken: verificationToken,
         emailVerificationExpires: verificationExpires,
         stripeCustomerId: stripeCustomerId || undefined,
       });
 
-      // Set 14-day trial period
-      const now = new Date();
-      const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-      await userService.update(user.id, {
-        trialStartedAt: now,
-        trialEndsAt: trialEnd,
-        subscriptionStatus: 'trialing',
-      });
+      if (isInvitedViewer) {
+        // Viewer: no trial, no subscription, accept the invite
+        await userService.update(user.id, {
+          subscriptionStatus: 'none',
+        });
 
-      // Multi-tenant: create organization and provision tenant database
-      if (config.MULTI_TENANT_ENABLED) {
-        const orgName = organizationName || fullName;
         try {
-          const org = await organizationService.createOrganization(orgName, user.id, stripeCustomerId || undefined);
-          await userService.update(user.id, { organizationId: org.id } as any);
-          // Provision tenant DB in background — don't block registration
-          provisionTenantDatabase(org.id).catch((err) => {
-            logger.error('Tenant provisioning failed', { orgId: org.id, error: err });
-          });
-        } catch (orgError) {
-          logger.error('Organization creation failed during registration', { userId: user.id, error: orgError });
-          // Don't fail registration — user is created, org can be provisioned later
+          await inviteService.acceptInvite(inviteToken!, user.id);
+        } catch (inviteErr) {
+          logger.error('Failed to accept invite during registration', { userId: user.id, error: inviteErr });
+        }
+      } else {
+        // Regular user: set 14-day trial period
+        const now = new Date();
+        const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+        await userService.update(user.id, {
+          trialStartedAt: now,
+          trialEndsAt: trialEnd,
+          subscriptionStatus: 'trialing',
+        });
+
+        // Multi-tenant: create organization and provision tenant database
+        if (config.MULTI_TENANT_ENABLED) {
+          const orgName = organizationName || fullName;
+          try {
+            const org = await organizationService.createOrganization(orgName, user.id, stripeCustomerId || undefined);
+            await userService.update(user.id, { organizationId: org.id } as any);
+            // Provision tenant DB in background — don't block registration
+            provisionTenantDatabase(org.id).catch((err) => {
+              logger.error('Tenant provisioning failed', { orgId: org.id, error: err });
+            });
+          } catch (orgError) {
+            logger.error('Organization creation failed during registration', { userId: user.id, error: orgError });
+          }
         }
       }
 
@@ -208,7 +233,9 @@ export async function authRoutes(fastify: FastifyInstance) {
       });
 
       return reply.status(201).send({
-        message: 'Registration successful. Please check your email to verify your account.',
+        message: isInvitedViewer
+          ? `Registration successful. You've been added to ${inviteData!.orgName}. Please check your email to verify your account.`
+          : 'Registration successful. Please check your email to verify your account.',
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -350,7 +377,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           email: user.email,
           fullName: user.fullName,
           role: user.role,
-          subscriptionTier: user.role === 'admin' ? 'pro' : user.subscriptionTier,
+          subscriptionTier: user.role === 'admin' ? 'enterprise' : user.subscriptionTier,
           subscriptionStatus: user.role === 'admin' ? 'active' : user.subscriptionStatus,
           trialEndsAt: user.trialEndsAt ? (user.trialEndsAt instanceof Date ? user.trialEndsAt.toISOString() : String(user.trialEndsAt)) : null,
           organization,

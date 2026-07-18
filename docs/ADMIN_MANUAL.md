@@ -40,7 +40,7 @@ The **Admin > Users** table displays 14 sortable columns. Click any column heade
 |--------|-------------|
 | User | Full name, email, username |
 | Role | Color-coded role badge |
-| Tier | Subscription tier badge (Free, Pro, Business, Consultant) |
+| Tier | Subscription tier badge (Trial, Consultant, SME, Enterprise) |
 | Organization | Multi-tenant organization name (or "none") |
 | Signed up | Account creation date |
 | Login status | Verified / Unverified / Pending login / Expired token |
@@ -152,6 +152,21 @@ Key variables in `.env` (never commit secrets):
 - **Health Snapshot Cron** — When `AGENT_ENABLED=true`, a daily cron job runs at 03:00 to snapshot each active project's health score into the `project_health_history` table (migration 038). This data powers the Health Trends sparklines on the dashboard. A manual trigger is available at `POST /api/v1/predictions/health/snapshot` (admin only).
 - **Trial Reminder Cron** — When `AGENT_ENABLED=true`, a daily cron job runs at 09:00 to send trial expiry reminder emails. It sends emails at the 3-day warning, 1-day warning, and expiry events. Redis-backed deduplication prevents repeat sends: each reminder is keyed as `trial-reminder:{userId}:{type}` with a 30-day TTL. Implementation: `src/server/services/scheduling/trialReminderJob.ts`.
 
+### Tier ENUM and Feature Gating
+
+The subscription tier is stored as a `tier` ENUM column on both the `users` table (single-tenant) and the `organizations` table (multi-tenant). Valid values are: `trial`, `consultant`, `sme`, `enterprise`.
+
+**Migration 067** automatically migrates all existing data from the old tier names:
+
+| Old value | New value |
+|-----------|-----------|
+| `free` | `trial` |
+| `pro` | `consultant` |
+| `business` | `sme` |
+| `consultant` | `enterprise` |
+
+**`requirePaidTier` middleware** blocks trial users from accessing advanced features. Any route decorated with this middleware returns `403 Forbidden` when the requesting user is on the `trial` tier. Paid tiers (consultant, sme, enterprise) pass through without restriction.
+
 ---
 
 ## 5. Billing and Subscriptions (Stripe)
@@ -160,18 +175,20 @@ Key variables in `.env` (never commit secrets):
 
 Three paid tiers are available, each with monthly and annual billing:
 
-| Tier | Monthly | Annual | AI Tokens/mo |
-|------|---------|--------|--------------|
-| Pro | $15 | $150 | 500,000 |
-| Business | $35 | $350 | 1,500,000 |
-| Consultant | $59 | $590 | 3,000,000 |
+| Tier | Monthly | Annual | AI Tokens/mo | Viewer Invites |
+|------|---------|--------|--------------|----------------|
+| Consultant | $19 | ~$190 | 500,000 | 5 |
+| SME | $39 | ~$390 | 1,500,000 | 20 |
+| Enterprise | $79 | ~$790 | 5,000,000 | Unlimited |
 
-Free trial accounts receive 25,000 AI tokens/month. Annual billing saves ~17%.
+Trial accounts are free, limited to 14 days, 3 projects, and 25,000 AI tokens/month (basic PM features only). All paid tiers include the full feature set. Annual billing saves ~17%.
+
+> **Viewer invites:** Viewer accounts are free — invited viewers do not need a subscription. The invite limit is per paid account (5/20/unlimited depending on tier).
 
 Map Stripe price IDs to app tiers via env vars:
-- `STRIPE_PRO_MONTHLY_PRICE_ID`, `STRIPE_PRO_ANNUAL_PRICE_ID`
-- `STRIPE_BUSINESS_MONTHLY_PRICE_ID`, `STRIPE_BUSINESS_ANNUAL_PRICE_ID`
-- `STRIPE_CONSULTANT_MONTHLY_PRICE_ID`, `STRIPE_CONSULTANT_ANNUAL_PRICE_ID`
+- `STRIPE_CONSULTANT_NEW_MONTHLY_PRICE_ID`, `STRIPE_CONSULTANT_NEW_ANNUAL_PRICE_ID`
+- `STRIPE_SME_MONTHLY_PRICE_ID`, `STRIPE_SME_ANNUAL_PRICE_ID`
+- `STRIPE_ENTERPRISE_MONTHLY_PRICE_ID`, `STRIPE_ENTERPRISE_ANNUAL_PRICE_ID`
 
 ### Token Top-Ups
 
@@ -193,7 +210,7 @@ Admins can override per-user AI token budgets from the **Admin > Users** page:
 - Click the value to inline-edit. Set a custom budget or clear to revert to tier default.
 - **API:** `PATCH /api/v1/admin/users/:id/budget` with body `{ budget: number | null }`.
 
-Tier budget defaults are displayed on the **Admin > Configuration** page under "Tier Budget Defaults". These are configured via env vars (`AI_TIER_BUDGET_FREE`, `AI_TIER_BUDGET_PRO`, `AI_TIER_BUDGET_BUSINESS`, `AI_TIER_BUDGET_CONSULTANT`).
+Tier budget defaults are displayed on the **Admin > Configuration** page under "Tier Budget Defaults". These are configured via env vars (`AI_TIER_BUDGET_TRIAL`, `AI_TIER_BUDGET_CONSULTANT`, `AI_TIER_BUDGET_SME`, `AI_TIER_BUDGET_ENTERPRISE`).
 
 ### Revenue Dashboard
 
@@ -204,7 +221,7 @@ Navigate to **Admin > Revenue** (`/admin/revenue`) for a real-time financial ove
 | Metric | Description |
 |--------|-------------|
 | MRR | Monthly Recurring Revenue — sum of all active monthly subscriptions plus annuals normalized to monthly |
-| Subscribers by Tier | Counts of active subscribers at Free, Pro, Business, and Consultant tiers |
+| Subscribers by Tier | Counts of active subscribers at Trial, Consultant, SME, and Enterprise tiers |
 | Churn Rate | Percentage of subscribers who cancelled in the current calendar month |
 | Top-Up Revenue | Total one-time revenue from AI token top-up purchases (current month) |
 | Trial Conversion | Percentage of trials that converted to a paid subscription |
@@ -213,7 +230,7 @@ Navigate to **Admin > Revenue** (`/admin/revenue`) for a real-time financial ove
 
 **Recent Events Feed:** A live feed of the latest subscription lifecycle events across all users — tier upgrades/downgrades, cancellations, renewals, payment failures, and top-up purchases — with user name, event type, amount, and timestamp.
 
-**API:** `GET /api/v1/admin/revenue` (admin only). Returns MRR, subscriber counts by tier, churn rate, top-up revenue, trial conversion rate, monthly trend data, and recent events.
+**API:** `GET /api/v1/admin/revenue` (admin only). Returns MRR, subscriber counts by tier (trial/consultant/sme/enterprise), churn rate, top-up revenue, trial conversion rate, monthly trend data, and recent events.
 
 ### subscription_events Table
 
@@ -600,7 +617,7 @@ Navigate to **Admin Panel > Tenants** to view and manage all organizations. This
 | Organization | Name and slug |
 | Owner | Full name and email of the org owner |
 | Users | Current user count / max users limit |
-| Tier | Subscription tier badge (free, pro, business, consultant) |
+| Tier | Subscription tier badge (trial, consultant, sme, enterprise) |
 | Status | Active/Inactive toggle — deactivated orgs cannot log in |
 | Provisioned | Green check if tenant DB exists; red retry button if provisioning failed |
 | Created | Organization creation date |
@@ -618,7 +635,7 @@ Navigate to **Admin Panel > Tenants** to view and manage all organizations. This
 |--------|----------|---------|
 | `GET` | `/api/v1/admin/tenants` | List all organizations with owner info and user counts |
 | `GET` | `/api/v1/admin/tenants/:id` | Get single org details including table count |
-| `PATCH` | `/api/v1/admin/tenants/:id` | Update org settings (name, isActive, maxUsers, tier, status, trialEndsAt) |
+| `PATCH` | `/api/v1/admin/tenants/:id` | Update org settings (name, isActive, maxUsers, tier [trial/consultant/sme/enterprise], status, trialEndsAt) |
 | `POST` | `/api/v1/admin/tenants/:id/provision` | Retry tenant database provisioning |
 | `POST` | `/api/v1/admin/tenants/:id/run-migrations` | Run pending tenant migrations |
 

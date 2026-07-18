@@ -116,9 +116,9 @@ export function AdminTenantsPage() {
                       </td>
                       <td className="py-3 pr-4">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                          t.subscription_tier === 'business'
+                          t.subscription_tier === 'enterprise'
                             ? 'bg-purple-100 text-purple-800'
-                            : t.subscription_tier === 'pro'
+                            : t.subscription_tier === 'sme'
                             ? 'bg-blue-100 text-blue-800'
                             : t.subscription_tier === 'consultant'
                             ? 'bg-amber-100 text-amber-800'

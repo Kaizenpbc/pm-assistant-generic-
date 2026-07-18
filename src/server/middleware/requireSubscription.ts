@@ -27,6 +27,11 @@ export async function requireActiveSubscription(request: FastifyRequest, reply: 
     return;
   }
 
+  // Viewers are free accounts — always allow (they have limited access via scope)
+  if (user.role === 'viewer') {
+    return;
+  }
+
   try {
     const fullUser = await userService.findById(user.userId);
     if (!fullUser) {
@@ -36,7 +41,7 @@ export async function requireActiveSubscription(request: FastifyRequest, reply: 
     const { subscriptionStatus, subscriptionTier, trialEndsAt } = fullUser;
 
     // Active paid subscription — allow
-    if (subscriptionStatus === 'active' && subscriptionTier !== 'free') {
+    if (subscriptionStatus === 'active' && subscriptionTier !== 'trial') {
       return;
     }
 

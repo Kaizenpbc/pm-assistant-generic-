@@ -82,7 +82,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
       // Compute tier budgets for each user so the frontend can show usage %
       const usersWithBudget = rows.map((u: any) => ({
         ...u,
-        ai_tier_budget: getTierBudget(u.subscription_tier || 'free'),
+        ai_tier_budget: getTierBudget(u.subscription_tier || 'trial'),
       }));
 
       return { users: usersWithBudget };
@@ -403,10 +403,10 @@ export async function adminRoutes(fastify: FastifyInstance) {
 
       // Tier budget defaults
       const tierBudgets = {
-        free: config.AI_TIER_BUDGET_FREE,
-        pro: config.AI_TIER_BUDGET_PRO,
-        business: config.AI_TIER_BUDGET_BUSINESS,
+        trial: config.AI_TIER_BUDGET_TRIAL,
         consultant: config.AI_TIER_BUDGET_CONSULTANT,
+        sme: config.AI_TIER_BUDGET_SME,
+        enterprise: config.AI_TIER_BUDGET_ENTERPRISE,
         topUpTokens: config.AI_TOPUP_TOKENS,
         topUpPriceCents: config.AI_TOPUP_PRICE_CENTS,
       };

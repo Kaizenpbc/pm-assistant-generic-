@@ -84,6 +84,16 @@ export class ProjectRepository extends BaseRepository<Project> {
     return this.mapRows(rows);
   }
 
+  async countByUser(userId: string): Promise<number> {
+    const rows = await this.queryRaw(
+      `SELECT COUNT(DISTINCT p.id) as count FROM projects p
+       LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = ?
+       WHERE (p.created_by = ? OR pm.user_id IS NOT NULL) AND p.archived_at IS NULL`,
+      [userId, userId],
+    );
+    return Number(rows[0]?.count ?? 0);
+  }
+
   async findByUserIdPaginated(userId: string, limit: number, offset: number, includeArchived = false): Promise<{ rows: Project[]; total: number }> {
     const archiveFilter = includeArchived ? '' : ' AND p.archived_at IS NULL';
     const countRows = await this.queryRaw(

@@ -7,12 +7,13 @@ export function TrialBanner() {
 
   if (!user) return null;
 
-  const tier = user.subscriptionTier || 'free';
+  const tier = user.subscriptionTier || 'trial';
   const status = user.subscriptionStatus || 'none';
 
-  // Don't show for paid users or admins
-  if (tier === 'consultant' || tier === 'pro' || tier === 'business') return null;
+  // Don't show for paid users, admins, or viewers
+  if (tier === 'consultant' || tier === 'sme' || tier === 'enterprise') return null;
   if (user.role === 'admin') return null;
+  if (user.role === 'viewer') return null;
 
   // Don't show for active trials (check trialEndsAt for app-managed trials)
   if (status === 'trialing' || status === 'active') return null;

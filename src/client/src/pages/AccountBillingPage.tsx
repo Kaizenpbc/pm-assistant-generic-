@@ -56,41 +56,38 @@ function getStatusBadge(status: string, cancelAtPeriodEnd: boolean) {
 }
 
 const TIER_LABELS: Record<string, string> = {
-  free: 'Free Plan',
-  pro: 'Pro Plan',
-  business: 'Business Plan',
+  trial: 'Trial',
   consultant: 'Consultant Plan',
+  sme: 'SME Plan',
+  enterprise: 'Enterprise Plan',
 };
 
 const TIER_FEATURES: Record<string, string[]> = {
-  free: [
-    'Up to 2 projects',
-    'Basic task management',
-    'Limited AI features',
-  ],
-  pro: [
-    'Up to 10 projects',
-    'All AI features',
-    'EVM forecasting',
-    'Workflow automation',
-    'API access',
-  ],
-  business: [
-    'Unlimited projects',
-    'All AI features',
-    'EVM forecasting & Monte Carlo simulation',
-    'Workflow automation & NL builder',
-    'Stakeholder portal & reports',
-    'API access & MCP integration',
-    'Priority support',
+  trial: [
+    'Up to 3 projects',
+    'Basic PM features',
+    '25K AI tokens/month',
   ],
   consultant: [
     'Unlimited projects',
-    'All AI features',
-    'EVM forecasting & Monte Carlo simulation',
-    'Workflow automation & NL builder',
-    'Stakeholder portal & reports',
-    'API access & MCP integration',
+    'All features included',
+    '500K AI tokens/month',
+    '1GB file storage',
+    '5 viewer invites',
+  ],
+  sme: [
+    'Unlimited projects',
+    'All features included',
+    '1.5M AI tokens/month',
+    '5GB file storage',
+    '20 viewer invites',
+  ],
+  enterprise: [
+    'Unlimited projects',
+    'All features included',
+    '5M AI tokens/month',
+    '10GB file storage',
+    'Unlimited viewer invites',
   ],
 };
 
@@ -163,7 +160,7 @@ export const AccountBillingPage: React.FC = () => {
     );
   }
 
-  const isPaid = data.tier === 'consultant' || data.tier === 'pro' || data.tier === 'business';
+  const isPaid = data.tier === 'consultant' || data.tier === 'sme' || data.tier === 'enterprise';
   const trialDays = daysUntil(data.trialEndsAt);
   const badge = getStatusBadge(data.status, data.cancelAtPeriodEnd);
   const BadgeIcon = badge.icon;

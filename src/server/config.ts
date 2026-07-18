@@ -80,10 +80,18 @@ const configSchema = z.object({
   AI_PRICING_OUTPUT: z.coerce.number().min(0).default(15.0),
 
   // Per-tier AI budget defaults (tokens/month)
-  AI_TIER_BUDGET_FREE: z.coerce.number().min(0).default(25000),
-  AI_TIER_BUDGET_PRO: z.coerce.number().min(0).default(500000),
-  AI_TIER_BUDGET_BUSINESS: z.coerce.number().min(0).default(1500000),
-  AI_TIER_BUDGET_CONSULTANT: z.coerce.number().min(0).default(3000000),
+  AI_TIER_BUDGET_TRIAL: z.coerce.number().min(0).default(25000),
+  AI_TIER_BUDGET_CONSULTANT: z.coerce.number().min(0).default(500000),
+  AI_TIER_BUDGET_SME: z.coerce.number().min(0).default(1500000),
+  AI_TIER_BUDGET_ENTERPRISE: z.coerce.number().min(0).default(5000000),
+
+  // New Stripe price IDs for restructured tiers
+  STRIPE_CONSULTANT_NEW_MONTHLY_PRICE_ID: z.string().optional().default(''),
+  STRIPE_CONSULTANT_NEW_ANNUAL_PRICE_ID: z.string().optional().default(''),
+  STRIPE_SME_MONTHLY_PRICE_ID: z.string().optional().default(''),
+  STRIPE_SME_ANNUAL_PRICE_ID: z.string().optional().default(''),
+  STRIPE_ENTERPRISE_MONTHLY_PRICE_ID: z.string().optional().default(''),
+  STRIPE_ENTERPRISE_ANNUAL_PRICE_ID: z.string().optional().default(''),
 
   // Token top-up pricing
   AI_TOPUP_TOKENS: z.coerce.number().min(0).default(500000),
@@ -191,10 +199,16 @@ export function validateConfiguration() {
       RAG_TOP_K: process.env['RAG_TOP_K'],
       RAG_SIMILARITY_THRESHOLD: process.env['RAG_SIMILARITY_THRESHOLD'],
       AI_MONTHLY_TOKEN_BUDGET: process.env['AI_MONTHLY_TOKEN_BUDGET'],
-      AI_TIER_BUDGET_FREE: process.env['AI_TIER_BUDGET_FREE'],
-      AI_TIER_BUDGET_PRO: process.env['AI_TIER_BUDGET_PRO'],
-      AI_TIER_BUDGET_BUSINESS: process.env['AI_TIER_BUDGET_BUSINESS'],
+      AI_TIER_BUDGET_TRIAL: process.env['AI_TIER_BUDGET_TRIAL'],
       AI_TIER_BUDGET_CONSULTANT: process.env['AI_TIER_BUDGET_CONSULTANT'],
+      AI_TIER_BUDGET_SME: process.env['AI_TIER_BUDGET_SME'],
+      AI_TIER_BUDGET_ENTERPRISE: process.env['AI_TIER_BUDGET_ENTERPRISE'],
+      STRIPE_CONSULTANT_NEW_MONTHLY_PRICE_ID: process.env['STRIPE_CONSULTANT_NEW_MONTHLY_PRICE_ID'],
+      STRIPE_CONSULTANT_NEW_ANNUAL_PRICE_ID: process.env['STRIPE_CONSULTANT_NEW_ANNUAL_PRICE_ID'],
+      STRIPE_SME_MONTHLY_PRICE_ID: process.env['STRIPE_SME_MONTHLY_PRICE_ID'],
+      STRIPE_SME_ANNUAL_PRICE_ID: process.env['STRIPE_SME_ANNUAL_PRICE_ID'],
+      STRIPE_ENTERPRISE_MONTHLY_PRICE_ID: process.env['STRIPE_ENTERPRISE_MONTHLY_PRICE_ID'],
+      STRIPE_ENTERPRISE_ANNUAL_PRICE_ID: process.env['STRIPE_ENTERPRISE_ANNUAL_PRICE_ID'],
       AI_TOPUP_TOKENS: process.env['AI_TOPUP_TOKENS'],
       AI_TOPUP_PRICE_CENTS: process.env['AI_TOPUP_PRICE_CENTS'],
       METRICS_ENABLED: process.env['METRICS_ENABLED'],
@@ -239,10 +253,10 @@ export function validateConfiguration() {
 export const config = validateConfiguration();
 
 const TIER_BUDGET_MAP: Record<string, keyof typeof config> = {
-  free: 'AI_TIER_BUDGET_FREE',
-  pro: 'AI_TIER_BUDGET_PRO',
-  business: 'AI_TIER_BUDGET_BUSINESS',
+  trial: 'AI_TIER_BUDGET_TRIAL',
   consultant: 'AI_TIER_BUDGET_CONSULTANT',
+  sme: 'AI_TIER_BUDGET_SME',
+  enterprise: 'AI_TIER_BUDGET_ENTERPRISE',
 };
 
 export function getTierBudget(tier: string): number {

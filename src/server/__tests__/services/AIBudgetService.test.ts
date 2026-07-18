@@ -12,7 +12,7 @@ vi.mock('../../config', () => ({
     AI_MONTHLY_TOKEN_BUDGET: 500000,
   },
   getTierBudget: (tier: string) => {
-    const map: Record<string, number> = { free: 25000, pro: 500000, business: 1500000, consultant: 3000000 };
+    const map: Record<string, number> = { trial: 25000, consultant: 500000, sme: 1500000, enterprise: 5000000 };
     return map[tier] ?? 500000;
   },
 }));
@@ -36,8 +36,8 @@ const mockCreate = notificationService.create as ReturnType<typeof vi.fn>;
 describe('AIBudgetService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: user is on 'pro' tier (500k budget) — matches legacy test expectations
-    mockQueryCP.mockResolvedValue([{ subscription_tier: 'pro' }]);
+    // Default: user is on 'consultant' tier (500k budget via new tier map)
+    mockQueryCP.mockResolvedValue([{ subscription_tier: 'consultant' }]);
   });
 
   describe('getMonthlyUsage', () => {

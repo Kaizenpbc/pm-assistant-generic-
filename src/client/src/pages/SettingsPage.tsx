@@ -28,6 +28,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { getTimezones } from '../utils/dateFormat';
 import { useLocaleStore } from '../stores/localeStore';
 import { useAccessibility } from '../contexts/AccessibilityContext';
+import { ViewerInvitePanel } from '../components/settings/ViewerInvitePanel';
 
 type Tab = 'profile' | 'team' | 'notifications' | 'display' | 'accessibility' | 'api-keys' | 'webhooks' | 'danger';
 
@@ -460,6 +461,11 @@ const TeamTab: React.FC = () => {
           isPending={removeMutation.isPending}
         />
       )}
+
+      {/* Viewer Invites — invite clients as free viewers */}
+      <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <ViewerInvitePanel />
+      </div>
     </div>
   );
 };

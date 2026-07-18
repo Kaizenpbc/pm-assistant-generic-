@@ -842,7 +842,7 @@ The `PolicyEngineService` enforces configurable governance rules:
 
 The `AIBudgetService` enforces per-user monthly AI token limits with tier-aware budget resolution:
 
-- **Per-tier defaults**: Free — 25,000 tokens/mo; Pro — 500,000; Business — 1,500,000; Consultant — 3,000,000. Configurable via `AI_TIER_BUDGET_FREE`, `AI_TIER_BUDGET_PRO`, `AI_TIER_BUDGET_BUSINESS`, `AI_TIER_BUDGET_CONSULTANT` env vars.
+- **Per-tier defaults**: Trial — 25,000 tokens/mo; Consultant — 500,000; SME — 1,500,000; Enterprise — 5,000,000. Configurable via `AI_TIER_BUDGET_TRIAL`, `AI_TIER_BUDGET_CONSULTANT`, `AI_TIER_BUDGET_SME`, `AI_TIER_BUDGET_ENTERPRISE` env vars.
 - **Budget resolution chain**: per-user override (`users.ai_monthly_token_budget`) → subscription tier default → global fallback (`AI_MONTHLY_TOKEN_BUDGET`)
 - **Token top-ups**: Users can purchase additional token packs ($5 per 500K tokens) via Stripe one-time payment. Top-up tokens are added instantly, do not expire, and are consumed only after the monthly tier allowance is exhausted. FIFO consumption (oldest packs first). Managed by `TokenTopUpRepository`.
 - Tracks all AI usage in the `ai_usage_log` table (input/output tokens, cost, latency, feature, model)
@@ -912,11 +912,11 @@ The main application also exposes an `/mcp` reverse proxy route for HTTP-based M
 The `StripeService` manages subscription billing:
 
 - **Customer creation**: linked to user accounts
-- **Multi-tier checkout**: Pro ($15/mo or $150/yr), Business ($35/mo or $350/yr), Consultant ($59/mo or $590/yr). Price IDs configured via `STRIPE_PRO_MONTHLY_PRICE_ID`, `STRIPE_BUSINESS_MONTHLY_PRICE_ID`, `STRIPE_CONSULTANT_MONTHLY_PRICE_ID` (and annual variants).
+- **Multi-tier checkout**: Consultant ($19/mo or $190/yr), SME ($39/mo or $390/yr), Enterprise ($79/mo or $790/yr). Price IDs configured via `STRIPE_CONSULTANT_MONTHLY_PRICE_ID`, `STRIPE_SME_MONTHLY_PRICE_ID`, `STRIPE_ENTERPRISE_MONTHLY_PRICE_ID` (and annual variants).
 - **Token top-up checkout**: One-time payment for 500K token packs ($5 each, 1-20 packs per purchase). Price ID via `STRIPE_TOPUP_PRICE_ID`. Webhook prevents double-processing via `findByStripeSession()`.
 - **Billing portal**: self-service subscription management via Stripe's portal
 - **Webhook handling**: processes Stripe events for subscription lifecycle (created, updated, cancelled, payment succeeded/failed) and top-up completion. Every event is written to the `subscription_events` table and logged to the audit ledger.
-- **Tier resolution**: `resolveTierFromPriceId()` maps Stripe price IDs to app tiers (free, pro, business, consultant) with legacy fallback support
+- **Tier resolution**: `resolveTierFromPriceId()` maps Stripe price IDs to app tiers (trial, consultant, sme, enterprise) with legacy fallback support
 - **Revenue capture**: `amount_cents`, `currency`, and `billing_interval` are extracted from Stripe webhook payloads and stored on the `subscriptions` row so revenue figures are always queryable without a Stripe API call.
 
 ### Subscription Events
@@ -932,9 +932,41 @@ Every subscription lifecycle change is persisted to the `subscription_events` ta
 
 The `AccountBillingPage` (`/account/billing`) shows:
 
-- **Plan name**: dynamically resolved from the user's actual subscription tier — never hardcoded. Free tier shows "Free Plan", paid tiers show "Pro Plan", "Business Plan", or "Consultant Plan" accordingly.
+- **Plan name**: dynamically resolved from the user's actual subscription tier — never hardcoded. Trial tier shows "Trial Plan", paid tiers show "Consultant Plan", "SME Plan", or "Enterprise Plan" accordingly.
 - **Top-up balance**: remaining purchased token balance with a **Buy More** button linking to the token top-up Stripe checkout.
 - **AI usage meter**: progress bar showing current-month token consumption vs the effective budget (tier allowance + top-up balance), color-coded green/amber/red.
+
+### Viewer Invite Flow
+
+Paid subscribers (Consultant, SME, and Enterprise tiers) can invite external client stakeholders as **viewer accounts** — free, read-only users who do not consume a paid seat.
+
+**Invite limits by tier:**
+
+| Tier | Viewer Invites |
+|------|---------------|
+| Trial | 0 (not available) |
+| Consultant | 5 |
+| SME | 20 |
+| Enterprise | Unlimited |
+
+**What viewers can do:**
+- View any project they have been explicitly invited to (project name, status, progress, milestones, budget summary)
+- Update RAID items where they are listed as the owner (status transitions only — the `viewer` user role restricts write access to owned RAID items exclusively)
+
+**What viewers cannot do:**
+- Create or delete projects, tasks, or any other entities
+- Access projects they have not been invited to
+- Access administrative settings, reports, API keys, or billing
+
+**Invite flow:**
+1. A paid user navigates to **Settings → Viewer Invites** (or the project's Members tab).
+2. They enter the invitee's email address and select one or more projects to share.
+3. The system checks the inviting user's remaining invite quota. If the quota is exhausted, the invite is blocked with a clear upgrade prompt.
+4. An invitation email is sent to the invitee. If the email does not match an existing account, a viewer account is auto-provisioned on first acceptance.
+5. The invitee clicks the link, completes registration (password only — no billing), and lands on a read-only project view.
+6. The inviting user can revoke access at any time from their invite management panel.
+
+**Role:** Invited viewers receive the `viewer` system role. This role has read scope only, plus the ability to update RAID items they own (see Section 45 for RAID role-based permissions).
 
 ### Trial Reminder Emails
 
@@ -950,18 +982,63 @@ A daily cron job runs at **09:00** to scan for trials expiring within the releva
 
 ### Pricing Page
 
-The Pricing page (`/pricing`) presents three paid tiers (Pro, Business, Consultant) with monthly/annual billing toggle and a 17%-save badge on annual plans. Each plan card shows:
+The Pricing page (`/pricing`) presents three paid tiers (Consultant, SME, Enterprise) with monthly/annual billing toggle and a 17%-save badge on annual plans. Each plan card shows:
 
 - Price and billing period
 - AI token allowance with **practical usage equivalents** (e.g., "~100 AI chats, 50 risk scans, or 25 reports/mo") so users understand what their token budget means in real terms
 - Feature list with checkmarks
 - Subscribe / Switch Plan / Current Plan button (context-aware based on auth state and current tier)
 
-Below the plan cards, a **Feature Comparison Matrix** provides a 22-row side-by-side table across all 4 tiers (Free, Pro, Business, Consultant). Features are marked with checkmarks (included), X marks (excluded), or text values (e.g., "3", "1GB", "Unlimited"). The table covers projects, AI tokens, exports, API access, EVM, Monte Carlo, resource management, workflows, portal, intelligence features, meeting tools, MCP, storage, and top-ups.
+Below the plan cards, a **Feature Comparison Matrix** provides a side-by-side table across all 4 tiers (Trial, Consultant, SME, Enterprise). Features are marked with checkmarks (included), X marks (excluded), or text values (e.g., "3", "1GB", "Unlimited"). The table covers projects, AI tokens, exports, API access, EVM, Monte Carlo, resource management, workflows, portal, intelligence features, meeting tools, MCP, storage, and top-ups.
+
+| Feature | Trial | Consultant | SME | Enterprise |
+|---------|-------|------------|-----|------------|
+| Projects | 3 | Unlimited | Unlimited | Unlimited |
+| AI Tokens/mo | 25K | 500K | 1.5M | 5M |
+| Storage | 100MB | 1GB | 5GB | 10GB |
+| Viewer Invites | 0 | 5 | 20 | Unlimited |
+| Exports | ✗ | ✓ | ✓ | ✓ |
+| API Keys | ✗ | ✓ | ✓ | ✓ |
+| EVM | ✗ | ✓ | ✓ | ✓ |
+| Monte Carlo | ✗ | ✓ | ✓ | ✓ |
+| Auto-Reschedule | ✗ | ✓ | ✓ | ✓ |
+| Resource Management | ✗ | ✓ | ✓ | ✓ |
+| Custom Reports | ✗ | ✓ | ✓ | ✓ |
+| DAG Workflows | ✗ | ✓ | ✓ | ✓ |
+| Portal Management | ✗ | ✓ | ✓ | ✓ |
+| Meeting Intelligence | ✗ | ✓ | ✓ | ✓ |
+| NL Query | ✗ | ✓ | ✓ | ✓ |
+| Cross-Project Intelligence | ✗ | ✓ | ✓ | ✓ |
+| Token Top-Ups | ✗ | ✓ | ✓ | ✓ |
+| Price (monthly) | Free | $19/mo | $39/mo | $79/mo |
+| Price (annual) | Free | $190/yr | $390/yr | $790/yr |
 
 A **Token Top-Up CTA** below the comparison table lets users purchase additional token packs ($5 per 500K).
 
 **Checkout Error Display:** When a Stripe Checkout session fails to initialize (network error, invalid price ID, Stripe API error), the Pricing page displays an **inline error banner** in a styled red alert box.
+
+### Feature Gating
+
+Trial users have access to core project management features only. The following features are restricted to paid tiers (Consultant, SME, Enterprise):
+
+| Restricted Feature | Trial | Paid Tiers |
+|--------------------|-------|------------|
+| Exports (CSV, PDF, XML) | ✗ | ✓ |
+| API Keys | ✗ | ✓ |
+| Earned Value Management (EVM) | ✗ | ✓ |
+| Monte Carlo Simulation | ✗ | ✓ |
+| Auto-Reschedule | ✗ | ✓ |
+| Resource Management | ✗ | ✓ |
+| Custom Report Builder | ✗ | ✓ |
+| DAG Workflow Automation | ✗ | ✓ |
+| Stakeholder Portal Management | ✗ | ✓ |
+| Meeting Intelligence | ✗ | ✓ |
+| Natural Language Query | ✗ | ✓ |
+| Cross-Project Intelligence | ✗ | ✓ |
+| Token Top-Ups | ✗ | ✓ |
+| Viewer Invites | ✗ | ✓ |
+
+When a trial user attempts to access a gated feature, they are shown an **upgrade prompt** with a direct link to the Pricing page. Gating is enforced server-side — restricted API endpoints return HTTP 403 with `code: 'FEATURE_GATED'` for trial accounts. Client-side gating provides an early prompt but is not the security boundary.
 
 ---
 
@@ -1725,7 +1802,7 @@ The Terms of Service (`/terms`) has been updated to include the following provis
 
 - **Trial conversion clause** — describes how the 14-day free trial converts to a paid subscription at the end of the trial period if a payment method is on file.
 - **Refund policy** — monthly plan fees are non-refundable. Annual plan fees are pro-rated and refundable within 30 days of the billing date. Token top-ups are non-refundable.
-- **AI Usage Limits (Section 5A)** — highlighted section covering per-tier monthly token allowances (Pro: 500K, Business: 1.5M, Consultant: 3M, Free: 25K), budget exhaustion behavior (AI features blocked, non-AI features unaffected), token top-up terms (non-refundable, no expiry), no carry-over of unused monthly tokens, per-user overrides, and fair use policy.
+- **AI Usage Limits (Section 5A)** — highlighted section covering per-tier monthly token allowances (Trial: 25K, Consultant: 500K, SME: 1.5M, Enterprise: 5M), budget exhaustion behavior (AI features blocked, non-AI features unaffected), token top-up terms (non-refundable, no expiry), no carry-over of unused monthly tokens, per-user overrides, and fair use policy.
 - **Governing law** — disputes are governed by the laws of British Columbia, Canada.
 - **Dispute resolution** — parties agree to attempt informal resolution before pursuing formal legal proceedings.
 
@@ -1805,7 +1882,7 @@ The **Admin > Users** page provides a comprehensive user management table with 1
 |--------|-------------|
 | **User** | Full name, email, and username |
 | **Role** | Color-coded role badge (admin, project_manager, executive, pmo, etc.) |
-| **Tier** | Subscription tier badge: Free (gray), Pro (blue), Business (green), Consultant (amber) |
+| **Tier** | Subscription tier badge: Trial (gray), Consultant (blue), SME (green), Enterprise (amber) |
 | **Organization** | Organization name (multi-tenant), or "none" if unassigned |
 | **Signed up** | Account creation date |
 | **Login status** | Email/login state badge — Verified (green), Unverified (gray), Pending login (yellow), Expired token (red). Sortable by urgency (expired first). |

@@ -5,6 +5,7 @@ import { ProposedChangeSchema } from '../../schemas/autoRescheduleSchemas';
 import { webhookService } from '../../services/WebhookService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requirePaidTier } from '../../middleware/requireTier';
 import logger from '../../utils/logger';
 
 const rejectBodySchema = z.object({
@@ -20,7 +21,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // GET /:scheduleId/delays — detect delayed tasks
   fastify.get('/:scheduleId/delays', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requirePaidTier],
     schema: { description: 'Detect delayed tasks in a schedule', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -38,7 +39,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /:scheduleId/propose — generate a reschedule proposal
   fastify.post('/:scheduleId/propose', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requirePaidTier],
     schema: { description: 'Generate an AI-powered reschedule proposal', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -59,7 +60,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // GET /:scheduleId/proposals — list proposals for a schedule
   fastify.get('/:scheduleId/proposals', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requirePaidTier],
     schema: { description: 'List reschedule proposals for a schedule', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -77,7 +78,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /proposals/:id/accept — accept a proposal and apply changes
   fastify.post('/proposals/:id/accept', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requirePaidTier],
     schema: { description: 'Accept a reschedule proposal and apply changes', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -103,7 +104,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /proposals/:id/reject — reject a proposal with optional feedback
   fastify.post('/proposals/:id/reject', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requirePaidTier],
     schema: { description: 'Reject a reschedule proposal', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -128,7 +129,7 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
 
   // POST /proposals/:id/modify — modify a proposal with new changes
   fastify.post('/proposals/:id/modify', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('write'), requirePaidTier],
     schema: { description: 'Modify a reschedule proposal with updated changes', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

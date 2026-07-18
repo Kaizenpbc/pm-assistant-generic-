@@ -87,10 +87,10 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const TIER_COLORS: Record<string, string> = {
-  free: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
-  pro: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-  business: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
-  consultant: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
+  trial: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+  consultant: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+  sme: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
+  enterprise: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
 };
 
 const SUB_STATUS_COLORS: Record<string, string> = {
@@ -147,7 +147,7 @@ export function AdminUsersPage() {
   }, [allUsers]);
 
   const tiers = useMemo(() => {
-    const set = new Set(allUsers.map(u => u.subscription_tier || 'free'));
+    const set = new Set(allUsers.map(u => u.subscription_tier || 'trial'));
     return Array.from(set).sort();
   }, [allUsers]);
 
@@ -155,7 +155,7 @@ export function AdminUsersPage() {
   const filtered = useMemo(() => {
     let result = allUsers;
     if (roleFilter) result = result.filter(u => u.role === roleFilter);
-    if (tierFilter) result = result.filter(u => (u.subscription_tier || 'free') === tierFilter);
+    if (tierFilter) result = result.filter(u => (u.subscription_tier || 'trial') === tierFilter);
     if (statusFilter === 'active') result = result.filter(u => Boolean(u.is_active));
     if (statusFilter === 'inactive') result = result.filter(u => !Boolean(u.is_active));
     if (subStatusFilter) result = result.filter(u => (u.subscription_status || '') === subStatusFilter);
@@ -179,7 +179,7 @@ export function AdminUsersPage() {
       switch (sortKey) {
         case 'full_name': return dir * a.full_name.localeCompare(b.full_name);
         case 'role': return dir * a.role.localeCompare(b.role);
-        case 'subscription_tier': return dir * (a.subscription_tier || 'free').localeCompare(b.subscription_tier || 'free');
+        case 'subscription_tier': return dir * (a.subscription_tier || 'trial').localeCompare(b.subscription_tier || 'trial');
         case 'subscription_status': return dir * (a.subscription_status || '').localeCompare(b.subscription_status || '');
         case 'created_at': return dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         case 'last_login_at': {
@@ -440,7 +440,7 @@ export function AdminUsersPage() {
                   const loginExpired = hasPendingLogin && u.login_verification_expires && new Date(u.login_verification_expires) < new Date();
                   const emailVerified = Boolean(u.email_verified);
                   const roleColor = ROLE_COLORS[u.role] || 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200';
-                  const tierColor = TIER_COLORS[u.subscription_tier || 'free'] || TIER_COLORS.free;
+                  const tierColor = TIER_COLORS[u.subscription_tier || 'trial'] || TIER_COLORS.trial;
                   const effectiveBudget = u.ai_monthly_token_budget ?? u.ai_tier_budget;
                   const usagePct = effectiveBudget > 0 ? Math.round((Number(u.ai_tokens_used) / effectiveBudget) * 100) : 0;
                   const usageBarColor = usagePct >= 90 ? 'bg-red-500' : usagePct >= 70 ? 'bg-amber-500' : 'bg-emerald-500';
@@ -459,7 +459,7 @@ export function AdminUsersPage() {
                       </td>
                       <td className="py-3 pr-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${tierColor}`}>
-                          {u.subscription_tier || 'free'}
+                          {u.subscription_tier || 'trial'}
                         </span>
                       </td>
                       <td className="py-3 pr-3">

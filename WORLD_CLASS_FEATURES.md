@@ -169,7 +169,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - MCP tool permission matrix: 83 tools filtered by user role at registration time (agents only see permitted tools)
 - Append-only chained audit ledger with API search, filter, and pagination
 - Data encryption at rest and in transit
-- Per-tier AI token budget enforcement (`AIBudgetService`) — tier-aware limits (Free: 25K, Pro: 500K, Business: 1.5M, Consultant: 3M), per-user admin overrides, purchasable token top-ups (500K/$5, FIFO consumption, no expiry), graceful degradation on exhaustion (HTTP 429 with reset date, non-AI features unaffected), `GET /api/v1/ai/budget` usage endpoint, automatic enforcement before every AI call, proactive 80% threshold warning notification (daily-deduped)
+- Per-tier AI token budget enforcement (`AIBudgetService`) — tier-aware limits (Trial: 25K, Consultant: 500K, SME: 1.5M, Enterprise: 5M), per-user admin overrides, purchasable token top-ups (500K/$5, FIFO consumption, no expiry), graceful degradation on exhaustion (HTTP 429 with reset date, non-AI features unaffected), `GET /api/v1/ai/budget` usage endpoint, automatic enforcement before every AI call, proactive 80% threshold warning notification (daily-deduped)
 - Zod validation on 24 route files covering all critical API inputs
 - **Benchmark:** Enterprise tools
 

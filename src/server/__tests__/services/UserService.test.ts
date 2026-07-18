@@ -20,7 +20,7 @@ const sampleRow = {
   role: 'team_member', is_active: 1, email_verified: 1,
   email_verification_token: null, email_verification_expires: null,
   password_reset_token: null, password_reset_expires: null,
-  stripe_customer_id: null, subscription_tier: 'free',
+  stripe_customer_id: null, subscription_tier: 'trial',
   subscription_status: 'none', trial_ends_at: null,
   email_notifications_enabled: 1, digest_frequency: 'daily',
   digest_last_sent_at: null, last_login_at: null,

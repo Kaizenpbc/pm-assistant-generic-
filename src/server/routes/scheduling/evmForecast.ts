@@ -2,13 +2,14 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { evmForecastService } from '../../services/EVMForecastService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { requirePaidTier } from '../../middleware/requireTier';
 
 export async function evmForecastRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // GET /:projectId — returns metrics immediately (AI included if cached)
   fastify.get('/:projectId', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requirePaidTier],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
@@ -28,7 +29,7 @@ export async function evmForecastRoutes(fastify: FastifyInstance) {
 
   // GET /:projectId/ai — returns AI predictions (generates if not cached)
   fastify.get('/:projectId/ai', {
-    preHandler: [requireScope('read')],
+    preHandler: [requireScope('read'), requirePaidTier],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };

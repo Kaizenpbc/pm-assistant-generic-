@@ -1135,7 +1135,7 @@ Each proposal has a risk level that determines its approval requirements:
 
 Navigate to **Account** in the sidebar to manage:
 
-- **Subscription plan**: The billing page displays your current plan name based on your actual subscription tier (e.g., "Free Plan", "Pro Plan", "Business Plan", or "Consultant Plan"). Choose from Pro ($15/mo), Business ($35/mo), or Consultant ($59/mo). Annual billing saves ~17%. Visit the **Pricing** page to see a full feature comparison matrix across all tiers, with practical usage equivalents explaining what each token budget means (e.g., "~100 AI chats, 50 risk scans").
+- **Subscription plan**: The billing page displays your current plan name based on your actual subscription tier (e.g., "Trial", "Consultant Plan", "SME Plan", or "Enterprise Plan"). Paid plans: Consultant ($19/mo or $190/yr), SME ($39/mo or $390/yr), and Enterprise ($79/mo or $790/yr). Annual billing saves ~17%. Visit the **Pricing** page to see a full feature comparison matrix across all tiers, with practical usage equivalents explaining what each token budget means (e.g., "~100 AI chats, 50 risk scans").
 - **Payment method**: Managed via Stripe's secure billing portal.
 - **AI usage meter**: A progress bar shows your current-month token consumption vs your effective budget (tier allowance plus any purchased top-up balance), color-coded green (<70%), amber (70–90%), or red (>90%).
 - **Top-up balance**: Your remaining purchased token balance is displayed below the usage meter. Click **Buy More** to purchase additional packs instantly.
@@ -1146,12 +1146,44 @@ Navigate to **Account** in the sidebar to manage:
 Navigate to **Settings** to configure:
 
 - **User management** -- Add, edit, or deactivate users. Assign roles (admin, executive, manager, member).
+- **Team & Viewers** -- Manage your team members and invite client stakeholders as viewer accounts (see [Viewer Invites](#viewer-invites) below). Available on Consultant, SME, and Enterprise plans.
 - **API keys** -- Generate and manage API keys for programmatic access. Revoking a key shows a styled confirmation modal before the key is deleted.
 - **Webhooks** -- Configure outbound webhook endpoints. Deleting a webhook shows a styled confirmation modal.
 - **Custom fields** -- Define organization-wide custom fields that appear on tasks and projects.
 - **Notifications** -- Configure notification preferences per category (Agent & Proposals, Risks & Issues, Budget & Finance, Meetings, System Alerts, Deadlines) with independent in-app and email toggles. Includes email master toggle and digest frequency. System alerts are always delivered to admin users.
 - **Language** -- Select your preferred display language (English, French, or Spanish). The change applies instantly without a page reload.
 - **Time Zone** -- Set your IANA timezone (e.g., `America/Toronto`). All dates in the application are displayed in this timezone.
+
+### Viewer Invites
+
+Paid plan users (Consultant, SME, and Enterprise) can invite external client stakeholders as **viewer accounts** at no extra charge, up to their plan's limit:
+
+| Plan | Viewer Invite Limit |
+|------|---------------------|
+| Trial | 0 (not available) |
+| Consultant | 5 viewers |
+| SME | 20 viewers |
+| Enterprise | Unlimited |
+
+**Inviting a viewer:**
+
+1. Go to **Settings → Team & Viewers**.
+2. Click **Invite Viewer**.
+3. Enter the invitee's email address and select which project(s) they should have access to.
+4. Click **Send Invite**. The invitee receives an email with a link to create their free viewer account.
+
+**What viewers can do:**
+
+- View any project they have been explicitly invited to (read-only).
+- Update RAID items (risks, actions, issues, decisions) that are assigned to them.
+
+**What viewers cannot do:**
+
+- Create or edit projects, tasks, schedules, or resources.
+- Access projects they have not been invited to.
+- Invite other users.
+
+Viewer accounts do not count against your paid seat count and cannot be upgraded to full seats from the viewer invitation flow.
 
 Destructive actions throughout the application (deleting integrations, change requests, intake forms, report templates, goals, lessons, API keys, and webhooks) use a consistent styled confirmation modal instead of the browser's native dialog, providing a cleaner experience that respects the application's design and dark mode.
 

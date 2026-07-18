@@ -17,7 +17,7 @@ function rowToUser(row: any): User {
     passwordResetToken: row.password_reset_token,
     passwordResetExpires: row.password_reset_expires,
     stripeCustomerId: row.stripe_customer_id,
-    subscriptionTier: row.subscription_tier || 'free',
+    subscriptionTier: row.subscription_tier || 'trial',
     subscriptionStatus: row.subscription_status || 'none',
     trialEndsAt: row.trial_ends_at,
     trialStartedAt: row.trial_started_at ?? null,

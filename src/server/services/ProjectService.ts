@@ -67,6 +67,10 @@ export class ProjectService {
     return projectRepository.findByUserId(userId);
   }
 
+  async countByUser(userId: string): Promise<number> {
+    return projectRepository.countByUser(userId);
+  }
+
   async findByUserIdPaginated(userId: string, limit: number, offset: number, includeArchived = false): Promise<{ rows: Project[]; total: number }> {
     return projectRepository.findByUserIdPaginated(userId, limit, offset, includeArchived);
   }
