@@ -9,7 +9,7 @@ import logger from '../utils/logger';
 const VIEWER_LIMITS: Record<string, number> = {
   trial: 0,
   consultant: 5,
-  sme: 20,
+  sme: 999999,
   enterprise: 999999,
 };
 
@@ -106,13 +106,18 @@ export class InviteService {
     return inviteTokenRepository.findByOrg(organizationId);
   }
 
-  async revokeInvite(id: string, userId: string): Promise<void> {
+  async revokeInvite(id: string, userId: string, userRole: string): Promise<void> {
     const invite = await inviteTokenRepository.findById(id);
     if (!invite) throw new Error('Invite not found');
 
     // Verify the revoker belongs to the same org
     const org = await organizationRepository.findByUserId(userId);
     if (!org || org.id !== invite.organizationId) {
+      throw new Error('Not authorized to revoke this invite');
+    }
+
+    // Only org owner, admin, or project_manager can revoke invites
+    if (org.ownerUserId !== userId && userRole !== 'admin' && userRole !== 'project_manager') {
       throw new Error('Not authorized to revoke this invite');
     }
 

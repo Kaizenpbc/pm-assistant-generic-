@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { config } from '../../config';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
@@ -6,7 +7,14 @@ import { userService } from '../../services/UserService';
 import { stripeService } from '../../services/StripeService';
 import { organizationRepository } from '../../database/OrganizationRepository';
 import { tokenTopUpRepository } from '../../database/TokenTopUpRepository';
+import { rateLimiter } from '../../middleware/rateLimiter';
 import logger from '../../utils/logger';
+
+const checkoutSchema = z.object({
+  plan: z.enum(['monthly', 'annual']).optional(),
+  tier: z.enum(['consultant', 'sme', 'enterprise']).optional(),
+  seats: z.number().int().min(3).max(100).optional(),
+});
 
 function resolvePriceId(tier: string, billing: string): string | undefined {
   // New tier price IDs
@@ -73,8 +81,18 @@ export async function stripeRoutes(fastify: FastifyInstance) {
     schema: { description: 'Create Stripe checkout session', tags: ['stripe'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Rate limit: 5 checkout sessions per minute per user
+      const rl = await rateLimiter.checkAsync(`checkout:${request.user!.userId}`, 5, 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many requests. Please try again later.' });
+      }
+
       const userId = request.user!.userId;
-      const { plan, tier, seats } = (request.body as { plan?: string; tier?: string; seats?: number }) || {};
+      const parsed = checkoutSchema.safeParse(request.body || {});
+      if (!parsed.success) {
+        return reply.status(400).send({ error: 'Invalid checkout parameters', message: parsed.error.issues.map(e => e.message).join(', ') });
+      }
+      const { plan, tier, seats } = parsed.data;
       const user = await userService.findById(userId);
       if (!user) {
         return reply.status(404).send({ error: 'User not found' });

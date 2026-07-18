@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { inviteService } from '../../services/InviteService';
+import { rateLimiter } from '../../middleware/rateLimiter';
 import logger from '../../utils/logger';
 
 const createInviteSchema = z.object({
@@ -11,12 +12,26 @@ const createInviteSchema = z.object({
   role: z.enum(['viewer', 'team_member', 'project_manager']).default('viewer'),
 });
 
+const tokenParamSchema = z.object({
+  token: z.string().min(1).max(128).regex(/^[a-f0-9]+$/),
+});
+
+const idParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
 export async function inviteRoutes(fastify: FastifyInstance) {
   // POST /api/v1/invites — create invite (auth required)
   fastify.post('/', {
     preHandler: [authMiddleware, requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Rate limit: 20 invites per minute per user
+      const rl = await rateLimiter.checkAsync(`invite:create:${request.user!.userId}`, 20, 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many invite requests. Please try again later.' });
+      }
+
       const data = createInviteSchema.parse(request.body);
       const invite = await inviteService.createInvite(
         request.user!.userId,
@@ -28,13 +43,13 @@ export async function inviteRoutes(fastify: FastifyInstance) {
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to create invite';
       if (msg.includes('limit reached')) {
-        return reply.status(403).send({ error: 'Viewer limit reached', message: msg });
+        return reply.status(403).send({ error: 'Viewer limit reached' });
       }
       if (error instanceof z.ZodError) {
         return reply.status(400).send({ error: 'Validation error', message: error.issues.map(e => e.message).join(', ') });
       }
       logger.error('Create invite error', { error });
-      return reply.status(500).send({ error: 'Internal server error', message: msg });
+      return reply.status(500).send({ error: 'Internal server error' });
     }
   });
 
@@ -59,8 +74,19 @@ export async function inviteRoutes(fastify: FastifyInstance) {
   // GET /api/v1/invites/:token/validate — public, for registration page
   fastify.get('/:token/validate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { token } = request.params as { token: string };
-      const result = await inviteService.validateToken(token);
+      // Rate limit: 10 token validations per minute per IP
+      const ip = request.ip || 'unknown';
+      const rl = await rateLimiter.checkAsync(`invite:validate:${ip}`, 10, 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many requests. Please try again later.' });
+      }
+
+      const parsed = tokenParamSchema.safeParse(request.params);
+      if (!parsed.success) {
+        return reply.status(400).send({ error: 'Invalid token format' });
+      }
+
+      const result = await inviteService.validateToken(parsed.data.token);
       return result;
     } catch (error) {
       logger.error('Validate invite error', { error });
@@ -73,11 +99,17 @@ export async function inviteRoutes(fastify: FastifyInstance) {
     preHandler: [authMiddleware, requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id } = request.params as { id: string };
-      await inviteService.revokeInvite(id, request.user!.userId);
+      const parsed = idParamSchema.safeParse(request.params);
+      if (!parsed.success) {
+        return reply.status(400).send({ error: 'Invalid invite ID format' });
+      }
+      await inviteService.revokeInvite(parsed.data.id, request.user!.userId, request.user!.role);
       return { message: 'Invite revoked' };
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to revoke invite';
+      if (msg.includes('Not authorized')) {
+        return reply.status(403).send({ error: msg });
+      }
       logger.error('Revoke invite error', { error });
       return reply.status(400).send({ error: msg });
     }

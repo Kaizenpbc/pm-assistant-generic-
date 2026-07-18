@@ -4,6 +4,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { seatService } from '../../services/SeatService';
 import { organizationRepository } from '../../database/OrganizationRepository';
+import { rateLimiter } from '../../middleware/rateLimiter';
 import logger from '../../utils/logger';
 
 const seatCountSchema = z.object({
@@ -23,18 +24,24 @@ export async function seatRoutes(fastify: FastifyInstance) {
     return seatInfo;
   });
 
-  // POST /api/v1/seats/add — add seats (org owner/admin only)
+  // POST /api/v1/seats/add — add seats (org owner only)
   fastify.post('/add', {
     preHandler: [authMiddleware, requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Rate limit: 10 seat changes per minute per user
+      const rl = await rateLimiter.checkAsync(`seats:add:${request.user!.userId}`, 10, 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many requests. Please try again later.' });
+      }
+
       const { count } = seatCountSchema.parse(request.body);
       const org = await organizationRepository.findByUserId(request.user!.userId);
       if (!org) {
         return reply.status(404).send({ error: 'No organization found' });
       }
-      if (org.ownerUserId !== request.user!.userId && request.user!.role !== 'admin') {
-        return reply.status(403).send({ error: 'Only the org owner or admin can manage seats' });
+      if (org.ownerUserId !== request.user!.userId) {
+        return reply.status(403).send({ error: 'Only the organization owner can manage seats' });
       }
       const result = await seatService.addSeats(org.id, count);
       return result;
@@ -45,18 +52,24 @@ export async function seatRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /api/v1/seats/remove — remove seats (org owner/admin only)
+  // POST /api/v1/seats/remove — remove seats (org owner only)
   fastify.post('/remove', {
     preHandler: [authMiddleware, requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Rate limit: 10 seat changes per minute per user
+      const rl = await rateLimiter.checkAsync(`seats:remove:${request.user!.userId}`, 10, 60_000);
+      if (!rl.allowed) {
+        return reply.status(429).send({ error: 'Too many requests. Please try again later.' });
+      }
+
       const { count } = seatCountSchema.parse(request.body);
       const org = await organizationRepository.findByUserId(request.user!.userId);
       if (!org) {
         return reply.status(404).send({ error: 'No organization found' });
       }
-      if (org.ownerUserId !== request.user!.userId && request.user!.role !== 'admin') {
-        return reply.status(403).send({ error: 'Only the org owner or admin can manage seats' });
+      if (org.ownerUserId !== request.user!.userId) {
+        return reply.status(403).send({ error: 'Only the organization owner can manage seats' });
       }
       const result = await seatService.removeSeats(org.id, count);
       return result;
