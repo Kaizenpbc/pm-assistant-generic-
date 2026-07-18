@@ -61,7 +61,6 @@ const TIER_LABELS: Record<string, string> = {
   trial: 'Trial',
   consultant: 'Consultant Plan',
   sme: 'SME Plan',
-  enterprise: 'Enterprise Plan',
 };
 
 const TIER_FEATURES: Record<string, string[]> = {
@@ -82,13 +81,6 @@ const TIER_FEATURES: Record<string, string[]> = {
     'All features included',
     '500K AI tokens per seat (pooled)',
     '5GB file storage',
-    'Unlimited viewer invites',
-  ],
-  enterprise: [
-    'Unlimited projects',
-    'All features included',
-    '5M AI tokens/month',
-    '10GB file storage',
     'Unlimited viewer invites',
   ],
 };
@@ -189,7 +181,7 @@ export const AccountBillingPage: React.FC = () => {
     );
   }
 
-  const isPaid = data.tier === 'consultant' || data.tier === 'sme' || data.tier === 'enterprise';
+  const isPaid = data.tier === 'consultant' || data.tier === 'sme';
   const trialDays = daysUntil(data.trialEndsAt);
   const badge = getStatusBadge(data.status, data.cancelAtPeriodEnd);
   const BadgeIcon = badge.icon;
