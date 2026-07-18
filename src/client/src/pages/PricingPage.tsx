@@ -21,6 +21,24 @@ interface PlanDef {
 
 const PLANS: PlanDef[] = [
   {
+    tier: 'trial',
+    name: 'Free Trial',
+    monthly: 0,
+    annual: 0,
+    tokens: '25K',
+    tokensEquiv: 'Enough to explore all AI features',
+    storage: '100MB',
+    viewerInvites: '0',
+    features: [
+      'Up to 3 projects',
+      '14-day full access',
+      'Mjuzi AI assistant (25K tokens)',
+      'Gantt, Kanban, Sprint boards',
+      'RAID management',
+      'No credit card required',
+    ],
+  },
+  {
     tier: 'consultant',
     name: 'Consultant',
     monthly: 19,
@@ -251,7 +269,7 @@ export const PricingPage: React.FC = () => {
           )}
 
           {/* Plan cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
             {PLANS.map((plan) => {
               const isCurrent = currentTier === plan.tier;
               const seats = plan.perSeat ? smeSeats : 1;
@@ -278,7 +296,12 @@ export const PricingPage: React.FC = () => {
 
                   <div className="mb-4">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">{plan.name}</h2>
-                    {plan.perSeat ? (
+                    {plan.monthly === 0 ? (
+                      <div className="mt-3 flex items-baseline gap-1">
+                        <span className="text-4xl font-bold text-gray-900 dark:text-white">Free</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">/14 days</span>
+                      </div>
+                    ) : plan.perSeat ? (
                       <>
                         <div className="mt-3 flex items-baseline gap-1">
                           <span className="text-4xl font-bold text-gray-900 dark:text-white">
@@ -344,11 +367,18 @@ export const PricingPage: React.FC = () => {
                   <div className="mb-6">
                     {isCurrent ? (
                       <button
-                        onClick={handleManageBilling}
+                        onClick={plan.tier !== 'trial' ? handleManageBilling : undefined}
                         className="w-full py-2.5 px-4 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                       >
                         Current Plan
                       </button>
+                    ) : plan.tier === 'trial' ? (
+                      <Link
+                        to="/register"
+                        className="block w-full py-2.5 px-4 text-sm font-semibold rounded-lg text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                      >
+                        Start Free Trial
+                      </Link>
                     ) : (
                       <button
                         onClick={() => handleSubscribe(plan.tier)}
