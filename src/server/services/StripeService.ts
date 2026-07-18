@@ -4,7 +4,9 @@ import { UserService } from './UserService';
 import { subscriptionRepository } from '../database/SubscriptionRepository';
 import { tokenTopUpRepository } from '../database/TokenTopUpRepository';
 import { subscriptionEventRepository } from '../database/SubscriptionEventRepository';
+import { organizationRepository } from '../database/OrganizationRepository';
 import { auditLedgerService } from './AuditLedgerService';
+import { databaseService } from '../database/connection';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
 
@@ -54,6 +56,29 @@ export class StripeService {
       metadata: { userId },
     });
     return session.url!;
+  }
+
+  async createSeatCheckoutSession(customerId: string, priceId: string, seatCount: number, orgId: string): Promise<string> {
+    const session = await this.getClient().checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: Math.max(3, seatCount) }],
+      mode: 'subscription',
+      subscription_data: {
+        metadata: { orgId, billingModel: 'per_seat' },
+      },
+      success_url: `${config.APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${config.APP_URL}/pricing`,
+      metadata: { orgId, billingModel: 'per_seat' },
+    });
+    return session.url!;
+  }
+
+  async updateSeatQuantity(subscriptionId: string, itemId: string, newCount: number): Promise<void> {
+    await this.getClient().subscriptions.update(subscriptionId, {
+      items: [{ id: itemId, quantity: Math.max(3, newCount) }],
+      proration_behavior: 'create_prorations',
+    });
   }
 
   async createTopUpSession(customerId: string, userId: string, quantity: number): Promise<string> {
@@ -213,6 +238,8 @@ export class StripeService {
     const smePriceIds = [
       config.STRIPE_SME_MONTHLY_PRICE_ID,
       config.STRIPE_SME_ANNUAL_PRICE_ID,
+      config.STRIPE_SME_SEAT_MONTHLY_PRICE_ID,
+      config.STRIPE_SME_SEAT_ANNUAL_PRICE_ID,
       // Legacy business price IDs map to sme
       config.STRIPE_BUSINESS_MONTHLY_PRICE_ID,
       config.STRIPE_BUSINESS_ANNUAL_PRICE_ID,
@@ -237,6 +264,22 @@ export class StripeService {
 
   private async upsertSubscription(subscription: Stripe.Subscription, stripeEventId: string): Promise<void> {
     const customerId = subscription.customer as string;
+    const metadata = subscription.metadata || {};
+
+    // Check if this is an org-level per-seat subscription
+    if (metadata.billingModel === 'per_seat' && metadata.orgId) {
+      await this.upsertOrgSubscription(subscription, stripeEventId, metadata.orgId);
+      return;
+    }
+
+    // Also check if this customer belongs to an org (fallback for existing org subscriptions)
+    const org = await organizationRepository.findByStripeCustomerId(customerId);
+    if (org && org.billingModel === 'per_seat') {
+      await this.upsertOrgSubscription(subscription, stripeEventId, org.id);
+      return;
+    }
+
+    // Standard user-level subscription flow
     const user = await this.userService.findByStripeCustomerId(customerId);
     if (!user) {
       logger.error(`[StripeService] No user found for Stripe customer ${customerId}`);
@@ -255,16 +298,7 @@ export class StripeService {
     const interval = item?.price?.recurring?.interval as 'month' | 'year' | undefined;
 
     // Map Stripe status
-    const statusMap: Record<string, 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none'> = {
-      active: 'active',
-      trialing: 'trialing',
-      past_due: 'past_due',
-      canceled: 'canceled',
-      incomplete: 'incomplete',
-      incomplete_expired: 'none',
-      unpaid: 'past_due',
-    };
-    const status = statusMap[subscription.status] || 'none';
+    const status = this.mapStripeStatus(subscription.status);
 
     // In Stripe SDK v20+, period dates are on subscription items
     const sub = subscription as any;
@@ -339,8 +373,126 @@ export class StripeService {
     }).catch(e => logger.error('[StripeService] Failed to append audit entry', e));
   }
 
+  private mapStripeStatus(stripeStatus: string): 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none' {
+    const statusMap: Record<string, 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none'> = {
+      active: 'active',
+      trialing: 'trialing',
+      past_due: 'past_due',
+      canceled: 'canceled',
+      incomplete: 'incomplete',
+      incomplete_expired: 'none',
+      unpaid: 'past_due',
+    };
+    return statusMap[stripeStatus] || 'none';
+  }
+
+  private async upsertOrgSubscription(subscription: Stripe.Subscription, stripeEventId: string, orgId: string): Promise<void> {
+    const org = await organizationRepository.findById(orgId);
+    if (!org) {
+      logger.error(`[StripeService] No org found for orgId ${orgId}`);
+      return;
+    }
+
+    const item = subscription.items.data[0];
+    const priceId = item?.price?.id;
+    const tier = this.resolveTierFromPriceId(priceId);
+    const status = this.mapStripeStatus(subscription.status);
+    const seatCount = item?.quantity ?? org.seatCount;
+    const amountCents = item?.price?.unit_amount ?? null;
+    const currency = item?.price?.currency ?? 'usd';
+    const interval = item?.price?.recurring?.interval as 'month' | 'year' | undefined;
+    const previousTier = org.subscriptionTier || 'trial';
+
+    // Update organization record
+    await organizationRepository.update(orgId, {
+      subscriptionTier: tier,
+      subscriptionStatus: status,
+      billingModel: 'per_seat',
+      seatCount,
+      stripeSubscriptionId: subscription.id,
+      stripeSubscriptionItemId: item?.id ?? null,
+      viewerLimit: 999999,
+    });
+
+    // Sync all non-viewer users in org to this tier/status
+    await databaseService.queryControlPlane(
+      "UPDATE users SET subscription_tier = ?, subscription_status = ? WHERE organization_id = ? AND role != 'viewer'",
+      [tier, status, orgId],
+    );
+
+    // Log event using org owner
+    const ownerId = org.ownerUserId;
+    if (previousTier !== tier) {
+      subscriptionEventRepository.create(
+        ownerId, 'tier_changed', previousTier, tier, amountCents ? amountCents * seatCount : null, stripeEventId,
+        { billingModel: 'per_seat', seatCount },
+      ).catch(e => logger.error('[StripeService] Failed to log org tier_changed event', e));
+    } else {
+      subscriptionEventRepository.create(
+        ownerId, 'subscription_created', previousTier, tier, amountCents ? amountCents * seatCount : null, stripeEventId,
+        { billingModel: 'per_seat', seatCount },
+      ).catch(e => logger.error('[StripeService] Failed to log org subscription_created event', e));
+    }
+
+    // Revenue tracking — use total amount (unit_amount * quantity)
+    if (amountCents != null && interval) {
+      const existing = await subscriptionRepository.findByStripeId(subscription.id);
+      const sub = subscription as any;
+      const periodStart = item?.current_period_start ?? sub.current_period_start;
+      const periodEnd = item?.current_period_end ?? sub.current_period_end;
+
+      if (existing) {
+        await subscriptionRepository.update(
+          subscription.id, subscription.status,
+          new Date(periodStart * 1000), new Date(periodEnd * 1000),
+          subscription.cancel_at_period_end,
+          subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+          subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+          subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+        );
+      } else {
+        await subscriptionRepository.insert(
+          uuidv4(), ownerId, subscription.id, priceId || '',
+          subscription.status,
+          new Date(periodStart * 1000), new Date(periodEnd * 1000),
+          subscription.cancel_at_period_end,
+          subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+          subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+          subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+        );
+      }
+
+      subscriptionRepository.updateRevenueColumns(
+        subscription.id, amountCents * seatCount, currency, interval,
+      ).catch(e => logger.error('[StripeService] Failed to update org revenue columns', e));
+    }
+
+    auditLedgerService.append({
+      actorId: ownerId, actorType: 'system',
+      action: 'subscription.org_updated', entityType: 'organization', entityId: orgId,
+      payload: { tier, status, seatCount, billingModel: 'per_seat' },
+      source: 'system',
+    }).catch(e => logger.error('[StripeService] Failed to append org audit entry', e));
+
+    logger.info(`[StripeService] Org ${orgId} subscription updated: tier=${tier}, seats=${seatCount}, status=${status}`);
+  }
+
   private async handleSubscriptionDeleted(subscription: Stripe.Subscription, stripeEventId: string): Promise<void> {
     const customerId = subscription.customer as string;
+    const metadata = subscription.metadata || {};
+
+    // Check if org-level subscription
+    if (metadata.billingModel === 'per_seat' && metadata.orgId) {
+      await this.handleOrgSubscriptionDeleted(subscription, stripeEventId, metadata.orgId);
+      return;
+    }
+
+    const org = await organizationRepository.findByStripeCustomerId(customerId);
+    if (org && org.billingModel === 'per_seat') {
+      await this.handleOrgSubscriptionDeleted(subscription, stripeEventId, org.id);
+      return;
+    }
+
     const user = await this.userService.findByStripeCustomerId(customerId);
     if (!user) return;
 
@@ -366,6 +518,35 @@ export class StripeService {
       payload: { previousTier },
       source: 'system',
     }).catch(e => logger.error('[StripeService] Failed to append audit entry', e));
+  }
+
+  private async handleOrgSubscriptionDeleted(subscription: Stripe.Subscription, stripeEventId: string, orgId: string): Promise<void> {
+    const org = await organizationRepository.findById(orgId);
+    if (!org) return;
+
+    const previousTier = org.subscriptionTier || 'trial';
+
+    await organizationRepository.update(orgId, {
+      subscriptionTier: 'trial',
+      subscriptionStatus: 'canceled',
+      stripeSubscriptionId: null as any,
+      stripeSubscriptionItemId: null as any,
+    });
+
+    // Downgrade all non-viewer users in org
+    await databaseService.queryControlPlane(
+      "UPDATE users SET subscription_tier = 'trial', subscription_status = 'canceled' WHERE organization_id = ? AND role != 'viewer'",
+      [orgId],
+    );
+
+    await subscriptionRepository.markCanceled(subscription.id);
+
+    subscriptionEventRepository.create(
+      org.ownerUserId, 'subscription_canceled', previousTier, 'trial', null, stripeEventId,
+      { billingModel: 'per_seat', orgId },
+    ).catch(e => logger.error('[StripeService] Failed to log org subscription_canceled event', e));
+
+    logger.info(`[StripeService] Org ${orgId} subscription canceled, all users downgraded to trial`);
   }
   async cancelAllSubscriptions(stripeCustomerId: string): Promise<void> {
     if (!this.stripe) return;

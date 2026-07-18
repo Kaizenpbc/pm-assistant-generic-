@@ -8,7 +8,7 @@ import logger from '../../utils/logger';
 const createInviteSchema = z.object({
   email: z.string().email(),
   projectId: z.string().uuid().optional(),
-  role: z.enum(['viewer']).default('viewer'),
+  role: z.enum(['viewer', 'team_member', 'project_manager']).default('viewer'),
 });
 
 export async function inviteRoutes(fastify: FastifyInstance) {

@@ -127,14 +127,14 @@ const pricingTiers = [
   },
   {
     name: 'SME',
-    price: '$39',
-    period: '/mo',
-    description: 'For growing teams and organizations',
+    price: '$33',
+    period: '/seat/mo',
+    description: '3-seat minimum — starting at $99/mo',
     features: [
       'Unlimited projects',
       'All features included',
-      '1.5M AI tokens/month',
-      '20 viewer invites',
+      '500K AI tokens per seat',
+      'Unlimited viewer invites',
       'Portfolio management',
     ],
     cta: 'Get Started',
@@ -703,7 +703,7 @@ export const LandingPage: React.FC = () => {
                   tier.highlighted
                     ? 'bg-gradient-to-br from-blue-600 to-cyan-500 text-white ring-4 ring-blue-400/30 ring-offset-2 ring-offset-[#0a0f1a] shadow-2xl shadow-blue-500/20'
                     : 'bg-[#111827]/70 backdrop-blur-sm border border-white/10 hover:border-white/15'
-                } ${tier.disabled ? 'opacity-60' : ''}`}
+                }`}
               >
                 {tier.badge && (
                   <span className="inline-block px-3 py-1 text-xs font-semibold bg-white/20 text-white rounded-full mb-4 backdrop-blur-sm">
@@ -738,22 +738,16 @@ export const LandingPage: React.FC = () => {
                   ))}
                 </ul>
                 <div className="mt-8">
-                  {tier.disabled ? (
-                    <span className="block w-full text-center py-2.5 px-4 text-sm font-medium rounded-lg bg-white/5 text-slate-500 cursor-not-allowed">
-                      {tier.cta}
-                    </span>
-                  ) : (
-                    <Link
-                      to={tier.ctaLink}
-                      className={`block w-full text-center py-2.5 px-4 text-sm font-semibold rounded-lg transition-all ${
-                        tier.highlighted
-                          ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-md'
-                          : 'bg-gradient-to-r from-blue-500 to-cyan-400 text-white hover:from-blue-600 hover:to-cyan-500 shadow-md shadow-blue-500/20'
-                      }`}
-                    >
-                      {tier.cta}
-                    </Link>
-                  )}
+                  <Link
+                    to={tier.ctaLink}
+                    className={`block w-full text-center py-2.5 px-4 text-sm font-semibold rounded-lg transition-all ${
+                      tier.highlighted
+                        ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-md'
+                        : 'bg-gradient-to-r from-blue-500 to-cyan-400 text-white hover:from-blue-600 hover:to-cyan-500 shadow-md shadow-blue-500/20'
+                    }`}
+                  >
+                    {tier.cta}
+                  </Link>
                 </div>
               </div>
             ))}

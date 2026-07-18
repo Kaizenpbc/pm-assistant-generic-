@@ -16,6 +16,25 @@ class AIBudgetRepository {
     return rows[0];
   }
 
+  async getOrgMonthlyUsage(userIds: string[]): Promise<{ total_input: number; total_output: number; total_cost: number; request_count: number }> {
+    if (userIds.length === 0) {
+      return { total_input: 0, total_output: 0, total_cost: 0, request_count: 0 };
+    }
+    const placeholders = userIds.map(() => '?').join(',');
+    const rows = await databaseService.query<any>(
+      `SELECT
+         COALESCE(SUM(input_tokens), 0) AS total_input,
+         COALESCE(SUM(output_tokens), 0) AS total_output,
+         COALESCE(SUM(cost_estimate), 0) AS total_cost,
+         COUNT(*) AS request_count
+       FROM ai_usage_log
+       WHERE user_id IN (${placeholders})
+         AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')`,
+      userIds,
+    );
+    return rows[0];
+  }
+
   async getUserBudget(userId: string): Promise<number | null> {
     const rows = await databaseService.query<{ ai_monthly_token_budget: number | null }>(
       'SELECT ai_monthly_token_budget FROM users WHERE id = ?',

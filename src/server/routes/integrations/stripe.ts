@@ -4,6 +4,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { userService } from '../../services/UserService';
 import { stripeService } from '../../services/StripeService';
+import { organizationRepository } from '../../database/OrganizationRepository';
 import { tokenTopUpRepository } from '../../database/TokenTopUpRepository';
 import logger from '../../utils/logger';
 
@@ -17,6 +18,10 @@ function resolvePriceId(tier: string, billing: string): string | undefined {
     if (config.STRIPE_PRO_MONTHLY_PRICE_ID) return config.STRIPE_PRO_MONTHLY_PRICE_ID;
   }
   if (tier === 'sme') {
+    // Per-seat pricing (new default)
+    if (billing === 'annual' && config.STRIPE_SME_SEAT_ANNUAL_PRICE_ID) return config.STRIPE_SME_SEAT_ANNUAL_PRICE_ID;
+    if (config.STRIPE_SME_SEAT_MONTHLY_PRICE_ID) return config.STRIPE_SME_SEAT_MONTHLY_PRICE_ID;
+    // Legacy flat-rate fallback
     if (billing === 'annual' && config.STRIPE_SME_ANNUAL_PRICE_ID) return config.STRIPE_SME_ANNUAL_PRICE_ID;
     if (config.STRIPE_SME_MONTHLY_PRICE_ID) return config.STRIPE_SME_MONTHLY_PRICE_ID;
     // Legacy business fallback
@@ -69,14 +74,10 @@ export async function stripeRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
-      const { plan, tier } = (request.body as { plan?: string; tier?: string }) || {};
+      const { plan, tier, seats } = (request.body as { plan?: string; tier?: string; seats?: number }) || {};
       const user = await userService.findById(userId);
       if (!user) {
         return reply.status(404).send({ error: 'User not found' });
-      }
-
-      if (!user.stripeCustomerId) {
-        return reply.status(400).send({ error: 'No Stripe customer', message: 'Please contact support' });
       }
 
       const billing = plan || 'monthly';
@@ -85,6 +86,40 @@ export async function stripeRoutes(fastify: FastifyInstance) {
 
       if (!priceId) {
         return reply.status(500).send({ error: 'Stripe not configured', message: 'Pricing is not configured' });
+      }
+
+      // SME per-seat flow: use org-level subscription
+      if (selectedTier === 'sme') {
+        const org = await organizationRepository.findByUserId(userId);
+        if (!org) {
+          return reply.status(400).send({ error: 'No organization found', message: 'An organization is required for SME subscriptions' });
+        }
+
+        // Ensure org has a Stripe customer
+        let orgStripeCustomerId = org.stripeCustomerId;
+        if (!orgStripeCustomerId) {
+          orgStripeCustomerId = await stripeService.createCustomer(
+            user.email, org.name, userId,
+          );
+          if (orgStripeCustomerId) {
+            await organizationRepository.update(org.id, { stripeCustomerId: orgStripeCustomerId });
+          }
+        }
+
+        if (!orgStripeCustomerId) {
+          return reply.status(500).send({ error: 'Failed to create Stripe customer for organization' });
+        }
+
+        const seatCount = Math.max(3, seats || await organizationRepository.countNonViewerUsers(org.id) || 3);
+        const url = await stripeService.createSeatCheckoutSession(
+          orgStripeCustomerId, priceId, seatCount, org.id,
+        );
+        return { url };
+      }
+
+      // Flat-rate flow (consultant/enterprise)
+      if (!user.stripeCustomerId) {
+        return reply.status(400).send({ error: 'No Stripe customer', message: 'Please contact support' });
       }
 
       const url = await stripeService.createCheckoutSession(

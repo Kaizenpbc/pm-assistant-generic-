@@ -7,8 +7,13 @@ export interface Organization {
   dbName: string;
   ownerUserId: string;
   stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  stripeSubscriptionItemId: string | null;
   subscriptionTier: 'trial' | 'consultant' | 'sme' | 'enterprise';
   subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
+  billingModel: 'flat' | 'per_seat';
+  seatCount: number;
+  seatPriceCents: number;
   trialEndsAt: string | null;
   maxUsers: number;
   viewerLimit: number;
@@ -26,8 +31,13 @@ function mapRow(row: any): Organization {
     dbName: row.db_name,
     ownerUserId: row.owner_user_id,
     stripeCustomerId: row.stripe_customer_id,
+    stripeSubscriptionId: row.stripe_subscription_id ?? null,
+    stripeSubscriptionItemId: row.stripe_subscription_item_id ?? null,
     subscriptionTier: row.subscription_tier,
     subscriptionStatus: row.subscription_status,
+    billingModel: row.billing_model ?? 'flat',
+    seatCount: row.seat_count ?? 1,
+    seatPriceCents: row.seat_price_cents ?? 3300,
     trialEndsAt: row.trial_ends_at,
     maxUsers: row.max_users,
     viewerLimit: row.viewer_limit ?? 5,
@@ -101,7 +111,7 @@ export class OrganizationRepository {
     return (await this.findById(org.id))!;
   }
 
-  async update(id: string, data: Partial<Pick<Organization, 'name' | 'isActive' | 'isProvisioned' | 'subscriptionTier' | 'subscriptionStatus' | 'trialEndsAt' | 'maxUsers' | 'stripeCustomerId'>>): Promise<void> {
+  async update(id: string, data: Partial<Pick<Organization, 'name' | 'isActive' | 'isProvisioned' | 'subscriptionTier' | 'subscriptionStatus' | 'trialEndsAt' | 'maxUsers' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'stripeSubscriptionItemId' | 'billingModel' | 'seatCount' | 'seatPriceCents' | 'viewerLimit'>>): Promise<void> {
     const fields: string[] = [];
     const values: any[] = [];
 
@@ -114,6 +124,12 @@ export class OrganizationRepository {
       trialEndsAt: 'trial_ends_at',
       maxUsers: 'max_users',
       stripeCustomerId: 'stripe_customer_id',
+      stripeSubscriptionId: 'stripe_subscription_id',
+      stripeSubscriptionItemId: 'stripe_subscription_item_id',
+      billingModel: 'billing_model',
+      seatCount: 'seat_count',
+      seatPriceCents: 'seat_price_cents',
+      viewerLimit: 'viewer_limit',
     };
 
     for (const [key, column] of Object.entries(columnMap)) {
@@ -140,6 +156,30 @@ export class OrganizationRepository {
       [orgId],
     );
     return Number(rows[0].cnt);
+  }
+
+  async countNonViewerUsers(orgId: string): Promise<number> {
+    const rows = await databaseService.queryControlPlane(
+      "SELECT COUNT(*) AS cnt FROM users WHERE organization_id = ? AND role != 'viewer' AND is_active = 1",
+      [orgId],
+    );
+    return Number(rows[0].cnt);
+  }
+
+  async findByStripeCustomerId(stripeCustomerId: string): Promise<Organization | null> {
+    const rows = await databaseService.queryControlPlane(
+      'SELECT * FROM organizations WHERE stripe_customer_id = ?',
+      [stripeCustomerId],
+    );
+    return rows.length > 0 ? mapRow(rows[0]) : null;
+  }
+
+  async getUserIdsInOrg(orgId: string): Promise<string[]> {
+    const rows = await databaseService.queryControlPlane(
+      'SELECT id FROM users WHERE organization_id = ? AND is_active = 1',
+      [orgId],
+    );
+    return rows.map((r: any) => r.id);
   }
 }
 

@@ -1,5 +1,6 @@
 import { aiBudgetRepository } from '../database/AIBudgetRepository';
 import { tokenTopUpRepository } from '../database/TokenTopUpRepository';
+import { organizationRepository } from '../database/OrganizationRepository';
 import { config, getTierBudget } from '../config';
 import { notificationService } from './NotificationService';
 import { deadLetterService } from './DeadLetterService';
@@ -31,9 +32,28 @@ export interface MonthlyUsage {
 
 class AIBudgetService {
   async getMonthlyUsage(userId: string): Promise<MonthlyUsage> {
-    const row = await aiBudgetRepository.getMonthlyUsage(userId);
-    const totalInput = Number(row.total_input);
-    const totalOutput = Number(row.total_output);
+    // Check if user belongs to a per-seat org → pool usage across org
+    const org = await organizationRepository.findByUserId(userId);
+    let totalInput: number;
+    let totalOutput: number;
+    let totalCost: number;
+    let requestCount: number;
+
+    if (org && org.billingModel === 'per_seat') {
+      const userIds = await organizationRepository.getUserIdsInOrg(org.id);
+      const row = await aiBudgetRepository.getOrgMonthlyUsage(userIds);
+      totalInput = Number(row.total_input);
+      totalOutput = Number(row.total_output);
+      totalCost = Number(row.total_cost);
+      requestCount = Number(row.request_count);
+    } else {
+      const row = await aiBudgetRepository.getMonthlyUsage(userId);
+      totalInput = Number(row.total_input);
+      totalOutput = Number(row.total_output);
+      totalCost = Number(row.total_cost);
+      requestCount = Number(row.request_count);
+    }
+
     const totalTokens = totalInput + totalOutput;
     const budget = await this.getBudget(userId);
     const remaining = Math.max(0, budget - totalTokens);
@@ -42,8 +62,8 @@ class AIBudgetService {
       totalInputTokens: totalInput,
       totalOutputTokens: totalOutput,
       totalTokens,
-      totalCost: Number(row.total_cost),
-      requestCount: Number(row.request_count),
+      totalCost,
+      requestCount,
       budget,
       remaining,
       percentUsed: budget > 0 ? Math.round((totalTokens / budget) * 100) : 0,
@@ -78,6 +98,13 @@ class AIBudgetService {
   }
 
   private async getBudget(userId: string): Promise<number> {
+    // Check if user belongs to a per-seat org → pooled budget
+    const org = await organizationRepository.findByUserId(userId);
+    if (org && org.billingModel === 'per_seat') {
+      const perSeatBudget = config.AI_TIER_BUDGET_SME_PER_SEAT;
+      return perSeatBudget * org.seatCount;
+    }
+
     // Priority: per-user override → tier default → global fallback
     const userBudget = await aiBudgetRepository.getUserBudget(userId);
     const baseBudget = userBudget ?? getTierBudget(await aiBudgetRepository.getUserTier(userId));

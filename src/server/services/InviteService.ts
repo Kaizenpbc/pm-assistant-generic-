@@ -30,11 +30,19 @@ export class InviteService {
     const org = await organizationRepository.findByUserId(inviterUserId);
     if (!org) throw new Error('Organization not found');
 
-    // Check viewer limit
-    const currentViewers = await inviteTokenRepository.countActiveViewersByOrg(org.id);
-    const limit = org.viewerLimit ?? this.getViewerLimit(org.subscriptionTier);
-    if (currentViewers >= limit) {
-      throw new Error(`Viewer limit reached (${limit}). Upgrade your plan for more viewer seats.`);
+    // For non-viewer roles on per-seat orgs, check seat availability
+    if (role !== 'viewer' && org.billingModel === 'per_seat') {
+      const { seatService } = await import('./SeatService');
+      await seatService.validateSeatAvailability(org.id);
+    }
+
+    // Check viewer limit (skip for per-seat orgs — unlimited viewers)
+    if (role === 'viewer' && org.billingModel !== 'per_seat') {
+      const currentViewers = await inviteTokenRepository.countActiveViewersByOrg(org.id);
+      const limit = org.viewerLimit ?? this.getViewerLimit(org.subscriptionTier);
+      if (currentViewers >= limit) {
+        throw new Error(`Viewer limit reached (${limit}). Upgrade your plan for more viewer seats.`);
+      }
     }
 
     const id = uuidv4();
@@ -62,10 +70,21 @@ export class InviteService {
     await inviteTokenRepository.markAccepted(invite.id, userId);
 
     // Update user: set organization and role
-    await userService.update(userId, {
+    const updateData: Record<string, any> = {
       organizationId: invite.organizationId,
-      role: invite.role as any,
-    } as any);
+      role: invite.role,
+    };
+
+    // For non-viewer roles, sync subscription tier/status from org
+    if (invite.role !== 'viewer') {
+      const org = await organizationRepository.findById(invite.organizationId);
+      if (org) {
+        updateData.subscriptionTier = org.subscriptionTier;
+        updateData.subscriptionStatus = org.subscriptionStatus;
+      }
+    }
+
+    await userService.update(userId, updateData as any);
 
     // If invite has a project, add user as project member
     if (invite.projectId) {
