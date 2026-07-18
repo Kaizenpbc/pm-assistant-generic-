@@ -14,6 +14,8 @@ interface PlanDef {
   storage: string;
   viewerInvites: string;
   highlight?: boolean;
+  perSeat?: boolean;
+  minSeats?: number;
   features: string[];
 }
 
@@ -41,18 +43,20 @@ const PLANS: PlanDef[] = [
   {
     tier: 'sme',
     name: 'SME',
-    monthly: 39,
-    annual: 390,
-    tokens: '1.5M',
-    tokensEquiv: '~300 AI chats, 150 risk scans, or 75 reports/mo',
+    monthly: 33,
+    annual: 330,
+    tokens: '500K',
+    tokensEquiv: '500K AI tokens per seat, pooled across your team',
     storage: '5GB',
-    viewerInvites: '20',
+    viewerInvites: 'Unlimited',
     highlight: true,
+    perSeat: true,
+    minSeats: 3,
     features: [
       'Everything in Consultant, plus:',
-      'AI tokens: 1.5M/mo (3x Consultant)',
+      '500K AI tokens per seat (pooled)',
       '5GB file storage',
-      '20 viewer invites for clients',
+      'Unlimited viewer invites',
       'EVM dashboard & Monte Carlo',
       'Resource management & heatmaps',
       'Custom report builder',
@@ -91,9 +95,9 @@ interface FeatureRow {
 
 const COMPARISON: FeatureRow[] = [
   { feature: 'Projects', trial: '3', consultant: 'Unlimited', sme: 'Unlimited', enterprise: 'Unlimited' },
-  { feature: 'AI tokens/month', trial: '25K', consultant: '500K', sme: '1.5M', enterprise: '5M' },
+  { feature: 'AI tokens/month', trial: '25K', consultant: '500K', sme: '500K/seat', enterprise: '5M' },
   { feature: 'File Storage', trial: '100MB', consultant: '1GB', sme: '5GB', enterprise: '10GB' },
-  { feature: 'Viewer Invites', trial: '0', consultant: '5', sme: '20', enterprise: 'Unlimited' },
+  { feature: 'Viewer Invites', trial: '0', consultant: '5', sme: 'Unlimited', enterprise: 'Unlimited' },
   { feature: 'Duration', trial: '14 days', consultant: 'Unlimited', sme: 'Unlimited', enterprise: 'Unlimited' },
   { feature: 'Mjuzi AI Assistant', trial: true, consultant: true, sme: true, enterprise: true },
   { feature: 'Gantt Charts & Critical Path', trial: true, consultant: true, sme: true, enterprise: true },
@@ -121,6 +125,7 @@ export const PricingPage: React.FC = () => {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [smeSeats, setSmeSeats] = useState(3);
 
   const currentTier = user?.subscriptionTier || 'trial';
   const isSubscribed = currentTier === 'consultant' || currentTier === 'sme' || currentTier === 'enterprise';
@@ -133,7 +138,8 @@ export const PricingPage: React.FC = () => {
     setLoading(tier);
     setError(null);
     try {
-      const { url } = await apiService.createCheckoutSession(billing, tier);
+      const seats = tier === 'sme' ? smeSeats : undefined;
+      const { url } = await apiService.createCheckoutSession(billing, tier, seats);
       window.location.href = url;
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to start checkout. Please try again.';
@@ -248,8 +254,10 @@ export const PricingPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
             {PLANS.map((plan) => {
               const isCurrent = currentTier === plan.tier;
-              const price = billing === 'monthly' ? plan.monthly : plan.annual;
-              const perMonth = billing === 'annual' ? (plan.annual / 12).toFixed(2) : null;
+              const seats = plan.perSeat ? smeSeats : 1;
+              const unitPrice = billing === 'monthly' ? plan.monthly : plan.annual;
+              const price = plan.perSeat ? unitPrice * seats : unitPrice;
+              const perMonth = billing === 'annual' ? ((plan.annual * seats) / 12).toFixed(2) : null;
 
               return (
                 <div
@@ -270,19 +278,63 @@ export const PricingPage: React.FC = () => {
 
                   <div className="mb-4">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">{plan.name}</h2>
-                    <div className="mt-3 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                        ${price}
-                      </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        /{billing === 'monthly' ? 'mo' : 'yr'}
-                      </span>
-                    </div>
-                    {perMonth && (
-                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">~${perMonth}/mo</p>
+                    {plan.perSeat ? (
+                      <>
+                        <div className="mt-3 flex items-baseline gap-1">
+                          <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                            ${unitPrice}
+                          </span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            /seat/{billing === 'monthly' ? 'mo' : 'yr'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {seats} seats = <span className="font-semibold text-gray-900 dark:text-white">${price}/{billing === 'monthly' ? 'mo' : 'yr'}</span>
+                        </p>
+                        {/* Seat selector */}
+                        <div className="mt-3 flex items-center gap-3">
+                          <label className="text-xs text-gray-500 dark:text-gray-400 font-medium">Seats:</label>
+                          <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                            <button
+                              onClick={() => setSmeSeats((s) => Math.max(plan.minSeats || 3, s - 1))}
+                              className="px-2.5 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-30"
+                              disabled={smeSeats <= (plan.minSeats || 3)}
+                            >
+                              &minus;
+                            </button>
+                            <span className="px-3 py-1 text-sm font-semibold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 min-w-[2.5rem] text-center">
+                              {smeSeats}
+                            </span>
+                            <button
+                              onClick={() => setSmeSeats((s) => Math.min(50, s + 1))}
+                              className="px-2.5 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">{plan.minSeats}+ min</span>
+                        </div>
+                        {perMonth && (
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-1">~${perMonth}/mo</p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="mt-3 flex items-baseline gap-1">
+                          <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                            ${price}
+                          </span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            /{billing === 'monthly' ? 'mo' : 'yr'}
+                          </span>
+                        </div>
+                        {perMonth && (
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-1">~${perMonth}/mo</p>
+                        )}
+                      </>
                     )}
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                      {plan.tokens} AI tokens/month | {plan.storage} storage
+                      {plan.perSeat ? `${plan.tokens} AI tokens/seat/month` : `${plan.tokens} AI tokens/month`} | {plan.storage} storage
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                       {plan.tokensEquiv}

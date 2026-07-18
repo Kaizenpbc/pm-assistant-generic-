@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   CreditCard,
@@ -11,6 +11,8 @@ import {
   Zap,
   XCircle,
   Plus,
+  Minus,
+  Users,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 
@@ -78,9 +80,9 @@ const TIER_FEATURES: Record<string, string[]> = {
   sme: [
     'Unlimited projects',
     'All features included',
-    '1.5M AI tokens/month',
+    '500K AI tokens per seat (pooled)',
     '5GB file storage',
-    '20 viewer invites',
+    'Unlimited viewer invites',
   ],
   enterprise: [
     'Unlimited projects',
@@ -98,8 +100,11 @@ function formatTokens(n: number) {
 }
 
 export const AccountBillingPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const [portalLoading, setPortalLoading] = useState(false);
   const [topUpLoading, setTopUpLoading] = useState(false);
+  const [seatLoading, setSeatLoading] = useState(false);
+  const [seatError, setSeatError] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery<SubscriptionStatus>({
     queryKey: ['subscription-status'],
@@ -115,6 +120,12 @@ export const AccountBillingPage: React.FC = () => {
     queryKey: ['ai-budget'],
     queryFn: () => apiService.getAiBudget(),
     staleTime: 5 * 60_000,
+  });
+
+  const { data: seatData } = useQuery({
+    queryKey: ['seat-info'],
+    queryFn: () => apiService.getSeatInfo(),
+    enabled: data?.tier === 'sme',
   });
 
   const handleManageBilling = async () => {
@@ -134,6 +145,24 @@ export const AccountBillingPage: React.FC = () => {
       window.location.href = result.url;
     } catch {
       setTopUpLoading(false);
+    }
+  };
+
+  const handleSeatChange = async (action: 'add' | 'remove') => {
+    setSeatLoading(true);
+    setSeatError(null);
+    try {
+      if (action === 'add') {
+        await apiService.addSeats(1);
+      } else {
+        await apiService.removeSeats(1);
+      }
+      queryClient.invalidateQueries({ queryKey: ['seat-info'] });
+      queryClient.invalidateQueries({ queryKey: ['ai-budget'] });
+    } catch (err: any) {
+      setSeatError(err?.response?.data?.message || `Failed to ${action} seat.`);
+    } finally {
+      setSeatLoading(false);
     }
   };
 
@@ -248,6 +277,63 @@ export const AccountBillingPage: React.FC = () => {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {formatTokens(budgetData.remaining)} tokens remaining &middot; {budgetData.requestCount} API calls this month
               </p>
+            </div>
+          )}
+
+          {/* Seat Management (SME per-seat only) */}
+          {seatData && seatData.billingModel === 'per_seat' && (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6 mb-4">
+              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Team Seats</h2>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {seatData.usedSeats} of {seatData.paidSeats} seats used
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {seatData.availableSeats} seat{seatData.availableSeats !== 1 ? 's' : ''} available &middot; ${(seatData.seatPriceCents / 100).toFixed(0)}/seat/mo
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleSeatChange('remove')}
+                    disabled={seatLoading || seatData.paidSeats <= 3}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-30"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleSeatChange('add')}
+                    disabled={seatLoading}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add Seat
+                  </button>
+                </div>
+              </div>
+              {/* Seat usage bar */}
+              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-blue-500 transition-all"
+                  style={{ width: `${seatData.paidSeats > 0 ? (seatData.usedSeats / seatData.paidSeats) * 100 : 0}%` }}
+                />
+              </div>
+              {seatError && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-2 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> {seatError}
+                </p>
+              )}
+              {seatLoading && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
+                  <span className="w-3 h-3 border border-gray-400 border-t-primary-500 rounded-full animate-spin" />
+                  Updating seats...
+                </p>
+              )}
             </div>
           )}
 

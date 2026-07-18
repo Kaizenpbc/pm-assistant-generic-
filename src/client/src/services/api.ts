@@ -149,8 +149,23 @@ class ApiService {
   // Stripe / Subscription endpoints
   // -------------------------------------------------------------------------
 
-  async createCheckoutSession(plan: 'monthly' | 'annual' = 'monthly', tier: string = 'consultant') {
-    const response = await this.api.post('/stripe/create-checkout-session', { plan, tier });
+  async createCheckoutSession(plan: 'monthly' | 'annual' = 'monthly', tier: string = 'consultant', seats?: number) {
+    const response = await this.api.post('/stripe/create-checkout-session', { plan, tier, ...(seats != null && { seats }) });
+    return response.data;
+  }
+
+  async getSeatInfo(): Promise<{ usedSeats: number; paidSeats: number; availableSeats: number; billingModel: string; seatPriceCents: number }> {
+    const response = await this.api.get('/seats');
+    return response.data;
+  }
+
+  async addSeats(count: number): Promise<{ paidSeats: number; message: string }> {
+    const response = await this.api.post('/seats/add', { count });
+    return response.data;
+  }
+
+  async removeSeats(count: number): Promise<{ paidSeats: number; message: string }> {
+    const response = await this.api.post('/seats/remove', { count });
     return response.data;
   }
 
