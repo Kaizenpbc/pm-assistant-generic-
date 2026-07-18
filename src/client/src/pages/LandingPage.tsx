@@ -695,13 +695,13 @@ export const LandingPage: React.FC = () => {
               Start free, upgrade when you need more power
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {pricingTiers.map((tier) => (
               <div
                 key={tier.name}
-                className={`rounded-2xl p-8 transition-all duration-300 ${
+                className={`rounded-2xl p-6 transition-all duration-300 ${
                   tier.highlighted
-                    ? 'bg-gradient-to-br from-blue-600 to-cyan-500 text-white ring-4 ring-blue-400/30 ring-offset-2 ring-offset-[#0a0f1a] shadow-2xl shadow-blue-500/20 scale-105'
+                    ? 'bg-gradient-to-br from-blue-600 to-cyan-500 text-white ring-4 ring-blue-400/30 ring-offset-2 ring-offset-[#0a0f1a] shadow-2xl shadow-blue-500/20'
                     : 'bg-[#111827]/70 backdrop-blur-sm border border-white/10 hover:border-white/15'
                 } ${tier.disabled ? 'opacity-60' : ''}`}
               >
