@@ -4,9 +4,10 @@ import { inviteTokenRepository, InviteToken } from '../database/InviteTokenRepos
 import { organizationRepository } from '../database/OrganizationRepository';
 import { emailService } from './EmailService';
 import { userService } from './UserService';
+import { pricingConfigService } from './PricingConfigService';
 import logger from '../utils/logger';
 
-const VIEWER_LIMITS: Record<string, number> = {
+const VIEWER_LIMITS_FALLBACK: Record<string, number> = {
   trial: 0,
   consultant: 5,
   sme: 999999,
@@ -14,8 +15,12 @@ const VIEWER_LIMITS: Record<string, number> = {
 };
 
 export class InviteService {
-  getViewerLimit(tier: string): number {
-    return VIEWER_LIMITS[tier] ?? 0;
+  async getViewerLimit(tier: string): Promise<number> {
+    try {
+      return await pricingConfigService.getViewerLimit(tier);
+    } catch {
+      return VIEWER_LIMITS_FALLBACK[tier] ?? 0;
+    }
   }
 
   async createInvite(
@@ -39,7 +44,7 @@ export class InviteService {
     // Check viewer limit (skip for per-seat orgs — unlimited viewers)
     if (role === 'viewer' && org.billingModel !== 'per_seat') {
       const currentViewers = await inviteTokenRepository.countActiveViewersByOrg(org.id);
-      const limit = org.viewerLimit ?? this.getViewerLimit(org.subscriptionTier);
+      const limit = org.viewerLimit ?? await this.getViewerLimit(org.subscriptionTier);
       if (currentViewers >= limit) {
         throw new Error(`Viewer limit reached (${limit}). Upgrade your plan for more viewer seats.`);
       }

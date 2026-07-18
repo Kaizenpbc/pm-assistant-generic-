@@ -5,7 +5,7 @@ import { WhatIfScenarioService } from '../../services/whatIfScenarioService';
 import { AIScenarioRequestSchema } from '../../schemas/phase5Schemas';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
-import { requirePaidTier } from '../../middleware/requireTier';
+import { requireFeature } from '../../middleware/requireTier';
 
 export async function intelligenceRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -16,7 +16,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
 
   // Anomaly Detection
   fastify.get('/anomalies', {
-    preHandler: [requireScope('read'), requirePaidTier],
+    preHandler: [requireScope('read'), requireFeature('cross_project_intelligence')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
@@ -29,7 +29,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/anomalies/project/:projectId', {
-    preHandler: [requireScope('read'), requirePaidTier],
+    preHandler: [requireScope('read'), requireFeature('cross_project_intelligence')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
@@ -44,7 +44,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
 
   // Cross-Project Intelligence
   fastify.get('/cross-project', {
-    preHandler: [requireScope('read'), requirePaidTier],
+    preHandler: [requireScope('read'), requireFeature('cross_project_intelligence')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
@@ -57,7 +57,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/cross-project/similar/:projectId', {
-    preHandler: [requireScope('read'), requirePaidTier],
+    preHandler: [requireScope('read'), requireFeature('cross_project_intelligence')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
@@ -72,7 +72,7 @@ export async function intelligenceRoutes(fastify: FastifyInstance) {
 
   // What-If Scenarios
   fastify.post('/scenarios', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write'), requireFeature('cross_project_intelligence')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AIScenarioRequestSchema.parse(request.body);

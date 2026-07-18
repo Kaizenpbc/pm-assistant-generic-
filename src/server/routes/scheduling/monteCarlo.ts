@@ -3,13 +3,13 @@ import { monteCarloService } from '../../services/MonteCarloService';
 import { MonteCarloConfigSchema } from '../../schemas/monteCarloSchemas';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
-import { requirePaidTier } from '../../middleware/requireTier';
+import { requireFeature } from '../../middleware/requireTier';
 
 export async function monteCarloRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // POST /:scheduleId/simulate — Run Monte Carlo simulation for a schedule
-  fastify.post('/:scheduleId/simulate', { preHandler: [requireScope('write'), requirePaidTier] }, async (
+  fastify.post('/:scheduleId/simulate', { preHandler: [requireScope('write'), requireFeature('monte_carlo')] }, async (
     request: FastifyRequest,
     reply: FastifyReply,
   ) => {

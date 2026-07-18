@@ -3,7 +3,7 @@ import { NLQueryService } from '../../services/NLQueryService';
 import { NLQueryRequestSchema } from '../../schemas/nlQuerySchemas';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
-import { requirePaidTier } from '../../middleware/requireTier';
+import { requireFeature } from '../../middleware/requireTier';
 
 export async function nlQueryRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -12,7 +12,7 @@ export async function nlQueryRoutes(fastify: FastifyInstance) {
 
   // POST / — process a natural-language query
   fastify.post('/', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write'), requireFeature('nl_query')],
     schema: {
       description: 'Process a natural-language query about project data and return an answer with optional chart visualizations',
       tags: ['nl-query'],

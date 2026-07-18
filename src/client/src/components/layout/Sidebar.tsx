@@ -29,6 +29,7 @@ import {
   MessageCircleHeart,
   Zap,
   DollarSign,
+  Tag,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -98,6 +99,7 @@ const adminNavSections: NavSection[] = [
     items: [
       { labelKey: 'nav.adminUsers', icon: Users, path: '/admin/users' },
       { labelKey: 'nav.adminTenants', icon: Building, path: '/admin/tenants' },
+      { labelKey: 'nav.adminPricing', icon: Tag, path: '/admin/pricing' },
       { labelKey: 'nav.adminFeedback', icon: MessageCircleHeart, path: '/admin/feedback' },
     ],
   },

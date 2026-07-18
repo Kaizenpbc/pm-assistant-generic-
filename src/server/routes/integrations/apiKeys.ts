@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { apiKeyService } from '../../services/ApiKeyService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
-import { requirePaidTier } from '../../middleware/requireTier';
+import { requireFeature } from '../../middleware/requireTier';
 import logger from '../../utils/logger';
 
 const createApiKeySchema = z.object({
@@ -18,7 +18,7 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // POST / — Create a new API key
-  fastify.post('/', { preHandler: [requireScope('write'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/', { preHandler: [requireScope('write'), requireFeature('api_keys')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = request.user!;
       if (!user?.userId) return reply.status(401).send({ error: 'Unauthorized' });

@@ -23,6 +23,7 @@
     "admin": "Admin",
     "adminUsers": "Users",
     "adminTenants": "Tenants",
+    "adminPricing": "Pricing",
     "adminRevenue": "Revenue",
     "adminAiUsage": "AI Usage",
     "adminOperations": "Operations",

@@ -6,7 +6,7 @@ import {
 } from '../../schemas/meetingSchemas';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
-import { requirePaidTier } from '../../middleware/requireTier';
+import { requireFeature } from '../../middleware/requireTier';
 
 export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -16,7 +16,7 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   // ---------------------------------------------------------------------------
 
   fastify.post('/analyze', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write'), requireFeature('meeting_intelligence')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AnalyzeRequestSchema.parse(request.body);
@@ -44,7 +44,7 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   // ---------------------------------------------------------------------------
 
   fastify.post('/:analysisId/apply', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write'), requireFeature('meeting_intelligence')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { analysisId } = request.params as { analysisId: string };
@@ -72,7 +72,7 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   // ---------------------------------------------------------------------------
 
   fastify.get('/project/:projectId/history', {
-    preHandler: [requireScope('read'), requirePaidTier],
+    preHandler: [requireScope('read'), requireFeature('meeting_intelligence')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };

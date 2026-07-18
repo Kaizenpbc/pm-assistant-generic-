@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { apiService } from '../../services/api';
 
@@ -19,7 +20,7 @@ export interface PlanDef {
   features: string[];
 }
 
-export const PLANS: PlanDef[] = [
+const FALLBACK_PLANS: PlanDef[] = [
   {
     tier: 'trial',
     name: 'Free Trial',
@@ -83,6 +84,25 @@ export const PLANS: PlanDef[] = [
   },
 ];
 
+function mapApiToPlan(t: any): PlanDef {
+  return {
+    tier: t.tier,
+    name: t.displayName,
+    monthly: t.monthlyPriceCents / 100,
+    annual: t.annualPriceCents / 100,
+    tokens: t.aiTokensLabel,
+    tokensEquiv: t.aiTokensDescription || '',
+    storage: t.storageLabel,
+    viewerInvites: t.viewerLimitLabel,
+    highlight: t.highlight,
+    perSeat: t.isPerSeat,
+    minSeats: t.minSeats,
+    features: t.featuresJson || [],
+  };
+}
+
+export { FALLBACK_PLANS as PLANS };
+
 export interface FeatureRow {
   feature: string;
   trial: boolean | string;
@@ -127,6 +147,17 @@ export const PricingCards: React.FC<PricingCardsProps> = ({ mode }) => {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [smeSeats, setSmeSeats] = useState(3);
+
+  const { data: pricingData } = useQuery({
+    queryKey: ['pricing-config'],
+    queryFn: () => apiService.getPricingConfig(),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  const PLANS: PlanDef[] = pricingData?.tiers
+    ? pricingData.tiers.map(mapApiToPlan)
+    : FALLBACK_PLANS;
 
   const currentTier = user?.subscriptionTier || 'trial';
   const isSubscribed = currentTier === 'consultant' || currentTier === 'sme';

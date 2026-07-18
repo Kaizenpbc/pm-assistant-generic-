@@ -4,14 +4,14 @@ import { projectService } from '../../services/ProjectService';
 import { criticalPathService } from '../../services/CriticalPathService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
-import { requirePaidTier } from '../../middleware/requireTier';
+import { requireFeature } from '../../middleware/requireTier';
 import logger from '../../utils/logger';
 
 export async function exportRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // GET /exports/projects/:id/export?format=csv|json
-  fastify.get('/projects/:id/export', { preHandler: [requireScope('read'), requirePaidTier] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/projects/:id/export', { preHandler: [requireScope('read'), requireFeature('exports')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       const { format } = request.query as { format?: string };

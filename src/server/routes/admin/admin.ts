@@ -8,6 +8,8 @@ import { userService } from '../../services/UserService';
 import { auditLedgerService } from '../../services/AuditLedgerService';
 import { subscriptionEventRepository } from '../../database/SubscriptionEventRepository';
 import { redisService } from '../../services/RedisService';
+import { pricingConfigService } from '../../services/PricingConfigService';
+import { pricingConfigRepository } from '../../database/PricingConfigRepository';
 import { config, getTierBudget } from '../../config';
 
 const statusSchema = z.object({
@@ -420,6 +422,60 @@ export async function adminRoutes(fastify: FastifyInstance) {
         storageConfig,
         tierBudgets,
       };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // GET /api/v1/admin/pricing — all tiers + features
+  fastify.get('/pricing', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!requireAdmin(request, reply)) return;
+    try {
+      const tiers = await pricingConfigRepository.findAllActive();
+      const features = await pricingConfigRepository.getAllFeatures();
+      return { tiers, features };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // PUT /api/v1/admin/pricing/:tier — update tier config
+  fastify.put('/pricing/:tier', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!requireAdmin(request, reply)) return;
+    const { tier } = request.params as { tier: string };
+    const body = request.body as Record<string, any>;
+
+    try {
+      const existing = await pricingConfigRepository.findByTier(tier);
+      if (!existing) {
+        return reply.status(404).send({ error: 'Tier not found' });
+      }
+
+      await pricingConfigRepository.updateTier(tier, body);
+      await pricingConfigService.invalidateCache();
+
+      const updated = await pricingConfigRepository.findByTier(tier);
+      return { tier: updated };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // PUT /api/v1/admin/pricing/:tier/features — update feature toggles
+  fastify.put('/pricing/:tier/features', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!requireAdmin(request, reply)) return;
+    const { tier } = request.params as { tier: string };
+    const body = request.body as Record<string, boolean>;
+
+    try {
+      await pricingConfigRepository.setFeaturesBulk(tier, body);
+      await pricingConfigService.invalidateCache();
+
+      const features = await pricingConfigRepository.getFeatures(tier);
+      return { features };
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Internal server error' });

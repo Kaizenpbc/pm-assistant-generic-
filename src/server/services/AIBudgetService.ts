@@ -2,6 +2,7 @@ import { aiBudgetRepository } from '../database/AIBudgetRepository';
 import { tokenTopUpRepository } from '../database/TokenTopUpRepository';
 import { organizationRepository } from '../database/OrganizationRepository';
 import { config, getTierBudget } from '../config';
+import { pricingConfigService } from './PricingConfigService';
 import { notificationService } from './NotificationService';
 import { deadLetterService } from './DeadLetterService';
 
@@ -101,13 +102,27 @@ class AIBudgetService {
     // Check if user belongs to a per-seat org → pooled budget
     const org = await organizationRepository.findByUserId(userId);
     if (org && org.billingModel === 'per_seat') {
-      const perSeatBudget = config.AI_TIER_BUDGET_SME_PER_SEAT;
+      const tier = org.subscriptionTier || 'sme';
+      let perSeatBudget: number;
+      try {
+        perSeatBudget = await pricingConfigService.getAIBudget(tier);
+      } catch {
+        perSeatBudget = config.AI_TIER_BUDGET_SME_PER_SEAT;
+      }
       return perSeatBudget * org.seatCount;
     }
 
-    // Priority: per-user override → tier default → global fallback
+    // Priority: per-user override → DB pricing config → env var fallback
     const userBudget = await aiBudgetRepository.getUserBudget(userId);
-    const baseBudget = userBudget ?? getTierBudget(await aiBudgetRepository.getUserTier(userId));
+    const userTier = await aiBudgetRepository.getUserTier(userId);
+    let tierBudget: number;
+    try {
+      tierBudget = await pricingConfigService.getAIBudget(userTier);
+      if (!tierBudget) tierBudget = getTierBudget(userTier);
+    } catch {
+      tierBudget = getTierBudget(userTier);
+    }
+    const baseBudget = userBudget ?? tierBudget;
 
     // Add any purchased top-up tokens
     const topUpTokens = await tokenTopUpRepository.getRemainingTokens(userId);

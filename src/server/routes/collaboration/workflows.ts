@@ -4,7 +4,7 @@ import { dagWorkflowService } from '../../services/DagWorkflowService';
 import { scheduleService } from '../../services/ScheduleService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
-import { requirePaidTier } from '../../middleware/requireTier';
+import { requireFeature } from '../../middleware/requireTier';
 import { claudeService } from '../../services/claudeService';
 import { workflowGenerateRequestSchema, workflowGenerationOutputSchema, WORKFLOW_GENERATION_SYSTEM_PROMPT } from '../../schemas/workflowGenerationSchemas';
 import logger from '../../utils/logger';
@@ -60,7 +60,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/workflows/generate — AI-generate workflow from natural language
   fastify.post('/generate', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write'), requireFeature('workflows')],
     schema: { description: 'Generate a workflow definition from natural language', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -102,7 +102,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/workflows — list definitions
   fastify.get('/', {
-    preHandler: [requireScope('read'), requirePaidTier],
+    preHandler: [requireScope('read'), requireFeature('workflows')],
     schema: { description: 'List workflow definitions', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -117,7 +117,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/workflows/:id — get definition with nodes + edges
   fastify.get('/:id', {
-    preHandler: [requireScope('read'), requirePaidTier],
+    preHandler: [requireScope('read'), requireFeature('workflows')],
     schema: { description: 'Get workflow definition with graph', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -133,7 +133,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/workflows — create definition
   fastify.post('/', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write'), requireFeature('workflows')],
     schema: { description: 'Create a workflow definition', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -155,7 +155,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // PUT /api/v1/workflows/:id — update definition
   fastify.put('/:id', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write'), requireFeature('workflows')],
     schema: { description: 'Update a workflow definition', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -175,7 +175,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // DELETE /api/v1/workflows/:id — delete definition
   fastify.delete('/:id', {
-    preHandler: [requireScope('admin'), requirePaidTier],
+    preHandler: [requireScope('admin'), requireFeature('workflows')],
     schema: { description: 'Delete a workflow definition', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -191,7 +191,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // PATCH /api/v1/workflows/:id/toggle — enable/disable
   fastify.patch('/:id/toggle', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write'), requireFeature('workflows')],
     schema: { description: 'Toggle workflow enabled/disabled', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -211,7 +211,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/workflows/:id/trigger — manual trigger
   fastify.post('/:id/trigger', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write'), requireFeature('workflows')],
     schema: { description: 'Manually trigger a workflow', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -231,7 +231,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/workflows/executions — list executions
   fastify.get('/executions', {
-    preHandler: [requireScope('read'), requirePaidTier],
+    preHandler: [requireScope('read'), requireFeature('workflows')],
     schema: { description: 'List workflow executions', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -249,7 +249,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // GET /api/v1/workflows/executions/:id — get execution detail
   fastify.get('/executions/:id', {
-    preHandler: [requireScope('read'), requirePaidTier],
+    preHandler: [requireScope('read'), requireFeature('workflows')],
     schema: { description: 'Get workflow execution details', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -265,7 +265,7 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/workflows/executions/:id/resume — resume waiting execution
   fastify.post('/executions/:id/resume', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write'), requireFeature('workflows')],
     schema: { description: 'Resume a waiting workflow execution', tags: ['workflows'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

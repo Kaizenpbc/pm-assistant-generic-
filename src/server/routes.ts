@@ -14,6 +14,7 @@ import { bulkRoutes } from './routes/core/bulk';
 import { feedbackRoutes } from './routes/core/feedback';
 import { inviteRoutes } from './routes/core/invites';
 import { seatRoutes } from './routes/core/seats';
+import { pricingRoutes } from './routes/core/pricing';
 
 // Scheduling
 import { scheduleRoutes } from './routes/scheduling/schedules';
@@ -113,6 +114,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(feedbackRoutes, { prefix: '/api/v1/feedback' });
   await fastify.register(inviteRoutes, { prefix: '/api/v1/invites' });
   await fastify.register(seatRoutes, { prefix: '/api/v1/seats' });
+  await fastify.register(pricingRoutes, { prefix: '/api/v1/pricing' });
 
   // Scheduling
   await fastify.register(scheduleRoutes, { prefix: '/api/v1/schedules' });

@@ -50,6 +50,7 @@ const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage').then(m 
 const AdminOperationsPage = lazy(() => import('./pages/admin/AdminOperationsPage').then(m => ({ default: m.AdminOperationsPage })));
 const AdminFeedbackPage = lazy(() => import('./pages/admin/AdminFeedbackPage').then(m => ({ default: m.AdminFeedbackPage })));
 const AdminRevenuePage = lazy(() => import('./pages/admin/AdminRevenuePage').then(m => ({ default: m.AdminRevenuePage })));
+const AdminPricingPage = lazy(() => import('./pages/admin/AdminPricingPage').then(m => ({ default: m.AdminPricingPage })));
 const AgentProposalsPage = lazy(() => import('./pages/AgentProposalsPage').then(m => ({ default: m.AgentProposalsPage })));
 const ChangeRequestsPage = lazy(() => import('./pages/ChangeRequestsPage').then(m => ({ default: m.ChangeRequestsPage })));
 const GoalsPage = lazy(() => import('./pages/GoalsPage').then(m => ({ default: m.GoalsPage })));
@@ -163,6 +164,7 @@ function App() {
         <Route path="/admin/operations" element={<PrivateRoute><AdminOperationsPage /></PrivateRoute>} />
         <Route path="/admin/feedback" element={<PrivateRoute><AdminFeedbackPage /></PrivateRoute>} />
         <Route path="/admin/revenue" element={<PrivateRoute><AdminRevenuePage /></PrivateRoute>} />
+        <Route path="/admin/pricing" element={<PrivateRoute><AdminPricingPage /></PrivateRoute>} />
         <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
 
         {/* Catch-all */}

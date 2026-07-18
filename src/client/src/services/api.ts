@@ -2207,6 +2207,30 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
   }
 
   // -------------------------------------------------------------------------
+  // Pricing Config
+  // -------------------------------------------------------------------------
+
+  async getPricingConfig() {
+    const response = await this.api.get('/pricing');
+    return response.data;
+  }
+
+  async getAdminPricing() {
+    const response = await this.api.get('/admin/pricing');
+    return response.data;
+  }
+
+  async updateAdminPricing(tier: string, data: Record<string, unknown>) {
+    const response = await this.api.put(`/admin/pricing/${tier}`, data);
+    return response.data;
+  }
+
+  async updateAdminFeatures(tier: string, features: Record<string, boolean>) {
+    const response = await this.api.put(`/admin/pricing/${tier}/features`, features);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
   // Notification Preferences
   // -------------------------------------------------------------------------
 
