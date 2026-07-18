@@ -930,9 +930,20 @@ The `EmailService` sends automated reminder emails to users approaching the end 
 
 A daily cron job runs at **09:00** to scan for trials expiring within the relevant windows and dispatch the appropriate email. Redis-backed deduplication prevents the same reminder from being sent more than once per user per trigger window — if the cron runs multiple times or a user is picked up on consecutive days for the same window, only one email is delivered.
 
-### Pricing Page — Checkout Error Display
+### Pricing Page
 
-When a Stripe Checkout session fails to initialize (network error, invalid price ID, Stripe API error), the Pricing page now displays an **inline error banner** above the plan's CTA button. The banner shows the error message in a styled red alert box. Previously, checkout errors failed silently with no user-visible feedback.
+The Pricing page (`/pricing`) presents three paid tiers (Pro, Business, Consultant) with monthly/annual billing toggle and a 17%-save badge on annual plans. Each plan card shows:
+
+- Price and billing period
+- AI token allowance with **practical usage equivalents** (e.g., "~100 AI chats, 50 risk scans, or 25 reports/mo") so users understand what their token budget means in real terms
+- Feature list with checkmarks
+- Subscribe / Switch Plan / Current Plan button (context-aware based on auth state and current tier)
+
+Below the plan cards, a **Feature Comparison Matrix** provides a 22-row side-by-side table across all 4 tiers (Free, Pro, Business, Consultant). Features are marked with checkmarks (included), X marks (excluded), or text values (e.g., "3", "1GB", "Unlimited"). The table covers projects, AI tokens, exports, API access, EVM, Monte Carlo, resource management, workflows, portal, intelligence features, meeting tools, MCP, storage, and top-ups.
+
+A **Token Top-Up CTA** below the comparison table lets users purchase additional token packs ($5 per 500K).
+
+**Checkout Error Display:** When a Stripe Checkout session fails to initialize (network error, invalid price ID, Stripe API error), the Pricing page displays an **inline error banner** in a styled red alert box.
 
 ---
 
@@ -1831,3 +1842,12 @@ The `GET /api/v1/projects` response now includes an `isFavourite` boolean flag p
 - **Project cards** show a star icon in the header — filled amber when favourited, outline when not. Click toggles the state.
 - **Projects page** sorts favourited projects to the top of the grid.
 - **Sidebar** shows a "Pinned" section below the main navigation (PM view only) with up to 5 favourite projects as direct links.
+
+### AI Token Usage Indicator
+
+The sidebar displays a real-time **AI Token Usage Indicator** above the user section:
+
+- **Expanded sidebar**: Shows "AI Tokens" label, percentage used, a progress bar, and "{remaining} of {budget} remaining" text.
+- **Collapsed sidebar**: Shows a compact SVG ring chart with a lightning bolt icon.
+- **Color-coded**: Green (<70% used), amber (70-90%), red (>90%).
+- Data is fetched from `GET /api/v1/ai/budget` with a 5-minute stale time (React Query). Only shown to authenticated users.

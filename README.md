@@ -280,7 +280,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Automated enforcement of organizational standards
 
 ### Billing (Stripe)
-- Subscription management with tiered pricing
+- Subscription management with tiered pricing (Pro/Business/Consultant), feature comparison matrix, usage equivalents, and sidebar token usage indicator
 - Usage-based billing support
 - Stripe Checkout and customer portal integration
 
