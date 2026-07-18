@@ -430,14 +430,14 @@ export const PricingPage: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-8">
               Compare plans
             </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto flex justify-center">
+              <table className="text-sm" style={{ maxWidth: '700px', width: '100%' }}>
                 <thead>
                   <tr className="border-b-2 border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 pr-4 font-semibold text-gray-900 dark:text-white">Feature</th>
-                    <th className="text-center py-3 px-3 font-semibold text-gray-500 dark:text-gray-400 w-24">Trial</th>
-                    <th className="text-center py-3 px-3 font-semibold text-gray-900 dark:text-white w-24">Consultant</th>
-                    <th className="text-center py-3 px-3 font-semibold text-primary-600 dark:text-primary-400 w-24">SME</th>
+                    <th className="text-left py-3 pr-6 font-semibold text-gray-900 dark:text-white">Feature</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-500 dark:text-gray-400 w-24">Trial</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-900 dark:text-white w-28">Consultant</th>
+                    <th className="text-center py-3 px-4 font-semibold text-primary-600 dark:text-primary-400 w-24">SME</th>
                   </tr>
                 </thead>
                 <tbody>
