@@ -14,4 +14,4 @@ CREATE TABLE IF NOT EXISTS subscription_events (
   INDEX idx_sub_events_type (event_type),
   INDEX idx_sub_events_created (created_at DESC),
   UNIQUE KEY idx_sub_events_stripe_dedup (stripe_event_id, event_type)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
