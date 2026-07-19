@@ -159,6 +159,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
             onClick={handleNewConversation}
             className="rounded-md p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
             title="New conversation"
+            aria-label="New conversation"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -169,6 +170,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
             }}
             className={`rounded-md p-1.5 ${showHistory ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300'}`}
             title="Conversation history"
+            aria-label="Conversation history"
           >
             <History className="h-4 w-4" />
           </button>
@@ -303,6 +305,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
           <button
             onClick={scrollToBottom}
             className="rounded-full bg-white dark:bg-gray-800 p-1.5 shadow-md ring-1 ring-gray-200 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+            aria-label="Scroll to bottom"
           >
             <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           </button>
@@ -329,6 +332,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
               onClick={clearChat}
               className="rounded-md p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
               title="Clear chat"
+              aria-label="Clear chat"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -343,6 +347,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
                     : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300'
                 }`}
                 title={isListening ? 'Stop listening' : 'Speak your message'}
+                aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
               >
                 {isListening ? (
                   <MicOff className="h-4 w-4" />
@@ -370,6 +375,7 @@ export function AIChatPanel({ context }: AIChatPanelProps) {
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
             className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Send message"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

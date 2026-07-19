@@ -382,7 +382,7 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
             <>
               <div className="flex items-start justify-between gap-4">
                 <h2 className="text-lg font-bold text-gray-900 leading-snug">{proposal.title}</h2>
-                <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded flex-shrink-0">
+                <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded flex-shrink-0" aria-label="Close">
                   <X className="w-5 h-5" />
                 </button>
               </div>

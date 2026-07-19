@@ -140,7 +140,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
           <h3 className="text-lg font-semibold text-gray-900">
             {workflowId ? 'Edit Approval Workflow' : 'New Approval Workflow'}
           </h3>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -252,6 +252,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                           disabled={index === 0}
                           className="p-0.5 text-gray-400 hover:text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           title="Move up"
+                          aria-label="Move step up"
                         >
                           <ArrowUp className="w-3.5 h-3.5" />
                         </button>
@@ -261,6 +262,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                           disabled={index === steps.length - 1}
                           className="p-0.5 text-gray-400 hover:text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           title="Move down"
+                          aria-label="Move step down"
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
                         </button>
@@ -272,6 +274,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                         onClick={() => handleRemoveStep(index)}
                         className="p-1 text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
                         title="Remove step"
+                        aria-label="Remove step"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

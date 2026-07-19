@@ -73,7 +73,7 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
       <div className="relative w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl" role="dialog" aria-modal="true">
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{isEdit ? 'Edit Field' : 'Add Custom Field'}</h3>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -118,6 +118,7 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
                       type="button"
                       onClick={() => setForm(p => ({ ...p, options: p.options.filter((_: string, j: number) => j !== i) }))}
                       className="text-red-400 hover:text-red-600"
+                      aria-label="Remove option"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -133,7 +134,7 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
                   className="input flex-1 text-sm"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOption(); } }}
                 />
-                <button type="button" onClick={addOption} className="p-1.5 text-primary-600 hover:bg-primary-50 rounded">
+                <button type="button" onClick={addOption} className="p-1.5 text-primary-600 hover:bg-primary-50 rounded" aria-label="Add option">
                   <Plus className="w-4 h-4" />
                 </button>
               </div>

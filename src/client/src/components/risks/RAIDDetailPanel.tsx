@@ -520,6 +520,7 @@ export function RAIDDetailPanel({ projectId, raidId, onClose, onEdit, members }:
               onClick={handleSendComment}
               disabled={!commentText.trim() || sendingComment}
               className="p-2 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 text-white transition-colors"
+              aria-label="Send comment"
             >
               <Send className="w-4 h-4" />
             </button>

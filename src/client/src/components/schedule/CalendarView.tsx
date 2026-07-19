@@ -92,11 +92,11 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Previous month">
             <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
           </button>
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white min-w-[160px] text-center">{monthLabel}</h3>
-          <button onClick={nextMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button onClick={nextMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Next month">
             <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" />
           </button>
         </div>

@@ -143,7 +143,7 @@ const GoalModal: React.FC<{
             <Target className="w-5 h-5 text-green-600" />
             {title}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -259,8 +259,8 @@ const KeyResultRow: React.FC<{ kr: Goal; onEdit: (g: Goal) => void; onDelete: (i
         <span className="text-xs text-gray-400 w-7 text-right">{pct}%</span>
       </div>
       <div className="flex items-center gap-1">
-        <button onClick={() => onEdit(kr)} className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 className="w-3.5 h-3.5" /></button>
-        <button onClick={() => onDelete(kr.id)} className="p-1 rounded text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 className="w-3.5 h-3.5" /></button>
+        <button onClick={() => onEdit(kr)} className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Edit key result"><Edit2 className="w-3.5 h-3.5" /></button>
+        <button onClick={() => onDelete(kr.id)} className="p-1 rounded text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Delete key result"><Trash2 className="w-3.5 h-3.5" /></button>
       </div>
     </div>
   );
@@ -294,8 +294,8 @@ const ObjectiveRow: React.FC<{ obj: Goal; onEdit: (g: Goal) => void; onDelete: (
         </div>
         {obj.due_date && <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{obj.due_date.slice(0, 10)}</span>}
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <button onClick={() => onEdit(obj)} className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 className="w-3.5 h-3.5" /></button>
-          <button onClick={() => onDelete(obj.id)} className="p-1 rounded text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 className="w-3.5 h-3.5" /></button>
+          <button onClick={() => onEdit(obj)} className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Edit objective"><Edit2 className="w-3.5 h-3.5" /></button>
+          <button onClick={() => onDelete(obj.id)} className="p-1 rounded text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Delete objective"><Trash2 className="w-3.5 h-3.5" /></button>
         </div>
       </div>
       {expanded && hasChildren && (

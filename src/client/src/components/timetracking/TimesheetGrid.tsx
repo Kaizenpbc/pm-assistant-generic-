@@ -56,13 +56,13 @@ export function TimesheetGrid() {
     <div className="space-y-4">
       {/* Week navigation */}
       <div className="flex items-center justify-between">
-        <button onClick={() => navigateWeek(-1)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+        <button onClick={() => navigateWeek(-1)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Previous week">
           <ChevronLeft className="w-4 h-4" />
         </button>
         <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           Week of {new Date(weekStart + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
         </div>
-        <button onClick={() => navigateWeek(1)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+        <button onClick={() => navigateWeek(1)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Next week">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>

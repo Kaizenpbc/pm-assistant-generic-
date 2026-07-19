@@ -239,7 +239,7 @@ export function BudgetTab({ projectId, project }: { projectId: string; project: 
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-primary-200 dark:border-primary-700 p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">New Expense</h3>
-                <button onClick={() => setShowForm(false)} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+                <button onClick={() => setShowForm(false)} className="p-1 text-gray-400 hover:text-gray-600" aria-label="Close expense form"><X className="w-4 h-4" /></button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <div>
@@ -314,7 +314,7 @@ export function BudgetTab({ projectId, project }: { projectId: string; project: 
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{e.vendor || '—'}</td>
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{e.description || '—'}</td>
                       <td className="px-4 py-3 text-right">
-                        <button onClick={() => deleteMutation.mutate(e.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => deleteMutation.mutate(e.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" aria-label="Delete expense"><Trash2 className="w-3.5 h-3.5" /></button>
                       </td>
                     </tr>
                   ))}

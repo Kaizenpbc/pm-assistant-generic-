@@ -217,6 +217,7 @@ export function AutoReschedulePanel({ scheduleId, onClose }: AutoReschedulePanel
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>

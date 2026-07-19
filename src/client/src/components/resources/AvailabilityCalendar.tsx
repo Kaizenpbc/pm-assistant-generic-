@@ -144,11 +144,11 @@ export function AvailabilityCalendar({ resourceId, resourceName }: AvailabilityC
           <h3 className="text-sm font-semibold text-gray-900">Availability — {resourceName}</h3>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded">
+          <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded" aria-label="Previous month">
             <ChevronLeft className="w-4 h-4 text-gray-500" />
           </button>
           <span className="text-sm font-medium text-gray-700 w-36 text-center">{monthLabel}</span>
-          <button onClick={nextMonthFn} className="p-1 hover:bg-gray-100 rounded">
+          <button onClick={nextMonthFn} className="p-1 hover:bg-gray-100 rounded" aria-label="Next month">
             <ChevronRight className="w-4 h-4 text-gray-500" />
           </button>
           <button

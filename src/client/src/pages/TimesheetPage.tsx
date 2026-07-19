@@ -103,7 +103,7 @@ export function TimesheetPage() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-primary-200 p-5 space-y-4 shadow-sm dark:shadow-gray-900/30">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white">Log Time Entry</h3>
-            <button onClick={() => setShowLogForm(false)} className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X className="w-4 h-4" /></button>
+            <button onClick={() => setShowLogForm(false)} className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300" aria-label="Close time log form"><X className="w-4 h-4" /></button>
           </div>
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4'} gap-3`}>
             <div>
@@ -287,13 +287,13 @@ function MobileTimesheetView() {
     <div className="space-y-3">
       {/* Week navigation */}
       <div className="flex items-center justify-between">
-        <button onClick={() => navigateWeek(-1)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200">
+        <button onClick={() => navigateWeek(-1)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200" aria-label="Previous week">
           <ChevronLeft className="w-4 h-4" />
         </button>
         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
           Week of {new Date(weekStart + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>
-        <button onClick={() => navigateWeek(1)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200">
+        <button onClick={() => navigateWeek(1)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200" aria-label="Next week">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>

@@ -1158,6 +1158,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                         disabled={colIdx === 0}
                         className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-20"
                         title="Move left"
+                        aria-label="Move column left"
                       >
                         <ArrowLeft className="w-2.5 h-2.5" />
                       </button>
@@ -1166,6 +1167,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                         disabled={colIdx === visibleColumns.length - 1}
                         className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-20"
                         title="Move right"
+                        aria-label="Move column right"
                       >
                         <ArrowRight className="w-2.5 h-2.5" />
                       </button>
@@ -1236,6 +1238,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                         onClick={() => onTaskClick(task)}
                         className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                         title="Edit task"
+                        aria-label="Edit task"
                       >
                         <Pencil className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                       </button>
@@ -1243,6 +1246,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                         onClick={() => handleRowDelete(task.id)}
                         className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20"
                         title="Delete task"
+                        aria-label="Delete task"
                       >
                         <Trash2 className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 hover:text-red-500" />
                       </button>

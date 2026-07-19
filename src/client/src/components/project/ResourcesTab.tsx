@@ -264,7 +264,7 @@ export function ResourcesTab({ projectId }: { projectId: string }) {
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-primary-200 dark:border-primary-700 p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">{editingResource ? 'Edit Resource' : 'New Resource'}</h3>
-                <button onClick={resetForm} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+                <button onClick={resetForm} className="p-1 text-gray-400 hover:text-gray-600" aria-label="Close resource form"><X className="w-4 h-4" /></button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <div>
@@ -346,8 +346,8 @@ export function ResourcesTab({ projectId }: { projectId: string }) {
                       <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{r.costRateHourly != null ? `$${r.costRateHourly.toFixed(2)}` : '--'}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => deleteResourceMutation.mutate(r.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Edit resource"><Edit2 className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => deleteResourceMutation.mutate(r.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" aria-label="Delete resource"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </td>
                     </tr>

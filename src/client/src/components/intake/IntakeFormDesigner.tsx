@@ -142,6 +142,7 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
         <button
           onClick={onClose}
           className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+          aria-label="Go back"
         >
           <ArrowLeft className="w-5 h-5 text-gray-500" />
         </button>
@@ -233,6 +234,7 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                       onClick={() => moveField(index, 'up')}
                       disabled={index === 0}
                       className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      aria-label="Move field up"
                     >
                       <ArrowUp className="w-3.5 h-3.5 text-gray-500" />
                     </button>
@@ -240,12 +242,14 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                       onClick={() => moveField(index, 'down')}
                       disabled={index === fields.length - 1}
                       className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      aria-label="Move field down"
                     >
                       <ArrowDown className="w-3.5 h-3.5 text-gray-500" />
                     </button>
                     <button
                       onClick={() => removeField(field.id)}
                       className="p-1 rounded hover:bg-red-100 transition-colors"
+                      aria-label="Remove field"
                     >
                       <Trash2 className="w-3.5 h-3.5 text-red-500" />
                     </button>
