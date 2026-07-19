@@ -217,6 +217,9 @@ No help/support link exists anywhere in the authenticated app — not in sidebar
 - Slow query log: clean — no queries >500ms, only trivial full scans on tiny tables (<25 rows)
 - All tab/page chunks lazy-load on demand
 
+### Next action
+- [ ] **Re-check slow query log** — review `/var/log/mysql/mariadb-slow.log` after a few days of real traffic (target: ~July 22-23)
+
 ### Future opportunities (not urgent)
 - **Reduce index chunk** (257KB raw / 71KB gz) — audit what's bundled in the app shell, lazy-load more
 - **Brotli compression** — ~20% smaller than gzip; use build-time pre-compression to avoid CPU cost
