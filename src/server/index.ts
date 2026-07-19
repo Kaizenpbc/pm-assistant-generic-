@@ -19,27 +19,27 @@ const fastify = Fastify({
 
 async function start() {
   try {
-    console.log('Initializing Kovarti PM Assistant...');
+    fastify.log.info('Initializing Kovarti PM Assistant...');
     logConfigSummary();
 
-    console.log('Testing database connection...');
+    fastify.log.info('Testing database connection...');
     const isConnected = await databaseService.testConnection();
     if (!isConnected) {
-      console.log('Database connection failed - running in offline mode');
+      fastify.log.warn('Database connection failed - running in offline mode');
     } else {
-      console.log('Database connection successful');
+      fastify.log.info('Database connection successful');
       await runMigrations();
 
       // Run pending tenant migrations if multi-tenant is enabled
       if (config.MULTI_TENANT_ENABLED) {
-        console.log('Running tenant migrations...');
+        fastify.log.info('Running tenant migrations...');
         await runAllTenantMigrations();
       }
     }
 
     // Connect to Redis (optional — graceful degradation if unavailable)
     if (config.REDIS_URL) {
-      console.log('Connecting to Redis...');
+      fastify.log.info('Connecting to Redis...');
       redisService.connect(config.REDIS_URL);
       // Load persisted metrics from Redis
       await metricsService.loadFromRedis();
@@ -48,30 +48,21 @@ async function start() {
     // Register service container for DI
     fastify.decorate('services', serviceContainer);
 
-    console.log('Registering plugins...');
     await registerPlugins(fastify);
-    console.log('Plugins registered');
-
-    console.log('Registering routes...');
     await registerRoutes(fastify);
-    console.log('Routes registered');
 
-    console.log('Starting server...');
     await fastify.listen({
       port: config.PORT,
       host: config.HOST
     });
 
-    console.log(`Kovarti PM Assistant running on http://${config.HOST}:${config.PORT}`);
-    console.log(`API Documentation: http://${config.HOST}:${config.PORT}/documentation`);
-    console.log(`Health Check: http://${config.HOST}:${config.PORT}/health`);
+    fastify.log.info(`Kovarti PM Assistant running on http://${config.HOST}:${config.PORT}`);
+    fastify.log.info('Cron jobs managed externally via systemd timers');
 
     // Start Redis metrics sync if connected
     if (redisService.isConnected()) {
       metricsService.startRedisSync();
     }
-
-    console.log('Cron jobs managed externally via systemd timers (see /etc/systemd/system/pm-cron-*.timer)');
 
   } catch (err) {
     console.error('Failed to start server:', err);
@@ -92,10 +83,10 @@ process.on('unhandledRejection', (reason) => {
 });
 
 async function gracefulShutdown(signal: string) {
-  console.log(`${signal} received — shutting down server...`);
+  fastify.log.info(`${signal} received — shutting down server...`);
   // Force exit after 30s if graceful shutdown hangs (e.g. long AI call)
   const forceTimer = setTimeout(() => {
-    console.error('Graceful shutdown timed out after 30s — forcing exit');
+    fastify.log.error('Graceful shutdown timed out after 30s — forcing exit');
     process.exit(1);
   }, 30_000);
   forceTimer.unref();

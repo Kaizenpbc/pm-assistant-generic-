@@ -103,7 +103,6 @@ export function useWebSocket() {
         globalWs = ws;
 
         ws.onopen = () => {
-          console.log('[WS] Connected');
           reconnectAttempts = 0;
           setConnectionState('connected');
         };
@@ -140,18 +139,15 @@ export function useWebSocket() {
         };
 
         ws.onclose = () => {
-          console.log('[WS] Disconnected');
           wsRef.current = null;
           if (globalWs === ws) globalWs = null;
           reconnectAttempts++;
           if (reconnectAttempts < MAX_ATTEMPTS) {
             const delay = getBackoffDelay(reconnectAttempts);
-            console.log(`[WS] Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_ATTEMPTS})`);
             setConnectionState('connecting');
             pendingReconnect = setTimeout(connect, delay);
             reconnectTimeoutRef.current = pendingReconnect;
           } else {
-            console.log('[WS] Max reconnect attempts reached');
             setConnectionState('disconnected');
           }
         };
