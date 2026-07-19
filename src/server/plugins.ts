@@ -98,6 +98,14 @@ export async function registerPlugins(fastify: FastifyInstance) {
     });
   }
 
+  // Server-Timing header — exposes processing time to browser Performance API
+  fastify.addHook('onSend', async (request, reply) => {
+    if (request.url.startsWith('/api/')) {
+      const ms = reply.elapsedTime?.toFixed(1) ?? '0';
+      reply.header('Server-Timing', `total;dur=${ms}`);
+    }
+  });
+
   fastify.addHook('onResponse', responseLogger);
 
   // Normalize DB snake_case keys to camelCase in JSON API responses only
@@ -256,7 +264,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-user-role', 'x-user-id', 'x-admin-key', 'Mcp-Session-Id'],
-    exposedHeaders: ['Mcp-Session-Id'],
+    exposedHeaders: ['Mcp-Session-Id', 'Server-Timing'],
   });
 
   await fastify.register(cookie, {
