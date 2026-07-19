@@ -4,6 +4,7 @@ import type { ColumnState } from '../../hooks/useColumnState';
 import { SavedViewsDropdown } from './SavedViewsDropdown';
 import type { SavedView } from './SavedViewsDropdown';
 import { exportTasksCSV } from '../../utils/exportUtils';
+import { ConfirmModal } from '../ui/ConfirmModal';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -721,6 +722,7 @@ export function GanttChart({
   const [bulkPriority, setBulkPriority] = useState('');
   const [bulkAssignee, setBulkAssignee] = useState('');
   const [bulkMessage, setBulkMessage] = useState('');
+  const [pendingBulkDelete, setPendingBulkDelete] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const lastClickedIdRef = useRef<string | null>(null);
   const someSelected = selectedIds.size > 0;
@@ -960,12 +962,14 @@ export function GanttChart({
     }
   }, [selectedIds, onBulkUpdate, showBulkMessage, clearBulkState]);
 
-  const handleBulkDelete = useCallback(async () => {
+  const handleBulkDelete = useCallback(() => {
     if (selectedIds.size === 0 || !onBulkDelete) return;
-    const label = selectedIds.size === 1
-      ? 'Are you sure you want to delete this task? This cannot be undone.'
-      : `Are you sure you want to delete ${selectedIds.size} tasks? This cannot be undone.`;
-    if (!window.confirm(label)) return;
+    setPendingBulkDelete(true);
+  }, [selectedIds, onBulkDelete]);
+
+  const confirmBulkDelete = useCallback(async () => {
+    if (!onBulkDelete) return;
+    setPendingBulkDelete(false);
     setBulkLoading(true);
     try {
       await onBulkDelete(Array.from(selectedIds));
@@ -3674,6 +3678,18 @@ export function GanttChart({
           main { padding: 0 !important; margin: 0 !important; }
         }
       `}</style>
+
+      {pendingBulkDelete && (
+        <ConfirmModal
+          title="Delete Tasks"
+          message={selectedIds.size === 1
+            ? 'Are you sure you want to delete this task? This cannot be undone.'
+            : `Are you sure you want to delete ${selectedIds.size} tasks? This cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={confirmBulkDelete}
+          onCancel={() => setPendingBulkDelete(false)}
+        />
+      )}
     </div>
   );
 }

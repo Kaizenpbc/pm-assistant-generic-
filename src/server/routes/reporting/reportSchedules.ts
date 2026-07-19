@@ -35,7 +35,7 @@ export async function reportScheduleRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
       logger.error('Create report schedule error', { error });
-      return reply.status(500).send({ error: error.message || 'Internal server error' });
+      return reply.status(500).send({ error: 'Internal server error' });
     }
   });
 

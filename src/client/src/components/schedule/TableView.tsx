@@ -7,6 +7,7 @@ import { SavedViewsDropdown, type SavedView } from './SavedViewsDropdown';
 import { exportTasksCSV } from '../../utils/exportUtils';
 import type { ColumnKey, ColumnDef } from './tableColumns';
 import type { ColumnState } from '../../hooks/useColumnState';
+import { ConfirmModal } from '../ui/ConfirmModal';
 
 const barColors: Record<string, { bg: string; text: string }> = {
   completed: { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400' },
@@ -83,6 +84,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
   const [bulkAssignee, setBulkAssignee] = useState('');
   const [bulkMessage, setBulkMessage] = useState('');
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null);
 
   const loadSavedView = useCallback((view: SavedView) => {
     columnState.setVisibleKeys(new Set(view.columns));
@@ -588,12 +590,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     }
   };
 
-  const handleDeleteTasks = async (taskIds: string[]) => {
-    if (taskIds.length === 0) return;
-    const label = taskIds.length === 1
-      ? `Are you sure you want to delete this task? This cannot be undone.`
-      : `Are you sure you want to delete ${taskIds.length} tasks? This cannot be undone.`;
-    if (!window.confirm(label)) return;
+  const confirmAndDeleteTasks = async (taskIds: string[]) => {
     setBulkLoading(true);
     try {
       await Promise.all(taskIds.map(id => apiService.deleteTask(scheduleId, id)));
@@ -607,6 +604,11 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     } finally {
       setBulkLoading(false);
     }
+  };
+
+  const handleDeleteTasks = (taskIds: string[]) => {
+    if (taskIds.length === 0) return;
+    setPendingDeleteIds(taskIds);
   };
 
   const handleBulkDelete = () => handleDeleteTasks(Array.from(selectedIds));
@@ -1266,6 +1268,19 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
           </tbody>
         </table>
       </div>
+
+      {pendingDeleteIds && (
+        <ConfirmModal
+          title="Delete Tasks"
+          message={pendingDeleteIds.length === 1
+            ? 'Are you sure you want to delete this task? This cannot be undone.'
+            : `Are you sure you want to delete ${pendingDeleteIds.length} tasks? This cannot be undone.`}
+          confirmLabel="Delete"
+          isPending={bulkLoading}
+          onConfirm={() => { confirmAndDeleteTasks(pendingDeleteIds); setPendingDeleteIds(null); }}
+          onCancel={() => setPendingDeleteIds(null)}
+        />
+      )}
     </div>
   );
 }

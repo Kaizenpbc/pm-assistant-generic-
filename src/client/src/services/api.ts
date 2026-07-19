@@ -73,24 +73,8 @@ class ApiService {
   // -------------------------------------------------------------------------
 
   async login(username: string, password: string) {
-    try {
-      const response = await this.api.post('/auth/login', { username, password });
-      return response.data;
-    } catch (err: unknown) {
-      // Debug: use fetch as fallback to bypass Axios issues
-      const baseURL = import.meta.env.DEV ? 'http://localhost:3001/api/v1' : '/api/v1';
-      const res = await fetch(`${baseURL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username, password }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw { response: { status: res.status, data: body } };
-      }
-      return res.json();
-    }
+    const response = await this.api.post('/auth/login', { username, password });
+    return response.data;
   }
 
   async register(userData: {
@@ -2439,6 +2423,27 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
 
   async submitFeedbackItem(data: Record<string, unknown>) {
     const response = await this.api.post('/feedback', data);
+    return response.data;
+  }
+
+  // --- Organization management ---
+  async getOrgMembers() {
+    const response = await this.api.get('/org/members');
+    return response.data;
+  }
+
+  async inviteOrgMember(email: string, role: string) {
+    const response = await this.api.post('/org/invite', { email, role });
+    return response.data;
+  }
+
+  async updateOrgMemberRole(memberId: string, role: string) {
+    const response = await this.api.patch(`/org/members/${memberId}`, { role });
+    return response.data;
+  }
+
+  async removeOrgMember(memberId: string) {
+    const response = await this.api.delete(`/org/members/${memberId}`);
     return response.data;
   }
 }

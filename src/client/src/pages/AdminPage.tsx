@@ -320,8 +320,7 @@ function TenantsTab() {
 
   const runMigrations = useMutation({
     mutationFn: (id: string) => apiService.runTenantMigrations(id),
-    onSuccess: (res) => {
-      alert(`${res.migrationsApplied} migration(s) applied`);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tenants'] });
     },
   });

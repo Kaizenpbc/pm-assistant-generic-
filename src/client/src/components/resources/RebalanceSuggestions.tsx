@@ -138,10 +138,9 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
 
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-600 hover:bg-primary-100 transition-colors"
-                onClick={() => {
-                  window.alert('Automatic rebalancing is coming soon. For now, use this suggestion to manually reassign tasks.');
-                }}
+                disabled
+                className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-400 cursor-not-allowed"
+                title="Coming soon — use this suggestion to manually reassign tasks"
               >
                 {/* Checkmark icon (hand-rolled SVG) */}
                 <svg

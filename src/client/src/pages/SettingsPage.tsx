@@ -288,15 +288,13 @@ const TeamTab: React.FC = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['org-members'],
     queryFn: async () => {
-      const res = await apiService['api'].get('/org/members');
-      return res.data as { organization: { id: string; name: string }; members: OrgMember[]; maxUsers: number };
+      return await apiService.getOrgMembers() as { organization: { id: string; name: string }; members: OrgMember[]; maxUsers: number };
     },
   });
 
   const inviteMutation = useMutation({
     mutationFn: async ({ email, role }: { email: string; role: string }) => {
-      const res = await apiService['api'].post('/org/invite', { email, role });
-      return res.data;
+      return await apiService.inviteOrgMember(email, role);
     },
     onSuccess: (data: any) => {
       setInviteMsg({ type: 'success', text: data.message });
@@ -310,8 +308,7 @@ const TeamTab: React.FC = () => {
 
   const updateRoleMutation = useMutation({
     mutationFn: async ({ memberId, role }: { memberId: string; role: string }) => {
-      const res = await apiService['api'].patch(`/org/members/${memberId}`, { role });
-      return res.data;
+      return await apiService.updateOrgMemberRole(memberId, role);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['org-members'] });
@@ -320,8 +317,7 @@ const TeamTab: React.FC = () => {
 
   const removeMutation = useMutation({
     mutationFn: async (memberId: string) => {
-      const res = await apiService['api'].delete(`/org/members/${memberId}`);
-      return res.data;
+      return await apiService.removeOrgMember(memberId);
     },
     onSuccess: () => {
       setConfirmRemove(null);
@@ -513,12 +509,12 @@ const NotificationsTab: React.FC = () => {
         digestFrequency,
         typePreferences: typePrefs,
       });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       console.error('Failed to save notification prefs:', err);
     }
     setServerSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   };
 
   const MiniToggle: React.FC<{ checked: boolean; onChange: () => void; label: string }> = ({ checked, onChange, label }) => (
@@ -626,11 +622,11 @@ const DisplayTab: React.FC = () => {
     setLocale(prefs.language);
     try {
       await apiService.updateUserPreferences({ timezone: prefs.timezone, locale: prefs.language });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       console.error('Failed to save preferences to server:', err);
     }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   };
 
   const viewOptions: { value: DisplayPreferences['defaultView']; label: string }[] = [
@@ -1225,8 +1221,10 @@ const AccessibilityTab: React.FC = () => {
 
 const DangerZoneTab: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [deleteInput, setDeleteInput] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
 
   const handleExport = async () => {
     setExporting(true);
@@ -1254,7 +1252,7 @@ const DangerZoneTab: React.FC = () => {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Export failed:', err);
-      alert('Export failed. Please try again.');
+      setExportError('Export failed. Please try again.');
     } finally {
       setExporting(false);
     }
@@ -1266,7 +1264,7 @@ const DangerZoneTab: React.FC = () => {
       await apiService.deleteAccount();
       window.location.href = '/';
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Failed to delete account. Please try again.');
+      setDeleteError(err?.response?.data?.message || 'Failed to delete account. Please try again.');
       setShowDeleteConfirm(false);
       setDeleteInput('');
     }
@@ -1281,10 +1279,12 @@ const DangerZoneTab: React.FC = () => {
           <Download className="w-4 h-4" />
           {exporting ? 'Exporting...' : 'Export All Data'}
         </button>
+        {exportError && <p className="mt-2 text-sm text-red-600">{exportError}</p>}
       </div>
       <div className="rounded-xl border border-red-200 bg-red-50 p-6">
         <h2 className="text-lg font-semibold text-red-900 mb-2">Delete Account</h2>
         <p className="text-sm text-red-700 mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
+        {deleteError && <p className="mb-3 text-sm text-red-600 font-medium">{deleteError}</p>}
         {!showDeleteConfirm ? (
           <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors">
             <Trash2 className="w-4 h-4" /> Delete Account

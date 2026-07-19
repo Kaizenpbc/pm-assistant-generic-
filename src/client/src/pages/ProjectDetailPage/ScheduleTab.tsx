@@ -317,7 +317,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     },
     onError: (error: any) => {
       const msg = error?.response?.data?.message || error?.message || 'Failed to update task';
-      alert(msg);
+      console.error('Task update failed:', msg);
     },
   });
 
