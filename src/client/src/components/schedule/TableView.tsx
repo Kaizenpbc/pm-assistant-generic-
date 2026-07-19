@@ -71,7 +71,7 @@ function addDaysToDate(baseDate: string, days: number): string {
 export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, activeTaskId, onTaskUpdate, onTaskReorder, columnState, cpmData, baselineData, scheduleStartDate }: TableViewProps) {
   const { visibleKeys, visibleColumns, colWidths, setColWidths, moveColumn } = columnState;
   const queryClient = useQueryClient();
-  const [sortField, setSortField] = useState<ColumnKey>('startDate');
+  const [sortField, setSortField] = useState<ColumnKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [editingCell, setEditingCell] = useState<{ taskId: string; field: EditableField } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
@@ -166,12 +166,17 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
 
   const toggleSort = useCallback((field: ColumnKey) => {
     if (sortField === field) {
-      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+      if (sortDir === 'asc') {
+        setSortDir('desc');
+      } else {
+        setSortField(null);
+        setSortDir('asc');
+      }
     } else {
       setSortField(field);
       setSortDir('asc');
     }
-  }, [sortField]);
+  }, [sortField, sortDir]);
 
   // Get a sortable value for any column
   const getSortValue = useCallback((task: GanttTask, field: ColumnKey): any => {
@@ -241,6 +246,9 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
 
     // Sort children within each group
     const sortChildren = (list: GanttTask[]) => {
+      if (!sortField) {
+        return [...list].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      }
       return [...list].sort((a, b) => {
         const va = getSortValue(a, sortField);
         const vb = getSortValue(b, sortField);
@@ -318,7 +326,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     setRowDrag(null);
   }, []);
 
-  const canDragRows = !!onTaskReorder && !editingCell && selectedIds.size === 0;
+  const canDragRows = !!onTaskReorder && !editingCell && selectedIds.size === 0 && !sortField;
 
   // Row number map: taskId → sequential row number (1-based)
   const rowNumMap = useMemo(() => {
@@ -1004,7 +1012,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
         <SavedViewsDropdown
           scheduleId={scheduleId}
           currentColumns={visibleKeys}
-          currentSortField={sortField}
+          currentSortField={sortField || 'startDate'}
           currentSortDir={sortDir}
           onLoadView={loadSavedView}
         />
