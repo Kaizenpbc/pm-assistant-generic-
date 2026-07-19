@@ -5,7 +5,18 @@ import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 import './index.css';
 
-registerSW({ immediate: true });
+registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    // New version deployed — reload to pick it up
+    if (window.confirm('A new version of Kovarti PM is available. Reload now?')) {
+      window.location.reload();
+    }
+  },
+  onOfflineReady() {
+    // Silently ready for offline use — no action needed
+  },
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
