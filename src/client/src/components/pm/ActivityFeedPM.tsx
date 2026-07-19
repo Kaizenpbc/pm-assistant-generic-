@@ -2,21 +2,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 import { Bell, ArrowRight, CheckCheck } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { timeAgo } from '../../utils/timeAgo';
 
 interface ActivityFeedPMProps {
   limit?: number;
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
 
 function resolveLink(notification: any): string {
   const linkType: string = notification.link_type || notification.linkType || '';

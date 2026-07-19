@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Bot, ArrowRight, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../../../services/api';
+import { timeAgo } from '../../../utils/timeAgo';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { ConfidenceBar } from '../../ui/ConfidenceGauge';
 
@@ -17,15 +18,6 @@ interface Proposal {
 
 const RISK_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
 
 function agentDisplayName(agentId: string): string {
   return agentId

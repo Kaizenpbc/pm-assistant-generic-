@@ -2426,6 +2426,21 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  // --- Feedback (admin) ---
+  async getAdminFeedback(params?: string) {
+    const response = await this.api.get(`/feedback${params ? `?${params}` : ''}`);
+    return response.data;
+  }
+
+  async updateFeedbackItem(id: string, data: Record<string, unknown>) {
+    const response = await this.api.patch(`/feedback/${id}`, data);
+    return response.data;
+  }
+
+  async submitFeedbackItem(data: Record<string, unknown>) {
+    const response = await this.api.post('/feedback', data);
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

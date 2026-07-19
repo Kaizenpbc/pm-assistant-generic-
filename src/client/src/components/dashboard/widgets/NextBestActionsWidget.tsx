@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Zap, ArrowRight, Clock, CheckCircle, Search, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../../../services/api';
+import { timeAgo } from '../../../utils/timeAgo';
 
 interface ActionItem {
   id: string;
@@ -12,15 +13,6 @@ interface ActionItem {
   priority: number;
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
 
 const TYPE_CONFIG = {
   Approve: { icon: CheckCircle, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/30', badge: 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' },

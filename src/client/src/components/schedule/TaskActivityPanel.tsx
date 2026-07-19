@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../../services/api';
+import { timeAgo } from '../../utils/timeAgo';
 import { MessageSquare, Activity, Send, Trash2 } from 'lucide-react';
 
 interface TaskActivityPanelProps {
@@ -39,18 +40,6 @@ function formatValue(field: string | undefined, value: string | undefined): stri
   return value;
 }
 
-function timeAgo(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diff = now - then;
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 function getInitials(name: string): string {
   return name

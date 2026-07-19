@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
+import { timeAgo } from '../utils/timeAgo';
 import { MetaPill } from '../components/ui/MetaPill';
 import { RiskBadge as RiskBadgePrimitive } from '../components/ui/RiskBadge';
 import { ConfidenceGauge as ConfidenceGaugePrimitive, ConfidenceBar } from '../components/ui/ConfidenceGauge';
@@ -117,15 +118,6 @@ const KNOWN_AGENTS = [
 // Utilities
 // ---------------------------------------------------------------------------
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
 
 function formatAgentName(agentId: string): string {
   return agentId.replace(/-v\d+$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());

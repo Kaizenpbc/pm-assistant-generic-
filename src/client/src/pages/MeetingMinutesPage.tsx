@@ -167,7 +167,7 @@ export const MeetingMinutesPage: React.FC = () => {
 
   const { data: historyData } = useQuery({
     queryKey: ['meetingHistory', selectedProjectId],
-    queryFn: () => (apiService as any).getMeetingHistory(selectedProjectId),
+    queryFn: () => apiService.getMeetingHistory(selectedProjectId),
     enabled: !!selectedProjectId,
   });
 
@@ -179,7 +179,7 @@ export const MeetingMinutesPage: React.FC = () => {
 
   const analyzeMutation = useMutation({
     mutationFn: () =>
-      (apiService as any).analyzeMeetingTranscript({
+      apiService.analyzeMeetingTranscript({
         transcript,
         projectId: selectedProjectId,
         scheduleId: selectedScheduleId,
@@ -192,7 +192,7 @@ export const MeetingMinutesPage: React.FC = () => {
 
   const applyMutation = useMutation({
     mutationFn: (selectedIndices: number[]) =>
-      (apiService as any).applyMeetingChanges(
+      apiService.applyMeetingChanges(
         analysisResult?.id || analysisResult?.analysisId,
         selectedIndices
       ),

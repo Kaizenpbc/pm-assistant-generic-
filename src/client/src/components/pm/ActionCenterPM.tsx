@@ -10,6 +10,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { timeAgo } from '../../utils/timeAgo';
 
 interface ActionCenterPMProps {
   projects: Array<{ id: string; name: string }>;
@@ -159,14 +160,6 @@ const TYPE_CONFIG = {
   Investigate: { icon: AlertTriangle, color: 'text-red-600 dark:text-red-400',    bg: 'bg-red-50 dark:bg-red-900/30',    badge: 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' },
 };
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
 
 function AINextBestActions() {
   const navigate = useNavigate();

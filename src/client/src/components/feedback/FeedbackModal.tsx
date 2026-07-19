@@ -56,8 +56,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ onClose }) => {
 
   const mutation = useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
-      const res = await (apiService as any).api.post('/feedback', data);
-      return res.data;
+      return await apiService.submitFeedbackItem(data);
     },
     onSuccess: () => setSubmitted(true),
   });

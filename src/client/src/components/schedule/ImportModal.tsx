@@ -210,7 +210,7 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
           headerMap[parsed.headers[Number(idx)]] = field;
         }
       }
-      const res = await (apiService as any).importTasks(scheduleId, csvText, headerMap);
+      const res = await apiService.importTasks(scheduleId, csvText, headerMap);
       const data = res?.data ?? res;
       setResult({ succeeded: data.succeeded ?? 0, failed: data.failed ?? [] });
       if ((data.succeeded ?? 0) > 0) onImported?.();

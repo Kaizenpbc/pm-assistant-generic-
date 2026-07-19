@@ -88,15 +88,13 @@ export function AdminFeedbackPage() {
       const params = new URLSearchParams();
       if (statusFilter) params.set('status', statusFilter);
       params.set('limit', '100');
-      const res = await (apiService as any).api.get(`/feedback?${params}`);
-      return res.data as { feedback: FeedbackItem[]; stats: FeedbackStats };
+      return await apiService.getAdminFeedback(params.toString()) as { feedback: FeedbackItem[]; stats: FeedbackStats };
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...body }: { id: string; status?: string; adminNotes?: string }) => {
-      const res = await (apiService as any).api.patch(`/feedback/${id}`, body);
-      return res.data;
+      return await apiService.updateFeedbackItem(id, body);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-feedback'] }),
   });
