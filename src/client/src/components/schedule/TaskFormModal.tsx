@@ -116,14 +116,14 @@ export function TaskFormModal({
   // Pre-fill form when editing
   useEffect(() => {
     if (task) {
-      const deps: PredecessorEntry[] = (task as any).dependencies?.length > 0
-        ? (task as any).dependencies.map((d: any) => ({
+      const deps: PredecessorEntry[] = task.dependencies?.length
+        ? task.dependencies.map((d) => ({
             dependencyId: d.dependencyId,
             dependencyType: d.dependencyType || 'FS',
             lagDays: d.lagDays?.toString() || '0',
           }))
         : task.dependency
-          ? [{ dependencyId: task.dependency, dependencyType: (task as any).dependencyType || 'FS', lagDays: (task as any).dependencyLagDays?.toString() || '0' }]
+          ? [{ dependencyId: task.dependency, dependencyType: task.dependencyType || 'FS', lagDays: task.dependencyLagDays?.toString() || '0' }]
           : [];
       setForm({
         name: task.name || '',
@@ -137,11 +137,11 @@ export function TaskFormModal({
         dependency: task.dependency || '',
         parentTaskId: task.parentTaskId || '',
         estimatedDays: task.estimatedDays?.toString() || '',
-        recurrenceRule: (task as any).recurrenceRule || '',
-        isRecurrenceTemplate: (task as any).isRecurrenceTemplate || false,
-        dependencyType: (task as any).dependencyType || 'FS',
-        dependencyLagDays: (task as any).dependencyLagDays?.toString() || '',
-        isMilestone: (task as any).isMilestone || false,
+        recurrenceRule: task.recurrenceRule || '',
+        isRecurrenceTemplate: task.isRecurrenceTemplate || false,
+        dependencyType: task.dependencyType || 'FS',
+        dependencyLagDays: task.dependencyLagDays?.toString() || '',
+        isMilestone: task.isMilestone || false,
         predecessors: deps,
       });
     }
@@ -496,7 +496,7 @@ export function TaskFormModal({
           </label>
 
           {/* Recurrence */}
-          <RecurrenceSection form={form} setForm={setForm} isRecurringInstance={!!(task as any)?.recurrenceParentId} />
+          <RecurrenceSection form={form} setForm={setForm} isRecurringInstance={!!task?.recurrenceParentId} />
 
           {/* Time Tracking (edit mode only) */}
           {isEdit && scheduleId && projectId && task && (

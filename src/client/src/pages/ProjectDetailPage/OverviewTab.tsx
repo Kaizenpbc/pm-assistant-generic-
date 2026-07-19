@@ -15,8 +15,22 @@ import { apiService } from '../../services/api';
 import { CustomFieldsSection } from '../../components/customfields/CustomFieldsSection';
 import { PortalLinkManager } from '../../components/portal/PortalLinkManager';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export function OverviewTab({ project }: { project: any }) {
+interface ProjectOverview {
+  id: string;
+  name?: string;
+  description?: string;
+  priority?: string;
+  category?: string;
+  type?: string;
+  location?: string;
+  currency?: string;
+  startDate?: string;
+  start_date?: string;
+  endDate?: string;
+  end_date?: string;
+}
+
+export function OverviewTab({ project }: { project: ProjectOverview }) {
   const { data: membersData, isLoading: membersLoading } = useQuery({
     queryKey: ['project-members', project.id],
     queryFn: () => apiService.getProjectMembers(project.id),

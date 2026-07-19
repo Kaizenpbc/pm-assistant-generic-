@@ -409,7 +409,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
       case 'progressPercentage': return String(task.progressPercentage ?? 0);
       case 'assignedTo': return task.assignedTo || '';
       case 'dependency': {
-        const deps = (task as any).dependencies as Array<{ dependencyId: string; dependencyType: string; lagDays: number }> | undefined;
+        const deps = task.dependencies;
         if (!deps || deps.length === 0) {
           // Fallback to legacy single dep
           if (!task.dependency) return '';
@@ -698,7 +698,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
               />
             ) : (
               <div className="flex items-center gap-2" style={{ paddingLeft: `${(levelMap.get(task.id) || 0) * 20}px` }}>
-                {(task as any).isMilestone && (
+                {task.isMilestone && (
                   <span className="inline-block w-2.5 h-2.5 rotate-45 bg-amber-500 flex-shrink-0" title="Milestone" />
                 )}
                 {(levelMap.get(task.id) || 0) > 0 && (
@@ -955,7 +955,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                 onBlur={() => { if (editValue === getTaskFieldValue(task, 'dependency')) { cancelEditing(); setDepError(null); } else { saveEdit(task.id, 'dependency', editValue); } }}
               />
             ) : (() => {
-              const deps = ((task as any).dependencies || []) as Array<{ dependencyId: string; dependencyType: string; lagDays: number }>;
+              const deps = task.dependencies || [];
               if (deps.length === 0 && !task.dependency) {
                 return <span className="text-gray-400 dark:text-gray-500">-</span>;
               }
