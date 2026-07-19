@@ -117,7 +117,7 @@ async function run() {
 
       case 'alert-check': {
         const { alertService } = await import('../services/AlertService');
-        await (alertService as any).runChecks();
+        await alertService.runChecks();
         console.log('[cron-runner] Alert checks completed');
         break;
       }

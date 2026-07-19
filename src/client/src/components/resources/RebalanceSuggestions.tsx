@@ -140,7 +140,7 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
                 type="button"
                 className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-600 hover:bg-primary-100 transition-colors"
                 onClick={() => {
-                  console.log('[RebalanceSuggestions] Apply clicked:', suggestion);
+                  window.alert('Automatic rebalancing is coming soon. For now, use this suggestion to manually reassign tasks.');
                 }}
               >
                 {/* Checkmark icon (hand-rolled SVG) */}

@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { parse as csvParse } from 'csv-parse/sync';
-import { scheduleService } from '../../services/ScheduleService';
+import { scheduleService, type CreateTaskData } from '../../services/ScheduleService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import logger from '../../utils/logger';
@@ -86,7 +86,7 @@ export async function importRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Schedule not found' });
       }
 
-      const userId = (request as any).user?.userId as string;
+      const userId = request.user!.userId;
 
       let records: Record<string, string>[];
       try {
@@ -178,8 +178,8 @@ export async function importRoutes(fastify: FastifyInstance) {
             scheduleId,
             name: row.name.trim(),
             description: row.description || undefined,
-            status: status as any,
-            priority: priority as any,
+            status: status as CreateTaskData['status'],
+            priority: priority as CreateTaskData['priority'],
             assignedTo: row.assignedTo || undefined,
             startDate: startDate || undefined,
             endDate: endDate || undefined,
