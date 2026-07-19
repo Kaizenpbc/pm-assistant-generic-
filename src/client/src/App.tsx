@@ -94,7 +94,7 @@ function App() {
     } else {
       setLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only: hydrate auth from cookie once
 
   if (isLoading) {
     return (

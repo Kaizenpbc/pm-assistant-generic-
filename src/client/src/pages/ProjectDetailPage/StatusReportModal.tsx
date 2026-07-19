@@ -14,7 +14,7 @@ export function StatusReportModal({ projectId, projectName, onClose }: { project
 
   useEffect(() => {
     mutation.mutate();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- fire once on open
 
   const content = report?.report?.content || report?.content || '';
 

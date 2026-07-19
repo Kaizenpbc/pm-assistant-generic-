@@ -162,15 +162,10 @@ export const PrelaunchLandingPage: React.FC = () => {
       {/* Hero */}
       <section className="pt-24 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Coming Soon */}
           <div className="mb-8">
-            <div className="inline-flex flex-col sm:flex-row items-center gap-3">
-              <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-500/15 border border-primary-500/40">
-                <span className="w-2.5 h-2.5 rounded-full bg-primary-400 animate-pulse" />
-                <span className="text-lg font-bold text-primary-300 tracking-wide uppercase">Coming Soon</span>
-                <span className="w-2.5 h-2.5 rounded-full bg-primary-400 animate-pulse" />
-              </div>
-              <span className="text-base font-semibold text-slate-400 tracking-widest uppercase">Summer 2026</span>
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-green-500/15 border border-green-500/40">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-lg font-bold text-green-300 tracking-wide uppercase">Now Live</span>
             </div>
           </div>
 

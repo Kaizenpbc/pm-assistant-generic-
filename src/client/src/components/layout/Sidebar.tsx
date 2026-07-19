@@ -206,7 +206,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onMo
     if (mobileOpen && onMobileClose) {
       onMobileClose();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to route change, not sidebar state
   }, [location.pathname]);
 
   const { data: favData } = useQuery({
