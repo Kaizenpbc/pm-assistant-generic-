@@ -12,6 +12,34 @@ import logger from '../../utils/logger';
  */
 export async function runTrialReminders(): Promise<void> {
   try {
+    // --- Step 1: Downgrade expired trials ---
+    // Set subscription_status = 'none' for users whose trial has passed
+    const downgraded = await databaseService.queryControlPlane(
+      `UPDATE users
+       SET subscription_status = 'none'
+       WHERE subscription_status = 'trialing'
+         AND trial_ends_at IS NOT NULL
+         AND trial_ends_at < NOW()`,
+    );
+    const downgradedCount = (downgraded as any)?.affectedRows ?? 0;
+    if (downgradedCount > 0) {
+      logger.info(`[trial-reminder] Downgraded ${downgradedCount} expired trial users to 'none'`);
+    }
+
+    // Also downgrade organizations with expired trials
+    const orgDowngraded = await databaseService.queryControlPlane(
+      `UPDATE organizations
+       SET subscription_status = 'none'
+       WHERE subscription_status = 'trialing'
+         AND trial_ends_at IS NOT NULL
+         AND trial_ends_at < NOW()`,
+    );
+    const orgCount = (orgDowngraded as any)?.affectedRows ?? 0;
+    if (orgCount > 0) {
+      logger.info(`[trial-reminder] Downgraded ${orgCount} expired trial orgs to 'none'`);
+    }
+
+    // --- Step 2: Send reminder/expired emails ---
     // Find trialing users with trial ending in the next 3 days or already expired
     const rows = await databaseService.queryControlPlane(
       `SELECT id, email, full_name, trial_ends_at, subscription_status
