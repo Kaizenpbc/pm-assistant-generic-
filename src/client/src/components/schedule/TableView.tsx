@@ -271,62 +271,69 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     return result;
   }, [tasks, sortField, sortDir, getSortValue]);
 
-  // Row drag reorder state
+  // Row drag reorder state — pointer-events-based (HTML5 drag on <tr> is unreliable)
   const [rowDrag, setRowDrag] = useState<{
     taskId: string;
     parentTaskId: string | null;
     startIdx: number;
     targetIdx: number;
   } | null>(null);
+  const tbodyRef = useRef<HTMLTableSectionElement | null>(null);
 
-  const handleRowDragStart = useCallback((e: React.DragEvent, task: GanttTask, rowIdx: number) => {
-    if (editingCell || !onTaskReorder) return;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', task.id);
-    setRowDrag({
+  const canDragRows = !!onTaskReorder && !editingCell && selectedIds.size === 0 && !sortField;
+
+  const handleGripMouseDown = useCallback((e: React.MouseEvent, task: GanttTask, rowIdx: number) => {
+    if (!canDragRows) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const state = {
       taskId: task.id,
       parentTaskId: task.parentTaskId || null,
       startIdx: rowIdx,
       targetIdx: rowIdx,
-    });
-  }, [editingCell, onTaskReorder]);
+    };
+    setRowDrag(state);
 
-  const handleRowDragOver = useCallback((e: React.DragEvent, task: GanttTask, rowIdx: number) => {
-    if (!rowDrag || !onTaskReorder) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    const draggedParent = rowDrag.parentTaskId;
-    const targetParent = task.parentTaskId || null;
-    if (draggedParent !== targetParent) return;
-    setRowDrag(prev => prev ? { ...prev, targetIdx: rowIdx } : null);
-  }, [rowDrag, onTaskReorder]);
+    const onMove = (ev: MouseEvent) => {
+      if (!tbodyRef.current) return;
+      const rows = tbodyRef.current.querySelectorAll('tr[data-row-idx]');
+      for (const row of rows) {
+        const rect = row.getBoundingClientRect();
+        if (ev.clientY >= rect.top && ev.clientY <= rect.bottom) {
+          const idx = parseInt(row.getAttribute('data-row-idx') || '-1', 10);
+          if (idx >= 0) {
+            setRowDrag(prev => prev ? { ...prev, targetIdx: idx } : null);
+          }
+          break;
+        }
+      }
+    };
 
-  const handleRowDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    if (!rowDrag || !onTaskReorder || rowDrag.startIdx === rowDrag.targetIdx) {
-      setRowDrag(null);
-      return;
-    }
-    const parentId = rowDrag.parentTaskId;
-    const siblings = sorted
-      .map((t, idx) => ({ task: t, rowIdx: idx }))
-      .filter(r => (r.task.parentTaskId || null) === parentId);
-    const draggedSibIdx = siblings.findIndex(s => s.task.id === rowDrag.taskId);
-    const targetSibIdx = siblings.findIndex(s => s.rowIdx === rowDrag.targetIdx);
-    if (draggedSibIdx === -1 || targetSibIdx === -1) { setRowDrag(null); return; }
-    const reordered = [...siblings];
-    const [removed] = reordered.splice(draggedSibIdx, 1);
-    reordered.splice(targetSibIdx, 0, removed);
-    const updates = reordered.map((s, i) => ({ taskId: s.task.id, sortOrder: (i + 1) * 10 }));
-    onTaskReorder(updates);
-    setRowDrag(null);
-  }, [rowDrag, onTaskReorder, sorted]);
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      setRowDrag(prev => {
+        if (!prev || !onTaskReorder || prev.startIdx === prev.targetIdx) return null;
+        const parentId = prev.parentTaskId;
+        const siblings = sorted
+          .map((t, idx) => ({ task: t, rowIdx: idx }))
+          .filter(r => (r.task.parentTaskId || null) === parentId);
+        const draggedSibIdx = siblings.findIndex(s => s.task.id === prev.taskId);
+        const targetSibIdx = siblings.findIndex(s => s.rowIdx === prev.targetIdx);
+        if (draggedSibIdx === -1 || targetSibIdx === -1) return null;
+        const reordered = [...siblings];
+        const [removed] = reordered.splice(draggedSibIdx, 1);
+        reordered.splice(targetSibIdx, 0, removed);
+        const updates = reordered.map((s, i) => ({ taskId: s.task.id, sortOrder: (i + 1) * 10 }));
+        onTaskReorder(updates);
+        return null;
+      });
+    };
 
-  const handleRowDragEnd = useCallback(() => {
-    setRowDrag(null);
-  }, []);
-
-  const canDragRows = !!onTaskReorder && !editingCell && selectedIds.size === 0 && !sortField;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [canDragRows, onTaskReorder, sorted]);
 
   // Row number map: taskId → sequential row number (1-based)
   const rowNumMap = useMemo(() => {
@@ -1186,25 +1193,25 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
               <th className="w-10" />
             </tr>
           </thead>
-          <tbody>
+          <tbody ref={tbodyRef}>
             {sorted.map((task, rowIdx) => {
               const isSelected = selectedIds.has(task.id);
               const isDragTarget = rowDrag && rowDrag.targetIdx === rowIdx && rowDrag.taskId !== task.id && (task.parentTaskId || null) === rowDrag.parentTaskId;
               return (
                 <tr
                   key={task.id}
-                  className={`border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors group cursor-pointer ${canDragRows ? 'select-none' : ''} ${isSelected ? 'bg-primary-50/40 dark:bg-primary-900/20' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 dark:ring-primary-700 bg-primary-50/60 dark:bg-primary-900/30' : ''} ${isDragTarget ? 'border-t-2 border-t-primary-400' : ''} ${rowDrag?.taskId === task.id ? 'opacity-40' : ''}`}
+                  data-row-idx={rowIdx}
+                  className={`border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors group cursor-pointer ${isSelected ? 'bg-primary-50/40 dark:bg-primary-900/20' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 dark:ring-primary-700 bg-primary-50/60 dark:bg-primary-900/30' : ''} ${isDragTarget ? 'border-t-2 border-t-primary-400' : ''} ${rowDrag?.taskId === task.id ? 'opacity-40' : ''}`}
                   onClick={() => onTaskSelect?.(task)}
-                  draggable={canDragRows}
-                  onDragStart={(e) => handleRowDragStart(e, task, rowIdx)}
-                  onDragOver={(e) => handleRowDragOver(e, task, rowIdx)}
-                  onDrop={handleRowDrop}
-                  onDragEnd={handleRowDragEnd}
                 >
                   <td className="px-2 py-2">
                     <div className="flex items-center gap-1">
                       {canDragRows && (
-                        <span className="cursor-grab text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 flex-shrink-0" title="Drag to reorder">&#x2807;</span>
+                        <span
+                          className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 flex-shrink-0 select-none"
+                          title="Drag to reorder"
+                          onMouseDown={(e) => handleGripMouseDown(e, task, rowIdx)}
+                        >&#x2807;</span>
                       )}
                       <input
                         type="checkbox"
