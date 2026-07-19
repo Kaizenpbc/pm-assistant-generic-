@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Calendar,
@@ -334,7 +334,26 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   });
 
   // Undo/redo
-  const { canUndo, canRedo, undoDescription, redoDescription, pushAction, undo, redo } = useUndoRedo();
+  const { canUndo, canRedo, undoDescription, redoDescription, pushAction: rawPushAction, undo: rawUndo, redo } = useUndoRedo();
+
+  // Undo toast
+  const [undoToast, setUndoToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const pushAction = useCallback((action: Parameters<typeof rawPushAction>[0]) => {
+    rawPushAction(action);
+    setUndoToast(action.description);
+    clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setUndoToast(null), 4000);
+  }, [rawPushAction]);
+
+  const undo = useCallback(() => {
+    rawUndo();
+    setUndoToast(null);
+    clearTimeout(toastTimerRef.current);
+  }, [rawUndo]);
+
+  useEffect(() => () => clearTimeout(toastTimerRef.current), []);
 
   // Update task with undo support
   const updateTaskWithUndo = useCallback((taskId: string, data: Record<string, unknown>) => {
@@ -776,6 +795,26 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
             queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
           }}
         />
+      )}
+
+      {/* Undo toast */}
+      {undoToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 dark:bg-gray-700 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-200">
+          <span>{undoToast}</span>
+          <button
+            onClick={undo}
+            className="font-semibold text-primary-300 hover:text-primary-200 transition-colors"
+          >
+            Undo
+          </button>
+          <span className="text-gray-400 text-xs">Ctrl+Z</span>
+          <button
+            onClick={() => { setUndoToast(null); clearTimeout(toastTimerRef.current); }}
+            className="text-gray-400 hover:text-gray-200 ml-1"
+          >
+            ✕
+          </button>
+        </div>
       )}
     </>
   );
