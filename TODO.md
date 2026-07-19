@@ -199,3 +199,29 @@ No help/support link exists anywhere in the authenticated app — not in sidebar
 - Indigo gradient background, "K" logo mark, headline, feature pills, CTA
 - Updated `index.html`: `og:image`, `og:image:width`/`height`, `twitter:card` → `summary_large_image`
 - Generator script: `scripts/generate-og-image.mjs`
+
+---
+
+## Performance
+
+### Done
+- **Code splitting** — ProjectDetailPage lazy-loaded into 15 tab chunks (476KB → 45KB initial, 90% reduction). Commit: 969bb29
+- **Dynamic xlsx import** — 431KB library only loads on file upload, not on page load
+- **Nginx gzip** — enabled for JS, CSS, JSON, SVG (e.g. 257KB → 71KB transfer)
+- **Cache headers** — `/assets/`: `Cache-Control: public, max-age=31536000, immutable`; `index.html`: `no-cache`
+- **Server-Timing header** — all API responses include `Server-Timing: total;dur=X` for DevTools visibility. Commit: 7982f7d
+- **Slow query log** — enabled on MariaDB (threshold 500ms, logs missing indexes, includes EXPLAIN plans). File: `/var/log/mysql/mariadb-slow.log`
+
+### Current state (July 19, 2026)
+- Initial page load: ~127KB gzipped JS (index 71KB + vendor-react 56KB). Solid.
+- Slow query log: clean — no queries >500ms, only trivial full scans on tiny tables (<25 rows)
+- All tab/page chunks lazy-load on demand
+
+### Future opportunities (not urgent)
+- **Reduce index chunk** (257KB raw / 71KB gz) — audit what's bundled in the app shell, lazy-load more
+- **Brotli compression** — ~20% smaller than gzip; use build-time pre-compression to avoid CPU cost
+- **HTTP/2** — verify Nginx is serving h2 for multiplexed chunk loading
+- **Prefetch likely chunks** — preload ScheduleTab on hover/idle for instant tab switches
+- **Redis caching expansion** — extend CachedRepository beyond ProjectService to other hot queries
+- **RUM (Real User Monitoring)** — lightweight web-vitals snippet reporting LCP/FID/CLS from real browsers
+- **Revisit slow query log** — check again once user traffic grows to catch queries that degrade with data volume
