@@ -1133,13 +1133,16 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
         <table className="text-sm" style={{ minWidth: '100%' }}>
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-              <th className="w-10 px-2 py-2.5">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleSelectAll}
-                  className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
-                />
+              <th className="w-16 px-2 py-2.5">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 w-5 text-center">#</span>
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
+                  />
+                </div>
               </th>
               {visibleColumns.map((col, colIdx) => (
                 <th
@@ -1206,12 +1209,14 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                 >
                   <td className="px-2 py-2">
                     <div className="flex items-center gap-1">
-                      {canDragRows && (
+                      {canDragRows ? (
                         <span
-                          className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 flex-shrink-0 select-none"
+                          className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 flex-shrink-0 select-none w-5 text-center text-[10px] font-medium"
                           title="Drag to reorder"
                           onMouseDown={(e) => handleGripMouseDown(e, task, rowIdx)}
-                        >&#x2807;</span>
+                        >{rowIdx + 1}</span>
+                      ) : (
+                        <span className="w-5 text-center text-[10px] font-medium text-gray-400 dark:text-gray-500">{rowIdx + 1}</span>
                       )}
                       <input
                         type="checkbox"
