@@ -1193,7 +1193,7 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
               return (
                 <tr
                   key={task.id}
-                  className={`border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors group cursor-pointer ${isSelected ? 'bg-primary-50/40 dark:bg-primary-900/20' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 dark:ring-primary-700 bg-primary-50/60 dark:bg-primary-900/30' : ''} ${isDragTarget ? 'border-t-2 border-t-primary-400' : ''} ${rowDrag?.taskId === task.id ? 'opacity-40' : ''}`}
+                  className={`border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors group cursor-pointer ${canDragRows ? 'select-none' : ''} ${isSelected ? 'bg-primary-50/40 dark:bg-primary-900/20' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 dark:ring-primary-700 bg-primary-50/60 dark:bg-primary-900/30' : ''} ${isDragTarget ? 'border-t-2 border-t-primary-400' : ''} ${rowDrag?.taskId === task.id ? 'opacity-40' : ''}`}
                   onClick={() => onTaskSelect?.(task)}
                   draggable={canDragRows}
                   onDragStart={(e) => handleRowDragStart(e, task, rowIdx)}
@@ -1204,12 +1204,13 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
                   <td className="px-2 py-2">
                     <div className="flex items-center gap-1">
                       {canDragRows && (
-                        <span className="hidden group-hover:inline cursor-grab text-gray-400 flex-shrink-0" title="Drag to reorder">&#x2807;</span>
+                        <span className="cursor-grab text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 flex-shrink-0" title="Drag to reorder">&#x2807;</span>
                       )}
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelect(task.id)}
+                        onClick={(e) => e.stopPropagation()}
                         className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
                       />
                     </div>
