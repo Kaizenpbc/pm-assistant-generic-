@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockQuery = vi.fn();
 vi.mock('../../database/connection', () => ({
-  databaseService: { query: (...args: any[]) => mockQuery(...args) },
+  databaseService: {
+    query: (...args: any[]) => mockQuery(...args),
+    queryControlPlane: (...args: any[]) => mockQuery(...args),
+  },
 }));
 
 vi.mock('uuid', () => ({ v4: () => 'test-uuid-1234' }));

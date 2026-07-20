@@ -30,7 +30,7 @@ class NotificationRepository {
     message: string, projectId: string | null, scheduleId: string | null,
     linkType: string | null, linkId: string | null, createdAt: string,
   ): Promise<void> {
-    await databaseService.query(
+    await databaseService.queryControlPlane(
       `INSERT INTO notifications (id, user_id, type, severity, title, message, project_id, schedule_id, link_type, link_id, is_read, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE, ?)`,
       [id, userId, type, severity, title, message, projectId, scheduleId, linkType, linkId, createdAt],
@@ -38,7 +38,7 @@ class NotificationRepository {
   }
 
   async findByUser(userId: string, limit: number, offset: number): Promise<NotificationDTO[]> {
-    const rows = await databaseService.query(
+    const rows = await databaseService.queryControlPlane(
       `SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`,
       [userId, limit, offset],
     );
@@ -46,18 +46,18 @@ class NotificationRepository {
   }
 
   async markRead(id: string): Promise<void> {
-    await databaseService.query('UPDATE notifications SET is_read = TRUE WHERE id = ?', [id]);
+    await databaseService.queryControlPlane('UPDATE notifications SET is_read = TRUE WHERE id = ?', [id]);
   }
 
   async markAllRead(userId: string): Promise<void> {
-    await databaseService.query(
+    await databaseService.queryControlPlane(
       'UPDATE notifications SET is_read = TRUE WHERE user_id = ? AND is_read = FALSE',
       [userId],
     );
   }
 
   async countByUser(userId: string): Promise<number> {
-    const rows = await databaseService.query<{ cnt: number }>(
+    const rows = await databaseService.queryControlPlane<{ cnt: number }>(
       'SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ?',
       [userId],
     );
@@ -65,7 +65,7 @@ class NotificationRepository {
   }
 
   async countUnread(userId: string): Promise<number> {
-    const rows = await databaseService.query<{ cnt: number }>(
+    const rows = await databaseService.queryControlPlane<{ cnt: number }>(
       'SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = FALSE',
       [userId],
     );

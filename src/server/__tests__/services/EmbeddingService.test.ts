@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../../database/connection', () => ({
   databaseService: {
     query: vi.fn().mockResolvedValue([]),
+    queryControlPlane: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -115,7 +116,7 @@ describe('EmbeddingService', () => {
     it('skips when content hash matches', async () => {
       const contentHash = 'dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f'; // sha256 of 'Hello, World!'
 
-      vi.mocked(databaseService.query).mockResolvedValueOnce([
+      vi.mocked(databaseService.queryControlPlane).mockResolvedValueOnce([
         { id: 'existing-id', content_hash: contentHash },
       ] as any);
 
@@ -125,7 +126,7 @@ describe('EmbeddingService', () => {
     });
 
     it('generates embedding and upserts when hash differs', async () => {
-      vi.mocked(databaseService.query)
+      vi.mocked(databaseService.queryControlPlane)
         .mockResolvedValueOnce([]) // no existing
         .mockResolvedValueOnce([] as any); // INSERT
 
@@ -140,8 +141,8 @@ describe('EmbeddingService', () => {
       const result = await service.upsertEmbedding('lesson', 'doc-1', 'new text');
       expect(result.skipped).toBe(false);
       // Verify INSERT was called with VEC_FromText
-      expect(databaseService.query).toHaveBeenCalledTimes(2);
-      const insertCall = vi.mocked(databaseService.query).mock.calls[1];
+      expect(databaseService.queryControlPlane).toHaveBeenCalledTimes(2);
+      const insertCall = vi.mocked(databaseService.queryControlPlane).mock.calls[1];
       expect(insertCall[0]).toContain('VEC_FromText');
     });
   });
@@ -160,7 +161,7 @@ describe('EmbeddingService', () => {
       } as any);
 
       // Mock DB query — SQL returns pre-scored results
-      vi.mocked(databaseService.query).mockResolvedValueOnce([
+      vi.mocked(databaseService.queryControlPlane).mockResolvedValueOnce([
         { document_type: 'lesson', document_id: 'good', score: 0.95 },
         { document_type: 'lesson', document_id: 'ok', score: 0.6 },
       ] as any);
@@ -174,7 +175,7 @@ describe('EmbeddingService', () => {
       expect(results[1].score).toBe(0.6);
 
       // Verify SQL uses VEC_DISTANCE_COSINE
-      const sqlCall = vi.mocked(databaseService.query).mock.calls[0];
+      const sqlCall = vi.mocked(databaseService.queryControlPlane).mock.calls[0];
       expect(sqlCall[0]).toContain('VEC_DISTANCE_COSINE');
       expect(sqlCall[0]).toContain('VEC_FromText');
     });
@@ -185,11 +186,11 @@ describe('EmbeddingService', () => {
         json: vi.fn().mockResolvedValue({ data: [{ embedding: [1, 0] }] }),
       } as any);
 
-      vi.mocked(databaseService.query).mockResolvedValueOnce([] as any);
+      vi.mocked(databaseService.queryControlPlane).mockResolvedValueOnce([] as any);
 
       await service.searchSimilar('test', 'meeting', 3, 0.5);
 
-      const sqlCall = vi.mocked(databaseService.query).mock.calls[0];
+      const sqlCall = vi.mocked(databaseService.queryControlPlane).mock.calls[0];
       expect(sqlCall[0]).toContain('WHERE document_type = ?');
       expect(sqlCall[1]).toContain('meeting');
     });
@@ -198,9 +199,9 @@ describe('EmbeddingService', () => {
   // --- deleteEmbedding ---
   describe('deleteEmbedding', () => {
     it('calls DELETE query', async () => {
-      vi.mocked(databaseService.query).mockResolvedValueOnce([] as any);
+      vi.mocked(databaseService.queryControlPlane).mockResolvedValueOnce([] as any);
       await service.deleteEmbedding('lesson', 'doc-1');
-      expect(databaseService.query).toHaveBeenCalledWith(
+      expect(databaseService.queryControlPlane).toHaveBeenCalledWith(
         'DELETE FROM embeddings WHERE document_type = ? AND document_id = ?',
         ['lesson', 'doc-1'],
       );

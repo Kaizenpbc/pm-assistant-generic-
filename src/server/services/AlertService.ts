@@ -60,7 +60,7 @@ class AlertService {
   private async checkAIBudget(): Promise<void> {
     try {
       // Get admin users to check global budget
-      const rows = await databaseService.query(
+      const rows = await databaseService.queryControlPlane(
         "SELECT id FROM users WHERE role = 'admin' AND is_active = 1 LIMIT 1"
       );
       if (rows.length === 0) return;
@@ -170,7 +170,7 @@ class AlertService {
 
     // Create in-app notification for admin users
     try {
-      const admins = await databaseService.query(
+      const admins = await databaseService.queryControlPlane(
         "SELECT id FROM users WHERE role = 'admin' AND is_active = 1"
       );
       for (const admin of admins as any[]) {

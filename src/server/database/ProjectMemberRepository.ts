@@ -112,7 +112,7 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
   }
 
   async findUserByEmail(email: string): Promise<{ id: string; fullName: string; email: string } | null> {
-    const rows = await databaseService.query(
+    const rows = await databaseService.queryControlPlane(
       'SELECT id, full_name, email FROM users WHERE email = ? LIMIT 1',
       [email],
     );

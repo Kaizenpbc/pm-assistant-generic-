@@ -16,7 +16,7 @@ export class BaseRepository<T> {
   ) {}
 
   async findById(id: string): Promise<T | null> {
-    const rows = await databaseService.query(
+    const rows = await this.queryRaw(
       `SELECT * FROM ${this.tableName} WHERE id = ?`,
       [id],
     );
@@ -24,7 +24,7 @@ export class BaseRepository<T> {
   }
 
   async findAll(limit = 1000): Promise<T[]> {
-    const rows = await databaseService.query(
+    const rows = await this.queryRaw(
       `SELECT * FROM ${this.tableName} ORDER BY created_at DESC LIMIT ?`,
       [limit],
     );
@@ -41,12 +41,12 @@ export class BaseRepository<T> {
       sql += ` AND ${w.column} = ?`;
       params.push(w.value);
     }
-    const result = await databaseService.query(sql, params) as unknown as ResultSetHeader;
+    const result = await this.queryRaw(sql, params) as unknown as ResultSetHeader;
     return (result.affectedRows ?? 0) > 0;
   }
 
   async countWhere(where: string, params: any[]): Promise<number> {
-    const rows = await databaseService.query(
+    const rows = await this.queryRaw(
       `SELECT COUNT(*) AS cnt FROM ${this.tableName} WHERE ${where}`,
       params,
     );
@@ -64,11 +64,11 @@ export class BaseRepository<T> {
       throw new Error(`Invalid ORDER BY clause: ${orderBy}`);
     }
     const [countResult, dataRows] = await Promise.all([
-      databaseService.query(
+      this.queryRaw(
         `SELECT COUNT(*) AS cnt FROM ${this.tableName} WHERE ${where}`,
         params,
       ),
-      databaseService.query(
+      this.queryRaw(
         `SELECT * FROM ${this.tableName} WHERE ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
         [...params, limit, offset],
       ),

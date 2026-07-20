@@ -58,19 +58,19 @@ export class AgentMemoryService {
       : null;
 
     // Upsert: check if exists
-    const existing = await databaseService.query<MemoryRow>(
+    const existing = await databaseService.queryControlPlane<MemoryRow>(
       `SELECT id FROM agent_memory
        WHERE agent_id = ? AND memory_type = ? AND (entity_id = ? OR (entity_id IS NULL AND ? IS NULL)) AND key_name = ?`,
       [agentId, memoryType, entityId, entityId, keyName],
     );
 
     if (existing.length > 0) {
-      await databaseService.query(
+      await databaseService.queryControlPlane(
         `UPDATE agent_memory SET value = ?, expires_at = ?, updated_at = NOW()
          WHERE id = ?`,
         [JSON.stringify(value), expiresAt, existing[0].id],
       );
-      const rows = await databaseService.query<MemoryRow>(
+      const rows = await databaseService.queryControlPlane<MemoryRow>(
         'SELECT * FROM agent_memory WHERE id = ?',
         [existing[0].id],
       );
@@ -78,13 +78,13 @@ export class AgentMemoryService {
     }
 
     const id = uuidv4();
-    await databaseService.query(
+    await databaseService.queryControlPlane(
       `INSERT INTO agent_memory (id, agent_id, memory_type, entity_id, key_name, value, expires_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [id, agentId, memoryType, entityId, keyName, JSON.stringify(value), expiresAt],
     );
 
-    const rows = await databaseService.query<MemoryRow>(
+    const rows = await databaseService.queryControlPlane<MemoryRow>(
       'SELECT * FROM agent_memory WHERE id = ?',
       [id],
     );
@@ -122,7 +122,7 @@ export class AgentMemoryService {
 
     sql += ' ORDER BY updated_at DESC';
 
-    const rows = await databaseService.query<MemoryRow>(sql, params);
+    const rows = await databaseService.queryControlPlane<MemoryRow>(sql, params);
     return rows.map(rowToMemory);
   }
 
@@ -152,7 +152,7 @@ export class AgentMemoryService {
       params.push(keyName);
     }
 
-    const result: any = await databaseService.query(sql, params);
+    const result: any = await databaseService.queryControlPlane(sql, params);
     return result.affectedRows ?? 0;
   }
 
@@ -199,7 +199,7 @@ export class AgentMemoryService {
     sql += ' ORDER BY updated_at DESC LIMIT ?';
     params.push(limit);
 
-    const rows = await databaseService.query<MemoryRow>(sql, params);
+    const rows = await databaseService.queryControlPlane<MemoryRow>(sql, params);
     return rows.map(rowToMemory);
   }
 
@@ -207,7 +207,7 @@ export class AgentMemoryService {
    * Clean up expired memories (can be called periodically).
    */
   async cleanExpired(): Promise<number> {
-    const result: any = await databaseService.query(
+    const result: any = await databaseService.queryControlPlane(
       'DELETE FROM agent_memory WHERE expires_at IS NOT NULL AND expires_at < NOW()',
     );
     return result.affectedRows ?? 0;

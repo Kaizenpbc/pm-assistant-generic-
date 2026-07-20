@@ -120,10 +120,9 @@ export class IntakeFormRepository extends BaseRepository<IntakeForm> {
   }
 
   async findSubmissions(formId?: string, status?: string): Promise<IntakeSubmission[]> {
-    let sql = `SELECT s.*, f.name as form_name, u.full_name as submitter_name
+    let sql = `SELECT s.*, f.name as form_name
                FROM intake_submissions s
-               JOIN intake_forms f ON s.form_id = f.id
-               LEFT JOIN users u ON s.submitted_by = u.id`;
+               JOIN intake_forms f ON s.form_id = f.id`;
     const conditions: string[] = [];
     const params: any[] = [];
     if (formId) { conditions.push('s.form_id = ?'); params.push(formId); }
@@ -131,19 +130,38 @@ export class IntakeFormRepository extends BaseRepository<IntakeForm> {
     if (conditions.length > 0) { sql += ' WHERE ' + conditions.join(' AND '); }
     sql += ' ORDER BY s.created_at DESC';
     const rows = await this.queryRaw(sql, params);
-    return rows.map(submissionRowToDTO);
+    const submissions = rows.map(submissionRowToDTO);
+    // Look up submitter names from control plane
+    await this.enrichSubmitterNames(submissions);
+    return submissions;
   }
 
   async findSubmissionById(id: string): Promise<IntakeSubmission | null> {
     const rows = await this.queryRaw(
-      `SELECT s.*, f.name as form_name, u.full_name as submitter_name
+      `SELECT s.*, f.name as form_name
        FROM intake_submissions s
        JOIN intake_forms f ON s.form_id = f.id
-       LEFT JOIN users u ON s.submitted_by = u.id
        WHERE s.id = ?`,
       [id],
     );
-    return rows.length > 0 ? submissionRowToDTO(rows[0]) : null;
+    if (rows.length === 0) return null;
+    const submission = submissionRowToDTO(rows[0]);
+    await this.enrichSubmitterNames([submission]);
+    return submission;
+  }
+
+  private async enrichSubmitterNames(submissions: IntakeSubmission[]): Promise<void> {
+    const userIds = [...new Set(submissions.map(s => s.submittedBy).filter(Boolean))];
+    if (userIds.length === 0) return;
+    const placeholders = userIds.map(() => '?').join(',');
+    const users = await this.queryControlPlaneRaw(
+      `SELECT id, full_name FROM users WHERE id IN (${placeholders})`,
+      userIds,
+    );
+    const nameMap = new Map(users.map((u: any) => [u.id, u.full_name]));
+    for (const s of submissions) {
+      s.submitterName = nameMap.get(s.submittedBy) || undefined;
+    }
   }
 
   async reviewSubmission(id: string, status: string, notes: string, reviewerId: string): Promise<IntakeSubmission> {

@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const sharedMockQuery = vi.hoisted(() => vi.fn().mockResolvedValue([]));
 vi.mock('../../database/connection', () => ({
-  databaseService: { query: vi.fn().mockResolvedValue([]) },
+  databaseService: {
+    query: sharedMockQuery,
+    queryControlPlane: sharedMockQuery,
+  },
 }));
 
 vi.mock('../../services/EmailService', () => ({
@@ -23,7 +27,7 @@ import { databaseService } from '../../database/connection';
 import { emailService } from '../../services/EmailService';
 import logger from '../../utils/logger';
 
-const mockQuery = databaseService.query as ReturnType<typeof vi.fn>;
+const mockQuery = sharedMockQuery;
 const mockSendDigestEmail = emailService.sendDigestEmail as ReturnType<typeof vi.fn>;
 
 function makeUser(overrides: Record<string, unknown> = {}) {

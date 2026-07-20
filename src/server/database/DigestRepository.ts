@@ -11,7 +11,7 @@ export interface DigestUserRow {
 
 class DigestRepository {
   async findEligibleUsers(): Promise<DigestUserRow[]> {
-    return databaseService.query<DigestUserRow>(
+    return databaseService.queryControlPlane<DigestUserRow>(
       `SELECT id, username, email, full_name, digest_frequency, digest_last_sent_at
        FROM users
        WHERE digest_frequency != 'none'
@@ -40,7 +40,7 @@ class DigestRepository {
   }
 
   async countUnreadNotifications(userId: string): Promise<number> {
-    const rows = await databaseService.query<{ cnt: number }>(
+    const rows = await databaseService.queryControlPlane<{ cnt: number }>(
       `SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = FALSE`,
       [userId],
     );
@@ -48,7 +48,7 @@ class DigestRepository {
   }
 
   updateLastSent(userId: string, now: string): Promise<any> {
-    return databaseService.query(
+    return databaseService.queryControlPlane(
       `UPDATE users SET digest_last_sent_at = ? WHERE id = ?`,
       [now, userId],
     );

@@ -40,7 +40,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
       const body = submitFeedbackSchema.parse(request.body);
       const id = uuidv4();
 
-      await databaseService.query(
+      await databaseService.queryControlPlane(
         `INSERT INTO feedback (id, user_id, overall_rating, schedule_rating, raid_rating, ai_rating, reporting_rating, category, comment)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [id, userId, body.overallRating, body.scheduleRating ?? null, body.raidRating ?? null, body.aiRating ?? null, body.reportingRating ?? null, body.category, body.comment ?? null],
@@ -88,10 +88,10 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
       sql += ' ORDER BY f.created_at DESC LIMIT ? OFFSET ?';
       params.push(parseInt(limit), parseInt(offset));
 
-      const rows = await databaseService.query(sql, params);
+      const rows = await databaseService.queryControlPlane(sql, params);
 
       // Get aggregate stats
-      const statsRows = await databaseService.query(
+      const statsRows = await databaseService.queryControlPlane(
         `SELECT
            COUNT(*) as total,
            ROUND(AVG(overall_rating), 1) as avg_overall,
@@ -154,7 +154,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
       }
 
       params.push(id);
-      const result = await databaseService.query(`UPDATE feedback SET ${updates.join(', ')} WHERE id = ?`, params) as any;
+      const result = await databaseService.queryControlPlane(`UPDATE feedback SET ${updates.join(', ')} WHERE id = ?`, params) as any;
       if ((result.affectedRows ?? 0) === 0) {
         return reply.status(404).send({ error: 'Feedback not found' });
       }

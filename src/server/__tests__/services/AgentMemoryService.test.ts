@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../database/connection', () => ({
-  databaseService: { query: vi.fn().mockResolvedValue([]) },
+  databaseService: {
+    query: vi.fn().mockResolvedValue([]),
+    queryControlPlane: vi.fn().mockResolvedValue([]),
+  },
 }));
 
 vi.mock('uuid', () => ({ v4: () => 'test-memory-id' }));
@@ -9,7 +12,7 @@ vi.mock('uuid', () => ({ v4: () => 'test-memory-id' }));
 import { AgentMemoryService } from '../../services/AgentMemoryService';
 import { databaseService } from '../../database/connection';
 
-const mockQuery = databaseService.query as ReturnType<typeof vi.fn>;
+const mockQuery = databaseService.queryControlPlane as ReturnType<typeof vi.fn>;
 
 const sampleRow = {
   id: 'mem-1',

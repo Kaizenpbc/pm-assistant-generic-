@@ -3,7 +3,7 @@ import { EmbeddingRow } from '../services/EmbeddingService';
 
 class EmbeddingRepository {
   async findByDocument(documentType: string, documentId: string): Promise<EmbeddingRow[]> {
-    return databaseService.query<EmbeddingRow>(
+    return databaseService.queryControlPlane<EmbeddingRow>(
       'SELECT id, content_hash FROM embeddings WHERE document_type = ? AND document_id = ?',
       [documentType, documentId],
     );
@@ -13,7 +13,7 @@ class EmbeddingRepository {
     id: string, documentType: string, documentId: string, contentHash: string,
     embedding: string, model: string, dimensions: number,
   ): Promise<any> {
-    return databaseService.query(
+    return databaseService.queryControlPlane(
       `INSERT INTO embeddings (id, document_type, document_id, content_hash, embedding, model, dimensions)
        VALUES (?, ?, ?, ?, VEC_FromText(?), ?, ?)
        ON DUPLICATE KEY UPDATE content_hash = VALUES(content_hash), embedding = VALUES(embedding), model = VALUES(model), dimensions = VALUES(dimensions)`,
@@ -40,7 +40,7 @@ class EmbeddingRepository {
     sql += ' HAVING score >= ? ORDER BY score DESC LIMIT ?';
     params.push(minScore, topK);
 
-    const rows = await databaseService.query<any>(sql, params);
+    const rows = await databaseService.queryControlPlane<any>(sql, params);
     return rows.map((r: any) => ({
       document_type: r.document_type,
       document_id: r.document_id,
@@ -49,7 +49,7 @@ class EmbeddingRepository {
   }
 
   delete(documentType: string, documentId: string): Promise<any> {
-    return databaseService.query(
+    return databaseService.queryControlPlane(
       'DELETE FROM embeddings WHERE document_type = ? AND document_id = ?',
       [documentType, documentId],
     );
