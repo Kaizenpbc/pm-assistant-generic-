@@ -16,11 +16,24 @@ function makeRequest(apiKey: string) {
     if (body !== undefined) {
       reqHeaders['Content-Type'] = 'application/json';
     }
-    const res = await fetch(url, {
-      method,
-      headers: reqHeaders,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method,
+        headers: reqHeaders,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err?.name === 'AbortError') {
+        throw new Error(`API ${method} ${path} → timeout after 30s`);
+      }
+      throw err;
+    }
+    clearTimeout(timeoutId);
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`API ${method} ${path} → ${res.status}: ${text}`);
