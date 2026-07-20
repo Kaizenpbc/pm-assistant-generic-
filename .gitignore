@@ -51,3 +51,17 @@ nul
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Claude Code
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Stale build artifacts
+dist-server/
+src/client/dist-deploy/
+src/client/dist-server/
+
+# One-off scripts & docs
+scripts/ai-budget-simulation.ts
+scripts/consultant-tier-analysis.ts
+UAT_Project_Readiness_Bar.docx
