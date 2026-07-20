@@ -143,7 +143,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
 
   // DELETE /links/:id — delete portal link
   fastify.delete('/links/:id', {
-    preHandler: [authMiddleware, requireScope('admin'), requireFeature('portal')],
+    preHandler: [authMiddleware, requireScope('write'), requireFeature('portal')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
