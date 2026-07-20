@@ -341,7 +341,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     // SPA fallback: serve index.html for non-API routes
     fastify.setNotFoundHandler(async (request, reply) => {
       if (request.url.startsWith('/api/') || request.url.startsWith('/documentation')) {
-        reply.status(404).send({
+        return reply.status(404).send({
           statusCode: 404,
           error: 'Not Found',
           message: `Route ${request.method}:${request.url} not found`,
@@ -353,7 +353,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     });
   } else {
     fastify.setNotFoundHandler(async (request, reply) => {
-      reply.status(404).send({
+      return reply.status(404).send({
         statusCode: 404,
         error: 'Not Found',
         message: `Route ${request.method}:${request.url} not found`,
@@ -386,7 +386,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     const overallStatus = dbStatus === 'OK' ? 'OK' : 'DEGRADED';
     const httpStatus = overallStatus === 'OK' ? 200 : 503;
 
-    reply.status(httpStatus).send({
+    return reply.status(httpStatus).send({
       status: overallStatus,
       service: 'Kovarti PM Assistant Generic',
       version: '1.0.0',
