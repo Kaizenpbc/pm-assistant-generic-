@@ -143,6 +143,8 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     resetState();
   };
 
+  const { dialogRef, handleKeyDown } = useModal(isOpen, handleClose);
+
   const handleCategorySelect = (key: string) => {
     setErrorMessage(null);
     if (key === 'scratch') {
@@ -253,8 +255,6 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ isOpen, onClose 
     { label: 'Template', active: step === 'template' || step === 'preview', completed: stepNumber > 1 },
     { label: 'Create', active: step === 'customize' || step === 'scratch', completed: false },
   ];
-
-  const { dialogRef, handleKeyDown } = useModal(isOpen, handleClose);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
