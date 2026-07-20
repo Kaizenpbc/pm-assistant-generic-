@@ -29,6 +29,7 @@ import { getTimezones } from '../utils/dateFormat';
 import { useLocaleStore } from '../stores/localeStore';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { ViewerInvitePanel } from '../components/settings/ViewerInvitePanel';
+import { getApiErrorMessage } from '../utils/getApiErrorMessage';
 
 type Tab = 'profile' | 'team' | 'notifications' | 'display' | 'accessibility' | 'api-keys' | 'webhooks' | 'danger';
 
@@ -154,8 +155,8 @@ const ProfileTab: React.FC = () => {
       if (user) setUser({ ...user, fullName: result.fullName ?? fullName, email: result.email ?? email });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to save profile');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to save profile'));
     } finally {
       setSaving(false);
     }
@@ -230,8 +231,8 @@ const ProfileTab: React.FC = () => {
                 setCurrentPassword('');
                 setNewPassword('');
                 setConfirmPassword('');
-              } catch (err: any) {
-                setPwError(err?.response?.data?.message || 'Failed to change password');
+              } catch (err: unknown) {
+                setPwError(getApiErrorMessage(err, 'Failed to change password'));
               } finally {
                 setPwSaving(false);
               }
@@ -301,8 +302,8 @@ const TeamTab: React.FC = () => {
       setInviteEmail('');
       queryClient.invalidateQueries({ queryKey: ['org-members'] });
     },
-    onError: (err: any) => {
-      setInviteMsg({ type: 'error', text: err.response?.data?.message || 'Failed to invite user' });
+    onError: (err: unknown) => {
+      setInviteMsg({ type: 'error', text: getApiErrorMessage(err, 'Failed to invite user') });
     },
   });
 
@@ -1263,8 +1264,8 @@ const DangerZoneTab: React.FC = () => {
     try {
       await apiService.deleteAccount();
       window.location.href = '/';
-    } catch (err: any) {
-      setDeleteError(err?.response?.data?.message || 'Failed to delete account. Please try again.');
+    } catch (err: unknown) {
+      setDeleteError(getApiErrorMessage(err, 'Failed to delete account. Please try again.'));
       setShowDeleteConfirm(false);
       setDeleteInput('');
     }

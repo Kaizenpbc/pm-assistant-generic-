@@ -2,6 +2,17 @@ import 'fastify';
 import { ServiceContainer } from '../container';
 import { ProjectMember } from '../database/ProjectMemberRepository';
 
+/** Shape of the JWT access token payload (signed by JWT_SECRET). */
+export interface JwtPayload {
+  userId: string;
+  username: string;
+  role: string;
+  tv?: number; // token version
+  type?: string; // 'refresh' for refresh tokens
+  iat?: number;
+  exp?: number;
+}
+
 declare module 'fastify' {
   interface FastifyRequest {
     user?: {

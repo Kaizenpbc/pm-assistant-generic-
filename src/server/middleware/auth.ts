@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
+import type { JwtPayload } from '../types/fastify';
 import { apiKeyService } from '../services/ApiKeyService';
 import { databaseService } from '../database/connection';
 import { redisService } from '../services/RedisService';
@@ -72,7 +73,7 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
       });
     }
 
-    const decoded = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] }) as any;
+    const decoded = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
 
     // Check if user is still active (deactivated users rejected even with valid JWT)
     const active = await isUserActive(decoded.userId);

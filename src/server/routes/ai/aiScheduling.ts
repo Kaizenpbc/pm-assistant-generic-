@@ -126,7 +126,7 @@ export async function aiSchedulingRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { projectId } = request.params as any;
+        const { projectId } = request.params as { projectId: string };
         const user = request.user!;
 
         const { insights, aiPowered } = await generateProjectInsightsClaude(

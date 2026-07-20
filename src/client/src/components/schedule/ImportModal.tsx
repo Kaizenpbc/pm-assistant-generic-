@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { apiService } from '../../services/api';
 import { cleanCsvForImport } from '../../utils/csvCleaner';
 import { useModal } from '../../hooks/useModal';
+import { getApiErrorMessage } from '../../utils/getApiErrorMessage';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -172,8 +173,8 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
             const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
             loadText(cleanCsvForImport(csv));
           }
-        } catch (err: any) {
-          setError(`Failed to parse Excel file: ${err.message}`);
+        } catch (err: unknown) {
+          setError(getApiErrorMessage(err, 'Failed to parse Excel file'));
         }
       };
       reader.readAsArrayBuffer(file);
@@ -214,8 +215,8 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
       const data = res?.data ?? res;
       setResult({ succeeded: data.succeeded ?? 0, failed: data.failed ?? [] });
       if ((data.succeeded ?? 0) > 0) onImported?.();
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Import failed');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Import failed'));
     } finally {
       setImporting(false);
     }

@@ -13,6 +13,7 @@ import { provisionTenantDatabase } from '../../database/tenantProvisioner';
 import { inviteService } from '../../services/InviteService';
 import { rateLimiter } from '../../middleware/rateLimiter';
 import logger from '../../utils/logger';
+import type { JwtPayload } from '../../types/fastify';
 
 const loginSchema = z.object({
   username: z.string().min(3),
@@ -356,7 +357,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     schema: { description: 'Get current authenticated user', tags: ['auth'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).user?.userId;
+      const userId = request.user?.userId;
       if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const user = await userService.findById(userId);
@@ -512,7 +513,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'No refresh token', message: 'Refresh token is required' });
       }
 
-      const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET, { algorithms: ['HS256'] }) as any;
+      const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
       if (decoded.type !== 'refresh') {
         return reply.status(401).send({ error: 'Invalid token type', message: 'Token is not a refresh token' });
       }
@@ -578,7 +579,7 @@ export async function authRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { currentPassword, newPassword } = changePasswordSchema.parse(request.body);
-      const userId = (request as any).user?.userId;
+      const userId = request.user?.userId;
       if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const user = await userService.findById(userId);
@@ -625,7 +626,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     schema: { description: 'Delete own account', tags: ['auth'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const userId = (request as any).user?.userId;
+      const userId = request.user?.userId;
       if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
 
       const user = await userService.findById(userId);

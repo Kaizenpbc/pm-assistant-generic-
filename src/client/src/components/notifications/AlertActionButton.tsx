@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Zap, Loader2 } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { getApiErrorMessage } from '../../utils/getApiErrorMessage';
 
 interface AlertActionButtonProps {
   toolName: string;
@@ -20,12 +21,8 @@ export function AlertActionButton({ toolName, params, label, onComplete }: Alert
     try {
       const result = await apiService.executeAlertAction({ toolName, params });
       onComplete?.(result);
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message ||
-        err?.message ||
-        'Action failed';
-      setError(message);
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Action failed'));
     } finally {
       setLoading(false);
     }

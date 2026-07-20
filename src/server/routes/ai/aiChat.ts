@@ -175,7 +175,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     schema: { description: 'Load a conversation by ID', tags: ['ai-chat'] },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { id } = request.params as any;
+        const { id } = request.params as { id: string };
         const user = request.user!;
         const conversation = await chatService.getConversation(id, user.userId);
         if (!conversation) return reply.code(404).send({ error: 'Conversation not found' });
@@ -193,7 +193,7 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     schema: { description: 'Delete a conversation', tags: ['ai-chat'] },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { id } = request.params as any;
+        const { id } = request.params as { id: string };
         const user = request.user!;
         const deleted = await chatService.deleteConversation(id, user.userId);
         if (!deleted) return reply.code(404).send({ error: 'Conversation not found' });

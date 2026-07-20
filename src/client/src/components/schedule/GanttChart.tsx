@@ -65,7 +65,7 @@ function daysBetween(a: Date, b: Date): number {
 }
 
 function formatShortDate(d: Date): string {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 /** Build a flat, sorted list of tasks with WBS numbers & hierarchy levels.

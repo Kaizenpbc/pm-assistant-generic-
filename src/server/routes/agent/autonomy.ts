@@ -53,7 +53,7 @@ export async function autonomyRoutes(fastify: FastifyInstance) {
     try {
       const { agentId } = request.params as { agentId: string };
       const body = autonomyActionSchema.parse(request.body);
-      const userId = (request as any).user?.userId;
+      const userId = request.user!.userId;
 
       if (body.action === 'promote') {
         const config = await autonomyService.promote(agentId, body.projectId ?? null, userId, {

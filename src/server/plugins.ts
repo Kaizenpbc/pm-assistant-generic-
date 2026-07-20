@@ -23,6 +23,7 @@ import { rateLimiter } from './middleware/rateLimiter';
 import { apiKeyService } from './services/ApiKeyService';
 import { metricsService } from './services/MetricsService';
 import { requireActiveSubscription } from './middleware/requireSubscription';
+import type { JwtPayload } from './types/fastify';
 
 // Standard HTTP status text for error response normalization
 const HTTP_STATUS_TEXT: Record<number, string> = {
@@ -53,7 +54,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     try {
       const token = request.cookies?.access_token;
       if (!token) return;
-      const decoded = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] }) as any;
+      const decoded = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
       request.user = { userId: decoded.userId, username: decoded.username, role: decoded.role };
     } catch {
       // Silently ignore — route-level authMiddleware will enforce auth

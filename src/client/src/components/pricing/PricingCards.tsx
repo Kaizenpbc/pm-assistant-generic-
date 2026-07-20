@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { apiService } from '../../services/api';
+import { getApiErrorMessage } from '../../utils/getApiErrorMessage';
 
 export interface PlanDef {
   tier: string;
@@ -173,9 +174,8 @@ export const PricingCards: React.FC<PricingCardsProps> = ({ mode }) => {
       const seats = tier === 'sme' ? smeSeats : undefined;
       const { url } = await apiService.createCheckoutSession(billing, tier, seats);
       window.location.href = url;
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to start checkout. Please try again.';
-      setError(msg);
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to start checkout. Please try again.'));
       setLoading(null);
     }
   };

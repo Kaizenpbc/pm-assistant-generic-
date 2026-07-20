@@ -429,15 +429,15 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     pushAction({
       description: `Bulk update ${field} on ${taskIds.length} tasks`,
       undo: async () => {
-        await Promise.all(oldValues.map(o => apiService.updateTask(schedule.id, o.id, { [field]: o.oldValue })));
+        await apiService.bulkUpdateTasks(oldValues.map(o => ({ id: o.id, scheduleId: schedule.id, [field]: o.oldValue })));
         queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
       },
       redo: async () => {
-        await Promise.all(taskIds.map(id => apiService.updateTask(schedule.id, id, { [field]: value })));
+        await apiService.bulkUpdateTasks(taskIds.map(id => ({ id, scheduleId: schedule.id, [field]: value })));
         queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
       },
     });
-    await Promise.all(taskIds.map(id => apiService.updateTask(schedule.id, id, { [field]: value })));
+    await apiService.bulkUpdateTasks(taskIds.map(id => ({ id, scheduleId: schedule.id, [field]: value })));
     queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
   }, [tasks, schedule.id, pushAction, queryClient]);
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { getApiErrorMessage } from '../utils/getApiErrorMessage';
 import {
   CreditCard,
   Crown,
@@ -151,8 +152,8 @@ export const AccountBillingPage: React.FC = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['seat-info'] });
       queryClient.invalidateQueries({ queryKey: ['ai-budget'] });
-    } catch (err: any) {
-      setSeatError(err?.response?.data?.message || `Failed to ${action} seat.`);
+    } catch (err: unknown) {
+      setSeatError(getApiErrorMessage(err, `Failed to ${action} seat.`));
     } finally {
       setSeatLoading(false);
     }
