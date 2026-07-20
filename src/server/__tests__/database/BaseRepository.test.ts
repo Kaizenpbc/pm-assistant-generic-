@@ -1,13 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../database/connection', () => ({
-  databaseService: { query: vi.fn().mockResolvedValue([]) },
+  databaseService: {
+    query: vi.fn().mockResolvedValue([]),
+    queryControlPlane: vi.fn().mockResolvedValue([]),
+  },
 }));
 
 import { BaseRepository } from '../../database/BaseRepository';
 import { databaseService } from '../../database/connection';
 
 const mockQuery = databaseService.query as ReturnType<typeof vi.fn>;
+const mockQueryCP = databaseService.queryControlPlane as ReturnType<typeof vi.fn>;
 
 interface TestEntity {
   id: string;
@@ -135,6 +139,33 @@ describe('BaseRepository', () => {
         (_key, val) => val.toUpperCase(),
       );
       expect(result!.values).toEqual(['TEST']);
+    });
+  });
+
+  describe('controlPlane option', () => {
+    let cpRepo: BaseRepository<TestEntity>;
+
+    beforeEach(() => {
+      cpRepo = new BaseRepository('cp_table', mapper, { controlPlane: true });
+    });
+
+    it('routes queries to queryControlPlane when controlPlane is true', async () => {
+      mockQueryCP.mockResolvedValueOnce([{ id: '1', name: 'CP' }]);
+      const result = await cpRepo.findById('1');
+      expect(result).toEqual({ id: '1', name: 'CP' });
+      expect(mockQueryCP).toHaveBeenCalledWith(
+        'SELECT * FROM cp_table WHERE id = ?',
+        ['1'],
+      );
+      expect(mockQuery).not.toHaveBeenCalled();
+    });
+
+    it('routes to tenant query when controlPlane is false (default)', async () => {
+      mockQuery.mockResolvedValueOnce([{ id: '2', name: 'Tenant' }]);
+      const result = await repo.findById('2');
+      expect(result).toEqual({ id: '2', name: 'Tenant' });
+      expect(mockQuery).toHaveBeenCalled();
+      expect(mockQueryCP).not.toHaveBeenCalled();
     });
   });
 });

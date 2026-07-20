@@ -74,12 +74,7 @@ const USER_COLUMN_MAP: Record<string, string> = {
 
 export class UserRepository extends BaseRepository<User> {
   constructor() {
-    super('users', rowToUser);
-  }
-
-  // Users table lives in the control plane DB — always bypass tenant context
-  protected override async queryRaw(sql: string, params: any[] = []): Promise<any[]> {
-    return this.queryControlPlaneRaw(sql, params);
+    super('users', rowToUser, { controlPlane: true });
   }
 
   async findByUsername(username: string): Promise<User | null> {

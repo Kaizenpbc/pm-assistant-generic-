@@ -65,12 +65,7 @@ function mapMessageRow(row: any): ChatMessage {
 
 export class ChatRepository extends BaseRepository<ChatConversation> {
   constructor() {
-    super('chat_conversations', mapConversationRow);
-  }
-
-  // chat tables live in the control plane DB, not tenant DBs
-  protected override async queryRaw(sql: string, params: any[] = []): Promise<any[]> {
-    return this.queryControlPlaneRaw(sql, params);
+    super('chat_conversations', mapConversationRow, { controlPlane: true });
   }
 
   async createConversation(data: {

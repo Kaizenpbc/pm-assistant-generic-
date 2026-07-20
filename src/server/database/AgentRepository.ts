@@ -54,12 +54,7 @@ function mapAgentRow(row: any): AgentRecord {
 
 export class AgentRepository extends BaseRepository<AgentRecord> {
   constructor() {
-    super('agents', mapAgentRow);
-  }
-
-  // agents table lives in the control plane DB, not tenant DBs
-  protected override async queryRaw(sql: string, params: any[] = []): Promise<any[]> {
-    return this.queryControlPlaneRaw(sql, params);
+    super('agents', mapAgentRow, { controlPlane: true });
   }
 
   async findEnabled(): Promise<AgentRecord[]> {

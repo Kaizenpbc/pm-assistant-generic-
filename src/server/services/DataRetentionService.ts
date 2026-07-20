@@ -36,13 +36,13 @@ export class DataRetentionService {
       results.agentMemory = 0;
     }
 
-    // 4. Read notifications older than N days
+    // 4. Read notifications older than N days (control plane table)
     const notifDays = envInt('RETENTION_NOTIFICATION_DAYS', DEFAULT_NOTIFICATION_RETENTION_DAYS);
     results.notifications = await this.deleteReadNotifications(notifDays);
 
-    // 5. API key usage log older than N days
+    // 5. API key usage log older than N days (control plane table)
     const apiLogDays = envInt('RETENTION_API_LOG_DAYS', DEFAULT_API_KEY_LOG_RETENTION_DAYS);
-    results.apiKeyUsageLog = await this.deleteOlderThan('api_key_usage_log', apiLogDays);
+    results.apiKeyUsageLog = await this.deleteOlderThanControlPlane('api_key_usage_log', apiLogDays);
 
     logger.info('[DataRetention] Purge complete', results);
     return results;
@@ -75,9 +75,22 @@ export class DataRetentionService {
     }
   }
 
+  private async deleteOlderThanControlPlane(table: string, days: number): Promise<number> {
+    try {
+      const result: any = await databaseService.queryControlPlane(
+        `DELETE FROM ${table} WHERE created_at < NOW() - INTERVAL ? DAY`,
+        [days],
+      );
+      return result.affectedRows ?? 0;
+    } catch (err) {
+      logger.error(`[DataRetention] Failed to purge ${table}`, err instanceof Error ? err.message : err);
+      return 0;
+    }
+  }
+
   private async deleteReadNotifications(days: number): Promise<number> {
     try {
-      const result: any = await databaseService.query(
+      const result: any = await databaseService.queryControlPlane(
         `DELETE FROM notifications WHERE is_read = TRUE AND created_at < NOW() - INTERVAL ? DAY`,
         [days],
       );

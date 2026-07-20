@@ -78,18 +78,18 @@ function mapFeatureRow(row: any): TierFeatureRecord {
 
 class PricingConfigRepository extends BaseRepository<PricingConfigRecord> {
   constructor() {
-    super('pricing_config', mapPricingRow);
+    super('pricing_config', mapPricingRow, { controlPlane: true });
   }
 
   async findAllActive(): Promise<PricingConfigRecord[]> {
-    const rows = await this.queryControlPlaneRaw(
+    const rows = await this.queryRaw(
       'SELECT * FROM pricing_config WHERE is_active = 1 ORDER BY sort_order',
     );
     return rows.map(mapPricingRow);
   }
 
   async findByTier(tier: string): Promise<PricingConfigRecord | null> {
-    const rows = await this.queryControlPlaneRaw(
+    const rows = await this.queryRaw(
       'SELECT * FROM pricing_config WHERE tier = ?',
       [tier],
     );
@@ -157,7 +157,7 @@ class PricingConfigRepository extends BaseRepository<PricingConfigRecord> {
     if (fields.length === 0) return false;
 
     values.push(tier);
-    const result: any = await this.queryControlPlaneRaw(
+    const result: any = await this.queryRaw(
       `UPDATE pricing_config SET ${fields.join(', ')} WHERE tier = ?`,
       values,
     );
@@ -165,7 +165,7 @@ class PricingConfigRepository extends BaseRepository<PricingConfigRecord> {
   }
 
   async getFeatures(tier: string): Promise<TierFeatureRecord[]> {
-    const rows = await this.queryControlPlaneRaw(
+    const rows = await this.queryRaw(
       'SELECT * FROM tier_features WHERE tier = ? ORDER BY feature_key',
       [tier],
     );
@@ -173,14 +173,14 @@ class PricingConfigRepository extends BaseRepository<PricingConfigRecord> {
   }
 
   async getAllFeatures(): Promise<TierFeatureRecord[]> {
-    const rows = await this.queryControlPlaneRaw(
+    const rows = await this.queryRaw(
       'SELECT * FROM tier_features ORDER BY tier, feature_key',
     );
     return rows.map(mapFeatureRow);
   }
 
   async setFeature(tier: string, featureKey: string, enabled: boolean): Promise<boolean> {
-    const result: any = await this.queryControlPlaneRaw(
+    const result: any = await this.queryRaw(
       'UPDATE tier_features SET enabled = ? WHERE tier = ? AND feature_key = ?',
       [enabled ? 1 : 0, tier, featureKey],
     );
@@ -189,7 +189,7 @@ class PricingConfigRepository extends BaseRepository<PricingConfigRecord> {
 
   async setFeaturesBulk(tier: string, features: Record<string, boolean>): Promise<void> {
     for (const [featureKey, enabled] of Object.entries(features)) {
-      await this.queryControlPlaneRaw(
+      await this.queryRaw(
         'UPDATE tier_features SET enabled = ? WHERE tier = ? AND feature_key = ?',
         [enabled ? 1 : 0, tier, featureKey],
       );

@@ -16,6 +16,21 @@ export interface DatabaseConfig {
   queueLimit: number;
 }
 
+// Tables that live in the control plane DB — querying them via tenant-routed query() is a bug
+const CONTROL_PLANE_TABLES = new Set([
+  'users', 'organizations', 'subscriptions', 'subscription_events',
+  'api_keys', 'api_key_usage_log', 'invite_tokens', 'agents',
+  'agent_memory', 'chat_conversations', 'chat_messages',
+  'ai_usage_log', 'notifications', 'embeddings', 'feedback',
+  '_migrations', 'pricing_config', 'tier_features', 'token_top_ups',
+]);
+
+// Extract the first table name from a SQL statement (handles FROM, INTO, UPDATE, DELETE FROM, JOIN)
+function extractTableName(sql: string): string | null {
+  const match = sql.match(/(?:FROM|INTO|UPDATE|JOIN)\s+`?(\w+)`?/i);
+  return match ? match[1] : null;
+}
+
 class DatabaseService {
   private pool: mysql.Pool | null = null;
   private isConnected = false;
@@ -79,6 +94,13 @@ class DatabaseService {
       throw new Error('Database pool not initialized');
     }
     const tenantDb = this.getTenantDbName();
+    // Dev-mode guard: warn when a control plane table is queried via tenant-routed path
+    if (tenantDb && process.env.NODE_ENV === 'development') {
+      const table = extractTableName(sql);
+      if (table && CONTROL_PLANE_TABLES.has(table)) {
+        logger.warn(`[DB] Control plane table "${table}" queried via tenant-routed query(). Use queryControlPlane() instead. SQL: ${sql.substring(0, 120)}`);
+      }
+    }
     if (tenantDb) {
       const conn = await this.pool.getConnection();
       try {

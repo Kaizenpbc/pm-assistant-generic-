@@ -3,6 +3,10 @@ import type { ResultSetHeader } from 'mysql2';
 
 export type RowMapper<T> = (row: any) => T;
 
+export interface RepositoryOptions {
+  controlPlane?: boolean;  // default: false (tenant-routed)
+}
+
 // Allowlist pattern for ORDER BY clauses: column names, optional ASC/DESC, optional comma-separated
 const SAFE_ORDER_BY = /^[a-zA-Z_][a-zA-Z0-9_]*(\s+(ASC|DESC))?(,\s*[a-zA-Z_][a-zA-Z0-9_]*(\s+(ASC|DESC))?)*$/i;
 
@@ -13,6 +17,7 @@ export class BaseRepository<T> {
   constructor(
     protected readonly tableName: string,
     protected readonly rowMapper: RowMapper<T>,
+    protected readonly options: RepositoryOptions = {},
   ) {}
 
   async findById(id: string): Promise<T | null> {
@@ -107,6 +112,9 @@ export class BaseRepository<T> {
   }
 
   protected async queryRaw(sql: string, params: any[] = []): Promise<any[]> {
+    if (this.options.controlPlane) {
+      return databaseService.queryControlPlane(sql, params);
+    }
     return databaseService.query(sql, params);
   }
 
