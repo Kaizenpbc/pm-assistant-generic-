@@ -59,8 +59,8 @@ class DailyBriefingService {
          ORDER BY cr.created_at DESC LIMIT 10`,
         [...projectParams]
       ),
-      // Unread notifications
-      databaseService.query<any>(
+      // Unread notifications (control plane table)
+      databaseService.queryControlPlane<any>(
         `SELECT severity, COUNT(*) AS cnt FROM notifications
          WHERE user_id = ? AND is_read = 0
          GROUP BY severity`,

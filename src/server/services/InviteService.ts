@@ -2,9 +2,11 @@ import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { inviteTokenRepository, InviteToken } from '../database/InviteTokenRepository';
 import { organizationRepository } from '../database/OrganizationRepository';
+import { projectMemberRepository } from '../database/ProjectMemberRepository';
 import { emailService } from './EmailService';
 import { userService } from './UserService';
 import { pricingConfigService } from './PricingConfigService';
+import { runWithTenantContext } from '../middleware/requestContext';
 import logger from '../utils/logger';
 
 const VIEWER_LIMITS_FALLBACK: Record<string, number> = {
@@ -91,14 +93,21 @@ export class InviteService {
 
     await userService.update(userId, updateData as any);
 
-    // If invite has a project, add user as project member
+    // If invite has a project, add user as project member (in tenant context)
     if (invite.projectId) {
       try {
-        const { databaseService } = await import('../database/connection');
-        await databaseService.query(
-          `INSERT IGNORE INTO project_members (id, project_id, user_id, role) VALUES (?, ?, ?, 'viewer')`,
-          [uuidv4(), invite.projectId, userId],
-        );
+        const org = await organizationRepository.findById(invite.organizationId);
+        if (org?.dbName) {
+          const user = await userService.findById(userId);
+          await runWithTenantContext(org.dbName, invite.organizationId, () =>
+            projectMemberRepository.insert(invite.projectId!, {
+              userId,
+              userName: user?.username || '',
+              email: user?.email || '',
+              role: 'viewer',
+            }),
+          );
+        }
       } catch (err) {
         logger.error('Failed to add invited user to project', { projectId: invite.projectId, userId, error: err });
       }

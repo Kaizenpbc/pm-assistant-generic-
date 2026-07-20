@@ -16,13 +16,14 @@ export interface DatabaseConfig {
   queueLimit: number;
 }
 
-// Tables that live in the control plane DB — querying them via tenant-routed query() is a bug
-const CONTROL_PLANE_TABLES = new Set([
+// Tables that exist ONLY in the control plane DB (not in tenant DBs).
+// Querying these via tenant-routed query() will fail with "table doesn't exist".
+const CONTROL_PLANE_ONLY_TABLES = new Set([
   'users', 'organizations', 'subscriptions', 'subscription_events',
-  'api_keys', 'api_key_usage_log', 'invite_tokens', 'agents',
-  'agent_memory', 'chat_conversations', 'chat_messages',
-  'ai_usage_log', 'notifications', 'embeddings', 'feedback',
-  '_migrations', 'pricing_config', 'tier_features', 'token_top_ups',
+  'api_keys', 'api_key_usage_log', 'invite_tokens',
+  'pricing_config', 'tier_features', 'token_top_ups',
+  'ai_conversations', 'ai_feedback', 'ai_accuracy_tracking', 'feedback',
+  'oauth_auth_codes', 'oauth_clients', 'oauth_tokens',
 ]);
 
 // Extract the first table name from a SQL statement (handles FROM, INTO, UPDATE, DELETE FROM, JOIN)
@@ -97,7 +98,7 @@ class DatabaseService {
     // Dev-mode guard: warn when a control plane table is queried via tenant-routed path
     if (tenantDb && process.env.NODE_ENV === 'development') {
       const table = extractTableName(sql);
-      if (table && CONTROL_PLANE_TABLES.has(table)) {
+      if (table && CONTROL_PLANE_ONLY_TABLES.has(table)) {
         logger.warn(`[DB] Control plane table "${table}" queried via tenant-routed query(). Use queryControlPlane() instead. SQL: ${sql.substring(0, 120)}`);
       }
     }
