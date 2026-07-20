@@ -123,6 +123,28 @@ export async function adminRoutes(fastify: FastifyInstance) {
     }
 
     try {
+      // Block deactivation of users with active Stripe subscriptions
+      if (!result.data.active) {
+        const [subRow] = await databaseService.queryControlPlane<{ status: string; stripe_customer_id: string | null }>(
+          `SELECT s.status, u.stripe_customer_id
+           FROM users u
+           LEFT JOIN (
+             SELECT s1.user_id, s1.status FROM subscriptions s1
+             INNER JOIN (SELECT user_id, MAX(created_at) AS mc FROM subscriptions GROUP BY user_id) s2
+             ON s1.user_id = s2.user_id AND s1.created_at = s2.mc
+           ) s ON s.user_id = u.id
+           WHERE u.id = ?`,
+          [id]
+        );
+        if (subRow && ['active', 'trialing', 'past_due'].includes(subRow.status)) {
+          return reply.status(409).send({
+            error: 'Conflict',
+            message: 'Cannot deactivate a user with an active subscription. Cancel their subscription in Stripe first.',
+            subscriptionStatus: subRow.status,
+          });
+        }
+      }
+
       const updated = await userService.update(id, { isActive: result.data.active });
       if (!updated) {
         return reply.status(404).send({ error: 'Not found', message: 'User not found' });

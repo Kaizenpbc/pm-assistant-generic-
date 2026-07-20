@@ -18,6 +18,7 @@ import {
   ArrowUp,
   ArrowDown,
   History,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface AdminUser {
@@ -126,6 +127,7 @@ export function AdminUsersPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
   const [historyUserName, setHistoryUserName] = useState('');
+  const [deactivateError, setDeactivateError] = useState<string | null>(null);
 
   const { data: historyData, isLoading: historyLoading } = useQuery({
     queryKey: ['admin-user-sub-events', historyUserId],
@@ -224,7 +226,15 @@ export function AdminUsersPage() {
   const toggleStatus = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) =>
       apiService.setAdminUserStatus(id, active),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
+    onSuccess: () => {
+      setDeactivateError(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to update user status';
+      setDeactivateError(msg);
+      setTimeout(() => setDeactivateError(null), 8000);
+    },
   });
 
   const resetPassword = useMutation({
@@ -361,6 +371,16 @@ export function AdminUsersPage() {
               Showing {sorted.length} of {totalUsers}
             </span>
           </div>
+
+          {deactivateError && (
+            <div className="mb-4 flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-800 dark:text-red-300">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>{deactivateError}</span>
+              <button onClick={() => setDeactivateError(null)} className="ml-auto text-red-400 hover:text-red-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {copiedToken && (
             <div className="mb-4 flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-800 dark:text-green-300">
@@ -541,7 +561,16 @@ export function AdminUsersPage() {
                       </td>
                       <td className="py-3 pr-3 text-center">
                         <button
-                          onClick={() => toggleStatus.mutate({ id: u.id, active: !active })}
+                          onClick={() => {
+                            if (active) {
+                              const hasSub = u.subscription_status && ['active', 'trialing', 'past_due'].includes(u.subscription_status);
+                              const msg = hasSub
+                                ? `${u.full_name || u.email} has an active subscription (${u.subscription_status}). Cancel their Stripe subscription first before deactivating. Proceed anyway?`
+                                : `Deactivate ${u.full_name || u.email}? They will be unable to log in.`;
+                              if (!confirm(msg)) return;
+                            }
+                            toggleStatus.mutate({ id: u.id, active: !active });
+                          }}
                           disabled={toggleStatus.isPending}
                           title={active ? 'Deactivate user' : 'Activate user'}
                           className="inline-flex items-center gap-1 text-xs"
