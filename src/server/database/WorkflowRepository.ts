@@ -82,6 +82,7 @@ class WorkflowRepository {
       [id, workflowId, nodeType, name, JSON.stringify(config), positionX, positionY],
     );
     const rows = await databaseService.query('SELECT * FROM workflow_nodes WHERE id = ?', [id]);
+    if (!rows[0]) throw new Error(`WorkflowNode not found: ${id}`);
     return rowToNode(rows[0]);
   }
 

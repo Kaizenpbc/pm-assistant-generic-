@@ -26,6 +26,7 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
   const [dragOver, setDragOver] = useState(false);
   const [versionHistoryId, setVersionHistoryId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [fileError, setFileError] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['attachments', entityType, entityId],
@@ -69,6 +70,8 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Download failed:', err);
+      setFileError('Download failed');
+      setTimeout(() => setFileError(''), 3000);
     }
   };
 
@@ -80,12 +83,16 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
       setPreviewUrl(url);
     } catch (err) {
       console.error('Preview failed:', err);
+      setFileError('Preview failed');
+      setTimeout(() => setFileError(''), 3000);
     }
   };
 
   return (
     <div className="space-y-3">
       <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Attachments</h4>
+
+      {fileError && <p className="text-xs text-red-600 dark:text-red-400">{fileError}</p>}
 
       {/* Drop zone */}
       <div

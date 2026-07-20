@@ -358,27 +358,27 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       }
       const comment = await scheduleService.addComment(taskId, text.trim(), user.userId, user.username || 'Project Manager');
 
-      // Parse @mentions and create notifications (fire-and-forget)
+      // Parse @mentions and create notifications (fire-and-forget, batched)
       const mentions = text.match(/@(\w+)/g);
       if (mentions && mentions.length > 0) {
         (async () => {
           try {
-            const task = await scheduleService.findTaskById(taskId);
-            for (const mention of mentions) {
-              const username = mention.slice(1);
-              if (username === user.username) continue;
-              const mentionedUser = await userService.findByUsername(username);
-              if (mentionedUser) {
-                await notificationService.create({
-                  userId: mentionedUser.id,
-                  type: 'mention',
-                  title: `${user.username} mentioned you`,
-                  message: `${user.username} mentioned you in a comment on "${task?.name || 'a task'}"`,
-                  linkType: 'task',
-                  linkId: taskId,
-                });
-              }
-            }
+            const usernames = [...new Set(mentions.map(m => m.slice(1)))].filter(u => u !== user.username).slice(0, 20);
+            if (usernames.length === 0) return;
+            const [task, mentionedUsers] = await Promise.all([
+              scheduleService.findTaskById(taskId),
+              userService.findByUsernames(usernames),
+            ]);
+            await Promise.all(mentionedUsers.map(mu =>
+              notificationService.create({
+                userId: mu.id,
+                type: 'mention',
+                title: `${user.username} mentioned you`,
+                message: `${user.username} mentioned you in a comment on "${task?.name || 'a task'}"`,
+                linkType: 'task',
+                linkId: taskId,
+              }),
+            ));
           } catch (err) {
             logger.error('Mention notification error', { error: err });
           }

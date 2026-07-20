@@ -66,11 +66,18 @@ export class RateLimiter {
     const windowSec = Math.ceil(windowMs / 1000);
 
     const count = await redisService.incr(redisKey);
+    // Always set expiry — avoids INCR+EXPIRE race where crash between them
+    // leaves a key with no TTL, permanently blocking the client.
+    // Redis EXPIRE on an already-expiring key is a no-op cost-wise.
     if (count === 1) {
       await redisService.expire(redisKey, windowSec);
     }
 
     const ttl = await redisService.ttl(redisKey);
+    // If key has no TTL (race recovery), set one now
+    if (ttl < 0) {
+      await redisService.expire(redisKey, windowSec);
+    }
     const resetAt = Date.now() + (ttl > 0 ? ttl * 1000 : windowMs);
     const allowed = count <= limit;
     const remaining = Math.max(0, limit - count);

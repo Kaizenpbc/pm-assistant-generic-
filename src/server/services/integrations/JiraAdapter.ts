@@ -24,7 +24,7 @@ export class JiraAdapter {
   async pullIssues(config: JiraConfig): Promise<{ items: any[]; count: number }> {
     try {
       const response = await fetch(
-        `${config.baseUrl}/rest/api/3/search?jql=project=${config.projectKey}&maxResults=100`,
+        `${config.baseUrl}/rest/api/3/search?jql=project=${encodeURIComponent(config.projectKey)}&maxResults=100`,
         {
           headers: {
             'Authorization': `Basic ${Buffer.from(`${config.email}:${config.apiToken}`).toString('base64')}`,

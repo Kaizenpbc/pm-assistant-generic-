@@ -24,26 +24,8 @@ interface Alert {
 }
 
 class AlertService {
-  private checkInterval: ReturnType<typeof setInterval> | null = null;
-  private static readonly CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-
-  start(): void {
-    if (!config.ALERT_ENABLED) return;
-    if (this.checkInterval) return;
-
-    logger.info('[AlertService] Starting alert monitoring');
-    // Run first check after 60s (let system stabilize)
-    setTimeout(() => this.runChecks(), 60_000);
-    this.checkInterval = setInterval(() => this.runChecks(), AlertService.CHECK_INTERVAL_MS);
-    if (this.checkInterval.unref) this.checkInterval.unref();
-  }
-
-  stop(): void {
-    if (this.checkInterval) {
-      clearInterval(this.checkInterval);
-      this.checkInterval = null;
-    }
-  }
+  // Alert checks are now scheduled externally via systemd timer (pm-cron@alert-check.timer).
+  // The start()/stop() methods have been removed to avoid accidental in-process scheduling.
 
   async runChecks(): Promise<void> {
     try {
