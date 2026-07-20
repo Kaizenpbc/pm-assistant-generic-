@@ -481,4 +481,79 @@ export async function adminRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
+
+  // GET /api/v1/admin/usage-analytics — Agent & feature usage analytics
+  fastify.get('/usage-analytics', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!requireAdmin(request, reply)) return;
+    try {
+      const q = request.query as { days?: string };
+      const days = parseInt(q.days || '30', 10) || 30;
+      const sinceDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+
+      // 1. Agent usage frequency
+      const agentUsage = await databaseService.queryControlPlane(
+        `SELECT agent_id, COUNT(*) AS runs, COUNT(DISTINCT entity_id) AS unique_projects,
+                MIN(created_at) AS first_run, MAX(created_at) AS last_run
+         FROM agent_memory WHERE memory_type = 'reflection' AND created_at >= ?
+         GROUP BY agent_id ORDER BY runs DESC`,
+        [sinceDate]
+      );
+
+      // 2. Sequential agent patterns (agent B triggered within 30 min of agent A on same project)
+      const agentPatterns = await databaseService.queryControlPlane(
+        `SELECT a1.agent_id AS first_agent, a2.agent_id AS second_agent, COUNT(*) AS frequency
+         FROM agent_memory a1
+         JOIN agent_memory a2 ON a1.entity_id = a2.entity_id
+           AND a2.created_at BETWEEN a1.created_at AND DATE_ADD(a1.created_at, INTERVAL 30 MINUTE)
+           AND a1.agent_id != a2.agent_id
+           AND a1.id != a2.id
+         WHERE a1.memory_type = 'reflection' AND a2.memory_type = 'reflection'
+           AND a1.created_at >= ?
+         GROUP BY first_agent, second_agent
+         HAVING frequency >= 2
+         ORDER BY frequency DESC
+         LIMIT 20`,
+        [sinceDate]
+      );
+
+      // 3. Feature usage (top API endpoints by call count from audit ledger)
+      const featureUsage = await databaseService.queryControlPlane(
+        `SELECT action, COUNT(*) AS call_count, COUNT(DISTINCT actor_id) AS unique_users
+         FROM audit_ledger WHERE created_at >= ?
+         GROUP BY action ORDER BY call_count DESC
+         LIMIT 25`,
+        [sinceDate]
+      );
+
+      // 4. Mjuzi chat stats
+      const chatStats = await databaseService.queryControlPlane(
+        `SELECT COUNT(DISTINCT c.id) AS conversations, COUNT(m.id) AS messages,
+                COUNT(DISTINCT c.user_id) AS active_chatters
+         FROM chat_conversations c
+         LEFT JOIN chat_messages m ON m.conversation_id = c.id AND m.created_at >= ?
+         WHERE c.created_at >= ?`,
+        [sinceDate, sinceDate]
+      );
+
+      // 5. Daily agent runs (for chart)
+      const dailyAgentRuns = await databaseService.queryControlPlane(
+        `SELECT DATE(created_at) AS day, COUNT(*) AS runs
+         FROM agent_memory WHERE memory_type = 'reflection' AND created_at >= ?
+         GROUP BY DATE(created_at) ORDER BY day`,
+        [sinceDate]
+      );
+
+      return {
+        agentUsage,
+        agentPatterns,
+        featureUsage,
+        chatStats: chatStats[0] ?? { conversations: 0, messages: 0, active_chatters: 0 },
+        dailyAgentRuns,
+        period: { days, since: sinceDate },
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
 }

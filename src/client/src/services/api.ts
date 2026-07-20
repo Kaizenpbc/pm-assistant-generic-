@@ -2121,6 +2121,11 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
+  async getAdminUsageAnalytics(days: number = 30) {
+    const response = await this.api.get(`/admin/usage-analytics?days=${days}`);
+    return response.data;
+  }
+
   async setAdminUserStatus(userId: string, active: boolean) {
     const response = await this.api.patch(`/admin/users/${userId}/status`, { active });
     return response.data;
