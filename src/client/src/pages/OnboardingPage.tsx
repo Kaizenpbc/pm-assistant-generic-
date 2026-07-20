@@ -8,8 +8,15 @@ export const OnboardingPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState('');
-  const [username, setUsername] = useState(user?.username || '');
+  const [username, setUsername] = useState('');
   const [organizationName, setOrganizationName] = useState('');
+
+  // Pre-fill username once user data loads
+  useEffect(() => {
+    if (user?.username && !username) {
+      setUsername(user.username);
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,8 +83,8 @@ export const OnboardingPage: React.FC = () => {
 
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Username</label>
-              <input id="username" type="text" required autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)}
-                className="input" placeholder="johndoe" minLength={3} />
+              <input id="username" type="text" required autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+                className="input" placeholder="johndoe" minLength={3} pattern="[a-zA-Z0-9_]+" />
               <p className="text-xs text-gray-400 mt-1">Letters, numbers, and underscores only</p>
             </div>
 

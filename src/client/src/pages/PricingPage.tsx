@@ -45,9 +45,9 @@ export const PricingPage: React.FC = () => {
               ) : (
                 <>
                   <Link to="/login" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white">Sign In</Link>
-                  <Link to="/register" className="text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg transition-colors">
-                    Get Started
-                  </Link>
+                  <a href="#pricing" className="text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg transition-colors">
+                    Choose a Plan
+                  </a>
                 </>
               )}
             </div>

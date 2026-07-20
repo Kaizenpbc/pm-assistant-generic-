@@ -89,7 +89,8 @@ function App() {
         }
       })
       .catch(() => {
-        // Not authenticated — that's fine
+        // Not authenticated — clear any stale state
+        setUser(null);
       })
       .finally(() => {
         setLoading(false);
