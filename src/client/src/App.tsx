@@ -59,6 +59,7 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m 
 const EVMDashboardPage = lazy(() => import('./pages/EVMDashboardPage').then(m => ({ default: m.EVMDashboardPage })));
 const KPIDrillInPage = lazy(() => import('./pages/KPIDrillInPage').then(m => ({ default: m.KPIDrillInPage })));
 const ProjectsPM = lazy(() => import('./pages/ProjectsPM').then(m => ({ default: m.ProjectsPM })));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 function PageLoader() {
@@ -69,32 +70,31 @@ function PageLoader() {
   );
 }
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? <AppLayout><RouteErrorBoundary>{children}</RouteErrorBoundary></AppLayout> : <Navigate to="/login" replace />;
+function PrivateRoute({ children, skipOnboardingCheck }: { children: React.ReactNode; skipOnboardingCheck?: boolean }) {
+  const { isAuthenticated, user } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!skipOnboardingCheck && !user?.fullName) return <Navigate to="/onboarding" replace />;
+  return <AppLayout><RouteErrorBoundary>{children}</RouteErrorBoundary></AppLayout>;
 }
 
 function App() {
   const { isAuthenticated, isLoading, setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
-    // Try to hydrate auth from cookies (handles verify-login redirect + page refresh)
-    if (!isAuthenticated) {
-      apiService.getMe()
-        .then((data) => {
-          if (data.user) {
-            setUser(data.user);
-          } else {
-            setLoading(false);
-          }
-        })
-        .catch(() => {
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only: hydrate auth from cookie once
+    // Hydrate auth from cookies on mount (handles page refresh + verify-login redirect)
+    apiService.getMe()
+      .then((data) => {
+        if (data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch(() => {
+        // Not authenticated — that's fine
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only
 
   if (isLoading) {
     return (
@@ -126,6 +126,7 @@ function App() {
         <Route path="/guide" element={<UserGuidePublicPage />} />
         <Route path="/waitlist-admin" element={<WaitlistAdminPage />} />
         <Route path="/portal/:token" element={<PortalViewPage />} />
+        <Route path="/onboarding" element={isAuthenticated ? <OnboardingPage /> : <Navigate to="/login" replace />} />
 
         {/* Protected routes */}
         <Route path="/dashboard" element={<PrivateRoute><DashboardRouter /></PrivateRoute>} />

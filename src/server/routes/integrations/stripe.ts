@@ -16,7 +16,7 @@ const checkoutSchema = z.object({
   seats: z.number().int().min(3).max(100).optional(),
 });
 
-function resolvePriceId(tier: string, billing: string): string | undefined {
+export function resolvePriceId(tier: string, billing: string): string | undefined {
   // New tier price IDs
   if (tier === 'consultant') {
     if (billing === 'annual' && config.STRIPE_CONSULTANT_NEW_ANNUAL_PRICE_ID) return config.STRIPE_CONSULTANT_NEW_ANNUAL_PRICE_ID;

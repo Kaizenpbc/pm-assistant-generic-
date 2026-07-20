@@ -78,12 +78,14 @@ class ApiService {
   }
 
   async register(userData: {
-    username: string;
+    username?: string;
     email: string;
     password: string;
-    fullName: string;
+    fullName?: string;
     organizationName?: string;
     inviteToken?: string;
+    tier?: 'consultant' | 'sme' | 'enterprise';
+    plan?: 'monthly' | 'annual';
   }) {
     const response = await this.api.post('/auth/register', userData);
     return response.data;
@@ -2223,7 +2225,7 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
     return response.data;
   }
 
-  async updateProfile(data: { fullName?: string; email?: string }) {
+  async updateProfile(data: { fullName?: string; email?: string; username?: string; organizationName?: string }) {
     const response = await this.api.put('/users/me/profile', data);
     return response.data;
   }

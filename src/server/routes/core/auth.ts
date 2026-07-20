@@ -12,6 +12,7 @@ import { organizationService } from '../../services/OrganizationService';
 import { provisionTenantDatabase } from '../../database/tenantProvisioner';
 import { inviteService } from '../../services/InviteService';
 import { rateLimiter } from '../../middleware/rateLimiter';
+import { resolvePriceId } from '../integrations/stripe';
 import logger from '../../utils/logger';
 import type { JwtPayload } from '../../types/fastify';
 
@@ -21,12 +22,14 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-  username: z.string().min(3).max(50),
+  username: z.string().min(3).max(50).optional(),
   email: z.string().email(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  fullName: z.string().min(2).max(100),
+  fullName: z.string().min(2).max(100).optional(),
   organizationName: z.string().min(2).max(255).optional(),
   inviteToken: z.string().optional(),
+  tier: z.enum(['consultant', 'sme', 'enterprise']).optional(),
+  plan: z.enum(['monthly', 'annual']).optional(),
 });
 
 const forgotPasswordSchema = z.object({
@@ -73,60 +76,54 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Admin users bypass login email verification
-      if (user.role === 'admin') {
-        const newVersion = (user.tokenVersion ?? 0) + 1;
-        await userService.update(user.id, {
-          tokenVersion: newVersion,
-          lastLoginAt: new Date(),
-        });
+      // TODO: Re-enable per-login email verification (2FA-style) behind a config flag
+      // Previously, non-admin users received a login verification email on every sign-in.
+      // Disabled to simplify the flow; re-add as opt-in MFA later.
 
-        const accessToken = jwt.sign(
-          { userId: user.id, username: user.username, role: user.role, tv: newVersion },
-          config.JWT_SECRET,
-          { expiresIn: '15m', algorithm: 'HS256' }
-        );
-        const refreshToken = jwt.sign(
-          { userId: user.id, type: 'refresh', tv: newVersion },
-          config.JWT_REFRESH_SECRET,
-          { expiresIn: '24h', algorithm: 'HS256' }
-        );
-
-        reply.setCookie('access_token', accessToken, {
-          httpOnly: true,
-          secure: config.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 15 * 60,
-        });
-        reply.setCookie('refresh_token', refreshToken, {
-          httpOnly: true,
-          secure: config.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 24 * 60 * 60,
-        });
-
-        return { token: accessToken, user: { id: user.id, username: user.username, email: user.email, fullName: user.fullName, role: user.role } };
-      }
-
-      // Generate login verification token (10-min expiry)
-      const loginToken = crypto.randomUUID();
-      const loginExpires = new Date(Date.now() + 10 * 60 * 1000);
+      const newVersion = (user.tokenVersion ?? 0) + 1;
       await userService.update(user.id, {
-        loginVerificationToken: loginToken,
-        loginVerificationExpires: loginExpires,
+        tokenVersion: newVersion,
+        lastLoginAt: new Date(),
       });
 
-      // Send verification email (fire-and-forget)
-      emailService.sendLoginVerificationEmail(user.email, loginToken, user.username).catch((err) => {
-        logger.error('Failed to send login verification email', { userId: user.id, error: err });
+      const accessToken = jwt.sign(
+        { userId: user.id, username: user.username, role: user.role, tv: newVersion },
+        config.JWT_SECRET,
+        { expiresIn: '15m', algorithm: 'HS256' }
+      );
+      const refreshToken = jwt.sign(
+        { userId: user.id, type: 'refresh', tv: newVersion },
+        config.JWT_REFRESH_SECRET,
+        { expiresIn: '24h', algorithm: 'HS256' }
+      );
+
+      reply.setCookie('access_token', accessToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 15 * 60,
+      });
+      reply.setCookie('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 24 * 60 * 60,
       });
 
-      return reply.status(202).send({
-        message: 'Please check your email to confirm this login.',
-        requiresVerification: true,
-      });
+      return {
+        token: accessToken,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          subscriptionTier: user.role === 'admin' ? 'enterprise' : user.subscriptionTier,
+          subscriptionStatus: user.role === 'admin' ? 'active' : user.subscriptionStatus,
+        },
+      };
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.status(400).send({ error: 'Validation error', message: 'Username and password are required' });
@@ -148,7 +145,13 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(429).send({ error: 'Too many registration attempts. Please try again later.' });
       }
 
-      const { username, email, password, fullName, organizationName, inviteToken } = registerSchema.parse(request.body);
+      const parsed = registerSchema.parse(request.body);
+      const { email, password, organizationName, inviteToken, tier, plan } = parsed;
+
+      // Auto-generate username if not provided (plan signup flow)
+      const username = parsed.username || email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') + '_' + crypto.randomBytes(3).toString('hex');
+      // Use empty string for fullName if not provided (will be collected in onboarding)
+      const fullName = parsed.fullName || '';
 
       // Validate invite token if provided
       let inviteData: { valid: boolean; email?: string; orgName?: string; projectId?: string | null } | null = null;
@@ -175,19 +178,21 @@ export async function authRoutes(fastify: FastifyInstance) {
       const passwordHash = await bcrypt.hash(password, 12);
 
       const isInvitedViewer = inviteData?.valid;
+      const isPlanSignup = !!tier && !isInvitedViewer;
 
       // Create Stripe customer (if configured) — skip for invited viewers
-      const stripeCustomerId = isInvitedViewer ? null : await stripeService.createCustomer(email, fullName, 'pending');
+      const stripeCustomerId = isInvitedViewer ? null : await stripeService.createCustomer(email, fullName || email, 'pending');
 
+      // For plan signup, auto-verify email (they'll verify via Stripe payment)
       const user = await userService.create({
         username,
         email,
         passwordHash,
         fullName,
         role: isInvitedViewer ? 'viewer' : 'team_member',
-        emailVerified: false,
-        emailVerificationToken: verificationToken,
-        emailVerificationExpires: verificationExpires,
+        emailVerified: isPlanSignup ? true : false,
+        emailVerificationToken: isPlanSignup ? undefined : verificationToken,
+        emailVerificationExpires: isPlanSignup ? undefined : verificationExpires,
         stripeCustomerId: stripeCustomerId || undefined,
       });
 
@@ -203,18 +208,14 @@ export async function authRoutes(fastify: FastifyInstance) {
           logger.error('Failed to accept invite during registration', { userId: user.id, error: inviteErr });
         }
       } else {
-        // Regular user: set 14-day trial period
-        const now = new Date();
-        const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+        // Regular user: no subscription until they pick a plan
         await userService.update(user.id, {
-          trialStartedAt: now,
-          trialEndsAt: trialEnd,
-          subscriptionStatus: 'trialing',
+          subscriptionStatus: 'none',
         });
 
         // Multi-tenant: create organization and provision tenant database
         if (config.MULTI_TENANT_ENABLED) {
-          const orgName = organizationName || fullName;
+          const orgName = organizationName || fullName || email.split('@')[0];
           try {
             const org = await organizationService.createOrganization(orgName, user.id, stripeCustomerId || undefined);
             await userService.update(user.id, { organizationId: org.id } as any);
@@ -228,7 +229,58 @@ export async function authRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Send verification email (fire-and-forget — don't block registration if email fails)
+      // Plan signup flow: auto-login + create Stripe checkout session + return URL
+      if (isPlanSignup && stripeCustomerId) {
+        const billing = plan || 'monthly';
+        const priceId = resolvePriceId(tier, billing);
+        if (!priceId) {
+          return reply.status(500).send({ error: 'Stripe not configured', message: 'Pricing is not configured for this tier' });
+        }
+
+        const checkoutUrl = await stripeService.createCheckoutSession(stripeCustomerId, priceId, user.id, '/onboarding');
+
+        // Auto-login: issue JWT cookies
+        const newVersion = (user.tokenVersion ?? 0) + 1;
+        await userService.update(user.id, { tokenVersion: newVersion, lastLoginAt: new Date() });
+
+        const accessToken = jwt.sign(
+          { userId: user.id, username: user.username, role: user.role, tv: newVersion },
+          config.JWT_SECRET,
+          { expiresIn: '15m', algorithm: 'HS256' }
+        );
+        const refreshToken = jwt.sign(
+          { userId: user.id, type: 'refresh', tv: newVersion },
+          config.JWT_REFRESH_SECRET,
+          { expiresIn: '24h', algorithm: 'HS256' }
+        );
+
+        reply.setCookie('access_token', accessToken, {
+          httpOnly: true, secure: config.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 15 * 60,
+        });
+        reply.setCookie('refresh_token', refreshToken, {
+          httpOnly: true, secure: config.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 24 * 60 * 60,
+        });
+
+        // Send verification email even for plan signup (they can verify later)
+        emailService.sendVerificationEmail(email, verificationToken).catch((emailErr) => {
+          logger.error('Failed to send verification email', { userId: user.id, email, error: emailErr });
+        });
+
+        return reply.status(201).send({
+          checkoutUrl,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role,
+            subscriptionTier: 'trial',
+            subscriptionStatus: 'none',
+          },
+        });
+      }
+
+      // Traditional flow: send verification email, no auto-login
       emailService.sendVerificationEmail(email, verificationToken).catch((emailErr) => {
         logger.error('Failed to send verification email', { userId: user.id, email, error: emailErr });
       });

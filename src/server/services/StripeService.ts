@@ -42,7 +42,7 @@ export class StripeService {
     return customer.id;
   }
 
-  async createCheckoutSession(customerId: string, priceId: string, userId: string): Promise<string> {
+  async createCheckoutSession(customerId: string, priceId: string, userId: string, successPath?: string): Promise<string> {
     const session = await this.getClient().checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -51,7 +51,7 @@ export class StripeService {
       subscription_data: {
         metadata: { userId },
       },
-      success_url: `${config.APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${config.APP_URL}${successPath || '/dashboard'}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${config.APP_URL}/pricing`,
       metadata: { userId },
     });

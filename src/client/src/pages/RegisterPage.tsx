@@ -1,11 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Users } from 'lucide-react';
+import { Eye, EyeOff, Users, CreditCard } from 'lucide-react';
+import { useAuthStore } from '../stores/authStore';
 import { apiService } from '../services/api';
+
+const TIER_LABELS: Record<string, string> = {
+  consultant: 'Consultant',
+  sme: 'SME',
+  enterprise: 'Enterprise',
+};
 
 export const RegisterPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get('invite') || undefined;
+  const tierParam = searchParams.get('tier') as 'consultant' | 'sme' | 'enterprise' | null;
+  const billingParam = (searchParams.get('billing') as 'monthly' | 'annual') || 'monthly';
+
+  const isPlanSignup = !!tierParam && !inviteToken;
+
+  const { setUser } = useAuthStore();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -59,13 +72,26 @@ export const RegisterPage: React.FC = () => {
     setIsLoading(true);
     try {
       const result = await apiService.register({
-        fullName,
+        fullName: isPlanSignup ? undefined : fullName,
         email,
-        username,
+        username: isPlanSignup ? undefined : username,
         password,
-        organizationName: inviteToken ? undefined : (organizationName || undefined),
+        organizationName: inviteToken ? undefined : (isPlanSignup ? undefined : (organizationName || undefined)),
         inviteToken,
+        tier: isPlanSignup ? tierParam! : undefined,
+        plan: isPlanSignup ? billingParam : undefined,
       });
+
+      // Plan signup flow: auto-login + redirect to Stripe
+      if (result.checkoutUrl) {
+        if (result.user) {
+          setUser(result.user);
+        }
+        window.location.href = result.checkoutUrl;
+        return;
+      }
+
+      // Traditional flow: show success message
       setSuccessMessage(result.message || 'Registration successful. Please check your email to verify your account.');
       setSuccess(true);
     } catch (err: unknown) {
@@ -103,7 +129,9 @@ export const RegisterPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
           <div className="text-center mb-8">
             <div className="mx-auto w-12 h-12 bg-primary-100 dark:bg-primary-900/40 rounded-xl flex items-center justify-center mb-4">
-              {isInviteFlow ? (
+              {isPlanSignup ? (
+                <CreditCard className="w-7 h-7 text-primary-600 dark:text-primary-400" />
+              ) : isInviteFlow ? (
                 <Users className="w-7 h-7 text-primary-600 dark:text-primary-400" />
               ) : (
                 <svg className="w-7 h-7 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +139,14 @@ export const RegisterPage: React.FC = () => {
                 </svg>
               )}
             </div>
-            {isInviteFlow ? (
+            {isPlanSignup ? (
+              <>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Subscribe to {TIER_LABELS[tierParam!] || tierParam}</h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {billingParam === 'annual' ? 'Annual' : 'Monthly'} billing — create your account to continue
+                </p>
+              </>
+            ) : isInviteFlow ? (
               <>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Join {inviteOrgName}</h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">You've been invited as a viewer</p>
@@ -137,11 +172,14 @@ export const RegisterPage: React.FC = () => {
               </div>
             )}
 
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Full Name</label>
-              <input id="fullName" type="text" required autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)}
-                className="input" placeholder="John Doe" />
-            </div>
+            {/* Full form fields — only for traditional / invite flows */}
+            {!isPlanSignup && (
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Full Name</label>
+                <input id="fullName" type="text" required autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)}
+                  className="input" placeholder="John Doe" />
+              </div>
+            )}
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
@@ -149,13 +187,15 @@ export const RegisterPage: React.FC = () => {
                 className="input" placeholder="john@example.com" readOnly={!!inviteEmail} />
             </div>
 
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Username</label>
-              <input id="username" type="text" required autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)}
-                className="input" placeholder="johndoe" minLength={3} />
-            </div>
+            {!isPlanSignup && (
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Username</label>
+                <input id="username" type="text" required autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)}
+                  className="input" placeholder="johndoe" minLength={3} />
+              </div>
+            )}
 
-            {!isInviteFlow && (
+            {!isPlanSignup && !isInviteFlow && (
               <div>
                 <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Organization Name <span className="text-gray-400 font-normal">(optional)</span>
@@ -205,8 +245,10 @@ export const RegisterPage: React.FC = () => {
               {isLoading ? (
                 <div className="flex items-center">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Creating account...
+                  {isPlanSignup ? 'Setting up...' : 'Creating account...'}
                 </div>
+              ) : isPlanSignup ? (
+                'Continue to Payment'
               ) : isInviteFlow ? (
                 'Accept Invitation'
               ) : (

@@ -165,7 +165,7 @@ export const PricingCards: React.FC<PricingCardsProps> = ({ mode }) => {
 
   const handleSubscribe = async (tier: string) => {
     if (!isAuthenticated) {
-      window.location.href = '/register';
+      window.location.href = `/register?tier=${tier}&billing=${billing}`;
       return;
     }
     setLoading(tier);
@@ -340,14 +340,14 @@ export const PricingCards: React.FC<PricingCardsProps> = ({ mode }) => {
                   </Link>
                 ) : mode === 'link' ? (
                   <Link
-                    to="/pricing"
+                    to={`/register?tier=${plan.tier}&billing=${billing}`}
                     className={`block w-full py-2.5 px-4 text-sm font-semibold rounded-lg text-center transition-colors ${
                       plan.highlight
                         ? 'bg-primary-600 text-white hover:bg-primary-700'
                         : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
                     }`}
                   >
-                    Get Started
+                    Subscribe
                   </Link>
                 ) : (
                   <button
@@ -367,7 +367,7 @@ export const PricingCards: React.FC<PricingCardsProps> = ({ mode }) => {
                     ) : isAuthenticated ? (
                       isSubscribed ? 'Switch Plan' : 'Subscribe'
                     ) : (
-                      'Start Free Trial'
+                      'Get Started'
                     )}
                   </button>
                 )}

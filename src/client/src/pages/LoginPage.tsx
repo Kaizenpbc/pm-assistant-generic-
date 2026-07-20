@@ -43,7 +43,7 @@ export const LoginPage: React.FC = () => {
         sessionStorage.setItem('pm-first-login', 'true');
       }
       setUser(response.user);
-      navigate('/dashboard');
+      navigate(response.user?.fullName ? '/dashboard' : '/onboarding');
     } catch (err: unknown) {
       const axiosError = err as { response?: { status?: number; data?: { message?: string; requiresVerification?: boolean } } };
 

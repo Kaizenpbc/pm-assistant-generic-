@@ -540,7 +540,7 @@ export const LandingPage: React.FC = () => {
                 to="/register"
                 className="text-[15px] font-bold text-white bg-gradient-to-br from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 px-7 py-3.5 rounded-xl transition-all shadow-lg shadow-blue-500/35 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5"
               >
-                Start Free Trial
+                Get Started Free
               </Link>
               <a
                 href="#pricing"

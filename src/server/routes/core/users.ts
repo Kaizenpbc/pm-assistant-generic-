@@ -3,11 +3,15 @@ import { z } from 'zod';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { userService } from '../../services/UserService';
+import { organizationService } from '../../services/OrganizationService';
+import { organizationRepository } from '../../database/OrganizationRepository';
 import logger from '../../utils/logger';
 
 const profileUpdateSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
   email: z.string().email().max(255).optional(),
+  username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_]+$/, 'Username may only contain letters, numbers, and underscores').optional(),
+  organizationName: z.string().min(2).max(255).optional(),
 });
 
 const categoryPrefSchema = z.object({
@@ -70,7 +74,7 @@ export async function userRoutes(fastify: FastifyInstance) {
 
   fastify.put('/me/profile', {
     preHandler: [requireScope('write')],
-    schema: { description: 'Update profile (full name, email)', tags: ['users'] },
+    schema: { description: 'Update profile (full name, email, username, organization)', tags: ['users'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
@@ -79,16 +83,43 @@ export async function userRoutes(fastify: FastifyInstance) {
       if (parsed.fullName !== undefined) updateData.fullName = parsed.fullName;
       if (parsed.email !== undefined) updateData.email = parsed.email;
 
-      if (Object.keys(updateData).length === 0) {
+      // Username change — check uniqueness
+      if (parsed.username !== undefined) {
+        const existing = await userService.findByUsername(parsed.username);
+        if (existing && existing.id !== userId) {
+          return reply.status(409).send({ error: 'Username taken', message: 'That username is already in use' });
+        }
+        updateData.username = parsed.username;
+      }
+
+      if (Object.keys(updateData).length === 0 && !parsed.organizationName) {
         return reply.status(400).send({ error: 'No fields to update' });
       }
 
-      const updated = await userService.update(userId, updateData);
-      if (!updated) return reply.status(404).send({ error: 'User not found' });
+      let updated;
+      if (Object.keys(updateData).length > 0) {
+        updated = await userService.update(userId, updateData);
+        if (!updated) return reply.status(404).send({ error: 'User not found' });
+      } else {
+        updated = await userService.findById(userId);
+      }
+
+      // Update organization name if provided
+      if (parsed.organizationName) {
+        try {
+          const org = await organizationService.findByUserId(userId);
+          if (org) {
+            await organizationRepository.update(org.id, { name: parsed.organizationName });
+          }
+        } catch (orgErr) {
+          logger.error('Failed to update organization name', { userId, error: orgErr });
+        }
+      }
 
       return {
-        fullName: updated.fullName,
-        email: updated.email,
+        fullName: updated?.fullName,
+        email: updated?.email,
+        username: updated?.username,
       };
     } catch (error) {
       if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });

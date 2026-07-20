@@ -21,7 +21,7 @@ export function TrialBanner() {
 
   return (
     <div className="bg-amber-500 text-white text-center py-2.5 px-4 text-sm font-medium flex items-center justify-center gap-3">
-      <span>Your trial has ended. Subscribe to keep building.</span>
+      <span>Subscribe to a plan to unlock all features.</span>
       <Link
         to="/pricing"
         className="inline-flex items-center gap-1.5 px-3 py-1 bg-white text-amber-700 text-xs font-semibold rounded-full hover:bg-amber-50 transition-colors"
