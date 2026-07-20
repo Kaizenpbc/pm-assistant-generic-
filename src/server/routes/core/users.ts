@@ -73,7 +73,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/me/profile', {
-    preHandler: [requireScope('write')],
+    preHandler: [requireScope('read')],
     schema: { description: 'Update profile (full name, email, username, organization)', tags: ['users'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {

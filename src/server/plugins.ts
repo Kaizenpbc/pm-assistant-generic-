@@ -74,6 +74,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     '/api/v1/portal',
     '/api/v1/ws',
     '/api/v1/waitlist',
+    '/api/v1/users/me/profile',
     '/mcp',
   ];
   fastify.addHook('preHandler', async (request, reply) => {
