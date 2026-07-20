@@ -152,17 +152,19 @@ ${predLinks ? predLinks + '\n' : ''}      </Task>`;
         }).join('\n');
 
         const resourcesXml = resourceNames.map(name => {
-          const uid = resourceUidMap.get(name)!;
+          const uid = resourceUidMap.get(name);
+          if (!uid) return '';
           return `      <Resource><UID>${uid}</UID><ID>${uid}</ID><Name>${xmlEscape(name)}</Name><Type>1</Type></Resource>`;
-        }).join('\n');
+        }).filter(Boolean).join('\n');
 
         let assignmentUid = 0;
         const assignmentsXml = allTasks.filter(t => t.assignedTo).map(t => {
+          const tUid = taskUidMap.get(t.id);
+          const rUid = resourceUidMap.get(t.assignedTo!);
+          if (!tUid || !rUid) return '';
           assignmentUid++;
-          const tUid = taskUidMap.get(t.id)!;
-          const rUid = resourceUidMap.get(t.assignedTo!)!;
           return `      <Assignment><UID>${assignmentUid}</UID><TaskUID>${tUid}</TaskUID><ResourceUID>${rUid}</ResourceUID></Assignment>`;
-        }).join('\n');
+        }).filter(Boolean).join('\n');
 
         const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Project xmlns="http://schemas.microsoft.com/project">

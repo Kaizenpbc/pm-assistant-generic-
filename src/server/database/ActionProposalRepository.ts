@@ -146,7 +146,7 @@ class ActionProposalRepository {
       `UPDATE agent_proposals SET status = 'expired', updated_at = NOW()
        WHERE status = 'pending' AND expires_at IS NOT NULL AND expires_at < NOW()`,
     );
-    return (result as any).affectedRows ?? 0;
+    return ((result as unknown as { affectedRows?: number }).affectedRows) ?? 0;
   }
 
   async countPendingByProject(projectId: string): Promise<number> {

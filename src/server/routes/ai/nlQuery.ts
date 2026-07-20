@@ -4,6 +4,7 @@ import { NLQueryRequestSchema } from '../../schemas/nlQuerySchemas';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireFeature } from '../../middleware/requireTier';
+import { rateLimiter } from '../../middleware/rateLimiter';
 
 export async function nlQueryRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -45,6 +46,12 @@ export async function nlQueryRoutes(fastify: FastifyInstance) {
 
         const user = request.user!;
         const userId = user.userId;
+
+        // Rate limit: 30 NL queries per hour
+        const rl = rateLimiter.check(`ai:nlquery:${userId}`, 30, 3600_000);
+        if (!rl.allowed) {
+          return reply.code(429).send({ error: 'Rate limit exceeded. Please try again later.' });
+        }
 
         const result = await nlQueryService.processQuery(
           parsed.data.query,

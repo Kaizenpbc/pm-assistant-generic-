@@ -436,13 +436,14 @@ export async function operationsRoutes(fastify: FastifyInstance) {
 
       // DB pool info
       const pool = databaseService.getPool();
-      let poolActive = 0, poolIdle = 0, poolTotal = 10, poolWaiting = 0;
+      let poolActive = 0, poolIdle = 0, poolTotal = config.DB_CONNECTION_LIMIT, poolWaiting = 0;
       if (pool) {
         const p = pool.pool;
-        poolActive = (p as any)?._allConnections?.length || 0;
-        poolIdle = (p as any)?._freeConnections?.length || 0;
-        poolWaiting = (p as any)?._connectionQueue?.length || 0;
-        poolTotal = 10;
+        // mysql2 pool internals — no public API for these stats
+        const internals = p as unknown as Record<string, { length?: number } | undefined>;
+        poolActive = internals._allConnections?.length || 0;
+        poolIdle = internals._freeConnections?.length || 0;
+        poolWaiting = internals._connectionQueue?.length || 0;
       }
 
       // Metrics snapshot

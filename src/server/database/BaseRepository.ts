@@ -1,6 +1,13 @@
 import { databaseService } from './connection';
+import type { ResultSetHeader } from 'mysql2';
 
 export type RowMapper<T> = (row: any) => T;
+
+// Allowlist pattern for ORDER BY clauses: column names, optional ASC/DESC, optional comma-separated
+const SAFE_ORDER_BY = /^[a-zA-Z_][a-zA-Z0-9_]*(\s+(ASC|DESC))?(,\s*[a-zA-Z_][a-zA-Z0-9_]*(\s+(ASC|DESC))?)*$/i;
+
+// Allowlist pattern for column names used in dynamic WHERE clauses
+const SAFE_COLUMN_NAME = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
 export class BaseRepository<T> {
   constructor(
@@ -28,10 +35,13 @@ export class BaseRepository<T> {
     let sql = `DELETE FROM ${this.tableName} WHERE id = ?`;
     const params: any[] = [id];
     for (const w of extraWhere) {
+      if (!SAFE_COLUMN_NAME.test(w.column)) {
+        throw new Error(`Invalid column name: ${w.column}`);
+      }
       sql += ` AND ${w.column} = ?`;
       params.push(w.value);
     }
-    const result: any = await databaseService.query(sql, params);
+    const result = await databaseService.query(sql, params) as unknown as ResultSetHeader;
     return (result.affectedRows ?? 0) > 0;
   }
 
@@ -40,7 +50,7 @@ export class BaseRepository<T> {
       `SELECT COUNT(*) AS cnt FROM ${this.tableName} WHERE ${where}`,
       params,
     );
-    return Number(rows[0].cnt);
+    return Number(rows[0]?.cnt ?? 0);
   }
 
   async queryPaginated(
@@ -50,6 +60,9 @@ export class BaseRepository<T> {
     limit: number,
     offset: number,
   ): Promise<{ rows: T[]; total: number }> {
+    if (!SAFE_ORDER_BY.test(orderBy)) {
+      throw new Error(`Invalid ORDER BY clause: ${orderBy}`);
+    }
     const [countResult, dataRows] = await Promise.all([
       databaseService.query(
         `SELECT COUNT(*) AS cnt FROM ${this.tableName} WHERE ${where}`,
@@ -62,7 +75,7 @@ export class BaseRepository<T> {
     ]);
     return {
       rows: dataRows.map(this.rowMapper),
-      total: Number(countResult[0].cnt),
+      total: Number(countResult[0]?.cnt ?? 0),
     };
   }
 

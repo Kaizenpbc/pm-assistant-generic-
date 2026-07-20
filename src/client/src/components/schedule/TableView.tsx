@@ -95,6 +95,12 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
   // Column resize handler
   const resizingRef = useRef<{ key: string; startX: number; startW: number } | null>(null);
 
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => { resizeCleanupRef.current?.(); };
+  }, []);
+
   const handleResizeStart = useCallback((e: React.MouseEvent, colKey: string, currentWidth: number) => {
     e.preventDefault();
     e.stopPropagation();
@@ -110,9 +116,11 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
       resizingRef.current = null;
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      resizeCleanupRef.current = null;
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
+    resizeCleanupRef.current = onUp;
   }, [setColWidths]);
 
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);

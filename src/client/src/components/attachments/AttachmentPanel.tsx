@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { File, Image, FileText, Trash2, Download, Clock, UploadCloud } from 'lucide-react';
 import { apiService } from '../../services/api';
@@ -27,6 +27,11 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
   const [versionHistoryId, setVersionHistoryId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileError, setFileError] = useState('');
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    return () => { if (errorTimerRef.current) clearTimeout(errorTimerRef.current); };
+  }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ['attachments', entityType, entityId],
@@ -68,10 +73,10 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Download failed:', err);
+    } catch {
       setFileError('Download failed');
-      setTimeout(() => setFileError(''), 3000);
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(() => setFileError(''), 3000);
     }
   };
 
@@ -81,10 +86,10 @@ export function AttachmentPanel({ entityType, entityId }: AttachmentPanelProps) 
       const blob = await apiService.downloadAttachment(att.id);
       const url = window.URL.createObjectURL(blob);
       setPreviewUrl(url);
-    } catch (err) {
-      console.error('Preview failed:', err);
+    } catch {
       setFileError('Preview failed');
-      setTimeout(() => setFileError(''), 3000);
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(() => setFileError(''), 3000);
     }
   };
 

@@ -127,7 +127,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
 
       // Ownership check: only creator or admin can update
       const user = request.user!;
-      if ((existing as any).createdBy !== user.userId && user.role !== 'admin') {
+      if (existing.createdBy !== user.userId && user.role !== 'admin') {
         return reply.status(403).send({ error: 'Only the link creator or an admin can modify this portal link' });
       }
 
@@ -152,7 +152,7 @@ export async function portalRoutes(fastify: FastifyInstance) {
 
       // Ownership check: only creator or admin can delete
       const user = request.user!;
-      if ((existing as any).createdBy !== user.userId && user.role !== 'admin') {
+      if (existing.createdBy !== user.userId && user.role !== 'admin') {
         return reply.status(403).send({ error: 'Only the link creator or an admin can delete this portal link' });
       }
 

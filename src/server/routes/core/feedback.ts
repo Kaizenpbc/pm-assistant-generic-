@@ -154,7 +154,10 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
       }
 
       params.push(id);
-      await databaseService.query(`UPDATE feedback SET ${updates.join(', ')} WHERE id = ?`, params);
+      const result = await databaseService.query(`UPDATE feedback SET ${updates.join(', ')} WHERE id = ?`, params) as any;
+      if ((result.affectedRows ?? 0) === 0) {
+        return reply.status(404).send({ error: 'Feedback not found' });
+      }
 
       return { message: 'Feedback updated' };
     } catch (error) {

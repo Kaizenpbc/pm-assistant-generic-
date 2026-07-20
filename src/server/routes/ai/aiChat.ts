@@ -4,6 +4,7 @@ import { AIChatService } from '../../services/aiChatService';
 import { AICircuitBreakerError } from '../../services/claudeService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
+import { rateLimiter } from '../../middleware/rateLimiter';
 
 const chatMessageSchema = z.object({
   message: z.string().min(1).max(10000),
@@ -53,8 +54,19 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = chatMessageSchema.parse(request.body);
         const user = request.user!;
+
+        // Per-user AI rate limit: 60 requests per hour
+        const rl = rateLimiter.check(`ai:chat:${user.userId}`, 60, 3600_000);
+        if (!rl.allowed) {
+          return reply.code(429).send({
+            error: 'AI rate limit exceeded',
+            message: 'Too many AI requests. Please wait before trying again.',
+            retryAfterMs: rl.resetAt - Date.now(),
+          });
+        }
+
+        const body = chatMessageSchema.parse(request.body);
 
         const result = await chatService.sendMessage({
           message: body.message,
@@ -106,8 +118,19 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = chatMessageSchema.parse(request.body);
         const user = request.user!;
+
+        // Share the same rate limit bucket as /message
+        const rl = rateLimiter.check(`ai:chat:${user.userId}`, 60, 3600_000);
+        if (!rl.allowed) {
+          return reply.code(429).send({
+            error: 'AI rate limit exceeded',
+            message: 'Too many AI requests. Please wait before trying again.',
+            retryAfterMs: rl.resetAt - Date.now(),
+          });
+        }
+
+        const body = chatMessageSchema.parse(request.body);
 
         reply.raw.writeHead(200, {
           'Content-Type': 'text/event-stream',
@@ -221,8 +244,15 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = createProjectSchema.parse(request.body);
         const user = request.user!;
+
+        // Rate limit: 10 AI project creations per hour
+        const rl = rateLimiter.check(`ai:create-project:${user.userId}`, 10, 3600_000);
+        if (!rl.allowed) {
+          return reply.code(429).send({ error: 'Rate limit exceeded. Please try again later.' });
+        }
+
+        const body = createProjectSchema.parse(request.body);
 
         const { AIProjectCreatorService } = await import('../../services/aiProjectCreator');
         const creator = new AIProjectCreatorService(fastify);
@@ -266,8 +296,15 @@ export async function aiChatRoutes(fastify: FastifyInstance) {
     },
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const body = extractTasksSchema.parse(request.body);
         const user = request.user!;
+
+        // Rate limit: 20 extractions per hour
+        const rl = rateLimiter.check(`ai:extract:${user.userId}`, 20, 3600_000);
+        if (!rl.allowed) {
+          return reply.code(429).send({ error: 'Rate limit exceeded. Please try again later.' });
+        }
+
+        const body = extractTasksSchema.parse(request.body);
 
         const { claudeService, promptTemplates } = await import('../../services/claudeService');
         const { AIMeetingExtractionSchema } = await import('../../schemas/aiSchemas');

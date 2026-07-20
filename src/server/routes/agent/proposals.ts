@@ -30,7 +30,7 @@ export async function proposalRoutes(fastify: FastifyInstance) {
       const query = request.query as { projectId?: string; status?: string; agentId?: string; limit?: string; offset?: string };
       const result = await actionProposalService.list({
         projectId: query.projectId,
-        status: query.status as any,
+        status: query.status as import('../../services/agents/ActionProposalService').ProposalStatus | undefined,
         agentId: query.agentId,
         limit: query.limit ? Number(query.limit) : undefined,
         offset: query.offset ? Number(query.offset) : undefined,

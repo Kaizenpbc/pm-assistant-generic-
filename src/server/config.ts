@@ -126,15 +126,18 @@ const configSchema = z.object({
   if (data.JWT_REFRESH_SECRET === data.COOKIE_SECRET) {
     throw new Error('JWT_REFRESH_SECRET and COOKIE_SECRET must be different');
   }
-  // Entropy check: reject secrets that are all-same-char or trivial repeating patterns
+  // Entropy check: reject secrets that are too short or trivial
   const secrets = [
     { name: 'JWT_SECRET', value: data.JWT_SECRET },
     { name: 'JWT_REFRESH_SECRET', value: data.JWT_REFRESH_SECRET },
     { name: 'COOKIE_SECRET', value: data.COOKIE_SECRET },
   ];
   for (const { name, value } of secrets) {
+    if (value.length < 32) {
+      throw new Error(`${name} is too short (${value.length} chars). Use at least 32 characters.`);
+    }
     const uniqueChars = new Set(value).size;
-    if (uniqueChars < 8) {
+    if (uniqueChars < 12) {
       throw new Error(`${name} has insufficient entropy (only ${uniqueChars} unique characters). Use a strong random secret.`);
     }
   }
@@ -228,7 +231,8 @@ export function validateConfiguration() {
       MAX_UPLOAD_SIZE_MB: process.env['MAX_UPLOAD_SIZE_MB'],
     };
 
-    console.log('Validating configuration...');
+    // Logger not yet available during bootstrap — use process.stderr
+    process.stderr.write('[config] Validating configuration...\n');
 
     const requiredVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'COOKIE_SECRET', 'DB_PASSWORD'];
     const missingVars = requiredVars.filter(varName => !process.env[varName]);
@@ -238,18 +242,18 @@ export function validateConfiguration() {
     }
 
     const validatedConfig = configSchema.parse(rawConfig);
-    console.log('Configuration validation successful');
+    process.stderr.write('[config] Configuration validation successful\n');
     return validatedConfig;
   } catch (error) {
-    console.error('Configuration validation failed:');
+    process.stderr.write('[config] Configuration validation failed:\n');
 
     if (error instanceof z.ZodError) {
       error.issues.forEach((issue: z.ZodIssue, index: number) => {
         const path = issue.path.length ? issue.path.join('.') : '(root)';
-        console.error(`  ${index + 1}. ${path}: ${issue.message}`);
+        process.stderr.write(`  ${index + 1}. ${path}: ${issue.message}\n`);
       });
     } else {
-      console.error(`  ${error instanceof Error ? error.message : 'Unknown error'}`);
+      process.stderr.write(`  ${error instanceof Error ? error.message : 'Unknown error'}\n`);
     }
 
     throw new Error('Configuration validation failed');
@@ -291,9 +295,9 @@ export function logConfigSummary(): void {
   }
   if (!config.STRIPE_SECRET_KEY) warnings.push('STRIPE_SECRET_KEY not set — billing disabled');
 
-  console.log(`[config] Environment: ${config.NODE_ENV} | Port: ${config.PORT}`);
-  console.log(`[config] Features: ${features.join(', ')}`);
+  process.stderr.write(`[config] Environment: ${config.NODE_ENV} | Port: ${config.PORT}\n`);
+  process.stderr.write(`[config] Features: ${features.join(', ')}\n`);
   for (const w of warnings) {
-    console.warn(`[config] WARNING: ${w}`);
+    process.stderr.write(`[config] WARNING: ${w}\n`);
   }
 }

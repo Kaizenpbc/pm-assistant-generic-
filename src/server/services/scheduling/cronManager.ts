@@ -263,9 +263,28 @@ export async function runOverdueScanImpl(
     if (tenantSet.has(taskId)) continue;
 
     tenantSet.add(taskId);
-    // Use row data directly instead of re-fetching from DB
-    const task = await scheduleService.findTaskById(taskId);
-    if (!task) continue;
+    // Map row data directly — no need to re-fetch from DB
+    const task: import('../ScheduleService').Task = {
+      id: row.id,
+      scheduleId: row.schedule_id,
+      name: row.name,
+      status: row.status,
+      priority: row.priority || 'medium',
+      assignedTo: row.assigned_to || undefined,
+      startDate: row.start_date ? String(row.start_date) : undefined,
+      endDate: row.end_date ? String(row.end_date) : undefined,
+      estimatedDays: row.estimated_days ?? undefined,
+      description: row.description || undefined,
+      parentTaskId: row.parent_task_id || undefined,
+      createdBy: row.created_by || '',
+      isRecurrenceTemplate: !!row.is_recurrence_template,
+      recurrenceRule: row.recurrence_rule || undefined,
+      recurrenceParentId: row.recurrence_parent_id || undefined,
+      sortOrder: row.sort_order ?? 0,
+      createdAt: '',
+      updatedAt: '',
+      dependencies: [],
+    };
 
     // Fire date_passed triggers via workflow engine
     dagWorkflowService.evaluateTaskChange(task, task, scheduleService).catch(err =>

@@ -126,9 +126,10 @@ export const useAIChatStore = create<AIChatState>()((set, get) => ({
 
     setLoading(true);
 
-    // Add placeholder assistant message
+    // Add placeholder assistant message and capture its ID immediately
     addMessage({ role: 'assistant', content: '', isStreaming: true });
-    const placeholderMsg = get().messages[get().messages.length - 1];
+    const messages = get().messages;
+    const placeholderMsg = messages[messages.length - 1];
 
     try {
       // Use non-streaming endpoint for tool support

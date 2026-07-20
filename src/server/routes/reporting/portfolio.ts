@@ -102,6 +102,10 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
         }))
       );
 
+      // Pre-fetch all resources to avoid N+1 lookups
+      const allResources = await resourceService.findAllResources();
+      const resourceLookup = new Map(allResources.map(r => [r.id, r]));
+
       // Aggregate per resource across projects
       interface AggResource {
         resourceId: string;
@@ -119,8 +123,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
         for (const w of workload) {
           let agg = resourceMap.get(w.resourceId);
           if (!agg) {
-            // Look up cost rate
-            const resource = await resourceService.findResourceById(w.resourceId);
+            const resource = resourceLookup.get(w.resourceId);
             agg = {
               resourceId: w.resourceId,
               resourceName: w.resourceName,

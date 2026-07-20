@@ -175,6 +175,11 @@ export function useWebSocket() {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
+      if (pendingReconnect) {
+        clearTimeout(pendingReconnect);
+        pendingReconnect = null;
+      }
+      connectFn = null;
       if (wsRef.current) {
         wsRef.current.close();
       }

@@ -65,20 +65,19 @@ async function start() {
     }
 
   } catch (err) {
-    console.error('Failed to start server:', err);
-    fastify.log.error(err);
+    fastify.log.error(err, 'Failed to start server');
     process.exit(1);
   }
 }
 
 // Crash-safety: log and exit on uncaught errors
 process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION — shutting down:', err);
+  process.stderr.write(`UNCAUGHT EXCEPTION — shutting down: ${err?.stack || err}\n`);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error('UNHANDLED REJECTION — shutting down:', reason);
+  process.stderr.write(`UNHANDLED REJECTION — shutting down: ${reason}\n`);
   process.exit(1);
 });
 
