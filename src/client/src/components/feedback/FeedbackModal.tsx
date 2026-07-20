@@ -33,6 +33,7 @@ function StarRating({ value, onChange, size = 'md' }: { value: number; onChange:
           onMouseLeave={() => setHover(0)}
           onClick={() => onChange(star)}
           className="focus:outline-none"
+          aria-label={`Rate ${star} out of 5 stars`}
         >
           <Star
             className={`${cls} transition-colors ${

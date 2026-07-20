@@ -156,11 +156,13 @@ export const useAIChatStore = create<AIChatState>()((set, get) => ({
 
       setLoading(false);
     } catch (error) {
-      const errData = (error as any)?.response?.data;
+      const errData = error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { data?: { code?: string; resetDate?: string } } }).response?.data
+        : undefined;
       const isBudgetExceeded = errData?.code === 'AI_BUDGET_EXCEEDED';
 
       if (isBudgetExceeded) {
-        const resetDate = errData.resetDate || 'next month';
+        const resetDate = errData?.resetDate || 'next month';
         updateLastAssistantMessage(
           `You've reached your monthly AI token limit. Your budget resets on **${resetDate}**.\n\nYou can [purchase additional tokens](/pricing) to continue using AI features, or wait for your budget to reset. All non-AI features remain fully available.`,
         );

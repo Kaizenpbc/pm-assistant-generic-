@@ -164,7 +164,7 @@ export class TaskRepository {
   }
 
   async findAll(maxRows = 50000): Promise<Task[]> {
-    const rows = await databaseService.query(`SELECT * FROM tasks ORDER BY sort_order, created_at LIMIT ${maxRows}`);
+    const rows = await databaseService.query('SELECT * FROM tasks ORDER BY sort_order, created_at LIMIT ?', [maxRows]);
     const tasks = rows.map(rowToTask);
     await this.attachDependencies(tasks);
     return tasks;
