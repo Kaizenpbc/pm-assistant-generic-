@@ -2,7 +2,7 @@ import { databaseService } from './connection';
 
 class AIBudgetRepository {
   async getMonthlyUsage(userId: string): Promise<{ total_input: number; total_output: number; total_cost: number; request_count: number }> {
-    const rows = await databaseService.query<any>(
+    const rows = await databaseService.queryControlPlane<any>(
       `SELECT
          COALESCE(SUM(input_tokens), 0) AS total_input,
          COALESCE(SUM(output_tokens), 0) AS total_output,
@@ -21,7 +21,7 @@ class AIBudgetRepository {
       return { total_input: 0, total_output: 0, total_cost: 0, request_count: 0 };
     }
     const placeholders = userIds.map(() => '?').join(',');
-    const rows = await databaseService.query<any>(
+    const rows = await databaseService.queryControlPlane<any>(
       `SELECT
          COALESCE(SUM(input_tokens), 0) AS total_input,
          COALESCE(SUM(output_tokens), 0) AS total_output,
@@ -36,7 +36,7 @@ class AIBudgetRepository {
   }
 
   async getUserBudget(userId: string): Promise<number | null> {
-    const rows = await databaseService.query<{ ai_monthly_token_budget: number | null }>(
+    const rows = await databaseService.queryControlPlane<{ ai_monthly_token_budget: number | null }>(
       'SELECT ai_monthly_token_budget FROM users WHERE id = ?',
       [userId],
     );
@@ -55,7 +55,7 @@ class AIBudgetRepository {
   }
 
   async findBudgetWarningToday(userId: string, today: string): Promise<boolean> {
-    const rows = await databaseService.query<{ id: string }>(
+    const rows = await databaseService.queryControlPlane<{ id: string }>(
       `SELECT id FROM notifications
        WHERE user_id = ? AND type = 'ai_budget_warning' AND DATE(created_at) = ?
        LIMIT 1`,
