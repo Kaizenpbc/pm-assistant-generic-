@@ -65,7 +65,7 @@ export function registerTaskTools(server: McpServer) {
       startDate: z.string().optional(),
       endDate: z.string().optional(),
       dependency: z.string().optional(),
-    })).describe('Array of tasks to create (max 100)'),
+    })).max(100).describe('Array of tasks to create (max 100)'),
   }, async ({ tasks }, extra) =>
     jsonResult(await getApiClientFromExtra(extra).post('/bulk/tasks', { tasks }))
   );
@@ -77,14 +77,14 @@ export function registerTaskTools(server: McpServer) {
       status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).optional(),
       priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
       assignedTo: z.string().optional(),
-      progressPercentage: z.number().optional(),
-    })).describe('Array of task updates'),
+      progressPercentage: z.number().min(0).max(100).optional(),
+    })).max(100).describe('Array of task updates (max 100)'),
   }, async ({ tasks }, extra) =>
     jsonResult(await getApiClientFromExtra(extra).put('/bulk/tasks', { tasks }))
   );
 
   server.tool('bulk-status-update', 'Batch status change for multiple tasks', {
-    taskIds: z.array(z.string()).describe('Task IDs to update'),
+    taskIds: z.array(z.string()).max(100).describe('Task IDs to update (max 100)'),
     status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).describe('New status'),
   }, async (params, extra) =>
     jsonResult(await getApiClientFromExtra(extra).put('/bulk/tasks/status', params))

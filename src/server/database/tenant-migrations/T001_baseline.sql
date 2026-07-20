@@ -513,6 +513,7 @@ CREATE TABLE IF NOT EXISTS integration_sync_log (
   error_message TEXT NULL,
   started_at DATETIME NOT NULL,
   completed_at DATETIME NULL,
+  INDEX idx_sync_log_integration (integration_id),
   FOREIGN KEY (integration_id) REFERENCES integrations(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -820,8 +821,7 @@ CREATE TABLE IF NOT EXISTS embeddings (
   dimensions SMALLINT UNSIGNED NOT NULL DEFAULT 1536,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE INDEX idx_emb_document (document_type, document_id),
-  INDEX idx_emb_type (document_type),
-  INDEX idx_embeddings_document (document_type, document_id)
+  INDEX idx_emb_type (document_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -848,7 +848,8 @@ CREATE TABLE IF NOT EXISTS goals (
   INDEX idx_owner (owner_id),
   INDEX idx_parent (parent_id),
   INDEX idx_project (project_id),
-  INDEX idx_type (goal_type)
+  INDEX idx_type (goal_type),
+  INDEX idx_goals_parent_type (parent_id, goal_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -977,7 +978,7 @@ CREATE TABLE IF NOT EXISTS project_risks (
   workaround TEXT NULL,
   INDEX idx_project_risks_project_type_status (project_id, type, status),
   INDEX idx_project_risks_project_triggered (project_id, triggered),
-  INDEX idx_project_risks_agent_source (source_agent_id, project_id),
+  INDEX idx_project_risks_project_agent (project_id, source_agent_id),
   UNIQUE INDEX idx_project_risks_record_id (record_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
