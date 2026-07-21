@@ -242,7 +242,7 @@ Auto-generated warnings based on real-time project data analysis.
 ## 12. AI Report Synthesis
 
 **Service:** `AIReportService` (`aiReportService.ts`)
-**Endpoint:** `POST /api/reports/generate`
+**Endpoint:** `POST /api/v1/ai-reports/generate`
 
 AI-generated executive summaries and status reports.
 
@@ -257,6 +257,25 @@ AI-generated executive summaries and status reports.
 - Claude generates narrative reports tailored to the data
 - Reports include AI-generated insights, not just data dumps
 - Each report tracked with token count and generation metadata
+
+### 12b. Automated Project Status Reports
+
+**Service:** `ProjectStatusReportService` (`ProjectStatusReportService.ts`)
+**Endpoints:**
+- `POST /api/v1/status-reports/generate` -- Generate a status report with optional email delivery
+- `POST /api/v1/status-reports/schedule` -- Create recurring schedule (daily/weekly/monthly)
+- `GET /api/v1/status-reports/schedules/:projectId` -- List schedules for a project
+- `DELETE /api/v1/status-reports/schedule/:id` -- Delete a schedule
+
+Dedicated service for project status reports with a `statusReport` prompt template. Generates structured reports with 7 sections: Executive Summary, Progress Update, Key Milestones, Risks & Issues, Budget Status, Next Steps, Blockers & Escalations.
+
+**Key features:**
+- AI generation via Claude with fallback to template when AI unavailable
+- Email delivery to stakeholder lists via `EmailService.sendStatusReportEmail()`
+- Recurring schedules via `ReportScheduleService` (uses `templateId = "status-report::<projectId>"` convention)
+- Reports stored in `ai_conversations` table (same as AIReportService)
+- MCP tool: `generate-status-report` (PM, scrum_master, pmo, ba, admin roles)
+- Feature-gated: requires paid tier
 
 ---
 

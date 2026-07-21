@@ -881,7 +881,13 @@ A severity badge (Low/Medium/High/Critical) flags the degree of scope drift. Cre
 
 ### Status Report Generator
 
-Click the **Status Report** button in the project header to generate an AI-powered weekly status report. The report opens in a modal with formatted sections (Executive Summary, Key Metrics, Risks, Milestones, Recommendations). You can copy the report to clipboard or download it as a markdown file.
+Click the **Status Report** button in the project header to generate an AI-powered status report. The modal has three tabs:
+
+- **Report** — View the generated report with formatted sections (Executive Summary, Progress Update, Key Milestones, Risks & Issues, Budget Status, Next Steps, Blockers & Escalations). Copy to clipboard or download as markdown.
+- **Email Report** — Enter comma-separated email addresses and send the report directly to stakeholders. A fresh report is generated and emailed in branded HTML format.
+- **Schedule Recurring** — Set up automatic report delivery on a daily, weekly, or monthly cadence. Choose the day of week/month, time, and recipients. View and delete existing schedules from this tab.
+
+Scheduled reports run automatically via the report scheduler cron and email the report to all configured recipients. Requires a paid subscription (Consultant, SME, or Enterprise tier).
 
 ---
 

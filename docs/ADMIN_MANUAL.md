@@ -552,6 +552,7 @@ Agents can be promoted from Tier 2 (propose-only) to Tier 3 (auto-execute) when 
 - **Reports > Templates** -- create reusable report templates with custom fields, filters, and layouts.
 - Built-in templates: project status, burndown, velocity, budget forecast.
 - Schedule automated report generation and email delivery.
+- **AI Status Reports** -- users can generate AI-powered project status reports via `POST /api/v1/status-reports/generate` and schedule recurring delivery via `POST /api/v1/status-reports/schedule`. Schedules use the existing `report_schedules` table with `templateId = "status-report::<projectId>"`. Requires `AI_ENABLED=true` for AI generation (falls back to template otherwise) and `RESEND_API_KEY` for email delivery. Gated by `requirePaidTier`.
 
 ---
 

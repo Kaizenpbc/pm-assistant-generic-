@@ -619,6 +619,7 @@ This runs 19 test files with 223+ tests covering:
 | `ProjectHygieneAgent.test.ts` | Guard chain, stale task detection, missing data, abandoned sprints, zero-progress tasks |
 | `DependencyRiskAgent.test.ts` | Guard chain, dependency graph traversal, blocked chains, bottleneck detection |
 | `LessonsLearnedAgent.test.ts` | Guard chain, completion threshold, lesson extraction, deduplication |
+| `ProjectStatusReportService.test.ts` | AI generation, fallback when unavailable, email delivery, error handling |
 | `PredictiveAlertingAgent.test.ts` | Guard chain, velocity trend, progress trajectory, risk accumulation |
 | `AutonomyService.test.ts` | Tier lookup, auto-execute gates, promotion eligibility, promote/demote |
 | `ActionProposalService.test.ts` | Proposal creation via transaction, lifecycle |

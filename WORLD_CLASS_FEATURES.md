@@ -334,7 +334,8 @@ An agentic AI project management platform that combines the scheduling power of 
 - `groupBy` parameter validated against an allowlist for SQL injection protection
 - Regular users can delete their own templates (no longer requires admin role)
 - Report Designer correctly persists all sections when updating an existing template
-- Scheduled report delivery via email
+- Scheduled report delivery via email (daily/weekly/monthly recurring schedules)
+- AI-powered project status reports with email delivery and MCP tool (`generate-status-report`)
 - Shareable report links
 - **Benchmark:** Smartsheet, Monday.com
 
@@ -415,7 +416,7 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 | Resource Availability Calendar | Done | Enhancement |
 | Customizable Dashboard Widgets | Done | Enhancement |
 | AI Task Slip Predictor | Done | Enhancement |
-| AI Status Report Generator | Done | Enhancement |
+| AI Status Report Generator + Email & Scheduling | Done | Enhancement |
 | AI Scope Creep Detector | Done | Enhancement |
 | Mobile-Optimized Views | Done | Enhancement |
 | Email Notifications & Digests | Done | Enhancement |
