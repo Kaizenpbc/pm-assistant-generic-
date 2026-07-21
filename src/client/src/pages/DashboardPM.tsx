@@ -28,6 +28,7 @@ import { HealthTrendsWidget } from '../components/dashboard/widgets/HealthTrends
 import { MorningBriefingWidget } from '../components/dashboard/widgets/MorningBriefingWidget';
 import { VelocitySparklineWidget } from '../components/dashboard/widgets/VelocitySparklineWidget';
 import { StandupSummaryWidget } from '../components/dashboard/widgets/StandupSummaryWidget';
+import { SprintSnapshotWidget } from '../components/dashboard/widgets/SprintSnapshotWidget';
 
 // ─── Widget registry ──────────────────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ const PM_WIDGETS: WidgetDef[] = [
   { id: 'milestones',    label: 'Milestones',             group: 'Details',  defaultOn: true,  size: 'third' },
   { id: 'budget',        label: 'Budget Watch',           group: 'Details',  defaultOn: true,  size: 'third' },
   { id: 'activity',      label: 'Activity Feed',          group: 'Details',  defaultOn: true,  size: 'third' },
-  { id: 'sprint',        label: 'Sprint Snapshot',        group: 'Details',  defaultOn: false, size: 'full' },
+  { id: 'sprint',        label: 'Sprint Snapshot',        group: 'Details',  defaultOn: true,  size: 'full' },
   { id: 'goals',         label: 'Goals Progress',         group: 'Details',  defaultOn: false, size: 'full' },
   { id: 'workload',      label: 'Team Workload',          group: 'Details',  defaultOn: false, size: 'full' },
   { id: 'standup',       label: 'Standup Summary',        group: 'Overview', defaultOn: false, size: 'full' },
@@ -199,6 +200,8 @@ export function DashboardPM() {
         return <BudgetWatchWidget projects={activeProjects} />;
       case 'activity':
         return <ActivityFeedPM limit={10} />;
+      case 'sprint':
+        return <SprintSnapshotWidget projects={projectSummaries} />;
       case 'standup':
         return <StandupSummaryWidget projects={projectSummaries} />;
       default:
