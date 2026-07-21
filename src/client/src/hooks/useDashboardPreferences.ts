@@ -21,6 +21,24 @@ function loadLocal(): DashboardPrefs | null {
   return null;
 }
 
+/** Merge newly added widgets into existing prefs so they appear for returning users. */
+function mergeNewWidgets(prefs: DashboardPrefs, widgets: WidgetDef[]): DashboardPrefs {
+  const knownIds = new Set(prefs.widgetOrder);
+  const newWidgets = widgets.filter(w => !knownIds.has(w.id));
+  if (newWidgets.length === 0) return prefs;
+
+  // Also remove widget IDs that no longer exist in the registry
+  const registryIds = new Set(widgets.map(w => w.id));
+  const cleanedOrder = prefs.widgetOrder.filter(id => registryIds.has(id));
+  const cleanedEnabled = prefs.enabledWidgets.filter(id => registryIds.has(id));
+
+  return {
+    ...prefs,
+    widgetOrder: [...cleanedOrder, ...newWidgets.map(w => w.id)],
+    enabledWidgets: [...cleanedEnabled, ...newWidgets.filter(w => w.defaultOn).map(w => w.id)],
+  };
+}
+
 function saveLocal(prefs: DashboardPrefs) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
 }
@@ -30,12 +48,14 @@ export function useDashboardPreferences(widgets: WidgetDef[]) {
   const defaultOrder = widgets.map(w => w.id);
 
   const [enabledIds, setEnabledIds] = useState<Set<string>>(() => {
-    const local = loadLocal();
+    const raw = loadLocal();
+    const local = raw ? mergeNewWidgets(raw, widgets) : null;
     return local ? new Set(local.enabledWidgets) : new Set(defaultIds);
   });
 
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
-    const local = loadLocal();
+    const raw = loadLocal();
+    const local = raw ? mergeNewWidgets(raw, widgets) : null;
     return local?.widgetOrder ?? defaultOrder;
   });
 
@@ -59,8 +79,9 @@ export function useDashboardPreferences(widgets: WidgetDef[]) {
   useEffect(() => {
     apiService.getDashboardPreferences()
       .then((res: any) => {
-        const prefs = res?.preferences;
-        if (prefs?.enabledWidgets && prefs?.widgetOrder) {
+        const raw = res?.preferences;
+        if (raw?.enabledWidgets && raw?.widgetOrder) {
+          const prefs = mergeNewWidgets(raw, widgets);
           setEnabledIds(new Set(prefs.enabledWidgets));
           setWidgetOrder(prefs.widgetOrder);
           if (prefs.scope === 'mine' || prefs.scope === 'portfolio') {

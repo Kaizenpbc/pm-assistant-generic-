@@ -17,7 +17,6 @@ export const UNIFIED_WIDGETS: WidgetDef[] = [
   { id: 'budget', label: 'Budget Watch', group: 'Details', defaultOn: true, size: 'third' },
   { id: 'activity', label: 'Recent Activity', group: 'Details', defaultOn: true, size: 'third' },
   { id: 'next-actions', label: 'Next Best Actions', group: 'Overview', defaultOn: true, size: 'full' },
-  { id: 'health-trends', label: 'Health Trends', group: 'Charts', defaultOn: true, size: 'full' },
   { id: 'sprints', label: 'Sprint Snapshot', group: 'Agile', defaultOn: false, size: 'full' },
   { id: 'goals', label: 'Goals', group: 'Overview', defaultOn: false, size: 'full' },
   { id: 'workload', label: 'Team Workload', group: 'Details', defaultOn: false, size: 'full' },

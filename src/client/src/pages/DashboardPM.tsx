@@ -24,7 +24,6 @@ import { KpiTilePM } from '../components/pm/KpiTilePM';
 import { ActionCenterPM } from '../components/pm/ActionCenterPM';
 import { ActivityFeedPM } from '../components/pm/ActivityFeedPM';
 import { NextBestActionsWidget } from '../components/dashboard/widgets/NextBestActionsWidget';
-import { HealthTrendsWidget } from '../components/dashboard/widgets/HealthTrendsWidget';
 import { MorningBriefingWidget } from '../components/dashboard/widgets/MorningBriefingWidget';
 import { VelocitySparklineWidget } from '../components/dashboard/widgets/VelocitySparklineWidget';
 import { StandupSummaryWidget } from '../components/dashboard/widgets/StandupSummaryWidget';
@@ -44,7 +43,6 @@ const PM_WIDGETS: WidgetDef[] = [
   // Below the fold — AI insights, charts, details
   { id: 'intel',         label: 'Portfolio Intelligence',  group: 'AI',       defaultOn: true,  size: 'full' },
   { id: 'trend',         label: 'Issues Trend',           group: 'Charts',   defaultOn: true,  size: 'full' },
-  { id: 'health-trends', label: 'Health Trends',          group: 'Charts',   defaultOn: true,  size: 'full' },
   { id: 'velocity',      label: 'Sprint Velocity',        group: 'Charts',   defaultOn: true,  size: 'full' },
   { id: 'milestones',    label: 'Milestones',             group: 'Details',  defaultOn: true,  size: 'third' },
   { id: 'budget',        label: 'Budget Watch',           group: 'Details',  defaultOn: true,  size: 'third' },
@@ -194,8 +192,6 @@ export function DashboardPM() {
         return <NextBestActionsWidget />;
       case 'trend':
         return <IssuesCreatedVsResolvedChart scope={scopeParam} />;
-      case 'health-trends':
-        return <HealthTrendsWidget projects={projectsWithHealth} />;
       case 'velocity':
         return <VelocitySparklineWidget projects={projectsWithHealth} />;
       case 'milestones':

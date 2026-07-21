@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Layers, DollarSign, TrendingUp, CheckCircle, AlertTriangle, FolderKanban, BarChart3, Users } from 'lucide-react';
+import { HealthTrendsWidget } from '../components/dashboard/widgets/HealthTrendsWidget';
 import { apiService } from '../services/api';
 import { GanttChart, type GanttTask } from '../components/schedule/GanttChart';
 
@@ -262,6 +263,9 @@ export function PortfolioPage() {
                   </div>
                 </div>
               )}
+
+              {/* Health Trends */}
+              <HealthTrendsWidget projects={filtered.map(p => ({ id: p.projectId, name: p.projectName }))} />
 
               {/* Project Cards */}
               <div className="space-y-3">

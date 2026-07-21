@@ -804,7 +804,6 @@ CREATE TABLE IF NOT EXISTS meeting_analyses (
   risks MEDIUMTEXT NULL,
   task_updates MEDIUMTEXT NULL,
   applied_items MEDIUMTEXT NULL,
-  title VARCHAR(255) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_ma_project (project_id),
   INDEX idx_ma_schedule (schedule_id),
