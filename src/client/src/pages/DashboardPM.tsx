@@ -30,6 +30,7 @@ import { VelocitySparklineWidget } from '../components/dashboard/widgets/Velocit
 import { StandupSummaryWidget } from '../components/dashboard/widgets/StandupSummaryWidget';
 import { SprintSnapshotWidget } from '../components/dashboard/widgets/SprintSnapshotWidget';
 import { GoalsWidget } from '../components/dashboard/widgets/GoalsWidget';
+import { TeamWorkloadWidget } from '../components/dashboard/widgets/TeamWorkloadWidget';
 
 // ─── Widget registry ──────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ const PM_WIDGETS: WidgetDef[] = [
   { id: 'activity',      label: 'Activity Feed',          group: 'Details',  defaultOn: true,  size: 'third' },
   { id: 'sprint',        label: 'Sprint Snapshot',        group: 'Details',  defaultOn: true,  size: 'full' },
   { id: 'goals',         label: 'Goals Progress',         group: 'Details',  defaultOn: true,  size: 'full' },
-  { id: 'workload',      label: 'Team Workload',          group: 'Details',  defaultOn: false, size: 'full' },
+  { id: 'workload',      label: 'Team Workload',          group: 'Details',  defaultOn: true,  size: 'full' },
   { id: 'standup',       label: 'Standup Summary',        group: 'Overview', defaultOn: false, size: 'full' },
 ];
 
@@ -205,6 +206,8 @@ export function DashboardPM() {
         return <SprintSnapshotWidget projects={projectSummaries} />;
       case 'goals':
         return <GoalsWidget />;
+      case 'workload':
+        return <TeamWorkloadWidget projects={projectSummaries} />;
       case 'standup':
         return <StandupSummaryWidget projects={projectSummaries} />;
       default:
