@@ -156,7 +156,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
   // Global API key resolution — sets apiKeyId on request for all API routes (even those without authMiddleware)
   fastify.addHook('onRequest', async (request) => {
     const authHeader = request.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ') && request.url.startsWith('/api/')) {
+    if (authHeader && authHeader.startsWith('Bearer ') && (request.url.startsWith('/api/') || request.url.startsWith('/mcp'))) {
       try {
         const keyInfo = await apiKeyService.validateKey(authHeader.slice(7));
         if (keyInfo) {
@@ -181,7 +181,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
   // Rate limiting for API key requests — runs after API key resolution hook above
   fastify.addHook('onRequest', async (request, reply) => {
     const apiKeyId = request.apiKeyId;
-    if (apiKeyId && request.url.startsWith('/api/')) {
+    if (apiKeyId && (request.url.startsWith('/api/') || request.url.startsWith('/mcp'))) {
       const limit = request.apiKeyRateLimit || 100;
       const result = rateLimiter.check(apiKeyId, limit);
       reply.header('X-RateLimit-Limit', String(limit));

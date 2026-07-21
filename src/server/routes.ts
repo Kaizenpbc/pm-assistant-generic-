@@ -100,6 +100,7 @@ import { deadLetterRoutes } from './routes/admin/deadLetter';
 import { tenantAdminRoutes } from './routes/admin/tenants';
 import { operationsRoutes } from './routes/admin/operations';
 import { revenueRoutes } from './routes/admin/revenue';
+import { mcpAnalyticsRoutes } from './routes/admin/mcpAnalytics';
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Core
@@ -202,4 +203,5 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(tenantAdminRoutes, { prefix: '/api/v1/admin/tenants' });
   await fastify.register(operationsRoutes, { prefix: '/api/v1/admin/operations' });
   await fastify.register(revenueRoutes, { prefix: '/api/v1/admin/revenue' });
+  await fastify.register(mcpAnalyticsRoutes, { prefix: '/api/v1/admin/mcp-analytics' });
 }

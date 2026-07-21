@@ -6,6 +6,7 @@ const DEFAULT_WEBHOOK_RETENTION_DAYS = 30;
 const DEFAULT_DEAD_LETTER_RETENTION_DAYS = 30;
 const DEFAULT_NOTIFICATION_RETENTION_DAYS = 90;
 const DEFAULT_API_KEY_LOG_RETENTION_DAYS = 90;
+const DEFAULT_MCP_INVOCATION_RETENTION_DAYS = 90;
 
 function envInt(name: string, fallback: number): number {
   const val = process.env[name];
@@ -43,6 +44,10 @@ export class DataRetentionService {
     // 5. API key usage log older than N days (control plane table)
     const apiLogDays = envInt('RETENTION_API_LOG_DAYS', DEFAULT_API_KEY_LOG_RETENTION_DAYS);
     results.apiKeyUsageLog = await this.deleteOlderThanControlPlane('api_key_usage_log', apiLogDays);
+
+    // 6. MCP tool invocations older than N days (control plane table)
+    const mcpDays = envInt('RETENTION_MCP_INVOCATION_DAYS', DEFAULT_MCP_INVOCATION_RETENTION_DAYS);
+    results.mcpToolInvocations = await this.deleteOlderThanControlPlane('mcp_tool_invocations', mcpDays);
 
     logger.info('[DataRetention] Purge complete', results);
     return results;

@@ -497,7 +497,9 @@ The MCP (Model Context Protocol) server exposes 83 tools across 15 groups and 6 
 
 **Auth:** OAuth 2.1 with PKCE (HTTP mode) or API key (STDIO mode). Role is resolved from the user's database record, not inferred from scopes.
 
-See `mcp-server/` for setup instructions and tool definitions.
+**External Access:** API key Bearer auth and OAuth2+PKCE supported on `/mcp`. Rate limiting applies to both `/api/v1/*` and `/mcp` routes. All tool invocations are logged to `mcp_tool_invocations` for analytics. Admin endpoint: `GET /api/v1/admin/mcp-analytics`.
+
+See [`docs/MCP_EXTERNAL_AGENTS.md`](docs/MCP_EXTERNAL_AGENTS.md) for connection guide and `mcp-server/` for tool definitions.
 
 ---
 
@@ -631,6 +633,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Admin Users | `/api/v1/admin/users` | User listing with login status, unlock stuck login tokens, subscription status |
 | Admin Revenue | `/api/v1/admin/revenue` | MRR, subscriber counts by tier (Trial/Consultant/SME/Enterprise), churn, top-up revenue, trial conversion, trend data (admin only) |
 | Admin Subscription Events | `/api/v1/admin/users/:id/subscription-events` | Per-user subscription lifecycle event history (admin only) |
+| Admin MCP Analytics | `/api/v1/admin/mcp-analytics` | MCP tool invocation stats — group by tool/user/day, success rate, latency (admin only) |
 
 ---
 

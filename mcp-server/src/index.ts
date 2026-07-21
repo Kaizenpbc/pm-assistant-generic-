@@ -29,6 +29,8 @@ import { registerResources } from './resources/index.js';
 export interface McpUserContext {
   role: Role;
   userId?: string;
+  apiKeyId?: string;
+  sessionId?: string;
 }
 
 /**
@@ -49,6 +51,75 @@ function createRoleFilteredServer(server: McpServer, role: Role): McpServer {
   return server;
 }
 
+/**
+ * Wraps McpServer.tool() to instrument each tool handler with timing + error capture.
+ * Logs invocations to mcp_tool_invocations table via fire-and-forget INSERT.
+ */
+function createInstrumentedServer(server: McpServer, userContext?: McpUserContext): McpServer {
+  const originalTool = server.tool.bind(server);
+
+  server.tool = function instrumentedTool(name: string, ...rest: any[]) {
+    // Find the handler (last argument that is a function)
+    const handlerIndex = rest.findIndex((arg: any) => typeof arg === 'function');
+    if (handlerIndex === -1) {
+      return (originalTool as any)(name, ...rest);
+    }
+
+    const originalHandler = rest[handlerIndex];
+    rest[handlerIndex] = async (...handlerArgs: any[]) => {
+      const start = Date.now();
+      let isSuccess = true;
+      let errorMessage: string | null = null;
+
+      try {
+        const result = await originalHandler(...handlerArgs);
+        return result;
+      } catch (err: any) {
+        isSuccess = false;
+        errorMessage = err?.message || String(err);
+        throw err;
+      } finally {
+        const durationMs = Date.now() - start;
+        // Fire-and-forget logging
+        logToolInvocation(
+          userContext?.userId || null,
+          userContext?.apiKeyId || null,
+          userContext?.sessionId || null,
+          name,
+          durationMs,
+          isSuccess,
+          errorMessage,
+        ).catch(() => {}); // swallow logging errors
+      }
+    };
+
+    return (originalTool as any)(name, ...rest);
+  } as any;
+
+  return server;
+}
+
+async function logToolInvocation(
+  userId: string | null,
+  apiKeyId: string | null,
+  sessionId: string | null,
+  toolName: string,
+  durationMs: number,
+  isSuccess: boolean,
+  errorMessage: string | null,
+): Promise<void> {
+  try {
+    const { query } = await import('./db.js');
+    await query(
+      `INSERT INTO mcp_tool_invocations (user_id, api_key_id, session_id, tool_name, duration_ms, is_success, error_message)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [userId, apiKeyId, sessionId, toolName, durationMs, isSuccess ? 1 : 0, errorMessage],
+    );
+  } catch (err) {
+    console.error('[MCP] Failed to log tool invocation:', err);
+  }
+}
+
 function createMcpServer(userContext?: McpUserContext): McpServer {
   const server = new McpServer({
     name: 'pm-assistant',
@@ -56,9 +127,12 @@ function createMcpServer(userContext?: McpUserContext): McpServer {
   });
 
   // Apply role filtering if user context is provided
-  const registrationTarget = userContext
+  const roleFiltered = userContext
     ? createRoleFilteredServer(server, userContext.role)
     : server; // No filtering in stdio mode without context (backward compat)
+
+  // Apply instrumentation (wraps handlers with timing + logging)
+  const registrationTarget = createInstrumentedServer(roleFiltered, userContext);
 
   // Register all tool groups (filtered by role)
   registerProjectTools(registrationTarget);
@@ -288,11 +362,14 @@ async function startHttp() {
       const userContext: McpUserContext = {
         role,
         userId: authInfo?.extra?.userId,
+        apiKeyId: authInfo?.extra?.apiKeyId,
       };
 
+      const mcpSessionId = randomUUID();
+      userContext.sessionId = mcpSessionId;
       const server = createMcpServer(userContext);
       const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID(),
+        sessionIdGenerator: () => mcpSessionId,
       });
 
       transport.onclose = () => {
