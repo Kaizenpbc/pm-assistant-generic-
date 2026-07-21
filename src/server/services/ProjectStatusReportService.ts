@@ -109,7 +109,12 @@ export class ProjectStatusReportService {
           maxTokens: 2048,
         });
 
-        structuredData = JSON.parse(result.content);
+        // Strip markdown code fences if Claude wraps JSON in them
+        let jsonStr = result.content.trim();
+        if (jsonStr.startsWith('```')) {
+          jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+        }
+        structuredData = JSON.parse(jsonStr);
         aiPowered = true;
 
         logAIUsage({
