@@ -41,6 +41,7 @@ vi.mock('../../services/aiUsageLogger', () => ({
 vi.mock('../../database/connection', () => ({
   databaseService: {
     query: vi.fn().mockResolvedValue([]),
+    queryControlPlane: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -56,6 +57,22 @@ import { ProjectStatusReportService } from '../../services/ProjectStatusReportSe
 import { claudeService } from '../../services/claudeService';
 import { emailService } from '../../services/EmailService';
 
+const MOCK_AI_RESPONSE = JSON.stringify({
+  executiveSummary: 'Project is on track with minor schedule concerns.',
+  areas: [
+    { name: 'Schedule', status: 'amber', comments: '2 tasks overdue' },
+    { name: 'Budget', status: 'green', comments: 'On track' },
+    { name: 'Resources', status: 'green', comments: 'Fully staffed' },
+    { name: 'Risks', status: 'amber', comments: '1 high risk' },
+    { name: 'Scope', status: 'green', comments: 'No changes' },
+    { name: 'Quality', status: 'green', comments: 'All tasks have estimates' },
+  ],
+  managementActions: [
+    'Review overdue tasks in sprint 3',
+    'Approve budget for Q3',
+  ],
+});
+
 describe('ProjectStatusReportService', () => {
   let service: ProjectStatusReportService;
 
@@ -64,10 +81,10 @@ describe('ProjectStatusReportService', () => {
     service = new ProjectStatusReportService();
   });
 
-  it('generates a report with AI when available', async () => {
+  it('generates a structured report with AI when available', async () => {
     vi.mocked(claudeService.isAvailable).mockReturnValue(true);
     vi.mocked(claudeService.complete).mockResolvedValue({
-      content: '## Executive Summary\nProject is on track.',
+      content: MOCK_AI_RESPONSE,
       usage: { inputTokens: 100, outputTokens: 200 },
       latencyMs: 500,
       model: 'claude-sonnet-4-6',
@@ -76,8 +93,12 @@ describe('ProjectStatusReportService', () => {
     const result = await service.generate('proj-1', 'user-1');
 
     expect(result.aiPowered).toBe(true);
-    expect(result.content).toContain('Executive Summary');
-    expect(result.projectId).toBe('proj-1');
+    expect(result.html).toContain('Executive Summary');
+    expect(result.html).toContain('Actions for Management');
+    expect(result.data.areas).toHaveLength(6);
+    expect(result.data.areas[0].name).toBe('Schedule');
+    expect(result.data.areas[0].status).toBe('amber');
+    expect(result.data.managementActions).toHaveLength(2);
     expect(result.emailSent).toBe(false);
   });
 
@@ -87,7 +108,9 @@ describe('ProjectStatusReportService', () => {
     const result = await service.generate('proj-1', 'user-1');
 
     expect(result.aiPowered).toBe(false);
-    expect(result.content).toContain('Template (AI unavailable)');
+    expect(result.data.areas).toHaveLength(6);
+    expect(result.data.areas.every(a => a.status === 'amber')).toBe(true);
+    expect(result.html).toContain('Template Report');
   });
 
   it('generates fallback when Claude fails', async () => {
@@ -97,13 +120,13 @@ describe('ProjectStatusReportService', () => {
     const result = await service.generate('proj-1', 'user-1');
 
     expect(result.aiPowered).toBe(false);
-    expect(result.content).toContain('Template (AI unavailable)');
+    expect(result.data.areas).toHaveLength(6);
   });
 
-  it('sends email when sendEmail is true with recipients', async () => {
+  it('sends email with HTML when sendEmail is true', async () => {
     vi.mocked(claudeService.isAvailable).mockReturnValue(true);
     vi.mocked(claudeService.complete).mockResolvedValue({
-      content: '## Executive Summary\nAll good.',
+      content: MOCK_AI_RESPONSE,
       usage: { inputTokens: 50, outputTokens: 100 },
       latencyMs: 300,
       model: 'claude-sonnet-4-6',
@@ -125,7 +148,7 @@ describe('ProjectStatusReportService', () => {
   it('does not send email when sendEmail is false', async () => {
     vi.mocked(claudeService.isAvailable).mockReturnValue(true);
     vi.mocked(claudeService.complete).mockResolvedValue({
-      content: '## Executive Summary\nOK.',
+      content: MOCK_AI_RESPONSE,
       usage: { inputTokens: 50, outputTokens: 100 },
       latencyMs: 300,
       model: 'claude-sonnet-4-6',
@@ -143,7 +166,7 @@ describe('ProjectStatusReportService', () => {
   it('handles email failure gracefully', async () => {
     vi.mocked(claudeService.isAvailable).mockReturnValue(true);
     vi.mocked(claudeService.complete).mockResolvedValue({
-      content: '## Summary\nOK.',
+      content: MOCK_AI_RESPONSE,
       usage: { inputTokens: 50, outputTokens: 100 },
       latencyMs: 300,
       model: 'claude-sonnet-4-6',
@@ -156,6 +179,43 @@ describe('ProjectStatusReportService', () => {
     });
 
     expect(result.emailSent).toBe(false);
-    expect(result.content).toContain('Summary');
+    expect(result.html).toContain('Executive Summary');
+  });
+
+  it('computes trend from previous report', async () => {
+    const { databaseService } = await import('../../database/connection');
+    vi.mocked(databaseService.queryControlPlane).mockResolvedValueOnce([
+      {
+        messages: JSON.stringify([{
+          content: JSON.stringify({
+            areas: [
+              { name: 'Schedule', status: 'green' },
+              { name: 'Budget', status: 'green' },
+              { name: 'Resources', status: 'green' },
+              { name: 'Risks', status: 'green' },
+              { name: 'Scope', status: 'green' },
+              { name: 'Quality', status: 'green' },
+            ],
+          }),
+        }]),
+      },
+    ] as any);
+
+    vi.mocked(claudeService.isAvailable).mockReturnValue(true);
+    vi.mocked(claudeService.complete).mockResolvedValue({
+      content: MOCK_AI_RESPONSE,
+      usage: { inputTokens: 50, outputTokens: 100 },
+      latencyMs: 300,
+      model: 'claude-sonnet-4-6',
+    });
+
+    const result = await service.generate('proj-1', 'user-1');
+
+    const schedule = result.data.areas.find(a => a.name === 'Schedule');
+    expect(schedule?.previousStatus).toBe('green');
+    expect(schedule?.trend).toBe('declining'); // green -> amber
+    const budget = result.data.areas.find(a => a.name === 'Budget');
+    expect(budget?.previousStatus).toBe('green');
+    expect(budget?.trend).toBe('stable'); // green -> green
   });
 });

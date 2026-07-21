@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileText, ClipboardCopy, X, Download, Mail, Calendar, Trash2 } from 'lucide-react';
+import { FileText, X, Download, Mail, Calendar, Trash2 } from 'lucide-react';
 import { apiService } from '../../services/api';
 
 export function StatusReportModal({ projectId, projectName, onClose }: { projectId: string; projectName: string; onClose: () => void }) {
   const [report, setReport] = useState<any>(null);
-  const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<'report' | 'email' | 'schedule'>('report');
   const [emailRecipients, setEmailRecipients] = useState('');
   const [emailSent, setEmailSent] = useState(false);
@@ -17,7 +16,7 @@ export function StatusReportModal({ projectId, projectName, onClose }: { project
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: () => apiService.generateReport({ reportType: 'weekly-status', projectId }),
+    mutationFn: () => apiService.generateStatusReport(projectId),
     onSuccess: (data) => setReport(data),
   });
 
@@ -50,25 +49,14 @@ export function StatusReportModal({ projectId, projectName, onClose }: { project
     mutation.mutate();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- fire once on open
 
-  const content = report?.report?.content || report?.content || '';
-
-  const sections = content.split(/^## /m).filter(Boolean).map((s: string) => {
-    const nlIdx = s.indexOf('\n');
-    return { title: s.slice(0, nlIdx).trim(), body: s.slice(nlIdx + 1).trim() };
-  });
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const html = report?.report?.html || '';
 
   const handleDownload = () => {
-    const blob = new Blob([content], { type: 'text/markdown' });
+    const blob = new Blob([html || 'No report generated'], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `status-report-${projectName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.md`;
+    a.download = `status-report-${projectName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.html`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -97,24 +85,18 @@ export function StatusReportModal({ projectId, projectName, onClose }: { project
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-primary-500" />
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Status Report — {projectName}</h2>
           </div>
           <div className="flex items-center gap-2">
-            {content && (
-              <>
-                <button onClick={handleCopy} className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                  <ClipboardCopy className="w-3 h-3" />
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
-                <button onClick={handleDownload} className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                  <Download className="w-3 h-3" />
-                  Download
-                </button>
-              </>
+            {html && (
+              <button onClick={handleDownload} className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                <Download className="w-3 h-3" />
+                Download
+              </button>
             )}
             <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
               <X className="w-4 h-4 text-gray-400 dark:text-gray-500" />
@@ -158,17 +140,11 @@ export function StatusReportModal({ projectId, projectName, onClose }: { project
                   <p className="text-sm text-red-500">Failed to generate report</p>
                   <button onClick={() => mutation.mutate()} className="mt-2 text-xs text-primary-600 dark:text-primary-400 hover:underline">Try again</button>
                 </div>
-              ) : sections.length > 0 ? (
-                <div className="space-y-4">
-                  {sections.map((s: any, i: number) => (
-                    <div key={i} className="rounded-lg border border-gray-100 dark:border-gray-700 p-4">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{s.title}</h3>
-                      <div className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{s.body}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : content ? (
-                <div className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{content}</div>
+              ) : html ? (
+                <div
+                  className="status-report-container"
+                  dangerouslySetInnerHTML={{ __html: html }}
+                />
               ) : null}
             </>
           )}

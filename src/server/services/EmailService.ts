@@ -287,7 +287,7 @@ export class EmailService {
     });
   }
 
-  async sendStatusReportEmail(recipients: string[], projectName: string, reportContent: string): Promise<void> {
+  async sendStatusReportEmail(recipients: string[], projectName: string, htmlContent: string): Promise<void> {
     if (!this.isConfigured) {
       logger.info(`[EmailService] Status report email would be sent to ${recipients.map(r => maskPii(r)).join(', ')}: ${escapeHtml(projectName)}`);
       return;
@@ -295,31 +295,9 @@ export class EmailService {
 
     const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Convert markdown sections to HTML
-    const sections = reportContent.split(/^## /m).filter(Boolean);
-    let bodyHtml = '';
-    for (const section of sections) {
-      const nlIdx = section.indexOf('\n');
-      const title = section.slice(0, nlIdx).trim();
-      const body = section.slice(nlIdx + 1).trim();
-      // Convert markdown lines to HTML paragraphs
-      const bodyLines = body.split('\n').map(line => {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-          return `<li style="color: #4b5563; margin: 4px 0;">${escapeHtml(trimmed.slice(2))}</li>`;
-        }
-        if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
-          return `<p style="color: #1f2937; font-weight: 600; margin: 8px 0;">${escapeHtml(trimmed.slice(2, -2))}</p>`;
-        }
-        if (!trimmed) return '';
-        return `<p style="color: #4b5563; line-height: 1.6; margin: 4px 0;">${escapeHtml(trimmed)}</p>`;
-      }).join('');
-      const hasListItems = bodyLines.includes('<li');
-      bodyHtml += `<h3 style="color: #1f2937; margin-top: 24px; margin-bottom: 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">${escapeHtml(title)}</h3>`;
-      bodyHtml += hasListItems ? `<ul style="padding-left: 20px; margin: 8px 0;">${bodyLines}</ul>` : bodyLines;
-    }
-
-    bodyHtml += `
+    // htmlContent is pre-rendered styled HTML from statusReportRenderer
+    const bodyHtml = `
+      ${htmlContent}
       <div style="text-align: center; margin: 32px 0;">
         <a href="${config.APP_URL}/dashboard" style="background-color: #4f46e5; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
           Open Dashboard

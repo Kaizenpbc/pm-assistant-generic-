@@ -270,23 +270,68 @@ Generate a complete, professional report in markdown format. Include an executiv
   ),
 
   statusReport: new PromptTemplate(
-    `You are generating a project status report. Use the following project data to create a comprehensive status update.
+    `You are generating an executive project status report for management. Analyze the project data and return a JSON object (no markdown, no code fences).
 
 <project-data>
 {{projectData}}
 </project-data>
 
-Structure the report with these sections:
-## Executive Summary
-## Progress Update
-## Key Milestones
-## Risks & Issues
-## Budget Status
-## Next Steps
-## Blockers & Escalations
+<rag-thresholds>
+{{ragThresholds}}
+</rag-thresholds>
 
-Be concise, data-driven, and highlight items needing attention. Use actual numbers from the data.`,
-    '1.0.0',
+<previous-report>
+{{previousReport}}
+</previous-report>
+
+Return valid JSON with this exact structure:
+{
+  "executiveSummary": "A concise 3-5 sentence paragraph summarizing overall project health, key accomplishments this period, and items needing management attention.",
+  "areas": [
+    {
+      "name": "Schedule",
+      "status": "green|amber|red",
+      "comments": "Brief data-driven comment about schedule health"
+    },
+    {
+      "name": "Budget",
+      "status": "green|amber|red",
+      "comments": "Brief data-driven comment about budget health"
+    },
+    {
+      "name": "Resources",
+      "status": "green|amber|red",
+      "comments": "Brief data-driven comment about resource health"
+    },
+    {
+      "name": "Risks",
+      "status": "green|amber|red",
+      "comments": "Brief data-driven comment about risk posture"
+    },
+    {
+      "name": "Scope",
+      "status": "green|amber|red",
+      "comments": "Brief data-driven comment about scope stability"
+    },
+    {
+      "name": "Quality",
+      "status": "green|amber|red",
+      "comments": "Brief data-driven comment about quality/data completeness"
+    }
+  ],
+  "managementActions": [
+    "Action item 1 requiring management decision or awareness",
+    "Action item 2..."
+  ]
+}
+
+Rules:
+- Use the RAG thresholds to determine green/amber/red status for each area.
+- If previous report data is available, use it for context but do NOT include previous statuses in your response — the system computes trends automatically.
+- Be concise and data-driven. Use actual numbers from the project data.
+- managementActions should contain 3-6 specific, actionable items for executives.
+- Return ONLY the JSON object, no other text.`,
+    '2.0.0',
   ),
 
   meetingNotesExtraction: new PromptTemplate(
