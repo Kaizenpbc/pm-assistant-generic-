@@ -269,6 +269,26 @@ Generate a complete, professional report in markdown format. Include an executiv
     '1.0.0',
   ),
 
+  statusReport: new PromptTemplate(
+    `You are generating a project status report. Use the following project data to create a comprehensive status update.
+
+<project-data>
+{{projectData}}
+</project-data>
+
+Structure the report with these sections:
+## Executive Summary
+## Progress Update
+## Key Milestones
+## Risks & Issues
+## Budget Status
+## Next Steps
+## Blockers & Escalations
+
+Be concise, data-driven, and highlight items needing attention. Use actual numbers from the data.`,
+    '1.0.0',
+  ),
+
   meetingNotesExtraction: new PromptTemplate(
     `You are an expert meeting analyst AI. Your role is to analyze raw meeting notes and extract structured, actionable information.
 

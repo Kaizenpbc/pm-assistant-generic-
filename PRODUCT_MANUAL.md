@@ -516,7 +516,17 @@ Severity thresholds: critical (10+ new tasks or 20+ days growth), high (5+/10+),
 
 ### AI Status Report Generator
 
-One-click weekly status report generation from the project detail page. Uses Claude to produce a narrative markdown report with sections (Executive Summary, Key Metrics, Risks & Issues, Milestones, Recommendations). Supports copy-to-clipboard and download as `.md` file. Uses existing `POST /api/v1/ai-reports/generate` endpoint.
+AI-powered status report generation from the project detail page. Uses Claude to produce a narrative markdown report with sections (Executive Summary, Progress Update, Key Milestones, Risks & Issues, Budget Status, Next Steps, Blockers & Escalations). Supports copy-to-clipboard, download as `.md` file, email delivery to stakeholders, and recurring schedules.
+
+**API Endpoints:**
+- `POST /api/v1/status-reports/generate` — Generate a status report for a project, optionally email it to recipients
+- `POST /api/v1/status-reports/schedule` — Create a recurring schedule (daily/weekly/monthly) with recipient list
+- `GET /api/v1/status-reports/schedules/:projectId` — List active schedules for a project
+- `DELETE /api/v1/status-reports/schedule/:id` — Delete a schedule (owner or admin only)
+
+**MCP Tool:** `generate-status-report` — Available to project_manager, scrum_master, pmo, ba, and admin roles.
+
+**Feature Gating:** Requires paid tier (consultant/sme/enterprise). AI generation requires `AI_ENABLED=true`; falls back to template when disabled. Email delivery requires `RESEND_API_KEY`.
 
 ### Anomaly Detection
 

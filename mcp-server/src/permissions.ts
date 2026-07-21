@@ -143,6 +143,11 @@ const ADMIN_ONLY_TOOLS = new Set([
   'create-integration', 'sync-integration', 'trigger-agent',
 ]);
 
+// Status report generation: project_manager, scrum_master, pmo, ba, admin
+const STATUS_REPORT_TOOLS = new Set([
+  'generate-status-report',
+]);
+
 // Template/workflow management: project_manager, pmo, admin
 const TEMPLATE_WRITE_TOOLS = new Set([
   'apply-template', 'create-workflow',
@@ -162,6 +167,7 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     FINANCE_TOOLS.has(tool) ||
     RISK_ANALYSIS_TOOLS.has(tool) ||
     MEETING_TOOLS.has(tool) ||
+    STATUS_REPORT_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TASK_DELETE_TOOLS.has(tool) ||
     SPRINT_WRITE_TOOLS.has(tool) ||
@@ -180,6 +186,7 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
   scrum_master: (tool) =>
     READ_TOOLS.has(tool) ||
     MEETING_TOOLS.has(tool) ||
+    STATUS_REPORT_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TASK_DELETE_TOOLS.has(tool) ||
     SPRINT_WRITE_TOOLS.has(tool) ||
@@ -212,6 +219,7 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     FINANCE_TOOLS.has(tool) ||
     RISK_ANALYSIS_TOOLS.has(tool) ||
     MEETING_TOOLS.has(tool) ||
+    STATUS_REPORT_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TASK_DELETE_TOOLS.has(tool) ||
     SPRINT_WRITE_TOOLS.has(tool) ||
@@ -231,6 +239,7 @@ const ROLE_PERMISSIONS: Record<Role, (toolName: string) => boolean> = {
     READ_TOOLS.has(tool) ||
     RISK_ANALYSIS_TOOLS.has(tool) ||
     MEETING_TOOLS.has(tool) ||
+    STATUS_REPORT_TOOLS.has(tool) ||
     TASK_WRITE_TOOLS.has(tool) ||
     TIME_TOOLS.has(tool) ||
     INTAKE_SUBMIT_TOOLS.has(tool) ||

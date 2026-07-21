@@ -30,4 +30,11 @@ export function registerReportTools(server: McpServer) {
   }, async ({ templateId }, extra) =>
     jsonResult(await getApiClientFromExtra(extra).post(`/report-builder/templates/${templateId}/generate`))
   );
+
+  server.tool('generate-status-report', 'Generate an AI-powered project status report with optional email delivery', {
+    projectId: z.string().describe('Project ID'),
+    sendEmail: z.boolean().optional().describe('Email the report to project members'),
+  }, async ({ projectId, sendEmail }, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).post('/status-reports/generate', { projectId, sendEmail }))
+  );
 }

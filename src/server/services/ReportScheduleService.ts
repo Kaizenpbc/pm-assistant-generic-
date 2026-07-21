@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { reportScheduleRepository, ReportSchedule } from '../database/ReportScheduleRepository';
 import { reportBuilderService } from './ReportBuilderService';
 import { emailService } from './EmailService';
+import { projectStatusReportService } from './ProjectStatusReportService';
 import logger from '../utils/logger';
 
 export type { ReportSchedule } from '../database/ReportScheduleRepository';
@@ -94,6 +95,22 @@ export class ReportScheduleService {
 
     for (const schedule of dueSchedules) {
       try {
+        // Handle status report schedules
+        if (schedule.templateId.startsWith('status-report::')) {
+          const projectId = schedule.templateId.replace('status-report::', '');
+          await projectStatusReportService.generate(projectId, schedule.createdBy, {
+            recipients: schedule.recipients,
+            sendEmail: true,
+          });
+
+          const nextRun = this.computeNextRun(
+            schedule.frequency, schedule.dayOfWeek, schedule.dayOfMonth, schedule.timeOfDay,
+          );
+          await this.updateRunStatus(schedule.id, 'success', null, nextRun);
+          executed++;
+          continue;
+        }
+
         const template = await reportBuilderService.getTemplateById(schedule.templateId);
         if (!template) {
           await this.updateRunStatus(schedule.id, 'error', 'Template not found');

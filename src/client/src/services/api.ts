@@ -526,6 +526,37 @@ class ApiService {
   }
 
   // -------------------------------------------------------------------------
+  // Status Reports endpoints
+  // -------------------------------------------------------------------------
+
+  async generateStatusReport(projectId: string, options?: { recipients?: string[]; sendEmail?: boolean }) {
+    const response = await this.api.post('/status-reports/generate', { projectId, ...options });
+    return response.data;
+  }
+
+  async scheduleStatusReport(data: {
+    projectId: string;
+    frequency: 'daily' | 'weekly' | 'monthly';
+    dayOfWeek?: number;
+    dayOfMonth?: number;
+    timeOfDay?: string;
+    recipients: string[];
+  }) {
+    const response = await this.api.post('/status-reports/schedule', data);
+    return response.data;
+  }
+
+  async getStatusReportSchedules(projectId: string) {
+    const response = await this.api.get(`/status-reports/schedules/${projectId}`);
+    return response.data;
+  }
+
+  async deleteStatusReportSchedule(id: string) {
+    const response = await this.api.delete(`/status-reports/schedule/${id}`);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
   // AI Scheduling endpoints
   // -------------------------------------------------------------------------
 
