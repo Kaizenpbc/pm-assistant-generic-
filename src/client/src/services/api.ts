@@ -403,6 +403,17 @@ class ApiService {
     return response.data;
   }
 
+  async getStandupSummary(projectId: string, refresh = false) {
+    const params = refresh ? '?refresh=true' : '';
+    const response = await this.api.get(`/standup/project/${projectId}${params}`);
+    return response.data;
+  }
+
+  async emailStandupSummary(projectId: string) {
+    const response = await this.api.get(`/standup/project/${projectId}/email`);
+    return response.data;
+  }
+
   // -------------------------------------------------------------------------
   // Predictions endpoints
   // -------------------------------------------------------------------------

@@ -358,6 +358,28 @@ Respond in valid JSON matching the requested schema. Be thorough but concise.`,
     '1.0.0',
   ),
 
+  standupSummary: new PromptTemplate(
+    `You are a concise project standup summarizer. Analyze the structured change data and produce a short, scannable narrative suitable for an async standup update.
+
+<project-name>
+{{projectName}}
+</project-name>
+
+<changes>
+{{changes}}
+</changes>
+
+Guidelines:
+- Lead with the most important items (completions, blockers, new risks).
+- Use bullet points for clarity.
+- Keep the total narrative under 200 words.
+- If there are blockers or new risks, call them out prominently.
+- If nothing notable happened, say so briefly.
+- Do NOT repeat raw IDs — use task/risk names only.
+- Write in third person, past tense for yesterday's events.`,
+    '1.0.0',
+  ),
+
   conversational: new PromptTemplate(
     `You are Mjuzi, a warm, knowledgeable, and proactive AI project management assistant. You remember past interactions and offer relevant insights.
 

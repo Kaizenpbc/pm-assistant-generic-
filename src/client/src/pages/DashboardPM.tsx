@@ -27,6 +27,7 @@ import { NextBestActionsWidget } from '../components/dashboard/widgets/NextBestA
 import { HealthTrendsWidget } from '../components/dashboard/widgets/HealthTrendsWidget';
 import { MorningBriefingWidget } from '../components/dashboard/widgets/MorningBriefingWidget';
 import { VelocitySparklineWidget } from '../components/dashboard/widgets/VelocitySparklineWidget';
+import { StandupSummaryWidget } from '../components/dashboard/widgets/StandupSummaryWidget';
 
 // ─── Widget registry ──────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ const PM_WIDGETS: WidgetDef[] = [
   { id: 'sprint',        label: 'Sprint Snapshot',        group: 'Details',  defaultOn: false, size: 'full' },
   { id: 'goals',         label: 'Goals Progress',         group: 'Details',  defaultOn: false, size: 'full' },
   { id: 'workload',      label: 'Team Workload',          group: 'Details',  defaultOn: false, size: 'full' },
+  { id: 'standup',       label: 'Standup Summary',        group: 'Overview', defaultOn: false, size: 'full' },
 ];
 
 // ─── KPI computation helpers ──────────────────────────────────────────────────
@@ -197,6 +199,8 @@ export function DashboardPM() {
         return <BudgetWatchWidget projects={activeProjects} />;
       case 'activity':
         return <ActivityFeedPM limit={10} />;
+      case 'standup':
+        return <StandupSummaryWidget projects={projectSummaries} />;
       default:
         return null;
     }

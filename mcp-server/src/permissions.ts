@@ -54,6 +54,8 @@ const READ_TOOLS = new Set([
   'ai-estimate-task',
   // briefing
   'get-daily-briefing',
+  // standup
+  'get-standup-summary',
   // admin (read-safe)
   'search', 'get-audit-trail', 'list-notifications', 'mark-notifications-read',
   // templates (read)

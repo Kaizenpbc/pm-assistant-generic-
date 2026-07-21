@@ -313,6 +313,58 @@ export class EmailService {
     });
   }
 
+  async sendStandupEmail(to: string, changes: any, narrative: string | null): Promise<void> {
+    if (!this.isConfigured) {
+      logger.info(`[EmailService] Standup email would be sent to ${maskPii(to)}`);
+      return;
+    }
+
+    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    let bodyHtml = '';
+
+    if (narrative) {
+      bodyHtml += `<p style="color: #4b5563; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(narrative)}</p><hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;" />`;
+    }
+
+    const sections: Array<{ title: string; items: string[]; color: string }> = [
+      { title: 'Completed', items: (changes.completions || []).map((c: any) => `${c.taskName} (by ${c.completedBy})`), color: '#059669' },
+      { title: 'Status Changes', items: (changes.statusChanges || []).map((c: any) => `${c.taskName}: ${c.fromStatus} → ${c.toStatus}`), color: '#3b82f6' },
+      { title: 'New Tasks', items: (changes.newTasks || []).map((c: any) => c.taskName), color: '#6366f1' },
+      { title: 'New Risks', items: (changes.newRisks || []).map((c: any) => `${c.title} (${c.severity})`), color: '#f59e0b' },
+      { title: 'Blockers', items: (changes.blockers || []).map((c: any) => c.taskName), color: '#dc2626' },
+    ];
+
+    for (const section of sections) {
+      if (section.items.length > 0) {
+        bodyHtml += `<h3 style="color: ${section.color}; margin-top: 16px;">${section.title} (${section.items.length})</h3><ul style="color: #4b5563;">`;
+        for (const item of section.items.slice(0, 15)) {
+          bodyHtml += `<li>${escapeHtml(item)}</li>`;
+        }
+        bodyHtml += '</ul>';
+      }
+    }
+
+    if (!bodyHtml) {
+      bodyHtml = '<p style="color: #6b7280;">No notable changes yesterday.</p>';
+    }
+
+    bodyHtml += `
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${config.APP_URL}/dashboard" style="background-color: #4f46e5; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+          Open Dashboard
+        </a>
+      </div>
+    `;
+
+    await this.sendEmail({
+      from: config.RESEND_FROM_EMAIL,
+      to,
+      subject: `Standup Summary — ${date}`,
+      html: this.wrapHtml('Daily Standup Summary', bodyHtml),
+    });
+  }
+
   async sendLoginVerificationEmail(to: string, token: string, username: string): Promise<void> {
     if (!this.isConfigured) {
       logger.warn(`[EmailService] RESEND_API_KEY not set — skipping login verification email to ${maskPii(to)}`);

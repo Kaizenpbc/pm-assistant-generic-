@@ -87,6 +87,13 @@ export function registerAIInsightTools(server: McpServer) {
     jsonResult(await getApiClientFromExtra(extra).get('/briefing/daily'))
   );
 
+  server.tool('get-standup-summary', 'Get AI-generated daily standup summary for a project: completions, status changes, new tasks, new risks, and blockers from the previous day', {
+    projectId: z.string().describe('Project ID'),
+    refresh: z.boolean().optional().describe('Force regenerate cached summary'),
+  }, async ({ projectId, refresh }, extra) =>
+    jsonResult(await getApiClientFromExtra(extra).get(`/standup/project/${projectId}`, { params: refresh ? { refresh: 'true' } : {} }))
+  );
+
   server.tool('ai-estimate-task', 'Estimate task duration using historical data and AI reasoning. Returns estimated days, confidence score, and explanation.', {
     taskName: z.string().describe('Name of the task to estimate'),
     taskDescription: z.string().optional().describe('Optional description for better estimation accuracy'),

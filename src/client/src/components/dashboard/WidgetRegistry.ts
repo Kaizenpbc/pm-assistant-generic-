@@ -21,6 +21,7 @@ export const UNIFIED_WIDGETS: WidgetDef[] = [
   { id: 'sprints', label: 'Sprint Snapshot', group: 'Agile', defaultOn: false, size: 'full' },
   { id: 'goals', label: 'Goals', group: 'Overview', defaultOn: false, size: 'full' },
   { id: 'workload', label: 'Team Workload', group: 'Details', defaultOn: false, size: 'full' },
+  { id: 'standup', label: 'Standup Summary', group: 'Overview', defaultOn: false, size: 'full' },
 ];
 
 export function getDefaultWidgetIds(widgets: WidgetDef[]): string[] {
