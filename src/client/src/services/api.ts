@@ -1955,8 +1955,12 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
   // Global Search
   // -------------------------------------------------------------------------
 
-  async search(q: string) {
-    const response = await this.api.get('/search', { params: { q } });
+  async search(q: string, filters?: { type?: string; project?: string; status?: string }) {
+    const params: Record<string, string> = { q };
+    if (filters?.type) params.type = filters.type;
+    if (filters?.project) params.project = filters.project;
+    if (filters?.status) params.status = filters.status;
+    const response = await this.api.get('/search', { params });
     return response.data;
   }
 

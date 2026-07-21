@@ -1,16 +1,23 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, FolderKanban, CheckSquare, ArrowRight, Plus, BarChart3, FileText } from 'lucide-react';
+import { Search, FolderKanban, CheckSquare, ArrowRight, Plus, BarChart3, FileText, AlertTriangle, Target, Users, BookOpen, GitPullRequest, Zap, MessageSquare } from 'lucide-react';
 import { apiService } from '../../services/api';
 
 interface SearchResult {
-  type: 'project' | 'task';
+  type: 'project' | 'task' | 'goal' | 'lesson' | 'resource' | 'change_request' | 'risk' | 'sprint' | 'comment';
   id: string;
   name: string;
   description?: string;
   status?: string;
   projectId?: string;
   projectName?: string;
+  priority?: string;
+  severity?: string;
+  recordId?: string;
+  assignedTo?: string;
+  progress?: number;
+  raidType?: string;
+  taskId?: string;
 }
 
 interface CommandPaletteProps {
@@ -35,6 +42,38 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-600',
 };
 
+const severityColors: Record<string, string> = {
+  critical: 'bg-red-100 text-red-700',
+  high: 'bg-orange-100 text-orange-700',
+  medium: 'bg-yellow-100 text-yellow-700',
+  low: 'bg-green-100 text-green-700',
+};
+
+const priorityColors: Record<string, string> = {
+  critical: 'bg-red-100 text-red-700',
+  high: 'bg-orange-100 text-orange-700',
+  medium: 'bg-yellow-100 text-yellow-700',
+  low: 'bg-green-100 text-green-700',
+};
+
+interface CategoryConfig {
+  type: SearchResult['type'];
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const categories: CategoryConfig[] = [
+  { type: 'project', label: 'Projects', icon: FolderKanban },
+  { type: 'task', label: 'Tasks', icon: CheckSquare },
+  { type: 'risk', label: 'Risks & Issues', icon: AlertTriangle },
+  { type: 'goal', label: 'Goals', icon: Target },
+  { type: 'resource', label: 'Resources', icon: Users },
+  { type: 'lesson', label: 'Lessons', icon: BookOpen },
+  { type: 'change_request', label: 'Change Requests', icon: GitPullRequest },
+  { type: 'sprint', label: 'Sprints', icon: Zap },
+  { type: 'comment', label: 'Comments', icon: MessageSquare },
+];
+
 function getStatusColor(status?: string): string {
   if (!status) return 'bg-gray-100 text-gray-500';
   return statusColors[status] || 'bg-gray-100 text-gray-500';
@@ -43,6 +82,39 @@ function getStatusColor(status?: string): string {
 function formatStatus(status?: string): string {
   if (!status) return '';
   return status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function ResultBadges({ result }: { result: SearchResult }) {
+  return (
+    <div className="flex items-center gap-1.5 flex-shrink-0">
+      {result.type === 'risk' && result.recordId && (
+        <span className="text-xs text-gray-400 font-mono">{result.recordId}</span>
+      )}
+      {result.type === 'risk' && result.severity && (
+        <span className={`inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full ${severityColors[result.severity] || 'bg-gray-100 text-gray-500'}`}>
+          {formatStatus(result.severity)}
+        </span>
+      )}
+      {result.type === 'task' && result.priority && (
+        <span className={`inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full ${priorityColors[result.priority] || 'bg-gray-100 text-gray-500'}`}>
+          {formatStatus(result.priority)}
+        </span>
+      )}
+      {result.type === 'goal' && result.progress != null && result.progress > 0 && (
+        <div className="flex items-center gap-1">
+          <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-primary-500 rounded-full" style={{ width: `${Math.min(result.progress, 100)}%` }} />
+          </div>
+          <span className="text-xs text-gray-400">{result.progress}%</span>
+        </div>
+      )}
+      {result.status && (
+        <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(result.status)}`}>
+          {formatStatus(result.status)}
+        </span>
+      )}
+    </div>
+  );
 }
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
@@ -117,13 +189,30 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
 
   const selectResult = useCallback(
     (result: SearchResult) => {
-      if (result.type === 'project') {
-        navigateTo(`/project/${result.id}`);
-      } else if (result.type === 'task' && result.projectId) {
-        navigateTo(`/project/${result.projectId}`);
+      switch (result.type) {
+        case 'project':
+          navigateTo(`/project/${result.id}`);
+          break;
+        case 'task':
+        case 'risk':
+        case 'change_request':
+        case 'sprint':
+        case 'comment':
+          if (result.projectId) navigateTo(`/project/${result.projectId}`);
+          break;
+        case 'goal':
+          navigateTo('/goals');
+          break;
+        case 'resource':
+          navigateTo('/resources');
+          break;
+        case 'lesson':
+          // No deep link — just close palette
+          onClose();
+          break;
       }
     },
-    [navigateTo]
+    [navigateTo, onClose]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -162,22 +251,25 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const projects = results.filter((r) => r.type === 'project');
-  const tasks = results.filter((r) => r.type === 'task');
+  // Group results by category, preserving order
+  const groupedResults: { config: CategoryConfig; items: SearchResult[] }[] = [];
+  let flatIndex = 0;
+  const flatIndexMap: Map<SearchResult, number> = new Map();
+
+  for (const result of results) {
+    flatIndexMap.set(result, flatIndex++);
+  }
+
+  for (const cat of categories) {
+    const items = results.filter(r => r.type === cat.type);
+    if (items.length > 0) {
+      groupedResults.push({ config: cat, items });
+    }
+  }
+
   const hasResults = query.length >= 2 && results.length > 0;
   const showEmpty = query.length >= 2 && !loading && results.length === 0;
   const showQuickActions = query.length < 2;
-
-  // Map flat selectedIndex to category-aware index
-  let projectSelectedIdx = -1;
-  let taskSelectedIdx = -1;
-  if (query.length >= 2) {
-    if (selectedIndex < projects.length) {
-      projectSelectedIdx = selectedIndex;
-    } else {
-      taskSelectedIdx = selectedIndex - projects.length;
-    }
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]" onClick={onClose}>
@@ -198,7 +290,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search projects, tasks..."
+            placeholder="Search projects, tasks, risks..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -254,75 +346,40 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
           {/* Search Results */}
           {hasResults && !loading && (
             <div className="py-2">
-              {/* Projects */}
-              {projects.length > 0 && (
-                <>
-                  <div className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Projects
-                  </div>
-                  {projects.map((result, i) => {
-                    const isSelected = projectSelectedIdx === i;
-                    return (
-                      <button
-                        key={`project-${result.id}`}
-                        data-selected={isSelected}
-                        onClick={() => selectResult(result)}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                          isSelected ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <FolderKanban className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-primary-500' : 'text-gray-400'}`} />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{result.name}</p>
-                          {result.description && (
-                            <p className="text-xs text-gray-400 truncate">{result.description}</p>
-                          )}
-                        </div>
-                        {result.status && (
-                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ${getStatusColor(result.status)}`}>
-                            {formatStatus(result.status)}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </>
-              )}
-
-              {/* Tasks */}
-              {tasks.length > 0 && (
-                <>
-                  <div className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-1">
-                    Tasks
-                  </div>
-                  {tasks.map((result, i) => {
-                    const isSelected = taskSelectedIdx === i;
-                    return (
-                      <button
-                        key={`task-${result.id}`}
-                        data-selected={isSelected}
-                        onClick={() => selectResult(result)}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                          isSelected ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <CheckSquare className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-primary-500' : 'text-gray-400'}`} />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{result.name}</p>
-                          {result.projectName && (
-                            <p className="text-xs text-gray-400 truncate">{result.projectName}</p>
-                          )}
-                        </div>
-                        {result.status && (
-                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ${getStatusColor(result.status)}`}>
-                            {formatStatus(result.status)}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </>
-              )}
+              {groupedResults.map(({ config, items }) => {
+                const Icon = config.icon;
+                return (
+                  <React.Fragment key={config.type}>
+                    <div className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-1 first:mt-0">
+                      {config.label}
+                    </div>
+                    {items.map((result) => {
+                      const idx = flatIndexMap.get(result) ?? -1;
+                      const isSelected = selectedIndex === idx;
+                      const subtitle = result.projectName || result.description;
+                      return (
+                        <button
+                          key={`${result.type}-${result.id}`}
+                          data-selected={isSelected}
+                          onClick={() => selectResult(result)}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                            isSelected ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <Icon className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-primary-500' : 'text-gray-400'}`} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{result.name}</p>
+                            {subtitle && (
+                              <p className="text-xs text-gray-400 truncate">{subtitle}</p>
+                            )}
+                          </div>
+                          <ResultBadges result={result} />
+                        </button>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
             </div>
           )}
 
