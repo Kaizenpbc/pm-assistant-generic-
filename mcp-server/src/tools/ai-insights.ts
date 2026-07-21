@@ -91,7 +91,7 @@ export function registerAIInsightTools(server: McpServer) {
     projectId: z.string().describe('Project ID'),
     refresh: z.boolean().optional().describe('Force regenerate cached summary'),
   }, async ({ projectId, refresh }, extra) =>
-    jsonResult(await getApiClientFromExtra(extra).get(`/standup/project/${projectId}`, { params: refresh ? { refresh: 'true' } : {} }))
+    jsonResult(await getApiClientFromExtra(extra).get(`/standup/project/${projectId}${refresh ? '?refresh=true' : ''}`))
   );
 
   server.tool('ai-estimate-task', 'Estimate task duration using historical data and AI reasoning. Returns estimated days, confidence score, and explanation.', {
