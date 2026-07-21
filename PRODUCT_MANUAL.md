@@ -514,9 +514,28 @@ Deterministic analysis comparing current project state against baselines:
 
 Severity thresholds: critical (10+ new tasks or 20+ days growth), high (5+/10+), medium (3+/5+ or 2+ change requests). Available at `GET /api/v1/predictions/project/:projectId/scope-creep`.
 
-### AI Status Report Generator
+### AI Status Report Generator (RAG Traffic Light)
 
-AI-powered status report generation from the project detail page. Uses Claude to produce a narrative markdown report with sections (Executive Summary, Progress Update, Key Milestones, Risks & Issues, Budget Status, Next Steps, Blockers & Escalations). Supports copy-to-clipboard, download as `.md` file, email delivery to stakeholders, and recurring schedules.
+AI-powered executive status report with a Red/Amber/Green (RAG) traffic light dashboard. Claude analyzes project data and produces a structured JSON response that is rendered as styled HTML for both the UI modal and email delivery.
+
+**Report Format:**
+1. **Executive Summary** — AI-generated paragraph summarizing overall project health, key concerns, and outlook
+2. **Traffic Light Dashboard** — Table with 6 areas (Schedule, Budget, Resources, Risks, Scope, Quality), each showing:
+   - Previous status (from last stored report)
+   - Current RAG status (🟢 Green / 🟡 Amber / 🔴 Red)
+   - Trend arrow (↑ Improving / → Stable / ↓ Declining)
+   - Comments explaining the assessment
+3. **Actions for Management** — Numbered list of recommended management actions
+
+**RAG Thresholds (configurable):**
+- Schedule: Green = <5% tasks overdue, Amber = 5–15%, Red = >15%
+- Budget: Green = <90% spent vs progress, Amber = 90–100%, Red = >100%
+- Resources: Green = 0 overallocated, Amber = 1–2, Red = 3+
+- Risks: Green = 0 high/critical, Amber = 1–2 high, Red = 3+ or any critical
+- Scope: Green = 0 change requests, Amber = 1–2 pending, Red = 3+ or unapproved growth
+- Quality: Green = <5% tasks missing data, Amber = 5–15%, Red = >15%
+
+**Trend Computation:** Compares current RAG status against the previous report (stored in `ai_conversations` with `context_type = 'status-report'`). If current is better than previous → improving (↑), same → stable (→), worse → declining (↓).
 
 **API Endpoints:**
 - `POST /api/v1/status-reports/generate` — Generate a status report for a project, optionally email it to recipients
@@ -526,7 +545,7 @@ AI-powered status report generation from the project detail page. Uses Claude to
 
 **MCP Tool:** `generate-status-report` — Available to project_manager, scrum_master, pmo, ba, and admin roles.
 
-**Feature Gating:** Requires paid tier (consultant/sme/enterprise). AI generation requires `AI_ENABLED=true`; falls back to template when disabled. Email delivery requires `RESEND_API_KEY`.
+**Feature Gating:** Requires paid tier (consultant/sme/enterprise). AI generation requires `AI_ENABLED=true`; falls back to all-amber template when disabled. Email delivery requires `RESEND_API_KEY`.
 
 ### Anomaly Detection
 

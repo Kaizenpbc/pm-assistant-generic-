@@ -258,22 +258,34 @@ AI-generated executive summaries and status reports.
 - Reports include AI-generated insights, not just data dumps
 - Each report tracked with token count and generation metadata
 
-### 12b. Automated Project Status Reports
+### 12b. Automated Project Status Reports (RAG Traffic Light)
 
 **Service:** `ProjectStatusReportService` (`ProjectStatusReportService.ts`)
+**Renderer:** `statusReportRenderer.ts` — shared HTML rendering with `renderStatusReportHtml()`, `computeTrend()`, types `RAGArea`, `StructuredStatusReport`
 **Endpoints:**
 - `POST /api/v1/status-reports/generate` -- Generate a status report with optional email delivery
 - `POST /api/v1/status-reports/schedule` -- Create recurring schedule (daily/weekly/monthly)
 - `GET /api/v1/status-reports/schedules/:projectId` -- List schedules for a project
 - `DELETE /api/v1/status-reports/schedule/:id` -- Delete a schedule
 
-Dedicated service for project status reports with a `statusReport` prompt template. Generates structured reports with 7 sections: Executive Summary, Progress Update, Key Milestones, Risks & Issues, Budget Status, Next Steps, Blockers & Escalations.
+Dedicated service for executive RAG (Red/Amber/Green) traffic light status reports. Claude receives project data, configurable RAG thresholds, and the previous report's RAG values, then returns structured JSON with `executiveSummary`, `areas[]` (name/status/comments), and `managementActions[]`. The JSON is parsed, trends computed, and rendered to styled HTML.
+
+**Report structure:**
+1. Executive Summary — AI-generated paragraph
+2. Traffic Light Dashboard — 6 areas (Schedule, Budget, Resources, Risks, Scope, Quality) × 4 columns (Previous, Current, Trend, Comments)
+3. Actions for Management — numbered recommendations
+
+**RAG thresholds** are defined in `DEFAULT_RAG_THRESHOLDS` and passed to the prompt template. Claude uses these to assign Green/Amber/Red per area.
+
+**Trend computation:** `computeTrend(current, previous)` uses ordinal comparison (green=0, amber=1, red=2). Lower = improving (↑), same = stable (→), higher = declining (↓). Previous status retrieved from last stored report in `ai_conversations` where `context_type = 'status-report'`.
 
 **Key features:**
-- AI generation via Claude with fallback to template when AI unavailable
+- Structured JSON output from Claude (with code fence stripping as defense-in-depth)
+- Styled HTML rendering via `renderStatusReportHtml()` — used in both UI modal and email
+- Fallback: all areas set to Amber with generic comments when AI unavailable
 - Email delivery to stakeholder lists via `EmailService.sendStatusReportEmail()`
 - Recurring schedules via `ReportScheduleService` (uses `templateId = "status-report::<projectId>"` convention)
-- Reports stored in `ai_conversations` table (same as AIReportService)
+- Reports stored in `ai_conversations` table with `context_type = 'status-report'`
 - MCP tool: `generate-status-report` (PM, scrum_master, pmo, ba, admin roles)
 - Feature-gated: requires paid tier
 

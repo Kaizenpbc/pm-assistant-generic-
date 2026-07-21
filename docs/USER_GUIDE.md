@@ -879,15 +879,20 @@ Also in the **AI Insights** tab, the Scope Creep Detector compares the current p
 
 A severity badge (Low/Medium/High/Critical) flags the degree of scope drift. Create a baseline first to enable this feature.
 
-### Status Report Generator
+### Status Report Generator (RAG Traffic Light)
 
-Click the **Status Report** button in the project header to generate an AI-powered status report. The modal has three tabs:
+Click the **Status Report** button in the project header to generate an AI-powered executive status report. The report uses a Red/Amber/Green (RAG) traffic light format and is rendered as styled HTML. The modal has three tabs:
 
-- **Report** — View the generated report with formatted sections (Executive Summary, Progress Update, Key Milestones, Risks & Issues, Budget Status, Next Steps, Blockers & Escalations). Copy to clipboard or download as markdown.
-- **Email Report** — Enter comma-separated email addresses and send the report directly to stakeholders. A fresh report is generated and emailed in branded HTML format.
+- **Report** — View the generated RAG traffic light report with three sections:
+  1. **Executive Summary** — AI-generated paragraph on overall project health
+  2. **Traffic Light Dashboard** — Table covering Schedule, Budget, Resources, Risks, Scope, and Quality. Each row shows previous status, current RAG status (🟢🟡🔴), trend arrow (↑→↓), and comments
+  3. **Actions for Management** — Recommended actions for leadership attention
+
+  Download the report as a styled `.html` file using the Download button.
+- **Email Report** — Enter comma-separated email addresses and send the report directly to stakeholders. A fresh report is generated and emailed in branded HTML format with the full traffic light dashboard.
 - **Schedule Recurring** — Set up automatic report delivery on a daily, weekly, or monthly cadence. Choose the day of week/month, time, and recipients. View and delete existing schedules from this tab.
 
-Scheduled reports run automatically via the report scheduler cron and email the report to all configured recipients. Requires a paid subscription (Consultant, SME, or Enterprise tier).
+The report tracks trends by comparing against the previous report — if Schedule was Green last week and is now Amber, the trend arrow shows ↓ (declining). Scheduled reports run automatically via the report scheduler cron and email the report to all configured recipients. Requires a paid subscription (Consultant, SME, or Enterprise tier).
 
 ---
 
