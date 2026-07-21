@@ -24,7 +24,7 @@ const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ defaul
 const UserGuidePublicPage = lazy(() => import('./pages/UserGuidePublicPage').then(m => ({ default: m.UserGuidePublicPage })));
 const WaitlistAdminPage = lazy(() => import('./pages/WaitlistAdminPage').then(m => ({ default: m.WaitlistAdminPage })));
 const PortalViewPage = lazy(() => import('./pages/PortalViewPage'));
-const DashboardRouter = lazy(() => import('./pages/DashboardRouter').then(m => ({ default: m.DashboardRouter })));
+const DashboardPM = lazy(() => import('./pages/DashboardPM').then(m => ({ default: m.DashboardPM })));
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage').then(m => ({ default: m.ProjectDetailPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
 const ScenarioModelingPage = lazy(() => import('./pages/ScenarioModelingPage').then(m => ({ default: m.ScenarioModelingPage })));
@@ -130,7 +130,7 @@ function App() {
         <Route path="/onboarding" element={isAuthenticated ? <OnboardingPage /> : <Navigate to="/login" replace />} />
 
         {/* Protected routes */}
-        <Route path="/dashboard" element={<PrivateRoute><DashboardRouter /></PrivateRoute>} />
+        <Route path="/dashboard" element={<PrivateRoute><DashboardPM /></PrivateRoute>} />
         <Route path="/projects" element={<PrivateRoute><ProjectsPM /></PrivateRoute>} />
         <Route path="/project/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
         <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
@@ -155,8 +155,6 @@ function App() {
         <Route path="/resources" element={<PrivateRoute><ResourceManagementPage /></PrivateRoute>} />
         <Route path="/evm" element={<PrivateRoute><EVMDashboardPage /></PrivateRoute>} />
         <Route path="/kpi/:type" element={<PrivateRoute><KPIDrillInPage /></PrivateRoute>} />
-        <Route path="/dashboard-pm" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/projects-pm" element={<Navigate to="/projects" replace />} />
         <Route path="/agent" element={<PrivateRoute><AgentProposalsPage /></PrivateRoute>} />
         <Route path="/admin/users" element={<PrivateRoute><AdminUsersPage /></PrivateRoute>} />
         <Route path="/admin/tenants" element={<PrivateRoute><AdminTenantsPage /></PrivateRoute>} />
