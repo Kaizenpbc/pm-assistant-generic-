@@ -60,7 +60,22 @@ Bulk create, update, and status-change endpoints allow operating on multiple tas
 
 ### Search
 
-Full-text search across 6 entity types: projects, tasks, goals, lessons learned, resources, and change requests. All queries execute in parallel and return a unified result set; any entity type that fails is silently omitted so a partial outage does not block the entire search.
+Full-text search across 9 entity types: projects, tasks, RAID items (risks/issues/actions/decisions), goals, lessons learned, resources, change requests, sprints, and task comments. All queries execute in parallel and return a unified result set; any entity type that fails is silently omitted so a partial outage does not block the entire search.
+
+**Enriched results** include contextual fields beyond just name/description/status:
+- **Tasks**: priority, assigned_to, progress_percentage, start_date, end_date
+- **RAID items**: severity, record_id, category, type (risk/issue/action/decision)
+- **Goals**: progress, goal_type, owner_id
+- **Resources**: role, skills, is_active
+- **Sprints**: goal, start_date, end_date
+- **Comments**: text (truncated to 120 chars), task_name
+
+**Optional query parameters:**
+- `type` — comma-separated entity types to search (e.g., `?q=budget&type=task,risk`)
+- `project` — scope results to a specific project ID (e.g., `?q=deploy&project=abc-123`)
+- `status` — filter by status value (e.g., `?q=deploy&status=in_progress`)
+
+**Response shape:** `{ results: [...], total: number, queryMs: number }`
 
 ---
 
@@ -1768,7 +1783,7 @@ All API routes are prefixed with `/api/v1/` and organized by domain:
 /api/v1/api-keys          API key management
 /api/v1/audit             Audit ledger queries
 /api/v1/policies          Policy engine rules
-/api/v1/search            Full-text search
+/api/v1/search            Full-text search (9 types, type/project/status filters)
 /api/v1/bulk              Bulk operations
 /api/v1/portfolio         Portfolio overview
 /api/v1/analytics         Portfolio analytics summary

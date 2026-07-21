@@ -120,7 +120,7 @@ An **AI Token Usage** indicator appears above the user section, showing your cur
 
 ### Command Palette
 
-Press **Ctrl+K** (or **Cmd+K** on Mac) to open the Command Palette. Type to quickly search and navigate to any page, project, or action. The global search covers 6 entity types — **projects, tasks, goals, lessons learned, resources, and change requests** — with all queries running in parallel. Results from each entity type appear together; if one type is temporarily unavailable it is silently omitted rather than blocking the whole search.
+Press **Ctrl+K** (or **Cmd+K** on Mac) to open the Command Palette. Type to quickly search and navigate to any page, project, or action. The global search covers 9 entity types — **projects, tasks, RAID items (risks/issues), goals, lessons learned, resources, change requests, sprints, and task comments** — with all queries running in parallel. Results appear grouped by category with contextual badges: severity (color-coded) for RAID items, priority for tasks, progress bars for goals, and record IDs (e.g., "R-001") for RAID items. Clicking a result navigates to the relevant page. If one entity type is temporarily unavailable it is silently omitted rather than blocking the whole search.
 
 ### Notifications
 

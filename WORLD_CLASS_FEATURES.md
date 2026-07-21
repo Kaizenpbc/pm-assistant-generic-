@@ -454,7 +454,7 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 | Goals Project Dropdown (replaces free-text Project ID input with searchable dropdown) | Done | Bug Fix |
 | Lessons Learned Edit/Delete (pre-filled modal for edit, ConfirmModal for delete) | Done | Enhancement |
 | Styled ConfirmModal (replaces window.confirm() across Integrations, Change Requests, Intake, Settings, Report Builder, Goals) | Done | Enhancement |
-| Expanded Global Search (6 entity types: projects, tasks, goals, lessons, resources, change requests; parallel queries) | Done | Enhancement |
+| Expanded Global Search (9 entity types incl. RAID items, sprints, comments; enriched results with severity/priority/progress badges; type/project/status filters) | Done | Enhancement |
 | Portfolio Dashboard (6 KPI cards, status filter pills, budget progress bar, project health cards, Dashboard/Timeline toggle) | Done | Enhancement |
 | Portfolio API Enhancement (budgetAllocated, budgetSpent, progressPercentage, totalTasks, completedTasks per project) | Done | Enhancement |
 | Load More Pagination (Notifications Center, Lessons Learned, Agent Proposals pages) | Done | Enhancement |

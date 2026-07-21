@@ -338,7 +338,10 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Mentioned users receive in-app notifications automatically
 
 ### Global Search
-- Full-text search across 6 entity types: projects, tasks, goals, lessons learned, resources, and change requests
+- Full-text search across 9 entity types: projects, tasks, RAID items, goals, lessons learned, resources, change requests, sprints, and task comments
+- Enriched results with contextual fields: priority and assignee for tasks, severity and record ID for RAID items, progress for goals
+- Optional filters: `type` (comma-separated entity types), `project` (scope to project ID), `status` (filter by status)
+- Response includes result count and query timing (`total`, `queryMs`)
 - All entity queries run in parallel with graceful per-entity fallbacks
 
 ### Bulk Import (CSV / Excel)
@@ -597,7 +600,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | API Keys | `/api/v1/api-keys` | API key management |
 | Audit | `/api/v1/audit` | Immutable audit ledger |
 | Policies | `/api/v1/policies` | Policy engine rules |
-| Search | `/api/v1/search` | Full-text search |
+| Search | `/api/v1/search` | Full-text search (9 entity types, filters: type/project/status) |
 | Bulk | `/api/v1/bulk` | Bulk operations |
 | Portfolio | `/api/v1/portfolio` | Portfolio overview |
 | Analytics | `/api/v1/analytics` | Portfolio analytics summary |
