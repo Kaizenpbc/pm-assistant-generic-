@@ -186,6 +186,24 @@ export class UserRepository extends BaseRepository<User> {
       [JSON.stringify(prefs), userId],
     );
   }
+
+  async getDashboardPrefs(userId: string): Promise<Record<string, unknown> | null> {
+    const rows = await this.queryRaw(
+      'SELECT dashboard_preferences FROM users WHERE id = ?',
+      [userId],
+    );
+    if (rows.length === 0) return null;
+    const raw = rows[0].dashboard_preferences;
+    if (!raw) return null;
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  }
+
+  async updateDashboardPrefs(userId: string, prefs: Record<string, unknown>): Promise<void> {
+    await this.queryRaw(
+      'UPDATE users SET dashboard_preferences = ?, updated_at = NOW() WHERE id = ?',
+      [JSON.stringify(prefs), userId],
+    );
+  }
 }
 
 export const userRepository = new UserRepository();

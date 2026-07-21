@@ -2379,6 +2379,20 @@ ${schedules.filter((s: any) => s.criticalPath?.criticalPathTaskIds?.length).map(
   }
 
   // -------------------------------------------------------------------------
+  // Dashboard preferences
+  // -------------------------------------------------------------------------
+
+  async getDashboardPreferences() {
+    const response = await this.api.get('/users/me/dashboard-preferences');
+    return response.data;
+  }
+
+  async updateDashboardPreferences(prefs: { enabledWidgets: string[]; widgetOrder: string[]; scope: string }) {
+    const response = await this.api.put('/users/me/dashboard-preferences', prefs);
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
   // Narratives
   // -------------------------------------------------------------------------
 

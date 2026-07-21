@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { Settings2, ChevronDown } from 'lucide-react';
+import { Settings2, ChevronDown, RotateCcw } from 'lucide-react';
 import type { WidgetDef } from './WidgetRegistry';
 
 interface CustomizeDropdownProps {
   widgets: WidgetDef[];
   enabledIds: Set<string>;
   onToggle: (id: string) => void;
+  onReset?: () => void;
 }
 
-export function CustomizeDropdown({ widgets, enabledIds, onToggle }: CustomizeDropdownProps) {
+export function CustomizeDropdown({ widgets, enabledIds, onToggle, onReset }: CustomizeDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -64,6 +65,18 @@ export function CustomizeDropdown({ widgets, enabledIds, onToggle }: CustomizeDr
               {gi < groups.size - 1 && <div className="border-b border-gray-100 my-1 mx-2" />}
             </div>
           ))}
+          {onReset && (
+            <>
+              <div className="border-t border-gray-100 my-1 mx-2" />
+              <button
+                onClick={() => { onReset(); setOpen(false); }}
+                className="flex items-center gap-2 w-full px-4 py-1.5 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Reset to Default Layout
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

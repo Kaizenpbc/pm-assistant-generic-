@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Eye,
@@ -17,8 +17,9 @@ import { IssuesCreatedVsResolvedChart } from '../components/dashboard/widgets/Is
 import { MilestonesWidget } from '../components/dashboard/widgets/MilestonesWidget';
 import { BudgetWatchWidget } from '../components/dashboard/widgets/BudgetWatchWidget';
 import { CustomizeDropdown } from '../components/dashboard/CustomizeDropdown';
-import { loadWidgetIds, saveWidgetIds } from '../components/dashboard/WidgetRegistry';
 import type { WidgetDef } from '../components/dashboard/WidgetRegistry';
+import { WidgetGrid } from '../components/dashboard/WidgetGrid';
+import { useDashboardPreferences } from '../hooks/useDashboardPreferences';
 import { KpiTilePM } from '../components/pm/KpiTilePM';
 import { ActionCenterPM } from '../components/pm/ActionCenterPM';
 import { ActivityFeedPM } from '../components/pm/ActivityFeedPM';
@@ -30,27 +31,22 @@ import { VelocitySparklineWidget } from '../components/dashboard/widgets/Velocit
 // ─── Widget registry ──────────────────────────────────────────────────────────
 
 const PM_WIDGETS: WidgetDef[] = [
-  { id: 'briefing',    label: 'Morning Briefing',       group: 'Overview', defaultOn: true },
-  { id: 'kpi',         label: 'KPI Tiles',              group: 'Overview', defaultOn: true },
-  { id: 'intel',       label: 'Portfolio Intelligence', group: 'Overview', defaultOn: true },
-  { id: 'projects',    label: 'Projects Table',         group: 'Overview', defaultOn: true },
-  { id: 'action',      label: 'Action Center',          group: 'Overview', defaultOn: true },
-  { id: 'next-actions', label: 'Next Best Actions',     group: 'Overview', defaultOn: true },
-  { id: 'trend',       label: 'Issues Trend',           group: 'Charts',   defaultOn: true },
-  { id: 'health-trends', label: 'Health Trends',        group: 'Charts',   defaultOn: true },
-  { id: 'velocity',      label: 'Sprint Velocity',       group: 'Charts',   defaultOn: true },
-  { id: 'milestones',  label: 'Milestones',             group: 'Details',  defaultOn: true },
-  { id: 'budget',      label: 'Budget Watch',           group: 'Details',  defaultOn: true },
-  { id: 'activity',    label: 'Activity Feed',          group: 'Details',  defaultOn: true },
-  { id: 'sprint',      label: 'Sprint Snapshot',        group: 'Details',  defaultOn: false },
-  { id: 'goals',       label: 'Goals Progress',         group: 'Details',  defaultOn: false },
-  { id: 'workload',    label: 'Team Workload',          group: 'Details',  defaultOn: false },
+  { id: 'briefing',      label: 'Morning Briefing',       group: 'Overview', defaultOn: true,  size: 'full' },
+  { id: 'kpi',           label: 'KPI Tiles',              group: 'Overview', defaultOn: true,  size: 'full' },
+  { id: 'intel',         label: 'Portfolio Intelligence',  group: 'Overview', defaultOn: true,  size: 'full' },
+  { id: 'projects',      label: 'Projects Table',         group: 'Overview', defaultOn: true,  size: 'full' },
+  { id: 'action',        label: 'Action Center',          group: 'Overview', defaultOn: true,  size: 'full' },
+  { id: 'next-actions',  label: 'Next Best Actions',      group: 'Overview', defaultOn: true,  size: 'full' },
+  { id: 'trend',         label: 'Issues Trend',           group: 'Charts',   defaultOn: true,  size: 'full' },
+  { id: 'health-trends', label: 'Health Trends',          group: 'Charts',   defaultOn: true,  size: 'full' },
+  { id: 'velocity',      label: 'Sprint Velocity',        group: 'Charts',   defaultOn: true,  size: 'full' },
+  { id: 'milestones',    label: 'Milestones',             group: 'Details',  defaultOn: true,  size: 'third' },
+  { id: 'budget',        label: 'Budget Watch',           group: 'Details',  defaultOn: true,  size: 'third' },
+  { id: 'activity',      label: 'Activity Feed',          group: 'Details',  defaultOn: true,  size: 'third' },
+  { id: 'sprint',        label: 'Sprint Snapshot',        group: 'Details',  defaultOn: false, size: 'full' },
+  { id: 'goals',         label: 'Goals Progress',         group: 'Details',  defaultOn: false, size: 'full' },
+  { id: 'workload',      label: 'Team Workload',          group: 'Details',  defaultOn: false, size: 'full' },
 ];
-
-const STORAGE_KEY = 'dashboard-pm-widgets';
-const SCOPE_KEY   = 'dashboard-pm:scope';
-
-type Scope = 'mine' | 'portfolio';
 
 // ─── KPI computation helpers ──────────────────────────────────────────────────
 
@@ -63,41 +59,20 @@ function formatCompact(n: number): string {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function DashboardPM() {
-  const [enabledSections, setEnabledSections] = useState<Set<string>>(
-    () => loadWidgetIds(STORAGE_KEY, PM_WIDGETS)
-  );
-  const [scope, setScope] = useState<Scope>(() => {
-    try {
-      const stored = localStorage.getItem(SCOPE_KEY);
-      if (stored === 'portfolio' || stored === 'mine') return stored;
-    } catch { /* ignore */ }
-    return 'mine';
-  });
-
-  // Persist state
-  useEffect(() => {
-    saveWidgetIds(STORAGE_KEY, enabledSections);
-  }, [enabledSections]);
-
-  useEffect(() => {
-    localStorage.setItem(SCOPE_KEY, scope);
-  }, [scope]);
+  const {
+    enabledIds,
+    widgetOrder,
+    scope,
+    toggleWidget,
+    reorder,
+    changeScope,
+    resetLayout,
+  } = useDashboardPreferences(PM_WIDGETS);
 
   // Set AI panel context
   useEffect(() => {
     useUIStore.getState().setAIPanelContext({ type: 'dashboard' });
   }, []);
-
-  const toggleWidget = useCallback((id: string) => {
-    setEnabledSections(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const show = (id: string) => enabledSections.has(id);
 
   // ─── Data fetching ──────────────────────────────────────────────────────────
 
@@ -185,6 +160,48 @@ export function DashboardPM() {
   const utilColor: 'green' | 'amber' | 'red' | 'teal' | 'gray' =
     utilization > 95 ? 'red' : utilization >= 80 ? 'amber' : 'green';
 
+  // ─── Widget renderer ──────────────────────────────────────────────────────
+
+  const renderWidget = useCallback((id: string): ReactNode => {
+    switch (id) {
+      case 'briefing':
+        return <MorningBriefingWidget scope={scopeParam} />;
+      case 'kpi':
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <KpiTilePM label="Portfolio Health" value={`${avgHealth}%`} icon={Activity} color={healthColor} statusDot={healthColor} drillPath="/portfolio" />
+            <KpiTilePM label="Overdue Tasks" value={overdueTasks} icon={Clock} color={kpiColor(overdueTasks, true, 5, 10)} statusDot={kpiColor(overdueTasks, true, 5, 10)} drillPath="/kpi/overdue" />
+            <KpiTilePM label="Open Risks" value={openRisks} icon={AlertTriangle} color={kpiColor(openRisks, true, 3, 7)} statusDot={kpiColor(openRisks, true, 3, 7)} drillPath="/kpi/risks" />
+            <KpiTilePM label="At-Risk Projects" value={atRiskCount} icon={AlertCircle} color={kpiColor(atRiskCount, true, 2, 4)} statusDot={kpiColor(atRiskCount, true, 2, 4)} drillPath="/kpi/at-risk" />
+            <KpiTilePM label="Budget Variance" value={varianceStr} icon={TrendingDown} color={varianceColor} statusDot={varianceColor} drillPath="/kpi/budget" />
+            <KpiTilePM label="Budget Utilization" value={`${Math.round(utilization)}%`} icon={DollarSign} color={utilColor} statusDot={utilColor} drillPath="/kpi/budget" />
+          </div>
+        );
+      case 'intel':
+        return <AISummaryBanner />;
+      case 'projects':
+        return <ProjectTable projects={projectsWithHealth} />;
+      case 'action':
+        return <ActionCenterPM projects={projectSummaries} />;
+      case 'next-actions':
+        return <NextBestActionsWidget />;
+      case 'trend':
+        return <IssuesCreatedVsResolvedChart scope={scopeParam} />;
+      case 'health-trends':
+        return <HealthTrendsWidget projects={projectsWithHealth} />;
+      case 'velocity':
+        return <VelocitySparklineWidget projects={projectsWithHealth} />;
+      case 'milestones':
+        return <MilestonesWidget scope={scopeParam} />;
+      case 'budget':
+        return <BudgetWatchWidget projects={activeProjects} />;
+      case 'activity':
+        return <ActivityFeedPM limit={10} />;
+      default:
+        return null;
+    }
+  }, [scopeParam, avgHealth, healthColor, overdueTasks, openRisks, atRiskCount, varianceStr, varianceColor, utilization, utilColor, projectsWithHealth, projectSummaries, activeProjects, kpiColor]);
+
   // ─── Loading state ──────────────────────────────────────────────────────────
 
   if (myLoading) {
@@ -213,7 +230,7 @@ export function DashboardPM() {
           {showScopeToggle && (
             <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
               <button
-                onClick={() => setScope('mine')}
+                onClick={() => changeScope('mine')}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   scope === 'mine'
                     ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -223,7 +240,7 @@ export function DashboardPM() {
                 My Projects · {myProjects.length}
               </button>
               <button
-                onClick={() => setScope('portfolio')}
+                onClick={() => changeScope('portfolio')}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   scope === 'portfolio'
                     ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -236,98 +253,21 @@ export function DashboardPM() {
           )}
           <CustomizeDropdown
             widgets={PM_WIDGETS}
-            enabledIds={enabledSections}
+            enabledIds={enabledIds}
             onToggle={toggleWidget}
+            onReset={resetLayout}
           />
         </div>
       </div>
 
-      {/* ── Morning Briefing ── */}
-      {show('briefing') && <MorningBriefingWidget scope={scopeParam} />}
-
-      {/* ── KPI Tiles ── */}
-      {show('kpi') && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <KpiTilePM
-            label="Portfolio Health"
-            value={`${avgHealth}%`}
-            icon={Activity}
-            color={healthColor}
-            statusDot={healthColor}
-            drillPath="/portfolio"
-          />
-          <KpiTilePM
-            label="Overdue Tasks"
-            value={overdueTasks}
-            icon={Clock}
-            color={kpiColor(overdueTasks, true, 5, 10)}
-            statusDot={kpiColor(overdueTasks, true, 5, 10)}
-            drillPath="/kpi/overdue"
-          />
-          <KpiTilePM
-            label="Open Risks"
-            value={openRisks}
-            icon={AlertTriangle}
-            color={kpiColor(openRisks, true, 3, 7)}
-            statusDot={kpiColor(openRisks, true, 3, 7)}
-            drillPath="/kpi/risks"
-          />
-          <KpiTilePM
-            label="At-Risk Projects"
-            value={atRiskCount}
-            icon={AlertCircle}
-            color={kpiColor(atRiskCount, true, 2, 4)}
-            statusDot={kpiColor(atRiskCount, true, 2, 4)}
-            drillPath="/kpi/at-risk"
-          />
-          <KpiTilePM
-            label="Budget Variance"
-            value={varianceStr}
-            icon={TrendingDown}
-            color={varianceColor}
-            statusDot={varianceColor}
-            drillPath="/kpi/budget"
-          />
-          <KpiTilePM
-            label="Budget Utilization"
-            value={`${Math.round(utilization)}%`}
-            icon={DollarSign}
-            color={utilColor}
-            statusDot={utilColor}
-            drillPath="/kpi/budget"
-          />
-        </div>
-      )}
-
-      {/* ── Portfolio Intelligence ── */}
-      {show('intel') && <AISummaryBanner />}
-
-      {/* ── Projects Table ── */}
-      {show('projects') && <ProjectTable projects={projectsWithHealth} />}
-
-      {/* ── Action Center ── */}
-      {show('action') && <ActionCenterPM projects={projectSummaries} />}
-
-      {/* ── Next Best Actions ── */}
-      {show('next-actions') && <NextBestActionsWidget />}
-
-      {/* ── Issues Created vs Resolved ── */}
-      {show('trend') && <IssuesCreatedVsResolvedChart scope={scopeParam} />}
-
-      {/* ── Health Trends ── */}
-      {show('health-trends') && <HealthTrendsWidget projects={projectsWithHealth} />}
-
-      {/* ── Sprint Velocity ── */}
-      {show('velocity') && <VelocitySparklineWidget projects={projectsWithHealth} />}
-
-      {/* ── 3-column grid ── */}
-      {(show('milestones') || show('budget') || show('activity')) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {show('milestones') && <MilestonesWidget scope={scopeParam} />}
-          {show('budget')     && <BudgetWatchWidget projects={activeProjects} />}
-          {show('activity')   && <ActivityFeedPM limit={10} />}
-        </div>
-      )}
+      {/* ── Widget Grid with drag-and-drop ── */}
+      <WidgetGrid
+        widgets={PM_WIDGETS}
+        enabledIds={enabledIds}
+        widgetOrder={widgetOrder}
+        onReorder={reorder}
+        renderWidget={renderWidget}
+      />
 
       {/* ── Footer ── */}
       <div className="flex items-center justify-between text-[10px] text-gray-400 dark:text-gray-500 pt-2 border-t border-gray-100 dark:border-gray-800">

@@ -3,23 +3,24 @@ export interface WidgetDef {
   label: string;
   group: string;
   defaultOn: boolean;
+  size: 'full' | 'third';
 }
 
 // Unified dashboard widgets — fixed layout order, togglable visibility
 export const UNIFIED_WIDGETS: WidgetDef[] = [
-  { id: 'briefing', label: 'Morning Briefing', group: 'Overview', defaultOn: true },
-  { id: 'kpi', label: 'KPI Tiles', group: 'Overview', defaultOn: true },
-  { id: 'intel', label: 'Portfolio Intelligence', group: 'Overview', defaultOn: true },
-  { id: 'projects', label: 'Projects Table', group: 'Overview', defaultOn: true },
-  { id: 'trend', label: 'Issues Trend', group: 'Charts', defaultOn: true },
-  { id: 'milestones', label: 'Milestones', group: 'Details', defaultOn: true },
-  { id: 'budget', label: 'Budget Watch', group: 'Details', defaultOn: true },
-  { id: 'activity', label: 'Recent Activity', group: 'Details', defaultOn: true },
-  { id: 'next-actions', label: 'Next Best Actions', group: 'Overview', defaultOn: true },
-  { id: 'health-trends', label: 'Health Trends', group: 'Charts', defaultOn: true },
-  { id: 'sprints', label: 'Sprint Snapshot', group: 'Agile', defaultOn: false },
-  { id: 'goals', label: 'Goals', group: 'Overview', defaultOn: false },
-  { id: 'workload', label: 'Team Workload', group: 'Details', defaultOn: false },
+  { id: 'briefing', label: 'Morning Briefing', group: 'Overview', defaultOn: true, size: 'full' },
+  { id: 'kpi', label: 'KPI Tiles', group: 'Overview', defaultOn: true, size: 'full' },
+  { id: 'intel', label: 'Portfolio Intelligence', group: 'Overview', defaultOn: true, size: 'full' },
+  { id: 'projects', label: 'Projects Table', group: 'Overview', defaultOn: true, size: 'full' },
+  { id: 'trend', label: 'Issues Trend', group: 'Charts', defaultOn: true, size: 'full' },
+  { id: 'milestones', label: 'Milestones', group: 'Details', defaultOn: true, size: 'third' },
+  { id: 'budget', label: 'Budget Watch', group: 'Details', defaultOn: true, size: 'third' },
+  { id: 'activity', label: 'Recent Activity', group: 'Details', defaultOn: true, size: 'third' },
+  { id: 'next-actions', label: 'Next Best Actions', group: 'Overview', defaultOn: true, size: 'full' },
+  { id: 'health-trends', label: 'Health Trends', group: 'Charts', defaultOn: true, size: 'full' },
+  { id: 'sprints', label: 'Sprint Snapshot', group: 'Agile', defaultOn: false, size: 'full' },
+  { id: 'goals', label: 'Goals', group: 'Overview', defaultOn: false, size: 'full' },
+  { id: 'workload', label: 'Team Workload', group: 'Details', defaultOn: false, size: 'full' },
 ];
 
 export function getDefaultWidgetIds(widgets: WidgetDef[]): string[] {

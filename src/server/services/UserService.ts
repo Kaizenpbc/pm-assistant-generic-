@@ -112,6 +112,14 @@ export class UserService {
   async updateAccessibilityPrefs(userId: string, prefs: Record<string, unknown>): Promise<void> {
     await userRepository.updateAccessibilityPrefs(userId, prefs);
   }
+
+  async getDashboardPrefs(userId: string): Promise<Record<string, unknown> | null> {
+    return userRepository.getDashboardPrefs(userId);
+  }
+
+  async updateDashboardPrefs(userId: string, prefs: Record<string, unknown>): Promise<void> {
+    await userRepository.updateDashboardPrefs(userId, prefs);
+  }
 }
 
 export const userService = new UserService();

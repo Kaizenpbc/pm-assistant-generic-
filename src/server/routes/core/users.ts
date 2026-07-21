@@ -215,4 +215,41 @@ export async function userRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
+
+  // Dashboard preferences
+  const dashboardPrefsSchema = z.object({
+    enabledWidgets: z.array(z.string().max(50)).max(50),
+    widgetOrder: z.array(z.string().max(50)).max(50),
+    scope: z.enum(['mine', 'portfolio']),
+  });
+
+  fastify.get('/me/dashboard-preferences', {
+    preHandler: [requireScope('read')],
+    schema: { description: 'Get dashboard widget preferences', tags: ['users'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = request.user!.userId;
+      const prefs = await userService.getDashboardPrefs(userId);
+      return { preferences: prefs };
+    } catch (error) {
+      logger.error('Get dashboard preferences error', { error });
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  fastify.put('/me/dashboard-preferences', {
+    preHandler: [requireScope('write')],
+    schema: { description: 'Update dashboard widget preferences', tags: ['users'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = request.user!.userId;
+      const parsed = dashboardPrefsSchema.parse(request.body);
+      await userService.updateDashboardPrefs(userId, parsed);
+      return { preferences: parsed };
+    } catch (error) {
+      if (error instanceof z.ZodError) return reply.status(400).send({ error: 'Validation error', details: error.issues });
+      logger.error('Update dashboard preferences error', { error });
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
 }
