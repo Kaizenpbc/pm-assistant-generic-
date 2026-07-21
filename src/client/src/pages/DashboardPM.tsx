@@ -35,12 +35,14 @@ import { TeamWorkloadWidget } from '../components/dashboard/widgets/TeamWorkload
 // ─── Widget registry ──────────────────────────────────────────────────────────
 
 const PM_WIDGETS: WidgetDef[] = [
-  { id: 'briefing',      label: 'Morning Briefing',       group: 'Overview', defaultOn: true,  size: 'full' },
+  // Above the fold — data first, then actionable items
   { id: 'kpi',           label: 'KPI Tiles',              group: 'Overview', defaultOn: true,  size: 'full' },
-  { id: 'intel',         label: 'Portfolio Intelligence',  group: 'Overview', defaultOn: true,  size: 'full' },
   { id: 'projects',      label: 'Projects Table',         group: 'Overview', defaultOn: true,  size: 'full' },
+  { id: 'briefing',      label: 'Morning Briefing',       group: 'Overview', defaultOn: true,  size: 'full' },
   { id: 'action',        label: 'Action Center',          group: 'Overview', defaultOn: true,  size: 'full' },
   { id: 'next-actions',  label: 'Next Best Actions',      group: 'Overview', defaultOn: true,  size: 'full' },
+  // Below the fold — AI insights, charts, details
+  { id: 'intel',         label: 'Portfolio Intelligence',  group: 'AI',       defaultOn: true,  size: 'full' },
   { id: 'trend',         label: 'Issues Trend',           group: 'Charts',   defaultOn: true,  size: 'full' },
   { id: 'health-trends', label: 'Health Trends',          group: 'Charts',   defaultOn: true,  size: 'full' },
   { id: 'velocity',      label: 'Sprint Velocity',        group: 'Charts',   defaultOn: true,  size: 'full' },
@@ -50,7 +52,7 @@ const PM_WIDGETS: WidgetDef[] = [
   { id: 'sprint',        label: 'Sprint Snapshot',        group: 'Details',  defaultOn: true,  size: 'full' },
   { id: 'goals',         label: 'Goals Progress',         group: 'Details',  defaultOn: true,  size: 'full' },
   { id: 'workload',      label: 'Team Workload',          group: 'Details',  defaultOn: true,  size: 'full' },
-  { id: 'standup',       label: 'Standup Summary',        group: 'Overview', defaultOn: false, size: 'full' },
+  { id: 'standup',       label: 'Standup Summary',        group: 'AI',       defaultOn: false, size: 'full' },
 ];
 
 // ─── KPI computation helpers ──────────────────────────────────────────────────
