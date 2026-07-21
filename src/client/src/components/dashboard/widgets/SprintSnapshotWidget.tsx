@@ -1,6 +1,6 @@
 import { useQueries } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { IterationCw, Loader2 } from 'lucide-react';
+import { IterationCw } from 'lucide-react';
 import { apiService } from '../../../services/api';
 
 interface Project {
@@ -50,13 +50,24 @@ export function SprintSnapshotWidget({ projects }: Props) {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 animate-pulse">
         <div className="flex items-center gap-2 mb-3">
-          <IterationCw className="h-4 w-4 text-gray-400" />
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Sprint Snapshot</h3>
+          <IterationCw className="h-4 w-4 text-gray-300 dark:text-gray-600" />
+          <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>
-        <div className="flex justify-center py-6">
-          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+        <div className="space-y-2.5">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="px-2 py-1.5">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="space-y-1">
+                  <div className="h-3.5 w-28 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <div className="h-3 w-20 bg-gray-100 dark:bg-gray-700/60 rounded" />
+                </div>
+                <div className="h-3 w-10 bg-gray-100 dark:bg-gray-700/60 rounded" />
+              </div>
+              <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full" />
+            </div>
+          ))}
         </div>
       </div>
     );

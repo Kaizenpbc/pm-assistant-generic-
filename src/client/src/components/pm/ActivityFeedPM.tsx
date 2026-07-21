@@ -81,9 +81,15 @@ export function ActivityFeedPM({ limit = 10 }: ActivityFeedPMProps) {
 
       {/* Body */}
       {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-10 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+        <div className="space-y-1 animate-pulse">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="flex items-start gap-2.5 px-2 py-2">
+              <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded" style={{ width: `${70 - i * 10}%` }} />
+                <div className="h-2.5 w-16 bg-gray-100 dark:bg-gray-700/60 rounded" />
+              </div>
+            </div>
           ))}
         </div>
       ) : notifications.length === 0 ? (

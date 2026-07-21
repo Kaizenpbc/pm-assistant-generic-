@@ -1,6 +1,6 @@
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Users, Loader2, AlertTriangle } from 'lucide-react';
+import { Users, AlertTriangle } from 'lucide-react';
 import { apiService } from '../../../services/api';
 
 interface Project {
@@ -46,13 +46,24 @@ export function TeamWorkloadWidget({ projects }: Props) {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 animate-pulse">
         <div className="flex items-center gap-2 mb-3">
-          <Users className="h-4 w-4 text-gray-400" />
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Team Workload</h3>
+          <Users className="h-4 w-4 text-gray-300 dark:text-gray-600" />
+          <div className="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>
-        <div className="flex justify-center py-6">
-          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+        <div className="space-y-2">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="flex items-center gap-2.5 px-1.5 py-1">
+              <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <div className="h-3 w-6 bg-gray-100 dark:bg-gray-700/60 rounded" />
+                </div>
+                <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

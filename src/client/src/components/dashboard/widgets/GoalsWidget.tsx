@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Target, Loader2 } from 'lucide-react';
+import { Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../../../services/api';
 
@@ -45,13 +45,21 @@ export function GoalsWidget() {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 animate-pulse">
         <div className="flex items-center gap-2 mb-3">
-          <Target className="h-4 w-4 text-gray-400" />
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Goals</h3>
+          <Target className="h-4 w-4 text-gray-300 dark:text-gray-600" />
+          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>
-        <div className="flex justify-center py-6">
-          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+        <div className="space-y-2.5">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="px-2 py-1.5">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded" style={{ width: `${60 + i * 10}%` }} />
+                <div className="h-4 w-14 bg-gray-100 dark:bg-gray-700/60 rounded" />
+              </div>
+              <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full" />
+            </div>
+          ))}
         </div>
       </div>
     );

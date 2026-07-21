@@ -91,8 +91,17 @@ export function StandupSummaryWidget({ projects }: Props) {
       {!collapsed && (
         <div className="p-4">
           {isLoading ? (
-            <div className="space-y-3 animate-pulse">
-              {[1, 2, 3].map(i => <div key={i} className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-3/4" />)}
+            <div className="animate-pulse">
+              <div className="h-16 bg-gray-100 dark:bg-gray-700 rounded-lg mb-3" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="space-y-2 p-3 border border-gray-100 dark:border-gray-700 rounded-lg">
+                    <div className="h-3.5 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="h-3 w-full bg-gray-100 dark:bg-gray-700/60 rounded" />
+                    <div className="h-3 w-3/4 bg-gray-100 dark:bg-gray-700/60 rounded" />
+                  </div>
+                ))}
+              </div>
             </div>
           ) : !changes ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">No data available. Select a project and refresh.</p>

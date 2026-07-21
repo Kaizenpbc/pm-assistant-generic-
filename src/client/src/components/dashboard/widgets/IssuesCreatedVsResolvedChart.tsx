@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
 import { apiService } from '../../../services/api';
 
 interface Props {
@@ -21,8 +20,16 @@ export function IssuesCreatedVsResolvedChart({ scope }: Props) {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 flex items-center justify-center h-64">
-        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 animate-pulse">
+        <div className="h-4 w-52 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
+        <div className="flex items-end gap-2 h-48">
+          {[40, 65, 50, 80, 55, 70, 45, 60].map((h, i) => (
+            <div key={i} className="flex-1 flex gap-0.5">
+              <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-t" style={{ height: `${h}%` }} />
+              <div className="flex-1 bg-gray-100 dark:bg-gray-700/60 rounded-t" style={{ height: `${h * 0.7}%` }} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
