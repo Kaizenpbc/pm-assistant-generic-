@@ -1367,13 +1367,16 @@ Each notification entry displays:
 
 ## 29. Dashboard Widget Customization
 
-The unified dashboard supports toggling widget sections on/off via the **Customize** dropdown:
+The unified dashboard supports toggling widget sections on/off and drag-and-drop reordering:
 
-1. Click **Customize** in the dashboard header.
-2. Check or uncheck widget sections to show or hide them.
-3. Your selections are saved automatically in localStorage and persist across sessions.
+1. Click **Customize** in the dashboard header to toggle widgets on/off.
+2. **Drag to reorder** — hover over any widget to reveal a grip handle on the left, then drag it to a new position.
+3. Click **"Reset to Default Layout"** at the bottom of the Customize dropdown to restore the default widget order, visibility, and scope.
+4. Your preferences (enabled widgets, order, and scope) are saved to the server automatically and sync across devices. Changes appear instantly via localStorage cache.
 
-Available sections: KPI Tiles, Portfolio Intelligence, Projects Table, Issues Trend, Milestones, Budget Watch, Recent Activity, Next Best Actions, Health Trends.
+Available sections: Morning Briefing, KPI Tiles, Portfolio Intelligence, Projects Table, Action Center, Next Best Actions, Issues Trend, Health Trends, Sprint Velocity, Milestones, Budget Watch, Activity Feed.
+
+Opt-in sections (disabled by default): Sprint Snapshot, Goals Progress, Team Workload.
 
 ---
 
@@ -1390,7 +1393,7 @@ Access via the sidebar under **Plan → Dashboard**.
 - **Portfolio Intelligence** — AI-generated health ring, risk chips, budget status, and key insights. Supports dark mode.
 - **Action Center** — Two columns: "Today's Priorities" (deadline-driven items) and "AI Next Best Actions" (proposals, notifications, at-risk projects to act on).
 - **Projects Table** — Sortable table; clicking a row navigates to the project detail view (`/project/:id`).
-- **Customize** — Toggle widgets on/off. Opt-in widgets (Sprint Snapshot, Goals Progress, Team Workload) are available but disabled by default.
+- **Customize** — Toggle widgets on/off, drag-and-drop to reorder, and "Reset to Default Layout" to restore defaults. Preferences sync across devices. Opt-in widgets (Sprint Snapshot, Goals Progress, Team Workload) are available but disabled by default.
 
 ### Projects (`/projects`)
 

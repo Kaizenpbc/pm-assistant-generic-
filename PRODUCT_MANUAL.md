@@ -1446,7 +1446,7 @@ Pure algorithmic Flesch-Kincaid readability scoring (no LLM required). Returns:
 
 All user roles now see the same customizable dashboard. The previous role-based dashboards have been replaced.
 
-The `DashboardRouter` component renders `DashboardPM` for all roles. Users who own fewer projects than the full portfolio see a **scope toggle** (My Projects / All Projects). Widget visibility is controlled via the **Customize** dropdown and persisted per-user in `localStorage`.
+The `DashboardRouter` component renders `DashboardPM` for all roles. Users who own fewer projects than the full portfolio see a **scope toggle** (My Projects / All Projects). Widget visibility, order, and scope are controlled via the **Customize** dropdown and **drag-and-drop reordering**, persisted server-side (migration 072: `dashboard_preferences` JSON column on `users`) with localStorage as an instant cache. The `useDashboardPreferences` hook handles localStorage-first loading with debounced server sync (500ms).
 
 See [Section 23](#23-dashboard) for full widget and endpoint details.
 
@@ -1509,7 +1509,9 @@ A monitoring cockpit with read-only scope toggle:
 - **Action Center** — Two-column card: "Today's Priorities" (deadline-driven items from predictions) and "AI Next Best Actions" (proposals to approve, notifications to investigate, at-risk projects to review).
 - **Issues Created vs Resolved** — Weekly trend chart with scope awareness.
 - **3-Column Footer** — Milestones widget, Budget Watch widget, Activity Feed with clickable rows, mark-as-read, and navigation.
-- **Customize Dropdown** — Toggle any widget section on/off. Includes opt-in placeholders for Sprint Snapshot, Goals Progress, and Team Workload (disabled by default).
+- **Customize Dropdown** — Toggle any widget section on/off. "Reset to Default Layout" button restores defaults. Includes opt-in placeholders for Sprint Snapshot, Goals Progress, and Team Workload (disabled by default).
+- **Drag-and-Drop Reordering** — Hover over any widget to reveal a grip handle; drag to reorder. The `WidgetGrid` component groups consecutive `third`-size widgets (Milestones, Budget Watch, Activity Feed) into 3-column rows. Order is persisted to the server.
+- **Server Persistence** — `GET/PUT /api/v1/users/me/dashboard-preferences` stores `enabledWidgets`, `widgetOrder`, and `scope` as JSON. On load, localStorage is used instantly, then overwritten by server data if available.
 
 ### Projects (`/projects`)
 
