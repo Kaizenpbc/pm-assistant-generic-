@@ -36,7 +36,7 @@ if [ "$MCP_ONLY" = true ]; then
   echo "[MCP] Uploading MCP server..."
   tar czf /tmp/mcp-server-dist.tar.gz -C mcp-server dist/ package.json package-lock.json
   do_scp /tmp/mcp-server-dist.tar.gz "$SSH_HOST":/tmp/
-  do_ssh "tar xzf /tmp/mcp-server-dist.tar.gz -C /opt/pm-app/mcp-server/ && cd /opt/pm-app/mcp-server && npm install --omit=dev"
+  do_ssh "sudo rm -rf /opt/pm-app/mcp-server/dist && sudo tar xzf /tmp/mcp-server-dist.tar.gz -C /opt/pm-app/mcp-server/ && sudo chown -R www-data:www-data /opt/pm-app/mcp-server/dist && cd /opt/pm-app/mcp-server && sudo npm install --omit=dev"
   rm -f /tmp/mcp-server-dist.tar.gz
   echo "  OK"
 
