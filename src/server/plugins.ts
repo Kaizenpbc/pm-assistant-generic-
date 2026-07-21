@@ -327,7 +327,7 @@ export async function registerPlugins(fastify: FastifyInstance) {
     if (errAny.used !== undefined) response.used = errAny.used;
     if (errAny.budget !== undefined) response.budget = errAny.budget;
 
-    reply.status(statusCode).send(response);
+    return reply.status(statusCode).send(response);
   });
 
   // Serve static client build in production
