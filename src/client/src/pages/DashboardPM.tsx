@@ -29,6 +29,7 @@ import { MorningBriefingWidget } from '../components/dashboard/widgets/MorningBr
 import { VelocitySparklineWidget } from '../components/dashboard/widgets/VelocitySparklineWidget';
 import { StandupSummaryWidget } from '../components/dashboard/widgets/StandupSummaryWidget';
 import { SprintSnapshotWidget } from '../components/dashboard/widgets/SprintSnapshotWidget';
+import { GoalsWidget } from '../components/dashboard/widgets/GoalsWidget';
 
 // ─── Widget registry ──────────────────────────────────────────────────────────
 
@@ -46,7 +47,7 @@ const PM_WIDGETS: WidgetDef[] = [
   { id: 'budget',        label: 'Budget Watch',           group: 'Details',  defaultOn: true,  size: 'third' },
   { id: 'activity',      label: 'Activity Feed',          group: 'Details',  defaultOn: true,  size: 'third' },
   { id: 'sprint',        label: 'Sprint Snapshot',        group: 'Details',  defaultOn: true,  size: 'full' },
-  { id: 'goals',         label: 'Goals Progress',         group: 'Details',  defaultOn: false, size: 'full' },
+  { id: 'goals',         label: 'Goals Progress',         group: 'Details',  defaultOn: true,  size: 'full' },
   { id: 'workload',      label: 'Team Workload',          group: 'Details',  defaultOn: false, size: 'full' },
   { id: 'standup',       label: 'Standup Summary',        group: 'Overview', defaultOn: false, size: 'full' },
 ];
@@ -202,6 +203,8 @@ export function DashboardPM() {
         return <ActivityFeedPM limit={10} />;
       case 'sprint':
         return <SprintSnapshotWidget projects={projectSummaries} />;
+      case 'goals':
+        return <GoalsWidget />;
       case 'standup':
         return <StandupSummaryWidget projects={projectSummaries} />;
       default:
