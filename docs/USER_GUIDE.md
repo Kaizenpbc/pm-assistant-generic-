@@ -190,17 +190,27 @@ Tabs are organized into primary tabs shown directly, plus **Financials** and **M
 
 **More dropdown:** Resources, Agent Activity
 
-The **Overview** tab includes:
+The **Overview** tab presents 15 information cards in a responsive grid layout. Cards can be **drag-and-drop reordered** (grip handle on hover) and **shown/hidden** via a Customize dropdown. Card order persists in localStorage.
 
-- **Project Details** -- Metadata chips (priority, category, type, PM, dates, currency).
-- **Team Members** -- Assigned members with role badges.
-- **Task Summary** -- Total, completed, overdue, and in-progress task counts.
-- **Timeline Progress** -- Elapsed vs complete percentage with on-track/behind/overdue indicator.
-- **Key Milestones** -- Milestone list with status icons and dates.
-- **RAID Summary** -- 2x2 grid showing open risks, open issues, open actions, and pending decisions with critical/triggered badges.
+Available cards:
+
+- **Task Summary** -- Total, completed, overdue, and in-progress task counts with a donut-style breakdown.
+- **Timeline Progress** -- Elapsed vs complete percentage with on-track/behind/overdue indicator and progress bar.
+- **Key Milestones** -- Up to 5 milestones sorted by date with status icons and dates. Click to navigate to the Schedule tab.
+- **Health Score** -- Current project health score with a 30-day **sparkline trend chart** (SVG) showing health history. Trend arrow (up/down/stable) with colour coding.
+- **EVM Metrics** -- CPI and SPI gauges with earned value, planned value, and cost/schedule variance. Click to navigate to the Performance tab.
+- **Budget** -- Budget allocated vs spent with utilization percentage bar, currency formatting, and over-budget warning.
+- **Due Soon** -- Tasks due within the next 7 days, sorted by urgency.
+- **RAID Summary** -- 2x2 grid showing open risks, open issues, open actions, and pending decisions with critical/triggered badges. Click to navigate to the RAID tab.
 - **Current Sprint** -- Active sprint name, day progress (Day X of Y), task completion bar, and sprint goal.
 - **Recent Activity** -- Last 6 audit trail entries with user, action, and timestamp.
-- **Attachments** -- File uploads with version history.
+- **Blocked Tasks** -- Tasks with "blocked" status, showing blockers and assignees.
+- **Comments** -- Recent task comments across the project.
+- **Goals** -- Project-linked OKR progress with completion percentages.
+- **Attachments** -- Recent file uploads with version info.
+- **Latest Meeting** -- Most recent meeting analysis summary with action items and decisions.
+
+Additional sections below the card grid:
 - **Custom Fields** -- User-defined metadata fields.
 - **Portal Links** -- External portal link management. Each link generates a unique token URL (`/portal/:token`) that stakeholders can access without logging in. The portal shows project progress, task statistics, budget summary, milestone timeline, recent activity, and a comment form. Visibility of each section is controlled by the link's permissions (`canViewBudget`, `canViewGantt`, `canViewReports`, `canComment`).
 - **Export XML** -- Click the **Export XML** button (same row as Export CSV and Export PDF) to download the project as an MSPDI XML file. This format is compatible with Microsoft Project and ProjectLibre and includes tasks, resources, assignments, and dependency links.
@@ -320,6 +330,25 @@ The default schedule view. Displays tasks as horizontal bars on a timeline:
 - **Resource overallocation warnings**: Click the **Overalloc** button (warning triangle icon) in the toolbar to highlight tasks with overlapping resource assignments. The system detects when the same person is assigned to multiple tasks with overlapping dates, then marks those bars with an amber border, glow effect, and a small "!" warning dot. A badge on the button shows the total count of flagged bars. The legend adds an "Overallocated" entry when active. Toggle the button off to hide the highlights.
 - **Minimap**: A small overview panel (200×80px) appears in the bottom-right corner of the timeline, showing the entire schedule at a glance. Each task is shown as a coloured rectangle matching its status colour. A semi-transparent blue rectangle indicates the currently visible area. Click anywhere on the minimap to jump to that position, or drag the viewport rectangle to scroll proportionally. Toggle the **Map** button in the toolbar to show or hide the minimap. Enabled by default.
 - **Touch gestures (mobile/tablet)**: All Gantt drag interactions support touch input for tablets and touch-enabled laptops. Touch-drag a task bar to move or resize it, touch-drag the progress handle to adjust completion percentage, and touch-drag on empty timeline space to create a new task. Single-finger gestures only; page scrolling is suppressed during drag operations.
+- **Row action icons**: Each row shows three action icons on hover — **Edit** (pencil, opens the task editor), **Insert Below** (+ icon, opens the add form to create a new task after the current row, inheriting the parent if the row is a subtask), and **Delete** (trash, deletes the task with a confirmation dialog). Icons fade in on row hover.
+
+#### Schedule Filter Bar & CSV Export
+
+A cross-view **filter bar** appears above all schedule views (Gantt, Kanban, Calendar, Table):
+
+- **Search** — real-time text filtering by task name.
+- **Filter dropdowns** — Status, Priority, and Assignee dropdowns populated from the current task list. A badge on the Filter toggle button shows how many filters are active.
+- **Clear all** — resets all filters in one click.
+- **Task count** — "X of Y tasks" indicator.
+- **CSV Export** — downloads the currently filtered tasks as a CSV file named after the schedule.
+
+#### Mobile Schedule View
+
+On mobile, the Schedule tab switches to a dedicated mobile experience with a **view switcher** (List / Kanban / Calendar):
+
+- **List view** — `TaskCardMobile` cards with swipe-to-complete (swipe right past 80px to mark complete) and tap-to-cycle status badges.
+- **Kanban view** — mobile-friendly columns with horizontal scrolling.
+- **Calendar view** — responsive Month/Week/Day calendar.
 
 ### Kanban Board
 
@@ -330,13 +359,23 @@ Drag-and-drop card view organized by status columns:
 - **Completed** -- Finished tasks.
 - **Cancelled** -- Removed tasks.
 
-Drag a card between columns to update its status. Each card shows the task name, priority badge, assignee, and due date.
+Drag a card between columns to update its status. Each card shows the task name, priority badge, assignee, due date, **subtask count badge**, and **dependency count badge**.
 
 **WIP Limits** -- Each column supports a configurable Work-In-Progress limit set from the Kanban toolbar. When a column reaches its limit, the column header turns amber to signal congestion. Limits are stored in localStorage per schedule.
 
+**Inline Quick-Add** -- Click the "+" button at the bottom of any column to reveal an inline text input. Type a task name and click Add to create a task directly in that status without opening a modal.
+
+**Swimlane Mode** -- Use the dropdown in the Kanban header to group cards by **Assignee** or **Priority** in addition to the default flat layout. Each swimlane row shows a label and mini status columns. Swimlane selection persists in localStorage.
+
 ### Calendar View
 
-Tasks plotted on a monthly calendar grid. Each day cell shows tasks that are active on that date. Useful for visualizing workload distribution and deadline clustering.
+Tasks plotted on a calendar with three display modes:
+
+- **Month view** (default) -- Monthly grid with task indicators per day. Supports **drag-to-reschedule**: drag a task from one day to another and the task's duration is preserved (start and end dates shift together).
+- **Week view** -- 7-column layout with large day headers and full task lists showing priority, assignee, and date range.
+- **Day view** -- Single-day detail view with rich task cards including priority badge, assignee, date range, and progress bar.
+
+Toggle between Month / Week / Day using buttons in the calendar header. Navigation arrows and a Today button move through time periods in any mode.
 
 ### Table View
 
@@ -360,6 +399,10 @@ Each predecessor in the list shows a **health dot**: green (completed), yellow (
 **Inline predecessor editing**: Click the Predecessor cell and type one or more comma-separated entries (e.g. `3`, `5SS`, `7FS+2d`, `3FS+2d,5SS,7`). Press Enter to save. Invalid inputs (bad row number, self-reference, more than 20 predecessors) show a red error. Clear the field to remove all dependencies.
 
 Column selections are saved per schedule and persist across page reloads. All visible columns support sorting. Bulk select, status/priority/assignee changes, and inline cell editing continue to work on the standard columns.
+
+**Group-By** -- Use the dropdown in the table header to group rows by **Status**, **Priority**, or **Assignee**. Each group has a collapsible header row showing the group name and task count. Collapsed/expanded state persists in localStorage.
+
+**Inline Quick-Add** -- A "+" row at the bottom of the table provides an inline text input for creating new tasks without opening a modal.
 
 #### Saved Views
 

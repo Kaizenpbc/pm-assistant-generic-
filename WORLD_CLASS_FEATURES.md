@@ -57,8 +57,10 @@ An agentic AI project management platform that combines the scheduling power of 
 - Toggle between Gantt / Kanban / Table views
 - Columns by status (Pending, In Progress, Completed, Cancelled)
 - Drag-and-drop cards between columns
-- Card shows: task name, assignee, priority, due date, progress
-- **Benchmark:** Monday.com, Jira, Asana
+- Card shows: task name, assignee, priority, due date, progress, subtask count badge, dependency count badge
+- **Inline quick-add** per column — create tasks without opening a modal
+- **Swimlane mode** — group by Assignee or Priority; persists in localStorage
+- **Benchmark:** Monday.com, Jira, Asana — **matches** with swimlanes and inline quick-add
 
 ### 1.6 Resource Pool & Workload View
 - Resource pool: list all team members with roles and capacity
@@ -137,8 +139,8 @@ An agentic AI project management platform that combines the scheduling power of 
 - **Benchmark:** Monday.com, Smartsheet
 
 ### 2.5 Calendar & Table Views
-- Calendar view with task bars across dates
-- Table view with inline editing (spreadsheet-like)
+- **Calendar view** with three display modes: Month (default with drag-to-reschedule), Week (7-column with full task cards), Day (single-day detail view). Toggle via header buttons. Navigation arrows and Today button in all modes. Drag-to-reschedule preserves task duration.
+- **Table view** with inline editing (spreadsheet-like)
 - MS Project-style column picker: 22 columns across 4 groups (Standard, Scheduling/CPM, Baseline, Other)
 - **Row number (#) column** — always visible, sequential numbering, cannot be toggled off
 - **Multi-predecessor support** — up to 20 predecessors per task, each with its own type (FS/SS/FF/SF) and lag days, stored in a `task_dependencies` junction table
@@ -153,7 +155,12 @@ An agentic AI project management platform that combines the scheduling power of 
 - WBS auto-computed from task hierarchy
 - Column sorting on all numeric and date fields
 - Saved Views: name and store column+sort configurations per schedule, load/update/delete from dropdown
-- **Benchmark:** MS Project, Smartsheet, Monday.com — **exceeds MS Project** with multi-predecessor support, health badges, and inline predecessor editing
+- **Table group-by** — group rows by Status, Priority, or Assignee with collapsible group headers
+- **Table inline quick-add** — "+" row at bottom for creating tasks without a modal
+- **Cross-view filter bar** — search by name, filter by status/priority/assignee, CSV export of filtered tasks. Applies to all views (Gantt, Kanban, Calendar, Table).
+- **Gantt row action icons** — edit, insert-below, and delete icons on each row (hover to reveal)
+- **Mobile schedule view** — view switcher (List/Kanban/Calendar) with swipe-to-complete gesture and tap-to-cycle status on task cards
+- **Benchmark:** MS Project, Smartsheet, Monday.com — **exceeds MS Project** with multi-predecessor support, health badges, inline predecessor editing, calendar drag-to-reschedule, and mobile swipe gestures
 
 ### 2.6 Portfolio Dashboard
 - Full portfolio dashboard with 6 KPI cards: Total Projects, Active, On Track, At Risk, Budget Allocated, Budget Spent
