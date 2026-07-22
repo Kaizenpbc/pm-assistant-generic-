@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Calendar,
@@ -12,6 +12,9 @@ import {
   Save,
   MapPin,
   Bot,
+  Search,
+  Filter,
+  X,
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { GanttChart, type GanttTask } from '../../components/schedule/GanttChart';
@@ -235,6 +238,11 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   const [showComparison, setShowComparison] = useState(false);
   const [showReschedulePanel, setShowReschedulePanel] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterPriority, setFilterPriority] = useState<string>('');
+  const [filterAssignee, setFilterAssignee] = useState<string>('');
+  const [showFilters, setShowFilters] = useState(false);
   const cpmNeeded = columnState.cpmNeeded;
 
   const { data: tasksData, isLoading: tasksLoading } = useQuery({
@@ -477,13 +485,39 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     updateMutation.mutate({ taskId, data: { status: newStatus } });
   };
 
-  // Task stats for summary bar
+  // Unique values for filter dropdowns
+  const uniqueStatuses = useMemo(() => [...new Set(tasks.map(t => t.status))].sort(), [tasks]);
+  const uniquePriorities = useMemo(() => [...new Set(tasks.map(t => t.priority).filter(Boolean))].sort(), [tasks]);
+  const uniqueAssignees = useMemo(() => [...new Set(tasks.map(t => t.assignedTo).filter(Boolean))].sort() as string[], [tasks]);
+
+  // Filtered tasks
+  const filteredTasks = useMemo(() => {
+    let result = tasks;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(t => t.name.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q) || t.assignedTo?.toLowerCase().includes(q));
+    }
+    if (filterStatus) result = result.filter(t => t.status === filterStatus);
+    if (filterPriority) result = result.filter(t => t.priority === filterPriority);
+    if (filterAssignee) result = result.filter(t => t.assignedTo === filterAssignee);
+    return result;
+  }, [tasks, searchQuery, filterStatus, filterPriority, filterAssignee]);
+
+  const hasActiveFilters = !!(searchQuery || filterStatus || filterPriority || filterAssignee);
+  const clearAllFilters = useCallback(() => {
+    setSearchQuery('');
+    setFilterStatus('');
+    setFilterPriority('');
+    setFilterAssignee('');
+  }, []);
+
+  // Task stats for summary bar (use filtered tasks)
   const taskStats = (() => {
-    const total = tasks.length;
-    const completed = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
-    const inProgress = tasks.filter(t => t.status === 'in_progress').length;
-    const pending = tasks.filter(t => t.status === 'pending' || t.status === 'not_started').length;
-    const overdue = tasks.filter(t => {
+    const total = filteredTasks.length;
+    const completed = filteredTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+    const inProgress = filteredTasks.filter(t => t.status === 'in_progress').length;
+    const pending = filteredTasks.filter(t => t.status === 'pending' || t.status === 'not_started').length;
+    const overdue = filteredTasks.filter(t => {
       if (t.status === 'completed' || t.status === 'done' || t.status === 'cancelled') return false;
       const due = t.endDate;
       return due && new Date(due) < new Date();
@@ -647,8 +681,102 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         </div>
       </div>
 
-      {/* Schedule Summary Bar */}
+      {/* Search + Filter Bar */}
       {tasks.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tasks..."
+              className="w-48 pl-7 pr-7 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+              hasActiveFilters
+                ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+          >
+            <Filter className="w-3 h-3" />
+            Filters
+            {hasActiveFilters && (
+              <span className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full bg-primary-600 text-white text-[9px] font-bold">
+                {[filterStatus, filterPriority, filterAssignee].filter(Boolean).length}
+              </span>
+            )}
+          </button>
+
+          {/* Inline filters (shown when toggled) */}
+          {showFilters && (
+            <>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+              >
+                <option value="">All statuses</option>
+                {uniqueStatuses.map(s => (
+                  <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                ))}
+              </select>
+              <select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+              >
+                <option value="">All priorities</option>
+                {uniquePriorities.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+              <select
+                value={filterAssignee}
+                onChange={(e) => setFilterAssignee(e.target.value)}
+                className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+              >
+                <option value="">All assignees</option>
+                {uniqueAssignees.map(a => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </>
+          )}
+
+          {/* Clear all */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            >
+              <X className="w-3 h-3" />
+              Clear
+            </button>
+          )}
+
+          {/* Filter result count */}
+          {hasActiveFilters && (
+            <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
+              {filteredTasks.length} of {tasks.length} tasks
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Schedule Summary Bar */}
+      {filteredTasks.length > 0 && (
         <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 text-xs mb-1 flex-wrap">
           <span className="text-gray-500 dark:text-gray-400">
             <span className="font-semibold text-gray-700 dark:text-gray-200">{taskStats.total}</span> tasks
@@ -680,7 +808,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
 
       {viewMode === 'gantt' && (
         <GanttChart
-          tasks={tasks}
+          tasks={filteredTasks}
           scheduleName={schedule.name}
           scheduleId={schedule.id}
           onTaskSelect={(task) => setActiveTaskId(task.id)}
@@ -715,7 +843,8 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
       )}
       {viewMode === 'kanban' && (
         <KanbanBoard
-          tasks={tasks}
+          tasks={filteredTasks}
+          allTasks={tasks}
           onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task as GanttTask); }}
           onStatusChange={handleKanbanStatusChange}
           activeTaskId={activeTaskId}
@@ -723,7 +852,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
       )}
       {viewMode === 'table' && (
         <TableView
-          tasks={tasks}
+          tasks={filteredTasks}
           scheduleId={schedule.id}
           onTaskSelect={(task) => setActiveTaskId(task.id)}
           onTaskClick={(task) => setEditingTask(task)}
@@ -738,7 +867,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
       )}
       {viewMode === 'calendar' && (
         <CalendarView
-          tasks={tasks}
+          tasks={filteredTasks}
           onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task); }}
         />
       )}

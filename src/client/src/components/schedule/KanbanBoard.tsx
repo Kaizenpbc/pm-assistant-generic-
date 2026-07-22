@@ -11,10 +11,12 @@ export interface KanbanTask {
   endDate?: string;
   progressPercentage?: number;
   isMilestone?: boolean;
+  parentTaskId?: string;
 }
 
 interface KanbanBoardProps {
   tasks: KanbanTask[];
+  allTasks?: KanbanTask[];
   onTaskClick?: (task: KanbanTask) => void;
   onStatusChange?: (taskId: string, newStatus: string) => void;
   scheduleId?: string;
@@ -85,7 +87,29 @@ function saveWipLimits(scheduleId: string, limits: Record<string, number>) {
   } catch {}
 }
 
-export function KanbanBoard({ tasks, onTaskClick, onStatusChange, scheduleId, activeTaskId }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, allTasks, onTaskClick, onStatusChange, scheduleId, activeTaskId }: KanbanBoardProps) {
+  // Precompute subtask counts and dependency counts from allTasks (or tasks if allTasks not provided)
+  const sourceTasks = allTasks || tasks;
+  const subtaskCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const t of sourceTasks) {
+      if (t.parentTaskId) {
+        counts[t.parentTaskId] = (counts[t.parentTaskId] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [sourceTasks]);
+
+  const dependencyCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const t of sourceTasks) {
+      const deps = (t as any).dependencies;
+      if (Array.isArray(deps) && deps.length > 0) {
+        counts[t.id] = deps.length;
+      }
+    }
+    return counts;
+  }, [sourceTasks]);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [wipLimits, setWipLimits] = useState<Record<string, number>>(() =>
     loadWipLimits(scheduleId || 'default')
@@ -232,6 +256,28 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, scheduleId, ac
                           </span>
                         )}
                       </div>
+
+                      {/* Subtask + Dependency badges */}
+                      {((subtaskCounts[task.id] || 0) > 0 || (dependencyCounts[task.id] || 0) > 0) && (
+                        <div className="flex items-center gap-2 mt-1.5">
+                          {subtaskCounts[task.id] > 0 && (
+                            <span className="flex items-center gap-0.5 text-[10px] text-gray-400 dark:text-gray-500" title={`${subtaskCounts[task.id]} subtask${subtaskCounts[task.id] > 1 ? 's' : ''}`}>
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h8m-8 6h16" />
+                              </svg>
+                              {subtaskCounts[task.id]}
+                            </span>
+                          )}
+                          {dependencyCounts[task.id] > 0 && (
+                            <span className="flex items-center gap-0.5 text-[10px] text-gray-400 dark:text-gray-500" title={`${dependencyCounts[task.id]} dependenc${dependencyCounts[task.id] > 1 ? 'ies' : 'y'}`}>
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                              </svg>
+                              {dependencyCounts[task.id]}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {/* Progress bar */}
                       {(task.progressPercentage ?? 0) > 0 && task.status !== 'completed' && (
