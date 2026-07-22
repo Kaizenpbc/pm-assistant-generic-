@@ -76,11 +76,13 @@ export function SprintSnapshotWidget({ projects }: Props) {
   // Collect active sprints across projects
   const rows: { project: Project; sprint: Sprint; velocity: number[] }[] = [];
   projects.slice(0, 10).forEach((p, i) => {
-    const sprints: Sprint[] = sprintQueries[i]?.data?.sprints || sprintQueries[i]?.data || [];
+    const rawSprints = sprintQueries[i]?.data?.sprints || sprintQueries[i]?.data;
+    const sprints: Sprint[] = Array.isArray(rawSprints) ? rawSprints : [];
     const activeSprint = sprints.find(s => s.status === 'active');
     if (!activeSprint) return;
 
-    const velData: VelocityPoint[] = velocityQueries[i]?.data?.velocity || velocityQueries[i]?.data || [];
+    const rawVel = velocityQueries[i]?.data?.velocity || velocityQueries[i]?.data;
+    const velData: VelocityPoint[] = Array.isArray(rawVel) ? rawVel : [];
     const last3 = velData.slice(-3).map(v => v.velocity);
 
     rows.push({ project: p, sprint: activeSprint, velocity: last3 });
