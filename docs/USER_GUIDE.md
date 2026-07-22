@@ -1389,9 +1389,9 @@ The Dashboard and Projects pages provide a lean, action-oriented project managem
 Access via the sidebar under **Plan → Dashboard**.
 
 - **Scope Toggle** — Switch between "My Projects" and "All Projects" to control which data is displayed.
-- **KPI Tiles** — 6 tiles showing Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, and Budget Utilization. Each has a colored status dot and click-through to drill-in pages.
+- **KPI Tiles** — 6 tiles showing Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, and Budget Utilization. Each has a colored status dot and click-through to drill-in pages. Health and Overdue tiles show 7-day trend arrows: green up arrow (improving), red down arrow (declining), or gray dash (stable).
 - **Portfolio Intelligence** — AI-generated health ring, risk chips, budget status, and key insights. Supports dark mode.
-- **Action Center** — Two columns: "Today's Priorities" (deadline-driven items) and "AI Next Best Actions" (proposals, notifications, at-risk projects to act on).
+- **Action Center** — Two columns: "Today's Priorities" (deadline-driven items) and "AI Next Best Actions" (proposals with confidence % and risk level badges, critical/high notifications, at-risk projects with health score badges).
 - **Projects Table** — Sortable table; clicking a row navigates to the project detail view (`/project/:id`).
 - **Customize** — Toggle widgets on/off, drag-and-drop to reorder, and "Reset to Default Layout" to restore defaults. Preferences sync across devices. Opt-in widgets (Sprint Snapshot, Goals Progress, Team Workload) are available but disabled by default.
 
@@ -1400,7 +1400,7 @@ Access via the sidebar under **Plan → Dashboard**.
 Access via the sidebar under **Plan → Projects**.
 
 - **Filter Bar** — Search by name, filter by health band and status.
-- **AI Portfolio Insights** — 3 insight tiles pulled from analytics summary.
+- **AI Portfolio Insights** — 3 insight tiles pulled from analytics summary, enriched with 7-day trend context (e.g., "Up from last week", "Completion rate is trending up").
 - **Project Cards** — Grid of cards with health-based left borders, status/priority chips, and progress meters. Clicking a card navigates to `/project/:id` with full Gantt/Kanban/Calendar/EVM detail.
 - **New Project** — Create from template via the template picker.
 

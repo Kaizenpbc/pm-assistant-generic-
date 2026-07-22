@@ -1098,14 +1098,14 @@ When a user's own projects are a subset of the full portfolio (e.g., a `team_mem
 
 | Widget | Description |
 |---|---|
-| **KPI Tiles** | 6 tiles: Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, Budget Utilization |
+| **KPI Tiles** | 6 tiles: Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, Budget Utilization. Health and Overdue tiles show 7-day trend arrows (improving/declining/stable) computed from `AnalyticsSummaryService.trendIndicators`. |
 | **Portfolio Intelligence** | AI-generated health score, risk summary, budget status, key insights, and optional AI narrative |
 | **Projects Table** | Sortable table with health score column (colored dot + numeric), status, priority, progress, budget, end date |
 | **Issues Trend** | SVG line chart showing issues created vs resolved per week (8-week window), with net change badge |
 | **Milestones** | Upcoming milestones with project name, date, and days-until badge (green/red) |
 | **Budget Watch** | Top 5 projects by spend percentage with progress bars |
-| **Recent Activity** | Latest notifications feed — click any notification to navigate to the linked entity and mark it as read. "View All" link navigates to the full notifications page. |
-| **Next Best Actions** | AI-suggested next actions |
+| **Recent Activity** | Latest notifications feed with filter pills (All / Agent / Risk / Budget / Meeting / System) and date grouping (Today / Yesterday / Earlier). Click any notification to navigate to the linked entity and mark it as read. "View All" link navigates to the full notifications page. |
+| **Next Best Actions** | AI-suggested next actions with confidence percentage badges (blue pill), risk level badges (color-coded: critical/high/medium/low), and health score badges for at-risk projects. Low-confidence proposals (<60%) are bumped in priority for human review. Critical-severity notifications now surface alongside high-severity. |
 | **Health Trends** | Sparkline health history per project |
 | **Sprint Snapshot** | Active sprints across projects with day progress, task completion bar, and velocity trend (default: off) |
 | **Goals** | Objectives sorted by urgency with progress bars, status badges, and due dates. "View All" links to the Goals page (default: off) |
@@ -1518,12 +1518,12 @@ The Dashboard and Projects pages provide a lean, action-oriented project managem
 
 A monitoring cockpit with read-only scope toggle:
 
-- **6 KPI Tiles** — Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, Budget Utilization. Each tile has a colored status dot, semantic color chip, hover lift animation, and click-through to drill-in pages.
+- **6 KPI Tiles** — Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, Budget Utilization. Each tile has a colored status dot, semantic color chip, hover lift animation, and click-through to drill-in pages. Health and Overdue tiles display 7-day trend arrows (green up = improving, red down = declining, gray dash = stable).
 - **Portfolio Intelligence** — `AISummaryBanner` with circular health ring, risk summary chips, budget status, key insights, and AI narrative (when enabled). Full dark mode support.
 - **Projects Table** — Sortable by 10 columns (name, health, status, priority, type, progress, budget, spent%, end date, days left). Rows navigate to `/project/:id`.
-- **Action Center** — Two-column card: "Today's Priorities" (deadline-driven items from predictions) and "AI Next Best Actions" (proposals to approve, notifications to investigate, at-risk projects to review).
+- **Action Center** — Two-column card: "Today's Priorities" (deadline-driven items from predictions) and "AI Next Best Actions" (proposals to approve with confidence % and risk level badges, critical/high notifications to investigate, at-risk projects to review with health score badges).
 - **Issues Created vs Resolved** — Weekly trend chart with scope awareness.
-- **3-Column Footer** — Milestones widget, Budget Watch widget, Activity Feed with clickable rows, mark-as-read, and navigation.
+- **3-Column Footer** — Milestones widget, Budget Watch widget, Activity Feed with filter pills (All/Agent/Risk/Budget/Meeting/System), date grouping (Today/Yesterday/Earlier), clickable rows, mark-as-read, and navigation.
 - **Customize Dropdown** — Toggle any widget section on/off. "Reset to Default Layout" button restores defaults. Includes opt-in placeholders for Sprint Snapshot, Goals Progress, and Team Workload (disabled by default).
 - **Drag-and-Drop Reordering** — Hover over any widget to reveal a grip handle; drag to reorder. The `WidgetGrid` component groups consecutive `third`-size widgets (Milestones, Budget Watch, Activity Feed) into 3-column rows. Order is persisted to the server.
 - **Server Persistence** — `GET/PUT /api/v1/users/me/dashboard-preferences` stores `enabledWidgets`, `widgetOrder`, and `scope` as JSON. On load, localStorage is used instantly, then overwritten by server data if available.
@@ -1531,7 +1531,7 @@ A monitoring cockpit with read-only scope toggle:
 ### Projects (`/projects`)
 
 - **Filter Bar** — Search by name, filter by health band (Healthy/Warning/Critical) and status (Active/Planning/On Hold/Completed).
-- **AI Portfolio Insights** — Self-fetching 3-up insight tiles from analytics summary.
+- **AI Portfolio Insights** — Self-fetching 3-up insight tiles from analytics summary, enriched with 7-day trend context (e.g., "Trending down from last week", "Completion rate is trending up").
 - **Project Cards** — Grid layout with left border colored by health band, health pill, status/priority chips, progress meter, and inline action buttons. Clicking a card navigates to `/project/:id`.
 - **New Project** — Template picker integration for creating projects from templates.
 

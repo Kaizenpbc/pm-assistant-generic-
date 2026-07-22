@@ -216,16 +216,16 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Scheduled report delivery via email (daily/weekly/monthly CSV)
 
 ### Dashboard Widgets
-- **Next Best Actions** -- AI-synthesized action cards from proposals, notifications, and at-risk projects with priority ranking
+- **Next Best Actions** -- AI-synthesized action cards from proposals, notifications, and at-risk projects with priority ranking; confidence percentage badges, risk level badges (color-coded by severity), and health score badges for at-risk projects
 - **Health Trends** -- Daily health score snapshots with SVG sparklines per project (migration 038, `project_health_history` table, daily cron at 03:00)
 - **Sprint Snapshot** -- Active sprints with day progress, task completion, and velocity trend (opt-in)
 - **Goals Progress** -- Objectives sorted by urgency with progress bars and status badges (opt-in)
 - **Team Workload** -- Per-resource task counts with overload indicators (opt-in)
-- **Clickable Recent Activity** -- Click notifications to navigate to linked entities; marks as read automatically
+- **Clickable Recent Activity** -- Click notifications to navigate to linked entities; marks as read automatically; filter pills (All/Agent/Risk/Budget/Meeting/System) with date grouping (Today/Yesterday/Earlier)
 - **Customizable layout** -- Toggle widget sections on/off via Customize dropdown; drag-and-drop reordering with grip handles; size-aware layout (third-width widget grouping); preferences persisted to server (syncs across devices) with localStorage as instant cache; "Reset to Default Layout" button
 
 ### Dashboard & Projects
-- **Dashboard** (`/dashboard`) -- Monitoring cockpit with 6 clickable KPI tiles (with status dots), scope toggle (My Projects / All), Portfolio Intelligence banner, Action Center (priorities + AI next-best-actions), sortable Projects Table, Issues Trend chart, Milestones, Budget Watch, and Activity Feed. Drag-and-drop widget reordering with server-persisted preferences. Full dark mode support.
+- **Dashboard** (`/dashboard`) -- Monitoring cockpit with 6 clickable KPI tiles (with status dots and 7-day trend arrows), scope toggle (My Projects / All), Portfolio Intelligence banner (with trend context), Action Center (priorities + AI next-best-actions with confidence/risk/health badges), sortable Projects Table, Issues Trend chart, Milestones, Budget Watch, and Activity Feed (with filter pills and date grouping). Drag-and-drop widget reordering with server-persisted preferences. Full dark mode support.
 - **Projects** (`/projects`) -- Filterable project card grid with health-based card borders, search/filter bar, AI portfolio insights panel, and inline New Project via template picker. Clicking a card navigates to `/project/:id` with full Gantt/Kanban/Calendar/EVM detail.
 - Shared PM components in `src/client/src/components/pm/`, types in `src/types/pm.ts`
 - Opt-in widgets available: Sprint Snapshot, Goals Progress, Team Workload (disabled by default)
