@@ -323,7 +323,7 @@ export function ProjectDetailPage() {
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{project.description}</p>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
             {otherViewers.length > 0 && (
               <div className="flex items-center mr-1">
                 <div className="flex -space-x-2">
@@ -370,11 +370,11 @@ export function ProjectDetailPage() {
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 hover:bg-primary-100 dark:bg-primary-900/40 rounded-lg transition-colors"
             >
               <FileText className="w-3.5 h-3.5" />
-              Status Report
+              <span className="hidden sm:inline">Status Report</span>
             </button>
             <button
               onClick={() => setShowSaveTemplate(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 hover:bg-primary-100 dark:bg-primary-900/40 rounded-lg transition-colors"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 hover:bg-primary-100 dark:bg-primary-900/40 rounded-lg transition-colors"
             >
               <Save className="w-3.5 h-3.5" />
               Save as Template
@@ -532,8 +532,8 @@ export function ProjectDetailPage() {
       />
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700 overflow-visible">
-        <nav className="-mb-px flex gap-4 md:gap-6 flex-wrap">
+      <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <nav className="-mb-px flex gap-3 sm:gap-4 md:gap-6 min-w-max">
           {getPrimaryTabs(methodology).map((tab) => {
             const openRaidCount = tab.id === 'raid' ? ((riskStats?.openRisks ?? 0) + (riskStats?.openIssues ?? 0) + (riskStats?.openActions ?? 0) + (riskStats?.pendingDecisions ?? 0)) : 0;
             return (

@@ -486,7 +486,7 @@ function PortfolioResourcesView() {
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Resource Utilization</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-700">
                 <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Resource</th>
@@ -603,7 +603,7 @@ function CPISPIComparison({ projects, onProjectClick }: { projects: PortfolioAna
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">CPI / SPI Comparison</h3>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-700">
               <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Project</th>
@@ -732,7 +732,7 @@ function ProjectComparisonMatrix({ projects, onProjectClick }: { projects: Portf
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Project Comparison</h3>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm min-w-[700px]">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-700">
               <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Project</th>

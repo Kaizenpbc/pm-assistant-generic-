@@ -743,7 +743,7 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
             <div className="space-y-4">
               <div>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Proposal History</h4>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className="bg-white border border-gray-200 rounded-lg p-2.5 text-center">
                     <div className="text-lg font-bold text-gray-900">{eligibility.totalProposals}</div>
                     <div className="text-xs text-gray-500">Total</div>

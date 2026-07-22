@@ -221,8 +221,8 @@ export function ResourceManagementPage() {
       </div>
 
       {/* Top-level tabs: Team vs Analytics */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <div className="flex gap-6">
+      <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <div className="flex gap-4 sm:gap-6 min-w-max">
           {([
             { key: 'team' as const, label: 'Team', icon: Users },
             { key: 'workload' as const, label: 'Workload Heatmap', icon: BarChart3 },
@@ -232,10 +232,11 @@ export function ResourceManagementPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              className={`flex items-center gap-1.5 pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
             >
               <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
             </button>
           ))}
         </div>
@@ -310,7 +311,7 @@ export function ResourceManagementPage() {
           )}
 
           {/* Resource list */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
             {resourcesLoading ? (
               <div className="flex items-center justify-center py-16">
                 <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />

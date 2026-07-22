@@ -189,7 +189,7 @@ const GoalModal: React.FC<{
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Target Value</label>
               <input type="number" value={form.target_value} onChange={(e) => update('target_value', e.target.value)} className="input w-full dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600" />

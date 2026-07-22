@@ -211,7 +211,7 @@ export function NotificationsPage() {
       </div>
 
       {/* Severity summary cards */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {(['critical', 'high', 'medium', 'low'] as const).map(sev => (
           <button
             key={sev}
