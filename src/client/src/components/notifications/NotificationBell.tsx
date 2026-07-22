@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Bell, Shield, DollarSign, Clock, Users, Info, X, Check, RefreshCw, TrendingDown, BarChart2, MessageSquare } from 'lucide-react';
+import { Bell, Shield, DollarSign, Clock, Users, Info, X, Check, RefreshCw, TrendingDown, BarChart2, MessageSquare, UserPlus, CheckCircle, AlertTriangle, MessageCircle, Bot, AlertCircle, CheckCircle2, XCircle, RotateCcw, Flag, GitBranch, AtSign, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore, Notification } from '../../stores/uiStore';
 import { apiService } from '../../services/api';
 import { timeAgo } from '../../utils/timeAgo';
 
-const typeIcons: Record<Notification['type'], React.ElementType> = {
+const typeIcons: Record<string, React.ElementType> = {
   risk: Shield,
   budget: DollarSign,
   schedule: Clock,
@@ -15,6 +15,22 @@ const typeIcons: Record<Notification['type'], React.ElementType> = {
   budget_alert: TrendingDown,
   monte_carlo_alert: BarChart2,
   meeting_followup: MessageSquare,
+  task_assigned: UserPlus,
+  task_completed: CheckCircle,
+  deadline_approaching: AlertTriangle,
+  task_comment: MessageCircle,
+  member_added: UserPlus,
+  agent_proposal: Bot,
+  agent_low_confidence: AlertCircle,
+  agent_execution_complete: CheckCircle2,
+  agent_execution_failed: XCircle,
+  agent_notification: Bell,
+  agent_rollback: RotateCcw,
+  raid_item: Flag,
+  system_alert: AlertTriangle,
+  workflow_action: GitBranch,
+  mention: AtSign,
+  ai_budget_warning: Wallet,
 };
 
 const severityColors: Record<Notification['severity'], string> = {
@@ -71,7 +87,7 @@ export function NotificationBell() {
         }> = response?.alerts ?? [];
 
         for (const alert of alerts) {
-          const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(alert.type)
+          const type = (alert.type in typeIcons
             ? alert.type
             : 'info') as Notification['type'];
 
@@ -128,7 +144,7 @@ export function NotificationBell() {
         }> = response?.notifications ?? [];
 
         for (const item of items) {
-          const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(item.type)
+          const type = (item.type in typeIcons
             ? item.type
             : 'info') as Notification['type'];
 
@@ -175,7 +191,7 @@ export function NotificationBell() {
           const msg = JSON.parse(event.data);
           if (msg.type === 'notification' && msg.payload) {
             const p = msg.payload;
-            const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(p.type)
+            const type = (p.type in typeIcons
               ? p.type
               : 'info') as Notification['type'];
 

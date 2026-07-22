@@ -358,8 +358,9 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
       }
       const comment = await scheduleService.addComment(taskId, text.trim(), user.userId, user.username || 'Project Manager');
 
-      // Parse @mentions and create notifications (fire-and-forget, batched)
+      // Parse @mentions and notify task assignee (fire-and-forget)
       const mentions = text.match(/@(\w+)/g);
+      const mentionedUserIds = new Set<string>();
       if (mentions && mentions.length > 0) {
         (async () => {
           try {
@@ -369,6 +370,7 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
               scheduleService.findTaskById(taskId),
               userService.findByUsernames(usernames),
             ]);
+            for (const mu of mentionedUsers) mentionedUserIds.add(mu.id);
             await Promise.all(mentionedUsers.map(mu =>
               notificationService.create({
                 userId: mu.id,
@@ -384,6 +386,26 @@ export async function scheduleRoutes(fastify: FastifyInstance) {
           }
         })();
       }
+
+      // Notify task assignee about the comment (if not the commenter and not already @mentioned)
+      (async () => {
+        try {
+          const task = await scheduleService.findTaskById(taskId);
+          if (task?.assignedTo && task.assignedTo !== user.userId && !mentionedUserIds.has(task.assignedTo)) {
+            await notificationService.create({
+              userId: task.assignedTo,
+              type: 'task_comment',
+              severity: 'low',
+              title: 'New comment on your task',
+              message: `${user.username || 'Someone'} commented on "${task.name}"`,
+              linkType: 'task',
+              linkId: taskId,
+            });
+          }
+        } catch (err) {
+          logger.error('Task comment notification error', { error: err });
+        }
+      })();
 
       return reply.status(201).send({ comment });
     } catch (error) {

@@ -4,6 +4,7 @@ import { projectMemberService } from '../../services/ProjectMemberService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
+import { notificationService } from '../../services/NotificationService';
 import logger from '../../utils/logger';
 
 const addMemberSchema = z.object({
@@ -62,6 +63,21 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
         email: data.email,
         role: data.role,
       });
+
+      // Notify the added user (fire-and-forget)
+      if (userId && userId !== (request.user as any)?.userId) {
+        notificationService.create({
+          userId,
+          type: 'member_added',
+          severity: 'low',
+          title: 'Added to project',
+          message: `You have been added to a project as ${data.role}`,
+          projectId,
+          linkType: 'project',
+          linkId: projectId,
+        }).catch(err => logger.error('member_added notification error', { error: err }));
+      }
+
       return reply.status(201).send({ member });
     } catch (error) {
       logger.error('Add member error', { error });

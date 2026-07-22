@@ -23,7 +23,7 @@ const notificationPrefsSchema = z.object({
   emailNotificationsEnabled: z.boolean().optional(),
   digestFrequency: z.enum(['none', 'daily', 'weekly']).optional(),
   typePreferences: z.record(
-    z.enum(['agent_proposals', 'risks_issues', 'budget_finance', 'meetings', 'system_alerts', 'deadlines']),
+    z.enum(['agent_proposals', 'risks_issues', 'budget_finance', 'meetings', 'system_alerts', 'deadlines', 'tasks', 'collaboration']),
     categoryPrefSchema,
   ).optional(),
 });

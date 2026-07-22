@@ -13,6 +13,7 @@
  *   health-snapshot  — Record daily project health scores
  *   trial-reminder   — Send trial expiry reminder emails
  *   alert-check      — Run infrastructure health checks
+ *   deadline-check   — Send deadline approaching notifications (2-day warning)
  *   data-retention   — Purge stale data from webhook_deliveries, dead_letter_queue, etc.
  */
 
@@ -25,7 +26,7 @@ const JOB_NAME = process.argv[2];
 
 if (!JOB_NAME) {
   console.error('Usage: node dist/server/scripts/runCronJob.js <job-name>');
-  console.error('Jobs: agent-scan, overdue-scan, recurrence, digest, reports, health-snapshot, trial-reminder, alert-check, data-retention');
+  console.error('Jobs: agent-scan, overdue-scan, recurrence, digest, reports, health-snapshot, trial-reminder, alert-check, deadline-check, data-retention');
   process.exit(1);
 }
 
@@ -119,6 +120,15 @@ async function run() {
         const { alertService } = await import('../services/AlertService');
         await alertService.runChecks();
         console.log('[cron-runner] Alert checks completed');
+        break;
+      }
+
+      case 'deadline-check': {
+        const { runDeadlineNotifications } = await import('../services/scheduling/deadlineNotificationJob');
+        await forEachTenant(async (tenant) => {
+          const count = await runDeadlineNotifications();
+          console.log(`[cron-runner] Deadline check: ${count} notifications sent (${tenant?.slug ?? 'default'})`);
+        });
         break;
       }
 

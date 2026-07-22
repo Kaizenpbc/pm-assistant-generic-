@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, Shield, DollarSign, Clock, Users, Info, Check, RefreshCw, TrendingDown, BarChart2, MessageSquare, Filter, CheckCheck } from 'lucide-react';
+import { Bell, Shield, DollarSign, Clock, Users, Info, Check, RefreshCw, TrendingDown, BarChart2, MessageSquare, Filter, CheckCheck, UserPlus, CheckCircle, AlertTriangle, MessageCircle, Bot, AlertCircle, CheckCircle2, XCircle, RotateCcw, Flag, GitBranch, AtSign, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore, Notification } from '../stores/uiStore';
 import { apiService } from '../services/api';
@@ -9,7 +9,7 @@ import { timeAgo } from '../utils/timeAgo';
 // Constants (same as NotificationBell)
 // ---------------------------------------------------------------------------
 
-const typeIcons: Record<Notification['type'], React.ElementType> = {
+const typeIcons: Record<string, React.ElementType> = {
   risk: Shield,
   budget: DollarSign,
   schedule: Clock,
@@ -19,6 +19,22 @@ const typeIcons: Record<Notification['type'], React.ElementType> = {
   budget_alert: TrendingDown,
   monte_carlo_alert: BarChart2,
   meeting_followup: MessageSquare,
+  task_assigned: UserPlus,
+  task_completed: CheckCircle,
+  deadline_approaching: AlertTriangle,
+  task_comment: MessageCircle,
+  member_added: UserPlus,
+  agent_proposal: Bot,
+  agent_low_confidence: AlertCircle,
+  agent_execution_complete: CheckCircle2,
+  agent_execution_failed: XCircle,
+  agent_notification: Bell,
+  agent_rollback: RotateCcw,
+  raid_item: Flag,
+  system_alert: AlertTriangle,
+  workflow_action: GitBranch,
+  mention: AtSign,
+  ai_budget_warning: Wallet,
 };
 
 const typeLabels: Record<string, string> = {
@@ -31,6 +47,22 @@ const typeLabels: Record<string, string> = {
   budget_alert: 'Budget Alert',
   monte_carlo_alert: 'Simulation',
   meeting_followup: 'Meeting',
+  task_assigned: 'Task Assigned',
+  task_completed: 'Task Completed',
+  deadline_approaching: 'Deadline',
+  task_comment: 'Comment',
+  member_added: 'Member Added',
+  agent_proposal: 'Agent Proposal',
+  agent_low_confidence: 'Low Confidence',
+  agent_execution_complete: 'Agent Complete',
+  agent_execution_failed: 'Agent Failed',
+  agent_notification: 'Agent',
+  agent_rollback: 'Rollback',
+  raid_item: 'RAID Item',
+  system_alert: 'System Alert',
+  workflow_action: 'Workflow',
+  mention: 'Mention',
+  ai_budget_warning: 'AI Budget',
 };
 
 const severityColors: Record<string, string> = {
@@ -90,7 +122,7 @@ export function NotificationsPage() {
 
         const alerts = alertsRes?.alerts ?? [];
         for (const a of alerts) {
-          const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(a.type) ? a.type : 'info') as Notification['type'];
+          const type = (a.type in typeIcons ? a.type : 'info') as Notification['type'];
           const severity = (['critical', 'high', 'medium', 'low'].includes(a.severity) ? a.severity : 'medium') as Notification['severity'];
           addNotification({ type, severity, title: a.title, message: a.message, projectId: a.projectId, projectName: a.projectName, read: false });
         }
@@ -100,7 +132,7 @@ export function NotificationsPage() {
         setTotalNotifications(total);
         setNotifOffset(items.length);
         for (const item of items) {
-          const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(item.type) ? item.type : 'info') as Notification['type'];
+          const type = (item.type in typeIcons ? item.type : 'info') as Notification['type'];
           const severity = (['critical', 'high', 'medium', 'low'].includes(item.severity) ? item.severity : 'medium') as Notification['severity'];
           addNotification({ type, severity, title: item.title, message: item.message, projectId: item.projectId, scheduleId: item.scheduleId, linkType: item.linkType, linkId: item.linkId, read: item.isRead });
         }
@@ -117,7 +149,7 @@ export function NotificationsPage() {
       const res = await apiService.getNotifications(PAGE_SIZE, notifOffset);
       const items = res?.notifications ?? [];
       for (const item of items) {
-        const type = (['risk', 'budget', 'schedule', 'resource', 'info', 'reschedule_proposal', 'budget_alert', 'monte_carlo_alert', 'meeting_followup'].includes(item.type) ? item.type : 'info') as Notification['type'];
+        const type = (item.type in typeIcons ? item.type : 'info') as Notification['type'];
         const severity = (['critical', 'high', 'medium', 'low'].includes(item.severity) ? item.severity : 'medium') as Notification['severity'];
         addNotification({ type, severity, title: item.title, message: item.message, projectId: item.projectId, scheduleId: item.scheduleId, linkType: item.linkType, linkId: item.linkId, read: item.isRead });
       }

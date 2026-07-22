@@ -24,6 +24,11 @@ const NOTIFICATION_TYPE_TO_CATEGORY: Record<string, string> = {
   meeting_followup: 'meetings',
   system_alert: 'system_alerts',
   workflow_action: 'system_alerts',
+  task_assigned: 'tasks',
+  task_completed: 'tasks',
+  deadline_approaching: 'deadlines',
+  task_comment: 'tasks',
+  member_added: 'collaboration',
 };
 
 const DEFAULT_CATEGORY_PREF: NotificationCategoryPref = { inApp: true, email: true };

@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export interface Notification {
   id: string;
-  type: 'risk' | 'budget' | 'schedule' | 'resource' | 'info' | 'reschedule_proposal' | 'budget_alert' | 'monte_carlo_alert' | 'meeting_followup';
+  type: 'risk' | 'budget' | 'schedule' | 'resource' | 'info' | 'reschedule_proposal' | 'budget_alert' | 'monte_carlo_alert' | 'meeting_followup' | 'task_assigned' | 'task_completed' | 'deadline_approaching' | 'task_comment' | 'member_added' | 'agent_proposal' | 'agent_low_confidence' | 'agent_execution_complete' | 'agent_execution_failed' | 'agent_notification' | 'agent_rollback' | 'raid_item' | 'system_alert' | 'workflow_action' | 'mention' | 'ai_budget_warning';
   severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   message: string;

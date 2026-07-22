@@ -6,6 +6,7 @@ import { auditLedgerService } from './AuditLedgerService';
 import { dagWorkflowService } from './DagWorkflowService';
 import logger from '../utils/logger';
 import { deadLetterService } from './DeadLetterService';
+import { notificationService } from './NotificationService';
 
 export interface Schedule {
   id: string;
@@ -368,6 +369,20 @@ export class ScheduleService {
       logger.error('[Workflow] evaluateTaskChange error:', err)
     );
 
+    // Notify assignee of new task assignment
+    if (data.assignedTo && data.assignedTo !== data.createdBy) {
+      notificationService.create({
+        userId: data.assignedTo,
+        type: 'task_assigned',
+        severity: 'medium',
+        title: 'Task assigned to you',
+        message: `You have been assigned to "${task.name}"`,
+        projectId: schedule?.projectId,
+        linkType: 'task',
+        linkId: id,
+      }).catch(err => logger.error('[Notification] task_assigned error:', err));
+    }
+
     return task;
   }
 
@@ -498,6 +513,38 @@ export class ScheduleService {
     dagWorkflowService.evaluateTaskChange(updated, oldTask, this).catch(err =>
       logger.error('[Workflow] evaluateTaskChange error:', err)
     );
+
+    // Notify on reassignment
+    const updaterId = data.createdBy || oldTask.createdBy;
+    if (data.assignedTo && data.assignedTo !== oldTask.assignedTo && data.assignedTo !== updaterId) {
+      notificationService.create({
+        userId: data.assignedTo,
+        type: 'task_assigned',
+        severity: 'medium',
+        title: 'Task assigned to you',
+        message: `You have been assigned to "${updated.name}"`,
+        projectId: schedule?.projectId ?? undefined,
+        linkType: 'task',
+        linkId: id,
+      }).catch(err => logger.error('[Notification] task_assigned error:', err));
+    }
+
+    // Notify on task completion
+    if (data.status && ['completed', 'done'].includes(data.status) && oldTask.status !== data.status) {
+      const creatorId = oldTask.createdBy;
+      if (creatorId && creatorId !== updaterId) {
+        notificationService.create({
+          userId: creatorId,
+          type: 'task_completed',
+          severity: 'low',
+          title: 'Task completed',
+          message: `"${updated.name}" has been marked as completed`,
+          projectId: schedule?.projectId ?? undefined,
+          linkType: 'task',
+          linkId: id,
+        }).catch(err => logger.error('[Notification] task_completed error:', err));
+      }
+    }
 
     return updated;
   }

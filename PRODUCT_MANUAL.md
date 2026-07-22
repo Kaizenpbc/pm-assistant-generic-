@@ -664,7 +664,7 @@ The `/api/v1/reporting/portfolio/resources` endpoint aggregates resource utiliza
 The `NotificationService` delivers notifications to users with:
 
 - **Severity levels**: critical, high, medium, low
-- **Type classification**: system, task, project, approval, alert
+- **Type classification**: task_assigned, task_completed, deadline_approaching, task_comment, member_added, agent_proposal, raid_item, system_alert, mention, and more
 - **Entity linking**: link to specific project, schedule, or entity
 - **Read/unread tracking**
 - **WebSocket delivery**: real-time push via the `WebSocketService`
@@ -707,7 +707,24 @@ Users can control which categories of notifications they receive, with independe
 | Budget & Finance | budget_alert, ai_budget_warning, monte_carlo_alert |
 | Meetings & Followups | meeting_followup |
 | System Alerts | system_alert, workflow_action (always ON for admins) |
-| Deadlines & Overdue | Reserved for future deadline notification types |
+| Tasks | task_assigned, task_completed, task_comment |
+| Collaboration | member_added |
+| Deadlines & Overdue | deadline_approaching |
+
+#### PM Workflow Notifications
+
+Common project management events now generate notifications automatically:
+
+| Event | Type | Severity | Recipient |
+|-------|------|----------|-----------|
+| Task created with assignee | `task_assigned` | medium | Assignee (if different from creator) |
+| Task reassigned | `task_assigned` | medium | New assignee (if different from updater) |
+| Task completed | `task_completed` | low | Task creator (if different from updater) |
+| Deadline within 2 days | `deadline_approaching` | high | Assignee (or creator if unassigned) |
+| Comment on task | `task_comment` | low | Assignee (if not the commenter and not @mentioned) |
+| Added to project | `member_added` | low | Added user |
+
+Deadline notifications run daily at 8:00 AM via cron (`deadline-check` job). Redis deduplication prevents the same task from generating repeat notifications on the same day.
 
 When a category's in-app toggle is off, notifications of that type are not inserted into the database or broadcast via WebSocket. When the email toggle is off, emails are suppressed even for critical/high severity. System alerts are never suppressed for admin users. New users (NULL preferences) default to all categories ON.
 

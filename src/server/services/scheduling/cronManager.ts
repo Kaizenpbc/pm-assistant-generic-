@@ -19,6 +19,7 @@ export interface CronTasks {
   reportScheduleTask: cron.ScheduledTask | null;
   healthSnapshotTask: cron.ScheduledTask | null;
   trialReminderTask: cron.ScheduledTask | null;
+  deadlineTask: cron.ScheduledTask | null;
 }
 
 export function startCronTasks(
@@ -33,6 +34,7 @@ export function startCronTasks(
     reportScheduleTask: null,
     healthSnapshotTask: null,
     trialReminderTask: null,
+    deadlineTask: null,
   };
 
   // Agent-specific jobs: gated by AGENT_ENABLED
@@ -188,6 +190,28 @@ export function startCronTasks(
     }
   });
 
+  // Deadline approaching notifications — daily at 08:00
+  logger.info('[cron] Starting deadline notification sender (daily at 08:00)');
+  tasks.deadlineTask = cron.schedule('0 8 * * *', async () => {
+    await forEachTenant(async (tenant) => {
+      const label = tenant?.slug ?? 'default';
+      const start = Date.now();
+      try {
+        const { runDeadlineNotifications } = await import('./deadlineNotificationJob');
+        const count = await runDeadlineNotifications();
+        logger.info(`[cron:deadline-check] ${label} completed`, {
+          cronJob: 'deadline-check', tenant: label, durationMs: Date.now() - start,
+          result: { notified: count },
+        });
+      } catch (error) {
+        logger.error(`[cron:deadline-check] ${label} FAILED`, {
+          cronJob: 'deadline-check', tenant: label, durationMs: Date.now() - start,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
+  });
+
   return tasks;
 }
 
@@ -199,6 +223,7 @@ export function stopCronTasks(tasks: CronTasks): void {
   if (tasks.reportScheduleTask) { tasks.reportScheduleTask.stop(); tasks.reportScheduleTask = null; }
   if (tasks.healthSnapshotTask) { tasks.healthSnapshotTask.stop(); tasks.healthSnapshotTask = null; }
   if (tasks.trialReminderTask) { tasks.trialReminderTask.stop(); tasks.trialReminderTask = null; }
+  if (tasks.deadlineTask) { tasks.deadlineTask.stop(); tasks.deadlineTask = null; }
   logger.info('[Agent] Stopped agent scheduler');
 }
 
