@@ -654,26 +654,47 @@ When a workflow reaches an **Approval** node:
 
 For teams using agile methodology, PM Assistant supports sprint-based work management.
 
+### Sprint Tab Header
+
+The Sprint tab header provides at-a-glance status:
+
+- **Active sprint progress bar** -- Colored bar showing task completion percentage for the active sprint (amber < 50%, blue 50-99%, green at 100%).
+- **Day progress** -- "Day X of Y" label with a mini bar showing elapsed time in the sprint timebox.
+- **View switcher** -- When a sprint is selected, toggle between List, Planning, Board, Burndown, Flow, and Capacity views.
+
+### Sprint List
+
+All sprints are displayed as clickable cards. Click a sprint to open it in the Planning view.
+
+- **Status badges** -- Color-coded badges (Planning, Active, Completed, Cancelled).
+- **Active sprint highlight** -- Active sprints have a blue left border and tinted background.
+- **Progress bars** -- Each sprint card shows task completion progress with point totals.
+- **Sorting** -- Click the sort toggle to cycle between Status (active first), Date (newest first), and Name (alphabetical) order.
+- **Velocity sparkline** -- A mini SVG chart in the list header shows velocity trend across the last 6 completed sprints.
+- **AI Retrospective** -- Completed sprints show a book icon. Click it to generate an AI-powered retrospective summary.
+
 ### Creating a Sprint
 
-1. Open a project and navigate to the sprint panel.
-2. Click **Create Sprint**.
+1. Open a project and navigate to the Sprints tab.
+2. Click **New Sprint**.
 3. Fill in:
    - **Name** -- e.g., "Sprint 14".
    - **Goal** -- What the team aims to achieve.
    - **Start Date / End Date** -- Sprint timebox.
    - **Velocity Commitment** -- Target story points.
-4. Save the sprint.
+4. Click **Create Sprint**.
 
 ### Sprint Planning
 
-The Sprint Planning Panel shows:
+The Sprint Planning Panel shows a two-column layout:
 
-- **Backlog** -- Tasks not yet assigned to a sprint.
-- **Sprint backlog** -- Tasks added to the current sprint.
-- **Story point totals** -- Running count vs. velocity commitment.
+- **Backlog** (left column) -- Tasks not yet assigned to a sprint.
+  - **Search bar** -- Type to filter backlog tasks by name or assignee.
+  - **Priority filter** -- Dropdown to show only urgent, high, medium, or low priority tasks.
+  - The backlog count in the header always shows total unfiltered count.
+- **Sprint backlog** (right column) -- Tasks added to the current sprint with running point total.
 
-Drag tasks from the backlog into the sprint, or use the add/remove buttons. Each task card shows name, status, priority, assignee, and story points.
+Click the **+** button on a backlog task to add it to the sprint, or the trash icon on a sprint task to remove it. Each task card shows name, status badge, priority badge, and story points.
 
 ### Starting a Sprint
 
@@ -681,19 +702,28 @@ Once planning is complete, click **Start Sprint** to begin. The sprint status ch
 
 ### Sprint Board
 
-During an active sprint, the sprint board provides a Kanban-style view of sprint tasks organized by status columns. Drag cards to update status.
+During an active sprint, the sprint board provides a Kanban-style view with three columns (Todo, In Progress, Done):
+
+- **Drag-and-drop** -- Drag cards between columns to update task status. The UI updates immediately (optimistic update) while the API call completes in the background.
+- **WIP limits** -- Click the gear icon on any column header to set a work-in-progress limit. The column highlights amber when at or over the limit.
+- **Swimlanes** -- Click the **Swimlane** toggle to group tasks by assignee. Each group shows an avatar header with task count.
+- **Assignee avatars** -- Each card shows the assignee with a colored avatar circle. Colors are deterministic (same person always gets the same color from an 8-color palette).
+- **Story points** -- Column headers show per-column point totals. The board header shows total points across all tasks.
 
 ### Sprint Burndown Chart
 
-Track sprint progress with the burndown chart:
+Track sprint progress with the interactive burndown chart:
 
-- **Ideal burndown** -- A straight line from total points to zero.
-- **Actual burndown** -- The real remaining story points over time.
+- **Ideal burndown** -- A dashed gray line from total points to zero.
+- **Actual burndown** -- Solid indigo line showing real remaining story points over time.
+- **Today marker** -- A vertical dashed amber line at the current date.
+- **Hover tooltips** -- Hover any data point to see the date, remaining points, and ideal comparison.
+- **Summary tiles** -- Four metric tiles above the chart: Total, Completed, Remaining (points), and Days Left.
 - If the actual line is above the ideal line, the team is behind pace.
 
 ### Velocity Chart
 
-View historical velocity across completed sprints. The chart shows story points completed per sprint, helping calibrate future commitments.
+View historical velocity across completed sprints. The chart shows story points completed per sprint, helping calibrate future commitments. The sprint list header also includes a velocity sparkline for quick trend visibility.
 
 ### Completing a Sprint
 
@@ -702,6 +732,10 @@ When the sprint period ends:
 1. Click **Complete Sprint**.
 2. Review completed vs. incomplete tasks.
 3. Incomplete tasks can be moved to the next sprint or back to the backlog.
+
+### Dark Mode & Mobile
+
+All sprint views fully support dark mode with appropriate contrast for cards, badges, charts, and SVG elements. On mobile devices, layouts use flex-wrap with condensed button labels and adjusted column widths for comfortable use on small screens.
 
 ---
 

@@ -329,10 +329,16 @@ An agentic AI project management platform that combines the scheduling power of 
 
 ### 5.5 Sprint Planning / Agile Mode
 - **Methodology-aware projects** -- Waterfall, Agile, or Hybrid methodology per project. Controls default view (Gantt vs Kanban), tab ordering (Sprints promoted for Agile/Hybrid), readiness bar steps, and context cards (velocity/sprint progress for Agile).
-- Scrum board with sprint cycles
-- Backlog grooming and prioritization
-- Story points and velocity tracking
-- Sprint retrospective summaries
+- Scrum board with sprint cycles, WIP limits per column, and assignee swimlane toggle
+- Backlog grooming with inline search/filter (text + priority dropdown) in planning panel
+- Story points and velocity tracking with sparkline trend visualization (last 6 sprints)
+- Sprint list sorting (status-first, date, name) with velocity sparkline in header
+- Sprint tab header: active sprint progress bar, "Day X of Y" indicator with mini progress bar
+- Deterministic assignee avatars (8-color hash palette) on board cards
+- Interactive burndown chart with today marker, hover tooltips, and summary stat tiles
+- Full dark mode across all sprint views (list, planning, board, burndown, flow, capacity)
+- Mobile-responsive layouts with flex-wrap, condensed labels, and touch-friendly card sizing
+- Sprint retrospective summaries (AI-generated)
 - **Benchmark:** Jira, Azure DevOps, Monday.com
 
 ### 5.6 Custom Report Builder

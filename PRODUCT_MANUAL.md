@@ -354,26 +354,58 @@ Each step in a change request records: who acted, what action they took (approve
 
 ## 7. Sprint / Agile
 
+### Sprint Tab Header
+
+The Sprint tab header shows at-a-glance status for the active sprint:
+
+- **Progress bar** — Colored bar showing task completion percentage (amber < 50%, blue 50-99%, green 100%).
+- **Day progress indicator** — "Day X of Y" label with a mini progress bar showing elapsed time within the sprint timebox.
+- **View switcher** — Toggle between List, Planning, Board, Burndown, Flow, and Capacity views when a sprint is selected.
+
+### Sprint List
+
+All sprints displayed as cards with status badges, date ranges, task progress bars, and velocity data. Features:
+
+- **Sorting** — Cycle between status-first (active → planning → completed → cancelled), date, and name sorting via the sort toggle button.
+- **Velocity sparkline** — Mini SVG chart in the header showing velocity trend across the last 6 completed sprints.
+- **AI Retrospective** — Completed sprints show a book icon to generate an AI-powered retrospective summary.
+
 ### Sprint Planning
 
-The `SprintService` manages time-boxed iterations with:
+The Sprint Planning Panel shows a two-column layout:
 
-- Sprint name, goal, start date, end date
-- Status: planning, active, completed
-- Task assignment to sprints
-- Sprint capacity tracking
+- **Backlog** (left) — Tasks not yet assigned to a sprint, with search bar and priority filter dropdown to narrow results. Shows total backlog count in header.
+- **Sprint backlog** (right) — Tasks added to the current sprint with running point total.
+- **Story point totals** — Running count vs. velocity commitment displayed in sprint header.
+
+Use the add/remove buttons on each task card. Each card shows name, status badge, priority badge, assignee, and story points.
 
 ### Sprint Board
 
-A Kanban-style board scoped to a single sprint, showing tasks grouped by status with drag-and-drop support.
+A Kanban-style board scoped to a single sprint with three columns (Todo, In Progress, Done). Features:
+
+- **Drag-and-drop** — Drag cards between columns to update task status (optimistic UI update).
+- **WIP limits** — Click the gear icon on any column header to set a work-in-progress limit. Column highlights amber when at or over limit.
+- **Swimlanes** — Toggle the Swimlane button to group tasks by assignee, with avatar headers for each group.
+- **Deterministic avatars** — Assignee avatars use a consistent color from an 8-color palette based on name hash.
+- **Story points** — Per-column and total point counts shown in headers.
 
 ### Burndown Charts
 
-The `BurndownService` computes daily remaining work for a sprint, producing the classic burndown line. Ideal burndown is plotted alongside actual for comparison.
+The `BurndownService` computes daily remaining work for a sprint, producing the classic burndown line. Features:
+
+- **Ideal vs actual** — Dashed ideal line alongside solid actual burndown line.
+- **Summary stats** — Four metric tiles: Total, Completed, Remaining (points), Days Left.
+- **Today marker** — Vertical dashed amber line at the current date.
+- **Interactive tooltips** — Hover data points to see date, remaining points, and ideal comparison.
 
 ### Velocity Tracking
 
 Historical sprint velocity (story points or task count completed per sprint) is tracked across sprints to support future capacity planning.
+
+### Dark Mode & Mobile
+
+All sprint components support full dark mode with appropriate contrast for cards, badges, charts, and SVG elements. Mobile responsive layouts use flex-wrap, condensed button labels, and adjusted column widths for small screens.
 
 ---
 
