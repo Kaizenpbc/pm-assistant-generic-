@@ -82,6 +82,50 @@ class AnalyticsSummaryRepository {
       [...projectIds],
     );
   }
+  async getOverdueCountAtDate(projectIds: string[], date: Date): Promise<number> {
+    const placeholders = projectIds.map(() => '?').join(',');
+    const rows = await databaseService.query<{ overdue_count: number }>(
+      `SELECT COUNT(*) AS overdue_count
+       FROM tasks st
+       JOIN schedules s ON s.id = st.schedule_id
+       WHERE s.project_id IN (${placeholders})
+         AND st.status NOT IN ('completed','done','cancelled')
+         AND st.end_date < ?`,
+      [...projectIds, date],
+    );
+    return Number(rows[0]?.overdue_count) || 0;
+  }
+
+  async getCompletedInRange(projectIds: string[], start: Date, end: Date): Promise<number> {
+    const placeholders = projectIds.map(() => '?').join(',');
+    const rows = await databaseService.query<{ completed_count: number }>(
+      `SELECT COUNT(*) AS completed_count
+       FROM tasks st
+       JOIN schedules s ON s.id = st.schedule_id
+       WHERE s.project_id IN (${placeholders})
+         AND st.status IN ('completed','done')
+         AND st.updated_at >= ? AND st.updated_at < ?`,
+      [...projectIds, start, end],
+    );
+    return Number(rows[0]?.completed_count) || 0;
+  }
+
+  async getAvgHealthScoreAtDate(projectIds: string[], date: Date): Promise<number | null> {
+    const placeholders = projectIds.map(() => '?').join(',');
+    const rows = await databaseService.query<{ avg_score: number | null }>(
+      `SELECT AVG(h.health_score) AS avg_score
+       FROM project_health_history h
+       INNER JOIN (
+         SELECT project_id, MAX(recorded_at) AS max_date
+         FROM project_health_history
+         WHERE project_id IN (${placeholders})
+           AND recorded_at <= ?
+         GROUP BY project_id
+       ) latest ON h.project_id = latest.project_id AND h.recorded_at = latest.max_date`,
+      [...projectIds, date],
+    );
+    return rows[0]?.avg_score != null ? Math.round(rows[0].avg_score) : null;
+  }
 }
 
 export const analyticsSummaryRepository = new AnalyticsSummaryRepository();

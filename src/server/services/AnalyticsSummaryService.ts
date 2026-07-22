@@ -4,6 +4,14 @@ import { analyticsSummaryRepository } from '../database/AnalyticsSummaryReposito
 // Types
 // ---------------------------------------------------------------------------
 
+export type TrendDirection = 'improving' | 'declining' | 'stable';
+
+export interface TrendIndicators {
+  overdueTasksTrend: TrendDirection;
+  completionRateTrend: TrendDirection;
+  healthTrend: TrendDirection;
+}
+
 export interface AnalyticsSummary {
   portfolio: {
     totalProjects: number;
@@ -26,6 +34,7 @@ export interface AnalyticsSummary {
   trends: {
     tasksCompletedByWeek: Array<{ week: string; count: number }>;
   };
+  trendIndicators?: TrendIndicators;
   generatedAt: string;
 }
 
@@ -168,6 +177,44 @@ class AnalyticsSummaryService {
           )
         : 0;
 
+    // Trend indicators (7-day comparison)
+    let trendIndicators: TrendIndicators | undefined;
+    if (projectIds.length > 0) {
+      try {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 86_400_000);
+        const fourteenDaysAgo = new Date(now.getTime() - 14 * 86_400_000);
+
+        const [overdueWeekAgo, completedThisWeek, completedLastWeek, healthNow, healthWeekAgo] =
+          await Promise.all([
+            analyticsSummaryRepository.getOverdueCountAtDate(projectIds, sevenDaysAgo),
+            analyticsSummaryRepository.getCompletedInRange(projectIds, sevenDaysAgo, now),
+            analyticsSummaryRepository.getCompletedInRange(projectIds, fourteenDaysAgo, sevenDaysAgo),
+            analyticsSummaryRepository.getAvgHealthScoreAtDate(projectIds, now),
+            analyticsSummaryRepository.getAvgHealthScoreAtDate(projectIds, sevenDaysAgo),
+          ]);
+
+        // Overdue: fewer is better → improving if current < week ago
+        const overdueTasksTrend: TrendDirection =
+          overdueCount < overdueWeekAgo ? 'improving' : overdueCount > overdueWeekAgo ? 'declining' : 'stable';
+
+        // Completions: more is better → improving if this week > last week
+        const completionRateTrend: TrendDirection =
+          completedThisWeek > completedLastWeek ? 'improving' : completedThisWeek < completedLastWeek ? 'declining' : 'stable';
+
+        // Health: higher is better, ±3 threshold for stable
+        let healthTrend: TrendDirection = 'stable';
+        if (healthNow != null && healthWeekAgo != null) {
+          const delta = healthNow - healthWeekAgo;
+          healthTrend = delta > 3 ? 'improving' : delta < -3 ? 'declining' : 'stable';
+        }
+
+        trendIndicators = { overdueTasksTrend, completionRateTrend, healthTrend };
+      } catch {
+        // Non-critical — omit trend indicators on failure
+      }
+    }
+
     return {
       portfolio: {
         totalProjects: projects.length,
@@ -190,6 +237,7 @@ class AnalyticsSummaryService {
       trends: {
         tasksCompletedByWeek: weeklyTrends,
       },
+      trendIndicators,
       generatedAt: new Date().toISOString(),
     };
   }

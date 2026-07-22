@@ -152,6 +152,9 @@ interface ActionItem {
   link: string;
   time: string;
   priority: number;
+  confidenceScore?: number;
+  riskLevel?: string;
+  healthScore?: number;
 }
 
 const TYPE_CONFIG = {
@@ -186,25 +189,30 @@ function AINextBestActions() {
 
   const proposals = proposalsData?.data || proposalsData?.proposals || [];
   for (const p of proposals.slice(0, 5)) {
+    const confidence = typeof p.confidence_score === 'number' ? p.confidence_score : undefined;
+    let basePriority = p.risk_level === 'critical' ? 0 : p.risk_level === 'high' ? 1 : 2;
+    if (confidence != null && confidence < 60) basePriority = Math.max(0, basePriority - 1);
     actions.push({
       id: `proposal-${p.id}`,
       type: 'Approve',
       description: `Review proposal: ${p.title}`,
       link: '/agent',
       time: p.created_at ? timeAgo(p.created_at) : '',
-      priority: p.risk_level === 'critical' ? 0 : p.risk_level === 'high' ? 1 : 2,
+      priority: basePriority,
+      confidenceScore: confidence,
+      riskLevel: p.risk_level,
     });
   }
 
   const notifications: any[] = notificationsData?.data || notificationsData?.notifications || [];
-  for (const n of notifications.filter((n: any) => !n.read_at && n.severity === 'high').slice(0, 3)) {
+  for (const n of notifications.filter((n: any) => !n.read_at && (n.severity === 'critical' || n.severity === 'high')).slice(0, 3)) {
     actions.push({
       id: `notif-${n.id}`,
       type: 'Investigate',
       description: n.title || n.message || 'Urgent notification',
       link: '/notifications',
       time: n.created_at ? timeAgo(n.created_at) : '',
-      priority: 3,
+      priority: n.severity === 'critical' ? 2 : 3,
     });
   }
 
@@ -217,6 +225,7 @@ function AINextBestActions() {
       link: `/project/${p.projectId || p.id}`,
       time: '',
       priority: 4,
+      healthScore: p.healthScore,
     });
   }
 
@@ -250,8 +259,31 @@ function AINextBestActions() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-gray-900 dark:text-white truncate">{item.description}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${cfg.badge}`}>{item.type}</span>
+                      {item.confidenceScore != null && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+                          {item.confidenceScore}%
+                        </span>
+                      )}
+                      {item.riskLevel && (
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          item.riskLevel === 'critical' ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
+                          : item.riskLevel === 'high' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300'
+                          : item.riskLevel === 'medium' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                          : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                        }`}>
+                          {item.riskLevel}
+                        </span>
+                      )}
+                      {item.healthScore != null && (
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          item.healthScore < 40 ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
+                          : 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                        }`}>
+                          Health: {item.healthScore}
+                        </span>
+                      )}
                       {item.time && (
                         <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-0.5">
                           <Clock className="w-2.5 h-2.5" />

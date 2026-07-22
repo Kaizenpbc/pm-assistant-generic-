@@ -7,9 +7,13 @@ import {
   AlertTriangle,
   DollarSign,
   TrendingUp,
+  TrendingDown,
+  Minus,
   Loader2,
 } from 'lucide-react';
 import { apiService } from '../../../services/api';
+
+type TrendDirection = 'improving' | 'declining' | 'stable';
 
 interface KPITile {
   label: string;
@@ -17,6 +21,7 @@ interface KPITile {
   icon: React.ElementType;
   color: 'green' | 'yellow' | 'red' | 'gray';
   href: string;
+  trend?: TrendDirection;
 }
 
 const colorMap = {
@@ -59,7 +64,8 @@ export function PortfolioKPIBar({ scope }: PortfolioKPIBarProps = {}) {
     );
   }
 
-  const tiles: KPITile[] = buildTiles(analytics, predictions);
+  const summary = analytics?.summary || analytics?.data || analytics;
+  const tiles: KPITile[] = buildTiles(summary, predictions);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -75,7 +81,15 @@ export function PortfolioKPIBar({ scope }: PortfolioKPIBarProps = {}) {
             </div>
             <span className={`h-2 w-2 rounded-full ${dotColor[tile.color]}`} />
           </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{tile.value}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{tile.value}</p>
+            {tile.trend && tile.trend !== 'stable' && (
+              tile.trend === 'improving'
+                ? <TrendingUp className="w-4 h-4 text-green-500" />
+                : <TrendingDown className="w-4 h-4 text-red-500" />
+            )}
+            {tile.trend === 'stable' && <Minus className="w-4 h-4 text-gray-400" />}
+          </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{tile.label}</p>
         </div>
       ))}
@@ -84,6 +98,7 @@ export function PortfolioKPIBar({ scope }: PortfolioKPIBarProps = {}) {
 }
 
 function buildTiles(analytics: any, predictions: any): KPITile[] {
+  const trendIndicators = analytics?.trendIndicators;
   // Portfolio Health
   const healthScores: number[] = predictions?.projectHealthScores?.map((s: any) => s.healthScore) || [];
   const avgHealth = healthScores.length > 0
@@ -118,8 +133,8 @@ function buildTiles(analytics: any, predictions: any): KPITile[] {
   const utilColor = utilization > 95 ? 'red' : utilization >= 80 ? 'yellow' : 'green';
 
   return [
-    { label: 'Portfolio Health', value: `${avgHealth}%`, icon: HeartPulse, color: healthColor, href: '/kpi/health' },
-    { label: 'Overdue Tasks', value: String(overdue), icon: Clock, color: overdueColor, href: '/kpi/overdue' },
+    { label: 'Portfolio Health', value: `${avgHealth}%`, icon: HeartPulse, color: healthColor, href: '/kpi/health', trend: trendIndicators?.healthTrend },
+    { label: 'Overdue Tasks', value: String(overdue), icon: Clock, color: overdueColor, href: '/kpi/overdue', trend: trendIndicators?.overdueTasksTrend },
     { label: 'Open Risks', value: String(openRisks), icon: ShieldAlert, color: riskColor, href: '/kpi/risks' },
     { label: 'At-Risk Projects', value: String(atRisk), icon: AlertTriangle, color: atRiskColor, href: '/kpi/at-risk' },
     { label: 'Budget Variance', value: varianceStr, icon: DollarSign, color: varianceColor, href: '/kpi/budget-variance' },

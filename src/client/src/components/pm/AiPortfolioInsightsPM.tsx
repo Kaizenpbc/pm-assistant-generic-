@@ -26,12 +26,13 @@ function buildInsights(analytics: any): InsightTile[] {
         .join(', ') + (atRisk.length > 3 ? ` and ${atRisk.length - 3} more` : ''),
     });
   } else {
+    const healthTrends = analytics?.trendIndicators;
     tiles.push({
       icon: AlertTriangle,
       iconColor: 'text-green-600 dark:text-green-400',
       iconBg: 'bg-green-50 dark:bg-green-900/30',
       title: 'No projects at risk',
-      body: 'All projects are within healthy thresholds.',
+      body: 'All projects are within healthy thresholds.' + (healthTrends?.healthTrend === 'improving' ? ' Portfolio health is trending up.' : ''),
     });
   }
 
@@ -61,6 +62,12 @@ function buildInsights(analytics: any): InsightTile[] {
   }
 
   const overdueTasks: number = analytics?.tasks?.overdue ?? 0;
+  const trends = analytics?.trendIndicators;
+  const overdueTrendText = trends?.overdueTasksTrend === 'improving'
+    ? ' Trending down from last week.'
+    : trends?.overdueTasksTrend === 'declining'
+    ? ' Up from last week.'
+    : '';
   tiles.push({
     icon: Clock,
     iconColor:
@@ -78,8 +85,8 @@ function buildInsights(analytics: any): InsightTile[] {
     title: overdueTasks === 0 ? 'Schedule on track' : `${overdueTasks} overdue task${overdueTasks > 1 ? 's' : ''}`,
     body:
       overdueTasks === 0
-        ? 'No overdue tasks across the portfolio.'
-        : `${overdueTasks} task${overdueTasks > 1 ? 's are' : ' is'} past due date. Review schedules and re-assign if needed.`,
+        ? 'No overdue tasks across the portfolio.' + (trends?.completionRateTrend === 'improving' ? ' Completion rate is trending up.' : '')
+        : `${overdueTasks} task${overdueTasks > 1 ? 's are' : ' is'} past due date.${overdueTrendText} Review schedules and re-assign if needed.`,
   });
 
   return tiles;
@@ -92,7 +99,7 @@ export function AiPortfolioInsightsPM() {
     staleTime: 120_000,
   });
 
-  const analytics = analyticsData?.data || analyticsData;
+  const analytics = analyticsData?.summary || analyticsData?.data || analyticsData;
   const tiles = isLoading ? [] : buildInsights(analytics);
 
   return (
