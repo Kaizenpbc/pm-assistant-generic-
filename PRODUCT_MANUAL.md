@@ -1277,6 +1277,12 @@ A global dark theme is available throughout the application. The user toggles it
 
 **Full coverage:** Every page in the application has `dark:` companion classes — including all auth pages (Login, Register, Forgot/Reset Password, Verify Email), public pages (Landing, Pricing, Privacy, Terms), dashboard pages (Executive, Portfolio, Analytics), tool pages (Report Builder, Workflow, Monte Carlo, Scenario Modeling), admin pages, and all shared components (report designer/preview, lessons cards, task form modal, notification bell, time tracking, custom fields, attachments, templates, timesheet grid, etc.).
 
+**Settings page (all 8 tabs):** Profile, Team, Notifications, Display, Accessibility, API Keys, Webhooks, and Danger Zone all have full dark mode coverage. Toggle tracks, form panels, badges, code blocks, and the danger zone destructive section each have dedicated `dark:` variants.
+
+**Admin page:** Role badges, stat card icon colors, tier badges, reset-token banner, and the header icon all have dark variants. The user search bar and AI Usage tab sortable columns also render correctly in dark mode.
+
+**Command Palette:** Modal background, search input, ESC badge, status/severity/priority badge colors, quick action items, search result items, and the empty state all support dark mode.
+
 ---
 
 ## 26. Project Milestones
@@ -2074,7 +2080,9 @@ The **Admin > Users** page provides a comprehensive user management table with 1
 
 **Filters:** Search by name/email/username/organization. Dropdown filters for Role, Tier, Status (active/inactive), and Subscription Status. Showing count updates in real time.
 
-**AI Usage column:** The backend query JOINs `ai_usage_log` (current month) and computes `ai_tokens_used` per user. The frontend calculates usage percentage against the effective budget (per-user override or tier default) and renders a mini progress bar.
+**User search bar:** A live search input at the top of the Users tab filters the visible rows by name, email, or role as you type. The search is client-side (no extra API calls) and combines with the existing Role/Tier/Status/Subscription dropdown filters.
+
+**AI Usage column:** The backend query JOINs `ai_usage_log` (current month) and computes `ai_tokens_used` per user. The frontend calculates usage percentage against the effective budget (per-user override or tier default) and renders a mini progress bar. The **Calls**, **Tokens**, and **Cost** columns in the AI Usage tab are sortable — click a column header to toggle ascending/descending order; an arrow indicator shows the active sort direction.
 
 **Organization column:** The backend query LEFT JOINs `organizations` on `users.organization_id` to display the org name.
 

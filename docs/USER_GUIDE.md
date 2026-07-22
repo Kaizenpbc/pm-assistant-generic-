@@ -121,7 +121,7 @@ An **AI Token Usage** indicator appears above the user section, showing your cur
 
 ### Command Palette
 
-Press **Ctrl+K** (or **Cmd+K** on Mac) to open the Command Palette. Type to quickly search and navigate to any page, project, or action. The global search covers 9 entity types — **projects, tasks, RAID items (risks/issues), goals, lessons learned, resources, change requests, sprints, and task comments** — with all queries running in parallel. Results appear grouped by category with contextual badges: severity (color-coded) for RAID items, priority for tasks, progress bars for goals, and record IDs (e.g., "R-001") for RAID items. Clicking a result navigates to the relevant page. If one entity type is temporarily unavailable it is silently omitted rather than blocking the whole search.
+Press **Ctrl+K** (or **Cmd+K** on Mac) to open the Command Palette. Type to quickly search and navigate to any page, project, or action. The global search covers 9 entity types — **projects, tasks, RAID items (risks/issues), goals, lessons learned, resources, change requests, sprints, and task comments** — with all queries running in parallel. Results appear grouped by category with contextual badges: severity (color-coded) for RAID items, priority for tasks, progress bars for goals, and record IDs (e.g., "R-001") for RAID items. Clicking a result navigates to the relevant page. If one entity type is temporarily unavailable it is silently omitted rather than blocking the whole search. The Command Palette fully supports dark mode — modal background, search input, ESC badge, badge colors, quick action items, results, and empty state all adapt to the active theme.
 
 ### Notifications
 
@@ -1271,6 +1271,8 @@ Navigate to **Settings** to configure:
 - **Language** -- Select your preferred display language (English, French, or Spanish). The change applies instantly without a page reload.
 - **Time Zone** -- Set your IANA timezone (e.g., `America/Toronto`). All dates in the application are displayed in this timezone.
 
+All eight Settings tabs (Profile, Team, Notifications, Display, Accessibility, API Keys, Webhooks, Danger Zone) fully support dark mode — toggle tracks, form panels, badges, code blocks, and the danger zone section all switch correctly when dark theme is active.
+
 ### Viewer Invites
 
 Paid plan users (Consultant, SME, and Enterprise) can invite external client stakeholders as **viewer accounts** at no extra charge, up to their plan's limit:
@@ -1325,7 +1327,7 @@ Destructive actions throughout the application (deleting integrations, change re
 
 ### Dark Mode
 
-Click the **dark mode toggle** (sun/moon icon) in the TopBar to switch between light and dark themes. The choice is saved and applied automatically on your next visit. Every page in the application supports dark mode — including auth pages, public pages, dashboards, tools, and admin areas.
+Click the **dark mode toggle** (sun/moon icon) in the TopBar to switch between light and dark themes. The choice is saved and applied automatically on your next visit. Every page in the application supports dark mode — including auth pages, public pages, dashboards, tools, and admin areas. This includes all 8 Settings tabs, the Admin page (role badges, stat icons, tier badges, search bar, AI usage table), and the Command Palette (modal, input, badges, results, empty state).
 
 ### Language
 
