@@ -95,11 +95,19 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
 
   const { data: auditData } = useQuery({
     queryKey: ['auditTrail', project.id, 'overview'],
-    queryFn: () => apiService.getAuditTrail(project.id, 6),
+    queryFn: () => apiService.getAuditTrail(project.id, 50),
     enabled: !!project.id,
     staleTime: 60_000,
   });
   const recentActivity: any[] = auditData?.activities || [];
+
+  // Velocity data for completion forecast
+  const { data: velocityData } = useQuery({
+    queryKey: ['velocity', primaryScheduleId, 'overview'],
+    queryFn: () => apiService.getVelocityData(primaryScheduleId!),
+    enabled: !!primaryScheduleId,
+    staleTime: 300_000,
+  });
 
   // Health history (30 days)
   const { data: healthHistoryData } = useQuery({
@@ -198,6 +206,58 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
   const overflowCount = members.length - maxVisibleMembers;
 
   const taskStats = summary?.tasks;
+
+  // #4 RAID trend — count RAID-related audit events in last 7 days
+  const raidTrend = (() => {
+    if (!recentActivity.length) return null;
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    let opened = 0;
+    let closed = 0;
+    for (const a of recentActivity) {
+      const ts = new Date(a.createdAt || a.timestamp);
+      if (ts < weekAgo) continue;
+      const action = (a.action || a.description || a.summary || '').toLowerCase();
+      if (action.includes('risk') || action.includes('issue') || action.includes('raid')) {
+        if (action.includes('creat') || action.includes('add') || action.includes('open')) opened++;
+        if (action.includes('clos') || action.includes('mitigat') || action.includes('resolv')) closed++;
+      }
+    }
+    if (opened === 0 && closed === 0) return null;
+    return { opened, closed, net: opened - closed };
+  })();
+
+  // #5 Team workload — tasks assigned per member
+  const memberWorkload = (() => {
+    if (!members.length || !allTasks.length) return [];
+    const activeTasks = allTasks.filter((t: any) => t.status !== 'completed' && t.status !== 'done' && t.status !== 'cancelled');
+    const counts: Record<string, number> = {};
+    for (const t of activeTasks) {
+      const assignee = t.assignedTo || t.assigned_to || t.assigneeId || t.assignee_id;
+      if (assignee) counts[assignee] = (counts[assignee] || 0) + 1;
+    }
+    const maxCount = Math.max(1, ...Object.values(counts));
+    return members.slice(0, 6).map((m: any) => {
+      const userId = m.userId || m.user_id || m.user?.id || m.id;
+      const name = m.user?.name || m.name || m.email || 'Unknown';
+      const count = counts[userId] || 0;
+      return { name: name.split(' ')[0], count, pct: (count / maxCount) * 100 };
+    });
+  })();
+
+  // #7 Completion forecast
+  const completionForecast = (() => {
+    const avgVelocity = velocityData?.averageVelocity;
+    if (!avgVelocity || avgVelocity <= 0) return null;
+    const totalTasks = taskStats?.total ?? allTasks.length;
+    const completedTasks = taskStats?.byStatus?.completed ?? 0;
+    const remaining = totalTasks - completedTasks;
+    if (remaining <= 0) return { date: null, label: 'All tasks complete' };
+    const weeksRemaining = remaining / avgVelocity;
+    const forecastDate = new Date();
+    forecastDate.setDate(forecastDate.getDate() + Math.ceil(weeksRemaining * 7));
+    return { date: forecastDate, label: forecastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) };
+  })();
 
   // Animate progress bars on mount
   const [mounted, setMounted] = useState(false);
@@ -343,6 +403,25 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
               {overflowCount > 0 && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">+{overflowCount} more</p>
               )}
+              {memberWorkload.length > 0 && memberWorkload.some(w => w.count > 0) && (
+                <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider font-medium">Active Tasks</p>
+                  <div className="space-y-1.5">
+                    {memberWorkload.map((w) => (
+                      <div key={w.name} className="flex items-center gap-2">
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 w-12 truncate">{w.name}</span>
+                        <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="h-full bg-primary-400 dark:bg-primary-500 rounded-full transition-all duration-500"
+                            style={{ width: `${w.pct}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 w-4 text-right">{w.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -411,18 +490,28 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
                 <span className="font-medium text-gray-700 dark:text-gray-300">Today</span>
                 <span>{formatDate(endDate)}</span>
               </div>
-              <div className="flex items-center gap-2">
-                {isOverdue ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Overdue
-                  </span>
-                ) : onTrack ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> On track
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Behind schedule
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {isOverdue ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
+                      <AlertTriangle className="w-3.5 h-3.5" /> Overdue
+                    </span>
+                  ) : onTrack ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> On track
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400">
+                      <AlertTriangle className="w-3.5 h-3.5" /> Behind schedule
+                    </span>
+                  )}
+                </div>
+                {completionForecast && (
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                    {completionForecast.date
+                      ? <>Est. completion: <span className={`font-medium ${end && completionForecast.date > end ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>{completionForecast.label}</span></>
+                      : <span className="text-green-600 dark:text-green-400 font-medium">{completionForecast.label}</span>
+                    }
                   </span>
                 )}
               </div>
@@ -685,20 +774,33 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
                   </div>
                 ))}
               </div>
-              {(raidStats.critical > 0 || raidStats.triggered > 0) && (
-                <div className="flex gap-2 flex-wrap">
-                  {raidStats.critical > 0 && (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">
-                      <AlertTriangle className="w-3 h-3" /> {raidStats.critical} critical
-                    </span>
-                  )}
-                  {raidStats.triggered > 0 && (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
-                      {raidStats.triggered} triggered
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="flex gap-2 flex-wrap">
+                {raidStats.critical > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">
+                    <AlertTriangle className="w-3 h-3" /> {raidStats.critical} critical
+                  </span>
+                )}
+                {raidStats.triggered > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
+                    {raidStats.triggered} triggered
+                  </span>
+                )}
+                {raidTrend && (
+                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                    raidTrend.net > 0
+                      ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+                      : raidTrend.net < 0
+                      ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
+                      : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800'
+                  }`}>
+                    {raidTrend.net > 0 ? <TrendingUp className="w-3 h-3" /> : raidTrend.net < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                    {raidTrend.opened > 0 && `+${raidTrend.opened}`}
+                    {raidTrend.opened > 0 && raidTrend.closed > 0 && ' / '}
+                    {raidTrend.closed > 0 && `-${raidTrend.closed}`}
+                    {' this week'}
+                  </span>
+                )}
+              </div>
             </>
           )}
         </div>
