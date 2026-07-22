@@ -504,3 +504,4 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 | PWA Support (real service worker, app-shell caching, installable, offline banner, auto-update) | Done | Enhancement |
 | KPI Drill-In Enrichment (summary cards, trend badges, distribution bars, health sparklines + sub-scores) | Done | Enhancement |
 | Dashboard Widget Enrichment (BudgetWatch burn-rate indicators, TeamWorkload overallocation warnings, VelocitySparkline sprint comparison) | Done | Enhancement |
+| Mobile UX Improvements (Notifications/Proposals stat cards 2-col on mobile, Goals modal stacks, Resource tab bar horizontal scroll, Project Detail action condensing + tab scroll, Portfolio tables min-width scroll) | Done | Enhancement |

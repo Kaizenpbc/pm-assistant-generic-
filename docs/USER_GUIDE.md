@@ -762,6 +762,16 @@ When the sprint period ends:
 
 All sprint views fully support dark mode with appropriate contrast for cards, badges, charts, and SVG elements. On mobile devices, layouts use flex-wrap with condensed button labels and adjusted column widths for comfortable use on small screens.
 
+### Mobile Responsiveness (UI Improvement Sprint)
+
+Additional responsive improvements were made across several pages:
+
+- **Notifications & Agent Proposals** — Summary stat cards reflow into a 2-column grid on mobile (4 columns on wider screens).
+- **Goals** — The create/edit modal form stacks its fields into a single column on mobile.
+- **Resource Management** — The tab bar scrolls horizontally on mobile; the resource table also scrolls horizontally rather than clipping content.
+- **Project Detail** — Action buttons are condensed on small screens (some labels hidden); the tab bar scrolls horizontally instead of wrapping onto a second line.
+- **Portfolio** — Wide data tables (Project Comparison, CPI/SPI, Resource Utilization) have a minimum width so they scroll horizontally rather than collapsing columns.
+
 ---
 
 ## 11. Time Tracking

@@ -1258,6 +1258,17 @@ The view toggle persists the selected mode. Each `TaskCardMobile` card supports:
 
 On mobile, the timesheet displays a card-per-day layout instead of the grid table. Each card shows the date, total hours, and a compact entry list. Week navigation is preserved.
 
+### Responsive Layout Improvements (UI Improvement Sprint)
+
+Several pages received targeted responsive fixes to avoid overflow and cramped layouts on small screens:
+
+- **Notifications Page** — Severity summary cards use `grid-cols-2 sm:grid-cols-4`, stacking into two columns on mobile instead of forcing a fixed four-column layout.
+- **Agent Proposals Page** — Proposal history stat cards use the same `grid-cols-2 sm:grid-cols-4` pattern.
+- **Goals Page** — The new/edit goal modal form grid changes from a fixed `grid-cols-3` to `grid-cols-1 sm:grid-cols-3`, stacking fields vertically on mobile.
+- **Resource Management Page** — The tab bar uses `overflow-x-auto` with `min-w-max` tabs for horizontal scroll instead of wrapping; tab labels display shortened names on mobile; the resource table container switches from `overflow-hidden` to `overflow-x-auto` so wide tables scroll cleanly.
+- **Project Detail Page** — Action buttons condense on mobile (Status Report label hidden, Save as Template button hidden on small screens); tab navigation changes from `flex-wrap` to `overflow-x-auto` horizontal scroll with `min-w-max` tab items.
+- **Portfolio Page** — Project Comparison, CPI/SPI, and Resource Utilization tables get `min-w-[600–700px]` so wide data tables scroll horizontally instead of compressing columns.
+
 ### Mobile-Responsive Gantt (Touch Gestures)
 
 Touch support is added to all Gantt chart drag interactions, enabling full use on tablets and touch-enabled laptops:
