@@ -118,6 +118,7 @@ function StatCard({ icon: Icon, label, value, color }: {
 function UsersTab() {
   const queryClient = useQueryClient();
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-users'],
@@ -143,12 +144,31 @@ function UsersTab() {
   if (isLoading) return <div className="text-center py-12 text-gray-500 dark:text-gray-400">Loading users…</div>;
   if (error) return <div className="text-center py-12 text-red-500">Failed to load users.</div>;
 
-  const users: AdminUser[] = data?.users ?? [];
+  const allUsers: AdminUser[] = data?.users ?? [];
+  const users = searchQuery
+    ? allUsers.filter(u => {
+        const q = searchQuery.toLowerCase();
+        return u.full_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.username.toLowerCase().includes(q) || u.role.toLowerCase().includes(q);
+      })
+    : allUsers;
 
   return (
     <div className="overflow-x-auto">
+      {/* Search bar */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search users by name, email, or role..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full max-w-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 placeholder-gray-400 dark:placeholder-gray-500"
+        />
+        {searchQuery && (
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{users.length} of {allUsers.length} users</p>
+        )}
+      </div>
       {copiedToken && (
-        <div className="mb-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+        <div className="mb-4 flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-800 dark:text-green-300">
           <Check className="w-4 h-4 flex-shrink-0" />
           <span>Reset token copied: <code className="font-mono text-xs break-all">{copiedToken}</code></span>
         </div>
@@ -178,7 +198,7 @@ function UsersTab() {
                 <td className="py-3 pr-4">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                     u.role === 'admin'
-                      ? 'bg-purple-100 text-purple-800'
+                      ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'
                   }`}>
                     {u.role}
@@ -209,7 +229,7 @@ function UsersTab() {
                     onClick={() => resetPassword.mutate(u.id)}
                     disabled={resetPassword.isPending}
                     title="Generate password reset token"
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800 transition-colors"
                   >
                     <KeyRound className="w-3.5 h-3.5" />
                     Reset PW
@@ -242,11 +262,11 @@ function SystemTab() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       <StatCard icon={Users} label="Total Users" value={s.total_users} color="bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400" />
-      <StatCard icon={Activity} label="Active Users" value={s.active_users} color="bg-green-100 text-green-600" />
-      <StatCard icon={FolderKanban} label="Total Projects" value={s.total_projects} color="bg-blue-100 text-blue-600" />
-      <StatCard icon={Cpu} label="AI API Calls" value={Number(s.total_ai_calls).toLocaleString()} color="bg-purple-100 text-purple-600" />
-      <StatCard icon={TrendingUp} label="Total Tokens" value={Number(s.total_tokens).toLocaleString()} color="bg-orange-100 text-orange-600" />
-      <StatCard icon={DollarSign} label="Total AI Cost" value={fmtCost(s.total_ai_cost)} color="bg-red-100 text-red-600" />
+      <StatCard icon={Activity} label="Active Users" value={s.active_users} color="bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400" />
+      <StatCard icon={FolderKanban} label="Total Projects" value={s.total_projects} color="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" />
+      <StatCard icon={Cpu} label="AI API Calls" value={Number(s.total_ai_calls).toLocaleString()} color="bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400" />
+      <StatCard icon={TrendingUp} label="Total Tokens" value={Number(s.total_tokens).toLocaleString()} color="bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" />
+      <StatCard icon={DollarSign} label="Total AI Cost" value={fmtCost(s.total_ai_cost)} color="bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400" />
     </div>
   );
 }
@@ -254,7 +274,12 @@ function SystemTab() {
 // ---------------------------------------------------------------------------
 // AI Usage tab
 // ---------------------------------------------------------------------------
+type AiSortField = 'call_count' | 'total_tokens' | 'total_cost';
+
 function AiUsageTab() {
+  const [sortField, setSortField] = useState<AiSortField>('total_cost');
+  const [sortAsc, setSortAsc] = useState(false);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-ai-usage'],
     queryFn: () => apiService.getAdminAiUsage(),
@@ -263,7 +288,18 @@ function AiUsageTab() {
   if (isLoading) return <div className="text-center py-12 text-gray-500 dark:text-gray-400">Loading AI usage…</div>;
   if (error) return <div className="text-center py-12 text-red-500">Failed to load AI usage.</div>;
 
-  const rows: AiUsageRow[] = data?.usage ?? [];
+  const rawRows: AiUsageRow[] = data?.usage ?? [];
+  const rows = [...rawRows].sort((a, b) => {
+    const diff = Number(a[sortField]) - Number(b[sortField]);
+    return sortAsc ? diff : -diff;
+  });
+
+  const toggleSort = (field: AiSortField) => {
+    if (sortField === field) setSortAsc(!sortAsc);
+    else { setSortField(field); setSortAsc(false); }
+  };
+
+  const sortArrow = (field: AiSortField) => sortField === field ? (sortAsc ? ' ↑' : ' ↓') : '';
 
   return (
     <div className="overflow-x-auto">
@@ -271,9 +307,9 @@ function AiUsageTab() {
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             <th className="pb-3 pr-4">User</th>
-            <th className="pb-3 pr-4 text-right">Calls</th>
-            <th className="pb-3 pr-4 text-right">Tokens</th>
-            <th className="pb-3 pr-4 text-right">Cost</th>
+            <th className="pb-3 pr-4 text-right cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none" onClick={() => toggleSort('call_count')}>Calls{sortArrow('call_count')}</th>
+            <th className="pb-3 pr-4 text-right cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none" onClick={() => toggleSort('total_tokens')}>Tokens{sortArrow('total_tokens')}</th>
+            <th className="pb-3 pr-4 text-right cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none" onClick={() => toggleSort('total_cost')}>Cost{sortArrow('total_cost')}</th>
             <th className="pb-3">Last Used</th>
           </tr>
         </thead>
@@ -380,11 +416,11 @@ function TenantsTab() {
                 <td className="py-3 pr-4">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                     t.subscription_tier === 'enterprise'
-                      ? 'bg-purple-100 text-purple-800'
+                      ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300'
                       : t.subscription_tier === 'sme'
-                      ? 'bg-blue-100 text-blue-800'
+                      ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300'
                       : t.subscription_tier === 'consultant'
-                      ? 'bg-amber-100 text-amber-800'
+                      ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'
                   }`}>
                     {t.subscription_tier}
@@ -466,8 +502,8 @@ export function AdminPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-          <ShieldCheck className="w-5 h-5 text-purple-600" />
+        <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+          <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>

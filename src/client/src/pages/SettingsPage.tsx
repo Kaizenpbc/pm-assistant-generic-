@@ -108,8 +108,8 @@ export const SettingsPage: React.FC = () => {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab.id
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300'
             }`}
           >
             {tab.icon}
@@ -168,32 +168,32 @@ const ProfileTab: React.FC = () => {
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Profile Information</h2>
       <div className="space-y-4 max-w-lg">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-          <input type="text" value={user?.username ?? ''} readOnly className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+          <input type="text" value={user?.username ?? ''} readOnly className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-          <input type="text" value={user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''} readOnly className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+          <input type="text" value={user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''} readOnly className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Account Created</label>
-          <input type="text" value="—" readOnly className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account Created</label>
+          <input type="text" value="—" readOnly className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-          <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+          <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <div className="flex items-center gap-3 pt-2">
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:opacity-50">
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
-          {saved && <span className="text-sm text-green-600">Saved successfully</span>}
+          {saved && <span className="text-sm text-green-600 dark:text-green-400">Saved successfully</span>}
         </div>
       </div>
     </div>
@@ -215,8 +215,8 @@ const ProfileTab: React.FC = () => {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm New Password</label>
           <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
         </div>
-        {pwError && <p className="text-sm text-red-600">{pwError}</p>}
-        {pwSuccess && <p className="text-sm text-green-600">{pwSuccess}</p>}
+        {pwError && <p className="text-sm text-red-600 dark:text-red-400">{pwError}</p>}
+        {pwSuccess && <p className="text-sm text-green-600 dark:text-green-400">{pwSuccess}</p>}
         <div className="pt-2">
           <button
             onClick={async () => {
@@ -374,7 +374,7 @@ const TeamTab: React.FC = () => {
           </button>
         </div>
         {inviteMsg && (
-          <p className={`mt-2 text-sm ${inviteMsg.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`mt-2 text-sm ${inviteMsg.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             {inviteMsg.text}
           </p>
         )}
@@ -525,8 +525,8 @@ const NotificationsTab: React.FC = () => {
       className="flex items-center gap-1.5"
       title={label}
     >
-      <span className="text-xs text-gray-500">{label}</span>
-      <span className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${checked ? 'bg-primary-600' : 'bg-gray-200'}`}>
+      <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+      <span className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${checked ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'}`}>
         <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
       </span>
     </button>
@@ -544,7 +544,7 @@ const NotificationsTab: React.FC = () => {
           <button
             type="button"
             onClick={() => setEmailEnabled(!emailEnabled)}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${emailEnabled ? 'bg-primary-600' : 'bg-gray-200'}`}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${emailEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'}`}
           >
             <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${emailEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
           </button>
@@ -598,7 +598,7 @@ const NotificationsTab: React.FC = () => {
           <Save className="w-4 h-4" />
           {serverSaving ? 'Saving...' : 'Save Preferences'}
         </button>
-        {saved && <span className="text-sm text-green-600">Saved successfully</span>}
+        {saved && <span className="text-sm text-green-600 dark:text-green-400">Saved successfully</span>}
       </div>
     </div>
   );
@@ -639,33 +639,33 @@ const DisplayTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Theme</h2>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Theme</h2>
         <div className="flex gap-3">
-          <button onClick={() => setPrefs((p) => ({ ...p, theme: 'light' }))} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${prefs.theme === 'light' ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+          <button onClick={() => setPrefs((p) => ({ ...p, theme: 'light' }))} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${prefs.theme === 'light' ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
             <Sun className="w-4 h-4" /> Light
           </button>
-          <button onClick={() => setPrefs((p) => ({ ...p, theme: 'dark' }))} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${prefs.theme === 'dark' ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+          <button onClick={() => setPrefs((p) => ({ ...p, theme: 'dark' }))} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${prefs.theme === 'dark' ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
             <Moon className="w-4 h-4" /> Dark
           </button>
         </div>
       </div>
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Default View</h2>
-        <p className="text-sm text-gray-500 mb-3">Choose the default view when opening a project schedule.</p>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Default View</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Choose the default view when opening a project schedule.</p>
         <div className="flex flex-wrap gap-3">
           {viewOptions.map((opt) => (
-            <button key={opt.value} onClick={() => setPrefs((p) => ({ ...p, defaultView: opt.value }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${prefs.defaultView === opt.value ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+            <button key={opt.value} onClick={() => setPrefs((p) => ({ ...p, defaultView: opt.value }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${prefs.defaultView === opt.value ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
               {opt.label}
             </button>
           ))}
         </div>
       </div>
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Sidebar</h2>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Sidebar</h2>
         <div className="flex gap-3">
-          <button onClick={() => setPrefs((p) => ({ ...p, sidebarExpanded: true }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${prefs.sidebarExpanded ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>Expanded</button>
-          <button onClick={() => setPrefs((p) => ({ ...p, sidebarExpanded: false }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${!prefs.sidebarExpanded ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>Collapsed</button>
+          <button onClick={() => setPrefs((p) => ({ ...p, sidebarExpanded: true }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${prefs.sidebarExpanded ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>Expanded</button>
+          <button onClick={() => setPrefs((p) => ({ ...p, sidebarExpanded: false }))} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${!prefs.sidebarExpanded ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>Collapsed</button>
         </div>
       </div>
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
@@ -696,7 +696,7 @@ const DisplayTab: React.FC = () => {
         <button onClick={handleSave} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors">
           <Save className="w-4 h-4" /> Save Preferences
         </button>
-        {saved && <span className="text-sm text-green-600">Saved successfully</span>}
+        {saved && <span className="text-sm text-green-600 dark:text-green-400">Saved successfully</span>}
       </div>
     </div>
   );
@@ -753,11 +753,11 @@ const ApiKeysTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">API Keys</h2>
-            <p className="text-sm text-gray-500 mt-1">Create API keys to allow external AI agents and integrations to access your data.</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">API Keys</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Create API keys to allow external AI agents and integrations to access your data.</p>
           </div>
           <button
             onClick={() => { setShowCreate(true); setCreatedKey(null); }}
@@ -769,43 +769,43 @@ const ApiKeysTab: React.FC = () => {
 
         {/* Create Key Form */}
         {showCreate && (
-          <div className="mb-6 p-4 rounded-lg border border-primary-200 bg-primary-50">
+          <div className="mb-6 p-4 rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20">
             {createdKey ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-green-700">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
                   <Check className="w-5 h-5" />
                   <span className="text-sm font-medium">API key created! Copy it now — it won't be shown again.</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-white px-3 py-2 rounded-md border border-gray-300 text-sm font-mono break-all">{createdKey}</code>
-                  <button onClick={() => handleCopy(createdKey)} className="flex items-center gap-1 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50">
+                  <code className="flex-1 bg-white dark:bg-gray-700 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm font-mono break-all dark:text-gray-100">{createdKey}</code>
+                  <button onClick={() => handleCopy(createdKey)} className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-gray-200">
                     {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                     {copied ? 'Copied' : 'Copy'}
                   </button>
                 </div>
-                <button onClick={() => { setShowCreate(false); setCreatedKey(null); }} className="text-sm text-primary-600 hover:text-primary-700">Done</button>
+                <button onClick={() => { setShowCreate(false); setCreatedKey(null); }} className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700">Done</button>
               </div>
             ) : (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Key Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Key Name</label>
                   <input
                     type="text"
                     value={newKeyName}
                     onChange={(e) => setNewKeyName(e.target.value)}
                     placeholder="e.g., My AI Agent"
-                    className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full max-w-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Scopes</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Scopes</label>
                   <div className="flex gap-2">
                     {['read', 'write', 'admin'].map((scope) => (
                       <button
                         key={scope}
                         onClick={() => toggleScope(scope)}
                         className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
-                          newKeyScopes.includes(scope) ? 'border-primary-600 bg-primary-100 text-primary-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                          newKeyScopes.includes(scope) ? 'border-primary-600 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-400'
                         }`}
                       >
                         {scope}
@@ -817,7 +817,7 @@ const ApiKeysTab: React.FC = () => {
                   <button onClick={handleCreate} disabled={!newKeyName.trim() || createMutation.isPending} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:opacity-50">
                     {createMutation.isPending ? 'Creating...' : 'Create'}
                   </button>
-                  <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
+                  <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
                 </div>
               </div>
             )}
@@ -826,22 +826,22 @@ const ApiKeysTab: React.FC = () => {
 
         {/* Keys List */}
         {isLoading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
         ) : keys.length === 0 ? (
-          <p className="text-sm text-gray-500">No API keys yet. Create one to get started.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No API keys yet. Create one to get started.</p>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {keys.map((key: any) => (
               <div key={key.id} className="py-3 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{key.name}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{key.name}</p>
                   <div className="flex items-center gap-3 mt-1">
-                    <code className="text-xs text-gray-500 font-mono">{key.keyPrefix}...</code>
-                    <span className="text-xs text-gray-400">
+                    <code className="text-xs text-gray-500 dark:text-gray-400 font-mono">{key.keyPrefix}...</code>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
                       Scopes: {(key.scopes || []).join(', ')}
                     </span>
                     {key.lastUsedAt && (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
                         Last used: {new Date(key.lastUsedAt).toLocaleDateString()}
                       </span>
                     )}
@@ -850,7 +850,7 @@ const ApiKeysTab: React.FC = () => {
                 <button
                   onClick={() => setConfirmRevokeId(key.id)}
                   className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
-                    key.isActive ? 'text-red-600 hover:bg-red-50 border border-red-200' : 'text-gray-400 cursor-not-allowed'
+                    key.isActive ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800' : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
                   }`}
                   disabled={!key.isActive}
                 >
@@ -863,9 +863,9 @@ const ApiKeysTab: React.FC = () => {
       </div>
 
       {/* Usage Info */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Using API Keys</h2>
-        <p className="text-sm text-gray-500 mb-3">Include your API key in the <code className="bg-gray-100 px-1 rounded">Authorization</code> header:</p>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Using API Keys</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Include your API key in the <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">Authorization</code> header:</p>
         <div className="bg-gray-900 text-gray-100 rounded-lg p-4 text-sm font-mono">
           <span className="text-green-400">curl</span> -H <span className="text-yellow-300">"Authorization: Bearer kpm_your_key_here"</span> \<br />
           &nbsp;&nbsp;{window.location.origin}/api/v1/projects
@@ -950,11 +950,11 @@ const WebhooksTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Webhooks</h2>
-            <p className="text-sm text-gray-500 mt-1">Receive HTTP POST notifications when events occur in your projects.</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Webhooks</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Receive HTTP POST notifications when events occur in your projects.</p>
           </div>
           <button
             onClick={() => { setShowCreate(true); setCreatedSecret(null); }}
@@ -966,42 +966,42 @@ const WebhooksTab: React.FC = () => {
 
         {/* Create Webhook Form */}
         {showCreate && (
-          <div className="mb-6 p-4 rounded-lg border border-primary-200 bg-primary-50">
+          <div className="mb-6 p-4 rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20">
             {createdSecret ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-green-700">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
                   <Check className="w-5 h-5" />
                   <span className="text-sm font-medium">Webhook created! Save the signing secret — it won't be shown again.</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-white px-3 py-2 rounded-md border border-gray-300 text-sm font-mono break-all">{createdSecret}</code>
-                  <button onClick={() => handleCopy(createdSecret)} className="flex items-center gap-1 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50">
+                  <code className="flex-1 bg-white dark:bg-gray-700 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm font-mono break-all dark:text-gray-100">{createdSecret}</code>
+                  <button onClick={() => handleCopy(createdSecret)} className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-600">
                     {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
-                <button onClick={() => { setShowCreate(false); setCreatedSecret(null); }} className="text-sm text-primary-600 hover:text-primary-700">Done</button>
+                <button onClick={() => { setShowCreate(false); setCreatedSecret(null); }} className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700">Done</button>
               </div>
             ) : (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payload URL</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payload URL</label>
                   <input
                     type="url"
                     value={newUrl}
                     onChange={(e) => setNewUrl(e.target.value)}
                     placeholder="https://your-server.com/webhook"
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Events</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Events</label>
                   <div className="flex flex-wrap gap-2">
                     {WEBHOOK_EVENTS.map((event) => (
                       <button
                         key={event}
                         onClick={() => toggleEvent(event)}
                         className={`px-2.5 py-1 rounded-md border text-xs font-medium transition-colors ${
-                          newEvents.includes(event) ? 'border-primary-600 bg-primary-100 text-primary-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                          newEvents.includes(event) ? 'border-primary-600 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-400'
                         }`}
                       >
                         {event}
@@ -1013,7 +1013,7 @@ const WebhooksTab: React.FC = () => {
                   <button onClick={handleCreate} disabled={!newUrl.trim() || newEvents.length === 0 || createMutation.isPending} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:opacity-50">
                     {createMutation.isPending ? 'Creating...' : 'Create'}
                   </button>
-                  <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
+                  <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
                 </div>
               </div>
             )}
@@ -1022,34 +1022,34 @@ const WebhooksTab: React.FC = () => {
 
         {/* Webhooks List */}
         {isLoading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
         ) : webhooks.length === 0 ? (
-          <p className="text-sm text-gray-500">No webhooks configured.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No webhooks configured.</p>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {webhooks.map((wh: any) => (
               <div key={wh.id} className="py-3">
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{wh.url}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{wh.url}</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {(wh.events || []).map((e: string) => (
-                        <span key={e} className="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">{e}</span>
+                        <span key={e} className="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{e}</span>
                       ))}
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-400 dark:text-gray-500">
                       <span className={wh.isActive ? 'text-green-600' : 'text-red-500'}>{wh.isActive ? 'Active' : 'Inactive'}</span>
                       {wh.failureCount > 0 && <span className="text-amber-600">{wh.failureCount} failures</span>}
                       {wh.lastTriggeredAt && <span>Last triggered: {new Date(wh.lastTriggeredAt).toLocaleString()}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <button onClick={() => testMutation.mutate(wh.id)} disabled={testMutation.isPending} className="text-sm px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50" title="Send test ping">
+                    <button onClick={() => testMutation.mutate(wh.id)} disabled={testMutation.isPending} className="text-sm px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" title="Send test ping">
                       <Send className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setConfirmDeleteWhId(wh.id)}
-                      className="text-sm px-3 py-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50"
+                      className="text-sm px-3 py-1.5 rounded-md border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1062,9 +1062,9 @@ const WebhooksTab: React.FC = () => {
       </div>
 
       {/* Webhook Verification Info */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Verifying Webhooks</h2>
-        <p className="text-sm text-gray-500 mb-3">Each webhook delivery includes an <code className="bg-gray-100 px-1 rounded">X-Webhook-Signature</code> header (HMAC-SHA256 of the request body using your secret).</p>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Verifying Webhooks</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Each webhook delivery includes an <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">X-Webhook-Signature</code> header (HMAC-SHA256 of the request body using your secret).</p>
         <div className="bg-gray-900 text-gray-100 rounded-lg p-4 text-sm font-mono">
           <span className="text-gray-500">// Verify signature (Node.js example)</span><br />
           <span className="text-blue-400">const</span> expected = crypto.createHmac(<span className="text-yellow-300">'sha256'</span>, secret)<br />
@@ -1123,7 +1123,7 @@ const AccessibilityTab: React.FC = () => {
               type="button"
               onClick={() => handleToggle('highContrast')}
               className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                prefs.highContrast ? 'bg-primary-600' : 'bg-gray-200'
+                prefs.highContrast ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'
               }`}
               role="switch"
               aria-checked={prefs.highContrast}
@@ -1140,7 +1140,7 @@ const AccessibilityTab: React.FC = () => {
               type="button"
               onClick={() => handleToggle('reducedMotion')}
               className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                prefs.reducedMotion ? 'bg-primary-600' : 'bg-gray-200'
+                prefs.reducedMotion ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'
               }`}
               role="switch"
               aria-checked={prefs.reducedMotion}
@@ -1201,7 +1201,7 @@ const AccessibilityTab: React.FC = () => {
             type="button"
             onClick={() => handleToggle('narrationEnabled')}
             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-              prefs.narrationEnabled ? 'bg-primary-600' : 'bg-gray-200'
+              prefs.narrationEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'
             }`}
             role="switch"
             aria-checked={prefs.narrationEnabled}
@@ -1212,7 +1212,7 @@ const AccessibilityTab: React.FC = () => {
       </div>
 
       {saved && (
-        <p className="text-sm text-green-600">Preferences saved</p>
+        <p className="text-sm text-green-600 dark:text-green-400">Preferences saved</p>
       )}
     </div>
   );
@@ -1273,33 +1273,33 @@ const DangerZoneTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Export Data</h2>
-        <p className="text-sm text-gray-500 mb-4">Download a copy of all your data including projects, tasks, and settings.</p>
-        <button onClick={handleExport} disabled={exporting} className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-900 transition-colors disabled:opacity-50">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Export Data</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Download a copy of all your data including projects, tasks, and settings.</p>
+        <button onClick={handleExport} disabled={exporting} className="flex items-center gap-2 bg-gray-800 dark:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors disabled:opacity-50">
           <Download className="w-4 h-4" />
           {exporting ? 'Exporting...' : 'Export All Data'}
         </button>
-        {exportError && <p className="mt-2 text-sm text-red-600">{exportError}</p>}
+        {exportError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{exportError}</p>}
       </div>
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-        <h2 className="text-lg font-semibold text-red-900 mb-2">Delete Account</h2>
-        <p className="text-sm text-red-700 mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
-        {deleteError && <p className="mb-3 text-sm text-red-600 font-medium">{deleteError}</p>}
+      <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/20 p-6">
+        <h2 className="text-lg font-semibold text-red-900 dark:text-red-300 mb-2">Delete Account</h2>
+        <p className="text-sm text-red-700 dark:text-red-400 mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
+        {deleteError && <p className="mb-3 text-sm text-red-600 dark:text-red-400 font-medium">{deleteError}</p>}
         {!showDeleteConfirm ? (
           <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors">
             <Trash2 className="w-4 h-4" /> Delete Account
           </button>
         ) : (
           <div className="space-y-3">
-            <div className="rounded-lg border border-red-300 bg-white p-4">
+            <div className="rounded-lg border border-red-300 dark:border-red-800 bg-white dark:bg-gray-800 p-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-red-900">Are you absolutely sure?</p>
-                  <p className="text-sm text-red-700 mt-1">This will permanently delete your account, all projects, tasks, and data. This action is irreversible.</p>
-                  <p className="text-sm text-red-700 mt-2">Type <span className="font-mono font-bold">DELETE</span> to confirm:</p>
-                  <input type="text" value={deleteInput} onChange={(e) => setDeleteInput(e.target.value)} placeholder="Type DELETE to confirm" className="mt-2 w-full max-w-xs rounded-md border border-red-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" />
+                  <p className="text-sm font-medium text-red-900 dark:text-red-300">Are you absolutely sure?</p>
+                  <p className="text-sm text-red-700 dark:text-red-400 mt-1">This will permanently delete your account, all projects, tasks, and data. This action is irreversible.</p>
+                  <p className="text-sm text-red-700 dark:text-red-400 mt-2">Type <span className="font-mono font-bold">DELETE</span> to confirm:</p>
+                  <input type="text" value={deleteInput} onChange={(e) => setDeleteInput(e.target.value)} placeholder="Type DELETE to confirm" className="mt-2 w-full max-w-xs rounded-md border border-red-300 dark:border-red-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" />
                 </div>
               </div>
             </div>
@@ -1307,7 +1307,7 @@ const DangerZoneTab: React.FC = () => {
               <button onClick={handleDelete} disabled={deleteInput !== 'DELETE'} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <Trash2 className="w-4 h-4" /> Permanently Delete
               </button>
-              <button onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); }} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+              <button onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); }} className="px-4 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
             </div>
           </div>
         )}
