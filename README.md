@@ -98,7 +98,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 - Multi-dependency support: up to 20 predecessors per task (FS/SS/FF/SF + lag), stored in a `task_dependencies` junction table
 - MS Project-style predecessor notation (e.g. "3FS+2d,5SS,7") with health badges and inline editing in both Gantt and Table views
 - Recurring tasks (daily, weekly, biweekly, monthly) with auto-generation
-- Unified customizable dashboard with scope toggle (My Projects / All Projects), KPI tiles, issues trend chart, milestones, budget watch, and widget visibility persistence
+- Unified customizable dashboard with scope toggle (My Projects / All Projects), KPI tiles with enriched drill-in pages (summary cards, trend badges, distribution bars, sparklines), issues trend chart, milestones, budget watch, and widget visibility persistence
 - Real-time presence indicators showing who is viewing a project
 
 ### Critical Path Method (CPM)

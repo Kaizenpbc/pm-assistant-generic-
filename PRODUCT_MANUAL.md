@@ -1518,7 +1518,13 @@ The Dashboard and Projects pages provide a lean, action-oriented project managem
 
 A monitoring cockpit with read-only scope toggle:
 
-- **6 KPI Tiles** — Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, Budget Utilization. Each tile has a colored status dot, semantic color chip, hover lift animation, and click-through to drill-in pages. Health and Overdue tiles display 7-day trend arrows (green up = improving, red down = declining, gray dash = stable).
+- **6 KPI Tiles** — Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, Budget Utilization. Each tile has a colored status dot, semantic color chip, hover lift animation, and click-through to drill-in pages (`/kpi/:type`). Health and Overdue tiles display 7-day trend arrows (green up = improving, red down = declining, gray dash = stable).
+- **KPI Drill-In Pages** (`/kpi/:type`) — Clicking any KPI tile opens an enriched drill-in page with:
+  - **Summary Cards** — 2–4 stat cards above the table (e.g., Avg Health / Healthy / At Risk / Critical for health; Total Overdue / Avg Days / Most Affected Project / Critical Priority for overdue; Total Elevated / Critical / High / Medium for risks; Over Budget / Avg Overrun / Worst Overrun for budget types).
+  - **Trend Badge** — Health and Overdue pages show an "Improving", "Declining", or "Stable" badge next to the title, derived from `trendIndicators`.
+  - **Distribution Bar** — Health page shows a horizontal stacked bar (green/amber/red by score bands); Risks page shows critical/high/medium breakdown with color legend.
+  - **Health Table Enrichment** — The health drill-in adds Schedule, Budget, and Risk sub-score columns plus a 30-day trend sparkline (SVG polyline, color-coded by last score) for each project.
+  - **Sortable Table** — All types retain the existing sortable table with click-through to project detail.
 - **Portfolio Intelligence** — `AISummaryBanner` with circular health ring, risk summary chips, budget status, key insights, and AI narrative (when enabled). Full dark mode support.
 - **Projects Table** — Sortable by 10 columns (name, health, status, priority, type, progress, budget, spent%, end date, days left). Rows navigate to `/project/:id`.
 - **Action Center** — Two-column card: "Today's Priorities" (deadline-driven items from predictions) and "AI Next Best Actions" (proposals to approve with confidence % and risk level badges, critical/high notifications to investigate, at-risk projects to review with health score badges).

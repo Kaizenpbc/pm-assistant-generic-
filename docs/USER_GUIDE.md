@@ -1390,6 +1390,7 @@ Access via the sidebar under **Plan → Dashboard**.
 
 - **Scope Toggle** — Switch between "My Projects" and "All Projects" to control which data is displayed.
 - **KPI Tiles** — 6 tiles showing Portfolio Health, Overdue Tasks, Open Risks, At-Risk Projects, Budget Variance, and Budget Utilization. Each has a colored status dot and click-through to drill-in pages. Health and Overdue tiles show 7-day trend arrows: green up arrow (improving), red down arrow (declining), or gray dash (stable).
+- **KPI Drill-In Pages** — Click any KPI tile to open a detailed drill-in page. Each page includes summary stat cards at the top (e.g., average health, total overdue, critical count), a sortable data table, and type-specific enrichments: Health and Overdue pages show a trend badge (improving/declining/stable); Health and Risks pages show a color-coded distribution bar; the Health table adds Schedule, Budget, and Risk sub-score columns with 30-day sparkline trends.
 - **Portfolio Intelligence** — AI-generated health ring, risk chips, budget status, and key insights. Supports dark mode.
 - **Action Center** — Two columns: "Today's Priorities" (deadline-driven items) and "AI Next Best Actions" (proposals with confidence % and risk level badges, critical/high notifications, at-risk projects with health score badges).
 - **Projects Table** — Sortable table; clicking a row navigates to the project detail view (`/project/:id`).
