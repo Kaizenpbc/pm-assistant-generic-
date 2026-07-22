@@ -15,6 +15,7 @@ import {
   Search,
   Filter,
   X,
+  Download,
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { GanttChart, type GanttTask } from '../../components/schedule/GanttChart';
@@ -32,6 +33,7 @@ import { useColumnState } from '../../hooks/useColumnState';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { COLUMN_DEFS } from '../../components/schedule/tableColumns';
+import { exportTasksCSV } from '../../utils/exportUtils';
 
 export function ScheduleTab({ projectId, projectName, projectStartDate, defaultViewMode = 'gantt' }: { projectId: string; projectName?: string; projectStartDate?: string; defaultViewMode?: string }) {
   const queryClient = useQueryClient();
@@ -207,6 +209,8 @@ export function ScheduleTab({ projectId, projectName, projectStartDate, defaultV
 }
 
 function MobileScheduleView({ schedules }: { schedules: any[] }) {
+  const queryClient = useQueryClient();
+  const [mobileView, setMobileView] = useState<'list' | 'kanban' | 'calendar'>('list');
   const { data: tasksData } = useQuery({
     queryKey: ['tasks', schedules[0]?.id],
     queryFn: () => apiService.getTasks(schedules[0]?.id),
@@ -214,13 +218,59 @@ function MobileScheduleView({ schedules }: { schedules: any[] }) {
   });
 
   const tasks = tasksData?.data || tasksData?.tasks || [];
+  const schedule = schedules[0];
+
+  const handleStatusChange = useCallback((taskId: string, newStatus: string) => {
+    apiService.updateTask(schedule.id, taskId, { status: newStatus }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', schedule.id] });
+    });
+  }, [schedule?.id, queryClient]);
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-        {schedules[0]?.name || 'Tasks'}
-      </h3>
-      <TaskListMobile tasks={tasks} />
+      {/* Mobile view switcher */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+          {schedule?.name || 'Tasks'}
+        </h3>
+        <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5">
+          {([
+            { mode: 'list' as const, label: 'List' },
+            { mode: 'kanban' as const, label: 'Board' },
+            { mode: 'calendar' as const, label: 'Cal' },
+          ] as const).map(({ mode, label }) => (
+            <button
+              key={mode}
+              onClick={() => setMobileView(mode)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                mobileView === mode
+                  ? 'bg-primary-600 text-white'
+                  : 'text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {mobileView === 'list' && (
+        <TaskListMobile tasks={tasks} onStatusChange={handleStatusChange} />
+      )}
+      {mobileView === 'kanban' && (
+        <KanbanBoard
+          tasks={tasks}
+          onTaskClick={() => {}}
+          onStatusChange={handleStatusChange}
+          scheduleId={schedule?.id}
+        />
+      )}
+      {mobileView === 'calendar' && (
+        <CalendarView
+          tasks={tasks}
+          onTaskClick={() => {}}
+        />
+      )}
     </div>
   );
 }
@@ -644,8 +694,18 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           </>
         )}
 
+        {/* Export */}
+        <button
+          onClick={() => exportTasksCSV(filteredTasks, schedule.name || 'tasks')}
+          className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors ml-auto"
+          title="Export tasks to CSV"
+        >
+          <Download className="w-3 h-3" />
+          CSV
+        </button>
+
         {/* Keyboard shortcuts */}
-        <div className="relative ml-auto">
+        <div className="relative">
           <button
             onClick={() => setShowShortcuts(!showShortcuts)}
             className="w-6 h-6 flex items-center justify-center text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-600 rounded transition-colors"

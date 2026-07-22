@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 
 export interface KanbanTask {
   id: string;
@@ -88,10 +88,32 @@ function saveWipLimits(scheduleId: string, limits: Record<string, number>) {
   } catch {}
 }
 
+type SwimlaneSetting = '' | 'assignee' | 'priority';
+
 export function KanbanBoard({ tasks, allTasks, onTaskClick, onStatusChange, onQuickAdd, scheduleId, activeTaskId }: KanbanBoardProps) {
   const [quickAddColumn, setQuickAddColumn] = useState<string | null>(null);
   const [quickAddValue, setQuickAddValue] = useState('');
   const quickAddRef = React.useRef<HTMLInputElement>(null);
+  const [swimlane, setSwimlane] = useState<SwimlaneSetting>('');
+
+  // Compute swimlane groups
+  const swimlaneGroups = useMemo(() => {
+    if (!swimlane) return null;
+    const groups = new Map<string, KanbanTask[]>();
+    for (const task of tasks) {
+      let key: string;
+      if (swimlane === 'assignee') key = task.assignedTo || 'Unassigned';
+      else key = task.priority || 'medium';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(task);
+    }
+    // Sort keys
+    if (swimlane === 'priority') {
+      const order = ['urgent', 'high', 'medium', 'low'];
+      return new Map([...groups.entries()].sort((a, b) => (order.indexOf(a[0]) ?? 99) - (order.indexOf(b[0]) ?? 99)));
+    }
+    return new Map([...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+  }, [tasks, swimlane]);
 
   const handleQuickAddSubmit = useCallback((columnId: string) => {
     const name = quickAddValue.trim();
@@ -179,20 +201,96 @@ export function KanbanBoard({ tasks, allTasks, onTaskClick, onStatusChange, onQu
   );
 
   // Group tasks by status and sort by priority
-  const grouped: Record<string, KanbanTask[]> = {};
-  for (const col of COLUMNS) {
-    grouped[col.id] = tasks
-      .filter((t) => t.status === col.id)
-      .sort((a, b) => (priorityOrder[a.priority || 'medium'] ?? 2) - (priorityOrder[b.priority || 'medium'] ?? 2));
-  }
+  const groupTasksByStatus = (taskList: KanbanTask[]) => {
+    const grouped: Record<string, KanbanTask[]> = {};
+    for (const col of COLUMNS) {
+      grouped[col.id] = taskList
+        .filter((t) => t.status === col.id)
+        .sort((a, b) => (priorityOrder[a.priority || 'medium'] ?? 2) - (priorityOrder[b.priority || 'medium'] ?? 2));
+    }
+    return grouped;
+  };
+
+  const grouped = groupTasksByStatus(tasks);
 
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
-      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Kanban Board</h3>
-        <span className="text-xs text-gray-400">{tasks.length} tasks</span>
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Kanban Board</h3>
+          <span className="text-xs text-gray-400">{tasks.length} tasks</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">Swimlane</span>
+          <select
+            value={swimlane}
+            onChange={(e) => setSwimlane(e.target.value as SwimlaneSetting)}
+            className="text-xs border border-gray-200 dark:border-gray-600 rounded px-1.5 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
+          >
+            <option value="">None</option>
+            <option value="assignee">By Assignee</option>
+            <option value="priority">By Priority</option>
+          </select>
+        </div>
       </div>
 
+      {swimlaneGroups ? (
+        // Swimlane view
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          {/* Column headers */}
+          <div className="flex gap-3 px-4 pt-3 pb-2">
+            <div className="w-32 flex-shrink-0" />
+            {COLUMNS.map(col => (
+              <div key={col.id} className="flex-1 min-w-[200px]">
+                <span className={`text-xs font-semibold uppercase tracking-wide ${col.color}`}>{col.label}</span>
+              </div>
+            ))}
+          </div>
+          {[...swimlaneGroups.entries()].map(([laneKey, laneTasks]) => {
+            const laneGrouped = groupTasksByStatus(laneTasks);
+            return (
+              <div key={laneKey} className="flex gap-3 px-4 py-3">
+                {/* Swimlane label */}
+                <div className="w-32 flex-shrink-0 pt-1">
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 capitalize">{laneKey.replace(/_/g, ' ')}</span>
+                  <span className="block text-[10px] text-gray-400 dark:text-gray-500">{laneTasks.length} tasks</span>
+                </div>
+                {/* Mini columns */}
+                {COLUMNS.map(col => {
+                  const columnTasks = laneGrouped[col.id] || [];
+                  return (
+                    <div
+                      key={col.id}
+                      className={`flex-1 min-w-[200px] rounded-lg border ${col.border} ${col.bg} p-2`}
+                      onDragOver={(e) => handleDragOver(e, col.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, col.id)}
+                    >
+                      {columnTasks.length === 0 ? (
+                        <div className="text-center py-4 text-[10px] text-gray-300 dark:text-gray-600">—</div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {columnTasks.map(task => (
+                            <div
+                              key={task.id}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, task.id)}
+                              onClick={() => onTaskClick?.(task)}
+                              className={`bg-white dark:bg-gray-700 rounded-md border p-2 text-xs cursor-grab active:cursor-grabbing hover:shadow-sm transition-shadow ${activeTaskId === task.id ? 'border-primary-400 ring-1 ring-primary-200' : 'border-gray-200 dark:border-gray-600'}`}
+                            >
+                              <span className="font-medium text-gray-900 dark:text-gray-100 line-clamp-1">{task.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
       <div className="flex gap-3 p-4 overflow-x-auto" style={{ minHeight: '400px' }}>
         {COLUMNS.map((col) => {
           const columnTasks = grouped[col.id] || [];
@@ -373,6 +471,7 @@ export function KanbanBoard({ tasks, allTasks, onTaskClick, onStatusChange, onQu
           );
         })}
       </div>
+      )}
     </div>
   );
 }

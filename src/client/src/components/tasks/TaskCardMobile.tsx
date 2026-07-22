@@ -1,5 +1,5 @@
-import React from 'react';
-import { Calendar, User } from 'lucide-react';
+import React, { useRef, useState, useCallback } from 'react';
+import { Calendar, User, Check } from 'lucide-react';
 
 interface TaskCardMobileProps {
   task: {
@@ -44,6 +44,41 @@ const priorityStyles: Record<string, string> = {
 };
 
 export const TaskCardMobile: React.FC<TaskCardMobileProps> = ({ task, onStatusCycle, onClick }) => {
+  const [swipeX, setSwipeX] = useState(0);
+  const [swiped, setSwiped] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (task.status === 'completed' || task.status === 'cancelled') return;
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      time: Date.now(),
+    };
+    setSwipeX(0);
+  }, [task.status]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const dx = e.touches[0].clientX - touchStartRef.current.x;
+    const dy = e.touches[0].clientY - touchStartRef.current.y;
+    // Only track horizontal swipes
+    if (Math.abs(dy) > Math.abs(dx)) { touchStartRef.current = null; setSwipeX(0); return; }
+    if (dx > 0) setSwipeX(Math.min(dx, 120));
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!touchStartRef.current) { setSwipeX(0); return; }
+    if (swipeX > 80 && onStatusCycle) {
+      setSwiped(true);
+      onStatusCycle(task.id, 'completed');
+      setTimeout(() => { setSwiped(false); setSwipeX(0); }, 600);
+    } else {
+      setSwipeX(0);
+    }
+    touchStartRef.current = null;
+  }, [swipeX, task.id, onStatusCycle]);
+
   const handleStatusTap = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onStatusCycle && task.status !== 'cancelled') {
@@ -52,10 +87,30 @@ export const TaskCardMobile: React.FC<TaskCardMobileProps> = ({ task, onStatusCy
     }
   };
 
+  const canSwipe = task.status !== 'completed' && task.status !== 'cancelled';
+  const swipeProgress = Math.min(swipeX / 80, 1);
+
   return (
+    <div className="relative overflow-hidden rounded-xl">
+      {/* Swipe background */}
+      {canSwipe && swipeX > 0 && (
+        <div
+          className="absolute inset-0 flex items-center pl-4 rounded-xl transition-colors"
+          style={{ backgroundColor: swipeProgress >= 1 ? '#22c55e' : '#86efac' }}
+        >
+          <Check className={`w-5 h-5 transition-transform ${swipeProgress >= 1 ? 'text-white scale-110' : 'text-green-700'}`} />
+          <span className={`ml-2 text-xs font-semibold ${swipeProgress >= 1 ? 'text-white' : 'text-green-800'}`}>
+            {swipeProgress >= 1 ? 'Release to complete' : 'Swipe to complete'}
+          </span>
+        </div>
+      )}
     <div
       onClick={() => onClick?.(task.id)}
-      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 min-h-[56px] active:bg-gray-50 dark:active:bg-gray-750 transition-colors cursor-pointer"
+      onTouchStart={canSwipe ? handleTouchStart : undefined}
+      onTouchMove={canSwipe ? handleTouchMove : undefined}
+      onTouchEnd={canSwipe ? handleTouchEnd : undefined}
+      className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 min-h-[56px] active:bg-gray-50 dark:active:bg-gray-750 cursor-pointer relative ${swiped ? 'transition-transform duration-300' : 'transition-transform duration-150'}`}
+      style={{ transform: swiped ? 'translateX(120px)' : `translateX(${swipeX}px)` }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -90,6 +145,7 @@ export const TaskCardMobile: React.FC<TaskCardMobileProps> = ({ task, onStatusCy
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 };
