@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Clock,
@@ -18,6 +18,9 @@ import {
   Minus,
   CalendarClock,
   Plus,
+  ChevronDown,
+  Link2,
+  MessageSquare,
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { CustomFieldsSection } from '../../components/customfields/CustomFieldsSection';
@@ -259,6 +262,25 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
     return { date: forecastDate, label: forecastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) };
   })();
 
+  // #6 Dependency warnings — blocked tasks
+  const blockedTasks = allTasks.filter((t: any) => {
+    if (t.status === 'completed' || t.status === 'done' || t.status === 'cancelled') return false;
+    const deps: any[] = t.dependencies || [];
+    if (deps.length === 0) return false;
+    return deps.some((d: any) => {
+      const depTask = allTasks.find((dt: any) => dt.id === d.dependencyId || dt.id === d.dependency_id);
+      return depTask && depTask.status !== 'completed' && depTask.status !== 'done';
+    });
+  }).slice(0, 5);
+
+  // #8 Recent comments from audit trail
+  const recentComments = recentActivity
+    .filter((a: any) => {
+      const action = (a.action || a.description || a.summary || '').toLowerCase();
+      return action.includes('comment') || action.includes('mention');
+    })
+    .slice(0, 5);
+
   // Animate progress bars on mount
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
@@ -429,10 +451,7 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
 
       {/* Row 2: Task Summary + Timeline Progress + Key Milestones */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className={cardClass}>
-          <h3 className={headingClass}>
-            <span className="flex items-center gap-2"><BarChart3 className="w-4 h-4" /> Task Summary</span>
-          </h3>
+        <CollapsibleCard id="task-summary" icon={<BarChart3 className="w-4 h-4" />} title="Task Summary" className={cardClass}>
           {analyticsLoading ? (
             <div className="grid grid-cols-2 gap-3">
               {[1, 2, 3, 4].map((i) => (
@@ -454,12 +473,9 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
               )}
             </>
           )}
-        </div>
+        </CollapsibleCard>
 
-        <div className={cardClass}>
-          <h3 className={headingClass}>
-            <span className="flex items-center gap-2"><Clock className="w-4 h-4" /> Timeline Progress</span>
-          </h3>
+        <CollapsibleCard id="timeline" icon={<Clock className="w-4 h-4" />} title="Timeline Progress" className={cardClass}>
           {!start || !end ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">No start/end dates set.</p>
           ) : (
@@ -517,12 +533,9 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
               </div>
             </div>
           )}
-        </div>
+        </CollapsibleCard>
 
-        <div className={cardClass}>
-          <h3 className={headingClass}>
-            <span className="flex items-center gap-2"><Target className="w-4 h-4" /> Key Milestones</span>
-          </h3>
+        <CollapsibleCard id="milestones" icon={<Target className="w-4 h-4" />} title="Key Milestones" className={cardClass}>
           {tasksLoading || (!primaryScheduleId && schedules.length === 0) ? (
             !primaryScheduleId && !tasksLoading ? (
               <p className="text-sm text-gray-500 dark:text-gray-400">No schedule created yet.</p>
@@ -574,16 +587,13 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
               })}
             </div>
           )}
-        </div>
+        </CollapsibleCard>
       </div>
 
       {/* Row 2.5: Health Score + CPI/SPI + Budget Snapshot */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Health Score */}
-        <div className={cardClass}>
-          <h3 className={headingClass}>
-            <span className="flex items-center gap-2"><Heart className="w-4 h-4" /> Project Health</span>
-          </h3>
+        <CollapsibleCard id="health" icon={<Heart className="w-4 h-4" />} title="Project Health" className={cardClass}>
           {currentHealth === null ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">No health data yet. Health scores are recorded daily.</p>
           ) : (
@@ -613,13 +623,10 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
               )}
             </div>
           )}
-        </div>
+        </CollapsibleCard>
 
         {/* CPI / SPI */}
-        <div className={cardClass}>
-          <h3 className={headingClass}>
-            <span className="flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Earned Value</span>
-          </h3>
+        <CollapsibleCard id="evm" icon={<TrendingUp className="w-4 h-4" />} title="Earned Value" className={cardClass}>
           {cpi === null && spi === null ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">No EVM data. Add tasks with costs and progress to enable.</p>
           ) : (
@@ -656,13 +663,10 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
               )}
             </div>
           )}
-        </div>
+        </CollapsibleCard>
 
         {/* Budget Snapshot */}
-        <div className={cardClass}>
-          <h3 className={headingClass}>
-            <span className="flex items-center gap-2"><DollarSign className="w-4 h-4" /> Budget</span>
-          </h3>
+        <CollapsibleCard id="budget" icon={<DollarSign className="w-4 h-4" />} title="Budget" className={cardClass}>
           {budgetAllocated === 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">No budget allocated. Set a budget in project settings.</p>
           ) : (
@@ -699,16 +703,13 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
               </div>
             </div>
           )}
-        </div>
+        </CollapsibleCard>
       </div>
 
       {/* Row 3: Due Soon + RAID Summary + Current Sprint / Recent Activity */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Due Soon */}
-        <div className={cardClass}>
-          <h3 className={headingClass}>
-            <span className="flex items-center gap-2"><CalendarClock className="w-4 h-4" /> Due This Week</span>
-          </h3>
+        <CollapsibleCard id="due-soon" icon={<CalendarClock className="w-4 h-4" />} title="Due This Week" className={cardClass}>
           {tasksLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -739,13 +740,10 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
               })}
             </div>
           )}
-        </div>
+        </CollapsibleCard>
 
         {/* RAID Summary */}
-        <div className={cardClass}>
-          <h3 className={headingClass}>
-            <span className="flex items-center gap-2"><ShieldAlert className="w-4 h-4" /> RAID Summary</span>
-          </h3>
+        <CollapsibleCard id="raid" icon={<ShieldAlert className="w-4 h-4" />} title="RAID Summary" className={cardClass}>
           {!raidStats ? (
             <div className="grid grid-cols-2 gap-2">
               {[1, 2, 3, 4].map((i) => (
@@ -803,7 +801,7 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
               </div>
             </>
           )}
-        </div>
+        </CollapsibleCard>
 
         {/* Current Sprint (only for agile/hybrid) or Recent Activity */}
         {methodology !== 'waterfall' ? (
@@ -912,6 +910,69 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
         </div>
       )}
 
+      {/* Row 3.75: Dependency Warnings + Recent Comments */}
+      {(blockedTasks.length > 0 || recentComments.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {blockedTasks.length > 0 && (
+            <CollapsibleCard id="blocked" icon={<Link2 className="w-4 h-4" />} title={`Blocked Tasks (${blockedTasks.length})`} className={cardClass}>
+              <div className="space-y-2">
+                {blockedTasks.map((t: any) => {
+                  const deps: any[] = t.dependencies || [];
+                  const blockerNames = deps
+                    .map((d: any) => {
+                      const dep = allTasks.find((dt: any) => dt.id === d.dependencyId || dt.id === d.dependency_id);
+                      return dep && dep.status !== 'completed' && dep.status !== 'done' ? dep.name : null;
+                    })
+                    .filter(Boolean);
+                  return (
+                    <div
+                      key={t.id}
+                      className="flex items-start gap-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
+                      onClick={() => onNavigateToTab?.('schedule')}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateToTab?.('schedule'); } }}
+                    >
+                      <div className="mt-0.5 flex-shrink-0">
+                        <Link2 className="w-3.5 h-3.5 text-amber-500" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-gray-900 dark:text-white truncate">{t.name}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                          Waiting on: {blockerNames.join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CollapsibleCard>
+          )}
+          {recentComments.length > 0 && (
+            <CollapsibleCard id="comments" icon={<MessageSquare className="w-4 h-4" />} title="Recent Comments" className={cardClass}>
+              <div className="space-y-2.5">
+                {recentComments.map((a: any, i: number) => (
+                  <div key={a.id || i} className="flex items-start gap-2.5">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <MessageSquare className="w-3 h-3 text-blue-500" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-gray-800 dark:text-gray-200 truncate">
+                        {a.action || a.description || a.summary || a.message || 'Comment'}
+                      </p>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                        {a.userName || a.user || ''}{a.userName || a.user ? ' · ' : ''}
+                        {new Date(a.createdAt || a.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleCard>
+          )}
+        </div>
+      )}
+
       {/* Row 4: Custom Fields + Portal Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {project.id && (
@@ -941,6 +1002,31 @@ function StatBox({ label, value, color, onClick }: { label: string; value: numbe
     >
       <p className={`text-2xl font-bold ${color || 'text-gray-900 dark:text-white'}`}>{value}</p>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{label}</p>
+    </div>
+  );
+}
+
+function CollapsibleCard({ id, icon, title, className, children }: { id: string; icon: ReactNode; title: string; className: string; children: ReactNode }) {
+  const storageKey = `overview-card-${id}`;
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(storageKey) === '1'; } catch { return false; }
+  });
+  const toggle = useCallback(() => {
+    setCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem(storageKey, next ? '1' : '0'); } catch { /* noop */ }
+      return next;
+    });
+  }, [storageKey]);
+  return (
+    <div className={className}>
+      <button onClick={toggle} className="flex items-center justify-between w-full text-base font-semibold text-gray-900 dark:text-white mb-0 group">
+        <span className="flex items-center gap-2">{icon} {title}</span>
+        <ChevronDown className={`w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`} />
+      </button>
+      <div className={`transition-all duration-200 overflow-hidden ${collapsed ? 'max-h-0 opacity-0 mt-0' : 'max-h-[2000px] opacity-100 mt-4'}`}>
+        {children}
+      </div>
     </div>
   );
 }
