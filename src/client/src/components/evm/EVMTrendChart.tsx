@@ -157,7 +157,7 @@ export function EVMTrendChart({ historicalData, predictions, height = 300 }: EVM
 
   if (historicalData.length === 0) {
     return (
-      <div className="text-center py-8 text-sm text-gray-400">
+      <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
         No CPI/SPI trend data available.
       </div>
     );
@@ -190,21 +190,21 @@ export function EVMTrendChart({ historicalData, predictions, height = 300 }: EVM
             y1={yl.y}
             x2={padding.left + plotWidth}
             y2={yl.y}
-            stroke="#e5e7eb"
+            className="stroke-gray-200 dark:stroke-gray-600"
             strokeWidth="1"
           />
         ))}
 
         {/* Y axis labels */}
         {yLabels.map((yl, i) => (
-          <text key={i} x={padding.left - 8} y={yl.y + 4} textAnchor="end" fontSize="10" fill="#9ca3af">
+          <text key={i} x={padding.left - 8} y={yl.y + 4} textAnchor="end" fontSize="10" className="fill-gray-400 dark:fill-gray-500">
             {yl.label}
           </text>
         ))}
 
         {/* X axis labels */}
         {xLabels.map((xl, i) => (
-          <text key={i} x={xl.x} y={height - 8} textAnchor="middle" fontSize="10" fill="#9ca3af">
+          <text key={i} x={xl.x} y={height - 8} textAnchor="middle" fontSize="10" className="fill-gray-400 dark:fill-gray-500">
             {xl.label}
           </text>
         ))}
@@ -223,7 +223,7 @@ export function EVMTrendChart({ historicalData, predictions, height = 300 }: EVM
           x={padding.left + plotWidth + 4}
           y={thresholdY + 4}
           fontSize="9"
-          fill="#9ca3af"
+          className="fill-gray-400 dark:fill-gray-500"
         >
           1.0
         </text>
@@ -299,7 +299,7 @@ export function EVMTrendChart({ historicalData, predictions, height = 300 }: EVM
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="absolute z-20 bg-gray-900 text-white rounded-lg px-3 py-2 text-xs shadow-lg pointer-events-none"
+          className="absolute z-20 bg-gray-900 dark:bg-gray-700 text-white rounded-lg px-3 py-2 text-xs shadow-lg pointer-events-none"
           style={{
             left: `${(tooltip.x / svgWidth) * 100}%`,
             top: '10px',
@@ -322,25 +322,25 @@ export function EVMTrendChart({ historicalData, predictions, height = 300 }: EVM
       <div className="flex items-center gap-5 justify-center mt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-blue-500 rounded" />
-          <span className="text-xs text-gray-500">CPI</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">CPI</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-green-500 rounded" />
-          <span className="text-xs text-gray-500">SPI</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">SPI</span>
         </div>
         {predPoints.length > 0 && (
           <div className="flex items-center gap-1.5">
             <svg width="20" height="4">
               <line x1="0" y1="2" x2="20" y2="2" stroke="#8b5cf6" strokeWidth="2" strokeDasharray="4,2" />
             </svg>
-            <span className="text-xs text-gray-500">AI Prediction</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">AI Prediction</span>
           </div>
         )}
         <div className="flex items-center gap-1.5">
           <svg width="20" height="4">
             <line x1="0" y1="2" x2="20" y2="2" stroke="#9ca3af" strokeWidth="1" strokeDasharray="4,2" />
           </svg>
-          <span className="text-xs text-gray-500">Threshold (1.0)</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Threshold (1.0)</span>
         </div>
       </div>
     </div>

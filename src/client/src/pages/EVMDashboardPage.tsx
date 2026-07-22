@@ -73,9 +73,9 @@ function indexColor(value: number): string {
 }
 
 function severityColor(s: string): string {
-  if (s === 'critical') return 'bg-red-100 text-red-700 border-red-200';
-  if (s === 'warning') return 'bg-amber-100 text-amber-700 border-amber-200';
-  return 'bg-blue-100 text-blue-700 border-blue-200';
+  if (s === 'critical') return 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800';
+  if (s === 'warning') return 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+  return 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
 }
 
 function trendIcon(direction?: string) {
@@ -176,7 +176,7 @@ export function EVMDashboardPage() {
       )}
 
       {selectedProjectId && !isLoading && !result && (
-        <div className="text-center py-16 text-gray-400">No EVM data available for this project.</div>
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">No EVM data available for this project.</div>
       )}
 
       {result && m && (
@@ -224,14 +224,14 @@ export function EVMDashboardPage() {
             <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">CPI / SPI Trend</h3>
               {trendData.length < 2 ? (
-                <div className="text-center py-8 text-gray-400 text-sm">Not enough historical data for trend chart.</div>
+                <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Not enough historical data for trend chart.</div>
               ) : trendLines && (
                 <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full" preserveAspectRatio="xMidYMid meet">
                   {/* Grid lines */}
                   {[0.5, 0.75, 1.0, 1.25, 1.5].filter(v => v >= trendLines.minY && v <= trendLines.maxY).map(v => (
                     <g key={v}>
-                      <line x1={PAD.left} y1={trendLines.toY(v)} x2={CHART_W - PAD.right} y2={trendLines.toY(v)} stroke="#e5e7eb" strokeWidth={v === 1.0 ? 1.5 : 0.5} strokeDasharray={v === 1.0 ? undefined : '4 2'} />
-                      <text x={PAD.left - 5} y={trendLines.toY(v) + 3} fontSize={9} fill="#9ca3af" textAnchor="end">{v.toFixed(1)}</text>
+                      <line x1={PAD.left} y1={trendLines.toY(v)} x2={CHART_W - PAD.right} y2={trendLines.toY(v)} className="stroke-gray-200 dark:stroke-gray-600" strokeWidth={v === 1.0 ? 1.5 : 0.5} strokeDasharray={v === 1.0 ? undefined : '4 2'} />
+                      <text x={PAD.left - 5} y={trendLines.toY(v) + 3} fontSize={9} className="fill-gray-400 dark:fill-gray-500" textAnchor="end">{v.toFixed(1)}</text>
                     </g>
                   ))}
                   {/* CPI line */}
@@ -239,12 +239,12 @@ export function EVMDashboardPage() {
                   {/* SPI line */}
                   <path d={trendLines.spiPath} fill="none" stroke="#22c55e" strokeWidth={2} />
                   {/* 1.0 baseline label */}
-                  <text x={CHART_W - PAD.right + 3} y={trendLines.baselineY + 3} fontSize={8} fill="#9ca3af">1.0</text>
+                  <text x={CHART_W - PAD.right + 3} y={trendLines.baselineY + 3} fontSize={8} className="fill-gray-400 dark:fill-gray-500">1.0</text>
                   {/* X axis labels */}
                   {trendData.map((d, i) => {
                     if (i % Math.max(1, Math.floor(trendData.length / 6)) !== 0) return null;
                     return (
-                      <text key={i} x={trendLines.toX(i)} y={CHART_H - 5} fontSize={8} fill="#9ca3af" textAnchor="middle">
+                      <text key={i} x={trendLines.toX(i)} y={CHART_H - 5} fontSize={8} className="fill-gray-400 dark:fill-gray-500" textAnchor="middle">
                         {new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </text>
                     );
@@ -263,10 +263,10 @@ export function EVMDashboardPage() {
                 </svg>
               )}
               {trendData.length >= 2 && (
-                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
                   <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-500 inline-block" /> CPI</span>
                   <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-green-500 inline-block" /> SPI</span>
-                  <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-300 inline-block" /> Baseline (1.0)</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-300 dark:bg-gray-500 inline-block" /> Baseline (1.0)</span>
                 </div>
               )}
             </div>
@@ -278,7 +278,7 @@ export function EVMDashboardPage() {
                 Early Warnings
               </h3>
               {result.earlyWarnings.length === 0 ? (
-                <div className="text-center py-6 text-green-500 text-sm font-medium">No warnings — project is on track</div>
+                <div className="text-center py-6 text-green-500 dark:text-green-400 text-sm font-medium">No warnings — project is on track</div>
               ) : (
                 <div className="space-y-2">
                   {result.earlyWarnings.map((w, i) => (

@@ -1,18 +1,12 @@
 import { Bot, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 import { MetaPill } from '../ui/MetaPill';
 
-// ---------------------------------------------------------------------------
-// Dollar formatting (matches SCurveChart convention)
-// ---------------------------------------------------------------------------
 function formatDollar(value: number): string {
   if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
   if (Math.abs(value) >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
   return `$${value.toFixed(0)}`;
 }
 
-// ---------------------------------------------------------------------------
-// Metric Card (matches app-wide style)
-// ---------------------------------------------------------------------------
 function MetricCard({
   label,
   value,
@@ -27,11 +21,11 @@ function MetricCard({
   badge?: string;
 }) {
   return (
-    <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center" title={tooltip}>
-      <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+    <div className="rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 text-center" title={tooltip}>
+      <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">
         {label}
         {badge && (
-          <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-primary-50 px-1.5 py-0.5 text-xs font-semibold text-primary-600">
+          <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 text-xs font-semibold text-primary-600 dark:text-primary-400">
             <Bot className="h-2.5 w-2.5" />
             {badge}
           </span>
@@ -42,18 +36,12 @@ function MetricCard({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Alert severity helpers
-// ---------------------------------------------------------------------------
 const severityStyles: Record<string, { bg: string; border: string; text: string; icon: typeof AlertTriangle }> = {
-  critical: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', icon: AlertTriangle },
-  warning: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', icon: AlertCircle },
-  info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: Info },
+  critical: { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', text: 'text-red-800 dark:text-red-300', icon: AlertTriangle },
+  warning: { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-800', text: 'text-yellow-800 dark:text-yellow-300', icon: AlertCircle },
+  info: { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800', text: 'text-blue-800 dark:text-blue-300', icon: Info },
 };
 
-// ---------------------------------------------------------------------------
-// Effort / priority badges
-// ---------------------------------------------------------------------------
 function EffortBadge({ effort }: { effort: string }) {
   const variant = effort === 'low' ? 'success' : effort === 'medium' ? 'warning' : 'danger';
   return <MetaPill variant={variant} className="capitalize">{effort}</MetaPill>;
@@ -64,13 +52,10 @@ function PriorityBadge({ priority }: { priority: number }) {
   return <MetaPill variant={variant}>P{priority}</MetaPill>;
 }
 
-// ---------------------------------------------------------------------------
-// Main Dashboard Component
-// ---------------------------------------------------------------------------
 export function EVMForecastDashboard({ data }: { data: any }) {
   if (!data) {
     return (
-      <div className="text-center py-8 text-sm text-gray-400">
+      <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
         No EVM forecast data available.
       </div>
     );
@@ -78,62 +63,32 @@ export function EVMForecastDashboard({ data }: { data: any }) {
 
   const { currentMetrics, forecasts, aiPredictions, earlyWarnings } = data;
 
-  // Determine colors for CPI / SPI
   const cpiColor =
-    (currentMetrics?.cpi ?? 1) >= 1 ? 'text-green-600' : (currentMetrics?.cpi ?? 1) >= 0.9 ? 'text-yellow-600' : 'text-red-600';
+    (currentMetrics?.cpi ?? 1) >= 1 ? 'text-green-600 dark:text-green-400' : (currentMetrics?.cpi ?? 1) >= 0.9 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400';
   const spiColor =
-    (currentMetrics?.spi ?? 1) >= 1 ? 'text-green-600' : (currentMetrics?.spi ?? 1) >= 0.9 ? 'text-yellow-600' : 'text-red-600';
-  const tcpiColor = (currentMetrics?.tcpi ?? 1) > 1.1 ? 'text-red-600' : 'text-green-600';
+    (currentMetrics?.spi ?? 1) >= 1 ? 'text-green-600 dark:text-green-400' : (currentMetrics?.spi ?? 1) >= 0.9 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400';
+  const tcpiColor = (currentMetrics?.tcpi ?? 1) > 1.1 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400';
 
-  // AI predicted EAC (use the ML / AI forecast if available)
   const aiEAC = aiPredictions?.predictedEAC ?? forecasts?.eacCPI;
 
   return (
     <div className="space-y-4">
-      {/* ----------------------------------------------------------------- */}
-      {/* Summary Cards                                                     */}
-      {/* ----------------------------------------------------------------- */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <MetricCard
-          label="CPI"
-          value={(currentMetrics?.cpi ?? '-').toString()}
-          color={cpiColor}
-          tooltip="Cost Performance Index: EV / AC"
-        />
-        <MetricCard
-          label="SPI"
-          value={(currentMetrics?.spi ?? '-').toString()}
-          color={spiColor}
-          tooltip="Schedule Performance Index: EV / PV"
-        />
-        <MetricCard
-          label="TCPI"
-          value={(currentMetrics?.tcpi ?? '-').toString()}
-          color={tcpiColor}
-          tooltip="To-Complete Performance Index"
-        />
-        <MetricCard
-          label="AI Predicted EAC"
-          value={aiEAC != null ? formatDollar(aiEAC) : '-'}
-          color="text-primary-600"
-          tooltip="AI / ML predicted Estimate at Completion"
-          badge="AI"
-        />
+        <MetricCard label="CPI" value={(currentMetrics?.cpi ?? '-').toString()} color={cpiColor} tooltip="Cost Performance Index: EV / AC" />
+        <MetricCard label="SPI" value={(currentMetrics?.spi ?? '-').toString()} color={spiColor} tooltip="Schedule Performance Index: EV / PV" />
+        <MetricCard label="TCPI" value={(currentMetrics?.tcpi ?? '-').toString()} color={tcpiColor} tooltip="To-Complete Performance Index" />
+        <MetricCard label="AI Predicted EAC" value={aiEAC != null ? formatDollar(aiEAC) : '-'} color="text-primary-600 dark:text-primary-400" tooltip="AI / ML predicted Estimate at Completion" badge="AI" />
       </div>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* Early Warning Alerts                                              */}
-      {/* ----------------------------------------------------------------- */}
+      {/* Early Warning Alerts */}
       {earlyWarnings && earlyWarnings.length > 0 && (
         <div className="space-y-2">
           {earlyWarnings.map((w: any, i: number) => {
             const sev = severityStyles[w.severity] ?? severityStyles.info;
             const Icon = sev.icon;
             return (
-              <div
-                key={i}
-                className={`flex items-start gap-2 rounded-lg border px-3 py-2 ${sev.bg} ${sev.border}`}
-              >
+              <div key={i} className={`flex items-start gap-2 rounded-lg border px-3 py-2 ${sev.bg} ${sev.border}`}>
                 <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${sev.text}`} />
                 <div>
                   <span className={`text-xs font-semibold ${sev.text}`}>{w.title ?? w.metric ?? 'Warning'}</span>
@@ -145,37 +100,34 @@ export function EVMForecastDashboard({ data }: { data: any }) {
         </div>
       )}
 
-      {/* ----------------------------------------------------------------- */}
-      {/* Corrective Actions Table                                          */}
-      {/* ----------------------------------------------------------------- */}
+      {/* Corrective Actions Table */}
       {aiPredictions?.correctiveActions && aiPredictions.correctiveActions.length > 0 && (
         <div>
           <div className="flex items-center gap-1.5 mb-2">
             <Bot className="h-4 w-4 text-primary-500" />
-            <h3 className="text-xs font-semibold text-gray-700">AI-Recommended Corrective Actions</h3>
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300">AI-Recommended Corrective Actions</h3>
           </div>
-
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="min-w-full text-xs">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-500 uppercase text-xs">Action</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-500 uppercase text-xs">Effort</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-500 uppercase text-xs">Priority</th>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-500 uppercase text-xs">Est. Impact</th>
+                  <th className="text-left px-3 py-2 font-semibold text-gray-500 dark:text-gray-400 uppercase text-xs">Action</th>
+                  <th className="text-center px-3 py-2 font-semibold text-gray-500 dark:text-gray-400 uppercase text-xs">Effort</th>
+                  <th className="text-center px-3 py-2 font-semibold text-gray-500 dark:text-gray-400 uppercase text-xs">Priority</th>
+                  <th className="text-left px-3 py-2 font-semibold text-gray-500 dark:text-gray-400 uppercase text-xs">Est. Impact</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {aiPredictions.correctiveActions.map((action: any, i: number) => (
-                  <tr key={i} className="hover:bg-gray-50/60">
-                    <td className="px-3 py-2 text-gray-700 max-w-xs">{action.description ?? action.action}</td>
+                  <tr key={i} className="hover:bg-gray-50/60 dark:hover:bg-gray-700/50">
+                    <td className="px-3 py-2 text-gray-700 dark:text-gray-300 max-w-xs">{action.description ?? action.action}</td>
                     <td className="px-3 py-2 text-center">
                       <EffortBadge effort={action.effort ?? 'medium'} />
                     </td>
                     <td className="px-3 py-2 text-center">
                       <PriorityBadge priority={action.priority ?? 3} />
                     </td>
-                    <td className="px-3 py-2 text-gray-500">{action.estimatedImpact ?? '-'}</td>
+                    <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{action.estimatedImpact ?? '-'}</td>
                   </tr>
                 ))}
               </tbody>
