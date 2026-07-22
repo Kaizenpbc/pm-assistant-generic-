@@ -21,6 +21,8 @@ import {
   ChevronDown,
   Link2,
   MessageSquare,
+  Flag,
+  Paperclip,
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { CustomFieldsSection } from '../../components/customfields/CustomFieldsSection';
@@ -111,6 +113,24 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
     enabled: !!primaryScheduleId,
     staleTime: 300_000,
   });
+
+  // Goals/OKRs for this project
+  const { data: goalsData } = useQuery({
+    queryKey: ['goals', project.id, 'overview'],
+    queryFn: () => apiService.listGoals({ projectId: project.id }),
+    enabled: !!project.id,
+    staleTime: 300_000,
+  });
+  const goals: any[] = goalsData?.goals || goalsData?.data || (Array.isArray(goalsData) ? goalsData : []);
+
+  // Attachments
+  const { data: attachmentsData } = useQuery({
+    queryKey: ['attachments', 'project', project.id, 'overview'],
+    queryFn: () => apiService.getAttachments('project', project.id),
+    enabled: !!project.id,
+    staleTime: 300_000,
+  });
+  const attachments: any[] = attachmentsData?.attachments || attachmentsData?.data || (Array.isArray(attachmentsData) ? attachmentsData : []);
 
   // Health history (30 days)
   const { data: healthHistoryData } = useQuery({
@@ -973,6 +993,84 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
         </div>
       )}
 
+      {/* Row 3.9: Goals + Attachments */}
+      {(goals.length > 0 || attachments.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {goals.length > 0 && (
+            <CollapsibleCard id="goals" icon={<Flag className="w-4 h-4" />} title={`Goals (${goals.length})`} className={cardClass}>
+              <div className="space-y-2.5">
+                {goals.slice(0, 6).map((g: any) => {
+                  const progress = g.progressPercentage ?? g.progress ?? 0;
+                  const status = g.status || 'active';
+                  const isDone = status === 'completed' || status === 'achieved';
+                  return (
+                    <div key={g.id} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className={`text-sm font-medium truncate flex-1 mr-2 ${isDone ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white'}`}>
+                          {g.name || g.title}
+                        </p>
+                        <span className={`text-xs font-medium ${isDone ? 'text-green-600 dark:text-green-400' : progress >= 75 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {Math.round(progress)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${isDone ? 'bg-green-500' : progress >= 75 ? 'bg-blue-500' : progress >= 50 ? 'bg-amber-500' : 'bg-gray-400'}`}
+                          style={{ width: `${Math.min(100, progress)}%` }}
+                        />
+                      </div>
+                      {g.targetDate && (
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                          Target: {new Date(g.targetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+                {goals.length > 6 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">+{goals.length - 6} more goals</p>
+                )}
+              </div>
+            </CollapsibleCard>
+          )}
+          {attachments.length > 0 && (
+            <CollapsibleCard id="attachments" icon={<Paperclip className="w-4 h-4" />} title={`Files (${attachments.length})`} className={cardClass}>
+              <div className="space-y-2">
+                {attachments.slice(0, 5).map((a: any) => {
+                  const name = a.originalName || a.fileName || a.name || 'File';
+                  const size = a.fileSize || a.size;
+                  const date = a.createdAt || a.uploadedAt || a.timestamp;
+                  return (
+                    <div
+                      key={a.id}
+                      className="flex items-center gap-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
+                      onClick={() => onNavigateToTab?.('files')}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateToTab?.('files'); } }}
+                    >
+                      <Paperclip className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-gray-900 dark:text-white truncate">{name}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                          {size ? `${(size / 1024).toFixed(0)} KB · ` : ''}
+                          {date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {attachments.length > 5 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 cursor-pointer hover:text-primary-600" onClick={() => onNavigateToTab?.('files')}>
+                    +{attachments.length - 5} more files
+                  </p>
+                )}
+              </div>
+            </CollapsibleCard>
+          )}
+        </div>
+      )}
+
       {/* Row 4: Custom Fields + Portal Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {project.id && (
@@ -1057,10 +1155,15 @@ function HealthSparkline({ data }: { data: number[] }) {
     `${(i / (data.length - 1)) * width},${height - ((v - min) / range) * (height - 4) - 2}`
   ).join(' ');
   const lastVal = data[data.length - 1];
-  const color = lastVal >= 75 ? '#22c55e' : lastVal >= 50 ? '#f59e0b' : '#ef4444';
+  const isDark = document.documentElement.classList.contains('dark');
+  const color = lastVal >= 75
+    ? (isDark ? '#4ade80' : '#22c55e')
+    : lastVal >= 50
+    ? (isDark ? '#fbbf24' : '#f59e0b')
+    : (isDark ? '#f87171' : '#ef4444');
   return (
     <svg width={width} height={height} className="w-full">
-      <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" opacity={isDark ? 0.85 : 1} />
     </svg>
   );
 }
