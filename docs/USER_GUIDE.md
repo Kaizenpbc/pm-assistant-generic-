@@ -75,13 +75,14 @@ All users see a single **Unified Dashboard** with customizable widgets:
 - **Projects Table** -- Sortable table with health score, status, priority, progress, budget, and end date. Click any row to open the project. If you have no projects yet, the table shows a **New Project** button in place of the empty list — click it to create your first project.
 - **Issues Trend** -- Chart showing issues created vs resolved per week.
 - **Milestones** -- Upcoming milestones with days-until badges.
-- **Budget Watch** -- Top 5 projects by budget spend percentage.
+- **Budget Watch** -- Portfolio summary row (total allocated/spent, utilization %, over-budget count), top 5 projects by spend % with burn-rate-vs-progress indicators and progress markers.
 - **Recent Activity** -- Latest notifications. Click any notification to navigate to the linked page and mark it as read. Includes a "View All" link to the full notifications page.
 - **Next Best Actions** -- AI-suggested actions.
 - **Health Trends** -- Sparkline health history per project.
+- **Sprint Velocity** -- Per-project velocity sparklines with average, trend arrow, sprint-over-sprint delta %, and commitment ratio (delivered vs committed). Portfolio aggregate row when multiple agile projects exist.
 - **Sprint Snapshot** -- Active sprints across projects with day progress, task completion bar, and velocity trend (off by default).
 - **Goals** -- Objectives sorted by urgency with progress bars, status badges, and due dates (off by default).
-- **Team Workload** -- Per-resource task counts with horizontal bars and overload warnings for 15+ tasks (off by default).
+- **Team Workload** -- Summary stats (active/overallocated count), per-resource task counts with horizontal bars, overload warnings (15+ tasks), multi-project overallocation alerts (3+ projects), and capacity display (off by default).
 
 **Scope toggle**: If you have fewer projects than the full portfolio, a **My Projects / All Projects** toggle appears. Switching scope updates all widgets.
 

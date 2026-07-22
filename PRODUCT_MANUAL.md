@@ -1103,13 +1103,14 @@ When a user's own projects are a subset of the full portfolio (e.g., a `team_mem
 | **Projects Table** | Sortable table with health score column (colored dot + numeric), status, priority, progress, budget, end date |
 | **Issues Trend** | SVG line chart showing issues created vs resolved per week (8-week window), with net change badge |
 | **Milestones** | Upcoming milestones with project name, date, and days-until badge (green/red) |
-| **Budget Watch** | Top 5 projects by spend percentage with progress bars |
+| **Budget Watch** | Portfolio summary row (total allocated/spent, utilization %, over-budget count badge), top 5 projects by spend % with burn-rate-vs-progress indicator (red up arrow if burn exceeds progress, green down if under budget), progress marker on spend bar, and dollar amounts |
 | **Recent Activity** | Latest notifications feed with filter pills (All / Agent / Risk / Budget / Meeting / System) and date grouping (Today / Yesterday / Earlier). Click any notification to navigate to the linked entity and mark it as read. "View All" link navigates to the full notifications page. |
 | **Next Best Actions** | AI-suggested next actions with confidence percentage badges (blue pill), risk level badges (color-coded: critical/high/medium/low), and health score badges for at-risk projects. Low-confidence proposals (<60%) are bumped in priority for human review. Critical-severity notifications now surface alongside high-severity. |
 | **Health Trends** | Sparkline health history per project |
+| **Sprint Velocity** | Per-project velocity sparklines with average badge, trend arrow, sprint-over-sprint delta percentage, and commitment ratio (delivered vs committed). Portfolio aggregate row when multiple agile projects exist. Only shown for agile/hybrid projects. |
 | **Sprint Snapshot** | Active sprints across projects with day progress, task completion bar, and velocity trend (default: off) |
 | **Goals** | Objectives sorted by urgency with progress bars, status badges, and due dates. "View All" links to the Goals page (default: off) |
-| **Team Workload** | Per-resource task counts with horizontal bars and overload indicator for resources with 15+ tasks (default: off) |
+| **Team Workload** | Summary stats row (active resource count, overallocated count), per-resource task counts with horizontal bars, overload indicator (15+ tasks), multi-project overallocation warning (3+ projects, red octagon icon), capacity hours display, and color-coded avatar rings for flagged resources (default: off) |
 
 ### Backend Endpoints
 
