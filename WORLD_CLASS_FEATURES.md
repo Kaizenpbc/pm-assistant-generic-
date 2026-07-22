@@ -373,9 +373,16 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 - Role-based permission matrix: all roles can create RAID items (triage-gated for non-PM roles); admin=all operations including reverse; project_manager/scrum_master/pmo/ba=create + triage + cancel; reverse restricted to admin
 - **AI Scan**: project-scoped AI analysis surfaces new Risks and Issues from schedule/task/budget data; user selects which findings to import; imported records tagged `source: ai_scan`
 - **Agent partnership**: background agents write directly to RAID log via `importFromAgent`; agent-written records tagged `source: agent`; `suggest-mitigation` MCP tool surfaces historical lessons-learned for open risks
-- Stats bar with live counts (Open Risks, Open Issues, Open Actions, Pending Decisions)
-- Search + multi-filter toolbar (type, status, severity, source)
-- **Benchmark:** BMC Remedy/Helix ITSM (no-delete audit semantics, sequential IDs, mandatory cancel reason); exceeds traditional PM tools with AI Scan integration and agent write pathway
+- Stats bar with live counts (Open Risks, Open Issues, Open Actions, Pending Decisions) + severity distribution bar
+- Search + collapsible multi-filter toolbar (type, status, severity, source) with active filter count badge
+- **Three view modes**: Table (sortable columns, inline status change, bulk select), Board (Kanban drag-and-drop by status), Risk Matrix (5×5 heatmap)
+- **Sortable columns** — click any column header (ID, Title, Type, Severity, Status, Owner, Score, Date) to sort asc/desc
+- **Inline status change** — click a status badge to pick a new status without opening the detail panel
+- **Bulk actions** — checkbox selection with bulk status and severity change
+- **Due date warnings** — overdue/due-soon badges on actions and issues with unresolved statuses
+- **RAID tab badge** — total open item count shown on the tab header
+- **Mobile card layout** — responsive cards on small screens with compact severity/status badges
+- **Benchmark:** BMC Remedy/Helix ITSM (no-delete audit semantics, sequential IDs, mandatory cancel reason); exceeds traditional PM tools with AI Scan, risk matrix heatmap, Kanban board, and inline status changes
 
 ---
 

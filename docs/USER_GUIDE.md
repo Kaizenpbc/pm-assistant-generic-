@@ -1485,15 +1485,33 @@ When a Proposed item is created, all project managers and owners receive a notif
 
 This keeps the active register curated while ensuring that threats identified by any team member are captured and reviewed.
 
+### Views
+
+The RAID tab supports three view modes, toggled from the toolbar:
+
+- **Table view** (default) — Sortable grid with columns for checkbox, ID, Title, Type, Severity, Status, Owner, Score, and Date. Click any column header to sort ascending or descending. Click a **status badge** directly in the table to change it inline — a dropdown appears with the valid statuses for that record type, without needing to open the detail panel. Due date warnings appear as overdue/due-soon badges next to action and issue titles. On mobile, the table automatically renders as responsive cards.
+- **Board view** — Kanban-style columns grouped by status. Drag cards between columns to change status. Each card shows the record ID, type indicator, severity badge, title, owner, and due warning. Only columns with items are shown.
+- **Risk Matrix** — A 5×5 probability × impact heatmap for risk-type items. Cells are colour-coded from green (low risk score) to red (critical). Each cell shows the count of risks; click a cell to view details.
+
+### Bulk Actions
+
+Use checkboxes to select multiple RAID items, then use the sticky bulk action bar to:
+
+- **Set Status** — Change the status of all selected items at once.
+- **Set Severity** — Change the severity of all selected items at once.
+- Click **Clear** to deselect all.
+
 ### Searching and Filtering
 
-Above the RAID table, a toolbar provides:
+A collapsible filter panel in the toolbar provides:
 
 - **Search box** — Filters records by title or description as you type.
+- **Filter toggle** — Click the Filter button to reveal/hide filter dropdowns. A badge shows how many filters are active.
 - **Type** dropdown — Show all types or filter to Risks, Issues, Actions, or Decisions only.
-- **Status** dropdown — Filter by a specific status (proposed, open, in_progress, resolved, closed, cancelled, etc.).
-- **Severity** dropdown — Filter to a specific severity level (low, medium, high, critical).
+- **Status** dropdown — Filter by a specific status.
+- **Severity** dropdown — Filter to a specific severity level.
 - **Source** dropdown — Filter by how the record was created (manual, ai_scan, agent, import).
+- **Clear all** — Resets all filters at once. Item count displayed.
 
 Filters combine — you can, for example, show only open critical Risks created by AI Scan.
 
@@ -1501,13 +1519,18 @@ Filters combine — you can, for example, show only open critical Risks created 
 
 At the top of the RAID log, a stats bar shows at-a-glance counts:
 
-- **Total** — All active (non-cancelled, non-closed) records in the log.
 - **Open Risks** — Risks in `open` or `monitoring` status.
 - **Open Issues** — Issues in `open` or `in_progress` status.
 - **Open Actions** — Actions in `open`, `in_progress`, or `deferred` status.
 - **Pending Decisions** — Decisions in `pending_decision` status.
+- **Critical** — All items with critical severity.
+- **Severity distribution** — A horizontal stacked bar chart showing the breakdown of critical/high/medium/low items with colour legend.
 
 These counts update immediately whenever a record is created, updated, or cancelled.
+
+### Tab Badge
+
+The RAID tab header shows a count badge with the total number of open items (open risks + open issues + open actions + pending decisions), providing at-a-glance visibility without clicking into the tab.
 
 ### Slide-Out Detail Panel
 

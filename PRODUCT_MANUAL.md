@@ -1739,6 +1739,30 @@ RAID records are never deleted. This preserves the audit trail and prevents gap-
 - **Cancel**: Available on any record in any status except `closed`. Requires a mandatory cancellation reason. Sets status to `cancelled`. Available to all roles that can edit the record type.
 - **Reverse**: Available on Decision records only, when status is `decided`. Requires a mandatory reason. Sets status to `reversed`. Restricted to admin users.
 
+### RAID Views
+
+The RAID tab supports three view modes, toggled from the toolbar:
+
+- **Table view** (default) — sortable grid with columns: checkbox, ID, Title, Type, Severity, Status, Owner, Score, Date. Click any column header to sort ascending/descending. Click a status badge to change status inline (dropdown appears). Checkboxes enable multi-select for bulk status and severity changes via a sticky bulk action bar. Due date warnings appear as overdue/due-soon badges next to action/issue titles. On mobile, the table automatically renders as a responsive card layout with compact task cards.
+- **Board view** — Kanban-style columns grouped by status. Drag cards between columns to change status. Each card shows record ID, type indicator, severity badge, title, owner, and due warning. Only columns with items are shown.
+- **Risk Matrix view** — 5×5 probability × impact heatmap grid. Cells are colour-coded from green (low) through amber (medium) to red (critical). Each cell shows the count of risks in that cell; click to view details. Only risk-type items with probability and impact values appear.
+
+### Filter Bar
+
+A collapsible filter panel with:
+
+- **Search** — real-time text search by title.
+- **Dropdowns** — Type, Status, Severity, Source filters. A badge on the Filter button shows how many filters are active.
+- **Clear all** — resets all filters. Item count displayed.
+
+### Severity Distribution
+
+A horizontal stacked bar chart in the stats row showing the breakdown of critical/high/medium/low items across all RAID records, with colour-coded legend.
+
+### Tab Badge
+
+The RAID tab header shows a count badge with the total number of open items (open risks + open issues + open actions + pending decisions) to provide at-a-glance visibility.
+
 ### Slide-Out Detail Panel
 
 Clicking any row in the RAID log opens a slide-out panel from the right side of the screen. The panel shows:
