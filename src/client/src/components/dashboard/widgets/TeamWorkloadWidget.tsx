@@ -1,6 +1,6 @@
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Users, AlertTriangle } from 'lucide-react';
+import { Users, AlertTriangle, AlertOctagon } from 'lucide-react';
 import { apiService } from '../../../services/api';
 
 interface Project {
@@ -12,6 +12,7 @@ interface Resource {
   id: string;
   name: string;
   email?: string;
+  capacityHoursPerWeek?: number;
 }
 
 interface WorkloadEntry {
@@ -19,6 +20,8 @@ interface WorkloadEntry {
   resourceName?: string;
   assignedTasks?: number;
   taskCount?: number;
+  projectId?: string;
+  projectName?: string;
 }
 
 interface Props {
@@ -70,12 +73,12 @@ export function TeamWorkloadWidget({ projects }: Props) {
   }
 
   // Merge workload across projects
-  const tasksByResource = new Map<string, { name: string; tasks: number }>();
+  const tasksByResource = new Map<string, { name: string; tasks: number; projectCount: number; projects: Set<string>; capacity: number | null }>();
   const resources: Resource[] = resourcesData?.resources || resourcesData || [];
 
-  // Seed with resource names
+  // Seed with resource names + capacity
   for (const r of resources) {
-    tasksByResource.set(r.id, { name: r.name, tasks: 0 });
+    tasksByResource.set(r.id, { name: r.name, tasks: 0, projectCount: 0, projects: new Set(), capacity: r.capacityHoursPerWeek ?? null });
   }
 
   for (const q of workloadQueries) {
@@ -87,10 +90,20 @@ export function TeamWorkloadWidget({ projects }: Props) {
       const existing = tasksByResource.get(id);
       if (existing) {
         existing.tasks += count;
+        if (e.projectId || e.projectName) {
+          existing.projects.add(e.projectId || e.projectName || '');
+        }
       } else {
-        tasksByResource.set(id, { name: e.resourceName || id, tasks: count });
+        const proj = new Set<string>();
+        if (e.projectId || e.projectName) proj.add(e.projectId || e.projectName || '');
+        tasksByResource.set(id, { name: e.resourceName || id, tasks: count, projectCount: 0, projects: proj, capacity: null });
       }
     }
+  }
+
+  // Finalize project counts
+  for (const entry of tasksByResource.values()) {
+    entry.projectCount = entry.projects.size;
   }
 
   const sorted = [...tasksByResource.values()]
@@ -99,6 +112,8 @@ export function TeamWorkloadWidget({ projects }: Props) {
     .slice(0, 8);
 
   const maxTasks = sorted.length > 0 ? sorted[0].tasks : 1;
+  const totalResources = sorted.length;
+  const overallocatedCount = sorted.filter(r => r.tasks > 15 || r.projectCount > 2).length;
 
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
@@ -107,6 +122,30 @@ export function TeamWorkloadWidget({ projects }: Props) {
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Team Workload</h3>
       </div>
 
+      {/* Summary stats row */}
+      {sorted.length > 0 && (
+        <div className="flex items-center gap-3 p-2 mb-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600/50">
+          <div className="flex items-center gap-4 text-xs w-full">
+            <div className="flex items-center gap-1.5">
+              <Users className="w-3 h-3 text-gray-400" />
+              <span className="text-gray-500 dark:text-gray-400">Active:</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-200">{totalResources}</span>
+            </div>
+            {overallocatedCount > 0 && (
+              <div className="flex items-center gap-1.5">
+                <AlertOctagon className="w-3 h-3 text-red-500" />
+                <span className="text-red-600 dark:text-red-400 font-medium">
+                  {overallocatedCount} overallocated
+                </span>
+              </div>
+            )}
+            {overallocatedCount === 0 && (
+              <span className="text-green-600 dark:text-green-400 text-[10px] font-medium">All balanced</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {sorted.length === 0 ? (
         <p className="text-xs text-gray-400 text-center py-6">No resource data available</p>
       ) : (
@@ -114,14 +153,16 @@ export function TeamWorkloadWidget({ projects }: Props) {
           {sorted.map(r => {
             const pct = Math.round((r.tasks / maxTasks) * 100);
             const overloaded = r.tasks > 15;
+            const multiProject = r.projectCount > 2;
+            const hasWarning = overloaded || multiProject;
             return (
               <div
                 key={r.name}
                 onClick={() => navigate('/resources')}
                 className="flex items-center gap-2.5 px-1.5 py-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
               >
-                <div className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-semibold text-primary-700 dark:text-primary-300">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${hasWarning ? 'bg-red-100 dark:bg-red-900/30' : 'bg-primary-100 dark:bg-primary-900/30'}`}>
+                  <span className={`text-xs font-semibold ${hasWarning ? 'text-red-700 dark:text-red-300' : 'text-primary-700 dark:text-primary-300'}`}>
                     {r.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -129,18 +170,29 @@ export function TeamWorkloadWidget({ projects }: Props) {
                   <div className="flex items-center justify-between gap-1 mb-0.5">
                     <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{r.name}</p>
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      {overloaded && <AlertTriangle className="w-3 h-3 text-amber-500" />}
-                      <span className={`text-xs font-medium ${overloaded ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                      {overloaded && <span title="High task count"><AlertTriangle className="w-3 h-3 text-amber-500" /></span>}
+                      {multiProject && <span title={`Spread across ${r.projectCount} projects`}><AlertOctagon className="w-3 h-3 text-red-500" /></span>}
+                      <span className={`text-xs font-medium ${hasWarning ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                         {r.tasks}
                       </span>
                     </div>
                   </div>
                   <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
                     <div
-                      className={`${overloaded ? 'bg-amber-500' : 'bg-primary-500'} h-1.5 rounded-full transition-all`}
+                      className={`${overloaded ? 'bg-red-500' : multiProject ? 'bg-amber-500' : 'bg-primary-500'} h-1.5 rounded-full transition-all`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
+                  {(multiProject || r.capacity != null) && (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {multiProject && (
+                        <span className="text-[10px] text-amber-500 dark:text-amber-400">{r.projectCount} projects</span>
+                      )}
+                      {r.capacity != null && r.capacity > 0 && (
+                        <span className="text-[10px] text-gray-400">{r.capacity}h/wk capacity</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
