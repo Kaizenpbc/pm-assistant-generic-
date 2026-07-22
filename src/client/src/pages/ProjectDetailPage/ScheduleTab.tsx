@@ -34,7 +34,17 @@ export function ScheduleTab({ projectId, projectName, projectStartDate, defaultV
   const queryClient = useQueryClient();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
-  const [viewMode, setViewMode] = useState<'gantt' | 'kanban' | 'table' | 'calendar' | 'network' | 'burndown'>(defaultViewMode as any);
+  const [viewMode, setViewModeRaw] = useState<'gantt' | 'kanban' | 'table' | 'calendar' | 'network' | 'burndown'>(() => {
+    try {
+      const saved = localStorage.getItem('schedule-view-mode');
+      if (saved && ['gantt', 'kanban', 'table', 'calendar', 'network', 'burndown'].includes(saved)) return saved as any;
+    } catch { /* noop */ }
+    return defaultViewMode as any;
+  });
+  const setViewMode = useCallback((mode: typeof viewMode) => {
+    setViewModeRaw(mode);
+    try { localStorage.setItem('schedule-view-mode', mode); } catch { /* noop */ }
+  }, []);
   const [uploadingSchedule, setUploadingSchedule] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const scheduleFileRef = useRef<HTMLInputElement>(null);
@@ -98,8 +108,22 @@ export function ScheduleTab({ projectId, projectName, projectStartDate, defaultV
 
   if (schedulesLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-72 animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg" />
+        </div>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="h-4 w-4 animate-pulse bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className={`h-4 animate-pulse bg-gray-200 dark:bg-gray-700 rounded`} style={{ width: `${40 + (i * 7) % 30}%` }} />
+                <div className="h-4 w-20 animate-pulse bg-gray-100 dark:bg-gray-600 rounded" />
+                <div className="h-3 w-32 animate-pulse bg-gray-100 dark:bg-gray-600 rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -210,6 +234,7 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
   const [selectedBaselineId, setSelectedBaselineId] = useState<string>('');
   const [showComparison, setShowComparison] = useState(false);
   const [showReschedulePanel, setShowReschedulePanel] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const cpmNeeded = columnState.cpmNeeded;
 
   const { data: tasksData, isLoading: tasksLoading } = useQuery({
@@ -452,11 +477,40 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
     updateMutation.mutate({ taskId, data: { status: newStatus } });
   };
 
+  // Task stats for summary bar
+  const taskStats = (() => {
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+    const inProgress = tasks.filter(t => t.status === 'in_progress').length;
+    const pending = tasks.filter(t => t.status === 'pending' || t.status === 'not_started').length;
+    const overdue = tasks.filter(t => {
+      if (t.status === 'completed' || t.status === 'done' || t.status === 'cancelled') return false;
+      const due = t.endDate;
+      return due && new Date(due) < new Date();
+    }).length;
+    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, inProgress, pending, overdue, pct };
+  })();
+
   if (tasksLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
-        <div className="flex items-center justify-center py-8">
-          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      <div className="space-y-3">
+        <div className="flex items-center gap-4 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="h-4 w-20 animate-pulse bg-gray-200 dark:bg-gray-700 rounded" />
+          ))}
+        </div>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="h-4 w-4 animate-pulse bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="h-4 animate-pulse bg-gray-200 dark:bg-gray-700 rounded" style={{ width: `${40 + (i * 7) % 30}%` }} />
+                <div className="h-4 w-20 animate-pulse bg-gray-100 dark:bg-gray-600 rounded" />
+                <div className="h-3 w-32 animate-pulse bg-gray-100 dark:bg-gray-600 rounded-full" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -555,7 +609,74 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           )}
           </>
         )}
+
+        {/* Keyboard shortcuts */}
+        <div className="relative ml-auto">
+          <button
+            onClick={() => setShowShortcuts(!showShortcuts)}
+            className="w-6 h-6 flex items-center justify-center text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-600 rounded transition-colors"
+            title="Keyboard shortcuts"
+          >
+            ?
+          </button>
+          {showShortcuts && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowShortcuts(false)} />
+              <div className="absolute right-0 top-8 z-50 w-56 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-3">
+                <p className="text-xs font-semibold text-gray-900 dark:text-white mb-2">Keyboard Shortcuts</p>
+                <div className="space-y-1.5 text-xs">
+                  {[
+                    ['Ctrl + Z', 'Undo'],
+                    ['Ctrl + Y', 'Redo'],
+                    ['Delete', 'Delete task'],
+                    ['Click', 'Select task'],
+                    ['Double-click', 'Edit task'],
+                    ['Drag bar', 'Move dates'],
+                    ['Drag handle', 'Reorder rows'],
+                    ['Shift + Click', 'Multi-select'],
+                  ].map(([key, desc]) => (
+                    <div key={key} className="flex items-center justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">{desc}</span>
+                      <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-mono text-[10px]">{key}</kbd>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Schedule Summary Bar */}
+      {tasks.length > 0 && (
+        <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 text-xs mb-1 flex-wrap">
+          <span className="text-gray-500 dark:text-gray-400">
+            <span className="font-semibold text-gray-700 dark:text-gray-200">{taskStats.total}</span> tasks
+          </span>
+          <span className="w-px h-3 bg-gray-200 dark:bg-gray-600" />
+          <span className="text-green-600 dark:text-green-400">
+            <span className="font-semibold">{taskStats.completed}</span> done
+            <span className="text-gray-400 dark:text-gray-500 ml-0.5">({taskStats.pct}%)</span>
+          </span>
+          <span className="w-px h-3 bg-gray-200 dark:bg-gray-600" />
+          <span className="text-blue-600 dark:text-blue-400">
+            <span className="font-semibold">{taskStats.inProgress}</span> in progress
+          </span>
+          {taskStats.overdue > 0 && (
+            <>
+              <span className="w-px h-3 bg-gray-200 dark:bg-gray-600" />
+              <span className="text-red-600 dark:text-red-400 font-semibold">
+                {taskStats.overdue} overdue
+              </span>
+            </>
+          )}
+          <span className="ml-auto">
+            <div className="w-24 h-1.5 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden">
+              <div className="h-full bg-green-500 rounded-full transition-all duration-500" style={{ width: `${taskStats.pct}%` }} />
+            </div>
+          </span>
+        </div>
+      )}
 
       {viewMode === 'gantt' && (
         <GanttChart

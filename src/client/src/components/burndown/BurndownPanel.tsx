@@ -46,35 +46,35 @@ export function BurndownPanel({ scheduleId }: BurndownPanelProps) {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-xs uppercase text-gray-500 tracking-wider">Total Scope</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{totalScope}</p>
-          <p className="text-xs text-gray-400">tasks</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center">
+          <p className="text-xs uppercase text-gray-500 dark:text-gray-400 tracking-wider">Total Scope</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{totalScope}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">tasks</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-xs uppercase text-gray-500 tracking-wider">Completed</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{percentComplete}%</p>
-          <p className="text-xs text-gray-400">{completedCount} / {totalScope} tasks</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center">
+          <p className="text-xs uppercase text-gray-500 dark:text-gray-400 tracking-wider">Completed</p>
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{percentComplete}%</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">{completedCount} / {totalScope} tasks</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-xs uppercase text-gray-500 tracking-wider">Velocity</p>
-          <p className="text-2xl font-bold text-primary-600 mt-1">{avgVelocity}</p>
-          <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center">
+          <p className="text-xs uppercase text-gray-500 dark:text-gray-400 tracking-wider">Velocity</p>
+          <p className="text-2xl font-bold text-primary-600 dark:text-primary-400 mt-1">{avgVelocity}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center justify-center gap-1">
             tasks/week <TrendIcon className={`w-3 h-3 ${trendColor}`} />
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-xs uppercase text-gray-500 tracking-wider">Est. Completion</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center">
+          <p className="text-xs uppercase text-gray-500 dark:text-gray-400 tracking-wider">Est. Completion</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
             {weeksToComplete !== null ? `${weeksToComplete}w` : '-'}
           </p>
-          <p className="text-xs text-gray-400">weeks remaining</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">weeks remaining</p>
         </div>
       </div>
 
       {/* Burndown Chart */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-bold text-gray-900 mb-3">Burndown / Burnup</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">Burndown / Burnup</h3>
         <BurndownChart
           dataPoints={burndownData?.dataPoints || []}
           totalScope={totalScope}
@@ -82,8 +82,8 @@ export function BurndownPanel({ scheduleId }: BurndownPanelProps) {
       </div>
 
       {/* Velocity Chart */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-1.5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5">
           <BarChart3 className="w-4 h-4 text-primary-500" /> Velocity Trend
         </h3>
         <VelocityChart
