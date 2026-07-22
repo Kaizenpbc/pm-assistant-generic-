@@ -156,15 +156,31 @@ The `EVMForecastService` extends basic EVM with AI-powered forecasting:
 
 Proactive alerts fire when CPI or SPI drop below configurable thresholds, enabling intervention before projects go off-track.
 
+### Budget Tab (Project Detail)
+
+The Budget tab within a project provides expense tracking and budget overview:
+
+- **Overview sub-tab**:
+  - **Four summary cards**: Budget Allocated, Total Spent, Remaining (green/red), Budget Health Gauge (semi-circle SVG with color zones: green < 80%, amber 80-100%, red > 100%).
+  - **Category donut chart**: SVG donut showing cost breakdown by category (10 categories: labor, materials, software, hardware, travel, contractors, training, consulting, licenses, other) with color legend.
+  - **Monthly spend trend**: Bar chart with cumulative spend line overlay (amber). Legend shows monthly bars vs cumulative line.
+- **Expenses sub-tab**:
+  - **Search bar** to filter by vendor, description, or category name.
+  - **Category dropdown filter** to show only a specific expense category.
+  - **Sortable columns**: Click Date, Category, Amount, or Vendor headers to sort ascending/descending.
+  - **CSV export**: Download filtered expenses as CSV file.
+  - **Add Expense form**: Inline form with date, amount, category, vendor, description fields.
+  - **Mobile card layout**: Responsive cards on small screens instead of the table.
+
 ### EVM Dashboard Page (`/evm`)
 
-A dedicated analytics page for earned value management, accessible from the sidebar under the **Analyze** section. Features:
+A dedicated analytics page for earned value management, accessible from the sidebar under the **Analyze** section. Full dark mode support. Features:
 
 - **Project selector** dropdown to choose which project to analyze.
 - **Six KPI cards**: CPI, SPI, EV, PV, AC, BAC with color-coded values (green when healthy, red when critical).
 - **Four forecast cards**: EAC, ETC, VAC, TCPI with red warning borders when thresholds are exceeded.
-- **CPI/SPI Trend chart**: SVG line chart with blue CPI line, green SPI line, 1.0 baseline reference, and labeled axes.
-- **Early Warnings panel**: color-coded alert cards (critical = red, warning = amber, info = blue).
+- **CPI/SPI Trend chart**: SVG line chart with blue CPI line, green SPI line, 1.0 baseline reference, and labeled axes. Dark mode uses class-based SVG fills for proper contrast.
+- **Early Warnings panel**: color-coded alert cards (critical = red, warning = amber, info = blue) with dark mode variants.
 - **Forecast Comparison table**: multiple forecasting methods with EAC values and BAC variance.
 - **AI Predictions section** (when `AI_ENABLED=true`): AI-adjusted EAC with confidence range, overrun probability, trend direction, narrative summary, and corrective actions with priority badges.
 

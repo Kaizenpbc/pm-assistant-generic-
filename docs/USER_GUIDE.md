@@ -509,7 +509,32 @@ The EVM Forecast Dashboard shows:
 
 ### EVM Trend Chart
 
-Track how SPI and CPI change over time to identify whether performance is improving or degrading.
+Track how SPI and CPI change over time to identify whether performance is improving or degrading. The trend chart includes:
+
+- **Dark mode support** -- SVG grid lines and axis labels adapt to dark mode using class-based fills.
+- **Interactive tooltips** -- Hover data points to see CPI, SPI values and date.
+- **AI prediction line** -- Dashed purple extension showing predicted future CPI trend.
+
+### Budget Tab
+
+The Budget tab within each project provides comprehensive expense tracking and budget visualization.
+
+#### Overview
+
+- **Summary cards** -- Budget Allocated, Total Spent, Remaining (green when positive, red when over budget).
+- **Budget health gauge** -- Semi-circle SVG gauge showing budget consumption percentage with color zones (green < 80%, amber 80-100%, red > 100%).
+- **Category donut chart** -- SVG donut chart showing cost breakdown across 10 categories (labor, materials, software, hardware, travel, contractors, training, consulting, licenses, other) with a color legend.
+- **Monthly spend trend** -- Bar chart showing monthly spending with an amber cumulative line overlay. Legend identifies monthly bars vs cumulative trend.
+
+#### Expenses
+
+- **Search bar** -- Filter expenses by vendor name, description, or category.
+- **Category filter** -- Dropdown to show only expenses in a specific category.
+- **Sortable columns** -- Click the Date, Category, Amount, or Vendor column headers to sort ascending or descending. Active sort shows an arrow indicator.
+- **CSV export** -- Click the CSV button to download all filtered expenses as a CSV file.
+- **Add expense** -- Inline form with date, amount, category, vendor, and description fields.
+- **Delete** -- Remove individual expenses with the trash icon.
+- **Mobile cards** -- On small screens, expenses display as compact cards instead of a table.
 
 ---
 
