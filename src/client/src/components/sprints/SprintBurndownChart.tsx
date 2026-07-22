@@ -53,7 +53,6 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
     const { totalPoints, dataPoints, startDate, endDate } = burndown;
     const maxVal = totalPoints || Math.max(...dataPoints.map((p) => p.remaining), 1);
 
-    // Build full date range from startDate to endDate for ideal line
     const start = new Date(startDate + 'T00:00:00');
     const end = new Date(endDate + 'T00:00:00');
     const totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000));
@@ -61,12 +60,10 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
     const scaleX = (dayIndex: number) => padding.left + (dayIndex / totalDays) * plotWidth;
     const scaleY = (v: number) => padding.top + (1 - v / maxVal) * plotHeight;
 
-    // Ideal burndown: straight line from totalPoints to 0
     const idealStart = `${scaleX(0)},${scaleY(totalPoints)}`;
     const idealEnd = `${scaleX(totalDays)},${scaleY(0)}`;
     const idealLine = `${idealStart} ${idealEnd}`;
 
-    // Actual burndown line
     const actualPoints: { x: number; y: number; point: BurndownPoint; dayIndex: number }[] = [];
     for (const dp of dataPoints) {
       const dpDate = new Date(dp.date + 'T00:00:00');
@@ -77,13 +74,11 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
     }
     const actualLine = actualPoints.map((p) => `${p.x},${p.y}`).join(' ');
 
-    // Today marker
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayDayIndex = Math.round((today.getTime() - start.getTime()) / 86400000);
     const todayX = todayDayIndex >= 0 && todayDayIndex <= totalDays ? scaleX(todayDayIndex) : -1;
 
-    // X-axis labels (show ~6-8 labels)
     const labelStep = Math.max(1, Math.floor(totalDays / 7));
     const xLabels: { label: string; x: number }[] = [];
     for (let d = 0; d <= totalDays; d += labelStep) {
@@ -93,12 +88,10 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
         x: scaleX(d),
       });
     }
-    // Always include end
     if (xLabels.length > 0 && xLabels[xLabels.length - 1].x < scaleX(totalDays) - 30) {
       xLabels.push({ label: formatDateShort(endDate), x: scaleX(totalDays) });
     }
 
-    // Y-axis labels
     const ySteps = 5;
     const yLabels = Array.from({ length: ySteps + 1 }, (_, i) => {
       const val = Math.round((maxVal / ySteps) * i);
@@ -110,10 +103,10 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-gray-200 rounded w-1/3" />
-          <div className="h-48 bg-gray-100 rounded" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+          <div className="h-48 bg-gray-100 dark:bg-gray-700 rounded" />
         </div>
       </div>
     );
@@ -121,50 +114,50 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
 
   if (isError) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-        <p className="text-sm text-red-600">Failed to load burndown data.</p>
+      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center">
+        <p className="text-sm text-red-600 dark:text-red-400">Failed to load burndown data.</p>
       </div>
     );
   }
 
   if (!burndown || !chart) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-        <TrendingDown className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-        <p className="text-sm text-gray-500">No burndown data available</p>
-        <p className="text-xs text-gray-400 mt-1">Burndown data will appear once the sprint is started and tasks are tracked.</p>
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center">
+        <TrendingDown className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+        <p className="text-sm text-gray-500 dark:text-gray-400">No burndown data available</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Burndown data will appear once the sprint is started and tasks are tracked.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
         <TrendingDown className="w-4 h-4 text-primary-500" />
-        <h3 className="text-sm font-semibold text-gray-800">Sprint Burndown</h3>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Sprint Burndown</h3>
       </div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-4 gap-3 px-4 pt-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 pt-4">
         <div className="text-center">
-          <div className="text-xs uppercase tracking-wide text-gray-400 font-medium">Total</div>
-          <div className="text-lg font-bold text-gray-800">{burndown.totalPoints}</div>
-          <div className="text-xs text-gray-400">points</div>
+          <div className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500 font-medium">Total</div>
+          <div className="text-lg font-bold text-gray-800 dark:text-white">{burndown.totalPoints}</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">points</div>
         </div>
         <div className="text-center">
-          <div className="text-xs uppercase tracking-wide text-gray-400 font-medium">Completed</div>
-          <div className="text-lg font-bold text-green-600">{burndown.pointsCompleted}</div>
-          <div className="text-xs text-gray-400">points</div>
+          <div className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500 font-medium">Completed</div>
+          <div className="text-lg font-bold text-green-600 dark:text-green-400">{burndown.pointsCompleted}</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">points</div>
         </div>
         <div className="text-center">
-          <div className="text-xs uppercase tracking-wide text-gray-400 font-medium">Remaining</div>
-          <div className="text-lg font-bold text-primary-600">{burndown.pointsRemaining}</div>
-          <div className="text-xs text-gray-400">points</div>
+          <div className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500 font-medium">Remaining</div>
+          <div className="text-lg font-bold text-primary-600 dark:text-primary-400">{burndown.pointsRemaining}</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">points</div>
         </div>
         <div className="text-center">
-          <div className="text-xs uppercase tracking-wide text-gray-400 font-medium">Days Left</div>
-          <div className="text-lg font-bold text-amber-600">{Math.max(0, burndown.daysRemaining)}</div>
-          <div className="text-xs text-gray-400">days</div>
+          <div className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500 font-medium">Days Left</div>
+          <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{Math.max(0, burndown.daysRemaining)}</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">days</div>
         </div>
       </div>
 
@@ -179,10 +172,10 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
                 y1={yl.y}
                 x2={chart.padding.left + chart.plotWidth}
                 y2={yl.y}
-                stroke="#e5e7eb"
+                className="stroke-gray-200 dark:stroke-gray-600"
                 strokeWidth="1"
               />
-              <text x={chart.padding.left - 8} y={yl.y + 4} textAnchor="end" fontSize="10" fill="#9ca3af">
+              <text x={chart.padding.left - 8} y={yl.y + 4} textAnchor="end" fontSize="10" className="fill-gray-400 dark:fill-gray-500">
                 {yl.val}
               </text>
             </g>
@@ -190,16 +183,16 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
 
           {/* X-axis labels */}
           {chart.xLabels.map((xl, i) => (
-            <text key={i} x={xl.x} y={svgHeight - 8} textAnchor="middle" fontSize="10" fill="#9ca3af">
+            <text key={i} x={xl.x} y={svgHeight - 8} textAnchor="middle" fontSize="10" className="fill-gray-400 dark:fill-gray-500">
               {xl.label}
             </text>
           ))}
 
-          {/* Ideal burndown line (dashed gray) */}
+          {/* Ideal burndown line (dashed) */}
           <polyline
             points={chart.idealLine}
             fill="none"
-            stroke="#9ca3af"
+            className="stroke-gray-400 dark:stroke-gray-500"
             strokeWidth="1.5"
             strokeDasharray="6 3"
           />
@@ -224,9 +217,8 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
               cy={ap.y}
               r="3.5"
               fill="#6366f1"
-              stroke="white"
+              className="stroke-white dark:stroke-gray-800"
               strokeWidth="1.5"
-              className="hover:r-[5]"
               onMouseEnter={(e) => {
                 const idealRemaining =
                   chart.totalPoints - (ap.dayIndex / chart.totalDays) * chart.totalPoints;
@@ -241,7 +233,7 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
             />
           ))}
 
-          {/* Today marker (vertical dashed line) */}
+          {/* Today marker */}
           {chart.todayX > 0 && (
             <g>
               <line
@@ -271,22 +263,22 @@ export function SprintBurndownChart({ sprintId }: SprintBurndownChartProps) {
         <div className="flex items-center gap-5 justify-center mt-2 text-xs">
           <div className="flex items-center gap-1.5">
             <div className="w-5 h-0.5" style={{ borderTop: '2px dashed #9ca3af' }} />
-            <span className="text-gray-600">Ideal</span>
+            <span className="text-gray-600 dark:text-gray-400">Ideal</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-5 h-0.5 bg-primary-500 rounded" />
-            <span className="text-gray-600">Actual</span>
+            <span className="text-gray-600 dark:text-gray-400">Actual</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ borderTop: '2px dashed #f59e0b' }} />
-            <span className="text-gray-600">Today</span>
+            <span className="text-gray-600 dark:text-gray-400">Today</span>
           </div>
         </div>
 
         {/* Tooltip */}
         {tooltip && (
           <div
-            className="fixed z-50 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 pointer-events-none shadow-lg"
+            className="fixed z-50 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg px-3 py-2 pointer-events-none shadow-lg"
             style={{ left: tooltip.x + 10, top: tooltip.y - 60 }}
           >
             <p className="font-medium">{formatDateShort(tooltip.point.date)}</p>

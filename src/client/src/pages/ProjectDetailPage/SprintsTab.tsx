@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Zap } from 'lucide-react';
+import { Zap, Calendar } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { SprintList } from '../../components/sprints/SprintList';
 import { SprintPlanningPanel } from '../../components/sprints/SprintPlanningPanel';
@@ -8,6 +8,33 @@ import { SprintBoard } from '../../components/sprints/SprintBoard';
 import { SprintBurndownChart } from '../../components/sprints/SprintBurndownChart';
 import { CumulativeFlowChart } from '../../components/sprints/CumulativeFlowChart';
 import { CapacityCard } from '../../components/sprints/CapacityCard';
+
+interface SprintSummary {
+  id: string;
+  name: string;
+  status: string;
+  start_date?: string;
+  end_date?: string;
+  taskStats?: { totalTasks: number; completedTasks: number; totalPoints: number; completedPoints: number };
+}
+
+function DayProgress({ sprint }: { sprint: SprintSummary | null }) {
+  if (!sprint || sprint.status !== 'active' || !sprint.start_date || !sprint.end_date) return null;
+  const start = new Date(sprint.start_date + 'T00:00:00').getTime();
+  const end = new Date(sprint.end_date + 'T00:00:00').getTime();
+  const now = new Date().setHours(0, 0, 0, 0);
+  const totalDays = Math.max(1, Math.round((end - start) / 86400000));
+  const elapsed = Math.max(0, Math.min(totalDays, Math.round((now - start) / 86400000)));
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+      <Calendar className="w-3 h-3" />
+      <span>Day {elapsed} of {totalDays}</span>
+      <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+        <div className="h-full bg-primary-500 rounded-full" style={{ width: `${Math.round((elapsed / totalDays) * 100)}%` }} />
+      </div>
+    </div>
+  );
+}
 
 export function SprintsTab({ projectId }: { projectId: string }) {
   const { data: schedulesData } = useQuery({
@@ -29,6 +56,22 @@ export function SprintsTab({ projectId }: { projectId: string }) {
     }
   }, [schedules, selectedScheduleId]);
 
+  const { data: sprintsData } = useQuery({
+    queryKey: ['sprints', projectId],
+    queryFn: () => apiService.getSprints(projectId),
+    enabled: !!projectId,
+  });
+
+  const allSprints: SprintSummary[] = sprintsData?.data || sprintsData?.sprints || [];
+  const activeSprint = useMemo(() => allSprints.find((s) => s.status === 'active') || null, [allSprints]);
+
+  const activeProgress = useMemo(() => {
+    if (!activeSprint?.taskStats) return null;
+    const { totalTasks, completedTasks } = activeSprint.taskStats;
+    if (totalTasks === 0) return null;
+    return Math.round((completedTasks / totalTasks) * 100);
+  }, [activeSprint]);
+
   const handleRetro = async (sprintId: string) => {
     setRetroLoading(true);
     try {
@@ -46,14 +89,30 @@ export function SprintsTab({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sprint Planning</h3>
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sprint Planning</h3>
+          {/* Active sprint progress bar */}
+          {activeSprint && activeProgress != null && (
+            <div className="flex items-center gap-2">
+              <div className="w-24 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${activeProgress === 100 ? 'bg-green-500' : activeProgress >= 50 ? 'bg-blue-500' : 'bg-amber-500'}`}
+                  style={{ width: `${activeProgress}%` }}
+                />
+              </div>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{activeProgress}%</span>
+            </div>
+          )}
+          {/* Day progress indicator */}
+          <DayProgress sprint={activeSprint} />
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
           {schedules.length > 1 && (
             <select
               value={selectedScheduleId}
               onChange={(e) => setSelectedScheduleId(e.target.value)}
-              className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
+              className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm"
             >
               {schedules.map((s: any) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
@@ -61,12 +120,12 @@ export function SprintsTab({ projectId }: { projectId: string }) {
             </select>
           )}
           {selectedSprintId && (
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
               {(['list', 'planning', 'board', 'burndown', 'flow', 'capacity'] as const).map((v) => (
                 <button
                   key={v}
                   onClick={() => setSprintView(v)}
-                  className={`px-3 py-1 text-xs rounded-md capitalize ${sprintView === v ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'}`}
+                  className={`px-3 py-1 text-xs rounded-md capitalize ${sprintView === v ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 >
                   {v}
                 </button>

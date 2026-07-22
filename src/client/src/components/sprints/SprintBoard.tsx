@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Kanban, Settings } from 'lucide-react';
+import { Kanban, Settings, Users } from 'lucide-react';
 import { apiService } from '../../services/api';
 
 interface BoardTask {
@@ -17,26 +17,42 @@ interface SprintBoardProps {
   sprintId: string;
 }
 
-const COLUMNS: { id: string; label: string; headerBg: string; headerText: string; bg: string; border: string }[] = [
-  { id: 'pending', label: 'Todo', headerBg: 'bg-gray-100', headerText: 'text-gray-700', bg: 'bg-gray-50', border: 'border-gray-200' },
-  { id: 'in_progress', label: 'In Progress', headerBg: 'bg-blue-100', headerText: 'text-blue-700', bg: 'bg-blue-50/30', border: 'border-blue-200' },
-  { id: 'completed', label: 'Done', headerBg: 'bg-green-100', headerText: 'text-green-700', bg: 'bg-green-50/30', border: 'border-green-200' },
+const COLUMNS: { id: string; label: string; headerBg: string; headerText: string; bg: string; border: string; darkHeaderBg: string; darkBg: string; darkBorder: string }[] = [
+  { id: 'pending', label: 'Todo', headerBg: 'bg-gray-100', headerText: 'text-gray-700', bg: 'bg-gray-50', border: 'border-gray-200', darkHeaderBg: 'dark:bg-gray-700', darkBg: 'dark:bg-gray-800/50', darkBorder: 'dark:border-gray-600' },
+  { id: 'in_progress', label: 'In Progress', headerBg: 'bg-blue-100', headerText: 'text-blue-700', bg: 'bg-blue-50/30', border: 'border-blue-200', darkHeaderBg: 'dark:bg-blue-900/40', darkBg: 'dark:bg-blue-900/10', darkBorder: 'dark:border-blue-800' },
+  { id: 'completed', label: 'Done', headerBg: 'bg-green-100', headerText: 'text-green-700', bg: 'bg-green-50/30', border: 'border-green-200', darkHeaderBg: 'dark:bg-green-900/40', darkBg: 'dark:bg-green-900/10', darkBorder: 'dark:border-green-800' },
 ];
 
-const priorityBadge: Record<string, { bg: string; text: string }> = {
-  urgent: { bg: 'bg-red-100', text: 'text-red-700' },
-  high: { bg: 'bg-orange-100', text: 'text-orange-700' },
-  medium: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  low: { bg: 'bg-green-100', text: 'text-green-700' },
+const priorityBadge: Record<string, { bg: string; text: string; darkBg: string; darkText: string }> = {
+  urgent: { bg: 'bg-red-100', text: 'text-red-700', darkBg: 'dark:bg-red-900/30', darkText: 'dark:text-red-300' },
+  high: { bg: 'bg-orange-100', text: 'text-orange-700', darkBg: 'dark:bg-orange-900/30', darkText: 'dark:text-orange-300' },
+  medium: { bg: 'bg-yellow-100', text: 'text-yellow-700', darkBg: 'dark:bg-yellow-900/30', darkText: 'dark:text-yellow-300' },
+  low: { bg: 'bg-green-100', text: 'text-green-700', darkBg: 'dark:bg-green-900/30', darkText: 'dark:text-green-300' },
 };
 
+const AVATAR_COLORS = [
+  { bg: 'bg-blue-500', text: 'text-white' },
+  { bg: 'bg-emerald-500', text: 'text-white' },
+  { bg: 'bg-purple-500', text: 'text-white' },
+  { bg: 'bg-amber-500', text: 'text-white' },
+  { bg: 'bg-rose-500', text: 'text-white' },
+  { bg: 'bg-cyan-500', text: 'text-white' },
+  { bg: 'bg-indigo-500', text: 'text-white' },
+  { bg: 'bg-pink-500', text: 'text-white' },
+];
+
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function getAvatarColor(name: string) {
+  return AVATAR_COLORS[hashStr(name) % AVATAR_COLORS.length];
+}
+
 function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
 function getPoints(task: BoardTask): number {
@@ -60,6 +76,7 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [localTaskOverrides, setLocalTaskOverrides] = useState<Record<string, string>>({});
   const [wipLimits, setWipLimits] = useState<Record<string, number>>(() => loadWipLimits(sprintId));
+  const [swimlane, setSwimlane] = useState<'none' | 'assignee'>('none');
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
@@ -70,10 +87,26 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
   const board = data?.board ?? data ?? {};
   const scheduleId: string | null = board.scheduleId ?? null;
   const rawTasks: BoardTask[] = board.tasks ?? [];
-  // Apply local status overrides (optimistic drag-and-drop updates)
   const tasks: BoardTask[] = rawTasks.map((t) =>
     localTaskOverrides[t.id] ? { ...t, status: localTaskOverrides[t.id] } : t,
   );
+
+  const assignees = useMemo(() => {
+    const set = new Set<string>();
+    tasks.forEach((t) => { if (t.assignedTo) set.add(t.assignedTo); });
+    return Array.from(set).sort();
+  }, [tasks]);
+
+  const swimlaneGroups = useMemo(() => {
+    if (swimlane === 'none') return [{ key: '__all', label: '', tasks }];
+    const groups: { key: string; label: string; tasks: BoardTask[] }[] = [];
+    for (const a of assignees) {
+      groups.push({ key: a, label: a, tasks: tasks.filter((t) => t.assignedTo === a) });
+    }
+    const unassigned = tasks.filter((t) => !t.assignedTo);
+    if (unassigned.length > 0) groups.push({ key: '__unassigned', label: 'Unassigned', tasks: unassigned });
+    return groups;
+  }, [swimlane, tasks, assignees]);
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ taskId, status }: { taskId: string; status: string }) => {
@@ -111,7 +144,6 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
       if (taskId) {
         const task = tasks.find((t) => t.id === taskId);
         if (task && task.status !== columnId) {
-          // Optimistically update local state, then persist via API
           setLocalTaskOverrides((prev) => ({ ...prev, [taskId]: columnId }));
           updateStatusMutation.mutate({ taskId, status: columnId });
         }
@@ -122,11 +154,11 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
         <div className="animate-pulse flex gap-4">
-          <div className="flex-1 h-48 bg-gray-100 rounded" />
-          <div className="flex-1 h-48 bg-gray-100 rounded" />
-          <div className="flex-1 h-48 bg-gray-100 rounded" />
+          <div className="flex-1 h-48 bg-gray-100 dark:bg-gray-700 rounded" />
+          <div className="flex-1 h-48 bg-gray-100 dark:bg-gray-700 rounded" />
+          <div className="flex-1 h-48 bg-gray-100 dark:bg-gray-700 rounded" />
         </div>
       </div>
     );
@@ -134,8 +166,8 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
 
   if (isError) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-        <p className="text-sm text-red-600">Failed to load sprint board.</p>
+      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center">
+        <p className="text-sm text-red-600 dark:text-red-400">Failed to load sprint board.</p>
       </div>
     );
   }
@@ -155,124 +187,144 @@ export function SprintBoard({ sprintId }: SprintBoardProps) {
     saveWipLimits(sprintId, next);
   };
 
-  // Group by status
-  const grouped: Record<string, BoardTask[]> = {};
-  for (const col of COLUMNS) {
-    grouped[col.id] = tasks.filter((t) => t.status === col.id);
-  }
-
-  // Compute total story points across all tasks
   const totalPoints = tasks.reduce((sum, t) => sum + getPoints(t), 0);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-wrap">
         <Kanban className="w-4 h-4 text-primary-500" />
-        <h3 className="text-sm font-semibold text-gray-800">Sprint Board</h3>
-        <span className="text-xs text-gray-400">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Sprint Board</h3>
+        <span className="text-xs text-gray-400 dark:text-gray-500">
           {tasks.length} task{tasks.length !== 1 ? 's' : ''}
           {totalPoints > 0 && <> · {totalPoints} pts</>}
         </span>
+        <div className="ml-auto">
+          <button
+            onClick={() => setSwimlane((s) => (s === 'none' ? 'assignee' : 'none'))}
+            className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors ${
+              swimlane !== 'none'
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+            title="Toggle swimlanes by assignee"
+          >
+            <Users className="w-3 h-3" />
+            <span className="hidden sm:inline">Swimlane</span>
+          </button>
+        </div>
       </div>
 
-      <div className="flex gap-3 p-4 overflow-x-auto" style={{ minHeight: '400px' }}>
-        {COLUMNS.map((col) => {
-          const columnTasks = grouped[col.id] || [];
-          const isOver = dragOverColumn === col.id;
-          const colPoints = columnTasks.reduce((sum, t) => sum + getPoints(t), 0);
-          const wipLimit = wipLimits[col.id];
-          const overWip = wipLimit != null && columnTasks.length >= wipLimit;
-
-          return (
-            <div
-              key={col.id}
-              className={`flex-1 min-w-[240px] rounded-lg border ${col.border} ${col.bg} transition-all ${
-                isOver ? 'ring-2 ring-primary-400 ring-opacity-50' : ''
-              } ${overWip ? 'ring-2 ring-amber-400' : ''}`}
-              onDragOver={(e) => handleDragOver(e, col.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, col.id)}
-            >
-              {/* Column header */}
-              <div className={`flex items-center justify-between px-3 py-2.5 ${col.headerBg} rounded-t-lg`}>
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-xs font-semibold uppercase tracking-wide ${col.headerText}`}>
-                    {col.label}
-                  </span>
-                  {colPoints > 0 && (
-                    <span className="text-[10px] font-medium text-gray-500">{colPoints} pts</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className={`text-xs font-bold bg-white rounded-full w-5 h-5 flex items-center justify-center ${overWip ? 'text-amber-600' : 'text-gray-500'}`}>
-                    {wipLimit != null ? `${columnTasks.length}/${wipLimit}` : columnTasks.length}
-                  </span>
-                  <button
-                    onClick={() => handleSetWipLimit(col.id)}
-                    className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
-                    aria-label="Set WIP limit"
-                    title="Set WIP limit"
-                  >
-                    <Settings className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Cards */}
-              <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto">
-                {columnTasks.length === 0 && (
-                  <div className="text-center py-8 text-xs text-gray-400">
-                    {isOver ? 'Drop here' : 'No tasks'}
+      {swimlaneGroups.map((group) => (
+        <div key={group.key}>
+          {group.label && (
+            <div className="px-4 py-2 bg-gray-100 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+              <div className="flex items-center gap-2">
+                {group.key !== '__unassigned' && (
+                  <div className={`w-5 h-5 rounded-full ${getAvatarColor(group.label).bg} ${getAvatarColor(group.label).text} flex items-center justify-center text-[8px] font-bold`}>
+                    {getInitials(group.label)}
                   </div>
                 )}
-
-                {columnTasks.map((task) => {
-                  const pBadge = priorityBadge[task.priority || 'medium'] || priorityBadge.medium;
-                  const points = getPoints(task);
-
-                  return (
-                    <div
-                      key={task.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, task.id)}
-                      className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
-                    >
-                      {/* Title */}
-                      <div className="text-xs font-medium text-gray-900 mb-2 line-clamp-2">
-                        {task.name}
-                      </div>
-
-                      {/* Badges row */}
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span
-                          className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text} capitalize`}
-                        >
-                          {task.priority || 'medium'}
-                        </span>
-                        {points > 0 && (
-                          <span className="text-xs font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full">
-                            {points} pts
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Assignee */}
-                      {task.assignedTo && (
-                        <div className="mt-2 flex items-center gap-1.5">
-                          <div className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[8px] font-bold">
-                            {getInitials(task.assignedTo)}
-                          </div>
-                          <span className="text-xs text-gray-500 truncate">{task.assignedTo}</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{group.label}</span>
+                <span className="text-[10px] text-gray-400 dark:text-gray-500">{group.tasks.length} task{group.tasks.length !== 1 ? 's' : ''}</span>
               </div>
             </div>
-          );
-        })}
-      </div>
+          )}
+          <div className="flex gap-3 p-4 overflow-x-auto" style={{ minHeight: group.label ? '200px' : '400px' }}>
+            {COLUMNS.map((col) => {
+              const columnTasks = group.tasks.filter((t) => t.status === col.id);
+              const isOver = dragOverColumn === col.id;
+              const colPoints = columnTasks.reduce((sum, t) => sum + getPoints(t), 0);
+              const wipLimit = wipLimits[col.id];
+              const overWip = wipLimit != null && columnTasks.length >= wipLimit;
+
+              return (
+                <div
+                  key={col.id}
+                  className={`flex-1 min-w-[200px] sm:min-w-[240px] rounded-lg border ${col.border} ${col.darkBorder} ${col.bg} ${col.darkBg} transition-all ${
+                    isOver ? 'ring-2 ring-primary-400 ring-opacity-50' : ''
+                  } ${overWip ? 'ring-2 ring-amber-400' : ''}`}
+                  onDragOver={(e) => handleDragOver(e, col.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, col.id)}
+                >
+                  {/* Column header */}
+                  <div className={`flex items-center justify-between px-3 py-2.5 ${col.headerBg} ${col.darkHeaderBg} rounded-t-lg`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${col.headerText} dark:text-gray-200`}>
+                        {col.label}
+                      </span>
+                      {colPoints > 0 && (
+                        <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{colPoints} pts</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className={`text-xs font-bold bg-white dark:bg-gray-800 rounded-full w-5 h-5 flex items-center justify-center ${overWip ? 'text-amber-600' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {wipLimit != null ? `${columnTasks.length}/${wipLimit}` : columnTasks.length}
+                      </span>
+                      <button
+                        onClick={() => handleSetWipLimit(col.id)}
+                        className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                        aria-label="Set WIP limit"
+                        title="Set WIP limit"
+                      >
+                        <Settings className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cards */}
+                  <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto">
+                    {columnTasks.length === 0 && (
+                      <div className="text-center py-8 text-xs text-gray-400 dark:text-gray-500">
+                        {isOver ? 'Drop here' : 'No tasks'}
+                      </div>
+                    )}
+
+                    {columnTasks.map((task) => {
+                      const pBadge = priorityBadge[task.priority || 'medium'] || priorityBadge.medium;
+                      const points = getPoints(task);
+                      const avatarColor = task.assignedTo ? getAvatarColor(task.assignedTo) : null;
+
+                      return (
+                        <div
+                          key={task.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, task.id)}
+                          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 p-3 shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow cursor-grab active:cursor-grabbing"
+                        >
+                          <div className="text-xs font-medium text-gray-900 dark:text-white mb-2 line-clamp-2">
+                            {task.name}
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text} ${pBadge.darkBg} ${pBadge.darkText} capitalize`}
+                            >
+                              {task.priority || 'medium'}
+                            </span>
+                            {points > 0 && (
+                              <span className="text-xs font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded-full">
+                                {points} pts
+                              </span>
+                            )}
+                          </div>
+                          {task.assignedTo && avatarColor && (
+                            <div className="mt-2 flex items-center gap-1.5">
+                              <div className={`w-5 h-5 rounded-full ${avatarColor.bg} ${avatarColor.text} flex items-center justify-center text-[8px] font-bold`}>
+                                {getInitials(task.assignedTo)}
+                              </div>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{task.assignedTo}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
