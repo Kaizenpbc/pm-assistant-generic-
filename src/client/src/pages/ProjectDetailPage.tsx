@@ -534,19 +534,27 @@ export function ProjectDetailPage() {
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700 overflow-visible">
         <nav className="-mb-px flex gap-4 md:gap-6 flex-wrap">
-          {getPrimaryTabs(methodology).map((tab) => (
+          {getPrimaryTabs(methodology).map((tab) => {
+            const openRaidCount = tab.id === 'raid' ? ((riskStats?.openRisks ?? 0) + (riskStats?.openIssues ?? 0) + (riskStats?.openActions ?? 0) + (riskStats?.pendingDecisions ?? 0)) : 0;
+            return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`border-b-2 pb-3 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+              className={`border-b-2 pb-3 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 ${
                 activeTab === tab.id
                   ? 'border-primary-600 text-primary-600 dark:text-primary-400'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               {tab.label}
+              {tab.id === 'raid' && openRaidCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                  {openRaidCount}
+                </span>
+              )}
             </button>
-          ))}
+            );
+          })}
           <FinancialsDropdown
             tabs={financialTabs}
             activeTab={activeTab}
