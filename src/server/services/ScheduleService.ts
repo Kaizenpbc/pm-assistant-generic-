@@ -7,6 +7,7 @@ import { dagWorkflowService } from './DagWorkflowService';
 import logger from '../utils/logger';
 import { deadLetterService } from './DeadLetterService';
 import { notificationService } from './NotificationService';
+import { getRequestContext } from '../middleware/requestContext';
 
 export interface Schedule {
   id: string;
@@ -515,7 +516,7 @@ export class ScheduleService {
     );
 
     // Notify on reassignment
-    const updaterId = data.createdBy || oldTask.createdBy;
+    const updaterId = getRequestContext()?.userId || data.createdBy || oldTask.createdBy;
     if (data.assignedTo && data.assignedTo !== oldTask.assignedTo && data.assignedTo !== updaterId) {
       notificationService.create({
         userId: data.assignedTo,
