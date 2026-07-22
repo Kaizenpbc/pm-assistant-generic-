@@ -39,7 +39,7 @@ interface ProjectOverview {
   end_date?: string;
 }
 
-export function OverviewTab({ project }: { project: ProjectOverview }) {
+export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOverview; onNavigateToTab?: (tab: string) => void }) {
   const { data: membersData, isLoading: membersLoading } = useQuery({
     queryKey: ['project-members', project.id],
     queryFn: () => apiService.getProjectMembers(project.id),
@@ -197,7 +197,7 @@ export function OverviewTab({ project }: { project: ProjectOverview }) {
 
   const taskStats = summary?.tasks;
 
-  const cardClass = 'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5';
+  const cardClass = 'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 min-h-[200px]';
   const headingClass = 'text-base font-semibold text-gray-900 dark:text-white mb-4';
   const skeletonPulse = 'animate-pulse bg-gray-200 dark:bg-gray-700 rounded';
 
@@ -333,10 +333,10 @@ export function OverviewTab({ project }: { project: ProjectOverview }) {
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <StatBox label="Total Tasks" value={taskStats?.total ?? 0} />
-                <StatBox label="Completed" value={taskStats?.byStatus?.completed ?? 0} color="text-green-600 dark:text-green-400" />
-                <StatBox label="Overdue" value={taskStats?.overdue ?? 0} color={taskStats?.overdue > 0 ? 'text-red-600 dark:text-red-400' : undefined} />
-                <StatBox label="In Progress" value={taskStats?.byStatus?.in_progress ?? 0} color="text-blue-600 dark:text-blue-400" />
+                <StatBox label="Total Tasks" value={taskStats?.total ?? 0} onClick={() => onNavigateToTab?.('schedule')} />
+                <StatBox label="Completed" value={taskStats?.byStatus?.completed ?? 0} color="text-green-600 dark:text-green-400" onClick={() => onNavigateToTab?.('schedule')} />
+                <StatBox label="Overdue" value={taskStats?.overdue ?? 0} color={taskStats?.overdue > 0 ? 'text-red-600 dark:text-red-400' : undefined} onClick={() => onNavigateToTab?.('schedule')} />
+                <StatBox label="In Progress" value={taskStats?.byStatus?.in_progress ?? 0} color="text-blue-600 dark:text-blue-400" onClick={() => onNavigateToTab?.('schedule')} />
               </div>
               {taskStats?.completedLast30Days != null && (
                 <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
@@ -621,26 +621,32 @@ export function OverviewTab({ project }: { project: ProjectOverview }) {
             <span className="flex items-center gap-2"><ShieldAlert className="w-4 h-4" /> RAID Summary</span>
           </h3>
           {!raidStats ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className={`h-16 rounded-lg ${skeletonPulse}`} />
+              ))}
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-2.5 text-center">
-                  <p className="text-xl font-bold text-red-600 dark:text-red-400">{raidStats.openRisks || 0}</p>
-                  <p className="text-[10px] text-red-500 dark:text-red-400">Open Risks</p>
-                </div>
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/20 p-2.5 text-center">
-                  <p className="text-xl font-bold text-orange-600 dark:text-orange-400">{raidStats.openIssues || 0}</p>
-                  <p className="text-[10px] text-orange-500 dark:text-orange-400">Open Issues</p>
-                </div>
-                <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-2.5 text-center">
-                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{raidStats.openActions || 0}</p>
-                  <p className="text-[10px] text-blue-500 dark:text-blue-400">Open Actions</p>
-                </div>
-                <div className="rounded-lg bg-purple-50 dark:bg-purple-900/20 p-2.5 text-center">
-                  <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{raidStats.pendingDecisions || 0}</p>
-                  <p className="text-[10px] text-purple-500 dark:text-purple-400">Pending Decisions</p>
-                </div>
+                {([
+                  { value: raidStats.openRisks || 0, label: 'Open Risks', bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600 dark:text-red-400', sub: 'text-red-500 dark:text-red-400' },
+                  { value: raidStats.openIssues || 0, label: 'Open Issues', bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-600 dark:text-orange-400', sub: 'text-orange-500 dark:text-orange-400' },
+                  { value: raidStats.openActions || 0, label: 'Open Actions', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400', sub: 'text-blue-500 dark:text-blue-400' },
+                  { value: raidStats.pendingDecisions || 0, label: 'Pending Decisions', bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600 dark:text-purple-400', sub: 'text-purple-500 dark:text-purple-400' },
+                ] as const).map((item) => (
+                  <div
+                    key={item.label}
+                    className={`rounded-lg ${item.bg} p-2.5 text-center ${item.value > 0 ? 'cursor-pointer hover:ring-1 hover:ring-primary-300 dark:hover:ring-primary-700 transition-all' : ''}`}
+                    onClick={item.value > 0 ? () => onNavigateToTab?.('raid') : undefined}
+                    role={item.value > 0 ? 'button' : undefined}
+                    tabIndex={item.value > 0 ? 0 : undefined}
+                    onKeyDown={item.value > 0 ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateToTab?.('raid'); } } : undefined}
+                  >
+                    <p className={`text-xl font-bold ${item.text}`}>{item.value}</p>
+                    <p className={`text-[10px] ${item.sub}`}>{item.label}</p>
+                  </div>
+                ))}
               </div>
               {(raidStats.critical > 0 || raidStats.triggered > 0) && (
                 <div className="flex gap-2 flex-wrap">
@@ -784,9 +790,16 @@ export function OverviewTab({ project }: { project: ProjectOverview }) {
   );
 }
 
-function StatBox({ label, value, color }: { label: string; value: number; color?: string }) {
+function StatBox({ label, value, color, onClick }: { label: string; value: number; color?: string; onClick?: () => void }) {
+  const interactive = onClick && value > 0;
   return (
-    <div className="rounded-lg bg-gray-50 dark:bg-gray-900/50 p-3 text-center">
+    <div
+      className={`rounded-lg bg-gray-50 dark:bg-gray-900/50 p-3 text-center ${interactive ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900/80 hover:ring-1 hover:ring-primary-300 dark:hover:ring-primary-700 transition-all' : ''}`}
+      onClick={interactive ? onClick : undefined}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={interactive ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
+    >
       <p className={`text-2xl font-bold ${color || 'text-gray-900 dark:text-white'}`}>{value}</p>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{label}</p>
     </div>

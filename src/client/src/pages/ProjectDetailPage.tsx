@@ -565,7 +565,7 @@ export function ProjectDetailPage() {
 
       {/* Tab Content */}
       <Suspense fallback={<SectionSpinner />}>
-        {activeTab === 'overview' && <OverviewTab project={project} />}
+        {activeTab === 'overview' && <OverviewTab project={project} onNavigateToTab={(tab) => setActiveTab(tab as Tab)} />}
         {activeTab === 'raid' && <RAIDTab projectId={id!} />}
         {activeTab === 'schedule' && <ScheduleTab projectId={id!} projectName={project.name} projectStartDate={project.startDate || project.start_date} defaultViewMode={getDefaultViewMode(methodology)} />}
         {activeTab === 'ai-insights' && <AIInsightsTab projectId={id!} />}
