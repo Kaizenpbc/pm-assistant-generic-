@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Clock,
@@ -16,6 +17,7 @@ import {
   TrendingDown,
   Minus,
   CalendarClock,
+  Plus,
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { CustomFieldsSection } from '../../components/customfields/CustomFieldsSection';
@@ -197,12 +199,40 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
 
   const taskStats = summary?.tasks;
 
+  // Animate progress bars on mount
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
+
   const cardClass = 'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 min-h-[200px]';
   const headingClass = 'text-base font-semibold text-gray-900 dark:text-white mb-4';
   const skeletonPulse = 'animate-pulse bg-gray-200 dark:bg-gray-700 rounded';
 
   return (
     <div className="space-y-6">
+      {/* Quick Actions */}
+      {onNavigateToTab && (
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => onNavigateToTab('schedule')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-700 dark:hover:text-primary-400 hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Task
+          </button>
+          <button
+            onClick={() => onNavigateToTab('raid')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-700 dark:hover:text-primary-400 hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+          >
+            <ShieldAlert className="w-3.5 h-3.5" /> Log Risk
+          </button>
+          <button
+            onClick={() => onNavigateToTab('team')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-700 dark:hover:text-primary-400 hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+          >
+            <Users className="w-3.5 h-3.5" /> Manage Team
+          </button>
+        </div>
+      )}
+
       {/* Row 1: Description + Project Details + Team Members */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className={`lg:col-span-2 space-y-6`}>
@@ -368,8 +398,8 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
               <div className="relative">
                 <div className="h-3 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${isOverdue ? 'bg-red-500' : onTrack ? 'bg-green-500' : 'bg-orange-500'}`}
-                    style={{ width: `${Math.min(100, elapsedPct)}%` }}
+                    className={`h-full rounded-full transition-all duration-700 ease-out ${isOverdue ? 'bg-red-500' : onTrack ? 'bg-green-500' : 'bg-orange-500'}`}
+                    style={{ width: mounted ? `${Math.min(100, elapsedPct)}%` : '0%' }}
                   />
                 </div>
                 {elapsedPct > 0 && elapsedPct < 100 && (
@@ -424,7 +454,14 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
                 const isPast = mDate && new Date(mDate) < now;
                 const isDone = mStatus === 'completed' || mStatus === 'done';
                 return (
-                  <div key={m.id} className="flex items-start gap-2.5">
+                  <div
+                    key={m.id}
+                    className="flex items-start gap-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 -mx-2 px-2 py-1 rounded-lg transition-colors"
+                    onClick={() => onNavigateToTab?.('schedule')}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateToTab?.('schedule'); } }}
+                  >
                     <div className="mt-0.5 flex-shrink-0">
                       {isDone ? (
                         <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -558,8 +595,8 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
                 </div>
                 <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${isOverBudget ? 'bg-red-500' : budgetUtilization > 90 ? 'bg-amber-500' : 'bg-green-500'}`}
-                    style={{ width: `${Math.min(100, budgetUtilization)}%` }}
+                    className={`h-full rounded-full transition-all duration-700 ease-out ${isOverBudget ? 'bg-red-500' : budgetUtilization > 90 ? 'bg-amber-500' : 'bg-green-500'}`}
+                    style={{ width: mounted ? `${Math.min(100, budgetUtilization)}%` : '0%' }}
                   />
                 </div>
               </div>
@@ -696,7 +733,7 @@ export function OverviewTab({ project, onNavigateToTab }: { project: ProjectOver
                       <span className="font-medium text-gray-900 dark:text-white">{done}/{total} tasks ({pct}%)</span>
                     </div>
                     <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
-                      <div className="bg-primary-500 h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      <div className="bg-primary-500 h-2 rounded-full transition-all duration-700 ease-out" style={{ width: mounted ? `${pct}%` : '0%' }} />
                     </div>
                   </div>
                   {activeSprint.goal && (
