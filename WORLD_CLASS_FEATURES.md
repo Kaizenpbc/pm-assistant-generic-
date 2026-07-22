@@ -162,7 +162,8 @@ An agentic AI project management platform that combines the scheduling power of 
 - Per-project cards with health indicator, progress bar, task completion ratio, and budget utilization bar
 - Dashboard / Timeline toggle preserving the original multi-project Gantt view
 - Server-side aggregation via `/api/v1/reporting/portfolio` returning `budgetAllocated`, `budgetSpent`, `progressPercentage`, `totalTasks`, `completedTasks` per project
-- **Benchmark:** Primavera P6, Smartsheet, Monday.com — **exceeds** with budget KPI cards and per-project health cards alongside the Gantt timeline
+- **Portfolio Analytics** via `/api/v1/reporting/portfolio/analytics`: cross-project CPI/SPI comparison table with SVG sparkline trends (last 8 weeks), burndown trend sparklines per project (ideal vs. actual), and sortable project comparison matrix (health, CPI, SPI, budget %, progress, tasks). Redis-cached (5 min), bounded concurrency (5 projects in parallel), graceful fallbacks for missing data.
+- **Benchmark:** Primavera P6, Smartsheet, Monday.com — **exceeds** with EVM-based portfolio analytics (CPI/SPI sparklines, cross-project comparison matrix) alongside budget KPI cards and per-project health cards
 
 ### 2.7 Advanced Security
 - Role-based access control (13 roles: admin, executive, project_manager, team_member, scrum_master, finance_officer, risk_manager, pmo, ba, qa, tester, devops, claude_sme) with project member roles (owner, manager, editor, viewer)
@@ -457,6 +458,7 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 | Expanded Global Search (9 entity types incl. RAID items, sprints, comments; enriched results with severity/priority/progress badges; type/project/status filters) | Done | Enhancement |
 | Portfolio Dashboard (6 KPI cards, status filter pills, budget progress bar, project health cards, Dashboard/Timeline toggle) | Done | Enhancement |
 | Portfolio API Enhancement (budgetAllocated, budgetSpent, progressPercentage, totalTasks, completedTasks per project) | Done | Enhancement |
+| Portfolio Analytics (CPI/SPI comparison with sparklines, burndown trends, sortable project comparison matrix) | Done | Enhancement |
 | Load More Pagination (Notifications Center, Lessons Learned, Agent Proposals pages) | Done | Enhancement |
 | Report Builder Data Shape Fixes (KPI/chart/table sections, groupBy SQL injection guard, user-owned template delete, designer section persistence) | Done | Bug Fix |
 | Shared Pagination Schema (paginationSchema.ts + PaginatedResponse on projects, schedule tasks, sprints, templates) | Done | Enhancement |

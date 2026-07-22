@@ -647,6 +647,20 @@ The Portfolio page UI consumes this endpoint and renders a full dashboard:
 - **Project cards** — each card shows name, status badge, health indicator, progress bar, task completion ratio, budget utilization bar, and a link to the project detail page
 - **Dashboard / Timeline / Resources toggle** — switch between the KPI dashboard view, Portfolio Gantt timeline, and portfolio-wide resource view; selection persists within the session
 
+### Portfolio Analytics Panels
+
+The `/api/v1/reporting/portfolio/analytics` endpoint aggregates EVM metrics, burndown data, and health history across all active/planning projects. It uses `generateMetricsOnly()` (no AI call) for speed, processes projects with bounded concurrency (5), and caches results in Redis for 5 minutes per user.
+
+Returns per-project: CPI, SPI, last-8-week CPI/SPI trend arrays, burndown sparkline data (sampled to ~12 points), percent complete, health score + trend direction, budget utilization, and schedule variance.
+
+The Portfolio page renders three analytics sections between the budget overview bar and Health Trends widget:
+
+- **CPI/SPI Comparison Table** — rows per active project with color-coded CPI/SPI values (green ≥1.0, amber 0.85–0.99, red <0.85), SVG sparkline trend lines, and sortable columns
+- **Burndown Trends** — mini burndown sparklines per project (ideal gray dashed + actual blue solid), completion percentage, and schedule variance badge (green positive / red negative)
+- **Project Comparison Matrix** — fully sortable table comparing Health (colored dot + score), CPI, SPI, Budget %, Progress (with mini bar), Tasks (completed/total), and Status badge. Click any row to navigate to the project detail page
+
+Projects without EVM or schedule data show graceful "—" fallbacks in all panels.
+
 ### Portfolio Resources View
 
 The `/api/v1/reporting/portfolio/resources` endpoint aggregates resource utilization across all active projects:

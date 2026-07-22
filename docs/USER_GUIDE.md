@@ -1003,6 +1003,9 @@ The dashboard mode shows:
 - **6 KPI cards** at the top of the page: Total Projects, Active, On Track, At Risk, Budget Allocated, and Budget Spent. These update as you apply status filters.
 - **Status filter pills** — click All, Active, On Hold, Planning, or Completed to narrow which projects appear in the card grid below.
 - **Portfolio budget progress bar** — a single bar showing aggregate budget spent vs. allocated across all currently visible projects, with a percentage label.
+- **CPI/SPI Comparison Table** — side-by-side CPI and SPI values for each active project, color-coded (green ≥1.0, amber 0.85–0.99, red <0.85) with SVG sparkline trend lines showing the last 8 weeks. Click column headers to sort by CPI or SPI.
+- **Burndown Trends** — mini burndown sparklines per project showing ideal (gray dashed) vs. actual (blue solid) remaining work, completion percentage, and a schedule variance badge (e.g. "+2%" green or "−5%" red).
+- **Project Comparison Matrix** — sortable table comparing all projects across Health (colored dot + score), CPI, SPI, Budget %, Progress (with mini progress bar), Tasks (completed/total), and Status. Click any column header to sort ascending/descending. Click any row to navigate to the project detail page.
 - **Project cards** — one card per project displaying: project name, status badge, a color-coded health indicator, an overall progress bar with percentage, a task completion ratio (e.g. "12 / 20 tasks"), and a budget utilization bar showing spend against the allocated budget. Click the project name or the arrow link on a card to navigate to the project detail page.
 
 ### Portfolio Timeline (Gantt view)

@@ -210,6 +210,7 @@ This starts both the Fastify API server and the Vite dev server concurrently.
 ### Reporting & Analytics
 - Custom report builder with saved templates; KPI, chart, and table sections render correctly with proper data shapes; SQL injection protection on groupBy; regular users can delete their own templates; report designer properly saves sections on template update
 - Portfolio dashboard with 6 KPI cards (Total Projects, Active, On Track, At Risk, Budget Allocated, Budget Spent), status filter pills, project health cards with progress bars and budget utilization, and Dashboard/Timeline toggle
+- **Portfolio Analytics** — cross-project CPI/SPI comparison table with sparkline trends, burndown trend sparklines per project, and sortable project comparison matrix (health, CPI, SPI, budget %, progress, tasks)
 - Portfolio-level analytics and executive dashboards
 - Project health scoring
 - Exportable reports
@@ -602,7 +603,7 @@ All API endpoints are versioned under `/api/v1/`. Endpoint groups (50+ route mod
 | Policies | `/api/v1/policies` | Policy engine rules |
 | Search | `/api/v1/search` | Full-text search (9 entity types, filters: type/project/status) |
 | Bulk | `/api/v1/bulk` | Bulk operations |
-| Portfolio | `/api/v1/portfolio` | Portfolio overview |
+| Portfolio | `/api/v1/portfolio` | Portfolio overview, analytics, resources |
 | Analytics | `/api/v1/analytics` | Portfolio analytics summary |
 | Alerts | `/api/v1/alerts` | Proactive alert feed |
 | Predictions | `/api/v1/predictions` | AI health, risk, budget predictions |
