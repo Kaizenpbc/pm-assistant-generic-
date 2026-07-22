@@ -131,8 +131,19 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
                 !isCurrentMonth ? 'bg-gray-50/50 dark:bg-gray-800/50' : ''
               } ${idx % 7 === 6 ? 'border-r-0' : ''}`}
             >
-              {/* Day number */}
-              <div className="flex justify-end mb-0.5">
+              {/* Day number + task density dots */}
+              <div className="flex items-center justify-between mb-0.5">
+                {/* Density dots */}
+                <div className="flex items-center gap-px pl-1">
+                  {dayTasks.length > 0 && dayTasks.length <= 3 && (
+                    Array.from({ length: dayTasks.length }).map((_, i) => (
+                      <span key={i} className="w-1 h-1 rounded-full bg-primary-400 dark:bg-primary-500" />
+                    ))
+                  )}
+                  {dayTasks.length > 3 && (
+                    <span className="text-[9px] font-bold text-primary-500 dark:text-primary-400">{dayTasks.length}</span>
+                  )}
+                </div>
                 <span className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full ${
                   isToday
                     ? 'bg-primary-600 text-white'

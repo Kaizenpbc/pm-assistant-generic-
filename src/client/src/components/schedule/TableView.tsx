@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Pencil, Check, Loader2, X, Trash2, CheckSquare, Download } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Pencil, Check, Loader2, X, Trash2, CheckSquare, Download, ChevronDown, ChevronRight, Plus, Layers } from 'lucide-react';
 import type { GanttTask } from './GanttChart';
 import { apiService } from '../../services/api';
 import { SavedViewsDropdown, type SavedView } from './SavedViewsDropdown';
@@ -52,11 +52,14 @@ interface TableViewProps {
   activeTaskId?: string | null;
   onTaskUpdate: (taskId: string, data: Record<string, unknown>) => void;
   onTaskReorder?: (updates: Array<{ taskId: string; sortOrder: number }>) => void;
+  onQuickAdd?: (name: string) => void;
   columnState: ColumnState;
   cpmData?: { tasks: CpmTaskData[]; criticalPathTaskIds: string[] };
   baselineData?: { taskVariances: BaselineTaskVariance[] };
   scheduleStartDate?: string;
 }
+
+type GroupByField = '' | 'status' | 'priority' | 'assignedTo';
 
 const statusOptions = ['pending', 'in_progress', 'completed'];
 const priorityOptions = ['low', 'medium', 'high', 'urgent'];
@@ -69,11 +72,15 @@ function addDaysToDate(baseDate: string, days: number): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, activeTaskId, onTaskUpdate, onTaskReorder, columnState, cpmData, baselineData, scheduleStartDate }: TableViewProps) {
+export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, activeTaskId, onTaskUpdate, onTaskReorder, onQuickAdd, columnState, cpmData, baselineData, scheduleStartDate }: TableViewProps) {
   const { visibleKeys, visibleColumns, colWidths, setColWidths, moveColumn } = columnState;
   const queryClient = useQueryClient();
   const [sortField, setSortField] = useState<ColumnKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [groupBy, setGroupBy] = useState<GroupByField>('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [quickAddName, setQuickAddName] = useState('');
+  const quickAddInputRef = useRef<HTMLInputElement>(null);
   const [editingCell, setEditingCell] = useState<{ taskId: string; field: EditableField } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [savingCell, setSavingCell] = useState<{ taskId: string; field: string } | null>(null);
@@ -280,6 +287,30 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     flatten(null);
     return result;
   }, [tasks, sortField, sortDir, getSortValue]);
+
+  // Group tasks
+  const groupedSorted = useMemo(() => {
+    if (!groupBy) return null;
+    const groups = new Map<string, GanttTask[]>();
+    for (const task of sorted) {
+      let key: string;
+      if (groupBy === 'status') key = task.status || 'unknown';
+      else if (groupBy === 'priority') key = task.priority || 'medium';
+      else key = task.assignedTo || 'Unassigned';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(task);
+    }
+    return groups;
+  }, [sorted, groupBy]);
+
+  const toggleGroupCollapse = useCallback((key: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
   // Row drag reorder state — pointer-events-based (HTML5 drag on <tr> is unreliable)
   const [rowDrag, setRowDrag] = useState<{
@@ -1018,6 +1049,20 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
       {/* Saved views header */}
       <div className="flex items-center justify-end gap-1.5 px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+        {/* Group by */}
+        <div className="flex items-center gap-1 mr-auto">
+          <Layers className="w-3 h-3 text-gray-400" />
+          <select
+            value={groupBy}
+            onChange={(e) => { setGroupBy(e.target.value as GroupByField); setCollapsedGroups(new Set()); }}
+            className="text-xs border border-gray-200 dark:border-gray-600 rounded px-1.5 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-400"
+          >
+            <option value="">No grouping</option>
+            <option value="status">Group by Status</option>
+            <option value="priority">Group by Priority</option>
+            <option value="assignedTo">Group by Assignee</option>
+          </select>
+        </div>
         <button
           onClick={() => exportTasksCSV(sorted, 'tasks')}
           className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -1209,68 +1254,144 @@ export function TableView({ tasks, scheduleId, onTaskClick, onTaskSelect, active
             </tr>
           </thead>
           <tbody ref={tbodyRef}>
-            {sorted.map((task, rowIdx) => {
-              const isSelected = selectedIds.has(task.id);
-              const isDragTarget = rowDrag && rowDrag.targetIdx === rowIdx && rowDrag.taskId !== task.id && (task.parentTaskId || null) === rowDrag.parentTaskId;
-              return (
-                <tr
-                  key={task.id}
-                  data-row-idx={rowIdx}
-                  className={`border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-all duration-150 group cursor-pointer ${isSelected ? 'bg-primary-50/40 dark:bg-primary-900/20' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 dark:ring-primary-700 bg-primary-50/60 dark:bg-primary-900/30' : ''} ${isDragTarget ? 'border-t-2 border-t-primary-400' : ''} ${rowDrag?.taskId === task.id ? 'relative z-10 scale-[1.02] shadow-lg shadow-primary-200/40 dark:shadow-primary-900/60 bg-primary-50 dark:bg-primary-900/40 opacity-90' : ''}`}
-                  onClick={() => onTaskSelect?.(task)}
-                >
-                  <td className="px-2 py-2">
-                    <div className="flex items-center gap-1">
-                      {canDragRows ? (
-                        <span
-                          className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 flex-shrink-0 select-none w-5 text-center text-[10px] font-medium"
-                          title="Drag to reorder"
-                          onMouseDown={(e) => handleGripMouseDown(e, task, rowIdx)}
-                        >{rowIdx + 1}</span>
-                      ) : (
-                        <span className="w-5 text-center text-[10px] font-medium text-gray-400 dark:text-gray-500">{rowIdx + 1}</span>
-                      )}
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelect(task.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
-                      />
-                    </div>
-                  </td>
+            {(() => {
+              const renderTaskRow = (task: GanttTask, rowIdx: number) => {
+                const isSelected = selectedIds.has(task.id);
+                const isDragTarget = rowDrag && rowDrag.targetIdx === rowIdx && rowDrag.taskId !== task.id && (task.parentTaskId || null) === rowDrag.parentTaskId;
+                return (
+                  <tr
+                    key={task.id}
+                    data-row-idx={rowIdx}
+                    className={`border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-all duration-150 group cursor-pointer ${isSelected ? 'bg-primary-50/40 dark:bg-primary-900/20' : ''} ${activeTaskId === task.id ? 'ring-1 ring-inset ring-primary-200 dark:ring-primary-700 bg-primary-50/60 dark:bg-primary-900/30' : ''} ${isDragTarget ? 'border-t-2 border-t-primary-400' : ''} ${rowDrag?.taskId === task.id ? 'relative z-10 scale-[1.02] shadow-lg shadow-primary-200/40 dark:shadow-primary-900/60 bg-primary-50 dark:bg-primary-900/40 opacity-90' : ''}`}
+                    onClick={() => onTaskSelect?.(task)}
+                  >
+                    <td className="px-2 py-2">
+                      <div className="flex items-center gap-1">
+                        {canDragRows ? (
+                          <span
+                            className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 flex-shrink-0 select-none w-5 text-center text-[10px] font-medium"
+                            title="Drag to reorder"
+                            onMouseDown={(e) => handleGripMouseDown(e, task, rowIdx)}
+                          >{rowIdx + 1}</span>
+                        ) : (
+                          <span className="w-5 text-center text-[10px] font-medium text-gray-400 dark:text-gray-500">{rowIdx + 1}</span>
+                        )}
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(task.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 cursor-pointer"
+                        />
+                      </div>
+                    </td>
 
-                  {visibleColumns.map(col => renderCell(task, col))}
+                    {visibleColumns.map(col => renderCell(task, col))}
 
-                  <td className="px-2 py-2">
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
-                      <button
-                        onClick={() => onTaskClick(task)}
-                        className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-                        title="Edit task"
-                        aria-label="Edit task"
-                      >
-                        <Pencil className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-                      </button>
-                      <button
-                        onClick={() => handleRowDelete(task.id)}
-                        className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20"
-                        title="Delete task"
-                        aria-label="Delete task"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 hover:text-red-500" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                    <td className="px-2 py-2">
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                          onClick={() => onTaskClick(task)}
+                          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                          title="Edit task"
+                          aria-label="Edit task"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                        </button>
+                        <button
+                          onClick={() => handleRowDelete(task.id)}
+                          className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20"
+                          title="Delete task"
+                          aria-label="Delete task"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 hover:text-red-500" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              };
+
+              if (groupedSorted) {
+                // Grouped rendering
+                const rows: React.ReactNode[] = [];
+                let globalIdx = 0;
+                for (const [groupKey, groupTasks] of groupedSorted) {
+                  const isCollapsed = collapsedGroups.has(groupKey);
+                  rows.push(
+                    <tr
+                      key={`group-${groupKey}`}
+                      className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-150 dark:hover:bg-gray-750"
+                      onClick={() => toggleGroupCollapse(groupKey)}
+                    >
+                      <td colSpan={visibleColumns.length + 2} className="px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          {isCollapsed ? (
+                            <ChevronRight className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                          )}
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 capitalize">
+                            {groupKey.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                            {groupTasks.length} task{groupTasks.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                  if (!isCollapsed) {
+                    for (const task of groupTasks) {
+                      rows.push(renderTaskRow(task, globalIdx));
+                      globalIdx++;
+                    }
+                  } else {
+                    globalIdx += groupTasks.length;
+                  }
+                }
+                return rows;
+              }
+
+              // Flat rendering (no grouping)
+              return sorted.map((task, rowIdx) => renderTaskRow(task, rowIdx));
+            })()}
 
             {sorted.length === 0 && (
               <tr>
                 <td colSpan={visibleColumns.length + 2} className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
                   No tasks found
                 </td>
+              </tr>
+            )}
+
+            {/* Inline quick-add row */}
+            {onQuickAdd && (
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="px-2 py-1.5">
+                  <Plus className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
+                </td>
+                <td colSpan={visibleColumns.length} className="px-3 py-1.5">
+                  <input
+                    ref={quickAddInputRef}
+                    type="text"
+                    value={quickAddName}
+                    onChange={(e) => setQuickAddName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && quickAddName.trim()) {
+                        onQuickAdd(quickAddName.trim());
+                        setQuickAddName('');
+                      }
+                      if (e.key === 'Escape') {
+                        setQuickAddName('');
+                        quickAddInputRef.current?.blur();
+                      }
+                    }}
+                    placeholder="+ Add task (press Enter)"
+                    className="w-full text-xs bg-transparent border-0 text-gray-500 dark:text-gray-400 placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none focus:text-gray-900 dark:focus:text-gray-100 focus:placeholder-gray-400 dark:focus:placeholder-gray-500"
+                  />
+                </td>
+                <td className="w-10" />
               </tr>
             )}
           </tbody>

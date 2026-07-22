@@ -19,6 +19,7 @@ interface KanbanBoardProps {
   allTasks?: KanbanTask[];
   onTaskClick?: (task: KanbanTask) => void;
   onStatusChange?: (taskId: string, newStatus: string) => void;
+  onQuickAdd?: (name: string, status: string) => void;
   scheduleId?: string;
   activeTaskId?: string | null;
 }
@@ -87,7 +88,23 @@ function saveWipLimits(scheduleId: string, limits: Record<string, number>) {
   } catch {}
 }
 
-export function KanbanBoard({ tasks, allTasks, onTaskClick, onStatusChange, scheduleId, activeTaskId }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, allTasks, onTaskClick, onStatusChange, onQuickAdd, scheduleId, activeTaskId }: KanbanBoardProps) {
+  const [quickAddColumn, setQuickAddColumn] = useState<string | null>(null);
+  const [quickAddValue, setQuickAddValue] = useState('');
+  const quickAddRef = React.useRef<HTMLInputElement>(null);
+
+  const handleQuickAddSubmit = useCallback((columnId: string) => {
+    const name = quickAddValue.trim();
+    if (name && onQuickAdd) {
+      onQuickAdd(name, columnId);
+      setQuickAddValue('');
+      setQuickAddColumn(null);
+    }
+  }, [quickAddValue, onQuickAdd]);
+
+  React.useEffect(() => {
+    if (quickAddColumn && quickAddRef.current) quickAddRef.current.focus();
+  }, [quickAddColumn]);
   // Precompute subtask counts and dependency counts from allTasks (or tasks if allTasks not provided)
   const sourceTasks = allTasks || tasks;
   const subtaskCounts = React.useMemo(() => {
@@ -308,6 +325,50 @@ export function KanbanBoard({ tasks, allTasks, onTaskClick, onStatusChange, sche
                   );
                 })}
               </div>
+
+              {/* Quick-add */}
+              {onQuickAdd && (
+                <div className="px-2 pb-2">
+                  {quickAddColumn === col.id ? (
+                    <div className="flex flex-col gap-1">
+                      <input
+                        ref={quickAddRef}
+                        type="text"
+                        value={quickAddValue}
+                        onChange={(e) => setQuickAddValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleQuickAddSubmit(col.id);
+                          if (e.key === 'Escape') { setQuickAddColumn(null); setQuickAddValue(''); }
+                        }}
+                        placeholder="Task name..."
+                        className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-400"
+                      />
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleQuickAddSubmit(col.id)}
+                          disabled={!quickAddValue.trim()}
+                          className="text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 rounded px-2 py-0.5 transition-colors"
+                        >
+                          Add
+                        </button>
+                        <button
+                          onClick={() => { setQuickAddColumn(null); setQuickAddValue(''); }}
+                          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-1"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setQuickAddColumn(col.id); setQuickAddValue(''); }}
+                      className="w-full text-left text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 py-1.5 px-1 rounded hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      + Add task
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

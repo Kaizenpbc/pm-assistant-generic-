@@ -847,6 +847,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           allTasks={tasks}
           onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task as GanttTask); }}
           onStatusChange={handleKanbanStatusChange}
+          onQuickAdd={(name, status) => {
+            createMutation.mutate({ name, status, priority: 'medium', assignedTo: '', startDate: '', endDate: '', progressPercentage: 0, description: '' } as any);
+          }}
           activeTaskId={activeTaskId}
         />
       )}
@@ -859,6 +862,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
           activeTaskId={activeTaskId}
           onTaskUpdate={(taskId, data) => updateMutation.mutate({ taskId, data })}
           onTaskReorder={handleTaskReorder}
+          onQuickAdd={(name) => {
+            createMutation.mutate({ name, status: 'pending', priority: 'medium', assignedTo: '', startDate: '', endDate: '', progressPercentage: 0, description: '' } as any);
+          }}
           columnState={columnState}
           cpmData={cpmData}
           baselineData={comparison}
