@@ -2,6 +2,10 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { projectService } from '../../services/ProjectService';
 import { scheduleService } from '../../services/ScheduleService';
 import { resourceService } from '../../services/ResourceService';
+import { evmForecastService } from '../../services/EVMForecastService';
+import { burndownService } from '../../services/BurndownService';
+import { databaseService } from '../../database/connection';
+import { redisService } from '../../services/RedisService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import logger from '../../utils/logger';
@@ -182,6 +186,181 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
     } catch (error) {
       logger.error('Get portfolio resources error', { error });
       return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch portfolio resources' });
+    }
+  });
+
+  // GET /portfolio/analytics — cross-project CPI/SPI, burndown, health analytics
+  fastify.get('/analytics', {
+    preHandler: [requireScope('read')],
+    schema: { description: 'Get portfolio-level analytics with EVM metrics and burndown data', tags: ['portfolio'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = request.user!;
+      const userId = user.userId;
+
+      // Check Redis cache
+      const cacheKey = `portfolio:analytics:${userId}`;
+      const cached = await redisService.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+
+      const projects = await projectService.findByUserId(userId);
+      const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'planning');
+
+      if (activeProjects.length === 0) {
+        return { projects: [] };
+      }
+
+      // Get all schedules in batch
+      const projectIds = activeProjects.map(p => p.id);
+      const allSchedules = await scheduleService.findByProjectIds(projectIds);
+      const schedulesByProject = new Map<string, typeof allSchedules>();
+      for (const s of allSchedules) {
+        let arr = schedulesByProject.get(s.projectId);
+        if (!arr) { arr = []; schedulesByProject.set(s.projectId, arr); }
+        arr.push(s);
+      }
+
+      // Fetch health history for all projects in one query
+      const healthRows = await databaseService.query<{
+        project_id: string; overall_health: number; recorded_at: string;
+      }>(
+        `SELECT project_id, overall_health, recorded_at
+         FROM project_health_history
+         WHERE project_id IN (${projectIds.map(() => '?').join(',')})
+           AND recorded_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+         ORDER BY recorded_at DESC`,
+        projectIds
+      );
+      const healthByProject = new Map<string, Array<{ score: number; date: string }>>();
+      for (const row of healthRows) {
+        let arr = healthByProject.get(row.project_id);
+        if (!arr) { arr = []; healthByProject.set(row.project_id, arr); }
+        arr.push({ score: row.overall_health, date: row.recorded_at });
+      }
+
+      // Process each project with bounded concurrency
+      const CONCURRENCY = 5;
+      const results: Array<{
+        projectId: string;
+        projectName: string;
+        status: string;
+        cpi: number | null;
+        spi: number | null;
+        cpiTrend: Array<{ date: string; value: number }>;
+        spiTrend: Array<{ date: string; value: number }>;
+        burndown: Array<{ date: string; ideal: number; actual: number }>;
+        percentComplete: number;
+        healthScore: number | null;
+        healthTrend: 'improving' | 'declining' | 'stable';
+        budgetUtilization: number;
+        budgetAllocated: number;
+        budgetSpent: number;
+        totalTasks: number;
+        completedTasks: number;
+        scheduleVariance: number;
+      }> = [];
+
+      for (let i = 0; i < activeProjects.length; i += CONCURRENCY) {
+        const batch = activeProjects.slice(i, i + CONCURRENCY);
+        const batchResults = await Promise.allSettled(
+          batch.map(async (project) => {
+            const projSchedules = schedulesByProject.get(project.id) ?? [];
+            const firstSchedule = projSchedules[0];
+
+            // EVM metrics (no AI call)
+            let cpi: number | null = null;
+            let spi: number | null = null;
+            let cpiTrend: Array<{ date: string; value: number }> = [];
+            let spiTrend: Array<{ date: string; value: number }> = [];
+            let scheduleVariance = 0;
+
+            try {
+              const evm = await evmForecastService.generateMetricsOnly(project.id);
+              cpi = evm.currentMetrics.CPI;
+              spi = evm.currentMetrics.SPI;
+              scheduleVariance = parseFloat(((spi - 1) * 100).toFixed(1));
+
+              // Last 8 weeks of CPI/SPI trends
+              const weekly = evm.historicalTrends.weeklyData.slice(-8);
+              cpiTrend = weekly.map(w => ({ date: w.date, value: w.cpi }));
+              spiTrend = weekly.map(w => ({ date: w.date, value: w.spi }));
+            } catch { /* no EVM data — leave nulls */ }
+
+            // Burndown data
+            let burndown: Array<{ date: string; ideal: number; actual: number }> = [];
+            let percentComplete = 0;
+            let totalTasks = 0;
+            let completedTasks = 0;
+
+            if (firstSchedule) {
+              try {
+                const bd = await burndownService.getBurndownData(firstSchedule.id);
+                percentComplete = bd.percentComplete;
+                totalTasks = bd.totalScope;
+                completedTasks = bd.completedCount;
+                // Sample to max ~12 points for sparkline
+                const pts = bd.dataPoints.filter(d => d.actual >= 0);
+                const step = Math.max(1, Math.floor(pts.length / 12));
+                burndown = pts
+                  .filter((_, idx) => idx % step === 0 || idx === pts.length - 1)
+                  .map(d => ({ date: d.date, ideal: d.ideal, actual: d.actual }));
+              } catch { /* no burndown data */ }
+            }
+
+            // Health from pre-fetched data
+            const healthHistory = healthByProject.get(project.id) ?? [];
+            const healthScore = healthHistory.length > 0 ? healthHistory[0].score : null;
+            let healthTrend: 'improving' | 'declining' | 'stable' = 'stable';
+            if (healthHistory.length >= 2) {
+              const diff = healthHistory[0].score - healthHistory[1].score;
+              if (diff > 2) healthTrend = 'improving';
+              else if (diff < -2) healthTrend = 'declining';
+            }
+
+            const budgetAllocated = project.budgetAllocated || 0;
+            const budgetSpent = project.budgetSpent || 0;
+            const budgetUtilization = budgetAllocated > 0 ? parseFloat(((budgetSpent / budgetAllocated) * 100).toFixed(1)) : 0;
+
+            return {
+              projectId: project.id,
+              projectName: project.name,
+              status: project.status,
+              cpi,
+              spi,
+              cpiTrend,
+              spiTrend,
+              burndown,
+              percentComplete,
+              healthScore,
+              healthTrend,
+              budgetUtilization,
+              budgetAllocated,
+              budgetSpent,
+              totalTasks,
+              completedTasks,
+              scheduleVariance,
+            };
+          })
+        );
+
+        for (const result of batchResults) {
+          if (result.status === 'fulfilled') {
+            results.push(result.value);
+          }
+        }
+      }
+
+      const response = { projects: results };
+
+      // Cache for 5 minutes
+      await redisService.set(cacheKey, JSON.stringify(response), 300);
+
+      return response;
+    } catch (error) {
+      logger.error('Get portfolio analytics error', { error });
+      return reply.status(500).send({ error: 'Internal server error', message: 'Failed to fetch portfolio analytics' });
     }
   });
 }

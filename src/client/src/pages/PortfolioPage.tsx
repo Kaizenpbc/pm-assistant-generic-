@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Layers, DollarSign, TrendingUp, CheckCircle, AlertTriangle, FolderKanban, BarChart3, Users } from 'lucide-react';
+import { Layers, DollarSign, TrendingUp, CheckCircle, AlertTriangle, FolderKanban, BarChart3, Users, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { HealthTrendsWidget } from '../components/dashboard/widgets/HealthTrendsWidget';
 import { apiService } from '../services/api';
 import { GanttChart, type GanttTask } from '../components/schedule/GanttChart';
@@ -35,6 +35,26 @@ interface PortfolioItem {
     dependency?: string;
     dependencyType?: string;
   }>;
+}
+
+interface PortfolioAnalyticsProject {
+  projectId: string;
+  projectName: string;
+  status: string;
+  cpi: number | null;
+  spi: number | null;
+  cpiTrend: Array<{ date: string; value: number }>;
+  spiTrend: Array<{ date: string; value: number }>;
+  burndown: Array<{ date: string; ideal: number; actual: number }>;
+  percentComplete: number;
+  healthScore: number | null;
+  healthTrend: 'improving' | 'declining' | 'stable';
+  budgetUtilization: number;
+  budgetAllocated: number;
+  budgetSpent: number;
+  totalTasks: number;
+  completedTasks: number;
+  scheduleVariance: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -81,6 +101,12 @@ export function PortfolioPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['portfolio'],
     queryFn: () => apiService.getPortfolio(),
+  });
+
+  const { data: analyticsData } = useQuery({
+    queryKey: ['portfolioAnalytics'],
+    queryFn: () => apiService.getPortfolioAnalytics(),
+    staleTime: 5 * 60 * 1000,
   });
 
   const portfolioItems: PortfolioItem[] = data?.portfolioItems || [];
@@ -262,6 +288,15 @@ export function PortfolioPage() {
                     />
                   </div>
                 </div>
+              )}
+
+              {/* Portfolio Analytics Panels */}
+              {analyticsData?.projects?.length > 0 && (
+                <>
+                  <CPISPIComparison projects={analyticsData.projects} onProjectClick={(id) => navigate(`/project/${id}`)} />
+                  <BurndownTrends projects={analyticsData.projects} />
+                  <ProjectComparisonMatrix projects={analyticsData.projects} onProjectClick={(id) => navigate(`/project/${id}`)} />
+                </>
               )}
 
               {/* Health Trends */}
@@ -486,6 +521,269 @@ function PortfolioResourcesView() {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sparkline SVG
+// ---------------------------------------------------------------------------
+
+function Sparkline({ data, width = 80, height = 20, color = '#3b82f6' }: { data: number[]; width?: number; height?: number; color?: string }) {
+  if (data.length < 2) return <span className="text-xs text-gray-400">—</span>;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) => `${(i / (data.length - 1)) * width},${height - ((v - min) / range) * (height - 2) - 1}`).join(' ');
+  return (
+    <svg width={width} height={height}>
+      <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function BurndownSparkline({ data, width = 100, height = 24 }: { data: Array<{ ideal: number; actual: number }>; width?: number; height?: number }) {
+  if (data.length < 2) return <span className="text-xs text-gray-400">—</span>;
+  const maxVal = Math.max(...data.map(d => Math.max(d.ideal, d.actual))) || 1;
+  const toPoints = (values: number[]) => values.map((v, i) => `${(i / (values.length - 1)) * width},${height - (v / maxVal) * (height - 2) - 1}`).join(' ');
+  return (
+    <svg width={width} height={height}>
+      <polyline points={toPoints(data.map(d => d.ideal))} fill="none" stroke="#9ca3af" strokeWidth={1} strokeDasharray="3,2" />
+      <polyline points={toPoints(data.map(d => d.actual))} fill="none" stroke="#3b82f6" strokeWidth={1.5} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CPI/SPI color helper
+// ---------------------------------------------------------------------------
+
+function cpiSpiColor(val: number | null): string {
+  if (val === null) return 'text-gray-400';
+  if (val >= 1.0) return 'text-green-600';
+  if (val >= 0.85) return 'text-amber-600';
+  return 'text-red-600';
+}
+
+function cpiSpiSparklineColor(val: number | null): string {
+  if (val === null) return '#9ca3af';
+  if (val >= 1.0) return '#16a34a';
+  if (val >= 0.85) return '#d97706';
+  return '#dc2626';
+}
+
+// ---------------------------------------------------------------------------
+// CPI/SPI Comparison Panel
+// ---------------------------------------------------------------------------
+
+function CPISPIComparison({ projects, onProjectClick }: { projects: PortfolioAnalyticsProject[]; onProjectClick: (id: string) => void }) {
+  const [sortKey, setSortKey] = useState<'cpi' | 'spi'>('cpi');
+  const [sortAsc, setSortAsc] = useState(false);
+
+  const sorted = useMemo(() => {
+    const withData = projects.filter(p => p.cpi !== null || p.spi !== null);
+    return [...withData].sort((a, b) => {
+      const av = sortKey === 'cpi' ? (a.cpi ?? 0) : (a.spi ?? 0);
+      const bv = sortKey === 'cpi' ? (b.cpi ?? 0) : (b.spi ?? 0);
+      return sortAsc ? av - bv : bv - av;
+    });
+  }, [projects, sortKey, sortAsc]);
+
+  const toggleSort = (key: 'cpi' | 'spi') => {
+    if (sortKey === key) setSortAsc(!sortAsc);
+    else { setSortKey(key); setSortAsc(false); }
+  };
+
+  if (sorted.length === 0) return null;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">CPI / SPI Comparison</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 dark:bg-gray-700">
+              <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Project</th>
+              <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300 cursor-pointer select-none" onClick={() => toggleSort('cpi')}>
+                <span className="inline-flex items-center gap-1">CPI {sortKey === 'cpi' && (sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</span>
+              </th>
+              <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300 cursor-pointer select-none" onClick={() => toggleSort('spi')}>
+                <span className="inline-flex items-center gap-1">SPI {sortKey === 'spi' && (sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</span>
+              </th>
+              <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">CPI Trend</th>
+              <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">SPI Trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map(p => (
+              <tr key={p.projectId} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer" onClick={() => onProjectClick(p.projectId)}>
+                <td className="px-4 py-2 font-medium text-gray-900 dark:text-white truncate max-w-[200px]">{p.projectName}</td>
+                <td className={`px-4 py-2 text-center font-bold ${cpiSpiColor(p.cpi)}`}>{p.cpi !== null ? p.cpi.toFixed(2) : '—'}</td>
+                <td className={`px-4 py-2 text-center font-bold ${cpiSpiColor(p.spi)}`}>{p.spi !== null ? p.spi.toFixed(2) : '—'}</td>
+                <td className="px-4 py-2 text-center"><Sparkline data={p.cpiTrend.map(t => t.value)} color={cpiSpiSparklineColor(p.cpi)} /></td>
+                <td className="px-4 py-2 text-center"><Sparkline data={p.spiTrend.map(t => t.value)} color={cpiSpiSparklineColor(p.spi)} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Burndown Trends Panel
+// ---------------------------------------------------------------------------
+
+function BurndownTrends({ projects }: { projects: PortfolioAnalyticsProject[] }) {
+  const withBurndown = projects.filter(p => p.burndown.length >= 2);
+  if (withBurndown.length === 0) return null;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Burndown Trends</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 dark:bg-gray-700">
+              <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Project</th>
+              <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Burndown</th>
+              <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Complete</th>
+              <th className="text-center px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Variance</th>
+            </tr>
+          </thead>
+          <tbody>
+            {withBurndown.map(p => (
+              <tr key={p.projectId} className="border-t border-gray-100 dark:border-gray-700">
+                <td className="px-4 py-2 font-medium text-gray-900 dark:text-white truncate max-w-[200px]">{p.projectName}</td>
+                <td className="px-4 py-2 text-center">
+                  <BurndownSparkline data={p.burndown} />
+                </td>
+                <td className="px-4 py-2 text-center font-bold text-gray-900 dark:text-white">{p.percentComplete}%</td>
+                <td className="px-4 py-2 text-center">
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
+                    p.scheduleVariance >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {p.scheduleVariance >= 0 ? '+' : ''}{p.scheduleVariance}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Project Comparison Matrix
+// ---------------------------------------------------------------------------
+
+type ComparisonSortKey = 'health' | 'cpi' | 'spi' | 'budget' | 'progress' | 'tasks';
+
+function ProjectComparisonMatrix({ projects, onProjectClick }: { projects: PortfolioAnalyticsProject[]; onProjectClick: (id: string) => void }) {
+  const [sortKey, setSortKey] = useState<ComparisonSortKey>('health');
+  const [sortAsc, setSortAsc] = useState(false);
+
+  const toggleSort = useCallback((key: ComparisonSortKey) => {
+    if (sortKey === key) setSortAsc(prev => !prev);
+    else { setSortKey(key); setSortAsc(false); }
+  }, [sortKey]);
+
+  const sorted = useMemo(() => {
+    return [...projects].sort((a, b) => {
+      let av: number, bv: number;
+      switch (sortKey) {
+        case 'health': av = a.healthScore ?? 0; bv = b.healthScore ?? 0; break;
+        case 'cpi': av = a.cpi ?? 0; bv = b.cpi ?? 0; break;
+        case 'spi': av = a.spi ?? 0; bv = b.spi ?? 0; break;
+        case 'budget': av = a.budgetUtilization; bv = b.budgetUtilization; break;
+        case 'progress': av = a.percentComplete; bv = b.percentComplete; break;
+        case 'tasks': av = a.totalTasks; bv = b.totalTasks; break;
+        default: av = 0; bv = 0;
+      }
+      return sortAsc ? av - bv : bv - av;
+    });
+  }, [projects, sortKey, sortAsc]);
+
+  const SortHeader = ({ label, k }: { label: string; k: ComparisonSortKey }) => (
+    <th className="text-center px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 cursor-pointer select-none whitespace-nowrap" onClick={() => toggleSort(k)}>
+      <span className="inline-flex items-center gap-1">{label} {sortKey === k && (sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</span>
+    </th>
+  );
+
+  const healthDotColor = (score: number | null) => {
+    if (score === null) return 'bg-gray-300';
+    if (score >= 75) return 'bg-green-500';
+    if (score >= 50) return 'bg-amber-500';
+    return 'bg-red-500';
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+        <ArrowUpDown className="w-4 h-4 text-gray-400" />
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Project Comparison</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 dark:bg-gray-700">
+              <th className="text-left px-4 py-2 font-semibold text-gray-600 dark:text-gray-300">Project</th>
+              <SortHeader label="Health" k="health" />
+              <SortHeader label="CPI" k="cpi" />
+              <SortHeader label="SPI" k="spi" />
+              <SortHeader label="Budget %" k="budget" />
+              <SortHeader label="Progress" k="progress" />
+              <SortHeader label="Tasks" k="tasks" />
+              <th className="text-center px-3 py-2 font-semibold text-gray-600 dark:text-gray-300">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map(p => {
+              const sc = STATUS_COLORS[p.status] || STATUS_COLORS.active;
+              return (
+                <tr key={p.projectId} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer" onClick={() => onProjectClick(p.projectId)}>
+                  <td className="px-4 py-2 font-medium text-gray-900 dark:text-white truncate max-w-[200px]">{p.projectName}</td>
+                  <td className="px-3 py-2 text-center">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${healthDotColor(p.healthScore)}`} />
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{p.healthScore !== null ? p.healthScore : '—'}</span>
+                    </span>
+                  </td>
+                  <td className={`px-3 py-2 text-center font-bold ${cpiSpiColor(p.cpi)}`}>{p.cpi !== null ? p.cpi.toFixed(2) : '—'}</td>
+                  <td className={`px-3 py-2 text-center font-bold ${cpiSpiColor(p.spi)}`}>{p.spi !== null ? p.spi.toFixed(2) : '—'}</td>
+                  <td className="px-3 py-2 text-center">
+                    <span className={`text-xs font-bold ${p.budgetUtilization > 100 ? 'text-red-600' : p.budgetUtilization > 90 ? 'text-amber-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {p.budgetAllocated > 0 ? `${p.budgetUtilization}%` : '—'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <div className="flex items-center gap-2 justify-center">
+                      <div className="w-16 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary-500 rounded-full" style={{ width: `${p.percentComplete}%` }} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{p.percentComplete}%</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-center text-xs text-gray-600 dark:text-gray-400">{p.completedTasks}/{p.totalTasks}</td>
+                  <td className="px-3 py-2 text-center">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${sc.bg} ${sc.text}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                      {p.status.replace('_', ' ')}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
