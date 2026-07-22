@@ -880,6 +880,10 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
             setShowAddForm(true);
           }}
           onDeleteTask={(taskId) => deleteMutation.mutate(taskId)}
+          onInsertAfter={(_afterTaskId, parentTaskId) => {
+            setCreateTaskDates({ startDate: '', endDate: '', parentTaskId });
+            setShowAddForm(true);
+          }}
           columnState={columnState}
           onTaskDragEnd={handleTaskDragEndWithUndo}
           onTaskUpdate={updateTaskWithUndo}
