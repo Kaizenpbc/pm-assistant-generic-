@@ -935,6 +935,9 @@ function ScheduleGantt({ schedule, viewMode, projectId }: { schedule: any; viewM
         <CalendarView
           tasks={filteredTasks}
           onTaskClick={(task) => { setActiveTaskId(task.id); setEditingTask(task); }}
+          onTaskReschedule={(taskId, newStart, newEnd) => {
+            updateTaskWithUndo(taskId, { startDate: newStart, endDate: newEnd });
+          }}
         />
       )}
       {viewMode === 'network' && (
