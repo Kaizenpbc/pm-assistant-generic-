@@ -444,7 +444,7 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 | Mobile-Optimized Views | Done | Enhancement |
 | Email Notifications & Digests | Done | Enhancement |
 | Scheduled Report Delivery | Done | Enhancement |
-| Dark Mode (full coverage — all 41 pages + shared components, Settings all 8 tabs, Admin page, Command Palette) | Done | Enhancement |
+| Dark Mode (full coverage — all 41 pages + shared components, Settings all 8 tabs, Admin page, Command Palette; badge/status polish across 9 pages: ProjectDetail, Notifications, Portfolio, Workflow, LessonsLearned, Reports, IntakeForms, AIInsights, AccountBilling) | Done | Enhancement |
 | Project Milestones (Gantt diamonds) | Done | Enhancement |
 | Dependency Types (FS/FF/SS/SF + lag) | Done | Enhancement |
 | Multi-Dependency Support (up to 20 predecessors, junction table) | Done | Enhancement |

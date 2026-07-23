@@ -1339,6 +1339,8 @@ Destructive actions throughout the application (deleting integrations, change re
 
 Click the **dark mode toggle** (sun/moon icon) in the TopBar to switch between light and dark themes. The choice is saved and applied automatically on your next visit. Every page in the application supports dark mode — including auth pages, public pages, dashboards, tools, and admin areas. This includes all 8 Settings tabs, the Admin page (role badges, stat icons, tier badges, search bar, AI usage table), and the Command Palette (modal, input, badges, results, empty state).
 
+All status, severity, and category badges are fully styled for dark mode. Pages with comprehensive badge coverage include: Project Detail (context icons, progress bars, avatar rings), Notifications (severity badges, filter card), Portfolio (project status colors), Workflow (node types, execution status), Lessons Learned (impact badges, recommendation box), Reports (report type badges), Intake Forms (submission status badges), AI Insights (risk/impact/severity badges), and Account Billing (subscription status badges). Badges use translucent dark backgrounds (`dark:bg-*-900/30`) with appropriately lightened text so they remain readable without being garish.
+
 ### Language
 
 Open **Settings → Language** and choose from **English**, **French (Français)**, or **Spanish (Español)**. The interface updates immediately; no page reload is required.

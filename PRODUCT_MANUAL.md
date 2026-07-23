@@ -1294,6 +1294,17 @@ A global dark theme is available throughout the application. The user toggles it
 
 **Command Palette:** Modal background, search input, ESC badge, status/severity/priority badge colors, quick action items, search result items, and the empty state all support dark mode.
 
+**Badge & status polish (9 pages):** All severity, status, and category badges across the following pages have `dark:bg-*-900/30` / `dark:text-*-400` dark variants — ensuring no washed-out or invisible badges in dark theme:
+- **ProjectDetailPage** — context card icon wells (purple/blue/green/red/orange), progress bar tracks (`dark:bg-gray-700`), presence avatar border rings.
+- **NotificationsPage** — critical/high/medium/low severity badges; active filter card.
+- **PortfolioPage** — STATUS_COLORS map (active/planning/on_hold/cancelled).
+- **WorkflowPage** — node type colors (trigger/condition/action/approval/delay); execution status badges (completed/failed/waiting/running); header icon well.
+- **LessonsLearnedPage** — amber recommendation box; positive/negative impact badges.
+- **ReportsPage** — report type badges (weekly-status/risk/budget/resource) in both REPORT_TYPES and badgeColorMap.
+- **IntakeFormsPage** — status badges (submitted/under_review/approved/rejected/converted); submissions table made horizontally scrollable.
+- **AIInsightsTab** — risk level, impact level, and severity badges across all levels.
+- **AccountBillingPage** — subscription status badges (trialing/active/past_due/canceling).
+
 ---
 
 ## 26. Project Milestones
