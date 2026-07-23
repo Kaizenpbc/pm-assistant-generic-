@@ -7,6 +7,7 @@ import {
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireFeature } from '../../middleware/requireTier';
+import { userService } from '../../services/UserService';
 
 export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
@@ -15,12 +16,21 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
   // POST /analyze — Analyze a meeting transcript
   // ---------------------------------------------------------------------------
 
+  // Trial users get sample analysis data with an upgrade prompt.
   fastify.post('/analyze', {
-    preHandler: [requireScope('write'), requireFeature('meeting_intelligence')],
+    preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const parsed = AnalyzeRequestSchema.parse(request.body);
       const userId = request.user!.userId;
+
+      // Trial users get sample meeting analysis
+      if (request.user!.role !== 'admin') {
+        const user = await userService.findById(userId);
+        if (user && user.subscriptionTier === 'trial') {
+          return reply.send({ data: generateSampleMeetingAnalysis(), sample: true });
+        }
+      }
 
       const analysis = await meetingIntelligenceService.analyzeTranscript(
         parsed.transcript,
@@ -83,4 +93,28 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: 'Failed to fetch meeting analysis history' });
     }
   });
+}
+
+function generateSampleMeetingAnalysis() {
+  return {
+    id: 'sample-analysis',
+    summary: 'Sprint review discussed progress on frontend redesign, identified two blockers, and decided to extend the testing phase by one week.',
+    actionItems: [
+      { description: 'Update wireframes based on stakeholder feedback', assignee: 'Jane Smith', dueDate: 'Next Friday', priority: 'high' },
+      { description: 'Resolve API integration blocker with payments team', assignee: 'John Doe', dueDate: 'End of week', priority: 'critical' },
+      { description: 'Schedule user testing sessions for next sprint', assignee: 'Sarah Kim', dueDate: 'Next Monday', priority: 'medium' },
+    ],
+    decisions: [
+      { description: 'Extend testing phase by one week to accommodate additional QA scenarios', decidedBy: 'Project Manager' },
+      { description: 'Use React instead of Vue for the new dashboard component', decidedBy: 'Tech Lead' },
+    ],
+    risks: [
+      { description: 'Payment integration delay may impact release timeline', severity: 'high', mitigation: 'Escalate to payments team lead' },
+    ],
+    taskUpdates: [
+      { taskName: 'Frontend Redesign', status: 'in_progress', progress: 75, notes: 'On track for completion next week' },
+      { taskName: 'API Integration', status: 'blocked', progress: 40, notes: 'Waiting on payments team response' },
+    ],
+    createdAt: new Date().toISOString(),
+  };
 }

@@ -11,6 +11,7 @@ import {
   Shield,
   DollarSign,
   Zap,
+  Lock,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 
@@ -194,6 +195,7 @@ const PortfolioIntelligence: React.FC = () => {
 
   const cpData: CrossProjectData | undefined = data?.data;
   if (!cpData) return <ErrorCard message="No portfolio data available." />;
+  const isSample: boolean = data?.sample || false;
 
   const heatMap = cpData.portfolioRiskHeatMap || [];
   const reallocation = cpData.budgetReallocation;
@@ -204,6 +206,20 @@ const PortfolioIntelligence: React.FC = () => {
         <Brain className="w-4 h-4 text-primary-500" />
         Portfolio Intelligence
       </h2>
+
+      {isSample && (
+        <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+          <div className="flex items-start gap-2">
+            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Sample Portfolio Intelligence</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                This is sample data. Upgrade to a paid plan to see cross-project insights, anomaly detection, and budget reallocation recommendations from your actual portfolio.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary */}
       {cpData.summary && (
@@ -380,11 +396,25 @@ const AnomalyDetection: React.FC = () => {
 
   const anomalyData: AnomalyData | undefined = data?.data;
   if (!anomalyData) return <ErrorCard message="No anomaly data available." />;
+  const isSample: boolean = data?.sample || false;
 
   const anomalies = anomalyData.anomalies || [];
 
   return (
     <div className="card">
+      {isSample && (
+        <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+          <div className="flex items-start gap-2">
+            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Sample Anomaly Detection</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                This is sample data. Upgrade to a paid plan to detect anomalies across your actual portfolio.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <Shield className="w-4 h-4 text-orange-500" />

@@ -7,6 +7,7 @@ import {
   Clock,
   FileText,
   Send,
+  Lock,
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { MeetingResultPanel } from '../components/meeting/MeetingResultPanel';
@@ -151,6 +152,7 @@ export const MeetingMinutesPage: React.FC = () => {
 
   // Analysis result
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [isSample, setIsSample] = useState(false);
 
   // ---- Queries ----
 
@@ -185,6 +187,7 @@ export const MeetingMinutesPage: React.FC = () => {
         scheduleId: selectedScheduleId,
       }),
     onSuccess: (data: any) => {
+      setIsSample(data?.sample || false);
       setAnalysisResult(data?.data || data?.analysis || data);
       queryClient.invalidateQueries({ queryKey: ['meetingHistory', selectedProjectId] });
     },
@@ -374,13 +377,26 @@ export const MeetingMinutesPage: React.FC = () => {
         {/* Results */}
         {analysisResult && (
           <div>
+            {isSample && (
+              <div className="mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+                <div className="flex items-start gap-2">
+                  <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Sample Meeting Analysis</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                      This is a sample analysis with demo data. Upgrade to a paid plan to analyze your actual meeting transcripts and extract action items, decisions, and risks.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary-500" />
               Analysis Results
             </h2>
             <MeetingResultPanel
               analysis={analysisResult}
-              onApply={handleApply}
+              onApply={isSample ? () => {} : handleApply}
               isApplying={applyMutation.isPending}
             />
 
