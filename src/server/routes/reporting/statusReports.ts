@@ -5,6 +5,7 @@ import { requireScope } from '../../middleware/requireScope';
 import { requirePaidTier } from '../../middleware/requireTier';
 import { projectStatusReportService } from '../../services/ProjectStatusReportService';
 import { reportScheduleService } from '../../services/ReportScheduleService';
+import { userService } from '../../services/UserService';
 import logger from '../../utils/logger';
 
 const generateSchema = z.object({
@@ -26,12 +27,22 @@ export async function statusReportRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // Generate a status report (optionally email it)
+  // Trial users get a sample report (no AI tokens consumed) with an upgrade prompt.
   fastify.post('/generate', {
-    preHandler: [requireScope('write'), requirePaidTier],
+    preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const userId = request.user!.userId;
       const body = generateSchema.parse(request.body);
+
+      // Check if user is on trial tier — return sample report instead
+      if (request.user!.role !== 'admin') {
+        const user = await userService.findById(userId);
+        if (user && user.subscriptionTier === 'trial') {
+          const sample = projectStatusReportService.generateSample(body.projectId);
+          return { report: sample, sample: true };
+        }
+      }
 
       const result = await projectStatusReportService.generate(body.projectId, userId, {
         recipients: body.recipients,

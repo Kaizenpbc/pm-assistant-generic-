@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileText, X, Download, Mail, Calendar, Trash2 } from 'lucide-react';
+import { FileText, X, Download, Mail, Calendar, Trash2, Lock } from 'lucide-react';
 import { apiService } from '../../services/api';
 
 export function StatusReportModal({ projectId, projectName, onClose }: { projectId: string; projectName: string; onClose: () => void }) {
   const [report, setReport] = useState<any>(null);
+  const [isSample, setIsSample] = useState(false);
   const [tab, setTab] = useState<'report' | 'email' | 'schedule'>('report');
   const [emailRecipients, setEmailRecipients] = useState('');
   const [emailSent, setEmailSent] = useState(false);
@@ -17,7 +18,10 @@ export function StatusReportModal({ projectId, projectName, onClose }: { project
 
   const mutation = useMutation({
     mutationFn: () => apiService.generateStatusReport(projectId),
-    onSuccess: (data) => setReport(data),
+    onSuccess: (data) => {
+      setReport(data);
+      if (data?.sample) setIsSample(true);
+    },
   });
 
   const emailMutation = useMutation({
@@ -92,7 +96,7 @@ export function StatusReportModal({ projectId, projectName, onClose }: { project
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Status Report — {projectName}</h2>
           </div>
           <div className="flex items-center gap-2">
-            {html && (
+            {html && !isSample && (
               <button onClick={handleDownload} className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
                 <Download className="w-3 h-3" />
                 Download
@@ -107,21 +111,25 @@ export function StatusReportModal({ projectId, projectName, onClose }: { project
         {/* Tabs */}
         <div className="flex border-b border-gray-200 dark:border-gray-700 px-5">
           {[
-            { key: 'report' as const, label: 'Report', icon: FileText },
-            { key: 'email' as const, label: 'Email Report', icon: Mail },
-            { key: 'schedule' as const, label: 'Schedule Recurring', icon: Calendar },
+            { key: 'report' as const, label: 'Report', icon: FileText, locked: false },
+            { key: 'email' as const, label: 'Email Report', icon: Mail, locked: isSample },
+            { key: 'schedule' as const, label: 'Schedule Recurring', icon: Calendar, locked: isSample },
           ].map(t => (
             <button
               key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => !t.locked && setTab(t.key)}
+              disabled={t.locked}
               className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                tab === t.key
-                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                t.locked
+                  ? 'border-transparent text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                  : tab === t.key
+                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
               <t.icon className="w-3 h-3" />
               {t.label}
+              {t.locked && <Lock className="w-3 h-3 ml-0.5" />}
             </button>
           ))}
         </div>
@@ -129,6 +137,19 @@ export function StatusReportModal({ projectId, projectName, onClose }: { project
         <div className="flex-1 overflow-y-auto p-5">
           {tab === 'report' && (
             <>
+              {isSample && (
+                <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+                  <div className="flex items-start gap-2">
+                    <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Sample Report</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                        This is a sample report with demo data. Upgrade to a paid plan to generate AI-powered status reports using your actual project data, email them to stakeholders, and schedule recurring delivery.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {mutation.isPending ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-3" />
@@ -142,7 +163,7 @@ export function StatusReportModal({ projectId, projectName, onClose }: { project
                 </div>
               ) : html ? (
                 <div
-                  className="status-report-container"
+                  className={`status-report-container ${isSample ? 'opacity-80' : ''}`}
                   dangerouslySetInnerHTML={{ __html: html }}
                 />
               ) : null}

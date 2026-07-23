@@ -253,6 +253,46 @@ export class ProjectStatusReportService {
     ].join('\n');
   }
 
+  generateSample(projectId: string): StatusReportResult {
+    const reportDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric',
+    });
+
+    const areas: RAGArea[] = [
+      { name: 'Schedule', status: 'green', previousStatus: 'green', trend: 'stable', comments: 'Project is tracking on schedule with 78% of milestones completed on time.' },
+      { name: 'Budget', status: 'amber', previousStatus: 'green', trend: 'declining', comments: 'Spending is at 92% of allocated budget with 15% of deliverables remaining.' },
+      { name: 'Resources', status: 'green', previousStatus: 'amber', trend: 'improving', comments: 'Resource gaps addressed — two new team members onboarded this sprint.' },
+      { name: 'Risks', status: 'amber', previousStatus: 'amber', trend: 'stable', comments: '3 medium-severity risks open. Key dependency on third-party API delivery.' },
+      { name: 'Scope', status: 'green', previousStatus: 'green', trend: 'stable', comments: 'No change requests pending. Scope baseline is intact.' },
+      { name: 'Quality', status: 'green', previousStatus: 'amber', trend: 'improving', comments: 'Defect rate decreased 40% after additional code review process.' },
+    ];
+
+    const report: StructuredStatusReport = {
+      executiveSummary: 'This is a sample status report demonstrating the AI-powered reporting feature. With a paid plan, this report will be generated using your actual project data — including real task progress, budget metrics, risk assessments, and trend analysis powered by AI.',
+      areas,
+      managementActions: [
+        'Review budget allocation for remaining deliverables',
+        'Monitor third-party API dependency timeline',
+        'Continue enhanced code review process to sustain quality gains',
+      ],
+      projectName: 'Sample Project Report',
+      reportDate,
+      aiPowered: false,
+    };
+
+    const html = renderStatusReportHtml(report);
+
+    return {
+      id: 'sample',
+      projectId,
+      html,
+      data: report,
+      generatedAt: new Date().toISOString(),
+      aiPowered: false,
+      emailSent: false,
+    };
+  }
+
   private generateFallbackData() {
     return {
       executiveSummary: 'AI-powered analysis is currently unavailable. This is a template report based on available project data. Enable AI features for comprehensive executive analysis.',
