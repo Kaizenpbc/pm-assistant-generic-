@@ -1305,6 +1305,8 @@ A global dark theme is available throughout the application. The user toggles it
 - **AIInsightsTab** — risk level, impact level, and severity badges across all levels.
 - **AccountBillingPage** — subscription status badges (trialing/active/past_due/canceling).
 
+**Auth & Remaining Dark Mode (10 items):** Auth page error banners (Login, Register, Onboarding, ForgotPassword, ResetPassword) and success state icons (Register, ResetPassword) now have proper dark mode styling. Fixed all 16 non-standard `gray-750` class occurrences across 13 files (gray-750 does not exist in Tailwind v3, replaced with `gray-700`). AgentProposalsPage received comprehensive dark mode coverage — triage section, modal interior, table/tab bar, autonomy/eligibility cards, status filter pills, and page title. TimesheetPage active tab contrast fixed (`dark:bg-gray-700` instead of invisible `dark:bg-gray-800`). AgentActivityTab result badges, row backgrounds, and pagination styled for dark mode.
+
 ---
 
 ## 26. Project Milestones

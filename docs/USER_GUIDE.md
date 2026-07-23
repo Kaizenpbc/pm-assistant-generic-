@@ -1341,6 +1341,8 @@ Click the **dark mode toggle** (sun/moon icon) in the TopBar to switch between l
 
 All status, severity, and category badges are fully styled for dark mode. Pages with comprehensive badge coverage include: Project Detail (context icons, progress bars, avatar rings), Notifications (severity badges, filter card), Portfolio (project status colors), Workflow (node types, execution status), Lessons Learned (impact badges, recommendation box), Reports (report type badges), Intake Forms (submission status badges), AI Insights (risk/impact/severity badges), and Account Billing (subscription status badges). Badges use translucent dark backgrounds (`dark:bg-*-900/30`) with appropriately lightened text so they remain readable without being garish.
 
+Auth pages (Login, Register, Onboarding, ForgotPassword, ResetPassword) have dark-mode-styled error banners and success icons. The AgentProposals page has full dark mode coverage across its triage section, modal, table, tabs, filter pills, and autonomy cards. The TimesheetPage active tab and AgentActivityTab badges/rows are also dark-mode correct. A non-standard `gray-750` class (not valid in Tailwind v3) was replaced with `gray-700` across 13 files.
+
 ### Language
 
 Open **Settings → Language** and choose from **English**, **French (Français)**, or **Spanish (Español)**. The interface updates immediately; no page reload is required.
