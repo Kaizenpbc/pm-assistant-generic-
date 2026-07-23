@@ -215,6 +215,8 @@ Additional sections below the card grid:
 - **Portal Links** -- External portal link management. Each link generates a unique token URL (`/portal/:token`) that stakeholders can access without logging in. The portal shows project progress, task statistics, budget summary, milestone timeline, recent activity, and a comment form. Visibility of each section is controlled by the link's permissions (`canViewBudget`, `canViewGantt`, `canViewReports`, `canComment`).
 - **Export XML** -- Click the **Export XML** button (same row as Export CSV and Export PDF) to download the project as an MSPDI XML file. This format is compatible with Microsoft Project and ProjectLibre and includes tasks, resources, assignments, and dependency links.
 
+> **Trial accounts:** If you are on a trial plan, clicking any export button (CSV, XML, or JSON/PDF) downloads a **sample file** containing demo project data (5 tasks across 2 phases) rather than your real project. An amber banner in the UI identifies it as a sample before the download begins. Upgrade to a paid plan to export your actual project data.
+
 #### Real-Time Presence
 
 When other users are viewing the same project, their avatar circles appear in the project header next to the action buttons. Each circle shows the user's initials with a tooltip displaying their username. This helps teams coordinate and avoid conflicting edits.
@@ -844,6 +846,8 @@ For custom reports, use the **Report Builder**:
 
 > **Note:** Regular users can delete report templates they created. Deleting another user's template still requires an admin role. When updating a template in the Report Designer, all configured sections are saved correctly.
 
+> **Trial accounts:** If you are on a trial plan, the Report Builder shows 3 sample templates (Weekly Status, Budget Overview, Time Tracking) so you can preview the feature. The New Report, Edit, Generate, and Delete buttons are replaced with an "Upgrade to use" label. An amber banner at the top of the page identifies the templates as samples. Upgrade to a paid plan to create and run your own custom report templates.
+
 ### Analytics Dashboard
 
 The **Analytics** page provides a summary dashboard with key metrics across all projects, including task completion rates, budget utilization, and schedule adherence.
@@ -917,6 +921,8 @@ PM Assistant integrates AI capabilities throughout the platform (requires AI to 
 3. The AI returns a written answer, often accompanied by auto-generated charts (bar, line, pie, or doughnut).
 4. **Suggested follow-ups** appear below the answer for deeper exploration.
 
+> **Trial accounts:** If you are on a trial plan, submitting a query returns a **sample response** with demo data — a short narrative answer, a sample bar chart showing task status across fictitious projects, and 3 suggested follow-up questions. An amber banner at the top of the page identifies it as a sample. No AI tokens are consumed. Upgrade to a paid plan to query your real project data.
+
 ### Mjuzi Chat Panel
 
 **Mjuzi** is your AI project assistant, available as a persistent slide-out chat panel from any page:
@@ -963,6 +969,8 @@ The Task Prioritization Panel analyzes your backlog and suggests an optimal task
    - **Decisions** -- Key decisions recorded.
    - **Risks** -- Potential issues mentioned.
 5. Action items can be converted directly into schedule tasks.
+
+> **Trial accounts:** If you are on a trial plan, clicking Process returns a **sample meeting analysis** with demo data — a brief summary, 3 sample action items (with assignees and due dates), 2 sample decisions, 1 sample risk, and 1 task update suggestion. An amber banner at the top of the page identifies it as a sample. The **Apply Changes** button (to convert action items into tasks) and the meeting **History** list are hidden or disabled for trial users. No AI tokens are consumed. Upgrade to a paid plan to process your real meeting transcripts.
 
 ### AI Summary Banner
 
@@ -1155,6 +1163,8 @@ Navigate to **Intelligence** in the sidebar to access:
 - **Budget Reallocation** -- Identifies projects with surplus budget and those in deficit, with recommendations for reallocation.
 - **Resource Conflicts** -- Flags resources assigned to overlapping tasks across projects.
 - **Anomaly Detection** -- AI identifies unusual patterns (sudden cost spikes, schedule anomalies, performance outliers) with severity ratings and recommendations.
+
+> **Trial accounts:** If you are on a trial plan, the Portfolio Intelligence and Anomaly Detection panels display **sample data** with fictitious projects and demo findings rather than your real portfolio. An amber banner at the top of the page identifies the results as samples. The **Scenario Modeling** (What-If) section remains fully gated on trial — attempting to submit a scenario shows an upgrade prompt without sample data. Upgrade to a paid plan to run intelligence analysis on your real portfolio.
 
 ---
 

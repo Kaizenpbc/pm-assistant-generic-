@@ -540,6 +540,8 @@ The `NLQueryService` implements a multi-step AI pipeline:
 
 Users ask questions like "Which projects are over budget?" or "Show me the critical path for Project Alpha" and receive data-backed answers.
 
+**Trial User Experience:** Trial users who submit a query on the Ask AI page are not blocked with a 403. Instead, `POST /api/v1/nl-query` returns a **sample NL query response** with demo data: a short narrative answer, a sample bar chart (task status breakdown across demo projects), and 3 suggested follow-up questions. An amber upgrade banner reads: "Sample Query — This is a sample response with demo data. Upgrade to a paid plan to query your real project data." No AI tokens are consumed for the sample. This follows the same pattern as Status Reports, EVM, and Monte Carlo.
+
 ### Meeting Intelligence
 
 The `MeetingIntelligenceService` processes meeting transcripts or notes to extract:
@@ -548,6 +550,8 @@ The `MeetingIntelligenceService` processes meeting transcripts or notes to extra
 - Key decisions made
 - Risk items identified
 - Follow-up topics
+
+**Trial User Experience:** Trial users who submit a transcript on the Meeting Minutes page are not blocked with a 403. Instead, `POST /api/v1/meeting-intelligence/analyze` returns a **sample meeting analysis** populated with realistic demo data: a brief executive summary, 3 sample action items (with assignees and due dates), 2 sample decisions, 1 sample risk, and 1 task update suggestion. An amber upgrade banner reads: "Sample Meeting Analysis — This is a sample analysis with demo data. Upgrade to a paid plan to process your real meeting transcripts." The **Apply Changes** button (to convert action items into tasks) and the meeting **History** list remain gated — they are hidden or disabled for trial users. No AI tokens are consumed for the sample. This follows the same pattern as Status Reports, EVM, and Monte Carlo.
 
 ### Lessons Learned
 
@@ -640,6 +644,8 @@ The `whatIfScenarioService` allows users to model hypothetical changes (adding r
 
 The `crossProjectIntelligenceService` analyzes patterns across the entire portfolio to surface systemic risks, resource conflicts, and optimization opportunities.
 
+**Trial User Experience:** Trial users who access Portfolio Intelligence or Anomaly Detection are not blocked with a 403. The Portfolio Intelligence endpoint (`GET /api/v1/intelligence/portfolio`) and Anomaly Detection endpoint (`GET /api/v1/intelligence/anomalies`) each return **sample data** with realistic demo results: sample risk summaries, resource conflicts, and anomaly flags drawn from fictitious projects. An amber upgrade banner reads: "Sample Intelligence — This is a sample analysis with demo data. Upgrade to a paid plan to run cross-project intelligence on your real portfolio." The **What-If Scenarios** endpoint (`POST /api/v1/intelligence/scenarios`) remains fully gated — trial users who attempt to submit a scenario see a standard upgrade prompt without sample data. The Scenario Modeling page shows the same amber sample banner when loaded. No AI tokens are consumed for the sample portfolio and anomaly responses.
+
 ### Mjuzi Chat
 
 **Mjuzi** is the AI project assistant, available as a slide-out chat panel on every page. The `aiChatService` provides a conversational interface where users can ask open-ended questions about their projects and receive AI-generated responses grounded in actual project data.
@@ -681,6 +687,8 @@ The `ReportBuilderService` provides a configurable report engine:
 - KPI, chart, and table sections now receive correctly shaped data objects, resolving blank section renders in the report preview.
 - Regular users can delete their own report templates (previously required admin role).
 - The Report Designer correctly persists all configured sections when updating an existing template.
+
+**Trial User Experience:** Trial users who navigate to the Report Builder are not blocked with a 403. Instead, `GET /api/v1/report-builder/templates` returns **3 sample report templates** (Weekly Status, Budget Overview, Time Tracking) so the page renders meaningfully. The **New Report**, **Edit**, **Generate**, and **Delete** buttons are hidden or replaced with an "Upgrade to use" label — trial users cannot create, modify, generate, or delete templates. An amber upgrade banner at the top of the page reads: "Sample Templates — You are viewing sample report templates. Upgrade to a paid plan to build and generate custom reports." No database writes are performed for trial users on this page.
 
 ### AI-Generated Reports
 
@@ -1179,7 +1187,21 @@ Trial users have access to core project management features only. The following 
 | Token Top-Ups | ✗ | ✓ |
 | Viewer Invites | ✗ | ✓ |
 
-When a trial user attempts to access a gated feature, they are shown an **upgrade prompt** with a direct link to the Pricing page. Gating is enforced server-side — restricted API endpoints return HTTP 403 with `code: 'FEATURE_GATED'` for trial accounts. Client-side gating provides an early prompt but is not the security boundary.
+When a trial user attempts to access a gated feature, the behavior depends on the feature:
+
+- **Sample data pattern** — For the following 8 features, trial users receive realistic **sample/demo data** with an amber upgrade banner instead of a 403 error. No AI tokens are consumed, and no real project data is read or written:
+  - Status Reports (`POST /api/v1/status-reports/generate`)
+  - EVM Dashboard (`GET /evm` — sample KPI and forecast data)
+  - Monte Carlo Simulation (`POST /api/v1/monte-carlo`)
+  - Report Builder (`GET /api/v1/report-builder/templates` — 3 sample templates; create/edit/generate/delete locked)
+  - Exports (CSV, XML, JSON/PDF — sample project with 5 tasks across 2 phases)
+  - Cross-Project Intelligence (portfolio and anomaly detection endpoints — sample portfolio data; What-If Scenarios POST remains hard-gated)
+  - Natural Language Query (`POST /api/v1/nl-query` — sample response with demo chart and follow-ups)
+  - Meeting Intelligence (`POST /api/v1/meeting-intelligence/analyze` — sample analysis; Apply Changes and History remain gated)
+
+- **Hard gate (403)** — All remaining gated features (API Keys, Auto-Reschedule, Resource Management, DAG Workflows, Stakeholder Portal, What-If Scenarios, Token Top-Ups, Viewer Invites) return HTTP 403 with `code: 'FEATURE_GATED'` and an upgrade prompt linking to the Pricing page.
+
+Client-side gating provides an early upgrade prompt but is not the security boundary — enforcement is always server-side.
 
 ---
 
@@ -1544,6 +1566,8 @@ The generated XML includes:
 **Dependency mapping:** FS = type 1, FF = type 0, SS = type 2, SF = type 3. Lag is expressed in tenths-of-minutes.
 
 **Client access:** The API client exposes `exportProjectXML(projectId)`. On the **Project Detail** page, an **"Export XML"** button appears in the same action row as Export CSV and Export PDF.
+
+**Trial User Experience:** Trial users who trigger any project export (CSV via `GET /api/v1/exports/projects/:id/export?format=csv`, XML via `?format=xml`, or JSON/PDF via `?format=json`) are not blocked with a 403. Instead, all three export endpoints return **sample project data**: a fictitious project with 5 tasks across 2 phases (Planning and Execution), with realistic names, dates, statuses, and assignments. An amber upgrade banner is shown in the UI before the download: "Sample Export — This download contains sample data, not your real project. Upgrade to a paid plan to export your actual project data." The file downloads successfully in the requested format. No real project data is read from the database for trial export requests. This follows the same pattern as Status Reports, EVM, and Monte Carlo.
 
 ---
 

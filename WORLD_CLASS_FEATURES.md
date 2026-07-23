@@ -355,6 +355,11 @@ An agentic AI project management platform that combines the scheduling power of 
 - Scheduled report delivery via email (daily/weekly/monthly recurring schedules)
 - AI-powered project status reports with email delivery and MCP tool (`generate-status-report`)
 - Trial users receive a sample status report with demo data (realistic RAG statuses, trend arrows, management actions) instead of a 403 — no AI tokens consumed; Email/Schedule/Download locked with upgrade banner
+- **Trial sample report templates**: trial users see 3 sample Report Builder templates (Weekly Status, Budget Overview, Time Tracking) instead of a 403; New/Edit/Generate/Delete buttons are hidden with an "Upgrade to use" label; amber banner identifies sample state; no tokens or DB writes
+- **Trial sample exports**: all 3 export formats (CSV, XML, JSON/PDF) return a sample project with 5 tasks across 2 phases instead of a 403; amber banner shown before download; no real project data read
+- **Trial sample cross-project intelligence**: Portfolio Intelligence and Anomaly Detection endpoints return sample portfolio data with amber upgrade banner instead of a 403; What-If Scenarios POST stays hard-gated; Scenario Modeling page shows amber sample banner; no tokens consumed
+- **Trial sample natural language query**: `POST /api/v1/nl-query` returns a sample response (demo narrative, bar chart, 3 suggested follow-ups) with amber upgrade banner instead of a 403; no AI tokens consumed
+- **Trial sample meeting intelligence**: `POST /api/v1/meeting-intelligence/analyze` returns sample meeting analysis (summary, 3 action items, 2 decisions, 1 risk, 1 task update) with amber upgrade banner instead of a 403; Apply Changes and History remain gated; no AI tokens consumed
 - Shareable report links
 - **Benchmark:** Smartsheet, Monday.com
 
