@@ -352,6 +352,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Report Designer correctly persists all sections when updating an existing template
 - Scheduled report delivery via email (daily/weekly/monthly recurring schedules)
 - AI-powered project status reports with email delivery and MCP tool (`generate-status-report`)
+- Trial users receive a sample status report with demo data (realistic RAG statuses, trend arrows, management actions) instead of a 403 — no AI tokens consumed; Email/Schedule/Download locked with upgrade banner
 - Shareable report links
 - **Benchmark:** Smartsheet, Monday.com
 
@@ -454,7 +455,7 @@ A structured project control register for Risks, Actions, Issues, and Decisions 
 | Health-Colored Gantt Dependency Arrows (one per predecessor) | Done | Innovation |
 | Kanban WIP Limits | Done | Enhancement |
 | Comment @Mentions | Done | Enhancement |
-| Bulk CSV/Excel Task Import (with guardrails) | Done | Enhancement |
+| Bulk CSV/Excel Task Import (with guardrails + Windows-1252 mojibake normalization) | Done | Enhancement |
 | Gantt PDF Export | Done | Enhancement |
 | Goals / OKR Tracking | Done | Enhancement |
 | Time Zone Support | Done | Enhancement |

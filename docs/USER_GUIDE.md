@@ -1007,6 +1007,8 @@ Click the **Status Report** button in the project header to generate an AI-power
 
 The report tracks trends by comparing against the previous report — if Schedule was Green last week and is now Amber, the trend arrow shows ↓ (declining). Scheduled reports run automatically via the report scheduler cron and email the report to all configured recipients. Requires a paid subscription (Consultant, SME, or Enterprise tier).
 
+**Trial users:** Instead of an error, a **sample report** is shown with realistic demo data so you can preview the format. An amber banner at the top identifies it as sample data. The Email, Schedule, and Download options are locked — upgrade to a paid plan to generate live AI-powered reports for your project.
+
 ---
 
 ## 15. Templates
@@ -1390,6 +1392,8 @@ You can import tasks into any schedule from a CSV or Excel file without entering
 6. Click **Import** to create all valid tasks. A summary shows how many rows were imported and any rows skipped due to errors.
 
 **Duplicate detection:** If a task with the same name and start date already exists in the schedule, the row is skipped and reported as a duplicate.
+
+**Encoding:** Files exported from Excel in Windows-1252 encoding (common on Windows machines) are automatically corrected. Characters like em dashes, smart quotes, and bullets that appear garbled in other tools will import correctly.
 
 Accepted date formats: `YYYY-MM-DD` and `MM/DD/YYYY`. Unrecognised status or priority values default to `pending` and `medium` respectively.
 

@@ -620,7 +620,9 @@ AI-powered executive status report with a Red/Amber/Green (RAG) traffic light da
 
 **MCP Tool:** `generate-status-report` — Available to project_manager, scrum_master, pmo, ba, and admin roles.
 
-**Feature Gating:** Requires paid tier (consultant/sme/enterprise). AI generation requires `AI_ENABLED=true`; falls back to all-amber template when disabled. Email delivery requires `RESEND_API_KEY`.
+**Trial User Experience:** Trial users are not blocked with a 403. Instead, the endpoint returns a **sample status report** populated with realistic demo data (green/amber RAG statuses, trend arrows, and example management actions). An amber upgrade banner appears above the report reading "This is a sample report with demo data. Upgrade to a paid plan to generate AI-powered status reports…". The report is rendered at reduced opacity (80%). The Email, Schedule, and Download tabs/buttons are locked with a lock icon. No AI tokens are consumed for the sample report. Paid tier users are unaffected — full AI-powered reports are generated as normal.
+
+**Feature Gating:** Full AI report generation requires a paid tier (consultant/sme/enterprise). AI generation requires `AI_ENABLED=true`; falls back to all-amber template when disabled. Email delivery requires `RESEND_API_KEY`.
 
 ### Anomaly Detection
 
@@ -1432,6 +1434,7 @@ Tasks can be imported in bulk from a CSV or Excel file via `POST /api/v1/schedul
 - **Duplicate detection** — rows with the same name + start date as an existing task (or earlier row in the same batch) are skipped.
 - **File size limit** — 5MB enforced both client-side (before upload) and server-side (before parsing).
 - **Row limit** — maximum 100 rows per import.
+- **Encoding normalization** — `fixMojibake()` is applied client-side (in `csvCleaner.ts`, before CSV parsing) and server-side (in `import.ts`, before `csvParse()`) to correct Windows-1252 → UTF-8 double-encoding artifacts. Fixes 10 common patterns including em dash (`â€"` → `—`), en dash, smart quotes (left/right single and double), bullet, ellipsis, middle dot, and non-breaking space. This prevents garbled task names when importing Excel/CSV files saved in Windows-1252 encoding.
 
 ---
 
