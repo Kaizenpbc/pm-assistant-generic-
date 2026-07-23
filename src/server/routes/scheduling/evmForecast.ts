@@ -3,16 +3,31 @@ import { evmForecastService } from '../../services/EVMForecastService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireFeature } from '../../middleware/requireTier';
+import { userService } from '../../services/UserService';
 
 export async function evmForecastRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // GET /:projectId — returns metrics immediately (AI included if cached)
+  // Trial users get sample data with an upgrade prompt.
   fastify.get('/:projectId', {
-    preHandler: [requireScope('read'), requireFeature('evm')],
+    preHandler: [requireScope('read')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
+
+      // Trial users get sample EVM data
+      if (request.user!.role !== 'admin') {
+        const user = await userService.findById(request.user!.userId);
+        if (user && user.subscriptionTier === 'trial') {
+          return reply.send({
+            result: evmForecastService.generateSampleMetrics(),
+            aiPowered: false,
+            sample: true,
+          });
+        }
+      }
+
       const result = await evmForecastService.generateMetricsOnly(projectId);
       return reply.send({
         result,

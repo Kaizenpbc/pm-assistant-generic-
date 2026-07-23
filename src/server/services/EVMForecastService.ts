@@ -235,6 +235,48 @@ export class EVMForecastService {
   }
 
   // -------------------------------------------------------------------------
+  // Sample data for trial users (no DB or AI calls)
+  // -------------------------------------------------------------------------
+
+  generateSampleMetrics(): EVMForecastResult {
+    const BAC = 500000;
+    const currentMetrics: EVMCurrentMetrics = {
+      BAC, EV: 320000, AC: 345000, PV: 300000,
+      CPI: 0.93, SPI: 1.07, EAC: 537634, ETC: 192634, VAC: -37634, TCPI: 1.16,
+    };
+
+    const weeklyData = [
+      { date: '2026-06-01', cpi: 1.02, spi: 0.95 },
+      { date: '2026-06-08', cpi: 0.99, spi: 0.97 },
+      { date: '2026-06-15', cpi: 0.97, spi: 1.00 },
+      { date: '2026-06-22', cpi: 0.95, spi: 1.02 },
+      { date: '2026-06-29', cpi: 0.94, spi: 1.04 },
+      { date: '2026-07-06', cpi: 0.93, spi: 1.05 },
+      { date: '2026-07-13', cpi: 0.93, spi: 1.07 },
+    ];
+
+    const earlyWarnings: EVMEarlyWarning[] = [
+      { type: 'cost', message: 'Cost performance slightly below target (CPI: 0.93). Monitor spending closely.', severity: 'info' },
+      { type: 'completion', message: 'To-Complete Performance Index is slightly elevated (TCPI: 1.16). Efficiency improvements needed to meet budget targets.', severity: 'info' },
+      { type: 'budget', message: 'Minor projected cost overrun of 7.5% (VAC: -$37,634).', severity: 'info' },
+    ];
+
+    const traditionalForecasts = {
+      eacCumulative: 537634,
+      eacComposite: 510204,
+      eacManagement: 525000,
+    };
+
+    const forecastComparison: EVMForecastComparison[] = [
+      { method: 'EAC (Cumulative CPI)', eacValue: 537634, varianceFromBAC: 37634 },
+      { method: 'EAC (Composite CPI*SPI)', eacValue: 510204, varianceFromBAC: 10204 },
+      { method: 'EAC (Management Estimate)', eacValue: 525000, varianceFromBAC: 25000 },
+    ];
+
+    return { currentMetrics, historicalTrends: { weeklyData }, earlyWarnings, traditionalForecasts, forecastComparison };
+  }
+
+  // -------------------------------------------------------------------------
   // Compute current EVM metrics from latest S-curve data point
   // -------------------------------------------------------------------------
 
