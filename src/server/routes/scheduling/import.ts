@@ -13,6 +13,21 @@ const importCsvSchema = z.object({
 
 const MAX_BULK = 100;
 
+/** Fix common UTF-8 mojibake from Windows-1252 encoded files. */
+function fixMojibake(text: string): string {
+  return text
+    .replace(/\u00E2\u0080\u0094/g, '\u2014')  // em dash
+    .replace(/\u00E2\u0080\u0093/g, '\u2013')  // en dash
+    .replace(/\u00E2\u0080\u0099/g, '\u2019')  // right single quote
+    .replace(/\u00E2\u0080\u0098/g, '\u2018')  // left single quote
+    .replace(/\u00E2\u0080\u009C/g, '\u201C')  // left double quote
+    .replace(/\u00E2\u0080\u009D/g, '\u201D')  // right double quote
+    .replace(/\u00E2\u0080\u00A2/g, '\u2022')  // bullet
+    .replace(/\u00E2\u0080\u00A6/g, '\u2026')  // ellipsis
+    .replace(/\u00C2\u00B7/g, '\u00B7')         // middle dot
+    .replace(/\u00C2\u00A0/g, ' ');             // non-breaking space
+}
+
 const VALID_STATUSES = ['pending', 'in_progress', 'completed', 'cancelled'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
@@ -78,7 +93,9 @@ export async function importRoutes(fastify: FastifyInstance) {
   fastify.post('/:scheduleId/import', { preHandler: [requireScope('write')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { scheduleId } = request.params as { scheduleId: string };
-      const { csv, columnMap } = importCsvSchema.parse(request.body);
+      const rawBody = importCsvSchema.parse(request.body);
+      const csv = fixMojibake(rawBody.csv);
+      const columnMap = rawBody.columnMap;
 
       // Schedule existence check
       const schedule = await scheduleService.findById(scheduleId);

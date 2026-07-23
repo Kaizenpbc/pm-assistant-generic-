@@ -76,8 +76,23 @@ function escapeCsvCell(value: string): string {
   return value;
 }
 
+/** Fix common UTF-8 mojibake from Windows-1252 encoded files. */
+function fixMojibake(text: string): string {
+  return text
+    .replace(/\u00E2\u0080\u0094/g, '\u2014')  // â€" → — (em dash)
+    .replace(/\u00E2\u0080\u0093/g, '\u2013')  // â€" → – (en dash)
+    .replace(/\u00E2\u0080\u0099/g, '\u2019')  // â€™ → ' (right single quote)
+    .replace(/\u00E2\u0080\u0098/g, '\u2018')  // â€˜ → ' (left single quote)
+    .replace(/\u00E2\u0080\u009C/g, '\u201C')  // â€œ → " (left double quote)
+    .replace(/\u00E2\u0080\u009D/g, '\u201D')  // â€ → " (right double quote)
+    .replace(/\u00E2\u0080\u00A2/g, '\u2022')  // â€¢ → • (bullet)
+    .replace(/\u00E2\u0080\u00A6/g, '\u2026')  // â€¦ → … (ellipsis)
+    .replace(/\u00C2\u00B7/g, '\u00B7')         // Â· → · (middle dot)
+    .replace(/\u00C2\u00A0/g, ' ');             // Â  → (non-breaking space)
+}
+
 export function cleanCsvForImport(rawCsv: string): string {
-  const lines = rawCsv.split(/\r?\n/).filter(l => l.trim().length > 0);
+  const lines = fixMojibake(rawCsv).split(/\r?\n/).filter(l => l.trim().length > 0);
   if (lines.length === 0) return rawCsv;
 
   // Find the best header row (highest score, at least 3 matches)
