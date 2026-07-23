@@ -1189,7 +1189,7 @@ Trial users have access to core project management features only. The following 
 
 When a trial user attempts to access a gated feature, the behavior depends on the feature:
 
-- **Sample data pattern** — For the following 8 features, trial users receive realistic **sample/demo data** with an amber upgrade banner instead of a 403 error. No AI tokens are consumed, and no real project data is read or written:
+- **Sample data pattern** — For the following 13 features, trial users receive realistic **sample/demo data** with an amber upgrade banner instead of a 403 error. No AI tokens are consumed, and no real project data is read or written:
   - Status Reports (`POST /api/v1/status-reports/generate`)
   - EVM Dashboard (`GET /evm` — sample KPI and forecast data)
   - Monte Carlo Simulation (`POST /api/v1/monte-carlo`)
@@ -1198,8 +1198,13 @@ When a trial user attempts to access a gated feature, the behavior depends on th
   - Cross-Project Intelligence (portfolio and anomaly detection endpoints — sample portfolio data; What-If Scenarios POST remains hard-gated)
   - Natural Language Query (`POST /api/v1/nl-query` — sample response with demo chart and follow-ups)
   - Meeting Intelligence (`POST /api/v1/meeting-intelligence/analyze` — sample analysis; Apply Changes and History remain gated)
+  - Stakeholder Portal (`GET /api/v1/links/:projectId` — 2 sample portal links: Stakeholder Review Portal, Executive Dashboard; Create Link button hidden)
+  - Workflow Automation (`GET /api/v1/workflows` — 3 sample workflow definitions: Task Status Notification, Overdue Escalation, Budget Alert; New Workflow and AI Generate section hidden)
+  - Resource Management (`GET /api/v1/resources` — 4 sample resources: PM, Developer, QA, Designer with skills and rates; Add Resource button hidden)
+  - Auto-Reschedule (`GET /api/v1/delays` — 3 sample delays; `GET /api/v1/proposals` — 1 sample proposal; Generate Proposal button disabled)
+  - API Keys (`GET /api/v1/api-keys` — 2 sample keys: CI/CD Pipeline, Dashboard Read-Only; Create Key button hidden)
 
-- **Hard gate (403)** — All remaining gated features (API Keys, Auto-Reschedule, Resource Management, DAG Workflows, Stakeholder Portal, What-If Scenarios, Token Top-Ups, Viewer Invites) return HTTP 403 with `code: 'FEATURE_GATED'` and an upgrade prompt linking to the Pricing page.
+- **Hard gate (403)** — All remaining gated features (What-If Scenarios, Token Top-Ups, Viewer Invites) return HTTP 403 with `code: 'FEATURE_GATED'` and an upgrade prompt linking to the Pricing page.
 
 Client-side gating provides an early upgrade prompt but is not the security boundary — enforcement is always server-side.
 

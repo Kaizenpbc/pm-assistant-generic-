@@ -360,6 +360,11 @@ An agentic AI project management platform that combines the scheduling power of 
 - **Trial sample cross-project intelligence**: Portfolio Intelligence and Anomaly Detection endpoints return sample portfolio data with amber upgrade banner instead of a 403; What-If Scenarios POST stays hard-gated; Scenario Modeling page shows amber sample banner; no tokens consumed
 - **Trial sample natural language query**: `POST /api/v1/nl-query` returns a sample response (demo narrative, bar chart, 3 suggested follow-ups) with amber upgrade banner instead of a 403; no AI tokens consumed
 - **Trial sample meeting intelligence**: `POST /api/v1/meeting-intelligence/analyze` returns sample meeting analysis (summary, 3 action items, 2 decisions, 1 risk, 1 task update) with amber upgrade banner instead of a 403; Apply Changes and History remain gated; no AI tokens consumed
+- **Trial sample stakeholder portal**: `GET /api/v1/links/:projectId` returns 2 sample portal links (Stakeholder Review Portal, Executive Dashboard) with amber upgrade banner instead of a 403; Create Link button hidden in PortalLinkManager; no DB reads
+- **Trial sample workflow automation**: `GET /api/v1/workflows` returns 3 sample workflow definitions (Task Status Notification, Overdue Escalation, Budget Alert) with amber upgrade banner instead of a 403; New Workflow button and AI Generate section hidden on WorkflowPage; no DB reads
+- **Trial sample resource management**: `GET /api/v1/resources` returns 4 sample resources (PM, Developer, QA, Designer with skills and rates) with amber upgrade banner instead of a 403; Add Resource button hidden on ResourceManagementPage; no DB reads
+- **Trial sample auto-reschedule**: `GET /api/v1/delays` returns 3 sample delays (API Integration, Database Migration, UI Redesign) and `GET /api/v1/proposals` returns 1 sample proposal with amber upgrade banner instead of a 403; Generate Proposal button disabled on AutoReschedulePanel; no AI tokens consumed
+- **Trial sample API keys**: `GET /api/v1/api-keys` returns 2 sample keys (CI/CD Pipeline, Dashboard Read-Only) with amber upgrade banner instead of a 403; Create Key button hidden on SettingsPage API Keys tab; no DB reads
 - Shareable report links
 - **Benchmark:** Smartsheet, Monday.com
 

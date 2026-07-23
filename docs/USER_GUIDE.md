@@ -972,6 +972,16 @@ The Task Prioritization Panel analyzes your backlog and suggests an optimal task
 
 > **Trial accounts:** If you are on a trial plan, clicking Process returns a **sample meeting analysis** with demo data — a brief summary, 3 sample action items (with assignees and due dates), 2 sample decisions, 1 sample risk, and 1 task update suggestion. An amber banner at the top of the page identifies it as a sample. The **Apply Changes** button (to convert action items into tasks) and the meeting **History** list are hidden or disabled for trial users. No AI tokens are consumed. Upgrade to a paid plan to process your real meeting transcripts.
 
+> **Trial accounts — Stakeholder Portal:** If you are on a trial plan, the Portal Links page shows 2 sample portal links (Stakeholder Review Portal, Executive Dashboard) with an amber banner instead of your real links. The **Create Link** button is hidden. Upgrade to a paid plan to create and share real stakeholder portals.
+
+> **Trial accounts — Workflow Automation:** If you are on a trial plan, the Workflows page shows 3 sample workflow definitions (Task Status Notification, Overdue Escalation, Budget Alert) with an amber banner. The **New Workflow** button and AI Generate section are hidden. Upgrade to a paid plan to build and run your own automations.
+
+> **Trial accounts — Resource Management:** If you are on a trial plan, the Resource Management page shows 4 sample resources (Project Manager, Developer, QA Engineer, Designer — with skills and hourly rates) with an amber banner. The **Add Resource** button is hidden. Upgrade to a paid plan to manage your real team resources.
+
+> **Trial accounts — Auto-Reschedule:** If you are on a trial plan, the Auto-Reschedule panel shows 3 sample detected delays (API Integration, Database Migration, UI Redesign) and 1 sample AI proposal with an amber banner. The **Generate Proposal** button is disabled. No AI tokens are consumed. Upgrade to a paid plan to run AI-powered reschedule analysis on your real schedule.
+
+> **Trial accounts — API Keys:** If you are on a trial plan, the API Keys tab in Settings shows 2 sample keys (CI/CD Pipeline, Dashboard Read-Only) with an amber banner. The **Create Key** button is hidden. Upgrade to a paid plan to generate real API keys for programmatic access.
+
 ### AI Summary Banner
 
 On the dashboard, the **Portfolio Intelligence** banner provides an AI-generated portfolio health summary, risk breakdown, budget status, and key insights. An optional AI narrative section (toggleable via accessibility settings) provides a plain-language summary tailored to your context.
