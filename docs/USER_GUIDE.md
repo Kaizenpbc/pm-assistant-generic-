@@ -1343,6 +1343,8 @@ All status, severity, and category badges are fully styled for dark mode. Pages 
 
 Auth pages (Login, Register, Onboarding, ForgotPassword, ResetPassword) have dark-mode-styled error banners and success icons. The AgentProposals page has full dark mode coverage across its triage section, modal, table, tabs, filter pills, and autonomy cards. The TimesheetPage active tab and AgentActivityTab badges/rows are also dark-mode correct. A non-standard `gray-750` class (not valid in Tailwind v3) was replaced with `gray-700` across 13 files.
 
+Additional component-level dark mode coverage includes: WorkloadHeatmap (heat colors, legend, resource pool badges), QuickActions (button variants), TaskPrioritizationPanel (priority/impact colors, AI badge, summary cards, score bars, banners), QueryInput (input styling, search icon), ChangeRequestDetail (status/category/priority colors, approval timeline, workflow selector), ChangeRequestList (hover state), ChangeRequestForm (modal, inputs, buttons), CustomizeDropdown (panel, labels, items, dividers), ErrorBoundary (full page error state), and CustomFieldEditorModal (option button hover).
+
 ### Language
 
 Open **Settings → Language** and choose from **English**, **French (Français)**, or **Spanish (Español)**. The interface updates immediately; no page reload is required.
