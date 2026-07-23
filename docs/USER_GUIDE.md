@@ -863,6 +863,8 @@ Monte Carlo simulation uses random sampling to model schedule uncertainty and pr
    - **Uncertainty Model** -- The probability distribution for task duration variability (e.g., triangular, PERT, normal).
 4. Click **Run Simulation**.
 
+> **Trial accounts:** If you are on a trial plan, clicking Run Simulation returns a sample simulation with demo data instead of running against your actual schedule. An amber banner at the top of the results identifies it as a sample. Upgrade to a paid plan to run simulations on your real project data.
+
 ### Interpreting Results
 
 The simulation produces several outputs:

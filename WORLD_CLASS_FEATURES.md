@@ -222,6 +222,7 @@ An agentic AI project management platform that combines the scheduling power of 
 - Risk-adjusted cost forecasting
 - Confidence intervals on all predictions
 - Visual tornado diagrams for sensitivity analysis
+- **Trial sample simulation**: trial users see a realistic sample result (P50: 142d, P80: 158d, P90: 168d; cost P50: $485K; 10-bin histogram; sensitivity and criticality index for 5 tasks; 10,000-iteration PERT footer) with an amber upgrade banner instead of a 403 error; no computation or DB queries performed
 
 ### 3.7 AI-Powered Earned Value Forecasting
 - Predict future CPI/SPI trends

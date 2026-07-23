@@ -500,6 +500,8 @@ The `MonteCarloService` runs configurable simulations (default: 10,000 iteration
 - **Criticality index**: percentage of iterations in which each task appears on the critical path
 - **Tornado diagram data**: ranked sensitivity items for visualization
 
+**Trial user behavior:** Trial users who click "Run Simulation" see a sample Monte Carlo result populated with realistic demo data instead of a 403 error. The sample includes duration forecast cards (P50: 142 days, P80: 158 days, P90: 168 days), a 10-bin histogram, sensitivity analysis for 5 sample tasks ranked by correlation, a criticality index for 5 sample tasks, and a cost forecast (P50: $485K, P80: $538K, P90: $572K). A simulation metadata footer shows 10,000 iterations using the PERT model. An amber banner reads: "Sample Simulation — This is a sample simulation with demo data. Upgrade to a paid plan to run Monte Carlo simulations on your actual project schedules." No computation or database queries are performed for the sample. This follows the same pattern as the sample status report and EVM features.
+
 ---
 
 ## 12. Network Diagrams
