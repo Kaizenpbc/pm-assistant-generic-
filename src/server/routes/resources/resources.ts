@@ -5,6 +5,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireFeature } from '../../middleware/requireTier';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
+import { userService } from '../../services/UserService';
 import logger from '../../utils/logger';
 
 const createResourceSchema = z.object({
@@ -30,7 +31,16 @@ export async function resourceRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // GET /resources - List resources (paginated)
+  // Trial users get sample resource data with an upgrade prompt.
   fastify.get('/', { preHandler: [requireScope('read')] }, async (request: FastifyRequest, _reply: FastifyReply) => {
+    // Trial users get sample resources
+    if (request.user!.role !== 'admin') {
+      const user = await userService.findById(request.user!.userId);
+      if (user && user.subscriptionTier === 'trial') {
+        return { resources: generateSampleResources(), total: 4, sample: true };
+      }
+    }
+
     const { limit, offset } = request.query as { limit?: string; offset?: string };
     const result = await resourceService.findAllResourcesPaginated(
       Math.min(Number(limit) || 50, 200),
@@ -106,4 +116,13 @@ export async function resourceRoutes(fastify: FastifyInstance) {
     const workload = await resourceService.computeWorkload(projectId);
     return { workload };
   });
+}
+
+function generateSampleResources() {
+  return [
+    { id: 'sample-r1', name: 'Jane Smith', role: 'Project Manager', email: 'jane@example.com', capacityHoursPerWeek: 40, skills: ['Leadership', 'Agile', 'Risk Management'], isActive: true, costRateHourly: 95 },
+    { id: 'sample-r2', name: 'John Doe', role: 'Senior Developer', email: 'john@example.com', capacityHoursPerWeek: 40, skills: ['React', 'TypeScript', 'Node.js'], isActive: true, costRateHourly: 85 },
+    { id: 'sample-r3', name: 'Sarah Kim', role: 'QA Engineer', email: 'sarah@example.com', capacityHoursPerWeek: 35, skills: ['Test Automation', 'Selenium', 'Performance Testing'], isActive: true, costRateHourly: 70 },
+    { id: 'sample-r4', name: 'Alex Chen', role: 'UX Designer', email: 'alex@example.com', capacityHoursPerWeek: 30, skills: ['Figma', 'User Research', 'Prototyping'], isActive: true, costRateHourly: 75 },
+  ];
 }

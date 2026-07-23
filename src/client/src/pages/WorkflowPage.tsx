@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, Zap, Clock, ChevronDown, ChevronRight, ArrowRight, Eye, Sparkles, Loader2 } from 'lucide-react';
+import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, Zap, Clock, ChevronDown, ChevronRight, ArrowRight, Eye, Sparkles, Loader2, Lock } from 'lucide-react';
 import { apiService } from '../services/api';
 import { WorkflowNodeEditor } from '../components/workflows/WorkflowNodeEditor';
 import { ExecutionDetail } from '../components/workflows/ExecutionDetail';
@@ -100,6 +100,7 @@ export function WorkflowPage() {
 
   const definitions: WorkflowDef[] = defsData?.definitions || [];
   const executions = execsData?.executions || [];
+  const isSample: boolean = defsData?.sample || false;
 
   // Mutations
   const createMut = useMutation({
@@ -240,16 +241,33 @@ export function WorkflowPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400">DAG-based workflow engine with conditions, approvals, and execution history</p>
           </div>
         </div>
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          New Workflow
-        </button>
+        {!isSample && (
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New Workflow
+          </button>
+        )}
       </div>
 
+      {isSample && (
+        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+          <div className="flex items-start gap-2">
+            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Sample Workflow Definitions</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                These are sample workflows with demo data. Upgrade to a paid plan to create automated workflows with triggers, conditions, approvals, and AI generation.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* AI Generate */}
+      {!isSample && (
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-4 h-4 text-purple-500" />
@@ -281,6 +299,7 @@ export function WorkflowPage() {
           <p className="text-xs text-red-500 mt-1.5">{nlError}</p>
         )}
       </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, AlertTriangle, ChevronDown, TrendingUp, Clock, BarChart3, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Users, AlertTriangle, ChevronDown, TrendingUp, Clock, BarChart3, Plus, Edit2, Trash2, X, Lock } from 'lucide-react';
 import { apiService } from '../services/api';
 
 // ---------------------------------------------------------------------------
@@ -142,6 +142,7 @@ export function ResourceManagementPage() {
     queryFn: () => apiService.getResources(),
   });
   const resources: Resource[] = resourcesData?.resources || [];
+  const isResourcesSample: boolean = resourcesData?.sample || false;
 
   const createResourceMutation = useMutation({
     mutationFn: (data: { name: string; role: string; email: string; capacityHoursPerWeek: number }) =>
@@ -242,17 +243,34 @@ export function ResourceManagementPage() {
         </div>
       </div>
 
+      {/* Sample upgrade banner */}
+      {isResourcesSample && (
+        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+          <div className="flex items-start gap-2">
+            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Sample Resource Data</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                These are sample resources with demo data. Upgrade to a paid plan to manage your team's capacity, skills, assignments, and workload.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Team Tab */}
       {activeTab === 'team' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">{resources.length} resources</p>
-            <button
-              onClick={() => { resetForm(); setShowResourceForm(true); }}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Add Resource
-            </button>
+            {!isResourcesSample && (
+              <button
+                onClick={() => { resetForm(); setShowResourceForm(true); }}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Add Resource
+              </button>
+            )}
           </div>
 
           {/* Inline form */}

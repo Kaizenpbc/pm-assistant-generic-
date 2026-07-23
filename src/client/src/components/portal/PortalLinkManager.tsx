@@ -8,6 +8,7 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
+  Lock,
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 
@@ -87,6 +88,7 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
   });
 
   const links: PortalLink[] = data?.links ?? data ?? [];
+  const isSample: boolean = data?.sample || false;
 
   const handleCreate = () => {
     createMutation.mutate({
@@ -167,14 +169,30 @@ export function PortalLinkManager({ projectId }: { projectId: string }) {
           <Link className="w-4 h-4 text-primary-600" />
           <h3 className="text-sm font-semibold text-gray-900">Client Portal Links</h3>
         </div>
-        <button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 font-medium"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          {showCreateForm ? 'Cancel' : 'Create Link'}
-        </button>
+        {!isSample && (
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 font-medium"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {showCreateForm ? 'Cancel' : 'Create Link'}
+          </button>
+        )}
       </div>
+
+      {isSample && (
+        <div className="mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+          <div className="flex items-start gap-2">
+            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Sample Portal Links</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                These are sample portal links. Upgrade to a paid plan to create shareable project portals for stakeholders.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Form */}
       {showCreateForm && (

@@ -6,6 +6,7 @@ import { webhookService } from '../../services/WebhookService';
 import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireFeature } from '../../middleware/requireTier';
+import { userService } from '../../services/UserService';
 import logger from '../../utils/logger';
 
 const rejectBodySchema = z.object({
@@ -20,11 +21,20 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authMiddleware);
 
   // GET /:scheduleId/delays — detect delayed tasks
+  // Trial users get sample delay data with an upgrade prompt.
   fastify.get('/:scheduleId/delays', {
-    preHandler: [requireScope('read'), requireFeature('auto_reschedule')],
+    preHandler: [requireScope('read')],
     schema: { description: 'Detect delayed tasks in a schedule', tags: ['auto-reschedule'] },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Trial users get sample delays
+      if (request.user!.role !== 'admin') {
+        const user = await userService.findById(request.user!.userId);
+        if (user && user.subscriptionTier === 'trial') {
+          return { delayedTasks: generateSampleDelays(), sample: true };
+        }
+      }
+
       const { scheduleId } = request.params as { scheduleId: string };
       const delayedTasks = await autoRescheduleService.detectDelays(scheduleId);
       return { delayedTasks };
@@ -33,6 +43,33 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to detect delays',
+      });
+    }
+  });
+
+  // GET /:scheduleId/proposals — list proposals for a schedule
+  // Trial users get sample proposals with an upgrade prompt.
+  fastify.get('/:scheduleId/proposals', {
+    preHandler: [requireScope('read')],
+    schema: { description: 'List reschedule proposals for a schedule', tags: ['auto-reschedule'] },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      // Trial users get sample proposals
+      if (request.user!.role !== 'admin') {
+        const user = await userService.findById(request.user!.userId);
+        if (user && user.subscriptionTier === 'trial') {
+          return { proposals: generateSampleProposals(), sample: true };
+        }
+      }
+
+      const { scheduleId } = request.params as { scheduleId: string };
+      const proposals = await autoRescheduleService.getProposals(scheduleId);
+      return { proposals };
+    } catch (error) {
+      logger.error('Get proposals error', { error });
+      return reply.status(500).send({
+        error: 'Internal server error',
+        message: 'Failed to fetch proposals',
       });
     }
   });
@@ -54,24 +91,6 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         error: 'Internal server error',
         message: 'Failed to generate reschedule proposal',
-      });
-    }
-  });
-
-  // GET /:scheduleId/proposals — list proposals for a schedule
-  fastify.get('/:scheduleId/proposals', {
-    preHandler: [requireScope('read'), requireFeature('auto_reschedule')],
-    schema: { description: 'List reschedule proposals for a schedule', tags: ['auto-reschedule'] },
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { scheduleId } = request.params as { scheduleId: string };
-      const proposals = await autoRescheduleService.getProposals(scheduleId);
-      return { proposals };
-    } catch (error) {
-      logger.error('Get proposals error', { error });
-      return reply.status(500).send({
-        error: 'Internal server error',
-        message: 'Failed to fetch proposals',
       });
     }
   });
@@ -151,4 +170,30 @@ export async function autoRescheduleRoutes(fastify: FastifyInstance) {
       });
     }
   });
+}
+
+function generateSampleDelays() {
+  return [
+    { taskId: 's1', taskName: 'API Integration', delayDays: 8, severity: 'critical' as const, reason: 'Third-party API documentation incomplete; team waiting on vendor response.', isCriticalPath: true },
+    { taskId: 's2', taskName: 'Database Migration', delayDays: 5, severity: 'high' as const, reason: 'Data volume larger than estimated; migration scripts need optimization.', isCriticalPath: true },
+    { taskId: 's3', taskName: 'UI Redesign', delayDays: 3, severity: 'medium' as const, reason: 'Design review required additional iteration with stakeholders.', isCriticalPath: false },
+  ];
+}
+
+function generateSampleProposals() {
+  const today = new Date();
+  const addDays = (n: number) => new Date(today.getTime() + n * 86400000).toISOString().slice(0, 10);
+  return [
+    {
+      id: 'sample-prop-1',
+      status: 'pending',
+      rationale: 'Shift downstream tasks to absorb API integration delay while maintaining critical path integrity.',
+      changes: [
+        { taskId: 's4', taskName: 'Integration Testing', currentStart: addDays(5), currentEnd: addDays(15), proposedStart: addDays(13), proposedEnd: addDays(23), reason: 'Delayed due to API integration dependency' },
+        { taskId: 's5', taskName: 'User Acceptance Testing', currentStart: addDays(16), currentEnd: addDays(25), proposedStart: addDays(24), proposedEnd: addDays(33), reason: 'Cascading delay from integration testing' },
+      ],
+      estimatedImpact: { originalEndDate: addDays(25), proposedEndDate: addDays(33), daysChange: 8 },
+      createdAt: new Date().toISOString(),
+    },
+  ];
 }

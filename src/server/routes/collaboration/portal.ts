@@ -5,6 +5,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { requireScope } from '../../middleware/requireScope';
 import { requireFeature } from '../../middleware/requireTier';
 import { requireProjectAccess } from '../../middleware/requireProjectAccess';
+import { userService } from '../../services/UserService';
 import logger from '../../utils/logger';
 import { rateLimiter } from '../../middleware/rateLimiter';
 
@@ -103,11 +104,21 @@ export async function portalRoutes(fastify: FastifyInstance) {
   });
 
   // GET /links/:projectId — list portal links
+  // Trial users get sample portal links with an upgrade prompt.
   fastify.get('/links/:projectId', {
-    preHandler: [authMiddleware, requireScope('read'), requireFeature('portal'), requireProjectAccess('viewer')],
+    preHandler: [authMiddleware, requireScope('read'), requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
+
+      // Trial users get sample portal links
+      if (request.user!.role !== 'admin') {
+        const user = await userService.findById(request.user!.userId);
+        if (user && user.subscriptionTier === 'trial') {
+          return { links: generateSamplePortalLinks(projectId), sample: true };
+        }
+      }
+
       const links = await portalService.getLinks(projectId);
       return { links };
     } catch (error) {
@@ -177,4 +188,29 @@ export async function portalRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: 'Failed to fetch portal comments' });
     }
   });
+}
+
+function generateSamplePortalLinks(projectId: string) {
+  return [
+    {
+      id: 'sample-link-1',
+      projectId,
+      label: 'Stakeholder Review Portal',
+      token: 'sample-token-abc123',
+      is_active: true,
+      expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
+      permissions: { canViewGantt: true, canViewBudget: false, canComment: true, canViewReports: true },
+      created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+    },
+    {
+      id: 'sample-link-2',
+      projectId,
+      label: 'Executive Dashboard',
+      token: 'sample-token-def456',
+      is_active: true,
+      expires_at: null,
+      permissions: { canViewGantt: true, canViewBudget: true, canComment: false, canViewReports: true },
+      created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
+    },
+  ];
 }
