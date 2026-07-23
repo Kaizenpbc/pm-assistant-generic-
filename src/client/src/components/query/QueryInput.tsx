@@ -38,7 +38,7 @@ export const QueryInput: React.FC<QueryInputProps> = ({
     <div className="relative flex items-center">
       {/* Search icon */}
       <div className="absolute left-4 pointer-events-none">
-        <Search className="w-5 h-5 text-gray-400" />
+        <Search className="w-5 h-5 text-gray-400 dark:text-gray-500" />
       </div>
 
       {/* Input */}
@@ -49,7 +49,7 @@ export const QueryInput: React.FC<QueryInputProps> = ({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={isLoading}
-        className="w-full pl-12 pr-28 py-4 text-base border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm disabled:opacity-60 disabled:cursor-not-allowed bg-white"
+        className="w-full pl-12 pr-28 py-4 text-base border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm disabled:opacity-60 disabled:cursor-not-allowed bg-white dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
       />
 
       {/* Submit button */}

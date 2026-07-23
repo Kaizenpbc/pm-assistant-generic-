@@ -20,27 +20,27 @@ interface ChangeRequestDetailProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-700',
-  pending: 'bg-yellow-100 text-yellow-800',
-  in_review: 'bg-blue-100 text-blue-800',
-  approved: 'bg-green-100 text-green-800',
-  rejected: 'bg-red-100 text-red-800',
-  withdrawn: 'bg-gray-100 text-gray-500',
+  draft: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+  pending: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400',
+  in_review: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400',
+  approved: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400',
+  rejected: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400',
+  withdrawn: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  scope: 'bg-purple-100 text-purple-800',
-  schedule: 'bg-blue-100 text-blue-800',
-  budget: 'bg-green-100 text-green-800',
-  resource: 'bg-orange-100 text-orange-800',
-  other: 'bg-gray-100 text-gray-700',
+  scope: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400',
+  schedule: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400',
+  budget: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400',
+  resource: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400',
+  other: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  low: 'text-gray-500',
-  medium: 'text-yellow-600',
-  high: 'text-orange-600',
-  critical: 'text-red-600',
+  low: 'text-gray-500 dark:text-gray-400',
+  medium: 'text-yellow-600 dark:text-yellow-400',
+  high: 'text-orange-600 dark:text-orange-400',
+  critical: 'text-red-600 dark:text-red-400',
 };
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {
@@ -220,21 +220,21 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
         {/* Description */}
         {cr.description && (
           <div className="mb-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</h3>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{cr.description}</p>
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Description</h3>
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{cr.description}</p>
           </div>
         )}
 
         {/* Impact Summary */}
         {cr.impactSummary && (
           <div>
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Impact Summary</h3>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{cr.impactSummary}</p>
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Impact Summary</h3>
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{cr.impactSummary}</p>
           </div>
         )}
 
         {/* Meta */}
-        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-4 text-xs text-gray-400">
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
           <span>Requested by: {cr.requestedByName || cr.requestedBy || '-'}</span>
           <span>Created: {new Date(cr.createdAt).toLocaleString()}</span>
           {cr.updatedAt && <span>Updated: {new Date(cr.updatedAt).toLocaleString()}</span>}
@@ -243,9 +243,9 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
 
       {/* Current Step Indicator */}
       {currentStep && (
-        <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
-          <h3 className="text-xs font-semibold text-primary-700 uppercase tracking-wider mb-1">Current Approval Step</h3>
-          <p className="text-sm text-primary-900 font-medium">
+        <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl p-4">
+          <h3 className="text-xs font-semibold text-primary-700 dark:text-primary-400 uppercase tracking-wider mb-1">Current Approval Step</h3>
+          <p className="text-sm text-primary-900 dark:text-primary-300 font-medium">
             Step {currentStep.stepOrder}: {currentStep.role} - {currentStep.action}
           </p>
         </div>
@@ -253,10 +253,10 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
 
       {/* Approval Timeline */}
       {approvalHistory.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Approval Timeline</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Approval Timeline</h3>
           <div className="relative">
-            <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gray-200" />
+            <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700" />
             <div className="space-y-4">
               {approvalHistory.map((entry: any, idx: number) => (
                 <div key={idx} className="flex items-start gap-3 relative">
@@ -265,20 +265,20 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {entry.actorName || entry.actor || 'System'}
                       </span>
-                      <span className="text-xs text-gray-500 capitalize">{entry.action}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{entry.action}</span>
                       {entry.stepRole && (
-                        <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
                           {entry.stepRole}
                         </span>
                       )}
                     </div>
                     {entry.comment && (
-                      <p className="text-sm text-gray-600 mt-0.5">{entry.comment}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{entry.comment}</p>
                     )}
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                       {new Date(entry.createdAt).toLocaleString()}
                     </p>
                   </div>
@@ -291,8 +291,8 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
 
       {/* Action Buttons */}
       {(canSubmit || canReview || canWithdraw) && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-4">
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</h3>
 
           {/* Submit for Approval (draft) */}
           {canSubmit && !showWorkflowSelect && (
@@ -307,17 +307,17 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
 
           {/* Workflow selector */}
           {canSubmit && showWorkflowSelect && (
-            <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-              <label className="block text-sm font-medium text-gray-700">Select Approval Workflow</label>
+            <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Approval Workflow</label>
               {isWorkflowsError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
                   Failed to load workflows. Please try again.
                 </div>
               )}
               <select
                 value={selectedWorkflowId}
                 onChange={(e) => setSelectedWorkflowId(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-200"
               >
                 <option value="">Choose a workflow...</option>
                 {workflows.map((wf: any) => (
@@ -338,7 +338,7 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
                 </button>
                 <button
                   onClick={() => setShowWorkflowSelect(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 >
                   Cancel
                 </button>
@@ -350,13 +350,13 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
           {canReview && (
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Comment</label>
                 <textarea
                   value={actionComment}
                   onChange={(e) => setActionComment(e.target.value)}
                   placeholder="Add a comment for your decision..."
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none bg-white dark:bg-gray-800 dark:text-gray-200"
                 />
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -390,7 +390,7 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
 
           {/* Withdraw */}
           {canWithdraw && (
-            <div className="pt-2 border-t border-gray-100">
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => {
                   if (confirm('Are you sure you want to withdraw this change request?')) {
@@ -398,7 +398,7 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
                   }
                 }}
                 disabled={isActionPending}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
               >
                 <X className="w-4 h-4" />
                 {withdrawMutation.isPending ? 'Withdrawing...' : 'Withdraw'}
@@ -408,7 +408,7 @@ export function ChangeRequestDetail({ crId, onBack, onEdit }: ChangeRequestDetai
 
           {/* Error display */}
           {(submitMutation.isError || approveMutation.isError || rejectMutation.isError || returnMutation.isError || withdrawMutation.isError) && (
-            <p className="text-sm text-red-600">Action failed. Please try again.</p>
+            <p className="text-sm text-red-600 dark:text-red-400">Action failed. Please try again.</p>
           )}
         </div>
       )}

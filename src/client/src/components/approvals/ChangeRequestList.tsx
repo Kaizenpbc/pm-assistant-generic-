@@ -106,7 +106,7 @@ export function ChangeRequestList({ projectId, onSelect, onNew }: ChangeRequestL
                 <tr
                   key={cr.id}
                   onClick={() => onSelect(cr.id)}
-                  className="hover:bg-primary-50/50 cursor-pointer transition-colors"
+                  className="hover:bg-primary-50/50 dark:hover:bg-primary-900/20 cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{cr.title}</td>
                   <td className="px-4 py-3">

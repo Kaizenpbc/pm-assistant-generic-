@@ -134,7 +134,7 @@ export function CustomFieldEditorModal({ projectId, entityType, field, onClose }
                   className="input flex-1 text-sm"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOption(); } }}
                 />
-                <button type="button" onClick={addOption} className="p-1.5 text-primary-600 hover:bg-primary-50 rounded" aria-label="Add option">
+                <button type="button" onClick={addOption} className="p-1.5 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded" aria-label="Add option">
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
