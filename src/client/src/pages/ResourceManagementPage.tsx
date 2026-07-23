@@ -335,7 +335,7 @@ export function ResourceManagementPage() {
                 </thead>
                 <tbody>
                   {resources.map(r => (
-                    <tr key={r.id} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750">
+                    <tr key={r.id} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{r.name}</td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.role}</td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{r.email}</td>

@@ -279,7 +279,7 @@ export function NotificationsPage() {
                     navigate(`/projects/${n.projectId}/schedule`);
                   }
                 }}
-                className={`flex items-start gap-4 px-5 py-4 relative hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors ${n.read ? 'opacity-60' : ''} ${isClickable ? 'cursor-pointer' : ''}`}
+                className={`flex items-start gap-4 px-5 py-4 relative hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${n.read ? 'opacity-60' : ''} ${isClickable ? 'cursor-pointer' : ''}`}
               >
                 {/* Severity bar */}
                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${severityColors[n.severity]}`} />

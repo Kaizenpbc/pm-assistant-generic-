@@ -109,7 +109,7 @@ export const TaskCardMobile: React.FC<TaskCardMobileProps> = ({ task, onStatusCy
       onTouchStart={canSwipe ? handleTouchStart : undefined}
       onTouchMove={canSwipe ? handleTouchMove : undefined}
       onTouchEnd={canSwipe ? handleTouchEnd : undefined}
-      className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 min-h-[56px] active:bg-gray-50 dark:active:bg-gray-750 cursor-pointer relative ${swiped ? 'transition-transform duration-300' : 'transition-transform duration-150'}`}
+      className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 min-h-[56px] active:bg-gray-50 dark:active:bg-gray-700 cursor-pointer relative ${swiped ? 'transition-transform duration-300' : 'transition-transform duration-150'}`}
       style={{ transform: swiped ? 'translateX(120px)' : `translateX(${swipeX}px)` }}
     >
       <div className="flex items-start justify-between gap-3">

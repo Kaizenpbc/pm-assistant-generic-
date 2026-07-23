@@ -12,9 +12,9 @@ const agentLabels: Record<string, string> = {
 };
 
 const resultBadgeColors: Record<string, string> = {
-  alert_created: 'bg-red-100 text-red-700',
+  alert_created: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
   skipped: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300',
-  error: 'bg-orange-100 text-orange-700',
+  error: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
 };
 
 export function AgentActivityTab({ projectId }: { projectId: string }) {
@@ -67,7 +67,7 @@ export function AgentActivityTab({ projectId }: { projectId: string }) {
           <select
             value={agentFilter}
             onChange={(e) => { setAgentFilter(e.target.value); setPage(0); }}
-            className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm"
+            className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-200"
           >
             <option value="">All Agents</option>
             <option value="auto_reschedule">Auto-Reschedule</option>
@@ -96,7 +96,7 @@ export function AgentActivityTab({ projectId }: { projectId: string }) {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {entries.map((entry: any) => (
-                  <tr key={entry.id} className="hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700">
+                  <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-4 py-2 whitespace-nowrap text-gray-500 dark:text-gray-400">
                       {new Date(entry.createdAt).toLocaleString()}
                     </td>
@@ -122,14 +122,14 @@ export function AgentActivityTab({ projectId }: { projectId: string }) {
                 <button
                   onClick={() => setPage(p => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="rounded border px-3 py-1 disabled:opacity-40"
+                  className="rounded border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(p => p + 1)}
                   disabled={page >= totalPages - 1}
-                  className="rounded border px-3 py-1 disabled:opacity-40"
+                  className="rounded border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
                 >
                   Next
                 </button>

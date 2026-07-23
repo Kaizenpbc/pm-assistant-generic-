@@ -396,7 +396,7 @@ const TeamTab: React.FC = () => {
             {members.map((m) => {
               const isMe = m.id === user?.id;
               return (
-                <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
+                <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
                     {m.fullName || m.username}
                     {isMe && <span className="ml-2 text-xs text-primary-600 dark:text-primary-400">(you)</span>}

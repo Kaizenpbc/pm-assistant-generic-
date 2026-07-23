@@ -499,7 +499,7 @@ function PortfolioResourcesView() {
             </thead>
             <tbody>
               {resources.map(r => (
-                <tr key={r.resourceId} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750">
+                <tr key={r.resourceId} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-4 py-2 font-medium text-gray-900 dark:text-white">{r.resourceName}</td>
                   <td className="px-4 py-2 text-gray-600 dark:text-gray-400">{r.role}</td>
                   <td className="px-4 py-2 text-center text-gray-600 dark:text-gray-400">
@@ -619,7 +619,7 @@ function CPISPIComparison({ projects, onProjectClick }: { projects: PortfolioAna
           </thead>
           <tbody>
             {sorted.map(p => (
-              <tr key={p.projectId} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer" onClick={() => onProjectClick(p.projectId)}>
+              <tr key={p.projectId} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onClick={() => onProjectClick(p.projectId)}>
                 <td className="px-4 py-2 font-medium text-gray-900 dark:text-white truncate max-w-[200px]">{p.projectName}</td>
                 <td className={`px-4 py-2 text-center font-bold ${cpiSpiColor(p.cpi)}`}>{p.cpi !== null ? p.cpi.toFixed(2) : '—'}</td>
                 <td className={`px-4 py-2 text-center font-bold ${cpiSpiColor(p.spi)}`}>{p.spi !== null ? p.spi.toFixed(2) : '—'}</td>
@@ -749,7 +749,7 @@ function ProjectComparisonMatrix({ projects, onProjectClick }: { projects: Portf
             {sorted.map(p => {
               const sc = STATUS_COLORS[p.status] || STATUS_COLORS.active;
               return (
-                <tr key={p.projectId} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer" onClick={() => onProjectClick(p.projectId)}>
+                <tr key={p.projectId} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onClick={() => onProjectClick(p.projectId)}>
                   <td className="px-4 py-2 font-medium text-gray-900 dark:text-white truncate max-w-[200px]">{p.projectName}</td>
                   <td className="px-3 py-2 text-center">
                     <span className="inline-flex items-center gap-1.5">

@@ -176,14 +176,14 @@ export function TimesheetPage() {
         <button
           onClick={() => setTab('my-timesheet')}
           className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md transition-colors
-            ${tab === 'my-timesheet' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm dark:shadow-gray-900/30' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'}`}
+            ${tab === 'my-timesheet' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm dark:shadow-gray-900/30' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'}`}
         >
           <Clock className="w-4 h-4" /> My Timesheet
         </button>
         <button
           onClick={() => setTab('project-summary')}
           className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md transition-colors
-            ${tab === 'project-summary' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm dark:shadow-gray-900/30' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'}`}
+            ${tab === 'project-summary' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm dark:shadow-gray-900/30' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'}`}
         >
           <BarChart3 className="w-4 h-4" /> Project Summary
         </button>

@@ -364,7 +364,7 @@ export function ImportModal({ isOpen, onClose, scheduleId, onImported }: ImportM
                         </thead>
                         <tbody>
                           {previewRows.map((row, ri) => (
-                            <tr key={ri} className="border-t dark:border-gray-700 even:bg-gray-50 dark:even:bg-gray-750">
+                            <tr key={ri} className="border-t dark:border-gray-700 even:bg-gray-50 dark:even:bg-gray-700">
                               {parsed.headers.map((_, ci) => (
                                 <td key={ci} className="px-3 py-1.5 text-gray-800 dark:text-gray-200 whitespace-nowrap max-w-[200px] truncate">
                                   {row[ci] ?? ''}

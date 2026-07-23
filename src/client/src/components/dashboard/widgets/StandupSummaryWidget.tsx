@@ -164,7 +164,7 @@ function Section({ icon: Icon, title, color, items, render }: {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-3">
+    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
       <div className="flex items-center gap-1.5 mb-2">
         <Icon className={`w-3.5 h-3.5 ${colorMap[color] || 'text-gray-500'}`} />
         <h4 className={`text-xs font-bold uppercase tracking-wide ${colorMap[color] || 'text-gray-500'}`}>

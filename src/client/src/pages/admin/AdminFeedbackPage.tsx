@@ -149,7 +149,7 @@ export function AdminFeedbackPage() {
               className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
             >
               <div
-                className="flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750"
+                className="flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                 onClick={() => setExpandedId(expanded ? null : item.id)}
               >
                 <Stars rating={item.overallRating} />

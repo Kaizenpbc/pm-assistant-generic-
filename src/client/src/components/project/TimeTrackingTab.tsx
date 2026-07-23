@@ -252,7 +252,7 @@ export function TimeTrackingTab({ projectId }: { projectId: string }) {
               </thead>
               <tbody>
                 {entries.map(e => (
-                  <tr key={e.id} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750">
+                  <tr key={e.id} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{e.taskName || e.taskId}</td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{e.userName || '—'}</td>

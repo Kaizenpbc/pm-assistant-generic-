@@ -198,14 +198,14 @@ function DiffView({ oldVal, newVal }: { oldVal: Record<string, unknown> | null; 
         if (!changed && ov === undefined) return null; // new-only key with no old
         return (
           <div key={key} className="flex items-center gap-2 text-xs">
-            <span className="text-gray-500 font-medium min-w-[80px]">{key.replace(/_/g, ' ')}:</span>
+            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[80px]">{key.replace(/_/g, ' ')}:</span>
             {ov !== undefined && (
-              <span className="text-red-600 line-through">{formatValue(ov)}</span>
+              <span className="text-red-600 dark:text-red-400 line-through">{formatValue(ov)}</span>
             )}
             {ov !== undefined && nv !== undefined && (
-              <ArrowRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
+              <ArrowRight className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" />
             )}
-            <span className="text-emerald-700 font-medium">{formatValue(nv)}</span>
+            <span className="text-emerald-700 dark:text-emerald-400 font-medium">{formatValue(nv)}</span>
           </div>
         );
       })}
@@ -231,25 +231,25 @@ function HealthBanner() {
 
   return (
     <div className={`flex items-center gap-4 px-4 py-2.5 rounded-lg text-sm border ${
-      isHealthy ? 'bg-white border-gray-200' : 'bg-amber-50 border-amber-200'
+      isHealthy ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
     }`}>
       <div className="flex items-center gap-2">
         <span className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
-        <span className="font-medium text-gray-700">{data.status}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{data.status}</span>
       </div>
-      <span className="text-gray-300">|</span>
-      <span className="text-gray-500 text-xs">
-        Claude: <span className={data.claudeApiStatus === 'available' ? 'text-emerald-600' : 'text-red-600'}>{data.claudeApiStatus}</span>
+      <span className="text-gray-300 dark:text-gray-600">|</span>
+      <span className="text-gray-500 dark:text-gray-400 text-xs">
+        Claude: <span className={data.claudeApiStatus === 'available' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>{data.claudeApiStatus}</span>
       </span>
       {data.recommendedScanScope && data.recommendedScanScope !== 'full' && (
         <>
           <span className="text-gray-300">|</span>
-          <span className="text-amber-600 text-xs">Scope: {data.recommendedScanScope}</span>
+          <span className="text-amber-600 dark:text-amber-400 text-xs">Scope: {data.recommendedScanScope}</span>
         </>
       )}
-      <div className="ml-auto flex items-center gap-4 text-xs text-gray-500">
+      <div className="ml-auto flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
         {typeof data.pendingProposals === 'number' && data.pendingProposals > 0 && (
-          <span className="font-medium text-amber-700">{data.pendingProposals} pending review</span>
+          <span className="font-medium text-amber-700 dark:text-amber-400">{data.pendingProposals} pending review</span>
         )}
         {costToday && (
           <span>{costToday.invocations} calls / ${(costToday.estimatedCostUsd ?? costToday.estimatedUsd ?? 0).toFixed(4)}</span>
@@ -276,23 +276,23 @@ function TriageSection({ proposals, onSelect }: { proposals: Proposal[]; onSelec
   });
 
   return (
-    <div className="border-2 border-amber-200 rounded-xl bg-amber-50/50 p-4">
+    <div className="border-2 border-amber-200 dark:border-amber-800 rounded-xl bg-amber-50/50 dark:bg-amber-900/20 p-4">
       <div className="flex items-center gap-2 mb-3">
-        <Zap className="w-4 h-4 text-amber-600" />
-        <h3 className="text-sm font-bold text-amber-800">Needs Your Decision</h3>
-        <span className="ml-auto text-xs text-amber-600 font-medium">{sorted.length} pending</span>
+        <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300">Needs Your Decision</h3>
+        <span className="ml-auto text-xs text-amber-600 dark:text-amber-400 font-medium">{sorted.length} pending</span>
       </div>
       <div className="space-y-2">
         {sorted.slice(0, 5).map(p => (
           <button
             key={p.id}
             onClick={() => onSelect(p.id)}
-            className="w-full flex items-center gap-3 bg-white border border-amber-200 rounded-lg px-4 py-3 hover:border-amber-400 hover:shadow-sm transition-all text-left"
+            className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-sm transition-all text-left"
           >
             <ConfidenceGauge score={p.confidence_score} size="sm" />
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium text-gray-900 truncate">{p.title}</div>
-              <div className="text-xs text-gray-500 mt-0.5">
+              <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{p.title}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {formatAgentName(p.agent_id)} &middot; {timeAgo(p.created_at)}
               </div>
             </div>
@@ -375,14 +375,14 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
         onClick={e => e.stopPropagation()}
       >
         {/* Header — Risk + Confidence dominate */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl z-10">
+        <div className="sticky top-0 bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 px-6 py-4 rounded-t-xl z-10">
           {isLoading ? (
-            <div className="h-6 w-48 bg-gray-200 rounded animate-pulse" />
+            <div className="h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           ) : proposal ? (
             <>
               <div className="flex items-start justify-between gap-4">
-                <h2 className="text-lg font-bold text-gray-900 leading-snug">{proposal.title}</h2>
-                <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded flex-shrink-0" aria-label="Close">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white leading-snug">{proposal.title}</h2>
+                <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded flex-shrink-0" aria-label="Close">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -391,7 +391,7 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                 <RiskBadge level={proposal.risk_level} />
                 <div className="flex items-center gap-2">
                   <ConfidenceGauge score={proposal.confidence_score} size="sm" />
-                  <span className="text-xs text-gray-500">confidence</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">confidence</span>
                 </div>
                 <div className="ml-auto">
                   <StatusPill status={proposal.status} />
@@ -409,11 +409,11 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
           <>
           <div className="px-6 py-5 space-y-6 overflow-y-auto flex-1 min-h-0">
             {/* Meta row */}
-            <div className="flex items-center gap-4 text-xs text-gray-500">
+            <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">
                 <Bot className="w-3.5 h-3.5 text-primary-500" />
-                <span className="font-medium text-gray-700">{formatAgentName(proposal.agent_id)}</span>
-                <span className="text-gray-400">v{proposal.agent_version}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{formatAgentName(proposal.agent_id)}</span>
+                <span className="text-gray-400 dark:text-gray-500">v{proposal.agent_version}</span>
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" />
@@ -428,7 +428,7 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
 
             {/* Summary — first-class, prominent */}
             <div>
-              <p className="text-sm text-gray-800 leading-relaxed">{proposal.summary}</p>
+              <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{proposal.summary}</p>
             </div>
 
             {/* Confidence Breakdown — visual bars */}
@@ -493,27 +493,27 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                 </h3>
                 <div className="space-y-2">
                   {actions.map(action => (
-                    <div key={action.id} className="border border-gray-200 rounded-lg p-3 bg-white">
+                    <div key={action.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="flex items-center justify-center w-5 h-5 rounded bg-primary-100 text-primary-600 text-xs font-bold">
+                          <span className="flex items-center justify-center w-5 h-5 rounded bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 text-xs font-bold">
                             {action.execution_order}
                           </span>
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
                             {formatActionType(action.action_type)}
                           </span>
                         </div>
                         <StatusPill status={action.status} />
                       </div>
-                      <div className="text-xs text-gray-500 mb-2">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                         {action.target_entity_type} &middot; {action.target_entity_id.slice(0, 8)}...
                       </div>
                       {action.reasoning && (
-                        <p className="text-xs text-gray-600 mb-2 italic">{action.reasoning}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 italic">{action.reasoning}</p>
                       )}
                       {/* Before→After diff */}
                       {(action.old_value || action.new_value) && (
-                        <div className="bg-gray-50 rounded p-2.5">
+                        <div className="bg-gray-50 dark:bg-gray-900 rounded p-2.5">
                           <DiffView oldVal={action.old_value} newVal={action.new_value} />
                         </div>
                       )}
@@ -525,14 +525,14 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
 
             {/* Error messages */}
             {(approveMutation.error || rejectMutation.error || executeMutation.error || rollbackMutation.error || feedbackMutation.error) && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
                 {String((approveMutation.error || rejectMutation.error || executeMutation.error || rollbackMutation.error || feedbackMutation.error) as Error)}
               </div>
             )}
 
             {/* Execute (approved, admin) */}
             {canExecute && (
-              <div className="border-t border-gray-200 pt-4">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => executeMutation.mutate()}
@@ -542,18 +542,18 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                     <Play className="w-4 h-4" />
                     Execute
                   </button>
-                  <span className="text-xs text-gray-500">Apply all proposed actions to the project</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Apply all proposed actions to the project</span>
                 </div>
               </div>
             )}
 
             {/* Rollback (executed, admin) */}
             {canRollback && (
-              <div className="border-t border-gray-200 pt-4">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <button
                   onClick={() => rollbackMutation.mutate()}
                   disabled={anyMutating}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-orange-600 border-2 border-orange-300 rounded-lg hover:bg-orange-50 transition-colors text-sm font-semibold disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-gray-800 text-orange-600 border-2 border-orange-300 dark:border-orange-700 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors text-sm font-semibold disabled:opacity-50"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Rollback
@@ -563,8 +563,8 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
 
             {/* Feedback (executed) */}
             {canFeedback && (
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Outcome Feedback</h3>
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Outcome Feedback</h3>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {['effective', 'partially_effective', 'ineffective', 'made_worse'].map(o => (
                     <button
@@ -572,8 +572,8 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                       onClick={() => setFeedbackOutcome(o)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                         feedbackOutcome === o
-                          ? 'border-primary-500 bg-primary-50 text-primary-700'
-                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                          : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                     >
                       {o === 'effective' && <ThumbsUp className="w-3 h-3 inline mr-1" />}
@@ -589,7 +589,7 @@ function ProposalDetailModal({ proposalId, onClose }: { proposalId: string; onCl
                       onChange={e => setFeedbackComment(e.target.value)}
                       placeholder="Optional comment..."
                       rows={2}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-2"
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-800 dark:text-neutral-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-2"
                     />
                     <button
                       onClick={() => feedbackMutation.mutate()}
@@ -684,25 +684,25 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
   const isTier3 = !!config;
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
       >
         <div className="flex items-center gap-3">
-          {isTier3 ? <ShieldCheck className="w-5 h-5 text-emerald-600" /> : <Shield className="w-5 h-5 text-gray-400" />}
+          {isTier3 ? <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> : <Shield className="w-5 h-5 text-gray-400 dark:text-gray-500" />}
           <div className="text-left">
-            <div className="font-medium text-gray-900 text-sm">{formatAgentName(agentId)}</div>
-            <div className="text-xs text-gray-500">{agentId}</div>
+            <div className="font-medium text-gray-900 dark:text-white text-sm">{formatAgentName(agentId)}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{agentId}</div>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {isTier3 ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
               <ShieldCheck className="w-3 h-3" /> Tier 3
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
               Tier 2
             </span>
           )}
@@ -711,13 +711,13 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
       </button>
 
       {expanded && (
-        <div className="border-t border-gray-200 px-4 py-4 bg-gray-50/50">
+        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-4 bg-gray-50/50 dark:bg-gray-800/50">
           {isTier3 && config && (
-            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+            <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="text-sm">
-                  <span className="font-medium text-emerald-800">Active Tier 3</span>
-                  <div className="text-emerald-700 text-xs mt-1">
+                  <span className="font-medium text-emerald-800 dark:text-emerald-300">Active Tier 3</span>
+                  <div className="text-emerald-700 dark:text-emerald-400 text-xs mt-1">
                     Min confidence: {config.minConfidenceThreshold}% | Max risk: {config.maxRiskLevel} | Since: {new Date(config.enabledAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -742,35 +742,35 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
           ) : eligibility ? (
             <div className="space-y-4">
               <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Proposal History</h4>
+                <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Proposal History</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <div className="bg-white border border-gray-200 rounded-lg p-2.5 text-center">
-                    <div className="text-lg font-bold text-gray-900">{eligibility.totalProposals}</div>
-                    <div className="text-xs text-gray-500">Total</div>
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-center">
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">{eligibility.totalProposals}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Total</div>
                   </div>
-                  <div className="bg-white border border-gray-200 rounded-lg p-2.5 text-center">
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-center">
                     <div className={`text-lg font-bold ${eligibility.acceptanceRate >= 80 ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {eligibility.acceptanceRate}%
                     </div>
-                    <div className="text-xs text-gray-500">Accepted</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Accepted</div>
                   </div>
-                  <div className="bg-white border border-gray-200 rounded-lg p-2.5 text-center">
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-center">
                     <div className={`text-lg font-bold ${eligibility.effectivenessRate >= 70 ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {eligibility.effectivenessRate}%
                     </div>
-                    <div className="text-xs text-gray-500">Effective</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Effective</div>
                   </div>
-                  <div className="bg-white border border-gray-200 rounded-lg p-2.5 text-center">
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-center">
                     <div className={`text-lg font-bold ${eligibility.rolledBackProposals === 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {eligibility.rolledBackProposals}
                     </div>
-                    <div className="text-xs text-gray-500">Rollbacks</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Rollbacks</div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Promotion Criteria</h4>
+                <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Promotion Criteria</h4>
                 <div className="space-y-1.5">
                   {eligibility.reasons.map((reason, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
@@ -781,22 +781,22 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
                       ) : (
                         <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       )}
-                      <span className="text-gray-700">{reason}</span>
+                      <span className="text-gray-700 dark:text-gray-300">{reason}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {isAdmin && !isTier3 && (
-                <div className="border-t border-gray-200 pt-4">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">Promote to Tier 3</h4>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">Promote to Tier 3</h4>
                   <div className="flex items-end gap-4">
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Min Confidence</label>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Min Confidence</label>
                       <select
                         value={threshold}
                         onChange={e => setThreshold(Number(e.target.value))}
-                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500"
+                        className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary-500"
                       >
                         {[70, 75, 80, 85, 90, 95].map(v => (
                           <option key={v} value={v}>{v}%</option>
@@ -804,11 +804,11 @@ function AgentEligibilityCard({ agentId, config, isAdmin }: {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Max Risk Level</label>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Max Risk Level</label>
                       <select
                         value={maxRisk}
                         onChange={e => setMaxRisk(e.target.value)}
-                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500"
+                        className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
@@ -866,12 +866,12 @@ function AutonomyTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+      <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <Shield className="w-5 h-5 text-slate-600 mt-0.5 flex-shrink-0" />
+          <Shield className="w-5 h-5 text-slate-600 dark:text-slate-400 mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="text-sm font-semibold text-slate-900">Autonomous Execution (Tier 3)</h3>
-            <p className="text-xs text-slate-600 mt-1">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Autonomous Execution (Tier 3)</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
               Tier 2 agents propose actions for human review. Tier 3 agents auto-execute low-risk, high-confidence proposals.
               Promotion requires 30+ days, 20+ proposals, 80%+ acceptance, 70%+ effectiveness, and zero rollbacks.
             </p>
@@ -880,12 +880,12 @@ function AutonomyTab() {
       </div>
 
       <div className="flex items-center gap-4 text-sm">
-        <span className="text-gray-600">
-          <span className="font-bold text-gray-900">{configs.length}</span> at Tier 3
+        <span className="text-gray-600 dark:text-gray-400">
+          <span className="font-bold text-gray-900 dark:text-white">{configs.length}</span> at Tier 3
         </span>
-        <span className="text-gray-300">|</span>
-        <span className="text-gray-600">
-          <span className="font-bold text-gray-900">{KNOWN_AGENTS.length - configs.length}</span> at Tier 2
+        <span className="text-gray-300 dark:text-gray-600">|</span>
+        <span className="text-gray-600 dark:text-gray-400">
+          <span className="font-bold text-gray-900 dark:text-white">{KNOWN_AGENTS.length - configs.length}</span> at Tier 2
         </span>
       </div>
 
@@ -972,14 +972,14 @@ export const AgentProposalsPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Agent Governance</h1>
-        <p className="text-sm text-gray-500 mt-1">Review proposals, manage autonomy, monitor agent operations</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Agent Governance</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Review proposals, manage autonomy, monitor agent operations</p>
       </div>
 
       <HealthBanner />
 
       {/* Page Tabs */}
-      <div className="flex items-center gap-1 border-b border-gray-200">
+      <div className="flex items-center gap-1 border-b border-gray-200 dark:border-gray-700">
         {PAGE_TABS.map(tab => {
           const Icon = tab.icon;
           return (
@@ -988,8 +988,8 @@ export const AgentProposalsPage: React.FC = () => {
               onClick={() => setPageTab(tab.key)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 pageTab === tab.key
-                  ? 'border-gray-900 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -1013,8 +1013,8 @@ export const AgentProposalsPage: React.FC = () => {
                 onClick={() => setStatusFilter(tab.key)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                   statusFilter === tab.key
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                    ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 {tab.label}
@@ -1029,7 +1029,7 @@ export const AgentProposalsPage: React.FC = () => {
           )}
 
           {isError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-sm text-red-700 dark:text-red-400">
               Failed to load proposals.
             </div>
           )}
@@ -1037,8 +1037,8 @@ export const AgentProposalsPage: React.FC = () => {
           {!isLoading && !isError && proposals.length === 0 && (
             <div className="text-center py-20">
               <Bot className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-700 mb-1">No proposals</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-1">No proposals</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {statusFilter === 'all' ? 'Agents have not generated any proposals yet.' : `No ${statusFilter} proposals.`}
               </p>
             </div>
@@ -1047,36 +1047,36 @@ export const AgentProposalsPage: React.FC = () => {
           {/* Proposals Table */}
           {!isLoading && !isError && proposals.length > 0 && (
             <>
-              <div className="overflow-x-auto border border-gray-200 rounded-lg">
+              <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Agent</th>
-                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Title</th>
-                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Status</th>
-                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Risk</th>
-                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Confidence</th>
-                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 text-xs uppercase">Created</th>
+                    <tr className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase">Agent</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase">Title</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase">Status</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase">Risk</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase">Confidence</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase">Created</th>
                       <th className="w-8" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                     {proposals.map(p => (
                       <tr
                         key={p.id}
                         onClick={() => setSelectedId(p.id)}
-                        className="hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <Bot className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            <span className="font-medium text-gray-900 truncate max-w-[140px]">
+                            <Bot className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                            <span className="font-medium text-gray-900 dark:text-white truncate max-w-[140px]">
                               {formatAgentName(p.agent_id)}
                             </span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-gray-900 truncate block max-w-[280px]">{p.title}</span>
+                          <span className="text-gray-900 dark:text-gray-100 truncate block max-w-[280px]">{p.title}</span>
                         </td>
                         <td className="px-4 py-3">
                           <StatusPill status={p.status} />
@@ -1087,7 +1087,7 @@ export const AgentProposalsPage: React.FC = () => {
                         <td className="px-4 py-3">
                           <ConfidenceBar score={p.confidence_score} />
                         </td>
-                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
+                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">
                           {timeAgo(p.created_at)}
                         </td>
                         <td className="px-4 py-3">
@@ -1101,12 +1101,12 @@ export const AgentProposalsPage: React.FC = () => {
 
               {/* Load More + Count */}
               <div className="flex items-center justify-between mt-3">
-                <p className="text-xs text-gray-500">Showing {proposals.length} of {proposalsTotal}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Showing {proposals.length} of {proposalsTotal}</p>
                 {proposals.length < proposalsTotal && (
                   <button
                     onClick={handleLoadMoreProposals}
                     disabled={loadingMore}
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 rounded-lg transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/50 rounded-lg transition-colors disabled:opacity-50"
                   >
                     {loadingMore ? (
                       <div className="w-3.5 h-3.5 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin" />
