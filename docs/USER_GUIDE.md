@@ -1442,6 +1442,8 @@ An 8-week bottleneck predictions table with columns for resource, week, demand, 
 
 The EVM Dashboard (`/evm`) provides a comprehensive earned value management view. Access it from the sidebar under the **Analyze** section.
 
+> **Trial plan:** If you are on a trial plan, the EVM Dashboard displays a sample dashboard with demo data rather than your actual project metrics. An amber banner at the top of the page indicates this. Upgrade to a paid plan to unlock EVM metrics calculated from your real project budgets, costs, and schedule performance.
+
 1. Select a project from the **project selector** dropdown.
 2. Review the **KPI cards**: CPI, SPI, EV, PV, AC, and BAC. Values are color-coded (green when healthy, red when critical).
 3. Review the **forecast cards**: EAC, ETC, VAC, and TCPI. Cards show red warning borders when thresholds are exceeded.
@@ -1457,6 +1459,8 @@ The EVM Dashboard (`/evm`) provides a comprehensive earned value management view
    - Trend direction (improving, stable, or deteriorating).
    - Narrative summary in plain language.
    - Corrective actions with priority badges.
+
+   > **Note:** AI Predictions are available on paid plans only and are not included in the trial sample dashboard.
 
 ---
 

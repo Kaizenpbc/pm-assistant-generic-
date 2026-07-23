@@ -184,6 +184,8 @@ A dedicated analytics page for earned value management, accessible from the side
 - **Forecast Comparison table**: multiple forecasting methods with EAC values and BAC variance.
 - **AI Predictions section** (when `AI_ENABLED=true`): AI-adjusted EAC with confidence range, overrun probability, trend direction, narrative summary, and corrective actions with priority badges.
 
+**Trial user behavior:** Trial users who navigate to `/evm` see a sample EVM dashboard populated with realistic demo data (CPI: 0.93, SPI: 1.07, 7-week trend, 3 early warnings, 3 forecast comparison methods) instead of a 403 error. An amber banner at the top of the page reads: "Sample EVM Dashboard — This is a sample dashboard with demo data. Upgrade to a paid plan to see EVM metrics calculated from your actual project budgets, costs, and schedule performance." The AI Predictions section (`/:projectId/ai`) remains gated to paid tiers. No tokens or database queries are consumed for the sample. This follows the same pattern as the sample status report feature.
+
 Uses the existing `getEVMForecast()` API.
 
 ---
