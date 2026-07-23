@@ -47,11 +47,11 @@ const defaultEdges: EdgeDraft[] = [
 ];
 
 const nodeTypeColors: Record<string, string> = {
-  trigger: 'border-blue-200 bg-blue-50',
-  condition: 'border-yellow-200 bg-yellow-50',
-  action: 'border-green-200 bg-green-50',
-  approval: 'border-purple-200 bg-purple-50',
-  delay: 'border-orange-200 bg-orange-50',
+  trigger: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20',
+  condition: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20',
+  action: 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20',
+  approval: 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20',
+  delay: 'border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20',
 };
 
 const nodeTypeLabel: Record<string, string> = {
@@ -232,8 +232,8 @@ export function WorkflowPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100">
-            <Workflow className="h-5 w-5 text-purple-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/40">
+            <Workflow className="h-5 w-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Workflow Automation</h1>
@@ -468,10 +468,10 @@ export function WorkflowPage() {
                       <span className="text-gray-400 dark:text-gray-500"> — {exec.entityType}:{exec.entityId}</span>
                     </div>
                     <span className={`px-1.5 py-0.5 rounded text-xs capitalize ${
-                      exec.status === 'completed' ? 'bg-green-100 text-green-700' :
-                      exec.status === 'failed' ? 'bg-red-100 text-red-700' :
-                      exec.status === 'waiting' ? 'bg-amber-100 text-amber-700' :
-                      exec.status === 'running' ? 'bg-blue-100 text-blue-700' :
+                      exec.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                      exec.status === 'failed' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                      exec.status === 'waiting' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                      exec.status === 'running' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
                       'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                     }`}>
                       {exec.status}

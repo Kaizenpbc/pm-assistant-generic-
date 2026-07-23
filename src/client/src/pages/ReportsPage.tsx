@@ -36,17 +36,17 @@ interface Project {
 // ---------------------------------------------------------------------------
 
 const REPORT_TYPES = [
-  { value: 'weekly-status', label: 'Weekly Status', icon: FileBarChart, badgeColor: 'bg-blue-100 text-blue-700' },
-  { value: 'risk-assessment', label: 'Risk Assessment', icon: Shield, badgeColor: 'bg-red-100 text-red-700' },
-  { value: 'budget-forecast', label: 'Budget Forecast', icon: DollarSign, badgeColor: 'bg-green-100 text-green-700' },
-  { value: 'resource-utilization', label: 'Resource Utilization', icon: Users, badgeColor: 'bg-purple-100 text-purple-700' },
+  { value: 'weekly-status', label: 'Weekly Status', icon: FileBarChart, badgeColor: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
+  { value: 'risk-assessment', label: 'Risk Assessment', icon: Shield, badgeColor: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+  { value: 'budget-forecast', label: 'Budget Forecast', icon: DollarSign, badgeColor: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
+  { value: 'resource-utilization', label: 'Resource Utilization', icon: Users, badgeColor: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
 ] as const;
 
 const badgeColorMap: Record<string, string> = {
-  'weekly-status': 'bg-blue-100 text-blue-700',
-  'risk-assessment': 'bg-red-100 text-red-700',
-  'budget-forecast': 'bg-green-100 text-green-700',
-  'resource-utilization': 'bg-purple-100 text-purple-700',
+  'weekly-status': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+  'risk-assessment': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+  'budget-forecast': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+  'resource-utilization': 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
 };
 
 const labelMap: Record<string, string> = {

@@ -32,13 +32,13 @@ function riskScoreColor(score: number): string {
 function riskLevelBadge(level: string): string {
   switch (level?.toLowerCase()) {
     case 'critical':
-      return 'bg-red-100 text-red-700';
+      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
     case 'high':
-      return 'bg-orange-100 text-orange-700';
+      return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400';
     case 'medium':
-      return 'bg-yellow-100 text-yellow-700';
+      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
     case 'low':
-      return 'bg-green-100 text-green-700';
+      return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
     default:
       return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200';
   }
@@ -48,13 +48,13 @@ function impactLevelBadge(level: string): string {
   switch (level?.toLowerCase()) {
     case 'severe':
     case 'high':
-      return 'bg-red-100 text-red-700';
+      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
     case 'moderate':
     case 'medium':
-      return 'bg-yellow-100 text-yellow-700';
+      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
     case 'low':
     case 'minimal':
-      return 'bg-green-100 text-green-700';
+      return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
     default:
       return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200';
   }
@@ -182,10 +182,10 @@ function TaskSlipPredictionSection({ projectId }: { projectId: string }) {
 
   const severityColor = (s: string) => {
     switch (s) {
-      case 'critical': return 'bg-red-100 text-red-700';
-      case 'high': return 'bg-orange-100 text-orange-700';
-      case 'medium': return 'bg-amber-100 text-amber-700';
-      default: return 'bg-green-100 text-green-700';
+      case 'critical': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+      case 'high': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400';
+      case 'medium': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
+      default: return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
     }
   };
 
@@ -245,10 +245,10 @@ function ScopeCreepSection({ projectId }: { projectId: string }) {
 
   const severityColor = (s: string) => {
     switch (s) {
-      case 'critical': return 'bg-red-100 text-red-700 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-700 border-orange-200';
-      case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200';
-      default: return 'bg-green-100 text-green-700 border-green-200';
+      case 'critical': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
+      case 'high': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800';
+      case 'medium': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800';
+      default: return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800';
     }
   };
 

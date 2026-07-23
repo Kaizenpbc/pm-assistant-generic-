@@ -88,8 +88,8 @@ const IMPACT_OPTIONS = [
 
 function impactBadge(impact: string) {
   const colors: Record<string, string> = {
-    positive: 'bg-green-100 text-green-700',
-    negative: 'bg-red-100 text-red-700',
+    positive: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+    negative: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
     neutral: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200',
   };
   return (
@@ -670,8 +670,8 @@ export const LessonsLearnedPage: React.FC = () => {
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-2">{lesson.description}</p>
                 {lesson.recommendation && (
-                  <div className="rounded-md bg-amber-50 border border-amber-100 px-3 py-2 mb-2">
-                    <p className="text-xs text-amber-800 flex items-start gap-1.5">
+                  <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 px-3 py-2 mb-2">
+                    <p className="text-xs text-amber-800 dark:text-amber-300 flex items-start gap-1.5">
                       <Lightbulb className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-amber-500" />
                       <span>{lesson.recommendation}</span>
                     </p>

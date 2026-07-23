@@ -11,11 +11,11 @@ type Tab = 'forms' | 'submissions';
 type View = 'list' | 'designer' | 'submission' | 'review';
 
 const statusBadgeStyles: Record<string, string> = {
-  submitted: 'bg-blue-100 text-blue-700',
-  under_review: 'bg-yellow-100 text-yellow-700',
-  approved: 'bg-green-100 text-green-700',
-  rejected: 'bg-red-100 text-red-700',
-  converted: 'bg-purple-100 text-purple-700',
+  submitted: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+  under_review: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+  approved: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+  rejected: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+  converted: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
 };
 
 const statusLabels: Record<string, string> = {
@@ -204,7 +204,7 @@ export const IntakeFormsPage: React.FC = () => {
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         form.is_active
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                       }`}
                     >
@@ -276,8 +276,8 @@ export const IntakeFormsPage: React.FC = () => {
               <p className="text-gray-500 dark:text-gray-400 text-sm">No submissions found.</p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
+              <table className="w-full text-sm min-w-[600px]">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">

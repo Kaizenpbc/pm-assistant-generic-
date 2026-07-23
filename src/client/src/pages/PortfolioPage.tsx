@@ -62,11 +62,11 @@ interface PortfolioAnalyticsProject {
 // ---------------------------------------------------------------------------
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  active: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
-  planning: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
-  on_hold: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+  active: { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500' },
+  planning: { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', dot: 'bg-blue-500' },
+  on_hold: { bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-400', dot: 'bg-amber-500' },
   completed: { bg: 'bg-gray-50 dark:bg-gray-900', text: 'text-gray-600 dark:text-gray-300', dot: 'bg-gray-400' },
-  cancelled: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-400' },
+  cancelled: { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-400', dot: 'bg-red-400' },
 };
 
 function formatCurrency(amount: number): string {

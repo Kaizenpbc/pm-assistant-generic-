@@ -73,10 +73,10 @@ const severityColors: Record<string, string> = {
 };
 
 const severityBadge: Record<string, string> = {
-  critical: 'bg-red-100 text-red-700',
-  high: 'bg-orange-100 text-orange-700',
-  medium: 'bg-yellow-100 text-yellow-700',
-  low: 'bg-blue-100 text-blue-700',
+  critical: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+  high: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+  medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+  low: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
 };
 
 const severityTextColors: Record<string, string> = {
@@ -216,7 +216,7 @@ export function NotificationsPage() {
           <button
             key={sev}
             onClick={() => setFilterSeverity(filterSeverity === sev ? 'all' : sev)}
-            className={`rounded-xl border p-3 text-center transition-colors ${filterSeverity === sev ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50'}`}
+            className={`rounded-xl border p-3 text-center transition-colors ${filterSeverity === sev ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/30 dark:border-primary-600' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
           >
             <div className={`text-lg font-bold ${severityTextColors[sev]}`}>{countBySeverity[sev]}</div>
             <div className="text-[10px] text-gray-500 uppercase font-semibold capitalize">{sev}</div>

@@ -337,7 +337,7 @@ export function ProjectDetailPage() {
                     return (
                       <div
                         key={viewer.userId}
-                        className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900/40 border-2 border-white flex items-center justify-center"
+                        className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900/40 border-2 border-white dark:border-gray-800 flex items-center justify-center"
                         title={`${viewer.username} is viewing`}
                       >
                         <span className="text-[10px] font-semibold text-primary-700 dark:text-primary-300">{initials}</span>
@@ -346,7 +346,7 @@ export function ProjectDetailPage() {
                   })}
                   {otherViewers.length > 5 && (
                     <div
-                      className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 border-2 border-white flex items-center justify-center"
+                      className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 border-2 border-white dark:border-gray-900 flex items-center justify-center"
                       title={`${otherViewers.length - 5} more viewers`}
                     >
                       <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">+{otherViewers.length - 5}</span>
@@ -433,7 +433,7 @@ export function ProjectDetailPage() {
             label="Velocity"
             value={avgVelocity != null ? `${avgVelocity} pts` : '--'}
             icon={Zap}
-            color="bg-purple-50 text-purple-600"
+            color="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
             detail={<p className="mt-1 text-xs text-gray-500">avg pts/sprint</p>}
           />
         ) : (
@@ -441,9 +441,9 @@ export function ProjectDetailPage() {
             label="Progress"
             value={`${progress}%`}
             icon={TrendingUp}
-            color="bg-blue-50 text-blue-600"
+            color="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
             detail={
-              <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+              <div className="mt-2 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                 <div
                   className="h-full rounded-full bg-blue-500 transition-all"
                   style={{ width: `${Math.min(progress, 100)}%` }}
@@ -456,9 +456,9 @@ export function ProjectDetailPage() {
           label="Budget"
           value={`$${(budgetSpent / 1000).toFixed(0)}K / $${(budgetAllocated / 1000).toFixed(0)}K`}
           icon={DollarSign}
-          color={budgetPct > 90 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}
+          color={budgetPct > 90 ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400'}
           detail={
-            <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+            <div className="mt-2 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
               <div
                 className={`h-full rounded-full transition-all ${
                   budgetPct > 90 ? 'bg-red-500' : 'bg-green-500'
@@ -476,7 +476,7 @@ export function ProjectDetailPage() {
           icon={Clock}
           color={
             daysRemaining !== null && daysRemaining < 14
-              ? 'bg-orange-50 text-orange-600'
+              ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
               : 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
           }
         />
@@ -486,10 +486,10 @@ export function ProjectDetailPage() {
           icon={ShieldAlert}
           color={
             riskStats?.critical > 0
-              ? 'bg-red-50 text-red-600'
+              ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'
               : riskStats?.openRisks > 0
-                ? 'bg-orange-50 text-orange-600'
-                : 'bg-green-50 text-green-600'
+                ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                : 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400'
           }
           detail={riskStats?.critical > 0 ? (
             <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">{riskStats.critical} critical</p>
@@ -500,14 +500,14 @@ export function ProjectDetailPage() {
             label="Sprint"
             value={sprintCount > 0 ? `${sprintCount} sprint${sprintCount !== 1 ? 's' : ''}` : 'No sprints'}
             icon={Zap}
-            color="bg-purple-50 text-purple-600"
+            color="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
           />
         ) : methodology === 'hybrid' ? (
           <ContextCard
             label="Velocity"
             value={avgVelocity != null ? `${avgVelocity} pts` : '--'}
             icon={Zap}
-            color="bg-purple-50 text-purple-600"
+            color="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
             detail={<p className="mt-1 text-xs text-gray-500">avg pts/sprint</p>}
           />
         ) : (
