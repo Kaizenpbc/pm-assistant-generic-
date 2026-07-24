@@ -1208,6 +1208,13 @@ When a trial user attempts to access a gated feature, the behavior depends on th
 
 Client-side gating provides an early upgrade prompt but is not the security boundary — enforcement is always server-side.
 
+**Implementation notes:**
+
+- A global `requireActiveSubscription` hook in `plugins.ts` blocks all POST/PUT/DELETE requests for expired trial users. POST-based sample endpoints (`/api/v1/nl-query`, `/api/v1/meeting-intelligence/analyze`) are added to the `SUBSCRIPTION_EXEMPT_PREFIXES` list so the in-handler trial check can return sample data instead of 403.
+- For Portal Links, the trial check runs as a preHandler **before** `requireProjectAccess` — this avoids a 404 when the trial user's project ID doesn't exist in the database.
+- For Meeting Intelligence, the trial check runs **before** Zod schema validation — this avoids a 400 when the trial user submits without required fields (projectId, scheduleId).
+- Write/mutate endpoints for all 13 features remain hard-gated with `requireFeature()` — sample data is read-only.
+
 ---
 
 ## 23. Dashboard
