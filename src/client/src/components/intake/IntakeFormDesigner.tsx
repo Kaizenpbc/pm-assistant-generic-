@@ -37,12 +37,12 @@ const fieldTypes: { value: FieldType; label: string }[] = [
 ];
 
 const fieldTypeBadgeColor: Record<FieldType, string> = {
-  text: 'bg-blue-100 text-blue-700',
-  number: 'bg-green-100 text-green-700',
-  date: 'bg-orange-100 text-orange-700',
-  dropdown: 'bg-purple-100 text-purple-700',
-  textarea: 'bg-teal-100 text-teal-700',
-  checkbox: 'bg-pink-100 text-pink-700',
+  text: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+  number: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+  date: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+  dropdown: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+  textarea: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400',
+  checkbox: 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400',
 };
 
 let fieldCounter = 0;
@@ -141,17 +141,17 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
       <div className="flex items-center gap-3">
         <button
           onClick={onClose}
-          className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+          className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           aria-label="Go back"
         >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
+          <ArrowLeft className="w-5 h-5 text-gray-500 dark:text-gray-400" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <ClipboardList className="w-5 h-5" />
             {formId ? 'Edit Intake Form' : 'New Intake Form'}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             Design the fields that submitters will fill out
           </p>
         </div>
@@ -161,38 +161,38 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
         {/* Editor */}
         <div className="space-y-5">
           {/* Form metadata */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Form Name</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Form Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. New Project Request"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe the purpose of this form..."
                 rows={3}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white dark:bg-gray-900 dark:text-white"
               />
             </div>
           </div>
 
           {/* Fields builder */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">Fields</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Fields</h2>
               <div className="flex items-center gap-2">
                 <select
                   value={addType}
                   onChange={(e) => setAddType(e.target.value as FieldType)}
-                  className="text-xs border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="text-xs border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 dark:text-white"
                 >
                   {fieldTypes.map((ft) => (
                     <option key={ft.value} value={ft.value}>
@@ -210,7 +210,7 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
             </div>
 
             {fields.length === 0 && (
-              <p className="text-xs text-gray-400 text-center py-6">
+              <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-6">
                 No fields yet. Add fields using the button above.
               </p>
             )}
@@ -219,7 +219,7 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
               {fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="border border-gray-200 rounded-lg p-4 space-y-3 bg-gray-50"
+                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3 bg-gray-50 dark:bg-gray-900/50"
                 >
                   <div className="flex items-center gap-2">
                     <span
@@ -233,22 +233,22 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                     <button
                       onClick={() => moveField(index, 'up')}
                       disabled={index === 0}
-                      className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       aria-label="Move field up"
                     >
-                      <ArrowUp className="w-3.5 h-3.5 text-gray-500" />
+                      <ArrowUp className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                     </button>
                     <button
                       onClick={() => moveField(index, 'down')}
                       disabled={index === fields.length - 1}
-                      className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       aria-label="Move field down"
                     >
-                      <ArrowDown className="w-3.5 h-3.5 text-gray-500" />
+                      <ArrowDown className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                     </button>
                     <button
                       onClick={() => removeField(field.id)}
-                      className="p-1 rounded hover:bg-red-100 transition-colors"
+                      className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
                       aria-label="Remove field"
                     >
                       <Trash2 className="w-3.5 h-3.5 text-red-500" />
@@ -256,7 +256,7 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                       Field Label
                     </label>
                     <input
@@ -264,13 +264,13 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                       value={field.label}
                       onChange={(e) => updateField(field.id, { label: e.target.value })}
                       placeholder="e.g. Project Name"
-                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-900 dark:text-white"
                     />
                   </div>
 
                   {field.type === 'dropdown' && (
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                         Options (comma-separated)
                       </label>
                       <input
@@ -278,7 +278,7 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                         value={field.options}
                         onChange={(e) => updateField(field.id, { options: e.target.value })}
                         placeholder="e.g. Option A, Option B, Option C"
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-900 dark:text-white"
                       />
                     </div>
                   )}
@@ -290,7 +290,7 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                       onChange={(e) => updateField(field.id, { required: e.target.checked })}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-xs text-gray-600">Required</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Required</span>
                   </label>
                 </div>
               ))}
@@ -308,12 +308,12 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
             </button>
             <button
               onClick={onClose}
-              className="px-5 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-5 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               Cancel
             </button>
             {saveMutation.isError && (
-              <span className="text-xs text-red-600">Failed to save. Please try again.</span>
+              <span className="text-xs text-red-600 dark:text-red-400">Failed to save. Please try again.</span>
             )}
           </div>
         </div>
@@ -321,28 +321,28 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
         {/* Preview */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <Eye className="w-4 h-4 text-gray-500" />
-            <h2 className="text-sm font-semibold text-gray-900">Preview</h2>
+            <Eye className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Preview</h2>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-5">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                 {name || 'Untitled Form'}
               </h3>
               {description && (
-                <p className="text-sm text-gray-500 mt-1">{description}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</p>
               )}
             </div>
 
             {fields.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-6">
+              <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-6">
                 Add fields to see a preview
               </p>
             ) : (
               <div className="space-y-4">
                 {fields.map((field) => (
                   <div key={field.id}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {field.label || 'Untitled Field'}
                       {field.required && <span className="text-red-500 ml-0.5">*</span>}
                     </label>
@@ -351,7 +351,7 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                         type="text"
                         disabled
                         placeholder="Text input"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-gray-400"
                       />
                     )}
                     {field.type === 'number' && (
@@ -359,14 +359,14 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                         type="number"
                         disabled
                         placeholder="0"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-gray-400"
                       />
                     )}
                     {field.type === 'date' && (
                       <input
                         type="date"
                         disabled
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-gray-400"
                       />
                     )}
                     {field.type === 'textarea' && (
@@ -374,13 +374,13 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                         disabled
                         placeholder="Long text input"
                         rows={3}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 resize-none"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-gray-400 resize-none"
                       />
                     )}
                     {field.type === 'checkbox' && (
                       <div className="flex items-center gap-2">
                         <input type="checkbox" disabled className="rounded border-gray-300" />
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
                           {field.label || 'Checkbox'}
                         </span>
                       </div>
@@ -388,7 +388,7 @@ export const IntakeFormDesigner: React.FC<Props> = ({ formId, onClose, onSaved }
                     {field.type === 'dropdown' && (
                       <select
                         disabled
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-gray-400"
                       >
                         <option>Select an option...</option>
                         {field.options

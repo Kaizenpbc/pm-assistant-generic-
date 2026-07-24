@@ -264,9 +264,9 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={`Configure ${provider}`} onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={`Configure ${provider}`} onKeyDown={handleKeyDown} tabIndex={-1} className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-200">
+        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
@@ -274,13 +274,13 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
             >
               {providerName.charAt(0)}
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               {isEdit ? `Configure ${providerName}` : `Connect ${providerName}`}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -290,7 +290,7 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
         <div className="p-5 overflow-y-auto flex-1 space-y-4">
           {fields.map((field) => (
             <div key={field.key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {field.label}
                 {field.required && (
                   <span className="text-red-500 ml-0.5">*</span>
@@ -301,14 +301,14 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
                 value={formValues[field.key] || ''}
                 onChange={(e) => handleChange(field.key, e.target.value)}
                 placeholder={field.placeholder}
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:text-white ${
                   errors[field.key]
-                    ? 'border-red-300 bg-red-50'
-                    : 'border-gray-300'
+                    ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900'
                 }`}
               />
               {errors[field.key] && (
-                <p className="mt-1 text-xs text-red-600">
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                   {errors[field.key]}
                 </p>
               )}
@@ -321,7 +321,7 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
               <button
                 onClick={handleTestConnection}
                 disabled={testMutation.isPending}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
               >
                 {testMutation.isPending ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />
@@ -335,8 +335,8 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
                 <div
                   className={`mt-2 flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${
                     testResult.success
-                      ? 'bg-green-50 text-green-700'
-                      : 'bg-red-50 text-red-700'
+                      ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                      : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
                   }`}
                 >
                   {testResult.success ? (
@@ -352,7 +352,7 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
 
           {/* Save error */}
           {saveMutation.isError && (
-            <div className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg">
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm px-3 py-2 rounded-lg">
               {(saveMutation.error as any)?.response?.data?.message ||
                 'Failed to save integration. Please try again.'}
             </div>
@@ -360,10 +360,10 @@ export const IntegrationConfigModal: React.FC<IntegrationConfigModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200">
+        <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Cancel
           </button>
