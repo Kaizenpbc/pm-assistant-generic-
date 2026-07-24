@@ -48,10 +48,10 @@ interface ResourceForecastPanelProps {
 // ---------------------------------------------------------------------------
 
 const severityStyles: Record<string, string> = {
-  low: 'bg-green-100 text-green-700',
-  medium: 'bg-yellow-100 text-yellow-700',
-  high: 'bg-orange-100 text-orange-700',
-  critical: 'bg-red-100 text-red-700',
+  low: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+  medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+  high: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+  critical: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
 };
 
 const riskDotColor: Record<string, string> = {
@@ -89,18 +89,18 @@ function SkeletonPanel() {
       {/* Summary cards skeleton */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="rounded-xl border border-gray-200 bg-white p-5">
-            <div className="h-3 w-24 rounded bg-gray-200 mb-3" />
-            <div className="h-6 w-16 rounded bg-gray-200" />
+          <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+            <div className="h-3 w-24 rounded bg-gray-200 dark:bg-gray-700 mb-3" />
+            <div className="h-6 w-16 rounded bg-gray-200 dark:bg-gray-700" />
           </div>
         ))}
       </div>
       {/* Bottleneck skeleton */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <div className="h-4 w-40 rounded bg-gray-200 mb-4" />
+        <div className="h-4 w-40 rounded bg-gray-200 dark:bg-gray-700 mb-4" />
         <div className="space-y-3">
           {[1, 2].map((i) => (
-            <div key={i} className="h-16 rounded-lg bg-gray-100" />
+            <div key={i} className="h-16 rounded-lg bg-gray-100 dark:bg-gray-700" />
           ))}
         </div>
       </div>
@@ -125,7 +125,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
 
   if (isError || !data?.result) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-5 text-center text-sm text-gray-400">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 text-center text-sm text-gray-400 dark:text-gray-500">
         Unable to load resource forecast.
       </div>
     );
@@ -141,16 +141,16 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
       {/* ------------------------------------------------------------------ */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Total Resources */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
             Total Resources
           </p>
-          <p className="text-2xl font-bold text-gray-900">{summary.totalResources}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.totalResources}</p>
         </div>
 
         {/* Over-Allocated */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
             Over-Allocated
           </p>
           <p className={`text-2xl font-bold ${summary.overAllocatedCount > 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -159,8 +159,8 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
         </div>
 
         {/* Average Utilization */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
             Avg Utilization
           </p>
           <p className={`text-2xl font-bold ${getUtilColor(summary.averageUtilization)}`}>
@@ -173,7 +173,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
       {/* Bottleneck Callout Cards                                           */}
       {/* ------------------------------------------------------------------ */}
       {bottlenecks.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
           <div className="flex items-center gap-2 mb-4">
             {/* Warning icon (hand-rolled SVG) */}
             <svg
@@ -188,8 +188,8 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
                 clipRule="evenodd"
               />
             </svg>
-            <h3 className="text-sm font-semibold text-gray-800">Bottlenecks</h3>
-            <span className="text-xs text-gray-400">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Bottlenecks</h3>
+            <span className="text-xs text-gray-400 dark:text-gray-500">
               {bottlenecks.length} detected
             </span>
           </div>
@@ -198,14 +198,14 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
             {bottlenecks.map((bn, idx) => (
               <div
                 key={`${bn.resourceId}-${bn.week}-${idx}`}
-                className="rounded-lg border border-gray-100 bg-gray-50/60 p-4"
+                className="rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-700/40 p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
                       {bn.resourceName}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
                       Week of {formatWeek(bn.week)}
                     </span>
                   </div>
@@ -226,7 +226,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
                     {bn.contributingTasks.map((t) => (
                       <span
                         key={t.taskId}
-                        className="inline-flex items-center gap-1 rounded bg-white border border-gray-200 px-2 py-0.5 text-xs text-gray-600"
+                        className="inline-flex items-center gap-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300"
                       >
                         {t.taskName}
                         <span className="text-gray-400">({t.hoursRequired}h)</span>
@@ -244,7 +244,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
       {/* Burnout Risk Badges                                                */}
       {/* ------------------------------------------------------------------ */}
       {burnoutRisks.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
           <div className="flex items-center gap-2 mb-4">
             {/* Heart/pulse icon (hand-rolled SVG) */}
             <svg
@@ -255,7 +255,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
             >
               <path d="M9.653 16.915l-.005-.003-.019-.01a20.759 20.759 0 01-1.162-.682 22.045 22.045 0 01-2.582-1.9C4.045 12.733 2 10.352 2 7.5a4.5 4.5 0 018-2.828A4.5 4.5 0 0118 7.5c0 2.852-2.044 5.233-3.885 6.82a22.049 22.049 0 01-3.744 2.582l-.019.01-.005.003h-.002a.723.723 0 01-.692 0h-.002z" />
             </svg>
-            <h3 className="text-sm font-semibold text-gray-800">Burnout Risk</h3>
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Burnout Risk</h3>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -266,8 +266,8 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
               >
                 <span className={`h-2 w-2 rounded-full ${riskDotColor[br.riskLevel] || riskDotColor.medium}`} />
                 <div>
-                  <span className="text-xs font-medium text-gray-900">{br.resourceName}</span>
-                  <span className="ml-2 text-xs text-gray-400">
+                  <span className="text-xs font-medium text-gray-900 dark:text-white">{br.resourceName}</span>
+                  <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
                     {br.consecutiveOverloadWeeks} week{br.consecutiveOverloadWeeks !== 1 ? 's' : ''} overloaded
                   </span>
                 </div>
@@ -284,7 +284,7 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
 
       {/* Empty state when no issues */}
       {bottlenecks.length === 0 && burnoutRisks.length === 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5 text-center">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 text-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
@@ -297,8 +297,8 @@ export function ResourceForecastPanel({ projectId }: ResourceForecastPanelProps)
               clipRule="evenodd"
             />
           </svg>
-          <p className="text-sm font-medium text-gray-600">No bottlenecks or burnout risks detected</p>
-          <p className="text-xs text-gray-400 mt-1">Resource allocation looks healthy for the forecast period.</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">No bottlenecks or burnout risks detected</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Resource allocation looks healthy for the forecast period.</p>
         </div>
       )}
     </div>

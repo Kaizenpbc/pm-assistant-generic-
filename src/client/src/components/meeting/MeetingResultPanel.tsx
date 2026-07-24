@@ -68,10 +68,10 @@ type TabKey = (typeof TABS)[number]['key'];
 function priorityBadge(priority: string) {
   const p = priority?.toLowerCase() || '';
   const colors: Record<string, string> = {
-    critical: 'bg-red-100 text-red-700',
-    high: 'bg-orange-100 text-orange-700',
-    medium: 'bg-yellow-100 text-yellow-700',
-    low: 'bg-green-100 text-green-700',
+    critical: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+    high: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+    medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+    low: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
   };
   return (
     <span
@@ -85,10 +85,10 @@ function priorityBadge(priority: string) {
 function severityBadge(severity: string) {
   const s = severity?.toLowerCase() || '';
   const colors: Record<string, string> = {
-    critical: 'bg-red-100 text-red-700 border-red-200',
-    high: 'bg-orange-100 text-orange-700 border-orange-200',
-    medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    low: 'bg-green-100 text-green-700 border-green-200',
+    critical: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+    high: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+    medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
+    low: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
   };
   return (
     <span
@@ -101,9 +101,9 @@ function severityBadge(severity: string) {
 
 function typeBadge(type: string) {
   const colors: Record<string, string> = {
-    create: 'bg-green-100 text-green-700',
-    update: 'bg-blue-100 text-blue-700',
-    reschedule: 'bg-purple-100 text-purple-700',
+    create: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+    update: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+    reschedule: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
   };
   return (
     <span
@@ -152,7 +152,7 @@ export const MeetingResultPanel: React.FC<MeetingResultPanelProps> = ({
   return (
     <div className="card">
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-gray-200 mb-4 -mx-4 px-4 overflow-x-auto">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4 -mx-4 px-4 overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -162,8 +162,8 @@ export const MeetingResultPanel: React.FC<MeetingResultPanelProps> = ({
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
                 isActive
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -179,7 +179,7 @@ export const MeetingResultPanel: React.FC<MeetingResultPanelProps> = ({
         {activeTab === 'summary' && (
           <div>
             {analysis.summary ? (
-              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                 {analysis.summary}
               </p>
             ) : (
@@ -196,27 +196,27 @@ export const MeetingResultPanel: React.FC<MeetingResultPanelProps> = ({
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 pr-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-2 pr-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       Description
                     </th>
-                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       Assignee
                     </th>
-                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       Due Date
                     </th>
-                    <th className="text-center py-2 pl-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    <th className="text-center py-2 pl-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       Priority
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {analysis.actionItems!.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-2.5 pr-4 text-gray-900">{item.description}</td>
-                      <td className="py-2.5 px-3 text-gray-600">{item.assignee}</td>
-                      <td className="py-2.5 px-3 text-gray-600">{item.dueDate}</td>
+                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      <td className="py-2.5 pr-4 text-gray-900 dark:text-white">{item.description}</td>
+                      <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400">{item.assignee}</td>
+                      <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400">{item.dueDate}</td>
                       <td className="py-2.5 pl-3 text-center">{priorityBadge(item.priority)}</td>
                     </tr>
                   ))}
@@ -236,11 +236,11 @@ export const MeetingResultPanel: React.FC<MeetingResultPanelProps> = ({
                 {analysis.decisions!.map((d, idx) => (
                   <div
                     key={idx}
-                    className="rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
+                    className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-sm transition-shadow"
                   >
-                    <h4 className="text-sm font-semibold text-gray-900 mb-1">{d.decision}</h4>
-                    <p className="text-xs text-gray-500 leading-relaxed">
-                      <span className="font-medium text-gray-600">Rationale:</span> {d.rationale}
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{d.decision}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                      <span className="font-medium text-gray-600 dark:text-gray-300">Rationale:</span> {d.rationale}
                     </p>
                   </div>
                 ))}
@@ -259,15 +259,15 @@ export const MeetingResultPanel: React.FC<MeetingResultPanelProps> = ({
                 {analysis.risks!.map((r, idx) => (
                   <div
                     key={idx}
-                    className="rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
+                    className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-sm transition-shadow"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                      <h4 className="text-sm font-semibold text-gray-900 flex-1">{r.risk}</h4>
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex-1">{r.risk}</h4>
                       {severityBadge(r.severity)}
                     </div>
-                    <p className="text-xs text-gray-500 leading-relaxed">
-                      <span className="font-medium text-gray-600">Mitigation:</span> {r.mitigation}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                      <span className="font-medium text-gray-600 dark:text-gray-300">Mitigation:</span> {r.mitigation}
                     </p>
                   </div>
                 ))}
@@ -286,7 +286,7 @@ export const MeetingResultPanel: React.FC<MeetingResultPanelProps> = ({
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-200">
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
                         <th className="text-left py-2 pr-2 w-8">
                           <input
                             type="checkbox"
@@ -295,20 +295,20 @@ export const MeetingResultPanel: React.FC<MeetingResultPanelProps> = ({
                             className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                           />
                         </th>
-                        <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        <th className="text-center py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                           Type
                         </th>
-                        <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                           Task Name
                         </th>
-                        <th className="text-left py-2 pl-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        <th className="text-left py-2 pl-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                           Proposed Changes
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                       {taskUpdates.map((tu, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                        <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                           <td className="py-2.5 pr-2">
                             <input
                               type="checkbox"
@@ -318,8 +318,8 @@ export const MeetingResultPanel: React.FC<MeetingResultPanelProps> = ({
                             />
                           </td>
                           <td className="py-2.5 px-3 text-center">{typeBadge(tu.type)}</td>
-                          <td className="py-2.5 px-3 font-medium text-gray-900">{tu.taskName}</td>
-                          <td className="py-2.5 pl-3 text-gray-600">{tu.proposedChanges}</td>
+                          <td className="py-2.5 px-3 font-medium text-gray-900 dark:text-white">{tu.taskName}</td>
+                          <td className="py-2.5 pl-3 text-gray-600 dark:text-gray-400">{tu.proposedChanges}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -328,7 +328,7 @@ export const MeetingResultPanel: React.FC<MeetingResultPanelProps> = ({
 
                 {/* Apply button */}
                 <div className="mt-4 flex items-center justify-between">
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {selectedIndices.size} of {taskUpdates.length} selected
                   </p>
                   <button
