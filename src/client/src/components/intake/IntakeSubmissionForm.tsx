@@ -59,14 +59,14 @@ export const IntakeSubmissionForm: React.FC<Props> = ({ formId, onClose, onSubmi
 
   if (isLoading) {
     return (
-      <div className="text-center py-12 text-gray-400">Loading form...</div>
+      <div className="text-center py-12 text-gray-400 dark:text-gray-500">Loading form...</div>
     );
   }
 
   if (!form) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Form not found.</p>
+        <p className="text-gray-500 dark:text-gray-400">Form not found.</p>
         <button onClick={onClose} className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium">
           Go back
         </button>
@@ -80,24 +80,24 @@ export const IntakeSubmissionForm: React.FC<Props> = ({ formId, onClose, onSubmi
       <div className="flex items-center gap-3">
         <button
           onClick={onClose}
-          className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+          className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           aria-label="Go back"
         >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
+          <ArrowLeft className="w-5 h-5 text-gray-500 dark:text-gray-400" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <ClipboardList className="w-5 h-5" />
             {form.name}
           </h1>
           {form.description && (
-            <p className="text-sm text-gray-500 mt-0.5">{form.description}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{form.description}</p>
           )}
         </div>
       </div>
 
       {/* Form fields */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-5">
         {fields.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-6">
             This form has no fields configured.
@@ -105,13 +105,13 @@ export const IntakeSubmissionForm: React.FC<Props> = ({ formId, onClose, onSubmi
         ) : (
           fields.map((field: any) => {
             const hasError = !!errors[field.id];
-            const inputClasses = `w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              hasError ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-300'
+            const inputClasses = `w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+              hasError ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-300 dark:border-gray-600'
             }`;
 
             return (
               <div key={field.id}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {field.label}
                   {field.required && <span className="text-red-500 ml-0.5">*</span>}
                 </label>
@@ -165,7 +165,7 @@ export const IntakeSubmissionForm: React.FC<Props> = ({ formId, onClose, onSubmi
                         hasError ? 'border-red-400' : 'border-gray-300'
                       }`}
                     />
-                    <span className="text-sm text-gray-600">{field.label}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{field.label}</span>
                   </label>
                 )}
 
@@ -206,12 +206,12 @@ export const IntakeSubmissionForm: React.FC<Props> = ({ formId, onClose, onSubmi
         </button>
         <button
           onClick={onClose}
-          className="px-5 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          className="px-5 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
         >
           Cancel
         </button>
         {submitMutation.isError && (
-          <span className="text-xs text-red-600">Failed to submit. Please try again.</span>
+          <span className="text-xs text-red-600 dark:text-red-400">Failed to submit. Please try again.</span>
         )}
       </div>
     </div>

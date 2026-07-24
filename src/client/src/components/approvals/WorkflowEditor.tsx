@@ -134,13 +134,13 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {workflowId ? 'Edit Approval Workflow' : 'New Approval Workflow'}
           </h3>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Close">
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -153,32 +153,32 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Workflow Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Workflow Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Standard Change Approval"
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe when this workflow should be used..."
                 rows={2}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none dark:placeholder-gray-400"
               />
             </div>
 
             {/* Entity Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Entity Type</label>
               <select
                 value={entityType}
                 onChange={(e) => setEntityType(e.target.value)}
@@ -215,7 +215,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                   {steps.map((step, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50"
+                      className="flex items-center gap-2 p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50"
                     >
                       {/* Order indicator */}
                       <span className="text-xs font-bold text-gray-400 w-6 text-center flex-shrink-0">
@@ -228,14 +228,14 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
                         value={step.role}
                         onChange={(e) => handleStepChange(index, 'role', e.target.value)}
                         placeholder="Role (e.g., Project Manager)"
-                        className="flex-1 border border-gray-300 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
 
                       {/* Action */}
                       <select
                         value={step.action}
                         onChange={(e) => handleStepChange(index, 'action', e.target.value)}
-                        className="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 w-28 flex-shrink-0"
+                        className="border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 w-28 flex-shrink-0"
                       >
                         {STEP_ACTIONS.map((a) => (
                           <option key={a} value={a}>
@@ -286,7 +286,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
 
             {/* Error */}
             {saveMutation.isError && (
-              <p className="text-sm text-red-600">
+              <p className="text-sm text-red-600 dark:text-red-400">
                 Failed to save workflow. Please try again.
               </p>
             )}
@@ -296,7 +296,7 @@ export function WorkflowEditor({ projectId, workflowId, onClose, onSaved }: Work
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>

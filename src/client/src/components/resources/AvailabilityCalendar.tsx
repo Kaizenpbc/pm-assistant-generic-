@@ -14,10 +14,10 @@ interface AvailabilityEntry {
 }
 
 const typeColors: Record<string, { bg: string; text: string; label: string }> = {
-  vacation: { bg: 'bg-red-100', text: 'text-red-700', label: 'Vacation' },
-  holiday: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Holiday' },
-  unavailable: { bg: 'bg-gray-200', text: 'text-gray-700', label: 'Unavailable' },
-  reduced: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Reduced Hours' },
+  vacation: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', label: 'Vacation' },
+  holiday: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', label: 'Holiday' },
+  unavailable: { bg: 'bg-gray-200 dark:bg-gray-700', text: 'text-gray-700 dark:text-gray-300', label: 'Unavailable' },
+  reduced: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', label: 'Reduced Hours' },
 };
 
 interface AvailabilityCalendarProps {
@@ -137,19 +137,19 @@ export function AvailabilityCalendar({ resourceId, resourceName }: AvailabilityC
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-primary-500" />
-          <h3 className="text-sm font-semibold text-gray-900">Availability — {resourceName}</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Availability — {resourceName}</h3>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded" aria-label="Previous month">
-            <ChevronLeft className="w-4 h-4 text-gray-500" />
+          <button onClick={prevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" aria-label="Previous month">
+            <ChevronLeft className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
-          <span className="text-sm font-medium text-gray-700 w-36 text-center">{monthLabel}</span>
-          <button onClick={nextMonthFn} className="p-1 hover:bg-gray-100 rounded" aria-label="Next month">
-            <ChevronRight className="w-4 h-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-36 text-center">{monthLabel}</span>
+          <button onClick={nextMonthFn} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" aria-label="Next month">
+            <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
           <button
             onClick={() => setShowForm(!showForm)}
@@ -163,18 +163,18 @@ export function AvailabilityCalendar({ resourceId, resourceName }: AvailabilityC
 
       {/* Add form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-end gap-3 flex-wrap">
+        <form onSubmit={handleSubmit} className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-end gap-3 flex-wrap">
           <div>
-            <label className="block text-[10px] font-medium text-gray-500 mb-0.5">From</label>
-            <input type="date" value={formData.dateFrom} onChange={e => setFormData(p => ({ ...p, dateFrom: e.target.value }))} className="text-xs border border-gray-300 rounded px-2 py-1" required />
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">From</label>
+            <input type="date" value={formData.dateFrom} onChange={e => setFormData(p => ({ ...p, dateFrom: e.target.value }))} className="text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded px-2 py-1" required />
           </div>
           <div>
-            <label className="block text-[10px] font-medium text-gray-500 mb-0.5">To</label>
-            <input type="date" value={formData.dateTo} onChange={e => setFormData(p => ({ ...p, dateTo: e.target.value }))} className="text-xs border border-gray-300 rounded px-2 py-1" required />
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">To</label>
+            <input type="date" value={formData.dateTo} onChange={e => setFormData(p => ({ ...p, dateTo: e.target.value }))} className="text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded px-2 py-1" required />
           </div>
           <div>
-            <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Type</label>
-            <select value={formData.type} onChange={e => setFormData(p => ({ ...p, type: e.target.value as any }))} className="text-xs border border-gray-300 rounded px-2 py-1">
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Type</label>
+            <select value={formData.type} onChange={e => setFormData(p => ({ ...p, type: e.target.value as any }))} className="text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded px-2 py-1">
               <option value="vacation">Vacation</option>
               <option value="holiday">Holiday</option>
               <option value="unavailable">Unavailable</option>
@@ -183,13 +183,13 @@ export function AvailabilityCalendar({ resourceId, resourceName }: AvailabilityC
           </div>
           {formData.type === 'reduced' && (
             <div>
-              <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Hours/day</label>
-              <input type="number" min="0" max="24" step="0.5" value={formData.hoursAvailable} onChange={e => setFormData(p => ({ ...p, hoursAvailable: e.target.value }))} className="text-xs border border-gray-300 rounded px-2 py-1 w-16" />
+              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Hours/day</label>
+              <input type="number" min="0" max="24" step="0.5" value={formData.hoursAvailable} onChange={e => setFormData(p => ({ ...p, hoursAvailable: e.target.value }))} className="text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded px-2 py-1 w-16" />
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Note</label>
-            <input type="text" value={formData.note} onChange={e => setFormData(p => ({ ...p, note: e.target.value }))} className="text-xs border border-gray-300 rounded px-2 py-1 w-32" placeholder="Optional" />
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Note</label>
+            <input type="text" value={formData.note} onChange={e => setFormData(p => ({ ...p, note: e.target.value }))} className="text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded px-2 py-1 w-32" placeholder="Optional" />
           </div>
           <button type="submit" disabled={createMutation.isPending} className="text-xs px-3 py-1 bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50">
             Save
@@ -198,9 +198,9 @@ export function AvailabilityCalendar({ resourceId, resourceName }: AvailabilityC
       )}
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+      <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-          <div key={d} className="bg-gray-50 text-center text-[10px] font-semibold text-gray-500 py-1">{d}</div>
+          <div key={d} className="bg-gray-50 dark:bg-gray-700 text-center text-[10px] font-semibold text-gray-500 dark:text-gray-400 py-1">{d}</div>
         ))}
         {calendarDays.map(({ date, inMonth }, i) => {
           const dateStr = date.toISOString().slice(0, 10);
@@ -211,11 +211,11 @@ export function AvailabilityCalendar({ resourceId, resourceName }: AvailabilityC
           return (
             <div
               key={i}
-              className={`bg-white p-1 min-h-[36px] ${!inMonth ? 'opacity-30' : ''}`}
+              className={`bg-white dark:bg-gray-800 p-1 min-h-[36px] ${!inMonth ? 'opacity-30' : ''}`}
               title={entry ? `${typeColors[entry.type].label}${entry.note ? `: ${entry.note}` : ''}` : undefined}
             >
               <div className={`text-[10px] text-center rounded-full w-5 h-5 flex items-center justify-center mx-auto ${
-                isToday ? 'bg-primary-600 text-white font-bold' : 'text-gray-600'
+                isToday ? 'bg-primary-600 text-white font-bold' : 'text-gray-600 dark:text-gray-300'
               }`}>
                 {date.getDate()}
               </div>
@@ -232,7 +232,7 @@ export function AvailabilityCalendar({ resourceId, resourceName }: AvailabilityC
       {/* Entries list */}
       {entries.length > 0 && (
         <div className="mt-3 space-y-1">
-          <h4 className="text-[10px] font-semibold text-gray-400 uppercase">Scheduled Blocks</h4>
+          <h4 className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase">Scheduled Blocks</h4>
           {entries.map(e => {
             const colors = typeColors[e.type];
             return (
@@ -240,12 +240,12 @@ export function AvailabilityCalendar({ resourceId, resourceName }: AvailabilityC
                 <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${colors.bg} ${colors.text}`}>
                   {colors.label}
                 </span>
-                <span className="text-gray-600">
+                <span className="text-gray-600 dark:text-gray-400">
                   {new Date(e.dateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   {' — '}
                   {new Date(e.dateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
-                {e.note && <span className="text-gray-400 truncate">{e.note}</span>}
+                {e.note && <span className="text-gray-400 dark:text-gray-500 truncate">{e.note}</span>}
                 <button
                   onClick={() => deleteMutation.mutate(e.id)}
                   className="ml-auto p-0.5 text-gray-400 hover:text-red-500"
@@ -264,7 +264,7 @@ export function AvailabilityCalendar({ resourceId, resourceName }: AvailabilityC
         {Object.entries(typeColors).map(([key, c]) => (
           <div key={key} className="flex items-center gap-1">
             <div className={`w-3 h-2 rounded ${c.bg}`} />
-            <span className="text-[10px] text-gray-500">{c.label}</span>
+            <span className="text-[10px] text-gray-500 dark:text-gray-400">{c.label}</span>
           </div>
         ))}
       </div>

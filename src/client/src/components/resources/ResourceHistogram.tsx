@@ -209,7 +209,7 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
 
   if (!data || data.resources.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-5 text-center text-sm text-gray-400">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 text-center text-sm text-gray-400 dark:text-gray-500">
         No resource histogram data available.
       </div>
     );
@@ -217,7 +217,7 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
 
   if (!chart) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-5 text-center text-sm text-gray-400">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 text-center text-sm text-gray-400 dark:text-gray-500">
         No demand data to display.
       </div>
     );
@@ -227,12 +227,12 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
     chart;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
       {/* Header row */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-primary-500" />
-          <h3 className="text-sm font-semibold text-gray-800">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             Resource Demand Histogram
           </h3>
         </div>
@@ -244,7 +244,7 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
             setSelectedResource(e.target.value);
             setHoveredIdx(null);
           }}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
+          className="rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 px-3 py-1.5 text-xs text-gray-700 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
         >
           <option value="__all__">All Resources (combined)</option>
           {resourceNames.map((name) => (
@@ -399,11 +399,11 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
       <div className="flex items-center gap-5 justify-center mt-3">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-primary-500" />
-          <span className="text-xs text-gray-500">Normal demand</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Normal demand</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-red-500" />
-          <span className="text-xs text-gray-500">Over-allocated</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Over-allocated</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="16" height="4">
@@ -417,7 +417,7 @@ export function ResourceHistogram({ data }: ResourceHistogramProps) {
               strokeDasharray="3,2"
             />
           </svg>
-          <span className="text-xs text-gray-500">Capacity line</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Capacity line</span>
         </div>
       </div>
     </div>

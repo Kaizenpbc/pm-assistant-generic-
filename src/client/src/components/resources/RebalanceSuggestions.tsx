@@ -19,10 +19,10 @@ interface RebalanceSuggestionsProps {
 // ---------------------------------------------------------------------------
 
 const typeBadgeStyles: Record<string, { bg: string; text: string; label: string }> = {
-  reassign: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Reassign' },
-  delay: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Delay' },
-  split: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Split' },
-  hire: { bg: 'bg-green-100', text: 'text-green-700', label: 'Hire' },
+  reassign: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', label: 'Reassign' },
+  delay: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-400', label: 'Delay' },
+  split: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-400', label: 'Split' },
+  hire: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', label: 'Hire' },
 };
 
 function getConfidenceColor(confidence: number): string {
@@ -39,7 +39,7 @@ function getConfidenceColor(confidence: number): string {
 export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps) {
   if (!suggestions || suggestions.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-5 text-center">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 text-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
@@ -52,8 +52,8 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
             clipRule="evenodd"
           />
         </svg>
-        <p className="text-sm text-gray-500">No rebalance suggestions available.</p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400">No rebalance suggestions available.</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
           AI will generate suggestions when resource imbalances are detected.
         </p>
       </div>
@@ -72,8 +72,8 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
         >
           <path d="M10 1a6 6 0 00-3.815 10.631C7.237 12.5 8 13.443 8 14.456v.044a2 2 0 002 2h0a2 2 0 002-2v-.044c0-1.013.762-1.957 1.815-2.825A6 6 0 0010 1zM8.5 18a1.5 1.5 0 003 0h-3z" />
         </svg>
-        <h3 className="text-sm font-semibold text-gray-800">AI Rebalance Suggestions</h3>
-        <span className="text-xs text-gray-400">{suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''}</span>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">AI Rebalance Suggestions</h3>
+        <span className="text-xs text-gray-400 dark:text-gray-500">{suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''}</span>
       </div>
 
       {suggestions.map((suggestion) => {
@@ -83,7 +83,7 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
         return (
           <div
             key={suggestion.id}
-            className="rounded-xl border border-gray-200 bg-white p-5 hover:shadow-sm transition-shadow"
+            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 hover:shadow-sm transition-shadow"
           >
             {/* Top row: type badge + confidence */}
             <div className="flex items-center justify-between mb-3">
@@ -95,8 +95,8 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
 
               {/* Confidence indicator */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Confidence</span>
-                <div className="relative w-20 h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                <span className="text-xs text-gray-400 dark:text-gray-500">Confidence</span>
+                <div className="relative w-20 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
                   <div
                     className={`absolute inset-y-0 left-0 rounded-full transition-all ${confColor}`}
                     style={{
@@ -104,14 +104,14 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
                     }}
                   />
                 </div>
-                <span className="text-xs font-medium text-gray-600">
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                   {suggestion.confidence}%
                 </span>
               </div>
             </div>
 
             {/* Description */}
-            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
               {suggestion.description}
             </p>
 
@@ -131,15 +131,15 @@ export function RebalanceSuggestions({ suggestions }: RebalanceSuggestionsProps)
                     clipRule="evenodd"
                   />
                 </svg>
-                <span className="text-xs text-gray-500">
-                  Impact: <span className="font-medium text-gray-700">{suggestion.estimatedImpact}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Impact: <span className="font-medium text-gray-700 dark:text-gray-300">{suggestion.estimatedImpact}</span>
                 </span>
               </div>
 
               <button
                 type="button"
                 disabled
-                className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-400 cursor-not-allowed"
+                className="inline-flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed"
                 title="Coming soon — use this suggestion to manually reassign tasks"
               >
                 {/* Checkmark icon (hand-rolled SVG) */}

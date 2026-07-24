@@ -67,7 +67,7 @@ export function NetworkDiagramView({ scheduleId }: NetworkDiagramViewProps) {
 
   if (error || nodes.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400 text-sm">
+      <div className="text-center py-12 text-gray-400 dark:text-gray-500 text-sm">
         {error ? 'Failed to load network diagram' : 'No tasks with dependencies to display'}
       </div>
     );
@@ -81,26 +81,26 @@ export function NetworkDiagramView({ scheduleId }: NetworkDiagramViewProps) {
     <div className="space-y-2">
       {/* Controls */}
       <div className="flex items-center gap-2">
-        <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50" title="Zoom In">
-          <ZoomIn className="w-4 h-4 text-gray-600" />
+        <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" title="Zoom In">
+          <ZoomIn className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
-        <button onClick={() => setZoom(z => Math.max(0.2, z - 0.2))} className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50" title="Zoom Out">
-          <ZoomOut className="w-4 h-4 text-gray-600" />
+        <button onClick={() => setZoom(z => Math.max(0.2, z - 0.2))} className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" title="Zoom Out">
+          <ZoomOut className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
-        <button onClick={fitToScreen} className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50" title="Fit to Screen">
-          <Maximize2 className="w-4 h-4 text-gray-600" />
+        <button onClick={fitToScreen} className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" title="Fit to Screen">
+          <Maximize2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
-        <span className="text-xs text-gray-400 ml-2">{Math.round(zoom * 100)}%</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{Math.round(zoom * 100)}%</span>
 
         {/* Legend */}
         <div className="flex items-center gap-4 ml-auto text-xs">
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-3 rounded border-2 border-red-500 bg-red-50" />
-            <span className="text-gray-600">Critical Path</span>
+            <span className="text-gray-600 dark:text-gray-400">Critical Path</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded border-2 border-gray-300 bg-gray-50" />
-            <span className="text-gray-600">Non-Critical</span>
+            <div className="w-4 h-3 rounded border-2 border-gray-300 dark:border-gray-500 bg-gray-50 dark:bg-gray-700" />
+            <span className="text-gray-600 dark:text-gray-400">Non-Critical</span>
           </div>
         </div>
       </div>
@@ -108,7 +108,7 @@ export function NetworkDiagramView({ scheduleId }: NetworkDiagramViewProps) {
       {/* Diagram */}
       <div
         ref={containerRef}
-        className="overflow-hidden border border-gray-200 rounded-xl bg-gray-50 cursor-grab active:cursor-grabbing"
+        className="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 cursor-grab active:cursor-grabbing"
         style={{ height: 500 }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}

@@ -148,7 +148,7 @@ export function MonteCarloHistogram({ histogram, p50, p80, p90 }: MonteCarloHist
 
   if (histogram.length === 0) {
     return (
-      <div className="text-center py-8 text-sm text-gray-400">
+      <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
         No histogram data available.
       </div>
     );
@@ -377,29 +377,29 @@ export function MonteCarloHistogram({ histogram, p50, p80, p90 }: MonteCarloHist
       <div className="flex items-center gap-5 justify-center mt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-primary-400 opacity-75" />
-          <span className="text-xs text-gray-500">Frequency</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Frequency</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-orange-500 rounded" />
-          <span className="text-xs text-gray-500">Cumulative %</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Cumulative %</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="14" height="4">
             <line x1="0" y1="2" x2="14" y2="2" stroke="#3b82f6" strokeWidth="2" strokeDasharray="3,2" />
           </svg>
-          <span className="text-xs text-gray-500">P50</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">P50</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="14" height="4">
             <line x1="0" y1="2" x2="14" y2="2" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3,2" />
           </svg>
-          <span className="text-xs text-gray-500">P80</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">P80</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="14" height="4">
             <line x1="0" y1="2" x2="14" y2="2" stroke="#ef4444" strokeWidth="2" strokeDasharray="3,2" />
           </svg>
-          <span className="text-xs text-gray-500">P90</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">P90</span>
         </div>
       </div>
     </div>

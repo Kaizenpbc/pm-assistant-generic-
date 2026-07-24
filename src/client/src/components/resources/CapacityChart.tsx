@@ -126,7 +126,7 @@ export function CapacityChart({ data }: CapacityChartProps) {
 
   if (!chart || data.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-5 text-center text-sm text-gray-400">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 text-center text-sm text-gray-400 dark:text-gray-500">
         No capacity data available.
       </div>
     );
@@ -135,7 +135,7 @@ export function CapacityChart({ data }: CapacityChartProps) {
   const { svgW, svgH, pad, plotW, plotH, barWidth, yTicks, bars } = chart;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
       <div className="flex items-center gap-2 mb-4">
         {/* Chart icon (hand-rolled SVG) */}
         <svg
@@ -146,8 +146,8 @@ export function CapacityChart({ data }: CapacityChartProps) {
         >
           <path d="M15.5 2A1.5 1.5 0 0014 3.5v13a1.5 1.5 0 001.5 1.5h1a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0016.5 2h-1zM9.5 6A1.5 1.5 0 008 7.5v9A1.5 1.5 0 009.5 18h1a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0010.5 6h-1zM3.5 10A1.5 1.5 0 002 11.5v5A1.5 1.5 0 003.5 18h1A1.5 1.5 0 006 16.5v-5A1.5 1.5 0 004.5 10h-1z" />
         </svg>
-        <h3 className="text-sm font-semibold text-gray-800">Capacity vs Allocation</h3>
-        <span className="text-xs text-gray-400">{data.length} weeks</span>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Capacity vs Allocation</h3>
+        <span className="text-xs text-gray-400 dark:text-gray-500">{data.length} weeks</span>
       </div>
 
       <div className="relative">
@@ -330,17 +330,17 @@ export function CapacityChart({ data }: CapacityChartProps) {
       <div className="flex items-center gap-5 justify-center mt-3">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-green-500" />
-          <span className="text-xs text-gray-500">Allocated (within capacity)</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Allocated (within capacity)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-red-500" />
-          <span className="text-xs text-gray-500">Deficit (over capacity)</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Deficit (over capacity)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="16" height="4">
             <line x1="0" y1="2" x2="16" y2="2" stroke="#6366f1" strokeWidth="2" strokeDasharray="3,2" />
           </svg>
-          <span className="text-xs text-gray-500">Capacity limit</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Capacity limit</span>
         </div>
       </div>
     </div>

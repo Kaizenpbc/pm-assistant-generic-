@@ -67,7 +67,7 @@ export function SCurveChart({ data, height = 300 }: SCurveChartProps) {
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-8 text-sm text-gray-400">
+      <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
         No S-Curve data available.
       </div>
     );
@@ -201,15 +201,15 @@ export function SCurveChart({ data, height = 300 }: SCurveChartProps) {
           <svg width="20" height="4">
             <line x1="0" y1="2" x2="20" y2="2" stroke="#9ca3af" strokeWidth="2" strokeDasharray="4,2" />
           </svg>
-          <span className="text-xs text-gray-500">Planned Value (PV)</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Planned Value (PV)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-blue-500 rounded" />
-          <span className="text-xs text-gray-500">Earned Value (EV)</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Earned Value (EV)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-red-500 rounded" />
-          <span className="text-xs text-gray-500">Actual Cost (AC)</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Actual Cost (AC)</span>
         </div>
       </div>
     </div>
