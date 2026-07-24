@@ -85,7 +85,7 @@ export function CriticalityIndex({ data }: CriticalityIndexProps) {
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-8 text-sm text-gray-400">
+      <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
         No criticality data available.
       </div>
     );
@@ -195,19 +195,19 @@ export function CriticalityIndex({ data }: CriticalityIndexProps) {
       <div className="flex items-center gap-5 justify-center mt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-red-500" />
-          <span className="text-xs text-gray-500">&gt;80% (Critical)</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">&gt;80% (Critical)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-orange-500" />
-          <span className="text-xs text-gray-500">&gt;50%</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">&gt;50%</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-yellow-500" />
-          <span className="text-xs text-gray-500">&gt;30%</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">&gt;30%</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-green-500" />
-          <span className="text-xs text-gray-500">&le;30%</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">&le;30%</span>
         </div>
       </div>
     </div>

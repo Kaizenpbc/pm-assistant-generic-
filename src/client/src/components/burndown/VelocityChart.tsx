@@ -55,7 +55,7 @@ export function VelocityChart({ weeks, averageVelocity, height = 250 }: Velocity
   }, [weeks, averageVelocity, height]);
 
   if (weeks.length === 0) {
-    return <p className="text-sm text-gray-400 text-center py-8">No velocity data available</p>;
+    return <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">No velocity data available</p>;
   }
 
   const svgWidth = 700;
@@ -100,7 +100,7 @@ export function VelocityChart({ weeks, averageVelocity, height = 250 }: Velocity
 
       {/* Hover tooltip */}
       {hoverIndex !== null && bars[hoverIndex] && (
-        <div className="text-center text-xs text-gray-500 mt-1">
+        <div className="text-center text-xs text-gray-500 dark:text-gray-400 mt-1">
           Week of {new Date(bars[hoverIndex].week.weekStart + 'T00:00:00').toLocaleDateString()} — {bars[hoverIndex].week.completed} tasks completed
         </div>
       )}
@@ -109,11 +109,11 @@ export function VelocityChart({ weeks, averageVelocity, height = 250 }: Velocity
       <div className="flex items-center gap-5 justify-center mt-2 text-xs">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded bg-primary-400" />
-          <span className="text-gray-600">Tasks Completed</span>
+          <span className="text-gray-600 dark:text-gray-400">Tasks Completed</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5" style={{ borderTop: '2px dashed #f59e0b' }} />
-          <span className="text-gray-600">Average Velocity</span>
+          <span className="text-gray-600 dark:text-gray-400">Average Velocity</span>
         </div>
       </div>
     </div>

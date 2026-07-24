@@ -74,7 +74,7 @@ export function BurndownChart({ dataPoints, totalScope, height = 300 }: Burndown
   }, [dataPoints, totalScope, height]);
 
   if (dataPoints.length === 0) {
-    return <p className="text-sm text-gray-400 text-center py-8">No burndown data available</p>;
+    return <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">No burndown data available</p>;
   }
 
   const svgWidth = 700;
@@ -134,15 +134,15 @@ export function BurndownChart({ dataPoints, totalScope, height = 300 }: Burndown
       <div className="flex items-center gap-5 justify-center mt-2 text-xs">
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-gray-400" style={{ borderTop: '2px dashed #9ca3af' }} />
-          <span className="text-gray-600">Ideal</span>
+          <span className="text-gray-600 dark:text-gray-400">Ideal</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-primary-500" />
-          <span className="text-gray-600">Remaining</span>
+          <span className="text-gray-600 dark:text-gray-400">Remaining</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-0.5 bg-green-500" />
-          <span className="text-gray-600">Completed</span>
+          <span className="text-gray-600 dark:text-gray-400">Completed</span>
         </div>
       </div>
 
