@@ -106,19 +106,19 @@ export async function portalRoutes(fastify: FastifyInstance) {
   // GET /links/:projectId — list portal links
   // Trial users get sample portal links with an upgrade prompt.
   fastify.get('/links/:projectId', {
-    preHandler: [authMiddleware, requireScope('read'), requireProjectAccess('viewer')],
+    preHandler: [authMiddleware, requireScope('read'), async (request: FastifyRequest, reply: FastifyReply) => {
+      // Trial users get sample data before project access check (project may not exist)
+      if (request.user && request.user.role !== 'admin') {
+        const u = await userService.findById(request.user.userId);
+        if (u && u.subscriptionTier === 'trial') {
+          const { projectId } = request.params as { projectId: string };
+          return reply.send({ links: generateSamplePortalLinks(projectId), sample: true });
+        }
+      }
+    }, requireProjectAccess('viewer')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { projectId } = request.params as { projectId: string };
-
-      // Trial users get sample portal links
-      if (request.user!.role !== 'admin') {
-        const user = await userService.findById(request.user!.userId);
-        if (user && user.subscriptionTier === 'trial') {
-          return { links: generateSamplePortalLinks(projectId), sample: true };
-        }
-      }
-
       const links = await portalService.getLinks(projectId);
       return { links };
     } catch (error) {

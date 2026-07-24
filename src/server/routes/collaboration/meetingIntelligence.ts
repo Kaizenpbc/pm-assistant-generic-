@@ -21,16 +21,17 @@ export async function meetingIntelligenceRoutes(fastify: FastifyInstance) {
     preHandler: [requireScope('write')],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const parsed = AnalyzeRequestSchema.parse(request.body);
       const userId = request.user!.userId;
 
-      // Trial users get sample meeting analysis
+      // Trial users get sample meeting analysis (before schema validation)
       if (request.user!.role !== 'admin') {
         const user = await userService.findById(userId);
         if (user && user.subscriptionTier === 'trial') {
           return reply.send({ data: generateSampleMeetingAnalysis(), sample: true });
         }
       }
+
+      const parsed = AnalyzeRequestSchema.parse(request.body);
 
       const analysis = await meetingIntelligenceService.analyzeTranscript(
         parsed.transcript,

@@ -75,6 +75,8 @@ export async function registerPlugins(fastify: FastifyInstance) {
     '/api/v1/ws',
     '/api/v1/waitlist',
     '/api/v1/users/me/profile',
+    '/api/v1/nl-query',
+    '/api/v1/meeting-intelligence/analyze',
     '/mcp',
   ];
   fastify.addHook('preHandler', async (request, reply) => {
